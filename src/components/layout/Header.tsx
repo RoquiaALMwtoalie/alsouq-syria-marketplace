@@ -1224,59 +1224,57 @@ export const Header = memo(function Header() {
               </TooltipContent>
             </Tooltip>
 
-            {/* Role Button */}
-            {(() => {
-              if (isAuthLoading) {
-                return (
-                  <div className="ms-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500/20 to-blue-600/20 animate-pulse h-7 w-24" />
-                );
-              }
+         {/* Role Button - نسخة محسنة للموبايل */}
+{(() => {
+  if (isAuthLoading) {
+    return <div className="ms-1 px-2 py-0.5 rounded-lg bg-blue-500/20 animate-pulse h-5 w-16" />;
+  }
 
-              if (app.user) {
-                if (isAdmin) {
-                  return (
-                    <Link 
-                      to="/admin" 
-                      className="ms-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1 border border-blue-400/20 shrink-0"
-                    >
-                      <LayoutDashboard className="h-3 w-3" />
-                      {app.lang === "ar" ? "لوحة الأدمن" : "Admin"}
-                    </Link>
-                  );
-                }
-                if (isSeller) {
-                  return (
-                    <Link 
-                      to="/dashboard" 
-                      className="ms-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1 border border-blue-400/20 shrink-0"
-                    >
-                      <Store className="h-3 w-3" />
-                      {app.lang === "ar" ? "لوحة البائع" : "Seller"}
-                    </Link>
-                  );
-                }
-                return (
-                  <Link 
-                    to="/dashboard" 
-                    className="ms-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1 border border-blue-400/20 shrink-0"
-                  >
-                    <Store className="h-3 w-3" />
-                    {app.lang === "ar" ? "أنشئ متجرك" : "List Business"}
-                  </Link>
-                );
-              }
-              
-              return (
-                <Link 
-                  to="/auth/$mode" 
-                  params={{ mode: "register" }} 
-                  className="ms-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1 border border-blue-400/20 shrink-0"
-                >
-                  <Store className="h-3 w-3" />
-                  {app.lang === "ar" ? "أنشئ متجرك" : "List Business"}
-                </Link>
-              );
-            })()}
+  if (app.user) {
+    if (isAdmin) {
+      return (
+        <Link 
+          to="/admin" 
+          className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-blue-400/20 shrink-0"
+        >
+          <LayoutDashboard className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+          {app.lang === "ar" ? "لوحة الأدمن" : "Admin"}
+        </Link>
+      );
+    }
+    if (isSeller) {
+      return (
+        <Link 
+          to="/dashboard" 
+          className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-blue-400/20 shrink-0"
+        >
+          <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+          {app.lang === "ar" ? "لوحة البائع" : "Seller"}
+        </Link>
+      );
+    }
+    return (
+      <Link 
+        to="/dashboard" 
+        className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-blue-400/20 shrink-0"
+      >
+        <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+        {app.lang === "ar" ? "أنشئ متجرك" : "List Business"}
+      </Link>
+    );
+  }
+  
+  return (
+    <Link 
+      to="/auth/$mode" 
+      params={{ mode: "register" }} 
+      className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-blue-400/20 shrink-0"
+    >
+      <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+      {app.lang === "ar" ? "أنشئ متجرك" : "List Business"}
+    </Link>
+  );
+})()}
           </div>
         </div>
 
