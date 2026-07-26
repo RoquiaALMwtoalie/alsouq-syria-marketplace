@@ -4,7 +4,7 @@ import { createFileRoute, useNavigate, useLocation } from "@tanstack/react-route
 import { useEffect, useState, useRef } from "react";
 import { useApp } from "@/lib/i18n";
 import { ChatMessages } from "@/components/chat/ChatMessages";
-import { Loader2, ArrowLeft, Store, Home, ChevronLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Store, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGetOrCreateConversation } from "@/lib/hooks/useConversation";
 import { useConversationStore } from "@/lib/stores/conversationStore";
@@ -190,7 +190,7 @@ function ChatPage() {
   // ====== عرض حالة التحميل ======
   if (loading || app.authLoading || isInitializing) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f0f2f5] dark:bg-[#1a1a2e]">
+      <div className="messages-chat flex h-screen items-center justify-center bg-[#f0f2f5] dark:bg-[#1a1a2e]">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#0084ff]" />
           <p className="mt-4 text-sm text-muted-foreground">
@@ -206,7 +206,7 @@ function ChatPage() {
   // ====== المستخدم غير موجود ======
   if (!otherUser) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-[#f0f2f5] dark:bg-[#1a1a2e]">
+      <div className="messages-chat flex h-screen flex-col items-center justify-center bg-[#f0f2f5] dark:bg-[#1a1a2e]">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
           <span className="text-3xl">❌</span>
         </div>
@@ -231,7 +231,7 @@ function ChatPage() {
   // ====== جاري تهيئة المحادثة ======
   if (!conversationId) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-[#f0f2f5] dark:bg-[#1a1a2e]">
+      <div className="messages-chat flex h-screen flex-col items-center justify-center bg-[#f0f2f5] dark:bg-[#1a1a2e]">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/20">
           <span className="text-3xl">⚠️</span>
         </div>
@@ -247,10 +247,10 @@ function ChatPage() {
 
   // ====== ✅ الواجهة الرئيسية المتجاوبة بالكامل ======
   return (
-    <div className="chat-page flex h-[100dvh] flex-col bg-[#f0f2f5] dark:bg-[#1a1a2e]">
+    <div className="messages-chat flex h-[100dvh] flex-col overflow-x-hidden bg-[#f0f2f5] dark:bg-[#1a1a2e]">
       
       {/* ✅ هيدر المحادثة - متجاوب بالكامل */}
-      <div className="chat-header sticky top-0 z-50 flex items-center gap-2 border-b border-slate-200/50 bg-white/95 px-3 py-2 backdrop-blur-xl dark:border-slate-700/50 dark:bg-[#242538]/95 sm:gap-3 sm:px-4 sm:py-2.5">
+      <div className="chat-header sticky top-0 z-50 flex shrink-0 items-center gap-2 border-b border-slate-200/50 bg-white/95 px-3 py-2 backdrop-blur-xl dark:border-slate-700/50 dark:bg-[#242538]/95 sm:gap-3 sm:px-4 sm:py-2.5">
         
         {/* ✅ زر الرجوع الذكي */}
         <Button
@@ -264,7 +264,7 @@ function ChatPage() {
         </Button>
 
         {/* ✅ صورة المستخدم */}
-        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white sm:h-10 sm:w-10">
+        <div className="avatar h-8 w-8 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white sm:h-10 sm:w-10">
           {otherUser?.avatar_url ? (
             <img 
               src={otherUser.avatar_url} 
@@ -315,7 +315,7 @@ function ChatPage() {
       </div>
 
       {/* ✅ مكون المحادثة - ياخذ باقي المساحة */}
-      <div className="flex-1 overflow-hidden">
+      <div className="chat-messages flex-1 overflow-y-auto overflow-x-hidden">
         <ChatMessages
           userId={app.user.id}
           conversationId={conversationId}
