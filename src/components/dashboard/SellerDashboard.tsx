@@ -854,9 +854,9 @@ export function SellerDashboard({ notificationButton }: SellerDashboardProps) {
               `}
             >
               <n.icon className={`h-5 w-5 transition-all duration-300 ${tab === n.id ? 'scale-110' : ''}`} />
-              <span className="text-[9px] leading-tight text-center max-w-full break-words">
-                {n.label.length > 8 ? n.label.substring(0, 6) + '..' : n.label}
-              </span>
+         <span className="text-[8px] leading-tight text-center max-w-full break-words">
+  {n.label}
+</span>
               {tab === n.id && (
                 <span className="h-1 w-4 rounded-full bg-white/60 animate-pulse" />
               )}
