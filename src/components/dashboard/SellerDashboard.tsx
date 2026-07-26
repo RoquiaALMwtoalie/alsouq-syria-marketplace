@@ -811,34 +811,62 @@ export function SellerDashboard({ notificationButton }: SellerDashboardProps) {
           </div>
         )}
 
-        {/* ===== TABS NAVIGATION ===== */}
-        {!showSearchResults && (
-          <div className="mb-6">
-            <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
-              <div className={`flex items-center ${isRTL ? 'flex-row-reverse justify-between' : 'justify-between'} p-1.5 gap-2`}>
-                {nav.map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => setTab(n.id)}
-                    className={`
-                      flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 whitespace-nowrap flex-1 text-center justify-center
-                      ${tab === n.id 
-                        ? 'bg-[#2563eb] text-white shadow-lg shadow-blue-500/25 scale-[1.02]' 
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
-                      }
-                    `}
-                  >
-                    <n.icon className={`h-4 w-4 transition-all duration-300 ${tab === n.id ? 'scale-110' : ''}`} />
-                    <span>{n.label}</span>
-                    {tab === n.id && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-white/60 animate-pulse ml-1" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+       {/* ===== TABS NAVIGATION - نسخة متجاوبة ===== */}
+{!showSearchResults && (
+  <div className="mb-6">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
+      {/* ✅ Desktop: عرض أفقي */}
+      <div className="hidden md:flex items-center p-1.5 gap-2 overflow-x-auto">
+        {nav.map((n) => (
+          <button
+            key={n.id}
+            onClick={() => setTab(n.id)}
+            className={`
+              flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 whitespace-nowrap flex-1 text-center justify-center
+              ${tab === n.id 
+                ? 'bg-[#2563eb] text-white shadow-lg shadow-blue-500/25 scale-[1.02]' 
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
+              }
+            `}
+          >
+            <n.icon className={`h-4 w-4 transition-all duration-300 ${tab === n.id ? 'scale-110' : ''}`} />
+            <span>{n.label}</span>
+            {tab === n.id && (
+              <span className="h-1.5 w-1.5 rounded-full bg-white/60 animate-pulse ml-1" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* ✅ Mobile: شبكة 2x4 مع أيقونات فقط */}
+      <div className="md:hidden p-3">
+        <div className="grid grid-cols-4 gap-1.5">
+          {nav.map((n) => (
+            <button
+              key={n.id}
+              onClick={() => setTab(n.id)}
+              className={`
+                flex flex-col items-center gap-1 p-2.5 rounded-xl text-xs font-medium transition-all duration-300
+                ${tab === n.id 
+                  ? 'bg-[#2563eb] text-white shadow-lg shadow-blue-500/25' 
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                }
+              `}
+            >
+              <n.icon className={`h-5 w-5 transition-all duration-300 ${tab === n.id ? 'scale-110' : ''}`} />
+              <span className="text-[9px] leading-tight text-center max-w-full break-words">
+                {n.label.length > 8 ? n.label.substring(0, 6) + '..' : n.label}
+              </span>
+              {tab === n.id && (
+                <span className="h-1 w-4 rounded-full bg-white/60 animate-pulse" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* ===== المحتوى حسب التبويب ===== */}
         {!showSearchResults && (

@@ -282,38 +282,50 @@ export function BecomeSellerCard() {
   }
 
   // ====== 📋 حالة: لديه طلب pending ======
-  if (canSubmitData?.existingApplication?.status === 'pending') {
-    const appData = canSubmitData.existingApplication;
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-2xl px-4 py-16 text-center"
-      >
-        <div className="rounded-3xl bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-2 border-yellow-200/50 dark:border-yellow-800/50 shadow-2xl p-8 md:p-12">
-          <motion.div 
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="mx-auto h-24 w-24 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 grid place-items-center mb-6 shadow-xl shadow-yellow-500/30"
-          >
-            <Clock className="h-12 w-12 text-white" />
-          </motion.div>
-          <h1 className="text-4xl font-black mb-3 bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
-            {app.lang === "ar" ? "⏳ طلبك قيد المراجعة" : "⏳ Your application is pending"}
-          </h1>
-          <p className="text-muted-foreground mb-6 text-lg">
+ {/* ====== 📋 حالة: لديه طلب pending ====== */}
+if (canSubmitData?.existingApplication?.status === 'pending') {
+  const appData = canSubmitData.existingApplication;
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mx-auto max-w-2xl px-4 py-16 text-center"
+    >
+      <div className="rounded-3xl bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-2 border-yellow-200/50 dark:border-yellow-800/50 shadow-2xl p-8 md:p-12">
+        <motion.div 
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+          className="mx-auto h-24 w-24 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 grid place-items-center mb-6 shadow-xl shadow-yellow-500/30"
+        >
+          <Clock className="h-12 w-12 text-white" />
+        </motion.div>
+        <h1 className="text-4xl font-black mb-3 bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
+          {app.lang === "ar" ? "⏳ طلبك قيد المراجعة" : "⏳ Your application is pending"}
+        </h1>
+        <p className="text-muted-foreground mb-6 text-lg">
+          {app.lang === "ar"
+            ? `طلبك للمتجر "${appData.store_name}" قيد المراجعة من قبل الأدمن`
+            : `Your application for "${appData.store_name}" is being reviewed`}
+        </p>
+        
+        {/* ✅ ✅ ✅ العبارة الجديدة ✅ ✅ ✅ */}
+        <div className="mb-6 p-4 rounded-xl bg-yellow-100/50 dark:bg-yellow-900/20 border border-yellow-300/30 dark:border-yellow-700/30">
+          <p className="text-yellow-700 dark:text-yellow-300 font-medium flex items-center justify-center gap-2">
+            <Clock className="h-5 w-5" />
             {app.lang === "ar"
-              ? `طلبك للمتجر "${appData.store_name}" قيد المراجعة من قبل الأدمن`
-              : `Your application for "${appData.store_name}" is being reviewed`}
+              ? "⏳ سيتم مراجعة طلبك بغضون دقائق فقط"
+              : "⏳ Your application will be reviewed within minutes"}
           </p>
-          <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white border-0 py-2 px-6 text-sm shadow-lg shadow-yellow-500/30">
-            <Clock className="h-4 w-4 mr-2" />
-            {app.lang === "ar" ? "⏳ بانتظار موافقة الأدمن" : "⏳ Awaiting admin approval"}
-          </Badge>
         </div>
-      </motion.div>
-    );
-  }
+        
+        <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white border-0 py-2 px-6 text-sm shadow-lg shadow-yellow-500/30">
+          <Clock className="h-4 w-4 mr-2" />
+          {app.lang === "ar" ? "⏳ بانتظار موافقة الأدمن" : "⏳ Awaiting admin approval"}
+        </Badge>
+      </div>
+    </motion.div>
+  );
+}
 
   // ====== 📋 حالة: لديه طلب approved ======
   if (canSubmitData?.existingApplication?.status === 'approved') {
