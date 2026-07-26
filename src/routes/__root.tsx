@@ -1,0 +1,756 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  Outlet,
+  createRootRouteWithContext,
+  useRouter,
+  useRouterState,
+  HeadContent,
+  Scripts,
+} from "@tanstack/react-router";
+import { useEffect, type ReactNode, useState } from "react";
+import { Toaster } from "@/components/ui/sonner";
+
+import appCss from "../styles.css?url";
+import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AppProvider, useApp } from "@/lib/i18n";
+import { Header, Footer } from "@/components/layout/Header";
+import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
+
+// ===== إضافة Imports الإشعارات =====
+import { Bell, BellOff, Check, Clock, ShoppingBag, Calendar as CalendarIcon, Settings, Gift, Shield, MoreVertical, Trash2, X, BellRing } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  useNotifications,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+} from "@/lib/queries";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+// ===== نهاية Imports الإشعارات =====
+
+// ===== ✅ إضافة استيراد isPushSupported =====
+import { isPushSupported } from '@/lib/pushNotifications';
+// بعد الـ imports الموجودة
+import { ClientOnly } from "@/components/ClientOnly";
+// ===== ✅ إضافة استيراد جميع Hooks Realtime =====
+import {
+  useProfileWithUpdate,
+  useFavoritesRealtime,
+  useListingsRealtime,
+  useCartRealtime,
+  useOrdersRealtime,
+  useBookingsRealtime,
+  useStoresRealtime,
+  useCategoriesRealtime,
+} from "@/lib/hooks";
+
+function NotFoundComponent() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-7xl font-black bg-gradient-to-br from-primary to-primary-glow bg-clip-text text-transparent">404</h1>
+        <h2 className="mt-4 text-xl font-semibold">Page not found</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          The page you're looking for doesn't exist.
+        </p>
+        <a href="/" className="mt-6 inline-flex rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium">
+          Go home
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
+  useEffect(() => { reportLovableError(error, { boundary: "root" }); }, [error]);
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-xl font-semibold">This page didn't load</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Something went wrong.</p>
+        <button
+          onClick={() => { router.invalidate(); reset(); }}
+          className="mt-6 inline-flex rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm"
+        >
+          Try again
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { title: "السوق اليك — Syria's Super Marketplace" },
+      { name: "description", content: "السوق اليك: منصة سوريا الشاملة للتسوق والخدمات والعقارات والمطاعم والسياحة والسيارات — كل ما تحتاجه بمكان واحد." },
+      { property: "og:title", content: "السوق اليك — Syria's Super Marketplace" },
+      { property: "og:description", content: "اكتشف كل ما تحتاجه في سوريا بمكان واحد: متاجر، خدمات، عقارات، أطباء وأكثر." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" },
+    ],
+  }),
+  shellComponent: RootShell,
+  component: RootComponent,
+  notFoundComponent: NotFoundComponent,
+  errorComponent: ErrorComponent,
+});
+
+function RootShell({ children }: { children: ReactNode }) {
+  return (
+    <html lang="ar" dir="rtl">
+      <head><HeadContent /></head>
+      <body>{children}<Scripts /></body>
+    </html>
+  );
+}
+
+// ===== ✅ ✅ ✅ مكون طلب الإشعارات الاحترافي =====
+function NotificationPermissionHandler() {
+  const app = useApp();
+  const [showBanner, setShowBanner] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [bannerShown, setBannerShown] = useState(false);
+
+  useEffect(() => {
+    const checkAndRequestPermission = async () => {
+      if (!app.user) {
+        console.log('⏳ No user, skipping notification request');
+        return;
+      }
+      
+      if (!isPushSupported()) {
+        console.log('❌ Push not supported');
+        return;
+      }
+      
+      const currentPermission = Notification.permission;
+      setPermission(currentPermission);
+      console.log('🔔 Current notification permission:', currentPermission);
+      
+      if (currentPermission !== 'default') {
+        console.log(`⏳ Permission already ${currentPermission}`);
+        return;
+      }
+      
+      if (!bannerShown) {
+        setBannerShown(true);
+        setTimeout(() => {
+          setShowBanner(true);
+        }, 2000);
+      }
+    };
+    
+    checkAndRequestPermission();
+  }, [app.user, bannerShown]);
+
+  const handleEnableNotifications = async () => {
+    try {
+      const result = await Notification.requestPermission();
+      setPermission(result);
+      
+      if (result === 'granted') {
+        setShowBanner(false);
+        toast.success(
+          app.lang === "ar" 
+            ? "🔔 شكراً لتفعيل الإشعارات! سنخبرك بكل جديد." 
+            : "🔔 Thanks for enabling notifications! We'll keep you updated.",
+          { duration: 4000, position: 'top-center', icon: '🔔' }
+        );
+      } else if (result === 'denied') {
+        toast.info(
+          app.lang === "ar" 
+            ? "يمكنك تفعيل الإشعارات لاحقاً من إعدادات المتصفح 🔔" 
+            : "You can enable notifications later from browser settings 🔔",
+          { duration: 4000 }
+        );
+        setShowBanner(false);
+      }
+    } catch (error) {
+      console.error('❌ Error requesting notification permission:', error);
+    }
+  };
+
+  const handleCloseBanner = () => {
+    setShowBanner(false);
+  };
+
+  if (!showBanner) return null;
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-[100] animate-in slide-in-from-bottom-full duration-500">
+      <div className="mx-auto max-w-7xl px-4 pb-4">
+        <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-2xl shadow-blue-500/30 p-4 md:p-5 border border-white/20">
+          <button
+            onClick={handleCloseBanner}
+            className="absolute top-2 right-2 md:top-3 md:right-3 text-white/60 hover:text-white transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex-shrink-0">
+              <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+                <BellRing className="h-6 w-6 md:h-7 md:w-7 text-white" />
+              </div>
+            </div>
+
+            <div className="flex-1 text-center sm:text-right">
+              <h4 className="text-white font-bold text-sm md:text-base">
+                {app.lang === "ar" ? "🔔 فعّل الإشعارات" : "🔔 Enable Notifications"}
+              </h4>
+              <p className="text-white/80 text-xs md:text-sm mt-0.5">
+                {app.lang === "ar" 
+                  ? "احصل على تحديثات فورية عن الطلبات والعروض الجديدة" 
+                  : "Get instant updates about orders and new offers"}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                onClick={handleEnableNotifications}
+                className="h-10 md:h-11 px-4 md:px-6 rounded-xl bg-white text-blue-600 hover:bg-white/90 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm md:text-base"
+              >
+                <BellRing className="h-4 w-4 mr-2" />
+                {app.lang === "ar" ? "تفعيل" : "Enable"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleCloseBanner}
+                className="h-10 md:h-11 px-3 md:px-4 rounded-xl text-white hover:bg-white/10 transition-colors text-sm"
+              >
+                {app.lang === "ar" ? "ليس الآن" : "Not now"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== مكون الإشعارات الداخلي =====
+function NotificationsProvider() {
+  const app = useApp();
+  
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const { data: notifications = [], refetch: refetchNotifications } = useNotifications(app.user?.id);
+  const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllNotificationsRead();
+  const unreadCount = notifications.filter((n: any) => !n.is_read).length;
+
+  async function handleNotificationClick(notification: any) {
+    if (!notification.is_read) {
+      try {
+        const { error } = await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('id', notification.id)
+          .eq('recipient_id', app.user!.id);
+        
+        if (error) throw error;
+        await refetchNotifications();
+      } catch (error) {
+        console.error("Error marking notification as read:", error);
+      }
+    }
+    
+    if (notification.link_url) {
+      window.location.href = notification.link_url;
+      setNotificationsOpen(false);
+    }
+  }
+
+  async function handleMarkAsRead(notificationId: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId)
+        .eq('recipient_id', app.user!.id);
+      
+      if (error) throw error;
+      await refetchNotifications();
+      toast.success(app.lang === "ar" ? "تم تحديد الإشعار كمقروء" : "Notification marked as read");
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      toast.error(app.lang === "ar" ? "حدث خطأ" : "An error occurred");
+    }
+  }
+
+  async function handleMarkAllAsRead() {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('recipient_id', app.user!.id)
+        .eq('is_read', false);
+      
+      if (error) throw error;
+      await refetchNotifications();
+      toast.success(app.lang === "ar" ? "تم تحديد الكل كمقروء" : "All notifications marked as read");
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+      toast.error(app.lang === "ar" ? "حدث خطأ" : "An error occurred");
+    }
+  }
+
+  function getNotificationIcon(type: string) {
+    switch (type) {
+      case 'order': return <ShoppingBag className="h-4 w-4" />;
+      case 'booking': return <Clock className="h-4 w-4" />;
+      case 'admin': return <Settings className="h-4 w-4" />;
+      case 'favorite_offer': return <Gift className="h-4 w-4" />;
+      case 'system': return <Shield className="h-4 w-4" />;
+      default: return <Bell className="h-4 w-4" />;
+    }
+  }
+
+  function getStatusColor(type: string) {
+    switch (type) {
+      case 'order':
+        return "bg-blue-500/10 text-blue-600 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-800";
+      case 'booking':
+        return "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-800";
+      case 'admin':
+        return "bg-purple-500/10 text-purple-600 border-purple-200 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-800";
+      case 'favorite_offer':
+        return "bg-amber-500/10 text-amber-600 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-800";
+      default:
+        return "bg-slate-500/10 text-slate-600 border-slate-200 dark:bg-slate-500/20 dark:text-slate-400 dark:border-slate-800";
+    }
+  }
+
+  function formatTime(date: string) {
+    const now = new Date();
+    const then = new Date(date);
+    const diffMs = now.getTime() - then.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (app.lang === "ar") {
+      if (diffMins < 1) return "الآن";
+      if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
+      if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+      if (diffDays < 7) return `منذ ${diffDays} يوم`;
+      return then.toLocaleDateString("ar-SA", { day: "numeric", month: "short" });
+    } else {
+      if (diffMins < 1) return "Just now";
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return then.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+    }
+  }
+
+  if (!app.user) return null;
+
+  return (
+    <div className="fixed bottom-6 end-6 z-50">
+      <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+        <DialogTrigger asChild>
+          <Button 
+            size="icon" 
+            className="h-14 w-14 rounded-full shadow-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-2xl transition-all hover:scale-110 relative"
+          >
+            <Bell className="h-6 w-6 text-white" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-6 min-w-6 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center animate-pulse border-2 border-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Button>
+        </DialogTrigger>
+
+        <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden border-0 shadow-2xl bg-white dark:bg-slate-900">
+          <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-50/90 to-indigo-50/90 dark:from-blue-950/90 dark:to-indigo-950/90 backdrop-blur-xl border-b border-blue-200/30 dark:border-blue-800/30 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                    <Bell className="h-5 w-5 text-white" />
+                  </div>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white flex items-center justify-center border-2 border-white dark:border-slate-900">
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white">
+                    {app.lang === "ar" ? "الإشعارات" : "Notifications"}
+                  </DialogTitle>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {unreadCount > 0
+                      ? app.lang === "ar"
+                        ? `${unreadCount} إشعار غير مقروء`
+                        : `${unreadCount} unread`
+                      : app.lang === "ar"
+                      ? "كل الإشعارات مقروءة"
+                      : "All caught up"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs gap-1.5 rounded-xl hover:bg-blue-100/50 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-all"
+                    onClick={handleMarkAllAsRead}
+                    disabled={markAllRead.isPending}
+                  >
+                    {markAllRead.isPending ? (
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                    ) : (
+                      <Check className="h-3.5 w-3.5" />
+                    )}
+                    {app.lang === "ar" ? "تحديد الكل كمقروء" : "Mark all read"}
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all"
+                  onClick={() => setNotificationsOpen(false)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-h-[60vh] overflow-y-auto p-2 space-y-1.5">
+            {notifications.length === 0 ? (
+              <div className="py-16 text-center">
+                <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                  <BellOff className="h-8 w-8 text-slate-300 dark:text-slate-600" />
+                </div>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {app.lang === "ar" ? "لا توجد إشعارات" : "No notifications"}
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                  {app.lang === "ar"
+                    ? "ستظهر الإشعارات هنا عند استلامها"
+                    : "Notifications will appear here"}
+                </p>
+              </div>
+            ) : (
+              notifications.map((notification: any) => {
+                const isUnread = !notification.is_read;
+                const statusColor = getStatusColor(notification.type);
+                const icon = getNotificationIcon(notification.type);
+
+                return (
+                  <div
+                    key={notification.id}
+                    className={`group relative rounded-xl transition-all duration-300 ${
+                      isUnread
+                        ? "bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-200/40 dark:border-blue-800/40 hover:shadow-md"
+                        : "hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
+                    }`}
+                  >
+                    <div 
+                      className="flex items-start gap-3 p-3 cursor-pointer" 
+                      onClick={() => handleNotificationClick(notification)}
+                    >
+                      <div className="flex-shrink-0">
+                        {notification.image_url ? (
+                          <div className="relative">
+                            <img
+                              src={notification.image_url}
+                              alt=""
+                              className="h-11 w-11 rounded-xl object-cover border-2 border-slate-200/50 dark:border-slate-700/50"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                            {isUnread && (
+                              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-blue-500 ring-2 ring-white dark:ring-slate-900" />
+                            )}
+                          </div>
+                        ) : (
+                          <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${statusColor} border`}>
+                            {icon}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm ${isUnread ? "font-semibold text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400"}`}>
+                              {notification.title_ar || notification.title_en || "إشعار"}
+                            </p>
+                            <p className={`text-xs mt-0.5 line-clamp-2 ${isUnread ? "text-slate-700 dark:text-slate-300" : "text-slate-500 dark:text-slate-500"}`}>
+                              {notification.body_ar || notification.body_en || notification.message}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {formatTime(notification.created_at)}
+                              </span>
+                              {notification.type && (
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${statusColor} border`}>
+                                  {notification.type}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex-shrink-0 flex items-center gap-1">
+                            {isUnread && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 rounded-lg hover:bg-blue-100/50 dark:hover:bg-blue-900/30 text-blue-500 hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100"
+                                onClick={(e) => handleMarkAsRead(notification.id, e)}
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all opacity-0 group-hover:opacity-100"
+                                >
+                                  <MoreVertical className="h-3.5 w-3.5 text-slate-400" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="rounded-xl p-1 min-w-[160px]">
+                                {isUnread && (
+                                  <DropdownMenuItem
+                                    className="rounded-lg text-sm cursor-pointer gap-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMarkAsRead(notification.id, e);
+                                    }}
+                                  >
+                                    <Check className="h-4 w-4" />
+                                    {app.lang === "ar" ? "تحديد كمقروء" : "Mark as read"}
+                                  </DropdownMenuItem>
+                                )}
+                                {notification.link_url && (
+                                  <DropdownMenuItem
+                                    className="rounded-lg text-sm cursor-pointer gap-2"
+                                    onClick={() => {
+                                      window.location.href = notification.link_url;
+                                      setNotificationsOpen(false);
+                                    }}
+                                  >
+                                    <Bell className="h-4 w-4" />
+                                    {app.lang === "ar" ? "عرض التفاصيل" : "View details"}
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  className="rounded-lg text-sm cursor-pointer gap-2 text-red-500 hover:text-red-600 hover:bg-red-50/50 dark:hover:bg-red-950/30"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      await supabase
+                                        .from('notifications')
+                                        .delete()
+                                        .eq('id', notification.id);
+                                      await refetchNotifications();
+                                      toast.success(app.lang === "ar" ? "تم حذف الإشعار" : "Notification deleted");
+                                    } catch (error) {
+                                      console.error('Error deleting notification:', error);
+                                      toast.error(app.lang === "ar" ? "حدث خطأ أثناء الحذف" : "Error deleting notification");
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  {app.lang === "ar" ? "حذف" : "Delete"}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {notifications.length > 0 && (
+            <div className="sticky bottom-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 p-3 flex items-center justify-between">
+              <span className="text-xs text-slate-400 dark:text-slate-500">
+                {notifications.length} {app.lang === "ar" ? "إشعار" : "notifications"}
+                {unreadCount > 0 && ` · ${unreadCount} ${app.lang === "ar" ? "غير مقروء" : "unread"}`}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                onClick={() => setNotificationsOpen(false)}
+              >
+                {app.lang === "ar" ? "إغلاق" : "Close"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ===== ✅ ✅ ✅ مكون إدارة Realtime (داخل AppProvider) ✅ ✅ ✅
+// ===== ✅ ✅ ✅ مكون إدارة Realtime (داخل AppProvider) ✅ ✅ ✅
+// ===== ✅ ✅ ✅ مكون إدارة Realtime (داخل AppProvider) ✅ ✅ ✅
+function RealtimeManager() {
+  const app = useApp();
+
+  // ✅ تفعيل كل الـ Realtime هنا (داخل AppProvider)
+  useProfileWithUpdate();
+  useFavoritesRealtime(app.user?.id);
+  useListingsRealtime();
+  useCartRealtime(app.user?.id);
+  useOrdersRealtime(app.user?.id);
+  
+  // ✅ ✅ ✅ استخدم استدعاء واحد فقط بدون role
+  // الـ Hook الجديد يدير كلا الدورين (عميل وبائع) في قناة واحدة
+  useBookingsRealtime(app.user?.id);
+  
+  useStoresRealtime();
+  useCategoriesRealtime();
+
+  return null;
+}
+function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const hideChrome = pathname.startsWith("/auth") || pathname.startsWith("/reset-password");
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppProvider>
+        <RealtimeManager />
+        <NotificationPermissionHandler />
+        <ProfileCompletionGate pathname={pathname} />
+        
+        {/* ✅ ✅ ✅ لف المحتوى بـ ClientOnly */}
+        <ClientOnly>
+          <div className="min-h-screen flex flex-col">
+            {!hideChrome && <AnnouncementBar />}
+            {!hideChrome && <Header />}
+            {!hideChrome && <NotificationsProvider />}
+            <main className="flex-1"><Outlet /></main>
+            {!hideChrome && <Footer />}
+          </div>
+        </ClientOnly>
+        
+        <Toaster position="top-center" richColors />
+      </AppProvider>
+    </QueryClientProvider>
+  );
+}
+
+function ProfileCompletionGate({ pathname }: { pathname: string }) {
+  const router = useRouter();
+  useEffect(() => {
+    console.log("🔍 1. ProfileCompletionGate - pathname:", pathname);
+    
+    if (
+      pathname.startsWith("/auth") || 
+      pathname.startsWith("/reset-password")
+    ) {
+      console.log("🔍 2. في صفحة auth أو complete أو reset، نوقف الفحص");
+      return;
+    }
+    
+    let cancelled = false;
+    (async () => {
+      console.log("🔍 3. بدأ جلب البيانات");
+      
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: userData } = await supabase.auth.getUser();
+      console.log("🔍 4. userData:", userData);
+      
+      const uid = userData.user?.id;
+      if (!uid || cancelled) {
+        console.log("🔍 5. لا يوجد uid أو cancelled");
+        return;
+      }
+      
+      const [{ data: profile }, { data: addressRows }, { data: roleRows }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("phone, full_name, address_text")
+          .eq("id", uid)
+          .maybeSingle(),
+        supabase
+          .from("user_addresses" as any)
+          .select("address_text")
+          .eq("user_id", uid)
+          .eq("is_default", true)
+          .maybeSingle(),
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", uid),
+      ]);
+      
+      console.log("🔍 6. profile:", profile, "addressRows:", addressRows);
+      
+      if (cancelled) return;
+      
+      const isAdmin = (roleRows ?? []).some((r) => r.role === "admin");
+      console.log("🔍 7. isAdmin:", isAdmin);
+      
+      const hasPhone = profile?.phone && profile.phone.trim() !== "";
+      const hasName = profile?.full_name && profile.full_name.trim() !== "";
+      const hasAddress = Boolean(profile?.address_text?.trim() || addressRows?.address_text?.trim());
+      
+      console.log("🔍 8. hasName:", hasName, "hasPhone:", hasPhone, "hasAddress:", hasAddress);
+      
+      if (isAdmin) {
+        if (!hasName || !hasPhone) {
+          console.log("🔍 9. Admin - بيانات ناقصة، روح لـ /auth/complete");
+          router.navigate({ to: "/auth/complete" });
+        } else {
+          console.log("✅ Admin - البيانات مكتملة");
+        }
+        return;
+      }
+      
+      const hasAllData = hasName && hasPhone && hasAddress;
+      
+      if (hasAllData) {
+        console.log("✅ البيانات مكتملة، لا حاجة للتوجيه");
+        return;
+      }
+      
+      console.log("❌ البيانات ناقصة، التوجيه لـ /auth/complete");
+      router.navigate({ to: "/auth/complete" });
+    })();
+    return () => { cancelled = true; };
+  }, [pathname, router]);
+  return null;
+}

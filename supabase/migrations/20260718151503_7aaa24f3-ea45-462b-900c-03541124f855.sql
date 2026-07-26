@@ -1,0 +1,1 @@
+ALTER VIEW public.listing_favorite_counts SET (security_invoker = true);
