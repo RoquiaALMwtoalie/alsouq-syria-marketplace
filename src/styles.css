@@ -196,27 +196,33 @@
 .animate-fade-up { animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
 /* ============================================================
-  /* ============================================================
+ /* ============================================================
    📱 إصلاح السكرول الأفقي في الموبايل
    ============================================================ */
 
-/* ✅ منع السكرول الأفقي في كل الصفحات */
+/* ✅ منع السكرول الأفقي في الصفحات فقط */
 html, body {
   overflow-x: hidden !important;
   max-width: 100% !important;
 }
 
-/* ✅ تصحيح الهيدر في الموبايل فقط (ما يأثر على باقي الصفحات) */
+/* ✅ السماح للسكرول في شريط التصنيفات */
+nav.overflow-x-auto {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+nav.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
+nav.overflow-x-auto .flex {
+  flex-wrap: nowrap !important;
+}
+
+/* ✅ تصحيح الهيدر في الموبايل */
 @media (max-width: 640px) {
-  /* ✅ منع overflow في الهيدر */
-  header .mx-auto {
-    overflow-x: hidden !important;
-    flex-wrap: nowrap !important;
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
-  }
-  
-  /* ✅ تصغير الأزرار في الهيدر فقط */
   header .ms-auto .h-9 {
     height: 1.75rem !important;
     width: 1.75rem !important;
@@ -238,22 +244,6 @@ html, body {
   header .ms-auto .px-2 svg {
     width: 0.6rem !important;
     height: 0.6rem !important;
-  }
-  
-  /* ✅ تصحيح شريط التصنيفات */
-  nav.overflow-x-auto {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  
-  nav.overflow-x-auto::-webkit-scrollbar {
-    display: none;
-  }
-  
-  nav.overflow-x-auto .flex {
-    flex-wrap: nowrap !important;
-    gap: 0.25rem !important;
   }
   
   nav.overflow-x-auto .shrink-0 {
