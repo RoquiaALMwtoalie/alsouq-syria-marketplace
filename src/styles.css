@@ -278,4 +278,84 @@ nav.overflow-x-auto .flex {
     width: 0.5rem !important;
     height: 0.5rem !important;
   }
+  /* ============================================================
+   📱 إصلاح صفحة المحادثة في الموبايل
+   ============================================================ */
+
+/* ✅ صفحة المحادثة - تجاوب كامل */
+@media (max-width: 640px) {
+  /* ✅ الحاوية الرئيسية */
+  .messages-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    height: calc(100vh - 120px) !important;
+  }
+  
+  /* ✅ قائمة المحادثات */
+  .messages-list {
+    height: 100% !important;
+    overflow-y: auto !important;
+  }
+  
+  /* ✅ صندوق الرسائل */
+  .messages-chat {
+    height: 100% !important;
+    padding: 0.5rem !important;
+  }
+  
+  /* ✅ رأس المحادثة */
+  .messages-chat .chat-header {
+    padding: 0.5rem !important;
+    font-size: 0.9rem !important;
+  }
+  
+  /* ✅ منطقة الرسائل */
+  .messages-chat .chat-messages {
+    height: calc(100% - 120px) !important;
+    padding: 0.5rem !important;
+  }
+  
+  /* ✅ رسالة فردية */
+  .messages-chat .message-item {
+    max-width: 85% !important;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.85rem !important;
+  }
+  
+  /* ✅ حقل إدخال الرسالة */
+  .messages-chat .chat-input {
+    padding: 0.5rem !important;
+    gap: 0.5rem !important;
+  }
+  
+  .messages-chat .chat-input input {
+    font-size: 0.9rem !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+  
+  .messages-chat .chat-input button {
+    padding: 0.5rem !important;
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+}
+
+/* ✅ شاشات صغيرة جداً (أقل من 400px) */
+@media (max-width: 400px) {
+  .messages-chat .message-item {
+    max-width: 90% !important;
+    font-size: 0.8rem !important;
+    padding: 0.4rem 0.6rem !important;
+  }
+  
+  .messages-chat .chat-header {
+    font-size: 0.8rem !important;
+    padding: 0.4rem !important;
+  }
+  
+  .messages-chat .chat-header .avatar {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+}
 }

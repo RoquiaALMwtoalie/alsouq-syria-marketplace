@@ -115,17 +115,16 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
   const showSearchResults = searchQuery.trim().length > 0 && showSearchResultsPage;
 
   // ===== قائمة التبويب =====
-  const nav = [
-    { id: "notifications" as const, label: app.lang === 'ar' ? "الإشعارات" : "Notifications", icon: Bell },
-    { id: "categories" as const, label: app.lang === 'ar' ? "التصنيفات" : "Categories", icon: Tags },
-    { id: "announcements" as const, label: app.lang === 'ar' ? "شريط الإعلانات" : "Announcements", icon: Megaphone },
-    { id: "banners" as const, label: app.lang === 'ar' ? "البنرات" : "Banners", icon: ImageIcon },
-    { id: "applications" as const, label: app.lang === 'ar' ? "طلبات البائعين" : "Seller applications", icon: ShieldCheck },
-    { id: "stores" as const, label: app.lang === 'ar' ? "المتاجر" : "Stores", icon: Store },
-    { id: "listings" as const, label: app.lang === 'ar' ? "المنتجات" : "Products", icon: Package },
-    { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", icon: LayoutDashboard },
-  ];
-
+const nav = [
+  { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", icon: LayoutDashboard },
+  { id: "listings" as const, label: app.lang === 'ar' ? "المنتجات" : "Products", icon: Package },
+  { id: "stores" as const, label: app.lang === 'ar' ? "المتاجر" : "Stores", icon: Store },
+  { id: "applications" as const, label: app.lang === 'ar' ? "طلبات البائعين" : "Seller applications", icon: ShieldCheck },
+  { id: "banners" as const, label: app.lang === 'ar' ? "البنرات" : "Banners", icon: ImageIcon },
+  { id: "announcements" as const, label: app.lang === 'ar' ? "شريط الإعلانات" : "Announcements", icon: Megaphone },
+  { id: "categories" as const, label: app.lang === 'ar' ? "التصنيفات" : "Categories", icon: Tags },
+  { id: "notifications" as const, label: app.lang === 'ar' ? "الإشعارات" : "Notifications", icon: Bell },
+];
   return (
     <div className={`min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
       

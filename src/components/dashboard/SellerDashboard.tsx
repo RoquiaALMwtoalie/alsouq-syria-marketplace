@@ -235,15 +235,15 @@ export function SellerDashboard({ notificationButton }: SellerDashboardProps) {
   }, [sellerOrders]);
 
   // ===== قائمة التبويب =====
-  const nav = [
-    { id: "settings" as const, label: app.lang === 'ar' ? "الإعدادات" : "Settings", icon: Settings },
-    { id: "stats" as const, label: app.lang === 'ar' ? "الإحصائيات" : "Analytics", icon: BarChart3 },
-    { id: "customers" as const, label: app.lang === 'ar' ? "العملاء" : "Customers", icon: Users },
-    { id: "bookings" as const, label: app.lang === 'ar' ? "الحجوزات" : "Bookings", icon: CalendarIcon },
-    { id: "orders" as const, label: app.lang === 'ar' ? "الطلبات" : "Orders", icon: ShoppingCart },
-    { id: "products" as const, label: app.lang === 'ar' ? "المنتجات" : "Products", icon: Package },
-    { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", icon: LayoutDashboard },
-  ];
+const nav = [
+  { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", icon: LayoutDashboard },
+  { id: "products" as const, label: app.lang === 'ar' ? "المنتجات" : "Products", icon: Package },
+  { id: "orders" as const, label: app.lang === 'ar' ? "الطلبات" : "Orders", icon: ShoppingCart },
+  { id: "bookings" as const, label: app.lang === 'ar' ? "الحجوزات" : "Bookings", icon: CalendarIcon },
+  { id: "customers" as const, label: app.lang === 'ar' ? "العملاء" : "Customers", icon: Users },
+  { id: "stats" as const, label: app.lang === 'ar' ? "الإحصائيات" : "Analytics", icon: BarChart3 },
+  { id: "settings" as const, label: app.lang === 'ar' ? "الإعدادات" : "Settings", icon: Settings },
+];
 
   const statusLabels: any = {
     completed: app.lang === 'ar' ? "مكتمل" : "Completed",
