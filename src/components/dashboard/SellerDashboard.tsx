@@ -36,12 +36,12 @@ import { StatsPage } from "./StatsPage";
 import { SettingsPage } from "./SettingsPage";
 
 interface SellerDashboardProps {
-  notificationButton: React.ReactNode;
+  // notificationButton removed
 }
 
 const COLORS = ['#2563eb', '#7c3aed', '#db2777', '#059669', '#d97706', '#dc2626'];
 
-export function SellerDashboard({ notificationButton }: SellerDashboardProps) {
+export function SellerDashboard({}: SellerDashboardProps) {
   const app = useApp();
   const t = useT();
   const navigate = useNavigate();
@@ -665,32 +665,31 @@ const nav = [
             </div>
           </div>
 
-          <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="relative hidden md:block">
-              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400`} />
-              <Input 
-                placeholder={app.lang === 'ar' ? "بحث في لوحة التحكم..." : "Search dashboard..."} 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearch}
-                className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} w-64 h-9 rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-sm focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 transition-all`}
-              />
-              {searchQuery && (
-                <button
-                  onClick={clearSearch}
-                  className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors`}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            {notificationButton}
-            <Avatar className="h-8 w-8 ring-2 ring-slate-200 dark:ring-slate-700">
-              <AvatarFallback className="bg-[#2563eb] text-white text-xs">
-                {app.user?.name?.charAt(0) || 'S'}
-              </AvatarFallback>
-            </Avatar>
-          </div>
+        <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+  <div className="relative hidden md:block">
+    <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400`} />
+    <Input 
+      placeholder={app.lang === 'ar' ? "بحث في لوحة التحكم..." : "Search dashboard..."} 
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      onKeyDown={handleSearch}
+      className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} w-64 h-9 rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-sm focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 transition-all`}
+    />
+    {searchQuery && (
+      <button
+        onClick={clearSearch}
+        className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors`}
+      >
+        <X className="h-4 w-4" />
+      </button>
+    )}
+  </div>
+  <Avatar className="h-8 w-8 ring-2 ring-slate-200 dark:ring-slate-700">
+    <AvatarFallback className="bg-[#2563eb] text-white text-xs">
+      {app.user?.name?.charAt(0) || 'S'}
+    </AvatarFallback>
+  </Avatar>
+</div>
         </div>
       </header>
 
