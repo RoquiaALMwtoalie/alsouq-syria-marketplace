@@ -310,6 +310,7 @@ export function ChatInput({
   maxLength = 2000,
 }: ChatInputProps) {
   const app = useApp();
+  const isRTL = app.lang === 'ar';
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -460,7 +461,6 @@ export function ChatInput({
   // ====== ✅ التحقق من الإذن قبل التسجيل ======
   const checkMicrophonePermission = async () => {
     try {
-      // ✅ التحقق من حالة الإذن
       const permissionStatus = await navigator.permissions.query({ 
         name: 'microphone' as PermissionName 
       });
@@ -468,13 +468,10 @@ export function ChatInput({
       console.log("🎤 Permission status:", permissionStatus.state);
       
       if (permissionStatus.state === 'granted') {
-        // ✅ الإذن موجود → ابدأ التسجيل
         startRecording();
       } else if (permissionStatus.state === 'prompt') {
-        // ✅ لم يتم طلب الإذن بعد → نعرض حوار الطلب
         setShowPermissionDialog(true);
       } else if (permissionStatus.state === 'denied') {
-        // ✅ تم رفض الإذن → نعرض رسالة مع زر الإعدادات
         setPermissionState('denied');
         toast.error(
           app.lang === "ar"
@@ -485,13 +482,10 @@ export function ChatInput({
             action: {
               label: app.lang === "ar" ? "⚙️ فتح الإعدادات" : "⚙️ Open Settings",
               onClick: () => {
-                // فتح إعدادات الموقع في المتصفح
                 if (navigator.userAgent.includes('Chrome')) {
                   window.open('chrome://settings/content/microphone', '_blank');
                 } else if (navigator.userAgent.includes('Firefox')) {
                   window.open('about:preferences#privacy', '_blank');
-                } else if (navigator.userAgent.includes('Safari')) {
-                  window.open('safari://settings', '_blank');
                 } else {
                   window.location.href = window.location.href + '?settings=true';
                 }
@@ -502,7 +496,6 @@ export function ChatInput({
       }
     } catch (error) {
       console.error("Error checking permission:", error);
-      // إذا لم يدعم المتصفح Permissions API → جرب مباشرة
       try {
         await startRecording();
       } catch {
@@ -511,92 +504,85 @@ export function ChatInput({
     }
   };
 
-  // ====== ✅ دالة طلب الإذن ======
-// ====== ✅ التحقق من وجود ميكروفون ======
-const checkMicrophoneAvailability = async (): Promise<boolean> => {
-  try {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const audioDevices = devices.filter(device => device.kind === 'audioinput');
-    console.log("🎤 Microphones found:", audioDevices.length);
-    return audioDevices.length > 0;
-  } catch (error) {
-    console.error("Error checking devices:", error);
-    return false;
-  }
-};
-
-// ====== ✅ دالة طلب الإذن - النسخة المصححة ======
-const requestMicrophonePermission = async () => {
-  // ✅ نغلق الديالوج فوراً
-  setShowPermissionDialog(false);
-  
-  try {
-    // ✅ التحقق من وجود ميكروفون
-    const hasMic = await checkMicrophoneAvailability();
-    
-    if (!hasMic) {
-      toast.error(
-        app.lang === "ar"
-          ? "🎤 لا يوجد ميكروفون متصل بالجهاز. يرجى توصيل ميكروفون والمحاولة مرة أخرى."
-          : "🎤 No microphone found on this device. Please connect a microphone.",
-        { duration: 5000 }
-      );
-      return;
+  // ====== ✅ التحقق من وجود ميكروفون ======
+  const checkMicrophoneAvailability = async (): Promise<boolean> => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioDevices = devices.filter(device => device.kind === 'audioinput');
+      console.log("🎤 Microphones found:", audioDevices.length);
+      return audioDevices.length > 0;
+    } catch (error) {
+      console.error("Error checking devices:", error);
+      return false;
     }
+  };
 
-    // ✅ طلب الإذن
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      audio: true,
-      video: false,
-    });
+  // ====== ✅ دالة طلب الإذن ======
+  const requestMicrophonePermission = async () => {
+    setShowPermissionDialog(false);
     
-    stream.getTracks().forEach(track => track.stop());
-    setPermissionState('granted');
-    
-    // ✅ بدء التسجيل
-    startRecording();
-    
-  } catch (error: any) {
-    console.error("Permission error:", error);
-    
-    if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
-      toast.error(
-        app.lang === "ar"
-          ? "🎤 لا يوجد ميكروفون متصل بالجهاز."
-          : "🎤 No microphone found.",
-        { duration: 5000 }
-      );
-    } else if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
-      setPermissionState('denied');
-      toast.error(
-        app.lang === "ar"
-          ? "❌ تم رفض الوصول إلى الميكروفون"
-          : "❌ Microphone access was denied",
-        {
-          duration: 5000,
-          action: {
-            label: app.lang === "ar" ? "⚙️ فتح الإعدادات" : "⚙️ Open Settings",
-            onClick: () => {
-              if (navigator.userAgent.includes('Chrome')) {
-                window.open('chrome://settings/content/microphone', '_blank');
-              } else if (navigator.userAgent.includes('Firefox')) {
-                window.open('about:preferences#privacy', '_blank');
-              } else {
-                window.open(window.location.href, '_blank');
+    try {
+      const hasMic = await checkMicrophoneAvailability();
+      
+      if (!hasMic) {
+        toast.error(
+          app.lang === "ar"
+            ? "🎤 لا يوجد ميكروفون متصل بالجهاز."
+            : "🎤 No microphone found on this device.",
+          { duration: 5000 }
+        );
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: true,
+        video: false,
+      });
+      
+      stream.getTracks().forEach(track => track.stop());
+      setPermissionState('granted');
+      startRecording();
+      
+    } catch (error: any) {
+      console.error("Permission error:", error);
+      
+      if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+        toast.error(
+          app.lang === "ar"
+            ? "🎤 لا يوجد ميكروفون متصل بالجهاز."
+            : "🎤 No microphone found.",
+          { duration: 5000 }
+        );
+      } else if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+        setPermissionState('denied');
+        toast.error(
+          app.lang === "ar"
+            ? "❌ تم رفض الوصول إلى الميكروفون"
+            : "❌ Microphone access was denied",
+          {
+            duration: 5000,
+            action: {
+              label: app.lang === "ar" ? "⚙️ فتح الإعدادات" : "⚙️ Open Settings",
+              onClick: () => {
+                if (navigator.userAgent.includes('Chrome')) {
+                  window.open('chrome://settings/content/microphone', '_blank');
+                } else {
+                  window.open(window.location.href, '_blank');
+                }
               }
             }
           }
-        }
-      );
-    } else {
-      toast.error(
-        app.lang === "ar"
-          ? "❌ حدث خطأ أثناء محاولة الوصول إلى الميكروفون"
-          : "❌ An error occurred while accessing the microphone"
-      );
+        );
+      } else {
+        toast.error(
+          app.lang === "ar"
+            ? "❌ حدث خطأ أثناء محاولة الوصول إلى الميكروفون"
+            : "❌ An error occurred while accessing the microphone"
+        );
+      }
     }
-  }
-};
+  };
+
   // ====== ✅ تسجيل صوتي ======
   const startRecording = async () => {
     try {
@@ -656,12 +642,8 @@ const requestMicrophonePermission = async () => {
           : "❌ No microphone found on this device";
       } else if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
         errorMessage = app.lang === "ar"
-          ? "❌ تم رفض إذن الميكروفون. يرجى السماح في إعدادات المتصفح"
-          : "❌ Microphone permission denied. Please allow in browser settings";
-      } else if (error.name === "NotReadableError") {
-        errorMessage = app.lang === "ar"
-          ? "❌ لا يمكن قراءة الميكروفون. تأكد من عدم استخدامه من تطبيق آخر"
-          : "❌ Cannot read microphone. Make sure it's not being used by another app";
+          ? "❌ تم رفض إذن الميكروفون"
+          : "❌ Microphone permission denied";
       } else {
         errorMessage = app.lang === "ar"
           ? "❌ لا يمكن الوصول إلى الميكروفون"
@@ -680,121 +662,78 @@ const requestMicrophonePermission = async () => {
   };
 
   // ====== ✅ مشاركة الموقع ======
-// src/components/chat/ChatInput.tsx
-
-// ====== ✅ مشاركة الموقع - كبطاقة موقع ======
-// ====== في ChatInput.tsx، handleSendLocation ======
-const handleSendLocation = () => {
-  if (!navigator.geolocation) {
-    toast.error(
-      app.lang === "ar"
-        ? "❌ متصفحك لا يدعم مشاركة الموقع"
-        : "❌ Your browser doesn't support location sharing"
-    );
-    return;
-  }
-
-  toast.info(
-    app.lang === "ar"
-      ? "📍 جاري الحصول على الموقع..."
-      : "📍 Getting location..."
-  );
-
-  // ✅ تحسين خيارات الموقع
-  const options = {
-    enableHighAccuracy: false,     // ✅ false = أسرع وأقل استهلاك للبطارية
-    timeout: 30000,                // ✅ 30 ثانية بدلاً من 10
-    maximumAge: 60000,             // ✅ استخدام موقع مخبأ لمدة دقيقة
-  };
-
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const { latitude, longitude } = position.coords;
-      
-      onSendMessage(
-        `📍 ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
-        undefined,
-        { latitude, longitude }
-      );
-      
-      toast.success(
+  const handleSendLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error(
         app.lang === "ar"
-          ? "✅ تم مشاركة الموقع"
-          : "✅ Location shared"
+          ? "❌ متصفحك لا يدعم مشاركة الموقع"
+          : "❌ Your browser doesn't support location sharing"
       );
-    },
-    (error) => {
-      console.error("Error getting location:", error);
-      
-      // ✅ معالجة خاصة للـ TIMEOUT
-      if (error.code === error.TIMEOUT) {
-        toast.error(
-          app.lang === "ar"
-            ? "⏱️ انتهت المهلة. حاول مرة أخرى أو استخدم WiFi للحصول على موقع أسرع."
-            : "⏱️ Timeout. Please try again or use WiFi for faster location."
+      return;
+    }
+
+    toast.info(
+      app.lang === "ar"
+        ? "📍 جاري الحصول على الموقع..."
+        : "📍 Getting location..."
+    );
+
+    const options = {
+      enableHighAccuracy: false,
+      timeout: 30000,
+      maximumAge: 60000,
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        onSendMessage(
+          `📍 ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+          undefined,
+          { latitude, longitude }
         );
         
-        // ✅ محاولة ثانية مع خيارات مختلفة
-        setTimeout(() => {
-          toast.info(
+        toast.success(
+          app.lang === "ar"
+            ? "✅ تم مشاركة الموقع"
+            : "✅ Location shared"
+        );
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        
+        if (error.code === error.TIMEOUT) {
+          toast.error(
             app.lang === "ar"
-              ? "🔄 محاولة ثانية للحصول على الموقع..."
-              : "🔄 Second attempt to get location..."
+              ? "⏱️ انتهت المهلة. حاول مرة أخرى."
+              : "⏱️ Timeout. Please try again."
           );
-          
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const { latitude, longitude } = pos.coords;
-              onSendMessage(
-                `📍 ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
-                undefined,
-                { latitude, longitude }
-              );
-              toast.success(
-                app.lang === "ar"
-                  ? "✅ تم مشاركة الموقع (المحاولة الثانية)"
-                  : "✅ Location shared (second attempt)"
-              );
-            },
-            (err) => {
-              toast.error(
-                app.lang === "ar"
-                  ? "❌ فشل الحصول على الموقع. حاول استخدام الشبكة."
-                  : "❌ Failed to get location. Try using network."
-              );
-            },
-            {
-              enableHighAccuracy: false,
-              timeout: 15000,
-              maximumAge: 120000,
-            }
-          );
-        }, 1000);
-      } else {
-        // معالجة الأخطاء الأخرى
-        let errorMessage = "";
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = app.lang === "ar"
-              ? "❌ تم رفض إذن الموقع. يرجى السماح في إعدادات المتصفح."
-              : "❌ Location permission denied. Please allow in browser settings.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = app.lang === "ar"
-              ? "❌ معلومات الموقع غير متاحة. تأكد من تشغيل GPS."
-              : "❌ Location information unavailable. Make sure GPS is on.";
-            break;
-          default:
-            errorMessage = app.lang === "ar"
-              ? "❌ فشل الحصول على الموقع"
-              : "❌ Failed to get location";
+        } else {
+          let errorMessage = "";
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = app.lang === "ar"
+                ? "❌ تم رفض إذن الموقع"
+                : "❌ Location permission denied";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = app.lang === "ar"
+                ? "❌ معلومات الموقع غير متاحة"
+                : "❌ Location information unavailable";
+              break;
+            default:
+              errorMessage = app.lang === "ar"
+                ? "❌ فشل الحصول على الموقع"
+                : "❌ Failed to get location";
+          }
+          toast.error(errorMessage);
         }
-        toast.error(errorMessage);
-      }
-    },
-    options  // ✅ استخدام الخيارات المحسنة
-  );
-};
+      },
+      options
+    );
+  };
+
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
@@ -851,7 +790,7 @@ const handleSendLocation = () => {
         )}
       </AnimatePresence>
 
-      {/* ====== حقل الإدخال - مثل الماسنجر ====== */}
+      {/* ====== حقل الإدخال ====== */}
       <div
         className={cn(
           "flex items-end gap-2 p-2",
@@ -966,8 +905,8 @@ const handleSendLocation = () => {
           </span>
         )}
 
-        {/* الأزرار الجانبية */}
-        <div className="flex items-center gap-0.5 shrink-0">
+        {/* ✅ الأزرار الجانبية - ترتيب RTL */}
+        <div className={cn("flex items-center gap-0.5 shrink-0", isRTL ? "flex-row" : "flex-row")}>
           <EmojiPicker
             onEmojiSelect={handleEmojiSelect}
             open={showEmojiPicker}
@@ -1008,7 +947,6 @@ const handleSendLocation = () => {
               if (isRecording) {
                 stopRecording();
               } else {
-                // ✅ التحقق من الإذن قبل التسجيل
                 checkMicrophonePermission();
               }
             }}
@@ -1021,7 +959,7 @@ const handleSendLocation = () => {
             )}
           </Button>
 
-          {/* زر الإرسال */}
+          {/* ✅ زر الإرسال - آخر عنصر */}
           <Button
             onClick={handleSend}
             disabled={
@@ -1037,7 +975,8 @@ const handleSendLocation = () => {
               "text-white shadow-lg shadow-[#0084ff]/30",
               "transition-all duration-300",
               "hover:scale-105 active:scale-95",
-              "disabled:opacity-50 disabled:hover:scale-100"
+              "disabled:opacity-50 disabled:hover:scale-100",
+              isRTL ? "order-last" : ""
             )}
           >
             {isLoading ? (

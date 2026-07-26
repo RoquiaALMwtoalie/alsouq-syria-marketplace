@@ -4,7 +4,7 @@ import { createFileRoute, useNavigate, useLocation } from "@tanstack/react-route
 import { useEffect, useState, useRef } from "react";
 import { useApp } from "@/lib/i18n";
 import { ChatMessages } from "@/components/chat/ChatMessages";
-import { Loader2, ArrowLeft, Search, Phone, MoreVertical } from "lucide-react";
+import { Loader2, ArrowLeft, Search, Phone, MoreVertical, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGetOrCreateConversation } from "@/lib/hooks/useConversation";
 import { useConversationStore } from "@/lib/stores/conversationStore";
@@ -186,6 +186,23 @@ function ChatPage() {
     navigate({ to: "/messages" });
   };
 
+  // ====== دوال المكالمة ======
+  const handleVoiceCall = () => {
+    toast.info(
+      app.lang === "ar"
+        ? "📞 جاري الاتصال..."
+        : "📞 Calling..."
+    );
+  };
+
+  const handleVideoCall = () => {
+    toast.info(
+      app.lang === "ar"
+        ? "📹 جاري مكالمة الفيديو..."
+        : "📹 Starting video call..."
+    );
+  };
+
   // ====== عرض حالة التحميل ======
   if (loading || app.authLoading || isInitializing) {
     return (
@@ -248,7 +265,7 @@ function ChatPage() {
   return (
     <div className="flex h-[100dvh] flex-col bg-[#f0f2f5] dark:bg-[#1a1a2e]">
       
-      {/* ====== ✅ هيدر مثل واتساب ====== */}
+      {/* ====== ✅ هيدر مثل واتساب - مع أزرار المكالمة ====== */}
       <div className="flex shrink-0 items-center justify-between border-b border-slate-200/50 bg-white px-3 py-2 dark:border-slate-700/50 dark:bg-[#242538] sm:px-4 sm:py-3">
         
         {/* ✅ الجهة اليسرى: زر الرجوع فقط */}
@@ -261,13 +278,24 @@ function ChatPage() {
           <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
 
-        {/* ✅ الجهة اليمنى: أزرار الماسنجر فقط */}
+        {/* ✅ الجهة اليمنى: أزرار الماسنجر مع مكالمة صوت وفيديو */}
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-          <button className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2">
-            <Search className="h-4 w-4 sm:h-5 sm:w-5" />
+          <button 
+            onClick={handleVoiceCall}
+            className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2"
+            title={app.lang === "ar" ? "مكالمة صوتية" : "Voice call"}
+          >
+            <Phone className="h-4 w-4 sm:h-5 sm:w-5" />
+          </button>
+          <button 
+            onClick={handleVideoCall}
+            className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2"
+            title={app.lang === "ar" ? "مكالمة فيديو" : "Video call"}
+          >
+            <Video className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
           <button className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2">
-            <Phone className="h-4 w-4 sm:h-5 sm:w-5" />
+            <Search className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
           <button className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2">
             <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
