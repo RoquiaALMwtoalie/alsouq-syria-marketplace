@@ -4,13 +4,12 @@ import { createFileRoute, useNavigate, useLocation } from "@tanstack/react-route
 import { useEffect, useState, useRef } from "react";
 import { useApp } from "@/lib/i18n";
 import { ChatMessages } from "@/components/chat/ChatMessages";
-import { Loader2, ArrowLeft, Store, Home, Search, Phone, MoreVertical } from "lucide-react";
+import { Loader2, ArrowLeft, Search, Phone, MoreVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGetOrCreateConversation } from "@/lib/hooks/useConversation";
 import { useConversationStore } from "@/lib/stores/conversationStore";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Link } from "@tanstack/react-router";
 
 console.log("🔴 CHAT PAGE LOADED");
 
@@ -245,54 +244,24 @@ function ChatPage() {
 
   console.log("✅✅✅ RENDERING FULL CHAT UI ✅✅✅");
 
-  // ====== ✅ واجهة مثل الماسنجر بالكامل ======
+  // ====== ✅ واجهة احترافية مثل واتساب/ماسنجر ======
   return (
     <div className="flex h-[100dvh] flex-col bg-[#f0f2f5] dark:bg-[#1a1a2e]">
       
-      {/* ====== ✅ هيدر الماسنجر ====== */}
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200/50 bg-white/95 px-3 py-2 backdrop-blur-xl dark:border-slate-700/50 dark:bg-[#242538]/95 sm:px-4 sm:py-3">
+      {/* ====== ✅ هيدر مثل واتساب ====== */}
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-200/50 bg-white px-3 py-2 dark:border-slate-700/50 dark:bg-[#242538] sm:px-4 sm:py-3">
         
-        {/* ✅ الجهة اليسرى: زر الرجوع + صورة + اسم */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleBack}
-            className="h-8 w-8 shrink-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 sm:h-9 sm:w-9"
-          >
-            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-          </Button>
+        {/* ✅ الجهة اليسرى: زر الرجوع فقط */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleBack}
+          className="h-8 w-8 shrink-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 sm:h-9 sm:w-9"
+        >
+          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+        </Button>
 
-          <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 sm:h-10 sm:w-10">
-            {otherUser?.avatar_url ? (
-              <img 
-                src={otherUser.avatar_url} 
-                alt="" 
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-sm font-bold text-white">
-                {otherUser?.full_name?.charAt(0)?.toUpperCase() || 
-                 otherUser?.store_name?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
-            )}
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold sm:text-base">
-              {otherUser?.store_name || otherUser?.full_name || (app.lang === "ar" ? "مستخدم" : "User")}
-            </p>
-            <p className="flex items-center gap-1 text-[10px] text-emerald-500 sm:text-xs">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {app.lang === "ar" ? "متصل الآن" : "Online now"}
-            </p>
-          </div>
-        </div>
-
-        {/* ✅ الجهة اليمنى: أزرار الماسنجر */}
+        {/* ✅ الجهة اليمنى: أزرار الماسنجر فقط */}
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
           <button className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2">
             <Search className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -303,27 +272,10 @@ function ChatPage() {
           <button className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2">
             <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
-          
-          {otherUser?.store_name && (
-            <Link
-              to="/store/$id"
-              params={{ id: userId }}
-              className="rounded-full p-1.5 text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 sm:p-2"
-            >
-              <Store className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Link>
-          )}
-          
-          <Link
-            to="/"
-            className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2"
-          >
-            <Home className="h-4 w-4 sm:h-5 sm:w-5" />
-          </Link>
         </div>
       </div>
 
-      {/* ====== ✅ منطقة المحادثة ====== */}
+      {/* ====== ✅ مكون المحادثة مع hideHeader ====== */}
       <div className="flex-1 overflow-hidden">
         <ChatMessages
           userId={app.user.id}
@@ -331,6 +283,7 @@ function ChatPage() {
           otherUserId={userId}
           className="h-full w-full max-w-4xl mx-auto bg-white shadow-xl dark:bg-[#242538]"
           onBack={handleBack}
+          hideHeader={true}
         />
       </div>
 
