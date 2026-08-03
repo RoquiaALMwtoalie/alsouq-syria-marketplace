@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ShoppingBag, Shirt, Smartphone, Home as HomeIcon, Footprints, Watch, BookOpen,
   Dumbbell, Gamepad2, Palette, Wrench, Utensils, Sparkles, BadgePercent, Gift, Flower2,
-  ArrowRight, Package, Store, Star,
+  ArrowRight, Package, Store, Star, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useApp, useT } from "@/lib/i18n";
@@ -92,7 +92,7 @@ function Home() {
       {/* ============ ADMIN BANNER SLIDER ============ */}
       <section className="mx-auto max-w-7xl px-3 sm:px-4 pt-3 sm:pt-4">
         {banners.length > 0 ? (
-          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-elegant aspect-[16/9] sm:aspect-[21/9] md:aspect-[21/8] lg:aspect-[21/7]">
+          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-elegant aspect-[16/9] sm:aspect-[21/9] md:aspect-[21/8] lg:aspect-[21/7] group">
             {banners.map((b, i) => (
               <div
                 key={b.id}
@@ -102,19 +102,19 @@ function Home() {
                 <img
                   src={b.image_url}
                   alt={app.lang === "ar" ? b.title_ar : (b.title_en || b.title_ar)}
-                  className="absolute inset-0 h-full w-full object-cover"
+                  className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-10000"
                   loading={i === 0 ? "eager" : "lazy"}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                 <div className="absolute inset-0 flex flex-col items-start justify-center p-6 md:p-10 text-white">
-                  <h2 className="text-2xl md:text-4xl lg:text-5xl font-black max-w-2xl leading-tight">
+                  <h2 className="text-2xl md:text-4xl lg:text-5xl font-black max-w-2xl leading-tight animate-fade-up">
                     {app.lang === "ar" ? b.title_ar : (b.title_en || b.title_ar)}
                   </h2>
-                  <p className="mt-2 text-sm md:text-base text-white/80 max-w-lg">
+                  <p className="mt-2 text-sm md:text-base text-white/80 max-w-lg animate-fade-up animation-delay-200">
                     {app.lang === "ar" ? b.subtitle_ar : (b.subtitle_en || b.subtitle_ar)}
                   </p>
                   {b.cta_label_ar && (
-                    <Button className="mt-4 bg-accent hover:bg-accent/90 text-accent-foreground font-bold">
+                    <Button className="mt-4 bg-accent hover:bg-accent/90 text-accent-foreground font-bold animate-fade-up animation-delay-400 hover:scale-105 transition-transform duration-300">
                       {app.lang === "ar" ? b.cta_label_ar : (b.cta_label_en || b.cta_label_ar)}
                     </Button>
                   )}
@@ -122,13 +122,42 @@ function Home() {
                 </div>
               </div>
             ))}
+            
+            {/* ✅ أزرار التحكم - تظهر عند التمرير */}
+            {banners.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setBannerIdx((i) => (i - 1 + banners.length) % banners.length);
+                  }}
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 p-1.5 sm:p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
+                  aria-label="Previous"
+                >
+                  <ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setBannerIdx((i) => (i + 1) % banners.length);
+                  }}
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 p-1.5 sm:p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
+                  aria-label="Next"
+                >
+                  <ChevronRight className="h-4 w-4 sm:h-6 sm:w-6" />
+                </button>
+              </>
+            )}
+            
             {banners.length > 1 && (
               <div className="absolute bottom-3 sm:bottom-4 inset-x-0 flex justify-center gap-1.5 sm:gap-2 pointer-events-none">
                 {banners.map((_, i) => (
                   <button 
                     key={i} 
                     onClick={(e) => { e.preventDefault(); setBannerIdx(i); }}
-                    className={`pointer-events-auto h-1.5 sm:h-2 rounded-full transition-all ${bannerIdx === i ? "w-6 sm:w-8 bg-white" : "w-1.5 sm:w-2 bg-white/60"}`} 
+                    className={`pointer-events-auto h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
+                      bannerIdx === i ? "w-6 sm:w-8 bg-white" : "w-1.5 sm:w-2 bg-white/60 hover:bg-white/80"
+                    }`} 
                   />
                 ))}
               </div>
@@ -143,7 +172,7 @@ function Home() {
       <section className="mx-auto max-w-7xl px-4 py-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 grid place-items-center text-white shadow-md">
+            <div className="h-10 w-10 rounded-2xl bg-[#2a655f] grid place-items-center text-white shadow-md hover:scale-110 hover:rotate-12 transition-all duration-500 cursor-pointer">
               <Star className="h-5 w-5 fill-current" />
             </div>
             <div>
@@ -159,10 +188,10 @@ function Home() {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="gap-1 text-[#2a655f] hover:text-[#1a4f4a] font-semibold"
+              className="gap-1 text-[#2a655f] hover:text-[#1a4f4a] font-semibold hover:scale-105 transition-transform duration-300 group"
             >
               {app.lang === "ar" ? "عرض الكل" : "View All"}
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
           </Link>
         </div>
@@ -175,7 +204,7 @@ function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-            {featuredCategories.slice(0, 12).map((c: any) => {
+            {featuredCategories.slice(0, 12).map((c: any, index: number) => {
               // ✅ كل شيء من قاعدة البيانات
               const Icon = getCategoryIcon(c.icon);
               const img = c.image_url;
@@ -186,7 +215,8 @@ function Home() {
                   key={c.id} 
                   to="/category/$slug" 
                   params={{ slug: c.slug }}
-                  className="group relative overflow-hidden rounded-2xl border-2 border-[#2a655f]/30 bg-card shadow-card hover:shadow-2xl hover:shadow-[#2a655f]/20 transition-all duration-500 hover:-translate-y-2 hover:border-[#2a655f]/70 hover:scale-[1.02] aspect-[4/5]"
+                  className="group relative overflow-hidden rounded-2xl border-2 border-[#2a655f]/30 bg-card shadow-card hover:shadow-2xl hover:shadow-[#2a655f]/20 transition-all duration-500 hover:-translate-y-2 hover:border-[#2a655f]/70 hover:scale-[1.02] aspect-[4/5] animate-fade-up"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   {img ? (
                     <img 
@@ -200,9 +230,9 @@ function Home() {
                   )}
                   <div className={`absolute inset-0 ${isOffer ? "bg-gradient-to-t from-red-600/85 via-red-600/40 to-transparent" : "bg-gradient-to-t from-primary/85 via-primary/30 to-transparent"} group-hover:from-primary/95 transition-colors duration-500`} />
                   
-                  {/* ✅ شارة مميز */}
+                  {/* ✅ شارة مميز - بنفس اللون الزيتي */}
                   <div className="absolute top-2 right-2 z-10">
-                    <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-[9px] px-1.5 py-0.5 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Badge className="bg-[#2a655f] text-white border-0 text-[9px] px-1.5 py-0.5 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       ⭐ {app.lang === "ar" ? "مميز" : "Featured"}
                     </Badge>
                   </div>
@@ -238,12 +268,12 @@ function Home() {
             <Link to="/categories">
               <Button 
                 variant="outline" 
-                className="px-8 py-6 rounded-2xl border-2 border-dashed border-[#2a655f]/30 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all group"
+                className="px-8 py-6 rounded-2xl border-2 border-dashed border-[#2a655f]/30 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 group hover:scale-105"
               >
                 <span className="flex items-center gap-3 text-[#2a655f] dark:text-[#3a8a82] font-semibold text-base">
-                  <Star className="h-5 w-5" />
+                  <Star className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
                   {app.lang === "ar" ? "⭐ عرض كل الأقسام المميزة" : "⭐ View All Featured Categories"}
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 rtl:rotate-180" />
                 </span>
               </Button>
             </Link>
@@ -267,11 +297,11 @@ function Home() {
             <button 
               key={tItem.id} 
               onClick={() => setTab(tItem.id)}
-              className={`flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition ${
-                tab === tItem.id ? "border-[#2a655f] text-[#2a655f]" : "border-transparent text-muted-foreground hover:text-foreground"
+              className={`flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 ${
+                tab === tItem.id ? "border-[#2a655f] text-[#2a655f]" : "border-transparent text-muted-foreground hover:text-foreground hover:border-[#2a655f]/30"
               }`}
             >
-              <tItem.icon className="h-4 w-4" /> {tItem.label}
+              <tItem.icon className={`h-4 w-4 transition-all duration-300 ${tab === tItem.id ? "scale-110 rotate-6" : ""}`} /> {tItem.label}
             </button>
           ))}
         </div>
@@ -284,8 +314,10 @@ function Home() {
           ) : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {products.slice(0, 8).map((i) => (
-                  <ListingCard key={i.id} item={i} />
+                {products.slice(0, 8).map((i, index) => (
+                  <div key={i.id} className="animate-fade-up" style={{ animationDelay: `${index * 50}ms` }}>
+                    <ListingCard item={i} />
+                  </div>
                 ))}
               </div>
               
@@ -294,11 +326,11 @@ function Home() {
                   <Link to="/products">
                     <Button 
                       variant="outline" 
-                      className="px-8 py-6 rounded-2xl border-2 border-dashed border-[#2a655f]/30 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all group"
+                      className="px-8 py-6 rounded-2xl border-2 border-dashed border-[#2a655f]/30 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 group hover:scale-105"
                     >
                       <span className="flex items-center gap-3 text-[#2a655f] dark:text-[#3a8a82] font-semibold text-base">
                         {app.lang === "ar" ? "🛍️ عرض كل المنتجات" : "🛍️ View All Products"}
-                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
+                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 rtl:rotate-180" />
                       </span>
                     </Button>
                   </Link>
@@ -314,8 +346,10 @@ function Home() {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {stores.slice(0, 4).map((s) => (
-                  <StoreMiniCard key={s.id} s={s} />
+                {stores.slice(0, 4).map((s, index) => (
+                  <div key={s.id} className="animate-fade-up" style={{ animationDelay: `${index * 50}ms` }}>
+                    <StoreMiniCard s={s} />
+                  </div>
                 ))}
               </div>
               
@@ -324,11 +358,11 @@ function Home() {
                   <Link to="/stores">
                     <Button 
                       variant="outline" 
-                      className="px-8 py-6 rounded-2xl border-2 border-dashed border-[#2a655f]/30 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all group"
+                      className="px-8 py-6 rounded-2xl border-2 border-dashed border-[#2a655f]/30 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 group hover:scale-105"
                     >
                       <span className="flex items-center gap-3 text-[#2a655f] dark:text-[#3a8a82] font-semibold text-base">
                         {app.lang === "ar" ? "🏪 عرض كل المتاجر" : "🏪 View All Stores"}
-                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
+                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 rtl:rotate-180" />
                       </span>
                     </Button>
                   </Link>
@@ -342,11 +376,12 @@ function Home() {
       {/* ============ OFFERS STRIP ============ */}
       {offers.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-14">
-         <div className="rounded-3xl bg-gradient-to-br from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] p-6 md:p-10 relative overflow-hidden shadow-elegant">
-            <div className="absolute -end-8 -top-8 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+         <div className="rounded-3xl bg-gradient-to-br from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] p-6 md:p-10 relative overflow-hidden shadow-elegant group">
+            <div className="absolute -end-8 -top-8 h-56 w-56 rounded-full bg-white/20 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
+            <div className="absolute -start-8 -bottom-8 h-56 w-56 rounded-full bg-white/10 blur-2xl group-hover:scale-150 transition-transform duration-1000 delay-300" />
             <div className="grid md:grid-cols-[1fr_auto] items-center gap-6 relative">
               <div>
-                <Badge className="bg-white/25 text-white border-0">
+                <Badge className="bg-white/25 text-white border-0 hover:bg-white/30 transition-colors duration-300">
                   <BadgePercent className="h-3 w-3 me-1" />
                   {app.lang === "ar" ? "عروض حصرية" : "Exclusive offers"}
                 </Badge>
@@ -355,13 +390,17 @@ function Home() {
                 </h3>
               </div>
               <Link to="/category/$slug" params={{ slug: "offers" }}>
-                <Button size="lg" variant="secondary" className="bg-white text-[#2a655f] hover:bg-white/90 shadow-elegant font-bold">
-                  {t("view_all")} <ArrowRight className="h-4 w-4 ms-1 rtl-flip" />
+                <Button size="lg" variant="secondary" className="bg-white text-[#2a655f] hover:bg-white/90 shadow-elegant font-bold hover:scale-105 transition-all duration-300 group">
+                  {t("view_all")} <ArrowRight className="h-4 w-4 ms-1 rtl-flip group-hover:translate-x-1 transition-transform duration-300" />
                 </Button>
               </Link>
             </div>
             <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 relative">
-              {offers.slice(0, 4).map((d) => <ListingCard key={d.id} item={d} />)}
+              {offers.slice(0, 4).map((d, index) => (
+                <div key={d.id} className="animate-fade-up" style={{ animationDelay: `${index * 100}ms` }}>
+                  <ListingCard item={d} />
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -405,7 +444,7 @@ function FeaturedSection() {
     <section className="mx-auto max-w-7xl px-4 pb-4">
       <div className="flex items-end justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 grid place-items-center text-white shadow-md">
+          <div className="h-10 w-10 rounded-2xl bg-[#2a655f] grid place-items-center text-white shadow-md hover:scale-110 hover:-rotate-6 transition-all duration-500 cursor-pointer">
             <Heart className="h-5 w-5 fill-current" />
           </div>
           <div>
@@ -425,8 +464,8 @@ function FeaturedSection() {
             <button 
               key={it.id} 
               onClick={() => setInnerTab(it.id)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition ${
-                innerTab === it.id ? "bg-card text-[#2a655f] shadow-sm" : "text-muted-foreground"
+              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-300 ${
+                innerTab === it.id ? "bg-card text-[#2a655f] shadow-sm" : "text-muted-foreground hover:text-[#2a655f]"
               }`}
             >
               {it.label}
@@ -442,7 +481,11 @@ function FeaturedSection() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {favProducts.map((i) => <ListingCard key={i.id} item={i} />)}
+            {favProducts.map((i, index) => (
+              <div key={i.id} className="animate-fade-up" style={{ animationDelay: `${index * 50}ms` }}>
+                <ListingCard item={i} />
+              </div>
+            ))}
           </div>
         )
       ) : (
@@ -452,17 +495,18 @@ function FeaturedSection() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {favStores.map((s) => (
-              <StoreMiniCard 
-                key={s.id} 
-                s={s} 
-                badge={
-                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 text-rose-600 px-2 py-0.5 text-[11px] font-bold">
-                    <Heart className="h-3 w-3 fill-current" />
-                    {s.hearts}
-                  </span>
-                } 
-              />
+            {favStores.map((s, index) => (
+              <div key={s.id} className="animate-fade-up" style={{ animationDelay: `${index * 50}ms` }}>
+                <StoreMiniCard 
+                  s={s} 
+                  badge={
+                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 text-rose-600 px-2 py-0.5 text-[11px] font-bold">
+                      <Heart className="h-3 w-3 fill-current" />
+                      {s.hearts}
+                    </span>
+                  } 
+                />
+              </div>
             ))}
           </div>
         )
@@ -487,7 +531,7 @@ function TrendingSection() {
     <section className="mx-auto max-w-7xl px-4 pb-10">
       <div className="flex items-end justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 grid place-items-center text-white shadow-md">
+          <div className="h-10 w-10 rounded-2xl bg-[#2a655f] grid place-items-center text-white shadow-md hover:scale-110 hover:rotate-12 transition-all duration-500 cursor-pointer">
             <Flame className="h-5 w-5" />
           </div>
           <div>
@@ -507,8 +551,8 @@ function TrendingSection() {
             <button 
               key={it.id} 
               onClick={() => setInnerTab(it.id)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition ${
-                innerTab === it.id ? "bg-card text-[#2a655f] shadow-sm" : "text-muted-foreground"
+              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-300 ${
+                innerTab === it.id ? "bg-card text-[#2a655f] shadow-sm" : "text-muted-foreground hover:text-[#2a655f]"
               }`}
             >
               {it.label}
@@ -519,21 +563,26 @@ function TrendingSection() {
 
       {innerTab === "products" ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {trProducts.map((i) => <ListingCard key={i.id} item={i} />)}
+          {trProducts.map((i, index) => (
+            <div key={i.id} className="animate-fade-up" style={{ animationDelay: `${index * 50}ms` }}>
+              <ListingCard item={i} />
+            </div>
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {trStores.map((s) => (
-            <StoreMiniCard 
-              key={s.id} 
-              s={s} 
-              badge={
-                <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 text-orange-600 px-2 py-0.5 text-[11px] font-bold">
-                  <Flame className="h-3 w-3" />
-                  {app.lang === "ar" ? "رائج" : "Trending"}
-                </span>
-              } 
-            />
+          {trStores.map((s, index) => (
+            <div key={s.id} className="animate-fade-up" style={{ animationDelay: `${index * 50}ms` }}>
+              <StoreMiniCard 
+                s={s} 
+                badge={
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 text-orange-600 px-2 py-0.5 text-[11px] font-bold">
+                    <Flame className="h-3 w-3" />
+                    {app.lang === "ar" ? "رائج" : "Trending"}
+                  </span>
+                } 
+              />
+            </div>
           ))}
         </div>
       )}
@@ -549,20 +598,21 @@ function StoreMiniCard({ s, badge }: { s: any; badge?: React.ReactNode }) {
     <Link 
       to="/store/$id" 
       params={{ id: s.id }} 
-      className="group rounded-2xl bg-card shadow-card overflow-hidden card-hover border"
+      className="group rounded-2xl bg-card shadow-card overflow-hidden card-hover border hover:border-[#2a655f]/30 transition-all duration-300"
     >
-      <div className="relative h-28 bg-gradient-to-br from-primary to-primary-glow">
+      <div className="relative h-28 bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] overflow-hidden">
         {s.store_cover_url && (
           <img 
             src={s.store_cover_url} 
-            className="absolute inset-0 h-full w-full object-cover" 
+            className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" 
             alt="" 
           />
         )}
         {badge && <div className="absolute top-2 end-2">{badge}</div>}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
       <div className="p-4 -mt-8 relative">
-        <div className="h-14 w-14 rounded-xl bg-card border-4 border-card shadow-md overflow-hidden grid place-items-center text-primary font-black text-xl">
+        <div className="h-14 w-14 rounded-xl bg-card border-4 border-card shadow-md overflow-hidden grid place-items-center text-[#2a655f] font-black text-xl group-hover:scale-110 transition-transform duration-300">
           {s.store_logo_url || s.avatar_url ? (
             <img 
               src={s.store_logo_url || s.avatar_url} 
@@ -571,7 +621,7 @@ function StoreMiniCard({ s, badge }: { s: any; badge?: React.ReactNode }) {
             />
           ) : ((s.store_name || s.full_name || "?")[0])}
         </div>
-        <div className="mt-2 font-bold line-clamp-1">
+        <div className="mt-2 font-bold line-clamp-1 group-hover:text-[#2a655f] transition-colors duration-300">
           {s.store_name || s.full_name || (app.lang === "ar" ? "متجر" : "Store")}
         </div>
         <div className="text-xs text-muted-foreground line-clamp-2 min-h-8">
