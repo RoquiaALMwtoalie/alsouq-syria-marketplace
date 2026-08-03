@@ -1335,28 +1335,28 @@ export const Header = memo(function Header() {
       const Icon = getCategoryIcon(c.icon);
       const isOffer = c.slug === "offers";
       return (
-        <Link
-          key={c.id}
-          to="/category/$slug"
-          params={{ slug: c.slug }}
-          className={`shrink-0 flex items-center gap-2.5 px-5 py-2.5 rounded-2xl font-medium text-xs transition-all duration-300 ${
-            isOffer
-              ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 hover:-translate-y-0.5"
-              : "bg-white/70 dark:bg-gray-900/70 text-gray-700 dark:text-gray-200 hover:text-[#2a655f] dark:hover:text-[#3a8a82] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:shadow-lg hover:shadow-[#2a655f]/20 dark:hover:shadow-[#2a655f]/30 hover:scale-105 hover:-translate-y-0.5 border border-[#2a655f]/20 dark:border-[#2a655f]/30 backdrop-blur-sm"
-          }`}
-        >
-          <Icon className={`h-4 w-4 shrink-0 transition-all duration-300 ${
-            isOffer ? "text-white" : "text-[#2a655f] dark:text-[#3a8a82]"
-          } group-hover:scale-110 group-hover:rotate-6`} />
-          <span className="whitespace-nowrap font-semibold tracking-wide">
-            {app.lang === "ar" ? c.name_ar : c.name_en}
-          </span>
-          {isOffer && (
-            <span className="text-[8px] uppercase bg-white/20 px-1.5 py-0.5 rounded-full font-bold tracking-wider animate-pulse">
-              {app.lang === "ar" ? "🔥 عروض" : "🔥 OFFERS"}
-            </span>
-          )}
-        </Link>
+       <Link
+  key={c.id}
+  to="/category/$slug"
+  params={{ slug: c.slug }}
+  className={`shrink-0 flex items-center gap-2.5 px-5 py-2.5 rounded-2xl font-medium text-xs transition-all duration-300 ${
+    isOffer
+      ? "bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/30 hover:shadow-xl hover:shadow-[#2a655f]/40 hover:scale-105 hover:-translate-y-0.5"
+      : "bg-white/70 dark:bg-gray-900/70 text-gray-700 dark:text-gray-200 hover:text-[#2a655f] dark:hover:text-[#3a8a82] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:shadow-lg hover:shadow-[#2a655f]/20 dark:hover:shadow-[#2a655f]/30 hover:scale-105 hover:-translate-y-0.5 border border-[#2a655f]/20 dark:border-[#2a655f]/30 backdrop-blur-sm"
+  }`}
+>
+  <Icon className={`h-4 w-4 shrink-0 transition-all duration-300 ${
+    isOffer ? "text-white" : "text-[#2a655f] dark:text-[#3a8a82]"
+  } group-hover:scale-110 group-hover:rotate-6`} />
+  <span className="whitespace-nowrap font-semibold tracking-wide">
+    {app.lang === "ar" ? c.name_ar : c.name_en}
+  </span>
+  {isOffer && (
+    <span className="text-[8px] uppercase bg-white/20 px-1.5 py-0.5 rounded-full font-bold tracking-wider animate-pulse">
+      {app.lang === "ar" ? "🔥 عروض" : "🔥 OFFERS"}
+    </span>
+  )}
+</Link>
       );
     })}
     {categories.length > 12 && (
