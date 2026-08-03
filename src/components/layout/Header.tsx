@@ -73,7 +73,6 @@ const getNotificationConfig = (type: string) => {
 };
 
 // ✅ Mega Menu Component - يستخدم الأيقونات من قاعدة البيانات
-// ✅ Mega Menu Component - الجزء المصحح
 function MegaMenu({ categories }: { categories: any[] }) {
   const app = useApp();
   const t = useT();
@@ -99,16 +98,16 @@ function MegaMenu({ categories }: { categories: any[] }) {
       onMouseLeave={handleMouseLeave}
     >
       <button
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-primary/10 transition-all duration-200 bg-gradient-to-r from-blue-50/50 to-blue-100/30 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/30 dark:border-blue-800/30 group"
+        className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-[#2a655f]/10 transition-all duration-200 bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 border border-[#2a655f]/20 dark:border-[#2a655f]/30 group"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <LayoutGrid className="h-4 w-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
-        <span className="hidden md:inline font-semibold text-blue-700 dark:text-blue-300">{t("categories")}</span>
-        <ChevronDown className={`h-3.5 w-3.5 text-blue-600 dark:text-blue-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        <LayoutGrid className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
+        <span className="hidden md:inline font-semibold text-[#2a655f] dark:text-[#3a8a82]">{t("categories")}</span>
+        <ChevronDown className={`h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full start-0 mt-2 w-[900px] bg-card rounded-2xl shadow-2xl border border-blue-200/30 dark:border-blue-800/30 p-6 grid grid-cols-4 gap-6 animate-in slide-in-from-top-5 duration-200 z-50 bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-950 dark:to-blue-950/20">
+        <div className="absolute top-full start-0 mt-2 w-[900px] bg-card rounded-2xl shadow-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 p-6 grid grid-cols-4 gap-6 animate-in slide-in-from-top-5 duration-200 z-50 bg-gradient-to-br from-white to-[#2a655f]/5 dark:from-gray-950 dark:to-[#2a655f]/20">
           <div className="col-span-3 grid grid-cols-3 gap-x-4 gap-y-1">
             {mainCategories.map((c) => {
               const Icon = getCategoryIcon(c.icon);
@@ -117,13 +116,13 @@ function MegaMenu({ categories }: { categories: any[] }) {
                   key={c.id}
                   to="/category/$slug"
                   params={{ slug: c.slug }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all group border border-transparent hover:border-blue-200/30 dark:hover:border-blue-800/30"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all group border border-transparent hover:border-[#2a655f]/20 dark:hover:border-[#2a655f]/30"
                 >
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-600/5 group-hover:from-blue-500/20 group-hover:to-blue-600/10 transition flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#2a655f]/10 to-[#2a655f]/5 group-hover:from-[#2a655f]/20 group-hover:to-[#2a655f]/10 transition flex items-center justify-center text-[#2a655f] dark:text-[#3a8a82]">
                     <Icon className="h-4 w-4 group-hover:scale-110 transition-transform" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                    <div className="text-sm font-medium group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82] transition">
                       {app.lang === "ar" ? c.name_ar : c.name_en}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
@@ -161,10 +160,9 @@ function MegaMenu({ categories }: { categories: any[] }) {
               );
             })}
             
-            {/* ✅ ✅ ✅ زر عرض الكل - ياخذ لصفحة التصنيفات ✅ ✅ ✅ */}
             <Link
-              to="/categories"   // ✅ الآن يروح لصفحة جميع التصنيفات
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 transition font-medium text-sm text-blue-600 dark:text-blue-400 mt-2 border border-blue-200/30 dark:border-blue-800/30 group"
+              to="/categories"
+              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-[#2a655f]/10 hover:bg-[#2a655f]/20 transition font-medium text-sm text-[#2a655f] dark:text-[#3a8a82] mt-2 border border-[#2a655f]/20 dark:border-[#2a655f]/30 group"
             >
               {t("view_all")}
               <ChevronDown className="h-3.5 w-3.5 -rotate-90 group-hover:translate-x-1 transition-transform" />
@@ -226,10 +224,8 @@ export const Header = memo(function Header() {
   // ✅ ✅ ✅ البحث التلقائي عند تغيير المحافظة ✅ ✅ ✅
   // ============================================================
   useEffect(() => {
-    // ✅ إذا كانت المحافظة مختلفة عن "all"
     if (gov !== "all") {
       const query = q.trim();
-      // ✅ ننفذ البحث تلقائياً (مع كلمة البحث إن وجدت)
       navigate({
         to: "/search",
         search: { 
@@ -239,7 +235,7 @@ export const Header = memo(function Header() {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gov]); // ✅ فقط عند تغيير gov
+  }, [gov]);
 
   // ===== ✅ دالة تعيين الرسائل كمقروءة =====
   const markMessagesAsRead = useCallback(async () => {
@@ -386,32 +382,39 @@ export const Header = memo(function Header() {
   return (
     <TooltipProvider>
       <header className={`sticky top-0 z-50 transition-all duration-500 ${scrolled
-          ? 'bg-background/95 backdrop-blur-xl border-b border-blue-200/30 dark:border-blue-800/30 shadow-xl'
-          : 'bg-gradient-to-b from-blue-50/30 via-background/50 to-transparent border-b border-transparent'
+          ? 'bg-background/95 backdrop-blur-xl border-b border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl'
+          : 'bg-gradient-to-b from-[#2a655f]/5 via-background/50 to-transparent border-b border-transparent'
         }`}>
-        {/* Announcement Bar */}
-        {announcements.length > 0 && (
-          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white py-2 overflow-hidden border-b border-white/10">
-            <div className="mx-auto max-w-7xl px-4">
-              <div className="flex items-center justify-center gap-6 animate-marquee whitespace-nowrap">
-                {announcements.map((announcement, index) => (
-                  <span key={announcement.id} className="text-sm font-medium flex items-center gap-2">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/60 animate-pulse" />
-                    {app.lang === "ar" ? announcement.text_ar : (announcement.text_en || announcement.text_ar)}
-                    {announcement.link_url && (
-                      <Link
-                        to={announcement.link_url}
-                        className="text-white/80 hover:text-white underline-offset-2 hover:underline transition text-xs font-semibold"
-                      >
-                        {app.lang === "ar" ? "اعرف أكثر" : "Learn more"}
-                      </Link>
-                    )}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+       {/* Announcement Bar - لون واحد موحد بدون حدود */}
+{announcements.length > 0 && (
+  <div 
+    className="text-white py-2 overflow-hidden"  // ← شيل border-b
+    style={{ 
+      backgroundColor: '#2a655f',
+      backgroundImage: 'none !important',
+      background: '#2a655f !important'
+    }}
+  >
+    <div className="mx-auto max-w-7xl px-4">
+      <div className="flex items-center justify-center gap-6 animate-marquee whitespace-nowrap">
+        {announcements.map((announcement, index) => (
+          <span key={announcement.id} className="text-sm font-medium flex items-center gap-2">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/60 animate-pulse" />
+            {app.lang === "ar" ? announcement.text_ar : (announcement.text_en || announcement.text_ar)}
+            {announcement.link_url && (
+              <Link
+                to={announcement.link_url}
+                className="text-white/80 hover:text-white underline-offset-2 hover:underline transition text-xs font-semibold"
+              >
+                {app.lang === "ar" ? "اعرف أكثر" : "Learn more"}
+              </Link>
+            )}
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
 
         <style>{`
           @keyframes marquee {
@@ -434,7 +437,7 @@ export const Header = memo(function Header() {
             <SheetTrigger asChild>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="md:hidden h-9 w-9 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition shrink-0">
+                  <Button variant="ghost" size="icon" className="md:hidden h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition shrink-0">
                     <Menu className="h-4.5 w-4.5" />
                   </Button>
                 </TooltipTrigger>
@@ -445,7 +448,7 @@ export const Header = memo(function Header() {
             </SheetTrigger>
             <SheetContent side={app.lang === "ar" ? "right" : "left"} className="w-80">
               <SheetTitle className="text-lg font-bold flex items-center gap-2">
-                <LayoutGrid className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <LayoutGrid className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
                 {t("categories")}
               </SheetTitle>
               <div className="mt-4 grid gap-1">
@@ -454,7 +457,7 @@ export const Header = memo(function Header() {
                     key={c.id}
                     to="/category/$slug"
                     params={{ slug: c.slug }}
-                    className="flex items-center justify-between rounded-lg px-3 py-3 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition group"
+                    className="flex items-center justify-between rounded-lg px-3 py-3 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group"
                   >
                     <span>{app.lang === "ar" ? c.name_ar : c.name_en}</span>
                     <ChevronDown className="h-4 w-4 -rotate-90 opacity-50 group-hover:opacity-100 transition" />
@@ -462,28 +465,28 @@ export const Header = memo(function Header() {
                 ))}
               </div>
               <div className="mt-6 grid gap-2 text-sm">
-                <Link to="/ai" className="rounded-lg px-3 py-3 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 flex items-center gap-2 transition group">
+                <Link to="/ai" className="rounded-lg px-3 py-3 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 flex items-center gap-2 transition group">
                   <Sparkles className="h-4 w-4 text-accent group-hover:scale-110 transition-transform" /> {t("ai_insights")}
                 </Link>
-                <Link to="/dashboard" className="rounded-lg px-3 py-3 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition">{t("dashboard")}</Link>
-                <Link to="/reports" className="rounded-lg px-3 py-3 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition">{t("reports")}</Link>
-                <Link to="/messages" className="rounded-lg px-3 py-3 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition">{t("messages")}</Link>
+                <Link to="/dashboard" className="rounded-lg px-3 py-3 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition">{t("dashboard")}</Link>
+                <Link to="/reports" className="rounded-lg px-3 py-3 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition">{t("reports")}</Link>
+                <Link to="/messages" className="rounded-lg px-3 py-3 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition">{t("messages")}</Link>
               </div>
             </SheetContent>
           </Sheet>
 
-          {/* ✅ Home Button مع Tooltip */}
+          {/* Home Button */}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={goHome}
                 className="flex items-center gap-2 shrink-0 group cursor-pointer"
               >
-                <div className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-md group-hover:shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+                <div className="grid place-items-center h-9 w-9 rounded-xl bg-[#2a655f] text-white shadow-md group-hover:shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
                   <House className="h-4.5 w-4.5" />
                 </div>
                 <div className="hidden sm:flex flex-col leading-none">
-                  <span className="font-black text-lg tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                  <span className="font-black text-lg tracking-tight group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82] transition">
                     {t("brand")}
                   </span>
                   <span className="text-[9px] text-muted-foreground tracking-wider">
@@ -502,10 +505,10 @@ export const Header = memo(function Header() {
             <MegaMenu categories={categories} />
           </div>
 
-          {/* ✅ Desktop Search */}
+          {/* Desktop Search */}
           <div className="flex-1 max-w-3xl mx-2 hidden lg:flex items-center gap-1.5">
             <div className="relative flex-1 min-w-[160px]">
-              <Search className={`absolute inset-y-0 my-auto start-3 h-4 w-4 transition-colors duration-300 ${searchFocused ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`} />
+              <Search className={`absolute inset-y-0 my-auto start-3 h-4 w-4 transition-colors duration-300 ${searchFocused ? 'text-[#2a655f] dark:text-[#3a8a82]' : 'text-muted-foreground'}`} />
               <input
                 type="text"
                 value={q}
@@ -516,15 +519,15 @@ export const Header = memo(function Header() {
                 placeholder={t("search_placeholder")}
                 className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
                   searchFocused
-                    ? 'border-blue-400/60 bg-card shadow-lg shadow-blue-200/30 dark:shadow-blue-900/20'
-                    : 'border-blue-200/30 dark:border-blue-800/30 hover:border-blue-300/50'
+                    ? 'border-[#2a655f]/60 bg-card shadow-lg shadow-[#2a655f]/20 dark:shadow-[#2a655f]/30'
+                    : 'border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#2a655f]/40'
                 }`}
               />
             </div>
             
             <button
               onClick={doSearch}
-              className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center group"
+              className="h-10 w-10 shrink-0 rounded-xl bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center group"
             >
               <Search className="h-4 w-4 group-hover:scale-110 transition-transform" />
             </button>
@@ -533,8 +536,8 @@ export const Header = memo(function Header() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="h-10 gap-1 shrink-0 min-w-[100px] rounded-xl border-blue-200/30 dark:border-blue-800/30 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:border-blue-400/50 transition group text-sm px-3">
-                      <MapPin className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+                    <Button variant="outline" className="h-10 gap-1 shrink-0 min-w-[100px] rounded-xl border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:border-[#2a655f]/40 transition group text-sm px-3">
+                      <MapPin className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
                       <span className="text-xs max-w-[70px] truncate">
                         {gov === "all"
                           ? t("all_governorates")
@@ -548,25 +551,25 @@ export const Header = memo(function Header() {
                   <p>{app.lang === "ar" ? "تصفية حسب الموقع" : "Filter by location"}</p>
                 </TooltipContent>
               </Tooltip>
-              <DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-blue-200/30 dark:border-blue-800/30 shadow-xl">
-                <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer flex items-center gap-2 text-sm">
+              <DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
+                <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
                   <Globe className="h-4 w-4 text-muted-foreground" />
                   {t("all_governorates")}
-                  {gov === "all" && <Check className="h-4 w-4 ms-auto text-blue-600" />}
+                  {gov === "all" && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {govs.map((g) => (
-                  <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer flex items-center gap-2 text-sm">
+                  <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                     {app.lang === "ar" ? g.name_ar : g.name_en}
-                    {gov === g.slug && <Check className="h-4 w-4 ms-auto text-blue-600" />}
+                    {gov === g.slug && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
-          {/* ✅ Tablet Search */}
+          {/* Tablet Search */}
           <div className="flex-1 max-w-lg mx-1.5 hidden md:flex lg:hidden items-center gap-1.5">
             <div className="relative flex-1">
               <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
@@ -576,59 +579,59 @@ export const Header = memo(function Header() {
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && doSearch()}
                 placeholder={t("search_placeholder")}
-                className="w-full h-10 ps-9 pe-3 bg-muted/50 border-2 border-blue-200/30 dark:border-blue-800/30 rounded-xl focus:border-blue-400/60 focus:bg-card focus:shadow-lg focus:outline-none transition-all text-sm"
+                className="w-full h-10 ps-9 pe-3 bg-muted/50 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 rounded-xl focus:border-[#2a655f]/60 focus:bg-card focus:shadow-lg focus:outline-none transition-all text-sm"
               />
             </div>
             
             <button
               onClick={doSearch}
-              className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center group"
+              className="h-10 w-10 shrink-0 rounded-xl bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center group"
             >
               <Search className="h-4 w-4 group-hover:scale-110 transition-transform" />
             </button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-blue-200/30 dark:border-blue-800/30 hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all duration-300 flex items-center justify-center group relative">
-                  <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+                <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 flex items-center justify-center group relative">
+                  <MapPin className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
                   {gov !== "all" && (
-                    <span className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full bg-blue-600 ring-2 ring-background animate-pulse" />
+                    <span className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full bg-[#2a655f] ring-2 ring-background animate-pulse" />
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-blue-200/30 dark:border-blue-800/30 shadow-xl">
-                <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer flex items-center gap-2 text-sm">
+              <DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
+                <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
                   <Globe className="h-4 w-4 text-muted-foreground" />
                   {t("all_governorates")}
-                  {gov === "all" && <Check className="h-4 w-4 ms-auto text-blue-600" />}
+                  {gov === "all" && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {govs.map((g) => (
-                  <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer flex items-center gap-2 text-sm">
+                  <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                     {app.lang === "ar" ? g.name_ar : g.name_en}
-                    {gov === g.slug && <Check className="h-4 w-4 ms-auto text-blue-600" />}
+                    {gov === g.slug && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
-          {/* ✅ Actions */}
+          {/* Actions */}
           <div className="ms-auto flex items-center gap-0.5 shrink-0">
             {/* Language */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition group shrink-0">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group shrink-0">
                       <Globe className="h-4 w-4 group-hover:scale-110 transition-transform" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="rounded-xl p-1 border-blue-200/30 dark:border-blue-800/30 shadow-xl">
+                  <DropdownMenuContent align="end" className="rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
                     <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Language</DropdownMenuLabel>
                     {(["ar", "en"] as Lang[]).map((l) => (
-                      <DropdownMenuItem key={l} onClick={() => app.setLang(l)} className="rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer">
+                      <DropdownMenuItem key={l} onClick={() => app.setLang(l)} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer">
                         {l === "ar" ? "العربية" : "English"} {app.lang === l && "✓"}
                       </DropdownMenuItem>
                     ))}
@@ -648,7 +651,7 @@ export const Header = memo(function Header() {
                     variant="ghost" 
                     size="icon" 
                     onClick={toggleSound} 
-                    className="h-9 w-9 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition group shrink-0"
+                    className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group shrink-0"
                   >
                     {soundEnabled ? (
                       <Volume2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
@@ -670,7 +673,7 @@ export const Header = memo(function Header() {
             {/* Theme */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={app.toggleTheme} className="h-9 w-9 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition group shrink-0">
+                <Button variant="ghost" size="icon" onClick={app.toggleTheme} className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group shrink-0">
                   {app.theme === "dark" ? <Sun className="h-4 w-4 group-hover:rotate-90 transition-transform" /> : <Moon className="h-4 w-4 group-hover:-rotate-90 transition-transform" />}
                 </Button>
               </TooltipTrigger>
@@ -694,7 +697,7 @@ export const Header = memo(function Header() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-9 w-9 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition relative"
+                    className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition relative"
                   >
                     <MessageCircle className="h-4 w-4 group-hover:scale-110 transition-transform" />
                     {unreadCount > 0 && (
@@ -725,7 +728,7 @@ export const Header = memo(function Header() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <DialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition group shrink-0">
+                      <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group shrink-0">
                         <Bell className="h-4 w-4 group-hover:scale-110 transition-transform" />
                         {unreadNotificationsCount > 0 && (
                           <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse border-2 border-background">
@@ -742,11 +745,11 @@ export const Header = memo(function Header() {
 
                 <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden border-0 shadow-2xl bg-white dark:bg-slate-900">
                   {/* HEADER */}
-                  <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-50/90 to-indigo-50/90 dark:from-blue-950/90 dark:to-indigo-950/90 backdrop-blur-xl border-b border-blue-200/30 dark:border-blue-800/30 p-4">
+                  <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f]/10 to-[#2a655f]/5 dark:from-[#2a655f]/30 dark:to-[#2a655f]/20 backdrop-blur-xl border-b border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                          <div className="h-10 w-10 rounded-xl bg-[#2a655f] flex items-center justify-center shadow-lg shadow-[#2a655f]/25">
                             <Bell className="h-5 w-5 text-white" />
                           </div>
                           {unreadNotificationsCount > 0 && (
@@ -776,12 +779,12 @@ export const Header = memo(function Header() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-xs gap-1.5 rounded-xl hover:bg-blue-100/50 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-all"
+                            className="text-xs gap-1.5 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 text-[#2a655f] dark:text-[#3a8a82] hover:text-[#2a655f]/80 dark:hover:text-[#3a8a82]/80 transition-all"
                             onClick={handleMarkAllAsRead}
                             disabled={markAllRead.isPending}
                           >
                             {markAllRead.isPending ? (
-                              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#2a655f] border-t-transparent" />
                             ) : (
                               <Check className="h-3.5 w-3.5" />
                             )}
@@ -828,7 +831,7 @@ export const Header = memo(function Header() {
                             key={notification.id}
                             className={`group relative rounded-xl transition-all duration-300 ${
                               isUnread
-                                ? "bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-200/40 dark:border-blue-800/40 hover:shadow-md"
+                                ? "bg-gradient-to-r from-[#2a655f]/10 to-[#2a655f]/5 dark:from-[#2a655f]/30 dark:to-[#2a655f]/20 border border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:shadow-md"
                                 : "hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
                             }`}
                           >
@@ -848,7 +851,7 @@ export const Header = memo(function Header() {
                                       }}
                                     />
                                     {isUnread && (
-                                      <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-blue-500 ring-2 ring-white dark:ring-slate-900" />
+                                      <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#2a655f] ring-2 ring-white dark:ring-slate-900" />
                                     )}
                                   </div>
                                 ) : (
@@ -885,7 +888,7 @@ export const Header = memo(function Header() {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7 rounded-lg hover:bg-blue-100/50 dark:hover:bg-blue-900/30 text-blue-500 hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100"
+                                        className="h-7 w-7 rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 text-[#2a655f] hover:text-[#2a655f]/80 transition-all opacity-0 group-hover:opacity-100"
                                         onClick={(e) => handleMarkAsRead(notification.id, e)}
                                       >
                                         <Check className="h-3.5 w-3.5" />
@@ -979,7 +982,7 @@ export const Header = memo(function Header() {
               </Dialog>
             )}
 
-            {/* ✅ Bookings Shortcut - في الهيدر بجانب المفضلة */}
+            {/* Bookings Shortcut */}
             {app.user && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1031,10 +1034,10 @@ export const Header = memo(function Header() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link to="/cart" className="relative group shrink-0">
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
+                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition">
                     <ShoppingBag className="h-4 w-4 group-hover:scale-110 transition-transform" />
                     {app.cart.length > 0 && (
-                      <Badge className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] bg-gradient-to-r from-blue-600 to-blue-700 text-white border-2 border-background">
+                      <Badge className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] bg-[#2a655f] text-white border-2 border-background">
                         {app.cart.length}
                       </Badge>
                     )}
@@ -1051,19 +1054,19 @@ export const Header = memo(function Header() {
               <TooltipTrigger asChild>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition group relative shrink-0">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group relative shrink-0">
                       <User className="h-4 w-4 group-hover:scale-110 transition-transform" />
                       {app.user && (
                         <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background animate-pulse" />
                       )}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-72 rounded-2xl p-0 border-blue-200/30 dark:border-blue-800/30 shadow-2xl overflow-hidden">
+                  <DropdownMenuContent align="end" className="w-72 rounded-2xl p-0 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-2xl overflow-hidden">
                     {app.user ? (
                       <>
-                        <div className="bg-gradient-to-r from-blue-600/10 to-indigo-600/10 dark:from-blue-950/30 dark:to-indigo-950/30 p-4 border-b border-blue-200/30 dark:border-blue-800/30">
+                        <div className="bg-gradient-to-r from-[#2a655f]/10 to-[#2a655f]/5 dark:from-[#2a655f]/30 dark:to-[#2a655f]/20 p-4 border-b border-[#2a655f]/20 dark:border-[#2a655f]/30">
                           <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/25 overflow-hidden flex-shrink-0">
+                            <div className="h-12 w-12 rounded-full bg-[#2a655f] flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-[#2a655f]/25 overflow-hidden flex-shrink-0">
                               {profile?.avatar_url ? (
                                 <img 
                                   src={profile.avatar_url} 
@@ -1099,7 +1102,7 @@ export const Header = memo(function Header() {
                           <div className="mt-2 flex items-center justify-between">
                             <Link 
                               to="/settings" 
-                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 transition-colors"
+                              className="text-xs text-[#2a655f] dark:text-[#3a8a82] hover:underline flex items-center gap-1 transition-colors"
                             >
                               <Camera className="h-3 w-3" />
                               {profile?.avatar_url 
@@ -1114,14 +1117,13 @@ export const Header = memo(function Header() {
                           
                           {app.user.address && (
                             <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <MapPin className="h-3 w-3 text-blue-500" />
+                              <MapPin className="h-3 w-3 text-[#2a655f]" />
                               <span className="truncate">{app.user.address}</span>
                             </div>
                           )}
                         </div>
 
                         <div className="p-1.5">
-                          {/* ✅ حجوزاتي - في قائمة الحساب مثل نون */}
                           <DropdownMenuItem asChild className="rounded-xl hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 cursor-pointer py-2.5 px-3 group">
                             <Link to="/bookings" className="flex items-center gap-3 w-full">
                               <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition">
@@ -1139,10 +1141,10 @@ export const Header = memo(function Header() {
                             </Link>
                           </DropdownMenuItem>
 
-                          <DropdownMenuItem asChild className="rounded-xl hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer py-2.5 px-3 group">
+                          <DropdownMenuItem asChild className="rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer py-2.5 px-3 group">
                             <Link to="/settings" className="flex items-center gap-3 w-full">
-                              <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition">
-                                <Settings className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                              <div className="h-8 w-8 rounded-lg bg-[#2a655f]/10 flex items-center justify-center group-hover:bg-[#2a655f]/20 transition">
+                                <Settings className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82]" />
                               </div>
                               <div className="flex-1">
                                 <p className="text-sm font-medium text-slate-900 dark:text-white">
@@ -1175,7 +1177,7 @@ export const Header = memo(function Header() {
                           </DropdownMenuItem>
                         </div>
 
-                        <div className="px-4 py-2 bg-slate-50/50 dark:bg-slate-800/30 border-t border-blue-200/30 dark:border-blue-800/30">
+                        <div className="px-4 py-2 bg-slate-50/50 dark:bg-slate-800/30 border-t border-[#2a655f]/20 dark:border-[#2a655f]/30">
                           <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                             <span>
                               {app.lang === "ar" ? "آخر تسجيل دخول" : "Last login"}: {new Date().toLocaleDateString(app.lang === "ar" ? "ar-SA" : "en-US")}
@@ -1189,7 +1191,7 @@ export const Header = memo(function Header() {
                       </>
                     ) : (
                       <>
-                        <div className="p-4 text-center border-b border-blue-200/30 dark:border-blue-800/30">
+                        <div className="p-4 text-center border-b border-[#2a655f]/20 dark:border-[#2a655f]/30">
                           <div className="h-14 w-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-2">
                             <User className="h-7 w-7 text-slate-400" />
                           </div>
@@ -1201,13 +1203,13 @@ export const Header = memo(function Header() {
                           </p>
                         </div>
                         <div className="p-2 space-y-1">
-                          <DropdownMenuItem asChild className="rounded-xl hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer py-2.5">
+                          <DropdownMenuItem asChild className="rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer py-2.5">
                             <Link to="/auth/$mode" params={{ mode: "login" }} className="flex items-center gap-3 w-full">
-                              <LogIn className="h-4 w-4 text-blue-600" />
+                              <LogIn className="h-4 w-4 text-[#2a655f]" />
                               <span className="font-medium">{t("login")}</span>
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild className="rounded-xl hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer py-2.5">
+                          <DropdownMenuItem asChild className="rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer py-2.5">
                             <Link to="/auth/$mode" params={{ mode: "register" }} className="flex items-center gap-3 w-full">
                               <UserPlus className="h-4 w-4 text-emerald-600" />
                               <span className="font-medium">{t("register")}</span>
@@ -1224,61 +1226,61 @@ export const Header = memo(function Header() {
               </TooltipContent>
             </Tooltip>
 
-         {/* Role Button - نسخة محسنة للموبايل */}
-{(() => {
-  if (isAuthLoading) {
-    return <div className="ms-1 px-2 py-0.5 rounded-lg bg-blue-500/20 animate-pulse h-5 w-16" />;
-  }
+            {/* Role Button - نسخة محسنة للموبايل */}
+            {(() => {
+              if (isAuthLoading) {
+                return <div className="ms-1 px-2 py-0.5 rounded-lg bg-[#2a655f]/20 animate-pulse h-5 w-16" />;
+              }
 
-  if (app.user) {
-    if (isAdmin) {
-      return (
-        <Link 
-          to="/admin" 
-          className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-blue-400/20 shrink-0"
-        >
-          <LayoutDashboard className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-          {app.lang === "ar" ? "لوحة الأدمن" : "Admin"}
-        </Link>
-      );
-    }
-    if (isSeller) {
-      return (
-        <Link 
-          to="/dashboard" 
-          className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-blue-400/20 shrink-0"
-        >
-          <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-          {app.lang === "ar" ? "لوحة البائع" : "Seller"}
-        </Link>
-      );
-    }
-    return (
-      <Link 
-        to="/dashboard" 
-        className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-blue-400/20 shrink-0"
-      >
-        <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-        {app.lang === "ar" ? "أنشئ متجرك" : "List Business"}
-      </Link>
-    );
-  }
-  
-  return (
-    <Link 
-      to="/auth/$mode" 
-      params={{ mode: "register" }} 
-      className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-blue-400/20 shrink-0"
-    >
-      <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-      {app.lang === "ar" ? "أنشئ متجرك" : "List Business"}
-    </Link>
-  );
-})()}
+              if (app.user) {
+                if (isAdmin) {
+                  return (
+                    <Link 
+                      to="/admin" 
+                      className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+                    >
+                      <LayoutDashboard className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+                      {app.lang === "ar" ? "لوحة الأدمن" : "Admin"}
+                    </Link>
+                  );
+                }
+                if (isSeller) {
+                  return (
+                    <Link 
+                      to="/dashboard" 
+                      className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+                    >
+                      <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+                      {app.lang === "ar" ? "لوحة البائع" : "Seller"}
+                    </Link>
+                  );
+                }
+                return (
+                  <Link 
+                    to="/dashboard" 
+                    className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+                  >
+                    <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+                    {app.lang === "ar" ? "أنشئ متجرك" : "List Business"}
+                  </Link>
+                );
+              }
+              
+              return (
+                <Link 
+                  to="/auth/$mode" 
+                  params={{ mode: "register" }} 
+                  className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+                >
+                  <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+                  {app.lang === "ar" ? "أنشئ متجرك" : "List Business"}
+                </Link>
+              );
+            })()}
           </div>
         </div>
 
-        {/* ✅ Mobile Search */}
+        {/* Mobile Search */}
         <div className="md:hidden px-3 pb-2.5 flex gap-1.5">
           <div className="relative flex-1">
             <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
@@ -1287,95 +1289,93 @@ export const Header = memo(function Header() {
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && doSearch()}
               placeholder={t("search_placeholder")}
-              className="ps-9 h-10 w-full bg-muted/50 border-blue-200/30 dark:border-blue-800/30 rounded-xl focus-visible:border-blue-400/60 transition text-sm"
+              className="ps-9 h-10 w-full bg-muted/50 border-[#2a655f]/20 dark:border-[#2a655f]/30 rounded-xl focus-visible:border-[#2a655f]/60 transition text-sm"
             />
           </div>
           
           <Button 
             onClick={doSearch}
             size="icon" 
-            className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
+            className="h-10 w-10 shrink-0 rounded-xl bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
           >
             <Search className="h-4 w-4" />
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-blue-200/30 dark:border-blue-800/30 hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all duration-300 flex items-center justify-center group relative">
-                <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+              <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 flex items-center justify-center group relative">
+                <MapPin className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
                 {gov !== "all" && (
-                  <span className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full bg-blue-600 ring-2 ring-background animate-pulse" />
+                  <span className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full bg-[#2a655f] ring-2 ring-background animate-pulse" />
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-blue-200/30 dark:border-blue-800/30 shadow-xl">
-              <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer flex items-center gap-2 text-sm">
+            <DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
+              <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
                 <Globe className="h-4 w-4 text-muted-foreground" />
                 {t("all_governorates")}
-                {gov === "all" && <Check className="h-4 w-4 ms-auto text-blue-600" />}
+                {gov === "all" && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {govs.map((g) => (
-                <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer flex items-center gap-2 text-sm">
+                <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
                   <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                   {app.lang === "ar" ? g.name_ar : g.name_en}
-                  {gov === g.slug && <Check className="h-4 w-4 ms-auto text-blue-600" />}
+                  {gov === g.slug && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        {/* ✅ Category Strip - يستخدم الأيقونات من قاعدة البيانات */}
-        <nav className="border-t border-blue-200/40 dark:border-blue-800/40 bg-gradient-to-r from-blue-50/80 via-blue-100/60 to-blue-50/80 dark:from-blue-950/60 dark:via-blue-900/40 dark:to-blue-950/60 backdrop-blur-md overflow-x-auto no-scrollbar shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-          <div className="mx-auto max-w-7xl px-4 flex items-center gap-1.5 py-3 text-sm">
-            {categories.slice(0, 12).map((c: any) => {
-              // ✅ جلب الأيقونة من قاعدة البيانات
-              const Icon = getCategoryIcon(c.icon);
-              const isOffer = c.slug === "offers";
-              return (
-                <Link
-                  key={c.id}
-                  to="/category/$slug"
-                  params={{ slug: c.slug }}
-                  className={`shrink-0 flex items-center gap-2.5 px-5 py-2.5 rounded-2xl font-medium text-xs transition-all duration-300 ${
-                    isOffer
-                      ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 hover:-translate-y-0.5"
-                      : "bg-white/70 dark:bg-gray-900/70 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:shadow-lg hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 hover:scale-105 hover:-translate-y-0.5 border border-blue-200/30 dark:border-blue-800/30 backdrop-blur-sm"
-                  }`}
-                >
-                  <Icon className={`h-4 w-4 shrink-0 transition-all duration-300 ${
-                    isOffer ? "text-white" : "text-blue-500 dark:text-blue-400"
-                  } group-hover:scale-110 group-hover:rotate-6`} />
-                  <span className="whitespace-nowrap font-semibold tracking-wide">
-                    {app.lang === "ar" ? c.name_ar : c.name_en}
-                  </span>
-                  {isOffer && (
-                    <span className="text-[8px] uppercase bg-white/20 px-1.5 py-0.5 rounded-full font-bold tracking-wider animate-pulse">
-                      {app.lang === "ar" ? "🔥 عروض" : "🔥 OFFERS"}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-            {categories.length > 12 && (
-              <Link
-                to="/categories"
-                className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:shadow-lg hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-300 border border-blue-200/30 dark:border-blue-800/30 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:scale-105 hover:-translate-y-0.5"
-              >
-                <span>{t("view_all")}</span>
-                <ChevronDown className="h-3.5 w-3.5 -rotate-90 transition-transform group-hover:translate-x-1" />
-              </Link>
-            )}
-          </div>
-        </nav>
+     {/* ✅ Category Strip - #2a655f */}
+<nav className="border-t border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-gradient-to-r from-[#2a655f]/5 via-[#2a655f]/10 to-[#2a655f]/5 dark:from-[#2a655f]/20 dark:via-[#2a655f]/30 dark:to-[#2a655f]/20 backdrop-blur-md overflow-x-auto no-scrollbar shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+  <div className="mx-auto max-w-7xl px-4 flex items-center gap-1.5 py-3 text-sm">
+    {categories.slice(0, 12).map((c: any) => {
+      const Icon = getCategoryIcon(c.icon);
+      const isOffer = c.slug === "offers";
+      return (
+        <Link
+          key={c.id}
+          to="/category/$slug"
+          params={{ slug: c.slug }}
+          className={`shrink-0 flex items-center gap-2.5 px-5 py-2.5 rounded-2xl font-medium text-xs transition-all duration-300 ${
+            isOffer
+              ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 hover:-translate-y-0.5"
+              : "bg-white/70 dark:bg-gray-900/70 text-gray-700 dark:text-gray-200 hover:text-[#2a655f] dark:hover:text-[#3a8a82] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:shadow-lg hover:shadow-[#2a655f]/20 dark:hover:shadow-[#2a655f]/30 hover:scale-105 hover:-translate-y-0.5 border border-[#2a655f]/20 dark:border-[#2a655f]/30 backdrop-blur-sm"
+          }`}
+        >
+          <Icon className={`h-4 w-4 shrink-0 transition-all duration-300 ${
+            isOffer ? "text-white" : "text-[#2a655f] dark:text-[#3a8a82]"
+          } group-hover:scale-110 group-hover:rotate-6`} />
+          <span className="whitespace-nowrap font-semibold tracking-wide">
+            {app.lang === "ar" ? c.name_ar : c.name_en}
+          </span>
+          {isOffer && (
+            <span className="text-[8px] uppercase bg-white/20 px-1.5 py-0.5 rounded-full font-bold tracking-wider animate-pulse">
+              {app.lang === "ar" ? "🔥 عروض" : "🔥 OFFERS"}
+            </span>
+          )}
+        </Link>
+      );
+    })}
+    {categories.length > 12 && (
+      <Link
+        to="/categories"
+        className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-medium text-[#2a655f] dark:text-[#3a8a82] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:shadow-lg hover:shadow-[#2a655f]/20 dark:hover:shadow-[#2a655f]/30 transition-all duration-300 border border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:scale-105 hover:-translate-y-0.5"
+      >
+        <span>{t("view_all")}</span>
+        <ChevronDown className="h-3.5 w-3.5 -rotate-90 transition-transform group-hover:translate-x-1" />
+      </Link>
+    )}
+  </div>
+</nav>
       </header>
     </TooltipProvider>
   );
 });
 
 export function Footer() {
-  // ====== ✅ جميع الـ Hooks أولاً ======
   const location = useLocation();
   const t = useT();
   const app = useApp();
@@ -1383,7 +1383,6 @@ export function Footer() {
   const { data: dbCategories = [] } = useCategories();
   const categories = (dbCategories || []).filter((c: any) => c.active !== false);
 
-  // ====== ✅ شرط إخفاء الفوتر ======
   const isChatPage = 
     location.pathname.startsWith('/messages_/') ||
     location.pathname.startsWith('/messages/') ||
@@ -1421,30 +1420,30 @@ export function Footer() {
 
   return (
     <footer className="relative mt-32 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-50/80 via-indigo-50/60 to-slate-100/80 dark:from-gray-950 dark:via-slate-950 dark:to-gray-950" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#2a655f]/10 via-[#2a655f]/5 to-slate-100/80 dark:from-gray-950 dark:via-slate-950 dark:to-gray-950" />
       <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.06]">
         <div className="absolute inset-0" style={{
           backgroundImage: `
-            radial-gradient(circle at 20% 50%, #3b82f6 1px, transparent 1px),
-            radial-gradient(circle at 80% 50%, #3b82f6 1px, transparent 1px)
+            radial-gradient(circle at 20% 50%, #2a655f 1px, transparent 1px),
+            radial-gradient(circle at 80% 50%, #2a655f 1px, transparent 1px)
           `,
           backgroundSize: '60px 60px',
           backgroundPosition: '0 0, 30px 30px'
         }} />
       </div>
-      <div className="absolute -top-40 -end-40 h-96 w-96 rounded-full bg-gradient-to-br from-blue-400/30 to-blue-600/10 blur-3xl animate-pulse" />
-      <div className="absolute -bottom-40 -start-40 h-96 w-96 rounded-full bg-gradient-to-tr from-indigo-400/30 to-purple-500/10 blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-gradient-to-r from-blue-500/5 to-indigo-500/5 blur-3xl" />
+      <div className="absolute -top-40 -end-40 h-96 w-96 rounded-full bg-gradient-to-br from-[#2a655f]/30 to-[#2a655f]/10 blur-3xl animate-pulse" />
+      <div className="absolute -bottom-40 -start-40 h-96 w-96 rounded-full bg-gradient-to-tr from-[#2a655f]/30 to-[#2a655f]/10 blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/5 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-6 pt-20 pb-8">
         <div className="grid gap-10 md:grid-cols-12 mb-16">
           <div className="md:col-span-4 space-y-5">
             <button onClick={() => window.location.href = '/'} className="inline-flex items-center gap-3 group cursor-pointer">
-              <div className="grid place-items-center h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-2xl shadow-lg group-hover:shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
+              <div className="grid place-items-center h-14 w-14 rounded-2xl bg-[#2a655f] text-white font-black text-2xl shadow-lg group-hover:shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
                 <House className="h-8 w-8" />
               </div>
               <div>
-                <div className="font-black text-2xl tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
+                <div className="font-black text-2xl tracking-tight group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82] transition-colors duration-300">
                   {t("brand")}
                 </div>
                 <div className="text-xs text-muted-foreground tracking-wider uppercase">
@@ -1460,7 +1459,7 @@ export function Footer() {
             <div className="flex items-center gap-3 pt-2">
               <div className="flex -space-x-2">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-9 w-9 rounded-full border-2 border-background bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                  <div key={i} className="h-9 w-9 rounded-full border-2 border-background bg-[#2a655f] flex items-center justify-center text-white text-xs font-bold">
                     {String.fromCharCode(64 + i)}
                   </div>
                 ))}
@@ -1471,19 +1470,19 @@ export function Footer() {
             </div>
             <div className="flex items-center gap-3">
               {[
-                { icon: Twitter, label: "Twitter", color: "hover:text-blue-400" },
+                { icon: Twitter, label: "Twitter", color: "hover:text-[#2a655f]" },
                 { icon: Instagram, label: "Instagram", color: "hover:text-pink-500" },
-                { icon: Facebook, label: "Facebook", color: "hover:text-blue-600" },
-                { icon: Globe, label: "Website", color: "hover:text-indigo-500" },
+                { icon: Facebook, label: "Facebook", color: "hover:text-[#2a655f]" },
+                { icon: Globe, label: "Website", color: "hover:text-[#2a655f]" },
                 { icon: Youtube, label: "YouTube", color: "hover:text-red-500" },
               ].map((social, i) => (
                 <a
                   key={i}
                   href="#"
                   aria-label={social.label}
-                  className="group grid place-items-center h-11 w-11 rounded-2xl border border-blue-200/30 dark:border-blue-800/30 bg-white/50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-400/50 transition-all duration-300 hover:scale-110 hover:shadow-lg backdrop-blur"
+                  className="group grid place-items-center h-11 w-11 rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white/50 dark:bg-gray-900/50 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:border-[#2a655f]/40 transition-all duration-300 hover:scale-110 hover:shadow-lg backdrop-blur"
                 >
-                  <social.icon className="h-5 w-5 text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+                  <social.icon className="h-5 w-5 text-muted-foreground group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82] transition-colors" />
                 </a>
               ))}
             </div>
@@ -1491,7 +1490,7 @@ export function Footer() {
 
           <div className="md:col-span-2">
             <h4 className="text-sm font-bold text-foreground mb-5 flex items-center gap-2">
-              <span className="h-1.5 w-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600" />
+              <span className="h-1.5 w-8 rounded-full bg-[#2a655f]" />
               {app.lang === "ar" ? "روابط سريعة" : "Quick Links"}
             </h4>
             <ul className="space-y-3">
@@ -1499,9 +1498,9 @@ export function Footer() {
                 <li key={i}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 flex items-center gap-2 group"
+                    className="text-sm text-muted-foreground hover:text-[#2a655f] dark:hover:text-[#3a8a82] transition-all duration-200 flex items-center gap-2 group"
                   >
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-600/30 dark:bg-blue-400/30 group-hover:w-3 group-hover:bg-blue-600 transition-all duration-300" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]/30 dark:bg-[#2a655f]/30 group-hover:w-3 group-hover:bg-[#2a655f] transition-all duration-300" />
                     {link.label}
                   </Link>
                 </li>
@@ -1511,7 +1510,7 @@ export function Footer() {
 
           <div className="md:col-span-2">
             <h4 className="text-sm font-bold text-foreground mb-5 flex items-center gap-2">
-              <span className="h-1.5 w-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600" />
+              <span className="h-1.5 w-8 rounded-full bg-[#2a655f]" />
               {app.lang === "ar" ? "المنصة" : "Platform"}
             </h4>
             <ul className="space-y-3">
@@ -1519,9 +1518,9 @@ export function Footer() {
                 <li key={i}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 flex items-center gap-2 group"
+                    className="text-sm text-muted-foreground hover:text-[#2a655f] dark:hover:text-[#3a8a82] transition-all duration-200 flex items-center gap-2 group"
                   >
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-600/30 dark:bg-blue-400/30 group-hover:w-3 group-hover:bg-blue-600 transition-all duration-300" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]/30 dark:bg-[#2a655f]/30 group-hover:w-3 group-hover:bg-[#2a655f] transition-all duration-300" />
                     {link.label}
                   </Link>
                 </li>
@@ -1531,7 +1530,7 @@ export function Footer() {
 
           <div className="md:col-span-2">
             <h4 className="text-sm font-bold text-foreground mb-5 flex items-center gap-2">
-              <span className="h-1.5 w-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600" />
+              <span className="h-1.5 w-8 rounded-full bg-[#2a655f]" />
               {app.lang === "ar" ? "الدعم" : "Support"}
             </h4>
             <ul className="space-y-3">
@@ -1539,9 +1538,9 @@ export function Footer() {
                 <li key={i}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 flex items-center gap-2 group"
+                    className="text-sm text-muted-foreground hover:text-[#2a655f] dark:hover:text-[#3a8a82] transition-all duration-200 flex items-center gap-2 group"
                   >
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-600/30 dark:bg-blue-400/30 group-hover:w-3 group-hover:bg-blue-600 transition-all duration-300" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]/30 dark:bg-[#2a655f]/30 group-hover:w-3 group-hover:bg-[#2a655f] transition-all duration-300" />
                     {link.label}
                   </Link>
                 </li>
@@ -1551,31 +1550,31 @@ export function Footer() {
 
           <div className="md:col-span-2">
             <h4 className="text-sm font-bold text-foreground mb-5 flex items-center gap-2">
-              <span className="h-1.5 w-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600" />
+              <span className="h-1.5 w-8 rounded-full bg-[#2a655f]" />
               {app.lang === "ar" ? "تواصل معنا" : "Contact Us"}
             </h4>
             <ul className="space-y-4 text-sm">
               <li className="flex items-start gap-3 text-muted-foreground hover:text-foreground transition-colors group">
-                <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center shrink-0 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
-                  <MapPin className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
+                <div className="h-9 w-9 rounded-xl bg-[#2a655f]/10 dark:bg-[#2a655f]/30 flex items-center justify-center shrink-0 group-hover:bg-[#2a655f]/20 dark:group-hover:bg-[#2a655f]/40 transition-colors">
+                  <MapPin className="h-4.5 w-4.5 text-[#2a655f] dark:text-[#3a8a82]" />
                 </div>
                 <span className="mt-1.5">{app.lang === "ar" ? "دمشق، سوريا" : "Damascus, Syria"}</span>
               </li>
               <li className="flex items-start gap-3 text-muted-foreground hover:text-foreground transition-colors group">
-                <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center shrink-0 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
-                  <Phone className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
+                <div className="h-9 w-9 rounded-xl bg-[#2a655f]/10 dark:bg-[#2a655f]/30 flex items-center justify-center shrink-0 group-hover:bg-[#2a655f]/20 dark:group-hover:bg-[#2a655f]/40 transition-colors">
+                  <Phone className="h-4.5 w-4.5 text-[#2a655f] dark:text-[#3a8a82]" />
                 </div>
                 <span className="mt-1.5" dir="ltr">+963 11 000 0000</span>
               </li>
               <li className="flex items-start gap-3 text-muted-foreground hover:text-foreground transition-colors group">
-                <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center shrink-0 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
-                  <Mail className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
+                <div className="h-9 w-9 rounded-xl bg-[#2a655f]/10 dark:bg-[#2a655f]/30 flex items-center justify-center shrink-0 group-hover:bg-[#2a655f]/20 dark:group-hover:bg-[#2a655f]/40 transition-colors">
+                  <Mail className="h-4.5 w-4.5 text-[#2a655f] dark:text-[#3a8a82]" />
                 </div>
                 <span className="mt-1.5">hello@alsouq.sy</span>
               </li>
               <li className="flex items-start gap-3 text-muted-foreground hover:text-foreground transition-colors group">
-                <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center shrink-0 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
-                  <Clock className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
+                <div className="h-9 w-9 rounded-xl bg-[#2a655f]/10 dark:bg-[#2a655f]/30 flex items-center justify-center shrink-0 group-hover:bg-[#2a655f]/20 dark:group-hover:bg-[#2a655f]/40 transition-colors">
+                  <Clock className="h-4.5 w-4.5 text-[#2a655f] dark:text-[#3a8a82]" />
                 </div>
                 <span className="mt-1.5">{app.lang === "ar" ? "دعم 24/7" : "24/7 Support"}</span>
               </li>
@@ -1583,27 +1582,27 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="pt-8 border-t border-blue-200/30 dark:border-blue-800/30 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="pt-8 border-t border-[#2a655f]/20 dark:border-[#2a655f]/30 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-2">
-              <span className="text-blue-600 dark:text-blue-400 font-bold">©</span>
-              {year} <span className="text-blue-600 dark:text-blue-400 font-semibold">{t("brand")}</span>
+              <span className="text-[#2a655f] dark:text-[#3a8a82] font-bold">©</span>
+              {year} <span className="text-[#2a655f] dark:text-[#3a8a82] font-semibold">{t("brand")}</span>
             </span>
             <span className="hidden sm:inline text-muted-foreground/30">|</span>
             <span>{app.lang === "ar" ? "جميع الحقوق محفوظة." : "All rights reserved."}</span>
           </div>
 
           <div className="flex items-center gap-6 text-xs">
-            <a href="#" className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+            <a href="#" className="text-muted-foreground hover:text-[#2a655f] dark:hover:text-[#3a8a82] transition-colors font-medium">
               {app.lang === "ar" ? "الخصوصية" : "Privacy"}
             </a>
-            <a href="#" className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+            <a href="#" className="text-muted-foreground hover:text-[#2a655f] dark:hover:text-[#3a8a82] transition-colors font-medium">
               {app.lang === "ar" ? "الشروط" : "Terms"}
             </a>
-            <a href="#" className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+            <a href="#" className="text-muted-foreground hover:text-[#2a655f] dark:hover:text-[#3a8a82] transition-colors font-medium">
               {app.lang === "ar" ? "الدعم" : "Support"}
             </a>
-            <a href="#" className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+            <a href="#" className="text-muted-foreground hover:text-[#2a655f] dark:hover:text-[#3a8a82] transition-colors font-medium">
               {app.lang === "ar" ? "ملفات التعريف" : "Cookies"}
             </a>
           </div>
@@ -1620,13 +1619,13 @@ export function Footer() {
             </div>
             <span className="text-muted-foreground/30">|</span>
             <span className="text-muted-foreground flex items-center gap-1">
-              <span className="text-blue-600 dark:text-blue-400">⚡</span>
+              <span className="text-[#2a655f] dark:text-[#3a8a82]">⚡</span>
               v2.0.0
             </span>
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-blue-200/20 dark:border-blue-800/20">
+        <div className="mt-8 pt-6 border-t border-[#2a655f]/20 dark:border-[#2a655f]/30">
           <div className="flex flex-wrap items-center justify-center gap-2">
             <span className="text-xs text-muted-foreground font-medium me-2">
               {app.lang === "ar" ? "التصنيفات:" : "Categories:"}
@@ -1636,7 +1635,7 @@ export function Footer() {
                 key={c.id}
                 to="/category/$slug"
                 params={{ slug: c.slug }}
-                className="text-xs text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/30 border border-transparent hover:border-blue-200/30"
+                className="text-xs text-muted-foreground hover:text-[#2a655f] dark:hover:text-[#3a8a82] transition-colors px-2 py-1 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 border border-transparent hover:border-[#2a655f]/20"
               >
                 {app.lang === "ar" ? c.name_ar : c.name_en}
               </Link>

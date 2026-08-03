@@ -43,11 +43,10 @@
 :root {
   --radius: 0.85rem;
 
-  /* Deeper blue primary #1D3FCC */
-  --primary: oklch(0.42 0.24 262);
+  /* Primary #2a655f - Teal Green */
+  --primary: #2a655f;
   --primary-foreground: oklch(0.99 0 0);
-  --primary-glow: oklch(0.56 0.22 258);
-
+  --primary-glow: oklch(0.52 0.08 190);
 
   /* Green secondary #16A34A */
   --secondary: oklch(0.62 0.19 148);
@@ -69,28 +68,28 @@
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(0.9 0.01 255);
   --input: oklch(0.92 0.01 255);
-  --ring: oklch(0.42 0.24 262);
+  --ring: #2a655f;
   --success: oklch(0.62 0.19 148);
   --warning: oklch(0.78 0.16 75);
 
-  --gradient-hero: linear-gradient(135deg, oklch(0.42 0.24 262) 0%, oklch(0.5 0.24 275) 60%, oklch(0.42 0.2 285) 100%);
+  --gradient-hero: linear-gradient(135deg, #2a655f 0%, oklch(0.48 0.08 185) 60%, oklch(0.42 0.08 180) 100%);
   --gradient-accent: linear-gradient(135deg, oklch(0.78 0.16 75), oklch(0.72 0.19 45));
-  --gradient-mesh: radial-gradient(60% 80% at 20% 10%, oklch(0.68 0.19 258 / 0.35), transparent 60%),
+  --gradient-mesh: radial-gradient(60% 80% at 20% 10%, oklch(0.52 0.08 190 / 0.35), transparent 60%),
                    radial-gradient(50% 70% at 90% 20%, oklch(0.78 0.16 75 / 0.25), transparent 60%),
                    radial-gradient(70% 80% at 50% 100%, oklch(0.62 0.19 148 / 0.25), transparent 60%);
 
-  --shadow-elegant: 0 20px 45px -20px oklch(0.55 0.22 262 / 0.35);
+ --shadow-elegant: 0 20px 45px -20px rgba(42, 101, 95, 0.35);
   --shadow-soft: 0 8px 24px -12px oklch(0.2 0.05 260 / 0.15);
   --shadow-card: 0 2px 8px -2px oklch(0.2 0.05 260 / 0.08), 0 8px 24px -8px oklch(0.2 0.05 260 / 0.06);
 
   --sidebar: oklch(0.985 0.005 250);
   --sidebar-foreground: oklch(0.18 0.03 260);
-  --sidebar-primary: oklch(0.42 0.24 262);
+  --sidebar-primary: #2a655f;
   --sidebar-primary-foreground: oklch(0.99 0 0);
   --sidebar-accent: oklch(0.955 0.008 250);
   --sidebar-accent-foreground: oklch(0.18 0.03 260);
   --sidebar-border: oklch(0.9 0.01 255);
-  --sidebar-ring: oklch(0.42 0.24 262);
+  --sidebar-ring: #2a655f;
 }
 
 .dark {
@@ -100,9 +99,9 @@
   --card-foreground: oklch(0.97 0.01 250);
   --popover: oklch(0.2 0.025 260);
   --popover-foreground: oklch(0.97 0.01 250);
-  --primary: oklch(0.56 0.22 258);
+  --primary: oklch(0.52 0.08 190);
   --primary-foreground: oklch(0.15 0.02 260);
-  --primary-glow: oklch(0.75 0.17 255);
+  --primary-glow: oklch(0.62 0.08 190);
   --secondary: oklch(0.68 0.17 148);
   --secondary-foreground: oklch(0.15 0.02 260);
   --accent: oklch(0.8 0.16 75);
@@ -113,22 +112,22 @@
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.56 0.22 258);
+  --ring: oklch(0.52 0.08 190);
   --success: oklch(0.68 0.17 148);
   --warning: oklch(0.8 0.16 75);
 
-  --gradient-hero: linear-gradient(135deg, oklch(0.35 0.18 265) 0%, oklch(0.28 0.15 275) 60%, oklch(0.22 0.1 285) 100%);
+  --gradient-hero: linear-gradient(135deg, oklch(0.32 0.08 190) 0%, oklch(0.28 0.08 185) 60%, oklch(0.22 0.06 180) 100%);
   --shadow-elegant: 0 20px 45px -20px oklch(0 0 0 / 0.6);
   --shadow-card: 0 2px 8px -2px oklch(0 0 0 / 0.4), 0 8px 24px -8px oklch(0 0 0 / 0.35);
 
   --sidebar: oklch(0.18 0.025 260);
   --sidebar-foreground: oklch(0.97 0.01 250);
-  --sidebar-primary: oklch(0.56 0.22 258);
+  --sidebar-primary: oklch(0.52 0.08 190);
   --sidebar-primary-foreground: oklch(0.15 0.02 260);
   --sidebar-accent: oklch(0.24 0.02 260);
   --sidebar-accent-foreground: oklch(0.97 0.01 250);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.56 0.22 258);
+  --sidebar-ring: oklch(0.52 0.08 190);
 }
 
 @theme inline {
@@ -195,8 +194,8 @@
 }
 .animate-fade-up { animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
+
 /* ============================================================
- /* ============================================================
    📱 إصلاح السكرول الأفقي في الموبايل
    ============================================================ */
 
@@ -278,7 +277,9 @@ nav.overflow-x-auto .flex {
     width: 0.5rem !important;
     height: 0.5rem !important;
   }
-  /* ============================================================
+}
+
+/* ============================================================
    📱 إصلاح صفحة المحادثة في الموبايل
    ============================================================ */
 
@@ -357,5 +358,4 @@ nav.overflow-x-auto .flex {
     width: 2rem !important;
     height: 2rem !important;
   }
-}
 }

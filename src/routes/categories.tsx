@@ -62,7 +62,7 @@ function CategoriesPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
       
       {/* ===== Header ===== */}
-      <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white overflow-hidden">
+      <div className="relative bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
@@ -191,7 +191,7 @@ function CategoriesPage() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-blue-500" />
+                  <Package className="h-5 w-5 text-[#2a655f]" />
                   <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
                     {searchQuery 
                       ? `${app.lang === "ar" ? "نتائج البحث" : "Search Results"} (${filteredCategories.length})`
@@ -215,7 +215,7 @@ function CategoriesPage() {
                   <Button
                     variant="outline"
                     onClick={() => setSearchQuery("")}
-                    className="mt-4 rounded-xl"
+                    className="mt-4 rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50"
                   >
                     {app.lang === "ar" ? "عرض الكل" : "View all"}
                   </Button>
@@ -237,7 +237,7 @@ function CategoriesPage() {
                           transition-all hover:-translate-y-2 border text-center relative
                           ${isFeatured 
                             ? 'border-yellow-400/50 hover:border-yellow-400' 
-                            : 'border-slate-200/50 dark:border-slate-700/50'
+                            : 'border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30'
                           }
                         `}
                       >
@@ -255,7 +255,7 @@ function CategoriesPage() {
                           group-hover:scale-110 transition-transform
                           ${isFeatured 
                             ? 'bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-900/30 dark:to-yellow-800/30 border-2 border-yellow-300/30' 
-                            : 'bg-slate-100 dark:bg-slate-700'
+                            : 'bg-slate-100 dark:bg-slate-700 group-hover:bg-[#2a655f]/10'
                           }
                         `}>
                           {hasImage ? (
@@ -269,17 +269,17 @@ function CategoriesPage() {
                                 const parent = (e.target as HTMLImageElement).parentElement;
                                 if (parent) {
                                   const icon = document.createElement('span');
-                                  icon.className = `h-7 w-7 ${isFeatured ? 'text-yellow-600 dark:text-yellow-400' : 'text-slate-600 dark:text-slate-400'}`;
+                                  icon.className = `h-7 w-7 ${isFeatured ? 'text-yellow-600 dark:text-yellow-400' : 'text-[#2a655f] dark:text-[#3a8a82]'}`;
                                   parent.appendChild(icon);
                                 }
                               }}
                             />
                           ) : (
-                            <Icon className={`h-7 w-7 ${isFeatured ? 'text-yellow-600 dark:text-yellow-400' : 'text-slate-600 dark:text-slate-400'}`} />
+                            <Icon className={`h-7 w-7 ${isFeatured ? 'text-yellow-600 dark:text-yellow-400' : 'text-[#2a655f] dark:text-[#3a8a82]'}`} />
                           )}
                         </div>
                         
-                        <p className="mt-3 font-semibold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition line-clamp-1">
+                        <p className="mt-3 font-semibold text-sm text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82] transition line-clamp-1">
                           {app.lang === "ar" ? cat.name_ar : cat.name_en}
                         </p>
                         

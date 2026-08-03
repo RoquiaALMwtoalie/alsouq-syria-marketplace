@@ -9,7 +9,7 @@ export function AnnouncementBar() {
   // Duplicate content for a seamless marquee loop
   const track = [...items, ...items];
   return (
-    <div className="w-full bg-gradient-to-r from-primary via-primary/90 to-primary-glow text-primary-foreground text-xs sm:text-sm overflow-hidden">
+    <div className="w-full bg-[#2a655f] text-primary-foreground text-xs sm:text-sm overflow-hidden">
       <div className="mx-auto max-w-7xl flex items-center gap-3 px-3 sm:px-4 py-1.5">
         <div className="shrink-0 flex items-center gap-1.5 font-bold opacity-90">
           <Megaphone className="h-3.5 w-3.5" />

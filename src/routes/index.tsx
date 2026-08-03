@@ -159,7 +159,7 @@ function Home() {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="gap-1 text-primary hover:text-primary/80 font-semibold"
+              className="gap-1 text-[#2a655f] hover:text-[#1a4f4a] font-semibold"
             >
               {app.lang === "ar" ? "عرض الكل" : "View All"}
               <ArrowRight className="h-4 w-4" />
@@ -186,39 +186,45 @@ function Home() {
                   key={c.id} 
                   to="/category/$slug" 
                   params={{ slug: c.slug }}
-                  className="group relative overflow-hidden rounded-2xl border bg-card shadow-card hover:shadow-elegant transition-all hover:-translate-y-0.5 aspect-[4/5] ring-2 ring-yellow-400/20 hover:ring-yellow-400/50"
+                  className="group relative overflow-hidden rounded-2xl border-2 border-[#2a655f]/30 bg-card shadow-card hover:shadow-2xl hover:shadow-[#2a655f]/20 transition-all duration-500 hover:-translate-y-2 hover:border-[#2a655f]/70 hover:scale-[1.02] aspect-[4/5]"
                 >
                   {img ? (
                     <img 
                       src={img} 
                       alt="" 
-                      className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" 
                       loading="lazy" 
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/40 to-primary-glow/40" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/40 to-primary-glow/40 group-hover:scale-110 transition-transform duration-700" />
                   )}
-                  <div className={`absolute inset-0 ${isOffer ? "bg-gradient-to-t from-red-600/85 via-red-600/40 to-transparent" : "bg-gradient-to-t from-primary/85 via-primary/30 to-transparent"}`} />
+                  <div className={`absolute inset-0 ${isOffer ? "bg-gradient-to-t from-red-600/85 via-red-600/40 to-transparent" : "bg-gradient-to-t from-primary/85 via-primary/30 to-transparent"} group-hover:from-primary/95 transition-colors duration-500`} />
                   
                   {/* ✅ شارة مميز */}
-                  <div className="absolute top-2 right-2">
-                    <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-[9px] px-1.5 py-0.5 shadow-lg">
+                  <div className="absolute top-2 right-2 z-10">
+                    <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-[9px] px-1.5 py-0.5 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       ⭐ {app.lang === "ar" ? "مميز" : "Featured"}
                     </Badge>
                   </div>
                   
-                  <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 text-white flex items-center gap-2">
-                    <div className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur grid place-items-center shrink-0">
-                      <Icon className="h-4 w-4" />
+                  <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 text-white flex items-center gap-2 z-10">
+                    <div className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur grid place-items-center shrink-0 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
+                      <Icon className="h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-black text-sm sm:text-base leading-tight line-clamp-1">
+                      <div className="font-black text-sm sm:text-base leading-tight line-clamp-1 group-hover:text-yellow-300 transition-colors duration-300">
                         {app.lang === "ar" ? c.name_ar : c.name_en}
                       </div>
-                      <div className="text-[10px] sm:text-xs opacity-80 line-clamp-1">
-                        {app.lang === "ar" ? "استكشف الآن" : "Explore now"}
+                      <div className="text-[10px] sm:text-xs opacity-80 line-clamp-1 group-hover:opacity-100 transition-opacity duration-300">
+                        {app.lang === "ar" ? "استكشف الآن →" : "Explore now →"}
                       </div>
                     </div>
+                  </div>
+                  
+                  {/* ✅ تأثير إضاءة عند التمرير */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#2a655f]/40 via-transparent to-transparent" />
+                    <div className="absolute -inset-full top-0 h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_ease-in-out]" />
                   </div>
                 </Link>
               );
@@ -232,9 +238,9 @@ function Home() {
             <Link to="/categories">
               <Button 
                 variant="outline" 
-                className="px-8 py-6 rounded-2xl border-2 border-dashed border-yellow-400/30 hover:bg-yellow-50/50 hover:border-yellow-400/50 transition-all group"
+                className="px-8 py-6 rounded-2xl border-2 border-dashed border-[#2a655f]/30 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all group"
               >
-                <span className="flex items-center gap-3 text-yellow-600 dark:text-yellow-400 font-semibold text-base">
+                <span className="flex items-center gap-3 text-[#2a655f] dark:text-[#3a8a82] font-semibold text-base">
                   <Star className="h-5 w-5" />
                   {app.lang === "ar" ? "⭐ عرض كل الأقسام المميزة" : "⭐ View All Featured Categories"}
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
@@ -262,7 +268,7 @@ function Home() {
               key={tItem.id} 
               onClick={() => setTab(tItem.id)}
               className={`flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition ${
-                tab === tItem.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                tab === tItem.id ? "border-[#2a655f] text-[#2a655f]" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               <tItem.icon className="h-4 w-4" /> {tItem.label}
@@ -288,9 +294,9 @@ function Home() {
                   <Link to="/products">
                     <Button 
                       variant="outline" 
-                      className="px-8 py-6 rounded-2xl border-2 border-dashed border-primary/30 hover:bg-primary/5 hover:border-primary/50 transition-all group"
+                      className="px-8 py-6 rounded-2xl border-2 border-dashed border-[#2a655f]/30 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all group"
                     >
-                      <span className="flex items-center gap-3 text-primary font-semibold text-base">
+                      <span className="flex items-center gap-3 text-[#2a655f] dark:text-[#3a8a82] font-semibold text-base">
                         {app.lang === "ar" ? "🛍️ عرض كل المنتجات" : "🛍️ View All Products"}
                         <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
                       </span>
@@ -318,9 +324,9 @@ function Home() {
                   <Link to="/stores">
                     <Button 
                       variant="outline" 
-                      className="px-8 py-6 rounded-2xl border-2 border-dashed border-primary/30 hover:bg-primary/5 hover:border-primary/50 transition-all group"
+                      className="px-8 py-6 rounded-2xl border-2 border-dashed border-[#2a655f]/30 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all group"
                     >
-                      <span className="flex items-center gap-3 text-primary font-semibold text-base">
+                      <span className="flex items-center gap-3 text-[#2a655f] dark:text-[#3a8a82] font-semibold text-base">
                         {app.lang === "ar" ? "🏪 عرض كل المتاجر" : "🏪 View All Stores"}
                         <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
                       </span>
@@ -336,7 +342,7 @@ function Home() {
       {/* ============ OFFERS STRIP ============ */}
       {offers.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-14">
-          <div className="rounded-3xl bg-gradient-to-br from-red-500 via-orange-500 to-amber-500 p-6 md:p-10 relative overflow-hidden shadow-elegant">
+         <div className="rounded-3xl bg-gradient-to-br from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] p-6 md:p-10 relative overflow-hidden shadow-elegant">
             <div className="absolute -end-8 -top-8 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
             <div className="grid md:grid-cols-[1fr_auto] items-center gap-6 relative">
               <div>
@@ -349,7 +355,7 @@ function Home() {
                 </h3>
               </div>
               <Link to="/category/$slug" params={{ slug: "offers" }}>
-                <Button size="lg" variant="secondary" className="bg-white text-red-600 hover:bg-white/90 shadow-elegant font-bold">
+                <Button size="lg" variant="secondary" className="bg-white text-[#2a655f] hover:bg-white/90 shadow-elegant font-bold">
                   {t("view_all")} <ArrowRight className="h-4 w-4 ms-1 rtl-flip" />
                 </Button>
               </Link>
@@ -420,7 +426,7 @@ function FeaturedSection() {
               key={it.id} 
               onClick={() => setInnerTab(it.id)}
               className={`px-4 py-1.5 rounded-lg text-sm font-bold transition ${
-                innerTab === it.id ? "bg-card text-primary shadow-sm" : "text-muted-foreground"
+                innerTab === it.id ? "bg-card text-[#2a655f] shadow-sm" : "text-muted-foreground"
               }`}
             >
               {it.label}
@@ -502,7 +508,7 @@ function TrendingSection() {
               key={it.id} 
               onClick={() => setInnerTab(it.id)}
               className={`px-4 py-1.5 rounded-lg text-sm font-bold transition ${
-                innerTab === it.id ? "bg-card text-primary shadow-sm" : "text-muted-foreground"
+                innerTab === it.id ? "bg-card text-[#2a655f] shadow-sm" : "text-muted-foreground"
               }`}
             >
               {it.label}
