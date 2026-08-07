@@ -5,6 +5,7 @@ import { ImageInput } from "@/components/ImageInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge"; // ✅ أضف هذا
 import { useApp, useT } from "@/lib/i18n";
 import { useUpdateProfile } from "@/lib/queries";
 import { useProfileWithUpdate } from "@/lib/hooks/useProfileWithUpdate";
@@ -47,6 +48,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
+// ... باقي الكود
 // ✅ أيقونة متحركة مع تموجات
 const AnimatedIcon = ({ 
   Icon, 

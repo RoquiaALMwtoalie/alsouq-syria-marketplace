@@ -1,7 +1,7 @@
-// src/routes/store.$id.tsx
+// src/routes/store.$id.tsx - الأداء الخارق 🚀
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from "react";
 import { 
   Star, MessageCircle, Store as StoreIcon, Loader2, 
   Clock, Calendar, MapPin, Globe, Building2, Truck,
@@ -12,7 +12,6 @@ import {
 import { useApp, useT } from "@/lib/i18n";
 import { useListings, useStoreProfile, useDeliveryCompanies } from "@/lib/queries";
 import { useGetOrCreateConversation } from "@/lib/hooks/useConversation";
-import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +27,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+
+// ✅ Lazy Loading للـ ListingCard
+const ListingCard = lazy(() => import("@/components/ListingCard"));
 
 export const Route = createFileRoute("/store/$id")({
   component: StorePage,
@@ -53,9 +55,9 @@ function StorePage() {
   } | null>(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
 
-  // ====== State الفلتر والترتيب ======
+  // ====== State الفلتر والترتيب (محسّن للأداء) ======
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [limit] = useState(20); // ✅ 20 منتج فقط لكل صفحة
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "popular" | "price_asc" | "price_desc" | "rating">("recent");
   const [viewFilter, setViewFilter] = useState<"all" | "offers">("all");
@@ -289,6 +291,8 @@ function StorePage() {
             src={store.store_cover_url} 
             className="absolute inset-0 h-full w-full object-cover opacity-60" 
             alt={name}
+            loading="eager"
+            decoding="async"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/80 to-transparent" />
@@ -314,6 +318,8 @@ function StorePage() {
                   src={store.store_logo_url || store.avatar_url} 
                   className="h-full w-full object-cover" 
                   alt={name}
+                  loading="lazy"
+                  decoding="async"
                 />
               ) : (
                 name[0]?.toUpperCase() || "?"
@@ -664,7 +670,9 @@ function StorePage() {
                   className="animate-fade-up"
                   style={{ animationDelay: `${(index % 10) * 50}ms` }}
                 >
-                  <ListingCard item={item} viewMode={viewMode} />
+                  <Suspense fallback={<ProductSkeleton />}>
+                    <ListingCard item={item} viewMode={viewMode} />
+                  </Suspense>
                 </div>
               ))}
             </div>
@@ -777,5 +785,22 @@ function StoreStatusBadge({ store, lang }: { store: any; lang: "ar" | "en" }) {
         ? (lang === "ar" ? "🟢 مفتوح الآن" : "🟢 Open now") 
         : (lang === "ar" ? "🔴 مغلق" : "🔴 Closed")}
     </span>
+  );
+}
+
+// ============================================================
+// ✅ SKELETON COMPONENT
+// ============================================================
+function ProductSkeleton() {
+  return (
+    <div className="rounded-xl bg-white dark:bg-[#1e293b] border border-[#0d2e2a]/10 p-3 animate-pulse">
+      <div className="aspect-square rounded-lg bg-[#0d2e2a]/10" />
+      <div className="h-4 bg-[#0d2e2a]/10 rounded mt-3 w-3/4" />
+      <div className="h-3 bg-[#0d2e2a]/10 rounded mt-2 w-1/2" />
+      <div className="flex items-center gap-2 mt-3">
+        <div className="h-4 bg-[#0d2e2a]/10 rounded w-1/3" />
+        <div className="h-4 bg-[#0d2e2a]/10 rounded w-1/4" />
+      </div>
+    </div>
   );
 }

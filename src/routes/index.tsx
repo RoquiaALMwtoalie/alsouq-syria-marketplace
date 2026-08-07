@@ -1,4 +1,4 @@
-// src/routes/index.tsx - الأداء العالي 🚀
+// src/routes/index.tsx - الأداء الخارق 🚀
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -6,17 +6,27 @@ import {
   Dumbbell, Gamepad2, Palette, Wrench, Utensils, Sparkles, BadgePercent, Gift, Flower2,
   ArrowRight, Package, Store, Star, ChevronLeft, ChevronRight, Heart, Flame,
   TrendingUp, Zap, Crown, Gem, Award, Clock, ThumbsUp, Eye, Truck, Coffee,
-  Layers, Grid3X3, List, Percent, Tag,
+  Layers, Grid3X3, List, Percent, Tag, MapPin, Navigation,
+  Globe, // ✅ أضف هذا
+  Building2 // ✅ وأضف هذا إذا كنت تستخدمه
 } from "lucide-react";
-import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback, Suspense } from "react";
 import { useApp, useT } from "@/lib/i18n";
 import { useListings, useBanners, useAllStores, useCategories, useMostFavoritedListings, useMostFavoritedStores, useTrendingListings, useTrendingStores } from "@/lib/queries";
-import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { cn } from "@/lib/utils";
+import ListingCard from "@/components/ListingCard";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -33,8 +43,11 @@ function Home() {
   const t = useT();
   const navigate = useNavigate();
   const isAdmin = app.roles?.includes("admin");
+  const [page, setPage] = useState(1);
+  const [bannerIdx, setBannerIdx] = useState(0);
+  const LIMIT = 12;
 
-  // ✅ التحقق من اكتمال الملف الشخصي (تحسين: useCallback)
+  // ✅ التحقق من اكتمال الملف الشخصي
   const checkProfile = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -65,39 +78,34 @@ function Home() {
     checkProfile();
   }, [checkProfile]);
 
+  // ====== البيانات مع Pagination ======
   const { data: banners = [] } = useBanners();
   const { data: dbCategories = [] } = useCategories();
-  const [bannerIdx, setBannerIdx] = useState(0);
 
-  // ============================================================
-  // ✅ استخدام useListings مع التنسيق الجديد { data, count, totalPages }
-  // ============================================================
-
-  // ✅ المنتجات - استخراج data من النتيجة
+  // ✅ المنتجات - مع Pagination
   const { data: productsData = { data: [], count: 0, totalPages: 0 }, isLoading: pLoading } = useListings({
     sort: "popular",
-    limit: 8,
+    limit: LIMIT,
+    page: page,
   });
   const products = productsData.data || [];
+  const totalPages = productsData.totalPages || 1;
 
-  // ✅ العروض - استخراج data من النتيجة
+  // ✅ العروض - محدودة
   const { data: allDealsData = { data: [], count: 0, totalPages: 0 } } = useListings({
     isOffer: true,
     sort: "discount_desc",
-    limit: 20,
+    limit: 12,
   });
   const allDeals = allDealsData.data || [];
 
-  // ✅ العروض الحصرية - استخراج data من النتيجة
+  // ✅ العروض الحصرية - محدودة
   const { data: offersData = { data: [], count: 0, totalPages: 0 } } = useListings({
     isOffer: true,
-    limit: 6,
+    limit: 4,
     sort: "recent",
   });
   const offers = offersData.data || [];
-
-  // ✅ العروض الأولى فقط - الآن slice يعمل بشكل صحيح
-  const dealsOfTheDay = useMemo(() => allDeals.slice(0, 4), [allDeals]);
 
   const { data: stores = [], isLoading: sLoading } = useAllStores(8);
 
@@ -108,12 +116,20 @@ function Home() {
     return () => clearInterval(id);
   }, [banners.length]);
 
-  // ✅ التصنيفات المميزة - مع useMemo
+  // ✅ التصنيفات المميزة
   const featuredCategories = useMemo(() => {
     return dbCategories
       .filter((c: any) => c.is_featured === true && c.active !== false)
       .sort((a: any, b: any) => (a.featured_sort || 0) - (b.featured_sort || 0));
   }, [dbCategories]);
+
+  // ✅ التنقل بين الصفحات
+  const goToPage = useCallback((p: number) => {
+    if (p >= 1 && p <= totalPages) {
+      setPage(p);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [totalPages]);
 
   return (
     <div className="bg-gradient-to-b from-[#2a655f]/5 via-transparent to-[#3a8a82]/5 dark:from-[#2a655f]/20 dark:to-[#3a8a82]/10">
@@ -133,6 +149,7 @@ function Home() {
                   alt={app.lang === "ar" ? b.title_ar : (b.title_en || b.title_ar)}
                   className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-10000 ease-out"
                   loading={i === 0 ? "eager" : "lazy"}
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
                 <div className="absolute inset-0 flex flex-col items-start justify-center p-6 sm:p-10 md:p-14 text-white">
@@ -333,6 +350,9 @@ function Home() {
         </div>
       </section>
 
+      {/* ===== ✅ NEARBY STORES - المتاجر الأقرب إليك (نسخة واحدة فقط) ===== */}
+      <NearbyStores />
+
       {/* ===== CATEGORY BANNERS ===== */}
       <CategoryBanners />
 
@@ -377,6 +397,97 @@ function Home() {
           </div>
         </section>
       )}
+
+      {/* ===== PRODUCTS GRID WITH PAGINATION ===== */}
+      <section className="mx-auto max-w-7xl px-4 py-8 md:py-12">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl md:text-2xl font-black text-foreground flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-[#2a655f]" />
+              {app.lang === "ar" ? "✨ أحدث المنتجات" : "✨ Latest Products"}
+              <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20">
+                {productsData.count || 0}
+              </Badge>
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {app.lang === "ar" 
+                ? `عرض ${products.length} من ${productsData.count || 0} منتج` 
+                : `Showing ${products.length} of ${productsData.count || 0} products`}
+            </p>
+          </div>
+        </div>
+
+        {/* ✅ Grid مع Skeleton Loading */}
+        {pLoading && products.length === 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ProductSkeleton key={i} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
+            {products.map((item, index) => (
+              <div key={item.id} className="animate-fade-up" style={{ animationDelay: `${(index % 8) * 50}ms` }}>
+                <ListingCard item={item} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ✅ Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => goToPage(page - 1)}
+              disabled={page === 1 || pLoading}
+              className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/40 transition-all duration-300"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              {app.lang === "ar" ? "السابق" : "Previous"}
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let p: number;
+                if (totalPages <= 5) p = i + 1;
+                else if (page <= 3) p = i + 1;
+                else if (page >= totalPages - 2) p = totalPages - 4 + i;
+                else p = page - 2 + i;
+                
+                return (
+                  <Button
+                    key={p}
+                    variant={p === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => goToPage(p)}
+                    className={cn(
+                      "h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300",
+                      p === page
+                        ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30"
+                        : "border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/40"
+                    )}
+                  >
+                    {p}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => goToPage(page + 1)}
+              disabled={page === totalPages || pLoading}
+              className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/40 transition-all duration-300"
+            >
+              {app.lang === "ar" ? "التالي" : "Next"}
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -450,6 +561,7 @@ function CategorySlider({ categories }: { categories: any[] }) {
                         alt={app.lang === "ar" ? c.name_ar : c.name_en}
                         className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
                         loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-[#2a655f]/60 to-[#3a8a82]/60" />
@@ -683,6 +795,395 @@ function TrendingSection() {
 }
 
 // ============================================================
+// ✅ NEARBY STORES - المتاجر الأقرب إليك (نسخة واحدة مع Logs)
+// ============================================================
+// ============================================================
+// ✅ NEARBY STORES - المتاجر الأقرب إليك (نسخة احترافية)
+// ============================================================
+function NearbyStores() {
+  const app = useApp();
+  const t = useT();
+  const [nearbyStores, setNearbyStores] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userLocations, setUserLocations] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+    governorateId?: string;
+    addressId?: string;
+    label?: string;
+    addressText?: string;
+  } | null>(null);
+
+  // ✅ حساب المسافة بين نقطتين باستخدام معادلة هافرسين
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }, []);
+
+  // ✅ جلب البيانات بالتوازي لسرعة فائقة
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchInitialData = async () => {
+      setLoading(true);
+      try {
+        const addressesPromise = app.user 
+          ? supabase
+              .from("user_addresses")
+              .select("id, label, address_text, lat, lng, governorate_id, is_default")
+              .eq("user_id", app.user.id)
+              .order("is_default", { ascending: false })
+          : Promise.resolve({ data: null });
+
+        const storesPromise = supabase
+          .from("profiles")
+          .select(`
+            id, full_name, store_name, store_description, store_logo_url,
+            store_cover_url, store_phone, store_active, store_online,
+            store_type, lat, lng, governorate_id, is_featured,
+            allows_messaging, store_opens_at, store_closes_at, store_address
+          `)
+          .eq("store_active", true)
+          .not("store_name", "is", null);
+
+        const [{ data: addresses }, { data: stores }] = await Promise.all([
+          addressesPromise,
+          storesPromise
+        ]);
+
+        if (!isMounted) return;
+
+        let activeLocation = null;
+        if (addresses && addresses.length > 0) {
+          setUserLocations(addresses);
+          const defaultAddress = addresses.find((a: any) => a.is_default) || addresses[0];
+          setSelectedAddressId(defaultAddress.id);
+          
+          activeLocation = {
+            lat: defaultAddress.lat || 0,
+            lng: defaultAddress.lng || 0,
+            governorateId: defaultAddress.governorate_id,
+            addressId: defaultAddress.id,
+            label: defaultAddress.label,
+            addressText: defaultAddress.address_text
+          };
+          setUserLocation(activeLocation);
+        }
+
+        if (!stores || stores.length === 0) {
+          setNearbyStores([]);
+          setLoading(false);
+          return;
+        }
+
+        let storesWithDistance = stores.map((store: any) => {
+          let distance = Infinity;
+          let distanceText = app.lang === "ar" ? "غير محدد" : "Unknown";
+          
+          if (activeLocation) {
+            if (activeLocation.lat && activeLocation.lng && store.lat && store.lng) {
+              distance = calculateDistance(activeLocation.lat, activeLocation.lng, store.lat, store.lng);
+              if (distance < 1) {
+                distanceText = `${Math.round(distance * 1000)} م`;
+              } else if (distance < 10) {
+                distanceText = `${distance.toFixed(1)} كم`;
+              } else {
+                distanceText = `${Math.round(distance)} كم`;
+              }
+            } else if (activeLocation.governorateId && store.governorate_id === activeLocation.governorateId) {
+              distance = store.store_type === 'physical' ? 4 : 6;
+              distanceText = `📍 ${app.lang === 'ar' ? 'نفس المحافظة' : 'Same gov'}`;
+            } else if (activeLocation.governorateId && store.governorate_id) {
+              distance = 30;
+              distanceText = `🚗 ${app.lang === 'ar' ? 'محافظة أخرى' : 'Other gov'}`;
+            }
+          }
+          
+          return { ...store, distance, distanceText };
+        });
+
+        storesWithDistance.sort((a: any, b: any) => {
+          if (a.distance === Infinity && b.distance !== Infinity) return 1;
+          if (a.distance !== Infinity && b.distance === Infinity) return -1;
+          return a.distance - b.distance;
+        });
+
+        setNearbyStores(storesWithDistance.slice(0, 8));
+      } catch (error) {
+        console.error("❌ Error fetching data:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchInitialData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [app.user, calculateDistance]);
+
+  const changeAddress = useCallback(async (addressId: string) => {
+    const address = userLocations.find((a: any) => a.id === addressId);
+    if (!address) return;
+
+    setSelectedAddressId(addressId);
+    
+    const newLoc = {
+      lat: address.lat || 0,
+      lng: address.lng || 0,
+      governorateId: address.governorate_id,
+      addressId: address.id,
+      label: address.label,
+      addressText: address.address_text
+    };
+    setUserLocation(newLoc);
+
+    setNearbyStores((prevStores) => {
+      const updated = prevStores.map((store: any) => {
+        let distance = Infinity;
+        let distanceText = app.lang === "ar" ? "غير محدد" : "Unknown";
+
+        if (newLoc.lat && newLoc.lng && store.lat && store.lng) {
+          distance = calculateDistance(newLoc.lat, newLoc.lng, store.lat, store.lng);
+          distanceText = distance < 1 ? `${Math.round(distance * 1000)} م` : `${distance.toFixed(1)} كم`;
+        } else if (newLoc.governorateId && store.governorate_id === newLoc.governorateId) {
+          distance = 5;
+          distanceText = `📍 ${app.lang === 'ar' ? 'نفس المحافظة' : 'Same gov'}`;
+        }
+        return { ...store, distance, distanceText };
+      });
+
+      return updated.sort((a, b) => a.distance - b.distance);
+    });
+  }, [userLocations, calculateDistance, app.lang]);
+
+  if (loading) {
+    return (
+      <section className="mx-auto max-w-7xl px-4 py-8 md:py-12">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-12 w-12 rounded-2xl bg-[#2a655f] grid place-items-center text-white shadow-lg animate-pulse">
+            <MapPin className="h-6 w-6 animate-bounce" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-6 w-48 bg-[#2a655f]/10 rounded-lg animate-pulse" />
+            <div className="h-4 w-64 bg-[#2a655f]/10 rounded-lg animate-pulse" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-72 rounded-3xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  const isArabic = app.lang === "ar";
+
+  return (
+    <section className="mx-auto max-w-7xl px-4 py-8 md:py-12">
+      
+      {/* ====== العنوان والتحكم بالعنوان والمميزات ====== */}
+      <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+        <div className="flex items-center gap-3.5">
+          {/* أيقونة متحركة متوهجة بلون النظام */}
+          <div className="relative">
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] opacity-75 blur-md animate-pulse"></div>
+            <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] grid place-items-center text-white shadow-xl">
+              <MapPin className="h-6 w-6 animate-bounce" />
+            </div>
+          </div>
+          <div>
+            <h2 className="text-2xl md:text-3xl font-black text-foreground flex items-center gap-2.5 tracking-tight">
+              {isArabic ? "📍 المتاجر الأقرب إليك" : "📍 Nearby Stores"}
+              <Badge className="bg-[#2a655f]/15 text-[#2a655f] dark:text-emerald-400 border border-[#2a655f]/30 font-extrabold text-[11px] px-2.5 py-0.5 rounded-full shadow-sm">
+                {nearbyStores.length} {isArabic ? "متجر نشط" : "Active stores"}
+              </Badge>
+            </h2>
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 font-medium">
+              <Truck className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
+              {isArabic ? "اكتشف أفضل المتاجر والخصومات المتاحة حولك فوراً" : "Discover top stores and discounts around you instantly"}
+            </p>
+          </div>
+        </div>
+
+        {/* أزرار وعناصر تفاعلية احترافية */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {userLocations.length > 1 && (
+            <Select value={selectedAddressId || undefined} onValueChange={changeAddress}>
+              <SelectTrigger className="w-[210px] h-11 rounded-2xl border-2 border-[#2a655f]/30 bg-card hover:border-[#2a655f] transition-all text-xs font-bold shadow-sm">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-[#2a655f]" />
+                  <SelectValue placeholder={isArabic ? "اختر عنوان التوصيل" : "Select address"} />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-[#2a655f]/20 shadow-xl">
+                {userLocations.map((addr: any) => (
+                  <SelectItem key={addr.id} value={addr.id} className="font-medium text-xs py-2">
+                    <div className="flex items-center gap-2">
+                      <span>{addr.label || addr.address_text}</span>
+                      {addr.is_default && (
+                        <Badge className="bg-[#2a655f]/15 text-[#2a655f] text-[9px] px-1.5 rounded-md font-bold">
+                          {isArabic ? "الافتراضي" : "Default"}
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <Link to="/stores">
+            <Button variant="outline" size="sm" className="gap-2 h-11 px-5 rounded-2xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f] hover:text-white transition-all duration-300 font-bold group shadow-sm">
+              {isArabic ? "عرض كل المتاجر" : "View All Stores"}
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* عرض تفاصيل العنوان الحالي المستخدم */}
+      {userLocation?.addressText && app.user && (
+        <div className="flex items-center gap-2 mb-6 text-xs text-muted-foreground bg-gradient-to-r from-[#2a655f]/10 via-transparent to-transparent rounded-2xl px-4 py-2.5 border border-[#2a655f]/20 shadow-sm animate-fade-in">
+          <MapPin className="h-4 w-4 text-[#2a655f] animate-bounce flex-shrink-0" />
+          <span className="font-bold text-foreground">{isArabic ? "العنوان النشط:" : "Active Address:"}</span>
+          <span className="truncate">{userLocation.addressText}</span>
+          {userLocation.label && (
+            <Badge className="bg-[#2a655f] text-white text-[9px] px-2 py-0.5 rounded-lg font-bold">
+              {userLocation.label}
+            </Badge>
+          )}
+        </div>
+      )}
+
+      {/* ====== قائمة المتاجر ببطاقات فاخرة وأيقونات متوهجة ====== */}
+      {nearbyStores.length === 0 ? (
+        <div className="rounded-3xl bg-card p-12 text-center text-muted-foreground text-sm border-2 border-dashed border-[#2a655f]/30 shadow-lg">
+          <StoreIcon className="h-16 w-16 mx-auto mb-3 text-[#2a655f]/50 animate-pulse" />
+          <p className="font-bold text-base text-foreground">{isArabic ? "🚫 لا توجد متاجر قريبة متاحة حالياً." : "🚫 No nearby stores available."}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {nearbyStores.map((store: any, index: number) => (
+            <div 
+              key={store.id} 
+              className="animate-fade-up group flex flex-col h-full"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <Link 
+                to="/store/$id" 
+                params={{ id: store.id }} 
+                className="relative flex flex-col h-full rounded-[24px] bg-card shadow-lg overflow-hidden border-2 border-[#2a655f]/20 hover:border-[#2a655f] transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#2a655f]/30 group"
+              >
+                {/* تأثير إضاءة متوهج عند التمرير خلف البطاقة */}
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#2a655f] to-teal-400 rounded-[26px] opacity-0 group-hover:opacity-30 blur-md transition duration-500 -z-10"></div>
+
+                {/* صورة الغلاف */}
+                <div className="relative h-36 w-full bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] overflow-hidden flex-shrink-0">
+                  {store.store_cover_url ? (
+                    <img 
+                      src={store.store_cover_url} 
+                      className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-85" 
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-teal-500/20 via-transparent to-black/40" />
+                  )}
+                  
+                  {/* شارة المسافة المتحركة */}
+                  <div className="absolute top-3 start-3 z-10">
+                    <Badge className="bg-black/80 backdrop-blur-md text-white border border-white/20 text-[11px] px-3 py-1.5 flex items-center gap-1.5 shadow-xl font-bold">
+                      <Navigation className="h-3 w-3 text-emerald-400 animate-spin" style={{ animationDuration: '6s' }} />
+                      <span className="truncate max-w-[90px]">{store.distanceText}</span>
+                    </Badge>
+                  </div>
+
+                  {/* شارة حالة المتجر (مفتوح / مغلق) مع نبض حيوي */}
+                  <div className="absolute top-3 end-3 z-10">
+                    {isStoreCurrentlyOpen(store) ? (
+                      <Badge className="bg-emerald-500 text-white border-0 text-[11px] font-black px-3 py-1 shadow-lg flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-white animate-ping"></span>
+                        <span>{isArabic ? "مفتوح" : "Open"}</span>
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-rose-600 text-white border-0 text-[11px] font-black px-3 py-1 shadow-lg">
+                        <span>{isArabic ? "مغلق" : "Closed"}</span>
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* محتوى البطاقة */}
+                <div className="p-5 pt-3 flex flex-col flex-1 justify-between bg-card relative">
+                  <div className="flex items-start gap-3.5">
+                    
+                    {/* شعار المتجر العائم مع تأثير إضاءة خاص */}
+                    <div className="relative -mt-10 flex-shrink-0">
+                      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#2a655f] to-teal-400 opacity-60 blur group-hover:opacity-100 transition duration-300 animate-pulse"></div>
+                      <div className="relative h-16 w-16 rounded-2xl bg-card border-2 border-[#2a655f] shadow-xl overflow-hidden flex items-center justify-center text-[#2a655f] font-black text-2xl group-hover:scale-105 transition-transform duration-300 z-10">
+                        {store.store_logo_url ? (
+                          <img src={store.store_logo_url} className="h-full w-full object-cover" alt="" loading="lazy" decoding="async" />
+                        ) : (
+                          <span className="text-xl font-black text-[#2a655f]">
+                            {(store.store_name || store.full_name || "?")[0]?.toUpperCase() || "?"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* اسم المتجر وشارات النوع المتحركة */}
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <div className="font-black text-base md:text-lg truncate group-hover:text-[#2a655f] transition-colors duration-300 leading-tight" dir={isArabic ? "rtl" : "ltr"}>
+                        {store.store_name || store.full_name || (isArabic ? "متجر" : "Store")}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        {store.is_featured && (
+                          <Flame className="h-4 w-4 text-amber-500 fill-amber-500 animate-bounce flex-shrink-0" />
+                        )}
+                        {store.store_type === 'physical' && (
+                          <span className="text-[10px] font-extrabold text-[#2a655f] bg-[#2a655f]/15 px-2.5 py-0.5 rounded-lg flex items-center gap-1 border border-[#2a655f]/20">
+                            <Building2 className="h-3 w-3" />
+                            {isArabic ? 'متجر فعلي' : 'Physical'}
+                          </span>
+                        )}
+                        {store.store_type === 'online' && (
+                          <span className="text-[10px] font-extrabold text-indigo-600 bg-indigo-500/15 px-2.5 py-0.5 rounded-lg flex items-center gap-1 border border-indigo-500/20">
+                            <Globe className="h-3 w-3" />
+                            {isArabic ? 'متجر إلكتروني' : 'Online'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* وصف المتجر بارتفاع ومحاذاة ثابتة */}
+                  <div className="text-xs text-muted-foreground line-clamp-2 mt-3.5 leading-relaxed min-h-[2.2rem] font-medium">
+                    {store.store_description || (isArabic ? "متجر موثوق على السوق عندك، تسوق الآن بأفضل الأسعار والعروض" : "A trusted store on Souqi, shop now")}
+                  </div>
+                </div>
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+// ============================================================
 // STORE CARD
 // ============================================================
 function StoreCard({ store, badge }: { store: any; badge?: React.ReactNode }) {
@@ -701,6 +1202,8 @@ function StoreCard({ store, badge }: { store: any; badge?: React.ReactNode }) {
             src={store.store_cover_url} 
             className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" 
             alt="" 
+            loading="lazy"
+            decoding="async"
           />
         )}
         {badge && <div className="absolute top-2 end-2">{badge}</div>}
@@ -713,6 +1216,8 @@ function StoreCard({ store, badge }: { store: any; badge?: React.ReactNode }) {
               src={store.store_logo_url || store.avatar_url} 
               className="h-full w-full object-cover" 
               alt="" 
+              loading="lazy"
+              decoding="async"
             />
           ) : ((store.store_name || store.full_name || "?")[0])}
         </div>
@@ -846,6 +1351,38 @@ function RecentlyViewed() {
 }
 
 // ============================================================
+// SKELETON COMPONENTS
+// ============================================================
+function ProductSkeleton() {
+  return (
+    <div className="rounded-xl bg-white dark:bg-[#1e293b] border border-[#2a655f]/10 p-3 animate-pulse">
+      <div className="aspect-square rounded-lg bg-[#2a655f]/10" />
+      <div className="h-4 bg-[#2a655f]/10 rounded mt-3 w-3/4" />
+      <div className="h-3 bg-[#2a655f]/10 rounded mt-2 w-1/2" />
+      <div className="flex items-center gap-2 mt-3">
+        <div className="h-4 bg-[#2a655f]/10 rounded w-1/3" />
+        <div className="h-4 bg-[#2a655f]/10 rounded w-1/4" />
+      </div>
+    </div>
+  );
+}
+
+function StoreSkeleton() {
+  return (
+    <div className="rounded-xl bg-white dark:bg-[#1e293b] border border-[#2a655f]/10 p-4 animate-pulse">
+      <div className="h-28 bg-[#2a655f]/10 rounded-t-xl" />
+      <div className="flex items-center gap-3 mt-2">
+        <div className="h-14 w-14 rounded-full bg-[#2a655f]/10" />
+        <div className="flex-1">
+          <div className="h-4 bg-[#2a655f]/10 rounded w-3/4" />
+          <div className="h-3 bg-[#2a655f]/10 rounded w-1/2 mt-2" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // UTILITY COMPONENTS
 // ============================================================
 function EmptyState({ message }: { message: string }) {
@@ -854,4 +1391,21 @@ function EmptyState({ message }: { message: string }) {
       {message}
     </div>
   );
+}
+
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
+export function isStoreCurrentlyOpen(store: any): boolean {
+  if (!store || store.store_online === false) return false;
+  const opens = (store.store_opens_at || "").slice(0, 5);
+  const closes = (store.store_closes_at || "").slice(0, 5);
+  if (!opens || !closes) return true;
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const [oh, om] = opens.split(":").map(Number);
+  const [ch, cm] = closes.split(":").map(Number);
+  const o = oh * 60 + om;
+  const c = ch * 60 + cm;
+  return o <= c ? cur >= o && cur <= c : cur >= o || cur <= c;
 }

@@ -572,3 +572,4 @@ export const ListingCard = memo(function ListingCard({
 
 // ✅ ✅ ✅ أضف displayName للـ Debug ✅ ✅ ✅
 ListingCard.displayName = 'ListingCard';
+export default ListingCard;
