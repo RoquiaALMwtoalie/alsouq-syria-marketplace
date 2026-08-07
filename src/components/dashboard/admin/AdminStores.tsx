@@ -1,4 +1,5 @@
 // src/components/dashboard/admin/AdminStores.tsx
+
 import { Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,9 @@ import {
   CheckCircle2, XCircle, Flame, Store, Eye, 
   Search, Filter, ChevronDown, RefreshCw,
   Store as StoreIcon, Users, Package, TrendingUp,
-  FileSpreadsheet, FileText, ChevronLeft, ChevronRight
+  FileSpreadsheet, FileText, ChevronLeft, ChevronRight,
+  Zap, Sparkles, Shield, Crown, Star, Gem, Layers,
+  DollarSign, Clock, Award, Rocket
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import * as XLSX from 'xlsx';
 import * as fileSaver from 'file-saver';
+import { cn } from "@/lib/utils";
 const { saveAs } = fileSaver;
 
 export function AdminStores() {
@@ -36,6 +40,8 @@ export function AdminStores() {
   const { data: stores = [], isLoading, refetch } = useAdminAllStores();
   const setActive = useSetStoreActive();
   const setFeatured = useSetStoreFeatured();
+
+  const isRTL = app.lang === 'ar';
 
   // ✅ State للبحث والفلترة والـ Pagination
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,7 +53,6 @@ export function AdminStores() {
   const filteredStores = useMemo(() => {
     let result = stores;
 
-    // ✅ فلترة حسب الحالة
     if (filterStatus === "active") {
       result = result.filter((s: any) => s.store_active !== false);
     } else if (filterStatus === "banned") {
@@ -56,7 +61,6 @@ export function AdminStores() {
       result = result.filter((s: any) => s.is_featured === true);
     }
 
-    // ✅ فلترة حسب البحث
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((s: any) => {
@@ -110,21 +114,10 @@ export function AdminStores() {
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'المتاجر');
-    
-    const colWidths = [
-      { wch: 25 },
-      { wch: 20 },
-      { wch: 18 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 12 },
-    ];
-    ws['!cols'] = colWidths;
-
+    ws['!cols'] = [{ wch: 25 }, { wch: 20 }, { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 12 }];
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
     saveAs(blob, `المتاجر_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.xlsx`);
-    
     toast.success(app.lang === "ar" ? "✅ تم تصدير البيانات إلى Excel" : "✅ Data exported to Excel");
   };
 
@@ -132,45 +125,37 @@ export function AdminStores() {
   const exportToWord = () => {
     let htmlContent = `
       <html dir="rtl" lang="ar">
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body { font-family: 'Arial', sans-serif; padding: 20px; }
-          h1 { color: #1e293b; text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th { background: #3b82f6; color: white; padding: 12px; text-align: right; }
-          td { padding: 10px; border: 1px solid #e2e8f0; text-align: right; }
-          tr:nth-child(even) { background: #f8fafc; }
-          .status-active { color: #10b981; font-weight: bold; }
-          .status-banned { color: #ef4444; font-weight: bold; }
-          .footer { margin-top: 20px; text-align: center; color: #94a3b8; font-size: 12px; }
-        </style>
-      </head>
+      <head><meta charset="UTF-8">
+      <style>
+        body { font-family: 'Arial', sans-serif; padding: 20px; background: #f8fafc; }
+        h1 { color: #0d2e2a; text-align: center; border-bottom: 3px solid #0d2e2a; padding-bottom: 10px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+        .stat-card { background: white; padding: 14px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-right: 4px solid #0d2e2a; }
+        .stat-card .value { font-size: 22px; font-weight: bold; color: #0d2e2a; }
+        .stat-card .label { font-size: 11px; color: #94a3b8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th { background: #0d2e2a; color: white; padding: 12px; text-align: right; }
+        td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; }
+        tr:hover { background: #f1f5f9; }
+        .status-active { color: #0d2e2a; font-weight: bold; }
+        .status-banned { color: #6bb5aa; font-weight: bold; }
+        .footer { margin-top: 20px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+        .badge-featured { background: #2d6b63; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; }
+      </style></head>
       <body>
-        <h1>📊 تقرير المتاجر</h1>
-        <p style="text-align: center; color: #64748b;">
-          تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}
-          ${filterStatus !== 'all' ? ` | الفلتر: ${filterStatus}` : ''}
-        </p>
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>اسم المتجر</th>
-              <th>المالك</th>
-              <th>الهاتف</th>
-              <th>عدد المنتجات</th>
-              <th>الحالة</th>
-              <th>رائج</th>
-            </tr>
-          </thead>
-          <tbody>
+        <h1>🏪 تقرير المتاجر</h1>
+        <p style="text-align: center; color: #64748b;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</p>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="value">${stats.total}</div><div class="label">إجمالي المتاجر</div></div>
+          <div class="stat-card"><div class="value">${stats.active}</div><div class="label">نشط</div></div>
+          <div class="stat-card"><div class="value">${stats.banned}</div><div class="label">محظور</div></div>
+          <div class="stat-card"><div class="value">${stats.featured}</div><div class="label">رائج</div></div>
+        </div>
+        <table><thead><tr><th>#</th><th>اسم المتجر</th><th>المالك</th><th>الهاتف</th><th>المنتجات</th><th>الحالة</th><th>رائج</th></tr></thead><tbody>
     `;
-
     filteredStores.forEach((s: any, index: number) => {
       const statusClass = s.store_active === false ? 'status-banned' : 'status-active';
       const statusText = s.store_active === false ? 'محظور' : 'نشط';
-      
       htmlContent += `
         <tr>
           <td>${index + 1}</td>
@@ -179,125 +164,153 @@ export function AdminStores() {
           <td>${s.phone || '—'}</td>
           <td>${s.listing_count || 0}</td>
           <td class="${statusClass}">${statusText}</td>
-          <td>${s.is_featured ? '✅ نعم' : '—'}</td>
+          <td>${s.is_featured ? '<span class="badge-featured">★ رائج</span>' : '—'}</td>
         </tr>
       `;
     });
-
     htmlContent += `
-          </tbody>
-        </table>
-        <div class="footer">
-          إجمالي المتاجر: ${filteredStores.length} | تم التصدير من لوحة التحكم
-        </div>
-      </body>
-      </html>
+        </tbody></table>
+        <div class="footer">إجمالي المتاجر: ${filteredStores.length} | تم التصدير من لوحة التحكم</div>
+      </body></html>
     `;
-
     const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
     saveAs(blob, `المتاجر_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.doc`);
-    
     toast.success(app.lang === "ar" ? "✅ تم تصدير البيانات إلى Word" : "✅ Data exported to Word");
   };
 
   return (
     <div className="space-y-5">
+      
       {/* ✅ Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <StoreIcon className="h-6 w-6 text-blue-600" />
-            {app.lang === "ar" ? "المتاجر" : "Stores"}
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center shadow-lg shadow-[#0d2e2a]/30">
+              <StoreIcon className="h-5 w-5 text-white animate-float" />
+            </div>
+            <span className="bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] bg-clip-text text-transparent">
+              {app.lang === "ar" ? "المتاجر" : "Stores"}
+            </span>
+            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 text-[10px]">
+              <Sparkles className="h-2.5 w-2.5 mr-1 animate-pulse" />
+              {app.lang === 'ar' ? 'مباشر' : 'Live'}
+            </Badge>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
             {app.lang === "ar"
               ? `إدارة جميع المتاجر (${filteredStores.length} من ${stores.length})`
               : `Manage all stores (${filteredStores.length} of ${stores.length})`}
+            <span className="h-1 w-1 rounded-full bg-[#0d2e2a]/30" />
+            <span className="text-xs text-[#2d6b63] flex items-center gap-1">
+              <Zap className="h-3 w-3 animate-pulse" />
+              {app.lang === 'ar' ? 'تحديث لحظي' : 'Real-time'}
+            </span>
           </p>
         </div>
+        
+        {/* ✅ أزرار التصدير */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportToExcel}
-            disabled={filteredStores.length === 0}
-            className="rounded-xl border-emerald-500/30 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:border-emerald-500/50"
-          >
-            <FileSpreadsheet className="h-4 w-4 mr-1.5" />
-            Excel
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportToWord}
-            disabled={filteredStores.length === 0}
-            className="rounded-xl border-blue-500/30 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:border-blue-500/50"
-          >
-            <FileText className="h-4 w-4 mr-1.5" />
-            Word
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="rounded-xl border-slate-200 dark:border-slate-700"
-          >
-            <RefreshCw className="h-4 w-4 mr-1.5" />
-            {app.lang === "ar" ? "تحديث" : "Refresh"}
-          </Button>
+          <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-[#0d2e2a]/20 shadow-sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={exportToExcel}
+              disabled={filteredStores.length === 0}
+              className="rounded-lg h-9 px-4 text-[#2d6b63] hover:bg-[#2d6b63]/10 hover:text-[#2d6b63] gap-2 transition-all duration-300 hover:scale-105"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs font-medium">Excel</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={exportToWord}
+              disabled={filteredStores.length === 0}
+              className="rounded-lg h-9 px-4 text-[#1a4f4a] hover:bg-[#1a4f4a]/10 hover:text-[#1a4f4a] gap-2 transition-all duration-300 hover:scale-105"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs font-medium">Word</span>
+            </Button>
+            <div className="w-px h-6 bg-[#0d2e2a]/20" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => refetch()}
+              className="rounded-lg h-9 px-3 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 transition-all duration-300 hover:scale-105"
+            >
+              <RefreshCw className="h-4 w-4 animate-spin-slow" />
+            </Button>
+          </div>
+          <Badge className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#0d2e2a]/30 animate-pulse">
+            <Sparkles className="h-3 w-3 mr-1" />
+            {app.lang === 'ar' ? 'لوحة تحكم' : 'Dashboard'}
+          </Badge>
         </div>
       </div>
 
-      {/* ✅ Stats Cards */}
+      {/* ✅ Stats Cards - بألوان النظام */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { 
             key: "total", 
             label: app.lang === "ar" ? "إجمالي المتاجر" : "Total Stores", 
             value: stats.total,
-            icon: Store,
-            color: "text-blue-600",
-            bg: "bg-blue-500/10"
+            icon: StoreIcon,
+            gradient: "from-[#0d2e2a] to-[#1a4f4a]",
+            bg: "bg-[#0d2e2a]/10",
+            glow: "shadow-[#0d2e2a]/20",
           },
           { 
             key: "active", 
             label: app.lang === "ar" ? "نشطة" : "Active", 
             value: stats.active,
             icon: CheckCircle2,
-            color: "text-emerald-600",
-            bg: "bg-emerald-500/10"
+            gradient: "from-[#2d6b63] to-[#4a9f95]",
+            bg: "bg-[#2d6b63]/10",
+            glow: "shadow-[#2d6b63]/20",
           },
           { 
             key: "banned", 
             label: app.lang === "ar" ? "محظورة" : "Banned", 
             value: stats.banned,
             icon: XCircle,
-            color: "text-rose-600",
-            bg: "bg-rose-500/10"
+            gradient: "from-[#4a9f95] to-[#6bb5aa]",
+            bg: "bg-[#4a9f95]/10",
+            glow: "shadow-[#4a9f95]/20",
           },
           { 
             key: "featured", 
             label: app.lang === "ar" ? "رائجة" : "Featured", 
             value: stats.featured,
             icon: Flame,
-            color: "text-orange-600",
-            bg: "bg-orange-500/10"
+            gradient: "from-[#0d2e2a] to-[#2d6b63]",
+            bg: "bg-[#0d2e2a]/10",
+            glow: "shadow-[#0d2e2a]/20",
           },
         ].map((stat) => (
           <div
             key={stat.key}
-            className="bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-4 shadow-sm"
+            className="group bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 p-4 shadow-lg hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden"
           >
-            <div className="flex items-center justify-between">
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+              <div className={`absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#0d2e2a]/5 blur-3xl animate-pulse`} />
+            </div>
+            <div className="flex items-center justify-between relative">
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#0d2e2a] transition-colors">{stat.value}</p>
               </div>
-              <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg ${stat.glow}`}>
+                <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
+                  <stat.icon className="h-3.5 w-3.5 text-white" />
+                </div>
               </div>
+            </div>
+            <div className="mt-2 h-0.5 w-full rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+              <div 
+                className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000 animate-shimmer`} 
+                style={{ width: `${Math.min(100, (stat.value / (stats.total || 1)) * 100)}%` }}
+              />
             </div>
           </div>
         ))}
@@ -305,16 +318,16 @@ export function AdminStores() {
 
       {/* ✅ Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400" />
+        <div className="relative flex-1 group">
+          <Search className={`absolute inset-y-0 my-auto ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-focus-within:text-[#0d2e2a] transition-colors duration-300`} />
           <Input
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            placeholder={app.lang === "ar" ? "بحث عن متجر..." : "Search stores..."}
-            className="ps-9 h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:ring-2 focus:ring-blue-500/20 transition-all"
+            placeholder={app.lang === "ar" ? "🔍 بحث عن متجر..." : "🔍 Search stores..."}
+            className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300`}
           />
         </div>
 
@@ -325,17 +338,17 @@ export function AdminStores() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[160px] h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b]">
+          <SelectTrigger className="w-[160px] h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] hover:border-[#0d2e2a]/40 transition-colors">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
+              <Filter className="h-4 w-4 text-[#0d2e2a]" />
               <SelectValue placeholder={app.lang === "ar" ? "جميع المتاجر" : "All stores"} />
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{app.lang === "ar" ? "جميع المتاجر" : "All stores"}</SelectItem>
-            <SelectItem value="active">{app.lang === "ar" ? "نشطة فقط" : "Active only"}</SelectItem>
-            <SelectItem value="banned">{app.lang === "ar" ? "محظورة فقط" : "Banned only"}</SelectItem>
-            <SelectItem value="featured">{app.lang === "ar" ? "رائجة فقط" : "Featured only"}</SelectItem>
+            <SelectItem value="all">{app.lang === "ar" ? "📋 جميع المتاجر" : "📋 All stores"}</SelectItem>
+            <SelectItem value="active">{app.lang === "ar" ? "✅ نشطة فقط" : "✅ Active only"}</SelectItem>
+            <SelectItem value="banned">{app.lang === "ar" ? "🚫 محظورة فقط" : "🚫 Banned only"}</SelectItem>
+            <SelectItem value="featured">{app.lang === "ar" ? "🔥 رائجة فقط" : "🔥 Featured only"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -346,9 +359,9 @@ export function AdminStores() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b]">
+          <SelectTrigger className="w-[100px] h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] hover:border-[#0d2e2a]/40 transition-colors">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">{app.lang === "ar" ? "عدد" : "Show"}</span>
+              <Layers className="h-4 w-4 text-[#0d2e2a]" />
               <SelectValue placeholder="10" />
             </div>
           </SelectTrigger>
@@ -369,7 +382,7 @@ export function AdminStores() {
             setFilterStatus("all");
             setPage(1);
           }}
-          className="h-10 rounded-xl border-slate-200 dark:border-slate-700"
+          className="h-10 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 hover:scale-105"
         >
           <XCircle className="h-4 w-4 mr-1.5" />
           {app.lang === "ar" ? "مسح الكل" : "Clear all"}
@@ -377,25 +390,40 @@ export function AdminStores() {
       </div>
 
       {/* ✅ Table */}
-      <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 overflow-hidden shadow-lg shadow-[#0d2e2a]/5 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-300">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-slate-50/50 dark:bg-slate-800/30">
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-right min-w-[200px]">
-                  {app.lang === "ar" ? "المتجر" : "Store"}
+              <TableRow className="border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 hover:bg-transparent bg-gradient-to-r from-[#0d2e2a]/5 to-[#1a4f4a]/5">
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-right min-w-[200px]">
+                  <div className="flex items-center gap-2">
+                    <StoreIcon className="h-3.5 w-3.5" />
+                    {app.lang === "ar" ? "المتجر" : "Store"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[120px]">
-                  {app.lang === "ar" ? "الهاتف" : "Phone"}
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[120px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Users className="h-3.5 w-3.5" />
+                    {app.lang === "ar" ? "المالك" : "Owner"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[80px]">
-                  {app.lang === "ar" ? "المنتجات" : "Products"}
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[80px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Package className="h-3.5 w-3.5" />
+                    {app.lang === "ar" ? "المنتجات" : "Products"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[100px]">
-                  {app.lang === "ar" ? "الحالة" : "Status"}
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[100px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Shield className="h-3.5 w-3.5" />
+                    {app.lang === "ar" ? "الحالة" : "Status"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[220px]">
-                  {app.lang === "ar" ? "إجراء" : "Action"}
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[280px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap className="h-3.5 w-3.5 animate-pulse" />
+                    {app.lang === "ar" ? "إجراءات" : "Actions"}
+                  </div>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -403,8 +431,8 @@ export function AdminStores() {
               {isLoading && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-12 text-slate-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#0d2e2a] border-t-transparent" />
                       {app.lang === "ar" ? "جار التحميل..." : "Loading..."}
                     </div>
                   </TableCell>
@@ -412,10 +440,17 @@ export function AdminStores() {
               )}
               {!isLoading && paginatedStores.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12 text-slate-500">
-                    <div className="flex flex-col items-center gap-2">
-                      <Store className="h-12 w-12 text-slate-300" />
-                      <p>{app.lang === "ar" ? "لا توجد متاجر تطابق البحث" : "No stores match your search"}</p>
+                  <TableCell colSpan={5} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-16 w-16 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center animate-bounce-slow">
+                        <StoreIcon className="h-8 w-8 text-[#0d2e2a]/40" />
+                      </div>
+                      <p className="font-medium text-slate-900 dark:text-white">
+                        {app.lang === "ar" ? "لا توجد متاجر" : "No stores"}
+                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {app.lang === "ar" ? "لا توجد متاجر تطابق البحث" : "No stores match your search"}
+                      </p>
                       <Button
                         variant="outline"
                         size="sm"
@@ -423,7 +458,7 @@ export function AdminStores() {
                           setSearchQuery("");
                           setFilterStatus("all");
                         }}
-                        className="mt-2"
+                        className="mt-2 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300"
                       >
                         {app.lang === "ar" ? "مسح البحث" : "Clear search"}
                       </Button>
@@ -431,31 +466,41 @@ export function AdminStores() {
                   </TableCell>
                 </TableRow>
               )}
-              {paginatedStores.map((s: any) => (
-                <TableRow key={s.id} className="border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+              {paginatedStores.map((s: any, index: number) => (
+                <TableRow 
+                  key={s.id} 
+                  className="border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/5 dark:hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                >
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      {s.store_logo_url && (
-                        <img
-                          src={s.store_logo_url}
-                          className="h-11 w-11 rounded-xl object-cover border border-slate-200 dark:border-slate-700 flex-shrink-0"
-                          alt=""
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
+                      {s.store_logo_url ? (
+                        <div className="relative h-11 w-11 rounded-xl overflow-hidden border border-[#0d2e2a]/20 flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                          <img
+                            src={s.store_logo_url}
+                            className="h-full w-full object-cover"
+                            alt=""
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        </div>
+                      ) : (
+                        <div className="h-11 w-11 rounded-xl bg-[#0d2e2a]/10 border border-[#0d2e2a]/20 flex items-center justify-center flex-shrink-0">
+                          <StoreIcon className="h-5 w-5 text-[#0d2e2a]/40" />
+                        </div>
                       )}
                       <div className="min-w-0">
-                        <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 group-hover:text-[#0d2e2a] transition-colors">
                           <Link
                             to="/store/$id"
                             params={{ id: s.id }}
-                            className="hover:text-blue-600 transition-colors truncate"
+                            className="hover:text-[#2d6b63] transition-colors truncate"
                           >
                             {s.store_name || s.full_name || "—"}
                           </Link>
                           {s.is_featured && (
-                            <Flame className="h-3.5 w-3.5 text-orange-500 fill-orange-500 shrink-0" />
+                            <Flame className="h-3.5 w-3.5 text-orange-500 fill-orange-500 animate-pulse shrink-0" />
                           )}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
@@ -465,34 +510,39 @@ export function AdminStores() {
                           <Link
                             to="/store/$id"
                             params={{ id: s.id }}
-                            className="text-[10px] text-blue-600 hover:underline flex items-center gap-0.5"
+                            className="text-[10px] text-[#2d6b63] hover:underline flex items-center gap-0.5 transition-colors"
                           >
                             <Eye className="h-3 w-3" />
                             {app.lang === "ar" ? "عرض المتجر" : "View store"}
                           </Link>
+                          <span className="text-[#0d2e2a]/20">|</span>
+                          <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                            <Users className="h-3 w-3" />
+                            {s.full_name || "—"}
+                          </span>
                         </div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-slate-600 dark:text-slate-300 font-mono text-center" dir="ltr">
-                    {s.phone || "—"}
+                  <TableCell className="text-sm text-slate-600 dark:text-slate-300 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Users className="h-3 w-3 text-[#2d6b63]" />
+                      {s.full_name || "—"}
+                    </div>
                   </TableCell>
                   <TableCell className="font-medium text-slate-900 dark:text-white text-center">
-                    <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-200/30 font-mono">
+                    <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 font-mono">
                       {s.listing_count || 0}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">
                     {s.store_active === false ? (
-                      <Badge
-                        variant="destructive"
-                        className="bg-rose-500/10 text-rose-600 border-rose-500/20"
-                      >
+                      <Badge className="bg-[#6bb5aa]/10 text-[#6bb5aa] border border-[#6bb5aa]/20">
                         <XCircle className="h-3 w-3 mr-1" />
                         {app.lang === "ar" ? "محظور" : "Banned"}
                       </Badge>
                     ) : (
-                      <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                      <Badge className="bg-[#2d6b63]/10 text-[#2d6b63] border border-[#2d6b63]/20">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         {app.lang === "ar" ? "نشط" : "Active"}
                       </Badge>
@@ -500,14 +550,16 @@ export function AdminStores() {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                      
+                      {/* ✅ زر Featured - رائج */}
                       <Button
                         size="sm"
-                        variant={s.is_featured ? "default" : "ghost"}
-                        className={
+                        className={cn(
+                          "rounded-xl h-8 px-3 transition-all duration-300 hover:scale-105",
                           s.is_featured
-                            ? "bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-8 px-3"
-                            : "rounded-xl h-8 px-3 border-slate-200 dark:border-slate-700"
-                        }
+                            ? "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30"
+                            : "border border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40"
+                        )}
                         onClick={() =>
                           setFeatured.mutate(
                             { id: s.id, is_featured: !s.is_featured },
@@ -516,30 +568,36 @@ export function AdminStores() {
                                 toast.success(
                                   app.lang === "ar"
                                     ? s.is_featured
-                                      ? "أُزيل من الرائج"
-                                      : "أُضيف للرائج"
+                                      ? "✨ أُزيل من الرائج"
+                                      : "🔥 أُضيف للرائج"
                                     : s.is_featured
-                                    ? "Removed from trending"
-                                    : "Added to trending"
+                                    ? "✨ Removed from trending"
+                                    : "🔥 Added to trending"
                                 ),
                             }
                           )
                         }
                         title={app.lang === "ar" ? "الأكثر رواجاً" : "Trending"}
                       >
-                        <Flame className="h-3.5 w-3.5" />
+                        <Flame className={cn(
+                          "h-3.5 w-3.5 mr-1",
+                          s.is_featured ? "animate-pulse" : ""
+                        )} />
+                        {app.lang === "ar" ? "رائج" : "Trend"}
                       </Button>
+
+                      {/* ✅ زر Ban/Unban */}
                       {s.store_active === false ? (
                         <Button
                           size="sm"
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl h-8 px-3"
+                          className="rounded-xl h-8 px-3 bg-gradient-to-r from-[#2d6b63] to-[#4a9f95] hover:from-[#4a9f95] hover:to-[#6bb5aa] text-white shadow-lg shadow-[#2d6b63]/30 transition-all duration-300 hover:scale-105"
                           onClick={() =>
                             setActive.mutate(
                               { id: s.id, active: true },
                               {
                                 onSuccess: () =>
                                   toast.success(
-                                    app.lang === "ar" ? "تم التفعيل" : "Activated"
+                                    app.lang === "ar" ? "✅ تم التفعيل" : "✅ Activated"
                                   ),
                               }
                             )
@@ -552,13 +610,13 @@ export function AdminStores() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="rounded-xl h-8 px-3 border-slate-200 dark:border-slate-700 hover:border-rose-300 hover:text-rose-600 hover:bg-rose-50/50"
+                          className="rounded-xl h-8 px-3 border-[#6bb5aa]/30 text-[#6bb5aa] hover:bg-[#6bb5aa]/10 hover:border-[#6bb5aa]/50 transition-all duration-300 hover:scale-105"
                           onClick={() => {
                             if (
                               confirm(
                                 app.lang === "ar"
-                                  ? "هل أنت متأكد من حظر هذا المتجر؟"
-                                  : "Are you sure you want to ban this store?"
+                                  ? "⚠️ هل أنت متأكد من حظر هذا المتجر؟"
+                                  : "⚠️ Are you sure you want to ban this store?"
                               )
                             )
                               setActive.mutate(
@@ -566,7 +624,7 @@ export function AdminStores() {
                                 {
                                   onSuccess: () =>
                                     toast.success(
-                                      app.lang === "ar" ? "تم الحظر" : "Banned"
+                                      app.lang === "ar" ? "🚫 تم الحظر" : "🚫 Banned"
                                     ),
                                 }
                               );
@@ -586,12 +644,13 @@ export function AdminStores() {
 
         {/* ✅ Pagination */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="px-4 py-3 border-t border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-xs text-slate-500 dark:text-slate-400">
               {filteredStores.length === 0 ? (
                 <span>{app.lang === "ar" ? "لا توجد متاجر" : "No stores"}</span>
               ) : (
-                <span>
+                <span className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#2d6b63] animate-pulse" />
                   {app.lang === "ar"
                     ? `عرض ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredStores.length)} من ${filteredStores.length} متجر`
                     : `Showing ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredStores.length)} of ${filteredStores.length} stores`}
@@ -605,10 +664,9 @@ export function AdminStores() {
                 size="sm"
                 onClick={() => goToPage(1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200 dark:border-slate-700"
-                title={app.lang === "ar" ? "الصفحة الأولى" : "First page"}
+                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
               >
-                <span className="text-xs">«</span>
+                <span className="text-xs font-bold">«</span>
               </Button>
 
               <Button
@@ -616,8 +674,7 @@ export function AdminStores() {
                 size="sm"
                 onClick={() => goToPage(page - 1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200 dark:border-slate-700"
-                title={app.lang === "ar" ? "السابق" : "Previous"}
+                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -641,11 +698,12 @@ export function AdminStores() {
                       variant={page === pageNum ? "default" : "outline"}
                       size="sm"
                       onClick={() => goToPage(pageNum)}
-                      className={`h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all ${
+                      className={cn(
+                        "h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300",
                         page === pageNum
-                          ? "bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-lg shadow-blue-500/25"
-                          : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:border-blue-300"
-                      }`}
+                          ? "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30 scale-105"
+                          : "border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 hover:scale-105"
+                      )}
                     >
                       {pageNum}
                     </Button>
@@ -659,7 +717,7 @@ export function AdminStores() {
                       variant="outline"
                       size="sm"
                       onClick={() => goToPage(totalPages)}
-                      className="h-8 min-w-[32px] p-0 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs"
+                      className="h-8 min-w-[32px] p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 text-xs transition-all duration-300 hover:scale-105"
                     >
                       {totalPages}
                     </Button>
@@ -672,8 +730,7 @@ export function AdminStores() {
                 size="sm"
                 onClick={() => goToPage(page + 1)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200 dark:border-slate-700"
-                title={app.lang === "ar" ? "التالي" : "Next"}
+                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -683,37 +740,85 @@ export function AdminStores() {
                 size="sm"
                 onClick={() => goToPage(totalPages)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200 dark:border-slate-700"
-                title={app.lang === "ar" ? "الصفحة الأخيرة" : "Last page"}
+                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
               >
-                <span className="text-xs">»</span>
+                <span className="text-xs font-bold">»</span>
               </Button>
             </div>
           </div>
         )}
 
         {/* ✅ Footer */}
-        <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-          <span>
-            {app.lang === "ar"
-              ? `عرض ${paginatedStores.length} من ${filteredStores.length} متجر (إجمالي ${stores.length})`
-              : `Showing ${paginatedStores.length} of ${filteredStores.length} stores (total ${stores.length})`}
+        <div className="px-4 py-2 border-t border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <span className="flex items-center gap-2">
+            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20">
+              {app.lang === "ar"
+                ? `عرض ${paginatedStores.length} من ${filteredStores.length}`
+                : `Showing ${paginatedStores.length} of ${filteredStores.length}`}
+            </Badge>
+            <span className="text-[10px] text-[#2d6b63]">
+              {app.lang === "ar" ? `إجمالي ${stores.length}` : `Total ${stores.length}`}
+            </span>
           </span>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800">
+            <Badge className="bg-[#0d2e2a]/5 text-[#0d2e2a] border border-[#0d2e2a]/20">
+              <Shield className="h-3 w-3 mr-1" />
               {filterStatus === "all" && (app.lang === "ar" ? "جميع" : "All")}
               {filterStatus === "active" && (app.lang === "ar" ? "نشطة" : "Active")}
               {filterStatus === "banned" && (app.lang === "ar" ? "محظورة" : "Banned")}
               {filterStatus === "featured" && (app.lang === "ar" ? "رائجة" : "Featured")}
             </Badge>
             {searchQuery && (
-              <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-950/30">
-                🔍 {searchQuery}
+              <Badge className="bg-[#1a4f4a]/10 text-[#1a4f4a] border border-[#1a4f4a]/20">
+                <Search className="h-3 w-3 mr-1" />
+                {searchQuery}
               </Badge>
             )}
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .animate-shimmer {
+          background-size: 200% auto;
+          animation: shimmer 3s linear infinite;
+        }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 6s linear infinite;
+        }
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+        .animate-bounce-slow {
+          animation: bounce-slow 2s ease-in-out infinite;
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-4px); }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+        @keyframes pulse-slow {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }
+
+// ✅ تصدير افتراضي
+export default AdminStores;

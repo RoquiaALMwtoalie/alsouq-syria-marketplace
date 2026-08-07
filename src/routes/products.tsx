@@ -1,15 +1,19 @@
 // src/routes/products.tsx
-import { createFileRoute, Link } from "@tanstack/react-router";
+
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useApp, useT } from "@/lib/i18n";
 import { useListings } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ArrowLeft, Filter, X, Sparkles } from "lucide-react";
+import { Search, ArrowLeft, Filter, X, Sparkles, ShoppingBag, Layers } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useCart, useAddToCart } from "@/lib/hooks/useCart";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/products")({
   component: ProductsPage,
@@ -19,26 +23,55 @@ export const Route = createFileRoute("/products")({
 function ProductsPage() {
   const app = useApp();
   const t = useT();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "product" | "offer">("all");
+  const [addingToCart, setAddingToCart] = useState<string | null>(null);
+  
+  // ✅ Cart Hooks
+  const { refetch: refetchCart } = useCart(app.user?.id);
+  const addToCartMutation = useAddToCart();
   
   const { data: allProducts = [], isLoading } = useListings({
     sort: "popular",
     limit: 100,
   });
 
-  // ✅ فلترة ذكية وفورية (Live Search)
+  // ✅ ✅ ✅ دالة التحقق من وجود فيرنتات
+  const hasVariations = (product: any) => {
+    const hasColors = product.colors && product.colors.length > 0;
+    const options = product.options || [];
+    const hasSizes = options.some((opt: any) => opt.option_type === 'size');
+    const hasVariations = product.variations && product.variations.length > 0;
+    const hasOtherOptions = options.some((opt: any) => 
+      opt.option_type !== 'size' && opt.option_type !== 'color'
+    );
+    
+    const result = hasColors || hasSizes || hasVariations || hasOtherOptions;
+    
+    if (product) {
+      console.log("🔍 [hasVariations] product:", product.id, product.title_ar);
+      console.log("🔍 [hasVariations] hasColors:", hasColors);
+      console.log("🔍 [hasVariations] hasSizes:", hasSizes);
+      console.log("🔍 [hasVariations] hasVariations:", hasVariations);
+      console.log("🔍 [hasVariations] hasOtherOptions:", hasOtherOptions);
+      console.log("🔍 [hasVariations] RESULT:", result);
+    }
+    
+    return result;
+  };
+
+  // ✅ فلترة
   const filteredProducts = useMemo(() => {
     let result = allProducts;
     
-    // ✅ فلترة حسب النوع
     if (filterType === "product") {
       result = result.filter((p: any) => p.is_offer !== true);
     } else if (filterType === "offer") {
       result = result.filter((p: any) => p.is_offer === true);
     }
     
-    // ✅ بحث فوري (Live Search)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((p: any) => {
@@ -47,7 +80,6 @@ function ProductsPage() {
         const descAr = (p.description_ar || "").toLowerCase();
         const descEn = (p.description_en || "").toLowerCase();
         
-        // ✅ بحث في العنوان والوصف
         return titleAr.includes(q) || 
                titleEn.includes(q) || 
                descAr.includes(q) || 
@@ -58,14 +90,12 @@ function ProductsPage() {
     return result;
   }, [allProducts, searchQuery, filterType]);
 
-  // ✅ إحصائيات البحث
   const searchStats = {
     total: allProducts.length,
     filtered: filteredProducts.length,
     hasResults: filteredProducts.length > 0,
   };
 
-  // ✅ اقتراحات البحث (مثل نون)
   const suggestions = useMemo(() => {
     if (!searchQuery.trim() || searchQuery.length < 2) return [];
     
@@ -79,6 +109,87 @@ function ProductsPage() {
     
     return matched;
   }, [allProducts, searchQuery, filteredProducts]);
+
+  // ✅ ✅ ✅ دالة إضافة للسلة
+  const handleQuickAddToCart = async (product: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    console.log("🛒 [QuickAdd] Product:", product.id, product.title_ar);
+    
+    if (!app.user) {
+      console.log("❌ [QuickAdd] No user logged in");
+      toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
+      navigate({ to: "/auth/$mode", params: { mode: "login" } });
+      return;
+    }
+    
+    if (!product.is_available) {
+      console.log("❌ [QuickAdd] Product not available");
+      toast.error(app.lang === "ar" ? "❌ هذا المنتج غير متوفر" : "❌ This product is unavailable");
+      return;
+    }
+
+    // ✅ التحقق من وجود فيرنتات
+    if (hasVariations(product)) {
+      console.log("🔄 [QuickAdd] Product HAS variations, redirecting to detail page");
+      navigate({ 
+        to: "/listing/$id", 
+        params: { id: product.id } 
+      });
+      
+      toast.info(
+        app.lang === "ar" 
+          ? `👆 اختر اللون والمقاس المناسب لـ "${product.title_ar}"` 
+          : `👆 Select the appropriate color and size for "${product.title_en || product.title_ar}"`,
+        { duration: 4000 }
+      );
+      return;
+    }
+
+    // ✅ إذا ما في فيرنتات → أضف للسلة مباشرة
+    console.log("🔄 [QuickAdd] Product has NO variations, adding to cart...");
+    setAddingToCart(product.id);
+    
+    try {
+      console.log("🔄 [QuickAdd] Calling addToCartMutation...");
+      
+      const result = await addToCartMutation.mutateAsync({
+        userId: app.user.id,
+        listingId: product.id,
+        quantity: 1,
+      });
+      
+      console.log("✅ [QuickAdd] Add to cart result:", result);
+      
+      // ✅ تحديث السلة
+      await queryClient.invalidateQueries({ queryKey: ["cart", app.user.id] });
+      await refetchCart();
+      console.log("✅ [QuickAdd] Cart invalidated and refetched");
+      
+      toast.success(
+        app.lang === "ar" 
+          ? `🛒 تم إضافة "${product.title_ar}" للسلة` 
+          : `🛒 Added "${product.title_en || product.title_ar}" to cart`,
+        { 
+          duration: 3000,
+          action: {
+            label: app.lang === "ar" ? "📦 عرض السلة" : "📦 View Cart",
+            onClick: () => navigate({ to: "/cart" })
+          }
+        }
+      );
+    } catch (error) {
+      console.error("❌ [QuickAdd] Error adding to cart:", error);
+      toast.error(app.lang === "ar" ? "❌ حدث خطأ" : "❌ An error occurred");
+    } finally {
+      setAddingToCart(null);
+    }
+  };
+
+  const handleProductClick = (productId: string) => {
+    console.log("👆 [handleProductClick] Navigating to product:", productId);
+    navigate({ to: "/listing/$id", params: { id: productId } });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -121,7 +232,7 @@ function ProductsPage() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={app.lang === "ar" ? "🔍 ابحث عن منتج... (اكتب أي حرف)" : "🔍 Search for product... (type any letter)"}
+              placeholder={app.lang === "ar" ? "🔍 ابحث عن منتج..." : "🔍 Search for product..."}
               className="ps-12 h-14 rounded-2xl border-2 border-slate-200/50 bg-white/50 dark:border-slate-800/50 dark:bg-slate-900/50 focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all text-lg"
               autoFocus
             />
@@ -135,7 +246,6 @@ function ProductsPage() {
             )}
           </div>
           
-          {/* ✅ مؤشر البحث الفوري */}
           {searchQuery.trim() && (
             <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
@@ -184,7 +294,7 @@ function ProductsPage() {
           </div>
         </div>
 
-        {/* ===== SUGGESTIONS (مثل نون) ===== */}
+        {/* ===== SUGGESTIONS ===== */}
         {suggestions.length > 0 && (
           <div className="mb-6 p-4 bg-primary/5 rounded-2xl border border-primary/10">
             <p className="text-xs text-muted-foreground mb-2">
@@ -236,12 +346,32 @@ function ProductsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredProducts.map((item) => (
-              <ListingCard key={item.id} item={item} />
-            ))}
+            {filteredProducts.map((item) => {
+              return (
+                <div
+                  key={item.id}
+                  className="relative group cursor-pointer"
+                  onClick={() => handleProductClick(item.id)}
+                >
+                  {/* ✅ ✅ ✅ زر واحد فقط - اللي في ListingCard (تحت عاليمين) */}
+                  {/* ✅ تم حذف الزر العائم من فوق */}
+                  
+                  <ListingCard 
+                    item={item}
+                    onAddToCart={(product, e) => {
+                      e.stopPropagation();
+                      console.log("🛒 [products] onAddToCart called for:", product.id);
+                      handleQuickAddToCart(product, e);
+                    }}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
     </div>
   );
 }
+
+export default ProductsPage;

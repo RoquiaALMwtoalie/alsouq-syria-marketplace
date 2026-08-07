@@ -15,6 +15,10 @@ import {
   MapPin,
   MicOff,
   SendHorizontal,
+  Sparkles,
+  Zap,
+  Heart,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/i18n";
@@ -33,6 +37,33 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+
+// ====== أيقونة متحركة ======
+const AnimatedIcon = ({ 
+  Icon, 
+  className = "",
+  color = "text-[#2a655f]",
+  delay = 0,
+  size = "h-5 w-5"
+}: any) => {
+  return (
+    <div 
+      className="relative inline-flex items-center justify-center"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="animate-float-icon group-hover:animate-pulse-slow">
+        <Icon className={cn(
+          "transition-all duration-500 group-hover:scale-110 group-hover:rotate-12",
+          color,
+          size,
+          className
+        )} />
+      </div>
+      <span className="absolute -inset-2 rounded-full border-2 border-[#2a655f]/20 animate-ripple opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <span className="absolute -inset-4 rounded-full border-2 border-[#3a8a82]/10 animate-ripple delay-700 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+    </div>
+  );
+};
 
 // ====== مكون اختيار الإيموجي ======
 const EMOJIS = [
@@ -67,13 +98,13 @@ function EmojiPicker({ onEmojiSelect, open, onOpenChange }: EmojiPickerProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 rounded-full hover:bg-[#e4e6eb] dark:hover:bg-[#3a3b4a] transition-colors"
+          className="h-10 w-10 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-[#2a655f]/20 hover:border-[#3a8a82]/40 group"
         >
-          <Smile className="h-5 w-5 text-muted-foreground hover:text-[#0084ff] transition-colors" />
+          <AnimatedIcon Icon={Smile} className="h-5 w-5 text-[#2a655f] group-hover:text-[#3a8a82]" color="text-[#2a655f]" delay={0} size="h-5 w-5" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-72 p-3 rounded-2xl shadow-xl border-[#e4e6eb] dark:border-[#3a3b4a]"
+        className="w-72 p-3 rounded-2xl shadow-2xl border-[#2a655f]/20 bg-white/95 dark:bg-[#0d1f1d]/95 backdrop-blur-xl"
         align="start"
         side="top"
       >
@@ -82,7 +113,7 @@ function EmojiPicker({ onEmojiSelect, open, onOpenChange }: EmojiPickerProps) {
             placeholder="🔍 Search emojis..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 text-sm rounded-xl"
+            className="h-9 text-sm rounded-xl border-[#2a655f]/20 focus:border-[#3a8a82]/40"
           />
           <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
             {filteredEmojis.map((emoji) => (
@@ -93,7 +124,7 @@ function EmojiPicker({ onEmojiSelect, open, onOpenChange }: EmojiPickerProps) {
                   onOpenChange(false);
                   setSearch("");
                 }}
-                className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-[#e4e6eb] dark:hover:bg-[#3a3b4a] transition-colors text-xl hover:scale-110 transform transition-transform"
+                className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-colors text-xl hover:scale-110 transform transition-transform"
               >
                 {emoji}
               </button>
@@ -130,20 +161,21 @@ function ReplyPreview({ replyTo, onCancel }: ReplyPreviewProps) {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="flex items-center justify-between px-3 py-2 bg-[#e4e6eb]/50 dark:bg-[#3a3b4a]/50 border-l-4 border-[#0084ff] rounded-lg mb-2"
+      className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/20 dark:to-[#3a8a82]/20 border-r-4 border-[#2a655f] rounded-2xl mb-2"
     >
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-[#0084ff]">
+        <p className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-1.5">
+          <AnimatedIcon Icon={Reply} className="h-3.5 w-3.5" color="text-[#2a655f]" delay={0} size="h-3.5 w-3.5" />
           {app.lang === "ar" ? "رد على" : "Replying to"} {replyTo.senderName}
         </p>
-        <p className="text-sm truncate text-muted-foreground">
+        <p className="text-sm truncate text-muted-foreground mt-0.5">
           {replyTo.content}
         </p>
       </div>
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 text-red-500 hover:text-red-600 shrink-0"
+        className="h-8 w-8 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-red-500 hover:text-red-600 shrink-0 transition-all"
         onClick={onCancel}
       >
         <X className="h-4 w-4" />
@@ -177,7 +209,7 @@ function AttachmentsPreview({ attachments, onRemove }: AttachmentsPreviewProps) 
       {attachments.map((attachment) => (
         <div
           key={attachment.id}
-          className="relative group rounded-xl overflow-hidden border border-[#e4e6eb] dark:border-[#3a3b4a] shadow-sm"
+          className="relative group rounded-xl overflow-hidden border-2 border-[#2a655f]/20 shadow-md hover:shadow-lg transition-all"
         >
           {attachment.type === 'image' && attachment.preview ? (
             <img
@@ -186,17 +218,17 @@ function AttachmentsPreview({ attachments, onRemove }: AttachmentsPreviewProps) 
               className="h-16 w-16 object-cover"
             />
           ) : (
-            <div className="h-16 w-16 flex items-center justify-center bg-slate-100 dark:bg-slate-800">
-              <File className="h-6 w-6 text-muted-foreground" />
+            <div className="h-16 w-16 flex items-center justify-center bg-[#2a655f]/5 dark:bg-[#2a655f]/10">
+              <AnimatedIcon Icon={File} className="h-6 w-6 text-[#2a655f]" color="text-[#2a655f]" delay={0} size="h-6 w-6" />
             </div>
           )}
           <button
             onClick={() => onRemove(attachment.id)}
-            className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 transform"
+            className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 transform shadow-lg"
           >
             <X className="h-3 w-3" />
           </button>
-          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[8px] truncate px-1 py-0.5">
+          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] truncate px-1.5 py-0.5 backdrop-blur-sm">
             {attachment.file.name}
           </div>
         </div>
@@ -222,16 +254,16 @@ function MicrophonePermissionDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white dark:bg-[#242538] rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl"
+        className="bg-white dark:bg-[#0d1f1d] rounded-3xl p-6 max-w-md w-full mx-4 shadow-2xl border border-[#2a655f]/20"
       >
         <div className="flex items-center gap-3 mb-4">
-          <div className="h-12 w-12 rounded-full bg-[#0084ff]/10 flex items-center justify-center">
-            <Mic className="h-6 w-6 text-[#0084ff]" />
+          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30">
+            <AnimatedIcon Icon={Mic} className="h-7 w-7 text-white" color="text-white" delay={0} size="h-7 w-7" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -245,7 +277,7 @@ function MicrophonePermissionDialog({
           </div>
         </div>
 
-        <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
+        <p className="text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
           {app.lang === "ar"
             ? "يحتاج التطبيق إلى الوصول إلى الميكروفون الخاص بك لتسجيل وإرسال الرسائل الصوتية. لن يتم استخدامه لأي غرض آخر."
             : "The app needs access to your microphone to record and send voice messages. It won't be used for any other purpose."}
@@ -254,14 +286,14 @@ function MicrophonePermissionDialog({
         <div className="flex flex-col gap-2">
           <Button
             onClick={onAllow}
-            className="rounded-xl bg-[#0084ff] hover:bg-[#0073e6] text-white w-full"
+            className="rounded-2xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white w-full h-12 font-bold shadow-lg shadow-[#2a655f]/30"
           >
             {app.lang === "ar" ? "👍 السماح بالوصول" : "👍 Allow Access"}
           </Button>
           <Button
             variant="ghost"
             onClick={onDeny}
-            className="rounded-xl text-muted-foreground hover:text-slate-700 dark:hover:text-slate-300 w-full"
+            className="rounded-2xl text-muted-foreground hover:text-slate-700 dark:hover:text-slate-300 w-full h-12"
           >
             {app.lang === "ar" ? "❌ ليس الآن" : "❌ Not Now"}
           </Button>
@@ -353,15 +385,6 @@ export function ChatInput({
     const content = message.trim();
     const file = attachments.length > 0 ? attachments[0].file : undefined;
 
-    console.log("📤 ChatInput - handleSend:", {
-      content,
-      file: file?.name,
-      fileSize: file?.size,
-      fileType: file?.type,
-      attachmentsLength: attachments.length,
-      hasFile: !!file,
-    });
-
     if (!content && !file) return;
     if (isLoading) return;
     if (content.length > maxLength) {
@@ -410,14 +433,10 @@ export function ChatInput({
   const handleFileSelect = (files: FileList | null, type: 'image' | 'file') => {
     if (!files) return;
 
-    console.log("📎 File selected:", files[0]?.name, files[0]?.type, files[0]?.size);
-
     const newAttachments: Attachment[] = [];
     
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
-      console.log(`📎 File ${i}:`, file.name, file.size, file.type);
       
       if (file.size > 10 * 1024 * 1024) {
         toast.error(
@@ -438,17 +457,11 @@ export function ChatInput({
         const reader = new FileReader();
         reader.onload = (e) => {
           attachment.preview = e.target?.result as string;
-          setAttachments(prev => {
-            console.log("📎 Added image attachment:", attachment.file.name);
-            return [...prev, attachment];
-          });
+          setAttachments(prev => [...prev, attachment]);
         };
         reader.readAsDataURL(file);
       } else {
-        setAttachments(prev => {
-          console.log("📎 Added file attachment:", attachment.file.name);
-          return [...prev, attachment];
-        });
+        setAttachments(prev => [...prev, attachment]);
       }
     }
   };
@@ -465,8 +478,6 @@ export function ChatInput({
         name: 'microphone' as PermissionName 
       });
       
-      console.log("🎤 Permission status:", permissionStatus.state);
-      
       if (permissionStatus.state === 'granted') {
         startRecording();
       } else if (permissionStatus.state === 'prompt') {
@@ -476,22 +487,7 @@ export function ChatInput({
         toast.error(
           app.lang === "ar"
             ? "❌ تم رفض الوصول إلى الميكروفون"
-            : "❌ Microphone access was denied",
-          {
-            duration: 5000,
-            action: {
-              label: app.lang === "ar" ? "⚙️ فتح الإعدادات" : "⚙️ Open Settings",
-              onClick: () => {
-                if (navigator.userAgent.includes('Chrome')) {
-                  window.open('chrome://settings/content/microphone', '_blank');
-                } else if (navigator.userAgent.includes('Firefox')) {
-                  window.open('about:preferences#privacy', '_blank');
-                } else {
-                  window.location.href = window.location.href + '?settings=true';
-                }
-              }
-            }
-          }
+            : "❌ Microphone access was denied"
         );
       }
     } catch (error) {
@@ -504,36 +500,11 @@ export function ChatInput({
     }
   };
 
-  // ====== ✅ التحقق من وجود ميكروفون ======
-  const checkMicrophoneAvailability = async (): Promise<boolean> => {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioDevices = devices.filter(device => device.kind === 'audioinput');
-      console.log("🎤 Microphones found:", audioDevices.length);
-      return audioDevices.length > 0;
-    } catch (error) {
-      console.error("Error checking devices:", error);
-      return false;
-    }
-  };
-
   // ====== ✅ دالة طلب الإذن ======
   const requestMicrophonePermission = async () => {
     setShowPermissionDialog(false);
     
     try {
-      const hasMic = await checkMicrophoneAvailability();
-      
-      if (!hasMic) {
-        toast.error(
-          app.lang === "ar"
-            ? "🎤 لا يوجد ميكروفون متصل بالجهاز."
-            : "🎤 No microphone found on this device.",
-          { duration: 5000 }
-        );
-        return;
-      }
-
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: true,
         video: false,
@@ -546,32 +517,12 @@ export function ChatInput({
     } catch (error: any) {
       console.error("Permission error:", error);
       
-      if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
-        toast.error(
-          app.lang === "ar"
-            ? "🎤 لا يوجد ميكروفون متصل بالجهاز."
-            : "🎤 No microphone found.",
-          { duration: 5000 }
-        );
-      } else if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
         setPermissionState('denied');
         toast.error(
           app.lang === "ar"
             ? "❌ تم رفض الوصول إلى الميكروفون"
-            : "❌ Microphone access was denied",
-          {
-            duration: 5000,
-            action: {
-              label: app.lang === "ar" ? "⚙️ فتح الإعدادات" : "⚙️ Open Settings",
-              onClick: () => {
-                if (navigator.userAgent.includes('Chrome')) {
-                  window.open('chrome://settings/content/microphone', '_blank');
-                } else {
-                  window.open(window.location.href, '_blank');
-                }
-              }
-            }
-          }
+            : "❌ Microphone access was denied"
         );
       } else {
         toast.error(
@@ -636,11 +587,11 @@ export function ChatInput({
       console.error("Error accessing microphone:", error);
       
       let errorMessage = "";
-      if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+      if (error.name === "NotFoundError") {
         errorMessage = app.lang === "ar"
           ? "❌ لا يوجد ميكروفون متصل بالجهاز"
           : "❌ No microphone found on this device";
-      } else if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+      } else if (error.name === "NotAllowedError") {
         errorMessage = app.lang === "ar"
           ? "❌ تم رفض إذن الميكروفون"
           : "❌ Microphone permission denied";
@@ -678,12 +629,6 @@ export function ChatInput({
         : "📍 Getting location..."
     );
 
-    const options = {
-      enableHighAccuracy: false,
-      timeout: 30000,
-      maximumAge: 60000,
-    };
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
@@ -702,35 +647,12 @@ export function ChatInput({
       },
       (error) => {
         console.error("Error getting location:", error);
-        
-        if (error.code === error.TIMEOUT) {
-          toast.error(
-            app.lang === "ar"
-              ? "⏱️ انتهت المهلة. حاول مرة أخرى."
-              : "⏱️ Timeout. Please try again."
-          );
-        } else {
-          let errorMessage = "";
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = app.lang === "ar"
-                ? "❌ تم رفض إذن الموقع"
-                : "❌ Location permission denied";
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = app.lang === "ar"
-                ? "❌ معلومات الموقع غير متاحة"
-                : "❌ Location information unavailable";
-              break;
-            default:
-              errorMessage = app.lang === "ar"
-                ? "❌ فشل الحصول على الموقع"
-                : "❌ Failed to get location";
-          }
-          toast.error(errorMessage);
-        }
-      },
-      options
+        toast.error(
+          app.lang === "ar"
+            ? "❌ فشل الحصول على الموقع"
+            : "❌ Failed to get location"
+        );
+      }
     );
   };
 
@@ -758,6 +680,39 @@ export function ChatInput({
 
   return (
     <div className={cn("flex flex-col", className)}>
+      {/* ✅ CSS Animations */}
+      <style>{`
+        @keyframes float-icon {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          25% { transform: translateY(-6px) rotate(3deg); }
+          75% { transform: translateY(4px) rotate(-2deg); }
+        }
+        .animate-float-icon {
+          animation: float-icon 3s ease-in-out infinite;
+        }
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 2s ease-in-out infinite;
+        }
+        @keyframes ripple {
+          0% { transform: scale(0.8); opacity: 1; }
+          100% { transform: scale(2.5); opacity: 0; }
+        }
+        .animate-ripple {
+          animation: ripple 2.5s ease-out infinite;
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%) skewX(-20deg); }
+          100% { transform: translateX(200%) skewX(-20deg); }
+        }
+        .animate-shimmer {
+          animation: shimmer 3s infinite;
+        }
+      `}</style>
+
       {/* ✅ حوار طلب الإذن للمايك */}
       {showPermissionDialog && (
         <MicrophonePermissionDialog
@@ -794,13 +749,14 @@ export function ChatInput({
       <div
         className={cn(
           "flex items-end gap-2 p-2",
-          "bg-white dark:bg-[#242538]",
-          "border border-[#e4e6eb] dark:border-[#3a3b4a]",
-          "rounded-full",
+          "bg-white/95 dark:bg-[#0d1f1d]/95",
+          "border-2",
+          "rounded-2xl",
           "transition-all duration-300",
           isFocused
-            ? "border-[#0084ff] shadow-lg shadow-[#0084ff]/20"
-            : "hover:border-[#0084ff]/50",
+            ? "border-[#2a655f] shadow-lg shadow-[#2a655f]/20"
+            : "border-[#2a655f]/30 hover:border-[#3a8a82]/50",
+          "backdrop-blur-xl",
           className
         )}
       >
@@ -812,14 +768,14 @@ export function ChatInput({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full hover:bg-[#e4e6eb] dark:hover:bg-[#3a3b4a] transition-colors text-slate-500 dark:text-slate-400"
+                  className="h-10 w-10 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-[#2a655f]/20 hover:border-[#3a8a82]/40 group"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={disabled || isLoading}
                 >
-                  <Paperclip className="h-5 w-5" />
+                  <AnimatedIcon Icon={Paperclip} className="h-5 w-5 text-[#2a655f] group-hover:text-[#3a8a82]" color="text-[#2a655f]" delay={0} size="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top">
+              <TooltipContent side="top" className="bg-[#2a655f] text-white border-0">
                 <p>{app.lang === "ar" ? "مرفقات" : "Attachments"}</p>
               </TooltipContent>
             </Tooltip>
@@ -840,14 +796,14 @@ export function ChatInput({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full hover:bg-[#e4e6eb] dark:hover:bg-[#3a3b4a] transition-colors text-slate-500 dark:text-slate-400"
+                  className="h-10 w-10 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-[#2a655f]/20 hover:border-[#3a8a82]/40 group"
                   onClick={() => imageInputRef.current?.click()}
                   disabled={disabled || isLoading}
                 >
-                  <Image className="h-5 w-5" />
+                  <AnimatedIcon Icon={Image} className="h-5 w-5 text-[#2a655f] group-hover:text-[#3a8a82]" color="text-[#2a655f]" delay={100} size="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top">
+              <TooltipContent side="top" className="bg-[#2a655f] text-white border-0">
                 <p>{app.lang === "ar" ? "صورة" : "Image"}</p>
               </TooltipContent>
             </Tooltip>
@@ -898,14 +854,14 @@ export function ChatInput({
                 ? "text-red-500"
                 : isNearLimit
                 ? "text-yellow-500"
-                : "text-muted-foreground"
+                : "text-[#2a655f]"
             )}
           >
             {remainingChars}
           </span>
         )}
 
-        {/* ✅ الأزرار الجانبية - ترتيب RTL */}
+        {/* ✅ الأزرار الجانبية */}
         <div className={cn("flex items-center gap-0.5 shrink-0", isRTL ? "flex-row" : "flex-row")}>
           <EmojiPicker
             onEmojiSelect={handleEmojiSelect}
@@ -920,14 +876,14 @@ export function ChatInput({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full hover:bg-[#e4e6eb] dark:hover:bg-[#3a3b4a] transition-colors text-slate-500 dark:text-slate-400 hover:text-red-500"
+                  className="h-10 w-10 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-[#2a655f]/20 hover:border-[#3a8a82]/40 group"
                   onClick={handleSendLocation}
                   disabled={disabled || isLoading}
                 >
-                  <MapPin className="h-5 w-5" />
+                  <AnimatedIcon Icon={MapPin} className="h-5 w-5 text-[#2a655f] group-hover:text-[#3a8a82]" color="text-[#2a655f]" delay={200} size="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top">
+              <TooltipContent side="top" className="bg-[#2a655f] text-white border-0">
                 <p>{app.lang === "ar" ? "موقع" : "Location"}</p>
               </TooltipContent>
             </Tooltip>
@@ -938,10 +894,10 @@ export function ChatInput({
             variant={isRecording ? "destructive" : "ghost"}
             size="icon"
             className={cn(
-              "h-9 w-9 rounded-full transition-all",
+              "h-10 w-10 rounded-2xl transition-all border-2",
               isRecording
-                ? "animate-pulse shadow-lg shadow-red-500/30"
-                : "hover:bg-[#e4e6eb] dark:hover:bg-[#3a3b4a]"
+                ? "border-red-500 bg-red-500/10 animate-pulse shadow-lg shadow-red-500/30"
+                : "border-[#2a655f]/20 hover:border-[#3a8a82]/40 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20"
             )}
             onClick={() => {
               if (isRecording) {
@@ -953,9 +909,9 @@ export function ChatInput({
             disabled={disabled || isLoading}
           >
             {isRecording ? (
-              <MicOff className="h-5 w-5" />
+              <AnimatedIcon Icon={MicOff} className="h-5 w-5 text-red-500" color="text-red-500" delay={0} size="h-5 w-5" />
             ) : (
-              <Mic className="h-5 w-5 text-slate-500 dark:text-slate-400 hover:text-[#0084ff]" />
+              <AnimatedIcon Icon={Mic} className="h-5 w-5 text-[#2a655f]" color="text-[#2a655f]" delay={300} size="h-5 w-5" />
             )}
           </Button>
 
@@ -970,19 +926,21 @@ export function ChatInput({
               isOverLimit
             }
             className={cn(
-              "h-9 w-9 rounded-full p-0",
-              "bg-[#0084ff] hover:bg-[#0073e6]",
-              "text-white shadow-lg shadow-[#0084ff]/30",
+              "h-12 w-12 rounded-2xl p-0",
+              "bg-gradient-to-r from-[#2a655f] to-[#3a8a82]",
+              "hover:from-[#1a4f4a] hover:to-[#2a655f]",
+              "text-white shadow-lg shadow-[#2a655f]/30",
               "transition-all duration-300",
-              "hover:scale-105 active:scale-95",
+              "hover:scale-110 hover:shadow-xl hover:shadow-[#2a655f]/40",
+              "active:scale-95",
               "disabled:opacity-50 disabled:hover:scale-100",
               isRTL ? "order-last" : ""
             )}
           >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              <SendHorizontal className="h-4 w-4" />
+              <AnimatedIcon Icon={SendHorizontal} className="h-5 w-5 text-white" color="text-white" delay={0} size="h-5 w-5" />
             )}
           </Button>
         </div>
@@ -1053,12 +1011,12 @@ export function SimpleChatInput({
         onKeyDown={handleKeyDown}
         placeholder={placeholder || (app.lang === "ar" ? "اكتب رسالتك..." : "Type a message...")}
         disabled={disabled || isLoading}
-        className="flex-1 rounded-full border-[#e4e6eb] dark:border-[#3a3b4a] focus:ring-2 focus:ring-[#0084ff]"
+        className="flex-1 rounded-full border-[#2a655f]/20 focus:border-[#3a8a82]/50 focus:ring-2 focus:ring-[#2a655f]/30"
       />
       <Button
         onClick={handleSend}
         disabled={!message.trim() || isLoading || disabled}
-        className="rounded-full px-6 bg-[#0084ff] hover:bg-[#0073e6] text-white shadow-lg shadow-[#0084ff]/30 transition-all hover:scale-105 disabled:opacity-50"
+        className="rounded-full px-6 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-lg shadow-[#2a655f]/30 transition-all hover:scale-105 disabled:opacity-50"
       >
         {isLoading ? (
           <Loader2 className="h-5 w-5 animate-spin" />

@@ -78,18 +78,20 @@ export function MessageSearch({
     }
   };
 
+  // ====== ✅ CSS Animations ======
   return (
     <div
       className={cn(
-        "bg-white dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-700/60",
-        "p-3 shadow-lg",
+        "bg-white/95 dark:bg-[#0d1f1d]/95 backdrop-blur-xl",
+        "border-b border-[#2a655f]/20",
+        "p-3 shadow-xl",
         className
       )}
     >
       <div className="flex items-center gap-2">
         {/* حقل البحث */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#2a655f] dark:text-[#3a8a82]" />
           <Input
             ref={inputRef}
             value={query}
@@ -99,31 +101,31 @@ export function MessageSearch({
                 ? "🔍 بحث في الرسائل..."
                 : "🔍 Search messages..."
             }
-            className="pl-9 pr-4 rounded-xl"
+            className="pl-9 pr-4 rounded-xl border-[#2a655f]/20 focus:border-[#3a8a82]/50 focus:ring-[#2a655f]/30"
           />
         </div>
 
         {/* نتائج البحث */}
         {results.length > 0 && (
           <div className="flex items-center gap-1 shrink-0">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
+            <span className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82] whitespace-nowrap">
               {currentIndex + 1}/{results.length}
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="h-8 w-8 rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-transparent hover:border-[#2a655f]/20"
               onClick={goToPrev}
             >
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82]" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="h-8 w-8 rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-transparent hover:border-[#2a655f]/20"
               onClick={goToNext}
             >
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82]" />
             </Button>
           </div>
         )}
@@ -132,10 +134,10 @@ export function MessageSearch({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
+          className="h-8 w-8 rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-transparent hover:border-[#2a655f]/20 shrink-0"
           onClick={onClose}
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82]" />
         </Button>
       </div>
 
@@ -153,14 +155,14 @@ export function MessageSearch({
               key={msg.id}
               onClick={() => handleResultClick(index)}
               className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors",
+                "flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200",
                 currentIndex === index
-                  ? "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"
-                  : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                  ? "bg-[#2a655f]/10 dark:bg-[#2a655f]/20 border border-[#2a655f]/30 shadow-sm"
+                  : "hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10 border border-transparent hover:border-[#2a655f]/10"
               )}
             >
-              <MessageCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <p className="text-sm truncate flex-1">
+              <MessageCircle className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] shrink-0" />
+              <p className="text-sm truncate flex-1 text-foreground">
                 {msg.content}
               </p>
               <span className="text-[10px] text-muted-foreground shrink-0">
@@ -172,7 +174,7 @@ export function MessageSearch({
             </div>
           ))}
           {results.length > 10 && (
-            <div className="text-xs text-center text-muted-foreground py-1">
+            <div className="text-xs text-center text-[#2a655f]/70 dark:text-[#3a8a82]/70 py-1">
               + {results.length - 10} {app.lang === "ar" ? "نتيجة إضافية" : "more results"}
             </div>
           )}

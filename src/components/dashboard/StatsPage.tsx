@@ -9,7 +9,8 @@ import {
   RefreshCw, X, Filter, DollarSign, ShoppingCart, TrendingUp, 
   TrendingDown, Calendar, Award, Users, Package, Clock,
   Eye, Download, BarChart3, PieChart as PieChartIcon,
-  CheckCircle2  // ✅ أضف هذا
+  CheckCircle2, Sparkles, Rocket, Zap, Target, Crown,
+  ArrowUpRight, ArrowDownRight, Medal, Star, Gift
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,11 +19,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { useMyOrders, useMyListings } from "@/lib/queries";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import * as XLSX from 'xlsx';
 import pkg from 'file-saver';
 const { saveAs } = pkg;
 
-const COLORS = ['#2563eb', '#7c3aed', '#db2777', '#059669', '#d97706', '#dc2626', '#14b8a6', '#8b5cf6'];
+const COLORS = ['#2a655f', '#3a8a82', '#4a9f95', '#5ab5a8', '#6acbbb', '#7ad8ca', '#2a655f', '#3a8a82'];
 
 function buildRevenueChart(rows: any[], lang: "ar" | "en") {
   const labels = lang === "ar"
@@ -63,7 +65,6 @@ export function StatsPage() {
   const filteredOrders = useMemo(() => {
     let result = orders;
 
-    // فلترة حسب الوقت
     if (timeRange !== "all") {
       const now = new Date();
       let startDate = new Date();
@@ -84,18 +85,16 @@ export function StatsPage() {
   const stats = useMemo(() => {
     const totalRevenue = filteredOrders.reduce((sum: number, o: any) => sum + (Number(o.total) || 0), 0);
     const totalOrders = filteredOrders.length;
-    const completedOrders = filteredOrders.filter((o: any) => o.status === 'completed').length;
+    const completedOrders = filteredOrders.filter((o: any) => o.status === 'completed' || o.status === 'delivered').length;
     const pendingOrders = filteredOrders.filter((o: any) => o.status === 'pending').length;
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     const completionRate = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
     const totalProducts = listings.length;
 
-    // ترتيب الطلبات حسب التاريخ
     const sortedOrders = [...filteredOrders].sort((a, b) => 
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-    // حساب النمو
     const growth = sortedOrders.length > 0 ? 
       ((sortedOrders[sortedOrders.length - 1]?.total || 0) - (sortedOrders[0]?.total || 0)) / (sortedOrders[0]?.total || 1) * 100 : 0;
 
@@ -189,12 +188,7 @@ export function StatsPage() {
     XLSX.utils.book_append_sheet(wb, ws, 'الإحصائيات');
     
     ws['!cols'] = [
-      { wch: 15 }, // رقم الطلب
-      { wch: 25 }, // المنتج
-      { wch: 12 }, // الكمية
-      { wch: 18 }, // الإجمالي
-      { wch: 15 }, // الحالة
-      { wch: 20 }, // التاريخ
+      { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 20 },
     ];
 
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
@@ -212,13 +206,13 @@ export function StatsPage() {
         <meta charset="UTF-8">
         <style>
           body { font-family: 'Arial', sans-serif; padding: 20px; }
-          h1 { color: #1e293b; text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
+          h1 { color: #1e293b; text-align: center; border-bottom: 2px solid #2a655f; padding-bottom: 10px; }
           .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 20px 0; }
-          .stat-card { background: #f8fafc; padding: 16px; border-radius: 12px; border-right: 4px solid #3b82f6; }
+          .stat-card { background: #f8fafc; padding: 16px; border-radius: 12px; border-right: 4px solid #2a655f; }
           .stat-card .value { font-size: 24px; font-weight: bold; color: #1e293b; }
           .stat-card .label { font-size: 12px; color: #94a3b8; }
           table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th { background: #3b82f6; color: white; padding: 12px; text-align: right; }
+          th { background: #2a655f; color: white; padding: 12px; text-align: right; }
           td { padding: 10px; border: 1px solid #e2e8f0; text-align: right; }
           tr:nth-child(even) { background: #f8fafc; }
           .footer { margin-top: 20px; text-align: center; color: #94a3b8; font-size: 12px; }
@@ -296,28 +290,81 @@ export function StatsPage() {
     toast.success(app.lang === "ar" ? "✅ تم تصدير البيانات إلى Word" : "✅ Data exported to Word");
   };
 
-  return (
-    <div className="space-y-5">
-      {/* ===== العنوان ===== */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-blue-600" />
-            {app.lang === "ar" ? "الإحصائيات" : "Analytics"}
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {app.lang === "ar"
-              ? `تحليل أدائك المالي (${filteredOrders.length} طلب)`
-              : `Financial performance analysis (${filteredOrders.length} orders)`}
+  // ===== حالة التحميل =====
+  if (ordersLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 space-y-6">
+        <div className="relative">
+          <div className="h-20 w-20 rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f] animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <BarChart3 className="h-8 w-8 text-[#2a655f] animate-pulse" />
+          </div>
+          <div className="absolute -inset-4 rounded-full border-2 border-[#2a655f]/10 animate-ping" />
+        </div>
+        <div className="text-center space-y-2">
+          <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 animate-pulse">
+            {app.lang === "ar" ? "⏳ جاري تحميل الإحصائيات..." : "⏳ Loading analytics..."}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {app.lang === "ar" ? "قد يستغرق هذا بضع ثوانٍ" : "This may take a few seconds"}
           </p>
         </div>
+        <div className="w-64 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div className="h-full w-1/2 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] rounded-full animate-slide" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* ===== العنوان ===== */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="relative">
+          <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
+          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#3a8a82]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+          
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
+            <div className="relative group">
+              <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
+              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#2a655f]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                <BarChart3 className="h-5 w-5 group-hover:animate-bounce" />
+              </div>
+            </div>
+            {app.lang === "ar" ? "الإحصائيات" : "Analytics"}
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
+              {filteredOrders.length}
+            </Badge>
+          </h1>
+          
+          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10">
+              <DollarSign className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
+              <span className="text-[#2a655f] font-medium">{formatPrice(stats.totalRevenue, app.currency, app.lang)}</span>
+              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "إيرادات" : "revenue"}</span>
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/50">
+              <ShoppingCart className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-emerald-600 font-medium">{stats.totalOrders}</span>
+              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "طلب" : "orders"}</span>
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200/50">
+              <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+              <span className="text-purple-600 font-medium">{stats.completionRate}%</span>
+              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "إنجاز" : "completed"}</span>
+            </span>
+          </p>
+        </div>
+
         <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
             onClick={exportToExcel}
             disabled={filteredOrders.length === 0}
-            className="rounded-xl border-emerald-500/30 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:border-emerald-500/50"
+            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105"
           >
             <FileSpreadsheet className="h-4 w-4 mr-1.5" />
             Excel
@@ -327,7 +374,7 @@ export function StatsPage() {
             size="sm"
             onClick={exportToWord}
             disabled={filteredOrders.length === 0}
-            className="rounded-xl border-blue-500/30 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:border-blue-500/50"
+            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105"
           >
             <FileText className="h-4 w-4 mr-1.5" />
             Word
@@ -339,9 +386,9 @@ export function StatsPage() {
               refetchOrders();
               refetchListings();
             }}
-            className="rounded-xl border-slate-200 dark:border-slate-700"
+            className="rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5 transition-all duration-300 group"
           >
-            <RefreshCw className="h-4 w-4 mr-1.5" />
+            <RefreshCw className="h-4 w-4 mr-1.5 group-hover:rotate-180 transition-transform duration-700" />
             {app.lang === "ar" ? "تحديث" : "Refresh"}
           </Button>
         </div>
@@ -355,16 +402,16 @@ export function StatsPage() {
             label: app.lang === 'ar' ? 'إجمالي الإيرادات' : 'Total Revenue', 
             value: formatPrice(stats.totalRevenue, app.currency, app.lang),
             icon: DollarSign,
-            color: 'text-emerald-600',
-            bg: 'bg-emerald-500/10'
+            color: 'text-[#2a655f]',
+            bg: 'bg-[#2a655f]/10'
           },
           { 
             key: 'orders', 
             label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', 
             value: stats.totalOrders,
             icon: ShoppingCart,
-            color: 'text-blue-600',
-            bg: 'bg-blue-500/10'
+            color: 'text-[#3a8a82]',
+            bg: 'bg-[#3a8a82]/10'
           },
           { 
             key: 'completion', 
@@ -383,16 +430,21 @@ export function StatsPage() {
             bg: 'bg-orange-500/10'
           },
         ].map((stat) => (
-          <div key={stat.key} className="bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-3 shadow-sm">
-            <div className="flex items-center justify-between">
+          <div 
+            key={stat.key} 
+            className="group relative bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-3 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
+          >
+            <div className={`absolute inset-0 bg-gradient-to-br from-${stat.color.split('-')[1]}/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+            <div className="relative flex items-center justify-between">
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
-                <p className="text-xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+                <p className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
               </div>
-              <div className={`h-9 w-9 rounded-lg ${stat.bg} flex items-center justify-center`}>
+              <div className={`h-9 w-9 rounded-lg ${stat.bg} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </div>
             </div>
+            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#2a655f] to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
           </div>
         ))}
       </div>
@@ -405,8 +457,8 @@ export function StatsPage() {
             label: app.lang === 'ar' ? 'الطلبات المكتملة' : 'Completed Orders', 
             value: stats.completedOrders,
             icon: CheckCircle2,
-            color: 'text-green-600',
-            bg: 'bg-green-500/10'
+            color: 'text-emerald-600',
+            bg: 'bg-emerald-500/10'
           },
           { 
             key: 'pending', 
@@ -425,22 +477,32 @@ export function StatsPage() {
             bg: 'bg-rose-500/10'
           },
         ].map((stat) => (
-          <div key={stat.key} className="bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-3 shadow-sm text-center">
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
+          <div 
+            key={stat.key} 
+            className="group relative bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-3 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden text-center"
+          >
+            <div className={`absolute inset-0 bg-gradient-to-br from-${stat.color.split('-')[1]}/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+            <div className="relative">
+              <div className={`h-7 w-7 rounded-lg ${stat.bg} flex items-center justify-center mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
+                <stat.icon className={`h-3.5 w-3.5 ${stat.color}`} />
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
+            </div>
+            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#2a655f] to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
           </div>
         ))}
       </div>
 
       {/* ===== الفلترة ===== */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400" />
+        <div className="relative flex-1 group">
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors duration-300" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={app.lang === "ar" ? "بحث..." : "Search..."}
-            className="ps-9 h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:ring-2 focus:ring-blue-500/20 transition-all"
+            placeholder={app.lang === "ar" ? "🔍 بحث في الإحصائيات..." : "🔍 Search analytics..."}
+            className="ps-9 h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-[#1e293b] focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300"
           />
         </div>
 
@@ -448,17 +510,17 @@ export function StatsPage() {
           value={timeRange}
           onValueChange={(value: any) => setTimeRange(value)}
         >
-          <SelectTrigger className="w-[150px] h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b]">
+          <SelectTrigger className="w-[150px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-[#1e293b] hover:border-[#2a655f]/30 transition-all duration-300">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-slate-400" />
               <SelectValue placeholder={app.lang === "ar" ? "المدة" : "Period"} />
             </div>
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{app.lang === "ar" ? "كل الوقت" : "All time"}</SelectItem>
-            <SelectItem value="3months">{app.lang === "ar" ? "آخر 3 شهور" : "Last 3 months"}</SelectItem>
-            <SelectItem value="6months">{app.lang === "ar" ? "آخر 6 شهور" : "Last 6 months"}</SelectItem>
-            <SelectItem value="year">{app.lang === "ar" ? "آخر سنة" : "Last year"}</SelectItem>
+          <SelectContent className="rounded-xl border-[#2a655f]/20">
+            <SelectItem value="all" className="hover:bg-[#2a655f]/10">{app.lang === "ar" ? "كل الوقت" : "All time"}</SelectItem>
+            <SelectItem value="3months" className="hover:bg-[#2a655f]/10">📅 {app.lang === "ar" ? "آخر 3 شهور" : "Last 3 months"}</SelectItem>
+            <SelectItem value="6months" className="hover:bg-[#2a655f]/10">📅 {app.lang === "ar" ? "آخر 6 شهور" : "Last 6 months"}</SelectItem>
+            <SelectItem value="year" className="hover:bg-[#2a655f]/10">📅 {app.lang === "ar" ? "آخر سنة" : "Last year"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -469,9 +531,9 @@ export function StatsPage() {
             setSearchQuery("");
             setTimeRange("all");
           }}
-          className="h-10 rounded-xl border-slate-200 dark:border-slate-700"
+          className="h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 group"
         >
-          <X className="h-4 w-4 mr-1.5" />
+          <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
           {app.lang === "ar" ? "مسح الكل" : "Clear all"}
         </Button>
       </div>
@@ -480,17 +542,22 @@ export function StatsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* ===== رسم الإيرادات ===== */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-5">
+        <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 p-5 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                <div className="p-1 rounded-lg bg-[#2a655f]/10">
+                  <TrendingUp className="h-4 w-4 text-[#2a655f] animate-pulse" />
+                </div>
                 {app.lang === 'ar' ? 'الإيرادات الشهرية' : 'Monthly Revenue'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {app.lang === 'ar' ? 'تطور الإيرادات خلال الأشهر الماضية' : 'Revenue trend over the past months'}
               </p>
             </div>
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+              {app.lang === "ar" ? "آخر 6 شهور" : "Last 6 months"}
+            </Badge>
           </div>
           <div className="h-[240px]">
             {revenueChart.some(d => d.revenue > 0) ? (
@@ -498,18 +565,18 @@ export function StatsPage() {
                 <AreaChart data={revenueChart}>
                   <defs>
                     <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0}/>
+                      <stop offset="0%" stopColor="#2a655f" stopOpacity={0.3}/>
+                      <stop offset="100%" stopColor="#2a655f" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
-                  <XAxis dataKey="m" fontSize={11} tick={{ fill: '#94a3b8' }} />
-                  <YAxis fontSize={11} tick={{ fill: '#94a3b8' }} />
+                  <XAxis dataKey="m" fontSize={11} tick={{ fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis fontSize={11} tick={{ fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                   <Tooltip 
                     contentStyle={{ 
                       borderRadius: '12px', 
                       border: 'none', 
-                      boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
+                      boxShadow: '0 10px 40px rgba(42,101,95,0.15)',
                       background: 'rgba(255,255,255,0.95)'
                     }}
                     formatter={(v: any) => formatPrice(v, app.currency, app.lang)}
@@ -517,26 +584,32 @@ export function StatsPage() {
                   <Area 
                     type="monotone" 
                     dataKey="revenue" 
-                    stroke="#8b5cf6" 
+                    stroke="#2a655f" 
                     fill="url(#revenueGradient)" 
                     strokeWidth={3}
-                    dot={{ fill: '#8b5cf6', r: 4 }}
+                    dot={{ fill: '#2a655f', r: 4 }}
+                    activeDot={{ r: 6 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-sm text-slate-500">
-                {app.lang === 'ar' ? 'لا توجد بيانات كافية' : 'Insufficient data'}
+                <div className="flex flex-col items-center gap-2">
+                  <BarChart3 className="h-10 w-10 text-slate-300" />
+                  <p>{app.lang === 'ar' ? 'لا توجد بيانات كافية' : 'Insufficient data'}</p>
+                </div>
               </div>
             )}
           </div>
         </div>
 
         {/* ===== توزيع الطلبات ===== */}
-        <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-5">
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 p-5 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-              <PieChartIcon className="h-4 w-4 text-blue-500" />
+              <div className="p-1 rounded-lg bg-[#2a655f]/10">
+                <PieChartIcon className="h-4 w-4 text-[#2a655f]" />
+              </div>
               {app.lang === 'ar' ? 'توزيع الطلبات' : 'Order Distribution'}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -566,7 +639,7 @@ export function StatsPage() {
                     contentStyle={{ 
                       borderRadius: '12px', 
                       border: 'none', 
-                      boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
+                      boxShadow: '0 10px 40px rgba(42,101,95,0.15)',
                       background: 'rgba(255,255,255,0.95)'
                     }}
                   />
@@ -575,7 +648,10 @@ export function StatsPage() {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-sm text-slate-500">
-                {app.lang === 'ar' ? 'لا توجد طلبات' : 'No orders'}
+                <div className="flex flex-col items-center gap-2">
+                  <PieChartIcon className="h-10 w-10 text-slate-300" />
+                  <p>{app.lang === 'ar' ? 'لا توجد طلبات' : 'No orders'}</p>
+                </div>
               </div>
             )}
           </div>
@@ -583,42 +659,69 @@ export function StatsPage() {
       </div>
 
       {/* ===== أفضل المنتجات ===== */}
-      <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-5">
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 p-5 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-              <Award className="h-4 w-4 text-yellow-500" />
-              {app.lang === 'ar' ? 'أفضل المنتجات مبيعاً' : 'Best Selling Products'}
+              <div className="p-1 rounded-lg bg-[#2a655f]/10">
+                <Award className="h-4 w-4 text-[#2a655f] animate-bounce" />
+              </div>
+              {app.lang === 'ar' ? '🏆 أفضل المنتجات مبيعاً' : '🏆 Best Selling Products'}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {app.lang === 'ar' ? 'المنتجات الأعلى إيراداً' : 'Top revenue products'}
             </p>
           </div>
+          <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0">
+            {topProducts.length} {app.lang === "ar" ? "منتج" : "products"}
+          </Badge>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           {topProducts.length > 0 ? (
             topProducts.map((product: any, index: number) => (
-              <div key={product.id} className={`p-3 rounded-xl border ${index === 0 ? 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/20' : 'border-slate-200/60 dark:border-slate-700/60'}`}>
+              <div 
+                key={product.id} 
+                className={cn(
+                  "p-3 rounded-xl border transition-all duration-500 hover:-translate-y-1 hover:shadow-lg group",
+                  index === 0 
+                    ? "border-amber-400 bg-gradient-to-br from-amber-50/80 to-amber-100/30 dark:from-amber-950/30 dark:to-amber-950/10" 
+                    : "border-[#2a655f]/20 bg-white dark:bg-[#1e293b] hover:border-[#2a655f]/40"
+                )}
+              >
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600 font-bold text-xs">
+                  <div className={cn(
+                    "h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs transition-all duration-300 group-hover:scale-110",
+                    index === 0 
+                      ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30" 
+                      : "bg-[#2a655f]/10 text-[#2a655f]"
+                  )}>
                     #{index + 1}
                   </div>
                   <div className="truncate">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate max-w-[100px]">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate max-w-[100px] group-hover:text-[#2a655f] transition-colors">
                       {product.name}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                      <ShoppingCart className="h-3 w-3 text-[#2a655f]" />
                       {product.orders || 0} {app.lang === 'ar' ? 'طلب' : 'orders'}
                     </p>
                   </div>
                 </div>
-                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 text-center">
+                <p className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82] mt-1 text-center">
                   {formatPrice(product.revenue || 0, app.currency, app.lang)}
                 </p>
+                {index === 0 && (
+                  <div className="flex justify-center mt-1">
+                    <Crown className="h-4 w-4 text-amber-500 animate-pulse" />
+                  </div>
+                )}
               </div>
             ))
           ) : (
             <div className="col-span-5 text-center py-8 text-sm text-slate-500">
+              <div className="h-12 w-12 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-2">
+                <Package className="h-6 w-6 text-[#2a655f]/40" />
+              </div>
               {app.lang === 'ar' ? 'لا توجد منتجات مبيعة' : 'No products sold yet'}
             </div>
           )}
@@ -627,34 +730,45 @@ export function StatsPage() {
 
       {/* ===== المبيعات اليومية ===== */}
       {dailySales.length > 0 && (
-        <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-5">
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 p-5 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-blue-500" />
+                <div className="p-1 rounded-lg bg-[#2a655f]/10">
+                  <Calendar className="h-4 w-4 text-[#2a655f]" />
+                </div>
                 {app.lang === 'ar' ? 'المبيعات اليومية' : 'Daily Sales'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {app.lang === 'ar' ? 'آخر 7 أيام' : 'Last 7 days'}
               </p>
             </div>
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0">
+              {dailySales.reduce((sum, d) => sum + d.orders, 0)} {app.lang === "ar" ? "طلب" : "orders"}
+            </Badge>
           </div>
           <div className="h-[150px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dailySales}>
+                <defs>
+                  <linearGradient id="dailyGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#2a655f" stopOpacity={0.8}/>
+                    <stop offset="100%" stopColor="#2a655f" stopOpacity={0.4}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
-                <XAxis dataKey="date" fontSize={10} tick={{ fill: '#94a3b8' }} />
-                <YAxis fontSize={10} tick={{ fill: '#94a3b8' }} />
+                <XAxis dataKey="date" fontSize={10} tick={{ fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis fontSize={10} tick={{ fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                 <Tooltip 
                   contentStyle={{ 
                     borderRadius: '12px', 
                     border: 'none', 
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
+                    boxShadow: '0 10px 40px rgba(42,101,95,0.15)',
                     background: 'rgba(255,255,255,0.95)'
                   }}
                   formatter={(v: any) => formatPrice(v, app.currency, app.lang)}
                 />
-                <Bar dataKey="revenue" fill="#8b5cf6" radius={[4,4,0,0]} barSize={32} />
+                <Bar dataKey="revenue" fill="url(#dailyGradient)" radius={[4,4,0,0]} barSize={32} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -662,21 +776,40 @@ export function StatsPage() {
       )}
 
       {/* ===== Footer ===== */}
-      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
-        <span>
+      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 border-t border-[#2a655f]/20 dark:border-[#2a655f]/30 pt-4">
+        <span className="flex items-center gap-2">
+          <Zap className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
           {app.lang === "ar"
             ? `إجمالي الطلبات: ${filteredOrders.length} | إجمالي الإيرادات: ${formatPrice(stats.totalRevenue, app.currency, app.lang)}`
             : `Total orders: ${filteredOrders.length} | Total revenue: ${formatPrice(stats.totalRevenue, app.currency, app.lang)}`}
         </span>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800">
+          <Badge variant="secondary" className="bg-[#2a655f]/10 text-[#2a655f] border-0">
+            <Calendar className="h-3 w-3 mr-1" />
             {timeRange === "all" ? (app.lang === "ar" ? "كل الوقت" : "All time") :
              timeRange === "3months" ? (app.lang === "ar" ? "آخر 3 شهور" : "Last 3 months") :
              timeRange === "6months" ? (app.lang === "ar" ? "آخر 6 شهور" : "Last 6 months") :
              (app.lang === "ar" ? "آخر سنة" : "Last year")}
+          </Badge>
+          <Badge variant="secondary" className="bg-[#2a655f]/10 text-[#2a655f] border-0">
+            <TrendingUp className="h-3 w-3 mr-1" />
+            {stats.growth > 0 ? '+' : ''}{stats.growth}%
           </Badge>
         </div>
       </div>
     </div>
   );
 }
+
+// ✅ إضافة CSS للحركات
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+  .animate-slide {
+    animation: slide 1.5s ease-in-out infinite;
+  }
+`;
+document.head.appendChild(style);

@@ -106,10 +106,10 @@ function UserStatus({ user, className }: { user: User; className?: string }) {
 
   if (user.is_online) {
     return (
-      <span className={cn("flex items-center gap-1.5 text-xs text-green-500", className)}>
+      <span className={cn("flex items-center gap-1.5 text-xs text-[#3a8a82]", className)}>
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3a8a82] opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3a8a82]" />
         </span>
         {app.lang === "ar" ? "متصل الآن" : "Online"}
       </span>
@@ -141,13 +141,12 @@ function UserStatus({ user, className }: { user: User; className?: string }) {
 
     return (
       <span className={cn("flex items-center gap-1.5 text-xs text-muted-foreground", className)}>
-        <Clock className="h-3 w-3" />
+        <Clock className="h-3 w-3 text-[#2a655f]/50" />
         {app.lang === "ar" ? `آخر ظهور ${lastSeenText}` : `Last seen ${lastSeenText}`}
       </span>
     );
   }
 
-  // ✅ بدلاً من "غير متاح"، اعرض "غير متصل"
   return (
     <span className={cn("flex items-center gap-1.5 text-xs text-gray-400", className)}>
       <span className="relative flex h-2 w-2">
@@ -167,18 +166,18 @@ function UserInfo({ user, isStore }: { user: User; isStore?: boolean }) {
 
   return (
     <div className="flex items-center gap-3 min-w-0">
-      <Avatar className="h-10 w-10 ring-2 ring-blue-200 dark:ring-blue-800 shrink-0">
+      <Avatar className="h-10 w-10 ring-2 ring-[#2a655f]/20 shrink-0">
         <AvatarImage src={avatar || undefined} alt={name} />
-        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-sm font-bold">
+        <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-sm font-bold">
           {name.charAt(0).toUpperCase()}
         </AvatarFallback>
       </Avatar>
       
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-sm truncate">{name}</h2>
+          <h2 className="font-semibold text-sm truncate text-foreground">{name}</h2>
           {isStore && (
-            <Badge variant="secondary" className="text-[8px] px-1.5 py-0 h-4 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 rounded-full shrink-0">
+            <Badge variant="secondary" className="text-[8px] px-1.5 py-0 h-4 bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20 rounded-full shrink-0">
               {app.lang === "ar" ? "متجر" : "Store"}
             </Badge>
           )}
@@ -221,7 +220,6 @@ export function ChatHeader({
 
   const name = user.store_name || user.full_name || (app.lang === "ar" ? "مستخدم" : "User");
 
-  // ====== معالج الرجوع ======
   const handleBack = () => {
     if (onBack) {
       onBack();
@@ -230,7 +228,6 @@ export function ChatHeader({
     }
   };
 
-  // ====== معالج الحذف ======
   const handleDelete = () => {
     setShowDeleteDialog(true);
   };
@@ -245,14 +242,14 @@ export function ChatHeader({
 
   return (
     <>
-      {/* ====== ✅ رأس المحادثة - تصميم الماسنجر ====== */}
+      {/* ====== ✅ رأس المحادثة ====== */}
       <div
         className={cn(
           "flex items-center justify-between px-4 py-3",
-          "bg-white dark:bg-[#242538]",
-          "border-b border-[#e4e6eb] dark:border-[#3a3b4a]",
+          "bg-white/95 dark:bg-[#0d1f1d]/95 backdrop-blur-xl",
+          "border-b border-[#2a655f]/20",
           "transition-all duration-300",
-          isHovered ? "shadow-sm" : "",
+          isHovered ? "shadow-lg shadow-[#2a655f]/10" : "",
           className
         )}
         onMouseEnter={() => setIsHovered(true)}
@@ -260,7 +257,6 @@ export function ChatHeader({
       >
         {/* ✅ الجانب الأيسر - زر الرجوع + معلومات المستخدم */}
         <div className="flex items-center gap-2 min-w-0">
-          {/* ✅ زر الرجوع - محسّن مثل الماسنجر */}
           {showBackButton && (
             <TooltipProvider>
               <Tooltip>
@@ -268,20 +264,19 @@ export function ChatHeader({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 rounded-full hover:bg-[#e4e6eb] dark:hover:bg-[#3a3b4a] transition-all shrink-0 text-slate-700 dark:text-slate-300 hover:scale-105 active:scale-95"
+                    className="h-10 w-10 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all shrink-0 text-[#2a655f] dark:text-[#3a8a82] hover:scale-105 active:scale-95 border border-transparent hover:border-[#2a655f]/20"
                     onClick={handleBack}
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">
+                <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-0">
                   <p>{app.lang === "ar" ? "رجوع" : "Back"}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
 
-          {/* معلومات المستخدم - قابلة للنقر للذهاب للملف الشخصي */}
           <div 
             className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-2"
             onClick={onViewProfile}
@@ -290,10 +285,9 @@ export function ChatHeader({
           </div>
         </div>
 
-        {/* ✅ الجانب الأيمن - أزرار الماسنجر */}
+        {/* ✅ الجانب الأيمن - أزرار */}
         {showActions && (
           <div className="flex items-center gap-0.5 shrink-0">
-            {/* ✅ زر البحث */}
             {onSearch && (
               <TooltipProvider>
                 <Tooltip>
@@ -301,20 +295,19 @@ export function ChatHeader({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 rounded-full hover:bg-[#e4e6eb] dark:hover:bg-[#3a3b4a] transition-colors text-slate-600 dark:text-slate-400"
+                      className="h-9 w-9 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-colors text-[#2a655f] dark:text-[#3a8a82] border border-transparent hover:border-[#2a655f]/20"
                       onClick={onSearch}
                     >
                       <Search className="h-4.5 w-4.5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">
+                  <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-0">
                     <p>{app.lang === "ar" ? "بحث" : "Search"}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
 
-            {/* ✅ زر الاتصال الصوتي */}
             {onCall && (
               <TooltipProvider>
                 <Tooltip>
@@ -322,20 +315,19 @@ export function ChatHeader({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 rounded-full hover:bg-[#e4e6eb] dark:hover:bg-[#3a3b4a] transition-colors text-green-600 hover:text-green-700"
+                      className="h-9 w-9 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-colors text-[#2a655f] hover:text-[#3a8a82] border border-transparent hover:border-[#2a655f]/20"
                       onClick={onCall}
                     >
                       <Phone className="h-4.5 w-4.5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">
+                  <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-0">
                     <p>{app.lang === "ar" ? "اتصال صوتي" : "Voice call"}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
 
-            {/* ✅ زر الاتصال المرئي */}
             {onVideoCall && (
               <TooltipProvider>
                 <Tooltip>
@@ -343,92 +335,84 @@ export function ChatHeader({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 rounded-full hover:bg-[#e4e6eb] dark:hover:bg-[#3a3b4a] transition-colors text-[#0084ff] hover:text-[#0073e6]"
+                      className="h-9 w-9 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-colors text-[#2a655f] hover:text-[#3a8a82] border border-transparent hover:border-[#2a655f]/20"
                       onClick={onVideoCall}
                     >
                       <Video className="h-4.5 w-4.5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">
+                  <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-0">
                     <p>{app.lang === "ar" ? "مكالمة فيديو" : "Video call"}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
 
-            {/* القائمة المنسدلة */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full hover:bg-[#e4e6eb] dark:hover:bg-[#3a3b4a] transition-colors text-slate-600 dark:text-slate-400"
+                  className="h-9 w-9 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-colors text-[#2a655f] dark:text-[#3a8a82] border border-transparent hover:border-[#2a655f]/20"
                 >
                   <MoreVertical className="h-4.5 w-4.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 rounded-xl p-1 shadow-xl border-[#e4e6eb] dark:border-[#3a3b4a]">
+              <DropdownMenuContent align="end" className="w-56 rounded-xl p-1 shadow-xl border-[#2a655f]/20 bg-white/95 dark:bg-[#0d1f1d]/95 backdrop-blur-xl">
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 ring-1 ring-[#2a655f]/20">
                       <AvatarImage src={user.avatar_url || undefined} alt={name} />
-                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs">
+                      <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-xs">
                         {name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-semibold">{name}</p>
-                      <p className="text-xs text-muted-foreground">{user.id}</p>
+                      <p className="text-sm font-semibold text-foreground">{name}</p>
+                      <p className="text-xs text-muted-foreground">{user.id.slice(0, 8)}</p>
                     </div>
                   </div>
                 </DropdownMenuLabel>
 
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-[#2a655f]/10" />
 
                 <DropdownMenuGroup>
                   {onViewProfile && (
-                    <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg" onClick={onViewProfile}>
-                      <User className="h-4 w-4" />
+                    <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg hover:bg-[#2a655f]/10 text-foreground" onClick={onViewProfile}>
+                      <User className="h-4 w-4 text-[#2a655f]" />
                       {app.lang === "ar" ? "عرض الملف الشخصي" : "View profile"}
                     </DropdownMenuItem>
                   )}
                   {isStore && onViewStore && (
-                    <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg" onClick={onViewStore}>
-                      <Store className="h-4 w-4" />
+                    <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg hover:bg-[#2a655f]/10 text-foreground" onClick={onViewStore}>
+                      <Store className="h-4 w-4 text-[#2a655f]" />
                       {app.lang === "ar" ? "عرض المتجر" : "View store"}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuGroup>
 
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-[#2a655f]/10" />
 
                 <DropdownMenuGroup>
                   {onPin && (
-                    <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg" onClick={onPin}>
-                      {isPinned ? (
-                        <>
-                          <Pin className="h-4 w-4 text-yellow-500" />
-                          {app.lang === "ar" ? "إلغاء التثبيت" : "Unpin"}
-                        </>
-                      ) : (
-                        <>
-                          <Pin className="h-4 w-4" />
-                          {app.lang === "ar" ? "تثبيت" : "Pin"}
-                        </>
-                      )}
+                    <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg hover:bg-[#2a655f]/10 text-foreground" onClick={onPin}>
+                      <Pin className={cn("h-4 w-4", isPinned ? "text-[#2a655f]" : "")} />
+                      {isPinned
+                        ? (app.lang === "ar" ? "إلغاء التثبيت" : "Unpin")
+                        : (app.lang === "ar" ? "تثبيت" : "Pin")}
                     </DropdownMenuItem>
                   )}
 
                   {onMute && (
-                    <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg" onClick={onMute}>
+                    <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg hover:bg-[#2a655f]/10 text-foreground" onClick={onMute}>
                       {isMuted ? (
                         <>
-                          <Bell className="h-4 w-4" />
+                          <Bell className="h-4 w-4 text-[#2a655f]" />
                           {app.lang === "ar" ? "إلغاء الكتم" : "Unmute"}
                         </>
                       ) : (
                         <>
-                          <BellOff className="h-4 w-4" />
+                          <BellOff className="h-4 w-4 text-[#2a655f]" />
                           {app.lang === "ar" ? "كتم الإشعارات" : "Mute notifications"}
                         </>
                       )}
@@ -436,8 +420,8 @@ export function ChatHeader({
                   )}
 
                   {onArchive && (
-                    <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg" onClick={onArchive}>
-                      <Archive className="h-4 w-4" />
+                    <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg hover:bg-[#2a655f]/10 text-foreground" onClick={onArchive}>
+                      <Archive className="h-4 w-4 text-[#2a655f]" />
                       {isArchived
                         ? (app.lang === "ar" ? "إلغاء الأرشفة" : "Unarchive")
                         : (app.lang === "ar" ? "أرشفة" : "Archive")}
@@ -445,16 +429,17 @@ export function ChatHeader({
                   )}
                 </DropdownMenuGroup>
 
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-[#2a655f]/10" />
 
                 {onShare && (
-                  <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg" onClick={onShare}>
-                    <Share2 className="h-4 w-4" />
-                    {app.lang === "ar" ? "مشاركة" : "Share"}
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg hover:bg-[#2a655f]/10 text-foreground" onClick={onShare}>
+                      <Share2 className="h-4 w-4 text-[#2a655f]" />
+                      {app.lang === "ar" ? "مشاركة" : "Share"}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-[#2a655f]/10" />
+                  </>
                 )}
-
-                <DropdownMenuSeparator />
 
                 <DropdownMenuGroup>
                   {onBlock && (
@@ -471,7 +456,7 @@ export function ChatHeader({
                   )}
                 </DropdownMenuGroup>
 
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-[#2a655f]/10" />
 
                 <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30" onClick={handleDelete}>
                   <Trash2 className="h-4 w-4" />
@@ -485,7 +470,7 @@ export function ChatHeader({
 
       {/* حوار تأكيد الحذف */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="rounded-2xl max-w-md border-[#2a655f]/20">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-red-500">
               {app.lang === "ar" ? "⚠️ حذف المحادثة" : "⚠️ Delete conversation"}
@@ -497,7 +482,7 @@ export function ChatHeader({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} className="flex-1 rounded-xl">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} className="flex-1 rounded-xl border-[#2a655f]/20 hover:border-[#3a8a82]/40">
               {app.lang === "ar" ? "إلغاء" : "Cancel"}
             </Button>
             <Button variant="destructive" onClick={confirmDelete} className="flex-1 rounded-xl">
@@ -574,7 +559,7 @@ export function ChatHeaderWithCallStatus({
         onShare={onShare}
         className={cn(
           callStatus === 'calling' || callStatus === 'ringing' || callStatus === 'connected'
-            ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50"
+            ? "bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/20 dark:to-[#3a8a82]/20"
             : "",
           className
         )}
@@ -586,27 +571,27 @@ export function ChatHeaderWithCallStatus({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 flex items-center justify-center gap-2 text-xs"
+          className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 flex items-center justify-center gap-2 text-xs"
         >
           {callStatus === 'calling' && (
             <>
-              <span className="animate-pulse text-blue-600">
+              <span className="animate-pulse text-[#2a655f]">
                 {app.lang === "ar" ? "جاري الاتصال..." : "Calling..."}
               </span>
               <span className="flex gap-0.5">
                 {[0, 1, 2].map((i) => (
-                  <span key={i} className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                  <span key={i} className="h-1.5 w-1.5 rounded-full bg-[#2a655f] animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
                 ))}
               </span>
             </>
           )}
           {callStatus === 'ringing' && (
-            <span className="text-green-600">
+            <span className="text-[#3a8a82]">
               {app.lang === "ar" ? "🔔 جاري الرنين..." : "🔔 Ringing..."}
             </span>
           )}
           {callStatus === 'connected' && (
-            <span className="text-green-600">
+            <span className="text-[#3a8a82]">
               {app.lang === "ar" ? "🟢 متصل" : "🟢 Connected"} · {formatDuration(callDuration)}
             </span>
           )}

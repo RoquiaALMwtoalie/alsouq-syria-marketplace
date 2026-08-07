@@ -1,3 +1,5 @@
+// src/__root.tsx
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -6,15 +8,18 @@ import {
   useRouterState,
   HeadContent,
   Scripts,
+  useNavigate,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode, useState } from "react";
+import { useEffect, type ReactNode, useState, useRef } from "react";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppProvider, useApp } from "@/lib/i18n";
-import { Header, Footer } from "@/components/layout/Header";
+import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
+import { Footer } from "@/components/layout/Footer";
+import { SupportButton } from "@/components/SupportButton";
 
 // ===== إضافة Imports الإشعارات =====
 import { Bell, BellOff, Check, Clock, ShoppingBag, Calendar as CalendarIcon, Settings, Gift, Shield, MoreVertical, Trash2, X, BellRing } from "lucide-react";
@@ -54,6 +59,24 @@ import {
   useCategoriesRealtime,
 } from "@/lib/hooks";
 
+// ===== ✅ ✅ ✅ ProgressBar Component (منقول من Footer) ✅ ✅ ✅
+// src/__root.tsx
+
+// ===== ✅ ✅ ✅ ProgressBar Component - z-index معدل ✅ ✅ ✅
+const ProgressBar = ({ progress }: { progress: number }) => {
+  return (
+    <div className="fixed top-0 left-0 right-0 h-1 z-[50] bg-[#2a655f]/10 dark:bg-[#2a655f]/20">
+      <div 
+        className="h-full bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#4a9f95] transition-all duration-300 ease-out relative"
+        style={{ width: `${Math.min(progress, 100)}%` }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+      </div>
+    </div>
+  );
+};
+
+// ... باقي الكود ...
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -116,14 +139,33 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+// src/__root.tsx
+
+// ... باقي الـ imports ...
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html 
+      lang="ar" 
+      dir="rtl" 
+      style={{ 
+        overflowY: 'scroll',  // ✅ شريط تمرير دائم - يمنع اهتزاز الشاشة
+        scrollBehavior: 'smooth'
+      }}
+    >
       <head><HeadContent /></head>
-      <body>{children}<Scripts /></body>
+      <body style={{ 
+        overflowX: 'hidden',  // ✅ منع التمرير الأفقي
+        width: '100%'
+      }}>
+        {children}
+        <Scripts />
+      </body>
     </html>
   );
 }
+
+// ... باقي الكود ...
 
 // ===== ✅ ✅ ✅ مكون طلب الإشعارات الاحترافي =====
 function NotificationPermissionHandler() {
@@ -250,6 +292,7 @@ function NotificationPermissionHandler() {
 }
 
 // ===== مكون الإشعارات الداخلي =====
+// ===== مكون الإشعارات الداخلي - بألوان السستم ومتحرك =====
 function NotificationsProvider() {
   const app = useApp();
   
@@ -330,11 +373,11 @@ function NotificationsProvider() {
   function getStatusColor(type: string) {
     switch (type) {
       case 'order':
-        return "bg-blue-500/10 text-blue-600 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-800";
+        return "bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20 dark:bg-[#2a655f]/20 dark:text-[#3a8a82] dark:border-[#2a655f]/30";
       case 'booking':
-        return "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-800";
+        return "bg-[#3a8a82]/10 text-[#3a8a82] border-[#3a8a82]/20 dark:bg-[#3a8a82]/20 dark:text-[#4a9f95] dark:border-[#3a8a82]/30";
       case 'admin':
-        return "bg-purple-500/10 text-purple-600 border-purple-200 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-800";
+        return "bg-[#1a4f4a]/10 text-[#1a4f4a] border-[#1a4f4a]/20 dark:bg-[#1a4f4a]/20 dark:text-[#2a655f] dark:border-[#1a4f4a]/30";
       case 'favorite_offer':
         return "bg-amber-500/10 text-amber-600 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-800";
       default:
@@ -368,16 +411,39 @@ function NotificationsProvider() {
   if (!app.user) return null;
 
   return (
-    <div className="fixed bottom-6 end-6 z-50">
+    <div className="fixed bottom-6 start-6 z-50">
       <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
         <DialogTrigger asChild>
           <Button 
             size="icon" 
-            className="h-14 w-14 rounded-full shadow-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-2xl transition-all hover:scale-110 relative"
+            className={`
+              h-14 w-14 rounded-full shadow-2xl 
+              bg-gradient-to-br from-[#2a655f] to-[#3a8a82] 
+              hover:shadow-[0_0_30px_rgba(42,101,95,0.5)] 
+              transition-all duration-500 hover:scale-110 relative group
+              border-2 border-[#4a9f95]/30
+              animate-pulse-glow
+            `}
+            style={{
+              animation: 'pulseGlow 3s ease-in-out infinite'
+            }}
           >
-            <Bell className="h-6 w-6 text-white" />
+            {/* ✅ تموجات حول الزر */}
+            <span className="absolute -inset-1 rounded-full border-2 border-[#2a655f]/20 animate-ripple opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <span className="absolute -inset-3 rounded-full border-2 border-[#3a8a82]/10 animate-ripple delay-700 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <span className="absolute -inset-5 rounded-full border-2 border-[#4a9f95]/5 animate-ripple delay-1500 opacity-0 group-hover:opacity-100 transition-opacity duration-900" />
+            
+            {/* ✅ الأيقونة */}
+            <Bell className={`
+              h-6 w-6 text-white 
+              group-hover:scale-110 group-hover:rotate-12 
+              transition-all duration-500
+              animate-float-bell
+            `} />
+            
+            {/* ✅ العدد */}
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 h-6 min-w-6 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center animate-pulse border-2 border-white">
+              <span className="absolute -top-1 -right-1 h-6 min-w-6 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center animate-pulse border-2 border-white shadow-lg shadow-red-500/50">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -385,11 +451,11 @@ function NotificationsProvider() {
         </DialogTrigger>
 
         <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden border-0 shadow-2xl bg-white dark:bg-slate-900">
-          <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-50/90 to-indigo-50/90 dark:from-blue-950/90 dark:to-indigo-950/90 backdrop-blur-xl border-b border-blue-200/30 dark:border-blue-800/30 p-4">
+          <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 backdrop-blur-xl border-b border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/25">
                     <Bell className="h-5 w-5 text-white" />
                   </div>
                   {unreadCount > 0 && (
@@ -408,8 +474,8 @@ function NotificationsProvider() {
                         ? `${unreadCount} إشعار غير مقروء`
                         : `${unreadCount} unread`
                       : app.lang === "ar"
-                      ? "كل الإشعارات مقروءة"
-                      : "All caught up"}
+                      ? "كل الإشعارات مقروءة ✨"
+                      : "All caught up ✨"}
                   </p>
                 </div>
               </div>
@@ -419,16 +485,16 @@ function NotificationsProvider() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs gap-1.5 rounded-xl hover:bg-blue-100/50 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-all"
+                    className="text-xs gap-1.5 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 text-[#2a655f] dark:text-[#3a8a82] transition-all"
                     onClick={handleMarkAllAsRead}
                     disabled={markAllRead.isPending}
                   >
                     {markAllRead.isPending ? (
-                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#2a655f] border-t-transparent" />
                     ) : (
                       <Check className="h-3.5 w-3.5" />
                     )}
-                    {app.lang === "ar" ? "تحديد الكل كمقروء" : "Mark all read"}
+                    {app.lang === "ar" ? "تحديد الكل" : "Mark all read"}
                   </Button>
                 )}
                 <Button
@@ -443,19 +509,20 @@ function NotificationsProvider() {
             </div>
           </div>
 
+          {/* LIST - نفس الكود السابق */}
           <div className="max-h-[60vh] overflow-y-auto p-2 space-y-1.5">
             {notifications.length === 0 ? (
               <div className="py-16 text-center">
-                <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
-                  <BellOff className="h-8 w-8 text-slate-300 dark:text-slate-600" />
+                <div className="h-16 w-16 rounded-full bg-[#2a655f]/10 dark:bg-[#2a655f]/20 flex items-center justify-center mx-auto mb-4">
+                  <BellOff className="h-8 w-8 text-[#2a655f]/40 dark:text-[#3a8a82]/40" />
                 </div>
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
                   {app.lang === "ar" ? "لا توجد إشعارات" : "No notifications"}
                 </p>
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                   {app.lang === "ar"
-                    ? "ستظهر الإشعارات هنا عند استلامها"
-                    : "Notifications will appear here"}
+                    ? "ستظهر الإشعارات هنا عند استلامها 📬"
+                    : "Notifications will appear here 📬"}
                 </p>
               </div>
             ) : (
@@ -469,7 +536,7 @@ function NotificationsProvider() {
                     key={notification.id}
                     className={`group relative rounded-xl transition-all duration-300 ${
                       isUnread
-                        ? "bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-200/40 dark:border-blue-800/40 hover:shadow-md"
+                        ? "bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 border border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:shadow-md"
                         : "hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
                     }`}
                   >
@@ -483,13 +550,13 @@ function NotificationsProvider() {
                             <img
                               src={notification.image_url}
                               alt=""
-                              className="h-11 w-11 rounded-xl object-cover border-2 border-slate-200/50 dark:border-slate-700/50"
+                              className="h-11 w-11 rounded-xl object-cover border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none';
                               }}
                             />
                             {isUnread && (
-                              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-blue-500 ring-2 ring-white dark:ring-slate-900" />
+                              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#2a655f] ring-2 ring-white dark:ring-slate-900" />
                             )}
                           </div>
                         ) : (
@@ -526,7 +593,7 @@ function NotificationsProvider() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 rounded-lg hover:bg-blue-100/50 dark:hover:bg-blue-900/30 text-blue-500 hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100"
+                                className="h-7 w-7 rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 text-[#2a655f] hover:text-[#2a655f]/80 transition-all opacity-0 group-hover:opacity-100"
                                 onClick={(e) => handleMarkAsRead(notification.id, e)}
                               >
                                 <Check className="h-3.5 w-3.5" />
@@ -542,10 +609,10 @@ function NotificationsProvider() {
                                   <MoreVertical className="h-3.5 w-3.5 text-slate-400" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="rounded-xl p-1 min-w-[160px]">
+                              <DropdownMenuContent align="end" className="rounded-xl p-1 min-w-[160px] border-[#2a655f]/20">
                                 {isUnread && (
                                   <DropdownMenuItem
-                                    className="rounded-lg text-sm cursor-pointer gap-2"
+                                    className="rounded-lg text-sm cursor-pointer gap-2 text-[#2a655f] hover:text-[#1a4f4a] hover:bg-[#2a655f]/10"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleMarkAsRead(notification.id, e);
@@ -600,7 +667,7 @@ function NotificationsProvider() {
           </div>
 
           {notifications.length > 0 && (
-            <div className="sticky bottom-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 p-3 flex items-center justify-between">
+            <div className="sticky bottom-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-[#2a655f]/20 dark:border-[#2a655f]/30 p-3 flex items-center justify-between">
               <span className="text-xs text-slate-400 dark:text-slate-500">
                 {notifications.length} {app.lang === "ar" ? "إشعار" : "notifications"}
                 {unreadCount > 0 && ` · ${unreadCount} ${app.lang === "ar" ? "غير مقروء" : "unread"}`}
@@ -608,7 +675,7 @@ function NotificationsProvider() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="text-xs rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 text-[#2a655f] dark:text-[#3a8a82]"
                 onClick={() => setNotificationsOpen(false)}
               >
                 {app.lang === "ar" ? "إغلاق" : "Close"}
@@ -622,8 +689,6 @@ function NotificationsProvider() {
 }
 
 // ===== ✅ ✅ ✅ مكون إدارة Realtime (داخل AppProvider) ✅ ✅ ✅
-// ===== ✅ ✅ ✅ مكون إدارة Realtime (داخل AppProvider) ✅ ✅ ✅
-// ===== ✅ ✅ ✅ مكون إدارة Realtime (داخل AppProvider) ✅ ✅ ✅
 function RealtimeManager() {
   const app = useApp();
 
@@ -633,36 +698,172 @@ function RealtimeManager() {
   useListingsRealtime();
   useCartRealtime(app.user?.id);
   useOrdersRealtime(app.user?.id);
-  
-  // ✅ ✅ ✅ استخدم استدعاء واحد فقط بدون role
-  // الـ Hook الجديد يدير كلا الدورين (عميل وبائع) في قناة واحدة
   useBookingsRealtime(app.user?.id);
-  
   useStoresRealtime();
   useCategoriesRealtime();
 
   return null;
 }
+
+// ============================================================
+// ✅ RootComponent
+// ============================================================
+// ============================================================
+// ✅ RootComponent
+// ============================================================
+// ============================================================
+// ✅ RootComponent
+// ============================================================
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const hideChrome = pathname.startsWith("/auth") || pathname.startsWith("/reset-password");
+  
+  // ✅ ✅ ✅ State لشريط التقدم ✅ ✅ ✅
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // ✅ ✅ ✅ useEffect لشريط التقدم ✅ ✅ ✅
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const progress = (scrollY / (documentHeight - windowHeight)) * 100;
+      setScrollProgress(Math.min(progress, 100));
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // ✅ ضبط السكرول إلى الأعلى
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  // ✅ صفحات تخفي الهيدر والفوتر
+  const hideChrome = 
+    pathname.startsWith("/auth") || 
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/delivery/dashboard") ||
+    pathname.startsWith("/delivery/complete") ||
+    pathname.startsWith("/distributor/complete") ||
+    pathname.startsWith("/delivery/orders/new") ||
+    pathname.startsWith("/delivery/messages") ||
+    pathname.startsWith("/delivery/conversation") ||
+    pathname.startsWith("/delivery/conversation/$userId") ||
+    pathname.startsWith("/distributor/conversation") ||
+    pathname.startsWith("/distributor/conversation/$userId") ||
+    pathname.startsWith("/distributor/dashboard") ||
+    pathname.startsWith("/distributor/messages") ||
+    pathname.startsWith("/delivery/distributors") ||
+    pathname.startsWith("/distributor/settings") ||
+    pathname.startsWith("/distributor/review") ||
+    pathname.startsWith("/messages") ||
+    pathname.startsWith("/messages_");
+
+  // ✅ ✅ ✅ مكون التوجيه المدمج - معدل للسماح للأدمن بالصفحة الرئيسية ✅ ✅ ✅
+  function SimpleRedirect() {
+    const app = useApp();
+    const navigate = useNavigate();
+    const pathname = useRouterState({ select: (s) => s.location.pathname });
+    const [loading, setLoading] = useState(true);
+    const redirectedRef = useRef(false);
+
+    useEffect(() => {
+      if (redirectedRef.current) return;
+
+      const checkAndRedirect = async () => {
+        if (!app.user) {
+          setLoading(false);
+          return;
+        }
+
+        try {
+          const { data, error } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", app.user.id);
+
+          if (error) throw error;
+          
+          const roles = data?.map((r: any) => r.role) || [];
+          const isAdmin = roles.includes("admin");
+          const isDeliveryCompany = roles.includes("delivery_company");
+          const isDistributor = roles.includes("distributor");
+
+          // ✅ إذا كان المستخدم في الصفحة الصحيحة
+          if (isDistributor && pathname.startsWith("/distributor")) {
+            setLoading(false);
+            return;
+          }
+          if (isDeliveryCompany && pathname.startsWith("/delivery")) {
+            setLoading(false);
+            return;
+          }
+          if (isAdmin && pathname.startsWith("/admin")) {
+            setLoading(false);
+            return;
+          }
+
+          // ✅ ✅ ✅ الأدمن يستطيع البقاء في الصفحة الرئيسية ✅ ✅ ✅
+          // لا نقوم بتوجيه الأدمن
+
+          // ✅ توجيه الموزع فقط من الصفحة الرئيسية
+          if (isDistributor && (pathname === "/" || pathname === "")) {
+            redirectedRef.current = true;
+            console.log("🚚 [Redirect] Distributor → /distributor/dashboard");
+            navigate({ to: "/distributor/dashboard" });
+            return;
+          }
+
+          // ✅ توجيه شركة التوصيل فقط من الصفحة الرئيسية
+          if (isDeliveryCompany && (pathname === "/" || pathname === "")) {
+            redirectedRef.current = true;
+            console.log("🏢 [Redirect] Delivery → /delivery/dashboard");
+            navigate({ to: "/delivery/dashboard" });
+            return;
+          }
+
+          // ✅ منع الوصول غير المصرح به
+          if (!isAdmin && !isDeliveryCompany && !isDistributor) {
+            if (pathname.startsWith("/distributor") || pathname.startsWith("/delivery") || pathname.startsWith("/admin")) {
+              redirectedRef.current = true;
+              console.log("👤 [Redirect] Customer → /");
+              navigate({ to: "/" });
+              return;
+            }
+          }
+
+        } catch (error) {
+          console.error("Error checking roles:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      checkAndRedirect();
+    }, [app.user, pathname, navigate]);
+
+    return null;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
       <AppProvider>
         <RealtimeManager />
+        <SimpleRedirect />
         <NotificationPermissionHandler />
-        <ProfileCompletionGate pathname={pathname} />
         
-        {/* ✅ ✅ ✅ لف المحتوى بـ ClientOnly */}
+        {/* ✅ ✅ ✅ شريط التقدم ✅ ✅ ✅ */}
+        <ProgressBar progress={scrollProgress} />
+        
         <ClientOnly>
           <div className="min-h-screen flex flex-col">
             {!hideChrome && <AnnouncementBar />}
             {!hideChrome && <Header />}
-            {!hideChrome && <NotificationsProvider />}
+ 
             <main className="flex-1"><Outlet /></main>
             {!hideChrome && <Footer />}
+            {!hideChrome && <SupportButton />}
           </div>
         </ClientOnly>
         
@@ -670,87 +871,4 @@ function RootComponent() {
       </AppProvider>
     </QueryClientProvider>
   );
-}
-
-function ProfileCompletionGate({ pathname }: { pathname: string }) {
-  const router = useRouter();
-  useEffect(() => {
-    console.log("🔍 1. ProfileCompletionGate - pathname:", pathname);
-    
-    if (
-      pathname.startsWith("/auth") || 
-      pathname.startsWith("/reset-password")
-    ) {
-      console.log("🔍 2. في صفحة auth أو complete أو reset، نوقف الفحص");
-      return;
-    }
-    
-    let cancelled = false;
-    (async () => {
-      console.log("🔍 3. بدأ جلب البيانات");
-      
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data: userData } = await supabase.auth.getUser();
-      console.log("🔍 4. userData:", userData);
-      
-      const uid = userData.user?.id;
-      if (!uid || cancelled) {
-        console.log("🔍 5. لا يوجد uid أو cancelled");
-        return;
-      }
-      
-      const [{ data: profile }, { data: addressRows }, { data: roleRows }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("phone, full_name, address_text")
-          .eq("id", uid)
-          .maybeSingle(),
-        supabase
-          .from("user_addresses" as any)
-          .select("address_text")
-          .eq("user_id", uid)
-          .eq("is_default", true)
-          .maybeSingle(),
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", uid),
-      ]);
-      
-      console.log("🔍 6. profile:", profile, "addressRows:", addressRows);
-      
-      if (cancelled) return;
-      
-      const isAdmin = (roleRows ?? []).some((r) => r.role === "admin");
-      console.log("🔍 7. isAdmin:", isAdmin);
-      
-      const hasPhone = profile?.phone && profile.phone.trim() !== "";
-      const hasName = profile?.full_name && profile.full_name.trim() !== "";
-      const hasAddress = Boolean(profile?.address_text?.trim() || addressRows?.address_text?.trim());
-      
-      console.log("🔍 8. hasName:", hasName, "hasPhone:", hasPhone, "hasAddress:", hasAddress);
-      
-      if (isAdmin) {
-        if (!hasName || !hasPhone) {
-          console.log("🔍 9. Admin - بيانات ناقصة، روح لـ /auth/complete");
-          router.navigate({ to: "/auth/complete" });
-        } else {
-          console.log("✅ Admin - البيانات مكتملة");
-        }
-        return;
-      }
-      
-      const hasAllData = hasName && hasPhone && hasAddress;
-      
-      if (hasAllData) {
-        console.log("✅ البيانات مكتملة، لا حاجة للتوجيه");
-        return;
-      }
-      
-      console.log("❌ البيانات ناقصة، التوجيه لـ /auth/complete");
-      router.navigate({ to: "/auth/complete" });
-    })();
-    return () => { cancelled = true; };
-  }, [pathname, router]);
-  return null;
 }

@@ -1,6 +1,6 @@
 // src/components/dashboard/admin/SellerApplicationsAdmin.tsx
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,7 +16,12 @@ import {
   Search, Filter, Eye, Calendar, RefreshCw, AlertCircle,
   Building2, MessageSquare, ChevronLeft, ChevronRight,
   Layers, ShoppingBag, FileSpreadsheet, FileText, Download,
-  Loader2
+  Loader2, Sparkles, Shield, Award, Target, Compass,
+  Rocket, Crown, Star, Flame, Gem, Bell, Check,
+  ArrowUp, ArrowDown, CircleDot, Activity, TrendingUp,
+  ShieldCheck, Tag, Truck, Image as ImageIcon, Megaphone,
+  Zap, Package, Users, Settings, LayoutDashboard, 
+  Mail, Hash, Clock as ClockIcon
 } from "lucide-react";
 import {
   Select,
@@ -25,13 +30,178 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import * as XLSX from 'xlsx';
 import * as fileSaver from 'file-saver';
 import { supabase } from "@/integrations/supabase/client";
 import { useSendNotificationV2 } from "@/lib/queries";
+import { cn } from "@/lib/utils";
 
 const { saveAs } = fileSaver;
+
+// ============================================================
+// ✅ أيقونات متحركة للحالات - بألوان النظام
+// ============================================================
+const STATUS_CONFIG: Record<string, { 
+  label_ar: string; 
+  label_en: string; 
+  color: string; 
+  bg: string; 
+  border: string;
+  icon: any;
+  animation: string;
+}> = {
+  pending: {
+    label_ar: "قيد المراجعة",
+    label_en: "Pending",
+    color: "text-[#2d6b63]",
+    bg: "bg-[#2d6b63]/10",
+    border: "border-[#2d6b63]/30",
+    icon: Clock,
+    animation: "animate-pulse-slow"
+  },
+  approved: {
+    label_ar: "موافق عليه",
+    label_en: "Approved",
+    color: "text-[#0d2e2a]",
+    bg: "bg-[#0d2e2a]/10",
+    border: "border-[#0d2e2a]/30",
+    icon: CheckCircle2,
+    animation: "animate-bounce-slow"
+  },
+  rejected: {
+    label_ar: "مرفوض",
+    label_en: "Rejected",
+    color: "text-[#6bb5aa]",
+    bg: "bg-[#6bb5aa]/10",
+    border: "border-[#6bb5aa]/30",
+    icon: XCircle,
+    animation: "animate-float"
+  },
+};
+
+// ============================================================
+// ✅ مؤشر حيوي
+// ============================================================
+const LiveIndicator = () => (
+  <span className="relative flex h-2.5 w-2.5">
+    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2d6b63] opacity-75" />
+    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#0d2e2a]" />
+  </span>
+);
+
+// ============================================================
+// ✅ Stat Card بألوان النظام
+// ============================================================
+const StatCard = ({ 
+  label, 
+  value, 
+  gradient,
+  bg,
+  glow,
+  icon: Icon, 
+  animation,
+  subtitle 
+}: { 
+  label: string; 
+  value: number; 
+  gradient: string;
+  bg: string;
+  glow: string;
+  icon: any; 
+  animation?: string;
+  subtitle?: string;
+}) => (
+  <div className={cn(
+    "group bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 p-4 shadow-lg hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden"
+  )}>
+    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+      <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#0d2e2a]/5 blur-3xl animate-pulse" />
+    </div>
+    <div className="flex items-center justify-between relative">
+      <div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+        <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#0d2e2a] transition-colors">{value}</p>
+        {subtitle && <p className="text-[10px] text-slate-400">{subtitle}</p>}
+      </div>
+      <div className={`h-10 w-10 rounded-xl ${bg} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg ${glow}`}>
+        <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+          <Icon className={cn(
+            "h-3.5 w-3.5 text-white",
+            animation || "animate-float"
+          )} />
+        </div>
+      </div>
+    </div>
+    <div className="mt-2 h-0.5 w-full rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+      <div 
+        className={`h-full rounded-full bg-gradient-to-r ${gradient} transition-all duration-1000 animate-shimmer`} 
+        style={{ width: `${Math.min(100, value / 10 * 100)}%` }}
+      />
+    </div>
+  </div>
+);
+
+// ============================================================
+// ✅ Badge الحالة
+// ============================================================
+const StatusBadge = ({ status }: { status: string }) => {
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+  const Icon = config.icon;
+  const isRTL = useApp().lang === 'ar';
+  
+  return (
+    <Badge className={cn(
+      "border-0 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 hover:scale-105",
+      config.bg,
+      config.color,
+      config.border,
+      "border"
+    )}>
+      <Icon className={cn("h-3 w-3", config.animation)} />
+      <span>{isRTL ? config.label_ar : config.label_en}</span>
+    </Badge>
+  );
+};
+
+// ============================================================
+// ✅ Badge النوع
+// ============================================================
+const TypeBadge = ({ type }: { type: string }) => {
+  const isRTL = useApp().lang === 'ar';
+  const typeValue = type || "store";
+  
+  const configs: Record<string, any> = {
+    store: {
+      icon: Building2,
+      label: isRTL ? "🏪 فتح متجر" : "🏪 Open Store",
+      bg: "bg-[#0d2e2a]/10",
+      color: "text-[#0d2e2a]",
+      animation: "animate-float"
+    },
+    product: {
+      icon: ShoppingBag,
+      label: isRTL ? "🛍️ إضافة منتج" : "🛍️ Add Product",
+      bg: "bg-[#4a9f95]/10",
+      color: "text-[#4a9f95]",
+      animation: "animate-spin-slow"
+    },
+  };
+  
+  const config = configs[typeValue] || configs.store;
+  const Icon = config.icon;
+  
+  return (
+    <Badge className={cn(
+      "border-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 hover:scale-105",
+      config.bg,
+      config.color
+    )}>
+      <Icon className={cn("h-3 w-3", config.animation)} />
+      {config.label}
+    </Badge>
+  );
+};
 
 export function SellerApplicationsAdmin() {
   const app = useApp();
@@ -44,8 +214,10 @@ export function SellerApplicationsAdmin() {
   const sendNotification = useSendNotificationV2();
   const tableRef = useRef<HTMLDivElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   
-  // ✅ جلب البيانات مع Pagination والفلترة
+  const isRTL = app.lang === 'ar';
+  
   const { 
     data: appsData, 
     isLoading, 
@@ -68,7 +240,21 @@ export function SellerApplicationsAdmin() {
   const [selectedApp, setSelectedApp] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
-  // ✅ دالة تصدير إلى Excel
+  // ============================================================
+  // ✅ إحصائيات
+  // ============================================================
+  const stats = useMemo(() => {
+    const total = apps.length;
+    const pending = apps.filter((a: any) => a.status === 'pending').length;
+    const approved = apps.filter((a: any) => a.status === 'approved').length;
+    const rejected = apps.filter((a: any) => a.status === 'rejected').length;
+    const approvalRate = total > 0 ? Math.round((approved / total) * 100) : 0;
+    return { total, pending, approved, rejected, approvalRate };
+  }, [apps]);
+
+  // ============================================================
+  // ✅ تصدير Excel
+  // ============================================================
   const exportToExcel = () => {
     const exportData = apps.map((a: any) => ({
       'اسم المتجر': a.store_name,
@@ -99,35 +285,45 @@ export function SellerApplicationsAdmin() {
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
     saveAs(blob, `الطلبات_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.xlsx`);
     
-    toast.success(app.lang === "ar" ? "✅ تم تصدير البيانات إلى Excel" : "✅ Data exported to Excel");
+    toast.success(isRTL ? "✅ تم تصدير البيانات إلى Excel" : "✅ Data exported to Excel");
   };
 
-  // ✅ دالة تصدير إلى Word
+  // ============================================================
+  // ✅ تصدير Word
+  // ============================================================
   const exportToWord = () => {
     let htmlContent = `
       <html dir="rtl" lang="ar">
       <head>
         <meta charset="UTF-8">
         <style>
-          body { font-family: 'Arial', sans-serif; padding: 20px; }
-          h1 { color: #1e293b; text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th { background: #3b82f6; color: white; padding: 12px; text-align: right; }
-          td { padding: 10px; border: 1px solid #e2e8f0; text-align: right; }
-          tr:nth-child(even) { background: #f8fafc; }
-          .status-pending { color: #f59e0b; font-weight: bold; }
-          .status-approved { color: #10b981; font-weight: bold; }
-          .status-rejected { color: #ef4444; font-weight: bold; }
-          .footer { margin-top: 20px; text-align: center; color: #94a3b8; font-size: 12px; }
+          body { font-family: 'Arial', sans-serif; padding: 20px; background: #f8fafc; }
+          h1 { color: #0d2e2a; text-align: center; border-bottom: 3px solid #0d2e2a; padding-bottom: 10px; }
+          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+          .stat-card { background: white; padding: 14px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-right: 4px solid #0d2e2a; }
+          .stat-card .value { font-size: 22px; font-weight: bold; color: #0d2e2a; }
+          .stat-card .label { font-size: 11px; color: #94a3b8; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+          th { background: #0d2e2a; color: white; padding: 12px; text-align: right; }
+          td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; }
+          tr:hover { background: #f1f5f9; }
+          .status-pending { color: #2d6b63; font-weight: bold; }
+          .status-approved { color: #0d2e2a; font-weight: bold; }
+          .status-rejected { color: #6bb5aa; font-weight: bold; }
+          .footer { margin-top: 20px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+          .badge-type-store { background: #0d2e2a10; color: #0d2e2a; padding: 2px 10px; border-radius: 20px; font-size: 11px; }
+          .badge-type-product { background: #4a9f9510; color: #4a9f95; padding: 2px 10px; border-radius: 20px; font-size: 11px; }
         </style>
       </head>
       <body>
-        <h1>📊 تقرير الطلبات</h1>
-        <p style="text-align: center; color: #64748b;">
-          تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}
-          ${filterStatus !== 'all' ? ` | الحالة: ${filterStatus}` : ''}
-          ${filterType !== 'all' ? ` | النوع: ${filterType === 'product' ? 'إضافة منتج' : 'فتح متجر'}` : ''}
-        </p>
+        <h1>📋 تقرير الطلبات</h1>
+        <p style="text-align: center; color: #64748b;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</p>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="value">${stats.total}</div><div class="label">إجمالي الطلبات</div></div>
+          <div class="stat-card"><div class="value">${stats.pending}</div><div class="label">قيد المراجعة</div></div>
+          <div class="stat-card"><div class="value">${stats.approved}</div><div class="label">موافق عليه</div></div>
+          <div class="stat-card"><div class="value">${stats.rejected}</div><div class="label">مرفوض</div></div>
+        </div>
         <table>
           <thead>
             <tr>
@@ -143,17 +339,17 @@ export function SellerApplicationsAdmin() {
           </thead>
           <tbody>
     `;
-
     apps.forEach((a: any, index: number) => {
       const statusClass = a.status === 'pending' ? 'status-pending' : a.status === 'approved' ? 'status-approved' : 'status-rejected';
       const statusText = a.status === 'pending' ? 'قيد المراجعة' : a.status === 'approved' ? 'موافق عليه' : 'مرفوض';
       const typeText = a.application_type === 'product' ? 'إضافة منتج' : 'فتح متجر';
+      const typeClass = a.application_type === 'product' ? 'badge-type-product' : 'badge-type-store';
       
       htmlContent += `
         <tr>
           <td>${index + 1}</td>
           <td>${a.store_name}</td>
-          <td>${typeText}</td>
+          <td><span class="${typeClass}">${typeText}</span></td>
           <td>${a.profiles?.full_name || '—'}</td>
           <td>${a.store_phone || a.profiles?.phone || '—'}</td>
           <td class="${statusClass}">${statusText}</td>
@@ -162,43 +358,34 @@ export function SellerApplicationsAdmin() {
         </tr>
       `;
     });
-
     htmlContent += `
           </tbody>
         </table>
-        <div class="footer">
-          إجمالي الطلبات: ${totalCount} | تم التصدير من لوحة التحكم
-        </div>
-      </body>
-      </html>
+        <div class="footer">إجمالي الطلبات: ${totalCount} | تم التصدير من لوحة التحكم</div>
+      </body></html>
     `;
-
     const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
     saveAs(blob, `الطلبات_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.doc`);
-    
-    toast.success(app.lang === "ar" ? "✅ تم تصدير البيانات إلى Word" : "✅ Data exported to Word");
+    toast.success(isRTL ? "✅ تم تصدير البيانات إلى Word" : "✅ Data exported to Word");
   };
 
   // ============================================================
-  // ✅ الدالة الرئيسية: الموافقة أو الرفض (معدلة لاستخدام V2)
+  // ✅ الموافقة أو الرفض
   // ============================================================
   async function decide(id: string, status: "approved" | "rejected", admin_note?: string) {
-    // ✅ منع النقر المتكرر
     if (isProcessing) {
-      toast.warning(app.lang === "ar" ? "⏳ جاري المعالجة..." : "⏳ Processing...");
+      toast.warning(isRTL ? "⏳ جاري المعالجة..." : "⏳ Processing...");
       return;
     }
 
-    // ✅ التحقق: الرفض يحتاج سبب
     if (status === "rejected" && (!admin_note || admin_note.trim() === "")) {
-      toast.error(app.lang === "ar" ? "⚠️ يرجى كتابة سبب الرفض" : "⚠️ Please provide a reason for rejection");
+      toast.error(isRTL ? "⚠️ يرجى كتابة سبب الرفض" : "⚠️ Please provide a reason for rejection");
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      // ✅ 1. جلب بيانات الطلب
       const { data: appData, error: fetchError } = await supabase
         .from("seller_applications")
         .select("*")
@@ -206,42 +393,17 @@ export function SellerApplicationsAdmin() {
         .single();
 
       if (fetchError || !appData) {
-        toast.error(app.lang === "ar" ? "❌ فشل جلب بيانات الطلب" : "❌ Failed to fetch application");
+        toast.error(isRTL ? "❌ فشل جلب بيانات الطلب" : "❌ Failed to fetch application");
         setIsProcessing(false);
         return;
       }
 
-      console.log("📝 Application data:", {
-        store_name: appData.store_name,
-        user_id: appData.user_id,
-        status: appData.status,
-        application_type: appData.application_type,
-        admin_note: admin_note
-      });
-
-      // ✅ 2. تنفيذ المراجعة (تحديث حالة الطلب)
       await review.mutateAsync({ id, status, admin_note: admin_note || null });
 
-      // ✅ 3. إذا كانت الموافقة
       if (status === "approved") {
-        
-        // ✅ 3a. تحديث `profiles` (لطلبات فتح متجر)
         if (appData.application_type === 'store') {
           const storeDescription = appData.store_description?.trim() || null;
           
-          console.log("📝 Updating profile with:", {
-            store_name: appData.store_name,
-            store_description: storeDescription,
-            store_logo_url: appData.store_logo_url,
-            store_cover_url: appData.store_cover_url,
-            store_type: appData.store_type,
-            address: appData.address,
-            opening_time: appData.opening_time,
-            closing_time: appData.closing_time,
-            weekly_off_days: appData.weekly_off_days,
-            user_id: appData.user_id
-          });
-
           const { error: profileError } = await supabase
             .from("profiles")
             .update({
@@ -265,49 +427,31 @@ export function SellerApplicationsAdmin() {
 
           if (profileError) {
             console.error("❌ Error updating profile:", profileError);
-            toast.error(app.lang === "ar" ? "⚠️ تمت الموافقة لكن فشل تحديث بيانات المتجر" : "⚠️ Approved but failed to update store data");
-          } else {
-            console.log("✅ Profile updated successfully!");
+            toast.error(isRTL ? "⚠️ تمت الموافقة لكن فشل تحديث بيانات المتجر" : "⚠️ Approved but failed to update store data");
           }
         }
 
-        // ✅ 3b. تحديث حالة المنتج في `listings` (لطلبات إضافة منتج)
-        if (appData.application_type === 'product') {
-          console.log("📝 Updating listing status to published for product description:", appData.store_description);
+      // ✅ التعديل في SellerApplicationsAdmin.tsx
+if (appData.application_type === 'product') {
+  // ✅ البحث عن المنتج بغض النظر عن store_description
+  const { data: listing, error: listingError } = await supabase
+    .from("listings")
+    .select("id, title_ar")
+    .eq("owner_id", appData.user_id)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-          const productNameMatch = appData.store_description?.match(/طلب إضافة منتج: (.+)/);
-          const productName = productNameMatch ? productNameMatch[1] : null;
+  if (listing && !listingError) {
+    await supabase
+      .from("listings")
+      .update({ status: 'published' })
+      .eq("id", listing.id);
+  }
+}
 
-          if (productName) {
-            const { data: listing, error: listingError } = await supabase
-              .from("listings")
-              .select("id, title_ar")
-              .eq("owner_id", appData.user_id)
-              .eq("title_ar", productName)
-              .eq("status", "pending")
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            if (listingError) {
-              console.error("❌ Error finding listing:", listingError);
-            } else if (listing) {
-              const { error: updateError } = await supabase
-                .from("listings")
-                .update({ status: 'published' })
-                .eq("id", listing.id);
-
-              if (updateError) {
-                console.error("❌ Error updating listing status:", updateError);
-                toast.error(app.lang === "ar" ? "⚠️ تمت الموافقة لكن فشل نشر المنتج" : "⚠️ Approved but failed to publish product");
-              } else {
-                console.log("✅ Listing published successfully!");
-              }
-            }
-          }
-        }
-
-        // ✅ 4. إرسال إشعار للمستخدم (موافقة) - باستخدام V2
+        // إشعار موافقة
         const notificationType = appData.application_type === 'store' ? 'store_approved' : 'product_approved';
         const linkUrl = appData.application_type === 'store' ? '/dashboard/store' : '/dashboard/products';
         
@@ -331,7 +475,7 @@ export function SellerApplicationsAdmin() {
         });
 
       } else {
-        // ✅ الرفض: إرسال إشعار للمستخدم مع سبب الرفض - باستخدام V2
+        // إشعار رفض
         const notificationType = appData.application_type === 'store' ? 'store_rejected' : 'product_rejected';
         
         await sendNotification.mutateAsync({
@@ -356,12 +500,8 @@ export function SellerApplicationsAdmin() {
 
       toast.success(
         status === "approved"
-          ? app.lang === "ar"
-            ? "✅ تمت الموافقة على الطلب"
-            : "✅ Application approved"
-          : app.lang === "ar"
-          ? "❌ تم رفض الطلب"
-          : "❌ Application rejected"
+          ? isRTL ? "✅ تمت الموافقة على الطلب" : "✅ Application approved"
+          : isRTL ? "❌ تم رفض الطلب" : "❌ Application rejected"
       );
       
       setNoteFor(null);
@@ -373,71 +513,16 @@ export function SellerApplicationsAdmin() {
       const errorMessage = e.message || String(e);
       
       if (errorMessage.includes("لا يمكنك تقديم أكثر من طلب واحد")) {
-        toast.error(app.lang === "ar" ? "⛔ هذا المستخدم لديه طلب سابق بالفعل" : "⛔ This user already has an existing application");
+        toast.error(isRTL ? "⛔ هذا المستخدم لديه طلب سابق بالفعل" : "⛔ This user already has an existing application");
       } else if (errorMessage.includes("لديك متجر مفعل")) {
-        toast.error(app.lang === "ar" ? "✅ هذا المستخدم لديه متجر مفعل بالفعل" : "✅ This user already has an active store");
+        toast.error(isRTL ? "✅ هذا المستخدم لديه متجر مفعل بالفعل" : "✅ This user already has an active store");
       } else {
-        toast.error(app.lang === "ar" ? `❌ فشل العملية: ${errorMessage}` : `❌ Operation failed: ${errorMessage}`);
+        toast.error(isRTL ? `❌ فشل العملية: ${errorMessage}` : `❌ Operation failed: ${errorMessage}`);
       }
     } finally {
       setIsProcessing(false);
     }
   }
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return (
-          <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 animate-pulse">
-            <Clock className="h-3.5 w-3.5 mr-1.5" />
-            {app.lang === "ar" ? "قيد المراجعة" : "Pending"}
-          </Badge>
-        );
-      case "approved":
-        return (
-          <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-            <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-            {app.lang === "ar" ? "موافق عليه" : "Approved"}
-          </Badge>
-        );
-      case "rejected":
-        return (
-          <Badge className="bg-rose-500/10 text-rose-600 border-rose-500/20">
-            <XCircle className="h-3.5 w-3.5 mr-1.5" />
-            {app.lang === "ar" ? "مرفوض" : "Rejected"}
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const getTypeBadge = (type: string) => {
-    const typeValue = type || "store";
-    
-    switch (typeValue) {
-      case "store":
-        return (
-          <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-            <Building2 className="h-3 w-3 mr-1" />
-            {app.lang === "ar" ? "فتح متجر" : "Open Store"}
-          </Badge>
-        );
-      case "product":
-        return (
-          <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">
-            <ShoppingBag className="h-3 w-3 mr-1" />
-            {app.lang === "ar" ? "إضافة منتج" : "Add Product"}
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline" className="text-slate-500">
-            {app.lang === "ar" ? "غير معروف" : "Unknown"}
-          </Badge>
-        );
-    }
-  };
 
   const goToPage = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -446,109 +531,191 @@ export function SellerApplicationsAdmin() {
     }
   };
 
+  // ============================================================
+  // ✅ حالة التحميل
+  // ============================================================
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="relative">
+          <div className="h-12 w-12 rounded-full border-4 border-[#0d2e2a]/20 border-t-[#0d2e2a] animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <ShieldCheck className="h-5 w-5 text-[#0d2e2a] animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
-      {/* ✅ Header */}
+      
+      {/* ============================================================
+      // ✅ HEADER - مثل AdminStores
+      // ============================================================ */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <Layers className="h-6 w-6 text-blue-600" />
-            {app.lang === "ar" ? "الطلبات" : "Applications"}
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center shadow-lg shadow-[#0d2e2a]/30">
+              <Layers className="h-5 w-5 text-white animate-float" />
+            </div>
+            <span className="bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] bg-clip-text text-transparent">
+              {app.lang === "ar" ? "الطلبات" : "Applications"}
+            </span>
+            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 text-[10px]">
+              <Sparkles className="h-2.5 w-2.5 mr-1 animate-pulse" />
+              {app.lang === 'ar' ? 'مباشر' : 'Live'}
+            </Badge>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
             {app.lang === "ar"
-              ? `إدارة جميع الطلبات (${totalCount})`
-              : `Manage all applications (${totalCount})`}
+              ? `إدارة جميع الطلبات (${apps.length} من ${totalCount})`
+              : `Manage all applications (${apps.length} of ${totalCount})`}
+            <span className="h-1 w-1 rounded-full bg-[#0d2e2a]/30" />
+            <span className="text-xs text-[#2d6b63] flex items-center gap-1">
+              <Zap className="h-3 w-3 animate-pulse" />
+              {app.lang === 'ar' ? 'تحديث لحظي' : 'Real-time'}
+            </span>
           </p>
         </div>
+        
+        {/* ✅ أزرار التصدير */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportToExcel}
-            disabled={apps.length === 0}
-            className="rounded-xl border-emerald-500/30 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:border-emerald-500/50"
-          >
-            <FileSpreadsheet className="h-4 w-4 mr-1.5" />
-            Excel
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportToWord}
-            disabled={apps.length === 0}
-            className="rounded-xl border-blue-500/30 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:border-blue-500/50"
-          >
-            <FileText className="h-4 w-4 mr-1.5" />
-            Word
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="rounded-xl border-slate-200 dark:border-slate-700"
-          >
-            <RefreshCw className="h-4 w-4 mr-1.5" />
-            {app.lang === "ar" ? "تحديث" : "Refresh"}
-          </Button>
+          <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-[#0d2e2a]/20 shadow-sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={exportToExcel}
+              disabled={apps.length === 0}
+              className="rounded-lg h-9 px-4 text-[#2d6b63] hover:bg-[#2d6b63]/10 hover:text-[#2d6b63] gap-2 transition-all duration-300 hover:scale-105"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs font-medium">Excel</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={exportToWord}
+              disabled={apps.length === 0}
+              className="rounded-lg h-9 px-4 text-[#1a4f4a] hover:bg-[#1a4f4a]/10 hover:text-[#1a4f4a] gap-2 transition-all duration-300 hover:scale-105"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs font-medium">Word</span>
+            </Button>
+            <div className="w-px h-6 bg-[#0d2e2a]/20" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => refetch()}
+              className="rounded-lg h-9 px-3 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 transition-all duration-300 hover:scale-105"
+            >
+              <RefreshCw className="h-4 w-4 animate-spin-slow" />
+            </Button>
+          </div>
+          <Badge className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#0d2e2a]/30 animate-pulse">
+            <Sparkles className="h-3 w-3 mr-1" />
+            {app.lang === 'ar' ? 'لوحة تحكم' : 'Dashboard'}
+          </Badge>
         </div>
       </div>
 
-      {/* ✅ Search & Filters */}
+      {/* ============================================================
+      // ✅ STATS CARDS - مثل AdminStores
+      // ============================================================ */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard 
+          label={isRTL ? 'إجمالي الطلبات' : 'Total Applications'} 
+          value={stats.total} 
+          gradient="from-[#0d2e2a] to-[#1a4f4a]"
+          bg="bg-[#0d2e2a]/10"
+          glow="shadow-[#0d2e2a]/20"
+          icon={Layers}
+          animation="animate-float"
+        />
+        <StatCard 
+          label={isRTL ? 'قيد المراجعة' : 'Pending'} 
+          value={stats.pending} 
+          gradient="from-[#2d6b63] to-[#4a9f95]"
+          bg="bg-[#2d6b63]/10"
+          glow="shadow-[#2d6b63]/20"
+          icon={Clock}
+          animation="animate-pulse-slow"
+        />
+        <StatCard 
+          label={isRTL ? 'موافق عليه' : 'Approved'} 
+          value={stats.approved} 
+          gradient="from-[#0d2e2a] to-[#2d6b63]"
+          bg="bg-[#0d2e2a]/10"
+          glow="shadow-[#0d2e2a]/20"
+          icon={CheckCircle2}
+          animation="animate-bounce-slow"
+        />
+        <StatCard 
+          label={isRTL ? 'مرفوض' : 'Rejected'} 
+          value={stats.rejected} 
+          gradient="from-[#4a9f95] to-[#6bb5aa]"
+          bg="bg-[#4a9f95]/10"
+          glow="shadow-[#4a9f95]/20"
+          icon={XCircle}
+          animation="animate-float"
+        />
+      </div>
+
+      {/* ============================================================
+      // ✅ SEARCH & FILTERS
+      // ============================================================ */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400" />
+        <div className="relative flex-1 group">
+          <Search className={`absolute inset-y-0 my-auto ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-focus-within:text-[#0d2e2a] transition-colors duration-300`} />
           <Input
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            placeholder={app.lang === "ar" ? "بحث عن طلب..." : "Search applications..."}
-            className="ps-9 h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:ring-2 focus:ring-blue-500/20 transition-all"
+            placeholder={isRTL ? "🔍 بحث عن طلب..." : "🔍 Search applications..."}
+            className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300`}
           />
         </div>
 
-        <Select 
-          value={filterStatus} 
+        <Select
+          value={filterStatus}
           onValueChange={(value: any) => {
             setFilterStatus(value);
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b]">
+          <SelectTrigger className="w-[160px] h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] hover:border-[#0d2e2a]/40 transition-colors">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
-              <SelectValue placeholder={app.lang === "ar" ? "الحالة" : "Status"} />
+              <Filter className="h-4 w-4 text-[#0d2e2a]" />
+              <SelectValue placeholder={isRTL ? "جميع الحالات" : "All status"} />
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{app.lang === "ar" ? "جميع الحالات" : "All status"}</SelectItem>
-            <SelectItem value="pending">{app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
-            <SelectItem value="approved">{app.lang === "ar" ? "موافق" : "Approved"}</SelectItem>
-            <SelectItem value="rejected">{app.lang === "ar" ? "مرفوض" : "Rejected"}</SelectItem>
+            <SelectItem value="all">📋 {isRTL ? "جميع الحالات" : "All"}</SelectItem>
+            <SelectItem value="pending">⏳ {isRTL ? "قيد المراجعة" : "Pending"}</SelectItem>
+            <SelectItem value="approved">✅ {isRTL ? "موافق" : "Approved"}</SelectItem>
+            <SelectItem value="rejected">❌ {isRTL ? "مرفوض" : "Rejected"}</SelectItem>
           </SelectContent>
         </Select>
 
-        <Select 
-          value={filterType} 
+        <Select
+          value={filterType}
           onValueChange={(value: any) => {
             setFilterType(value);
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[150px] h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b]">
+          <SelectTrigger className="w-[160px] h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] hover:border-[#0d2e2a]/40 transition-colors">
             <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-slate-400" />
-              <SelectValue placeholder={app.lang === "ar" ? "النوع" : "Type"} />
+              <Layers className="h-4 w-4 text-[#0d2e2a]" />
+              <SelectValue placeholder={isRTL ? "النوع" : "Type"} />
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{app.lang === "ar" ? "جميع الأنواع" : "All types"}</SelectItem>
-            <SelectItem value="store">{app.lang === "ar" ? "🏪 فتح متجر" : "🏪 Open Store"}</SelectItem>
-            <SelectItem value="product">{app.lang === "ar" ? "🛍️ إضافة منتج" : "🛍️ Add Product"}</SelectItem>
+            <SelectItem value="all">📦 {isRTL ? "جميع الأنواع" : "All"}</SelectItem>
+            <SelectItem value="store">🏪 {isRTL ? "فتح متجر" : "Open Store"}</SelectItem>
+            <SelectItem value="product">🛍️ {isRTL ? "إضافة منتج" : "Add Product"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -559,9 +726,9 @@ export function SellerApplicationsAdmin() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b]">
+          <SelectTrigger className="w-[100px] h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] hover:border-[#0d2e2a]/40 transition-colors">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">{app.lang === "ar" ? "عدد" : "Show"}</span>
+              <Layers className="h-4 w-4 text-[#0d2e2a]" />
               <SelectValue placeholder="10" />
             </div>
           </SelectTrigger>
@@ -583,203 +750,258 @@ export function SellerApplicationsAdmin() {
             setFilterType("all");
             setPage(1);
           }}
-          className="h-10 rounded-xl border-slate-200 dark:border-slate-700"
+          className="h-10 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 hover:scale-105"
         >
           <XCircle className="h-4 w-4 mr-1.5" />
-          {app.lang === "ar" ? "مسح الكل" : "Clear all"}
+          {isRTL ? "مسح الكل" : "Clear all"}
         </Button>
       </div>
 
-      {/* ✅ Table */}
-      <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden shadow-sm">
+      {/* ============================================================
+      // ✅ TABLE - مثل AdminStores
+      // ============================================================ */}
+      <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 overflow-hidden shadow-lg shadow-[#0d2e2a]/5 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-300">
         <div className="overflow-x-auto" ref={tableRef}>
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-slate-50/50 dark:bg-slate-800/30">
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-right min-w-[200px]">
-                  {app.lang === "ar" ? "المتقدم / المتجر" : "Applicant / Store"}
+              <TableRow className="border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 hover:bg-transparent bg-gradient-to-r from-[#0d2e2a]/5 to-[#1a4f4a]/5">
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-right min-w-[200px]">
+                  <div className="flex items-center gap-2">
+                    <Store className="h-3.5 w-3.5" />
+                    {isRTL ? "المتقدم / المتجر" : "Applicant / Store"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[100px]">
-                  {app.lang === "ar" ? "النوع" : "Type"}
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[100px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Layers className="h-3.5 w-3.5" />
+                    {isRTL ? "النوع" : "Type"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[120px]">
-                  {app.lang === "ar" ? "الهاتف" : "Phone"}
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[100px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Phone className="h-3.5 w-3.5" />
+                    {isRTL ? "الهاتف" : "Phone"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[100px]">
-                  {app.lang === "ar" ? "الحالة" : "Status"}
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[120px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Shield className="h-3.5 w-3.5" />
+                    {isRTL ? "الحالة" : "Status"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[120px]">
-                  {app.lang === "ar" ? "تاريخ الطلب" : "Date"}
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[100px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {isRTL ? "تاريخ الطلب" : "Date"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[240px]">
-                  {app.lang === "ar" ? "إجراء" : "Action"}
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[280px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap className="h-3.5 w-3.5 animate-pulse" />
+                    {isRTL ? "إجراءات" : "Actions"}
+                  </div>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && (
+              {apps.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-slate-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                      {app.lang === "ar" ? "جار التحميل..." : "Loading..."}
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-16 w-16 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center animate-bounce-slow">
+                        <Layers className="h-8 w-8 text-[#0d2e2a]/40" />
+                      </div>
+                      <p className="font-medium text-slate-900 dark:text-white">
+                        {isRTL ? "لا توجد طلبات" : "No applications"}
+                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {isRTL ? "جميع الطلبات تمت مراجعتها" : "All applications have been reviewed"}
+                      </p>
                     </div>
                   </TableCell>
                 </TableRow>
-              )}
-              {!isLoading && apps.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-slate-500">
-                    <div className="flex flex-col items-center gap-2">
-                      <Layers className="h-12 w-12 text-slate-300" />
-                      <p className="font-medium">{app.lang === "ar" ? "لا توجد طلبات" : "No applications"}</p>
-                      <p className="text-sm">{app.lang === "ar" ? "جميع الطلبات تمت مراجعتها" : "All applications have been reviewed"}</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-              {apps.map((a: any) => (
-                <TableRow 
-                  key={a.id} 
-                  className={`border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition ${
-                    a.status === "pending" ? "bg-yellow-50/30 dark:bg-yellow-950/10" : ""
-                  }`}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-11 w-11 rounded-xl flex-shrink-0">
-                        {a.store_logo_url ? (
-                          <img src={a.store_logo_url} alt="" className="h-11 w-11 rounded-xl object-cover" />
-                        ) : (
-                          <AvatarFallback className="bg-blue-500/10 text-blue-600 rounded-xl">
-                            <Store className="h-5 w-5" />
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-slate-900 dark:text-white">
-                            {a.store_name}
-                          </span>
-                          {a.store_type && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              {a.store_type === "physical" ? "🏪" : "🌐"}
-                            </Badge>
-                          )}
+              ) : (
+                apps.map((a: any) => {
+                  const isHovered = hoveredRow === a.id;
+                  
+                  return (
+                    <TableRow 
+                      key={a.id} 
+                      className={cn(
+                        "border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 transition-all duration-300 group",
+                        a.status === "pending" ? "bg-[#2d6b63]/5 dark:bg-[#2d6b63]/10" : "",
+                        "hover:bg-[#0d2e2a]/5 dark:hover:bg-[#0d2e2a]/10"
+                      )}
+                      onMouseEnter={() => setHoveredRow(a.id)}
+                      onMouseLeave={() => setHoveredRow(null)}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300",
+                            isHovered ? "scale-105 rotate-6" : "",
+                            a.store_logo_url ? "" : "bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a]"
+                          )}>
+                            {a.store_logo_url ? (
+                              <img src={a.store_logo_url} alt="" className="h-11 w-11 rounded-xl object-cover" />
+                            ) : (
+                              <Store className="h-5 w-5 text-white" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 group-hover:text-[#0d2e2a] transition-colors">
+                              <span className="truncate">{a.store_name}</span>
+                              {a.store_type && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-[#0d2e2a]/20">
+                                  {a.store_type === "physical" ? "🏪" : "🌐"}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {a.profiles?.full_name || "—"}
+                            </div>
+                            {a.store_description && (
+                              <div className="text-xs text-slate-400 dark:text-slate-500 line-clamp-1 max-w-[150px]">
+                                {a.store_description}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          {a.profiles?.full_name || "—"}
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <TypeBadge type={a.application_type || "store"} />
+                      </TableCell>
+                      
+                      <TableCell dir="ltr" className="text-sm text-slate-600 dark:text-slate-300 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Phone className="h-3 w-3 text-[#4a9f95]" />
+                          {a.store_phone || a.profiles?.phone || "—"}
                         </div>
-                        {a.store_description && (
-                          <div className="text-xs text-slate-400 dark:text-slate-500 line-clamp-1 max-w-[150px]">
-                            {a.store_description}
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <StatusBadge status={a.status} />
+                        {a.reviewed_at && a.status !== "pending" && (
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            {new Date(a.reviewed_at).toLocaleDateString(
+                              isRTL ? "ar-SA" : "en-US"
+                            )}
                           </div>
                         )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">{getTypeBadge(a.application_type || "store")}</TableCell>
-                  <TableCell dir="ltr" className="text-sm text-slate-600 dark:text-slate-300 text-center">
-                    {a.store_phone || a.profiles?.phone || "—"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {getStatusBadge(a.status)}
-                    {a.reviewed_at && a.status !== "pending" && (
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        {new Date(a.reviewed_at).toLocaleDateString(
-                          app.lang === "ar" ? "ar-SA" : "en-US"
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600 dark:text-slate-300 text-center">
-                    <div className="flex items-center gap-1 justify-center">
-                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                      {new Date(a.created_at).toLocaleDateString(
-                        app.lang === "ar" ? "ar-SA" : "en-US",
-                        { year: "numeric", month: "short", day: "numeric" }
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="rounded-xl h-8 px-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50/50"
-                        onClick={() => {
-                          setSelectedApp(a);
-                          setShowDetailsDialog(true);
-                        }}
-                        title={app.lang === "ar" ? "عرض التفاصيل" : "View details"}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-
-                      {a.status === "pending" && (
-                        <>
+                      </TableCell>
+                      
+                      <TableCell className="text-sm text-slate-600 dark:text-slate-300 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Calendar className="h-3.5 w-3.5 text-[#4a9f95]" />
+                          {new Date(a.created_at).toLocaleDateString(
+                            isRTL ? "ar-SA" : "en-US",
+                            { year: "numeric", month: "short", day: "numeric" }
+                          )}
+                        </div>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                          
+                          {/* ✅ زر التفاصيل */}
                           <Button
                             size="sm"
-                            className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl h-8 px-3 disabled:opacity-50"
-                            onClick={() => decide(a.id, "approved")}
-                            disabled={isProcessing}
-                            title={app.lang === "ar" ? "موافقة على الطلب" : "Approve application"}
-                          >
-                            {isProcessing ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                            ) : (
-                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                            )}
-                            {app.lang === "ar" ? "موافقة" : "Approve"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="rounded-xl h-8 px-3 border-slate-200 dark:border-slate-700 hover:border-rose-300 hover:text-rose-600 hover:bg-rose-50/50 disabled:opacity-50"
+                            variant="ghost"
+                            className="rounded-xl h-8 px-3 text-[#4a9f95] hover:text-[#0d2e2a] hover:bg-[#0d2e2a]/10 transition-all duration-300 hover:scale-105"
                             onClick={() => {
-                              setNoteFor(a.id);
-                              setNote("");
+                              setSelectedApp(a);
+                              setShowDetailsDialog(true);
                             }}
-                            disabled={isProcessing}
-                            title={app.lang === "ar" ? "رفض الطلب" : "Reject application"}
+                            title={isRTL ? "عرض التفاصيل" : "View details"}
                           >
-                            <XCircle className="h-3.5 w-3.5 mr-1" />
-                            {app.lang === "ar" ? "رفض" : "Reject"}
+                            <Eye className="h-3.5 w-3.5" />
                           </Button>
-                        </>
-                      )}
-                      {a.status !== "pending" && (
-                        <span className="text-xs text-slate-400 flex items-center gap-1">
-                          {a.status === "approved" ? (
+
+                          {a.status === "pending" && (
                             <>
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                              <span className="text-emerald-600">{app.lang === "ar" ? "تمت الموافقة" : "Approved"}</span>
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="h-3.5 w-3.5 text-rose-500" />
-                              <span className="text-rose-600">{app.lang === "ar" ? "مرفوض" : "Rejected"}</span>
+                              {/* ✅ زر الموافقة */}
+                              <Button
+                                size="sm"
+                                className={cn(
+                                  "rounded-xl h-8 px-3 transition-all duration-300 hover:scale-105",
+                                  "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30"
+                                )}
+                                onClick={() => decide(a.id, "approved")}
+                                disabled={isProcessing}
+                                title={isRTL ? "موافقة على الطلب" : "Approve application"}
+                              >
+                                {isProcessing ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <>
+                                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                                    {isRTL ? "موافقة" : "Approve"}
+                                  </>
+                                )}
+                              </Button>
+
+                              {/* ✅ زر الرفض */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="rounded-xl h-8 px-3 border-[#6bb5aa]/30 text-[#6bb5aa] hover:bg-[#6bb5aa]/10 hover:border-[#6bb5aa]/50 transition-all duration-300 hover:scale-105"
+                                onClick={() => {
+                                  setNoteFor(a.id);
+                                  setNote("");
+                                }}
+                                disabled={isProcessing}
+                                title={isRTL ? "رفض الطلب" : "Reject application"}
+                              >
+                                <XCircle className="h-3.5 w-3.5 mr-1" />
+                                {isRTL ? "رفض" : "Reject"}
+                              </Button>
                             </>
                           )}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                          
+                          {a.status !== "pending" && (
+                            <div className={cn(
+                              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium",
+                              a.status === "approved" 
+                                ? "bg-[#0d2e2a]/10 text-[#0d2e2a]" 
+                                : "bg-[#6bb5aa]/10 text-[#6bb5aa]"
+                            )}>
+                              {a.status === "approved" ? (
+                                <>
+                                  <CheckCircle2 className="h-3.5 w-3.5 animate-bounce-slow" />
+                                  <span>{isRTL ? "تمت الموافقة" : "Approved"}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="h-3.5 w-3.5 animate-float" />
+                                  <span>{isRTL ? "مرفوض" : "Rejected"}</span>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </div>
 
-        {/* ✅ Pagination */}
+        {/* ============================================================
+        // ✅ PAGINATION - مثل AdminStores
+        // ============================================================ */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="px-4 py-3 border-t border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-xs text-slate-500 dark:text-slate-400">
-              {totalCount === 0 ? (
-                <span>{app.lang === "ar" ? "لا توجد طلبات" : "No applications"}</span>
+              {apps.length === 0 ? (
+                <span>{isRTL ? "لا توجد طلبات" : "No applications"}</span>
               ) : (
-                <span>
-                  {app.lang === "ar"
+                <span className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#2d6b63] animate-pulse" />
+                  {isRTL
                     ? `عرض ${(page - 1) * limit + 1}-${Math.min(page * limit, totalCount)} من ${totalCount} طلب`
                     : `Showing ${(page - 1) * limit + 1}-${Math.min(page * limit, totalCount)} of ${totalCount} applications`}
                 </span>
@@ -792,10 +1014,9 @@ export function SellerApplicationsAdmin() {
                 size="sm"
                 onClick={() => goToPage(1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200 dark:border-slate-700"
-                title={app.lang === "ar" ? "الصفحة الأولى" : "First page"}
+                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
               >
-                <span className="text-xs">«</span>
+                <span className="text-xs font-bold">«</span>
               </Button>
 
               <Button
@@ -803,8 +1024,7 @@ export function SellerApplicationsAdmin() {
                 size="sm"
                 onClick={() => goToPage(page - 1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200 dark:border-slate-700"
-                title={app.lang === "ar" ? "السابق" : "Previous"}
+                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -828,11 +1048,12 @@ export function SellerApplicationsAdmin() {
                       variant={page === pageNum ? "default" : "outline"}
                       size="sm"
                       onClick={() => goToPage(pageNum)}
-                      className={`h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all ${
+                      className={cn(
+                        "h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300",
                         page === pageNum
-                          ? "bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-lg shadow-blue-500/25"
-                          : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:border-blue-300"
-                      }`}
+                          ? "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30 scale-105"
+                          : "border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 hover:scale-105"
+                      )}
                     >
                       {pageNum}
                     </Button>
@@ -846,7 +1067,7 @@ export function SellerApplicationsAdmin() {
                       variant="outline"
                       size="sm"
                       onClick={() => goToPage(totalPages)}
-                      className="h-8 min-w-[32px] p-0 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs"
+                      className="h-8 min-w-[32px] p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 text-xs transition-all duration-300 hover:scale-105"
                     >
                       {totalPages}
                     </Button>
@@ -859,8 +1080,7 @@ export function SellerApplicationsAdmin() {
                 size="sm"
                 onClick={() => goToPage(page + 1)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200 dark:border-slate-700"
-                title={app.lang === "ar" ? "التالي" : "Next"}
+                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -870,167 +1090,213 @@ export function SellerApplicationsAdmin() {
                 size="sm"
                 onClick={() => goToPage(totalPages)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200 dark:border-slate-700"
-                title={app.lang === "ar" ? "الصفحة الأخيرة" : "Last page"}
+                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
               >
-                <span className="text-xs">»</span>
+                <span className="text-xs font-bold">»</span>
               </Button>
             </div>
           </div>
         )}
+
+        {/* ✅ Footer */}
+        <div className="px-4 py-2 border-t border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <span className="flex items-center gap-2">
+            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20">
+              {isRTL
+                ? `عرض ${apps.length} من ${totalCount}`
+                : `Showing ${apps.length} of ${totalCount}`}
+            </Badge>
+            <span className="text-[10px] text-[#2d6b63]">
+              {isRTL ? `إجمالي ${totalCount}` : `Total ${totalCount}`}
+            </span>
+          </span>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-[#0d2e2a]/5 text-[#0d2e2a] border border-[#0d2e2a]/20">
+              <Shield className="h-3 w-3 mr-1" />
+              {filterStatus === "all" && (isRTL ? "جميع" : "All")}
+              {filterStatus === "pending" && (isRTL ? "قيد المراجعة" : "Pending")}
+              {filterStatus === "approved" && (isRTL ? "موافق" : "Approved")}
+              {filterStatus === "rejected" && (isRTL ? "مرفوض" : "Rejected")}
+            </Badge>
+            {searchQuery && (
+              <Badge className="bg-[#1a4f4a]/10 text-[#1a4f4a] border border-[#1a4f4a]/20">
+                <Search className="h-3 w-3 mr-1" />
+                {searchQuery}
+              </Badge>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* ✅ Dialog للرفض - مع جعل الحقل مطلوب */}
+      {/* ============================================================
+      // ✅ REJECT DIALOG - بألوان النظام
+      // ============================================================ */}
       <Dialog open={!!noteFor} onOpenChange={(o) => !o && setNoteFor(null)}>
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="rounded-2xl max-w-md p-6 border border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/20">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-rose-500" />
-              {app.lang === "ar" ? "رفض الطلب" : "Reject Application"}
+              <AlertCircle className="h-5 w-5 text-[#6bb5aa]" />
+              {isRTL ? "رفض الطلب" : "Reject Application"}
             </DialogTitle>
             <DialogDescription>
-              {app.lang === "ar"
+              {isRTL
                 ? "✍️ يرجى كتابة سبب الرفض لتوضيح السبب للمستخدم."
                 : "✍️ Please provide a reason for rejection to clarify to the user."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label className="text-sm font-medium flex items-center gap-1">
-                {app.lang === "ar" ? "سبب الرفض" : "Rejection Reason"}
-                <span className="text-red-500">*</span>
+              <Label className="text-sm font-medium flex items-center gap-1 text-[#0d2e2a]">
+                {isRTL ? "سبب الرفض" : "Rejection Reason"}
+                <span className="text-[#6bb5aa]">*</span>
               </Label>
               <Textarea
                 rows={4}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder={app.lang === "ar" 
+                placeholder={isRTL 
                   ? "✍️ اذكر سبب الرفض هنا (مطلوب)" 
                   : "✍️ Mention the reason for rejection here (required)"}
-                className={`mt-1.5 rounded-xl resize-none ${
-                  !note && noteFor ? 'border-rose-500/50 focus-visible:ring-rose-500/20' : ''
-                }`}
+                className={cn(
+                  "mt-1.5 rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300",
+                  !note && noteFor && "border-[#6bb5aa]/50 focus-visible:ring-[#6bb5aa]/20"
+                )}
               />
               {!note && noteFor && (
-                <p className="text-xs text-rose-500 mt-1.5 flex items-center gap-1">
+                <p className="text-xs text-[#6bb5aa] mt-1.5 flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
-                  {app.lang === "ar" ? "⚠️ يرجى كتابة سبب الرفض" : "⚠️ Please provide a reason for rejection"}
+                  {isRTL ? "⚠️ يرجى كتابة سبب الرفض" : "⚠️ Please provide a reason for rejection"}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground mt-1.5">
-                {app.lang === "ar" 
+              <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                <MessageSquare className="h-3 w-3" />
+                {isRTL 
                   ? "💡 هذا السبب سيظهر للمستخدم ليعرف سبب الرفض"
                   : "💡 This reason will be shown to the user to know why it was rejected"}
               </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setNoteFor(null)}>
-              {app.lang === "ar" ? "إلغاء" : "Cancel"}
+            <Button variant="outline" onClick={() => setNoteFor(null)} className="rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10">
+              {isRTL ? "إلغاء" : "Cancel"}
             </Button>
             <Button
               variant="destructive"
               onClick={() => {
                 if (!note.trim()) {
-                  toast.error(app.lang === "ar" ? "⚠️ يرجى كتابة سبب الرفض" : "⚠️ Please provide a reason");
+                  toast.error(isRTL ? "⚠️ يرجى كتابة سبب الرفض" : "⚠️ Please provide a reason");
                   return;
                 }
                 noteFor && decide(noteFor, "rejected", note.trim());
               }}
               disabled={isProcessing}
+              className="rounded-xl bg-gradient-to-r from-[#6bb5aa] to-[#4a9f95] hover:from-[#4a9f95] hover:to-[#2d6b63] text-white shadow-lg shadow-[#6bb5aa]/30 transition-all duration-300 hover:scale-105"
             >
               {isProcessing ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
               ) : (
                 <XCircle className="h-4 w-4 mr-1.5" />
               )}
-              {app.lang === "ar" ? "تأكيد الرفض" : "Confirm Reject"}
+              {isRTL ? "تأكيد الرفض" : "Confirm Reject"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ✅ Dialog لعرض التفاصيل */}
+      {/* ============================================================
+      // ✅ DETAILS DIALOG - بألوان النظام
+      // ============================================================ */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="rounded-2xl max-w-lg">
+        <DialogContent className="rounded-2xl max-w-lg p-6 border border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/20">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Store className="h-5 w-5 text-blue-600" />
-              {app.lang === "ar" ? "تفاصيل الطلب" : "Application Details"}
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center shadow-lg shadow-[#0d2e2a]/30">
+                <Store className="h-4 w-4 text-white" />
+              </div>
+              {isRTL ? "تفاصيل الطلب" : "Application Details"}
             </DialogTitle>
           </DialogHeader>
           {selectedApp && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-slate-500">{app.lang === "ar" ? "اسم المتجر" : "Store Name"}</p>
-                  <p className="font-semibold text-slate-900 dark:text-white">{selectedApp.store_name}</p>
+                <div className="col-span-2">
+                  <p className="text-xs text-slate-500">{isRTL ? "اسم المتجر" : "Store Name"}</p>
+                  <p className="font-semibold text-slate-900 dark:text-white text-lg">{selectedApp.store_name}</p>
                 </div>
+                
                 <div>
-                  <p className="text-xs text-slate-500">{app.lang === "ar" ? "نوع الطلب" : "Application Type"}</p>
-                  {getTypeBadge(selectedApp.application_type || "store")}
+                  <p className="text-xs text-slate-500">{isRTL ? "نوع الطلب" : "Application Type"}</p>
+                  <div className="mt-1">{TypeBadge({ type: selectedApp.application_type || "store" })}</div>
                 </div>
+                
                 <div>
-                  <p className="text-xs text-slate-500">{app.lang === "ar" ? "الحالة" : "Status"}</p>
-                  <div className="mt-1">{getStatusBadge(selectedApp.status)}</div>
+                  <p className="text-xs text-slate-500">{isRTL ? "الحالة" : "Status"}</p>
+                  <div className="mt-1">{StatusBadge({ status: selectedApp.status })}</div>
                 </div>
+                
                 <div>
-                  <p className="text-xs text-slate-500">{app.lang === "ar" ? "المتقدم" : "Applicant"}</p>
+                  <p className="text-xs text-slate-500">{isRTL ? "المتقدم" : "Applicant"}</p>
                   <p className="font-semibold text-slate-900 dark:text-white">
                     {selectedApp.profiles?.full_name || "—"}
                   </p>
                 </div>
+                
                 <div>
-                  <p className="text-xs text-slate-500">{app.lang === "ar" ? "الهاتف" : "Phone"}</p>
+                  <p className="text-xs text-slate-500">{isRTL ? "الهاتف" : "Phone"}</p>
                   <p className="font-mono text-slate-900 dark:text-white">
                     {selectedApp.store_phone || selectedApp.profiles?.phone || "—"}
                   </p>
                 </div>
+                
                 <div className="col-span-2">
-                  <p className="text-xs text-slate-500">{app.lang === "ar" ? "الوصف" : "Description"}</p>
-                  <p className="text-slate-700 dark:text-slate-300">
-                    {selectedApp.store_description || (app.lang === "ar" ? "لا يوجد وصف" : "No description")}
+                  <p className="text-xs text-slate-500">{isRTL ? "الوصف" : "Description"}</p>
+                  <p className="text-slate-700 dark:text-slate-300 bg-[#0d2e2a]/5 p-3 rounded-xl border border-[#0d2e2a]/10">
+                    {selectedApp.store_description || (isRTL ? "لا يوجد وصف" : "No description")}
                   </p>
                 </div>
+                
                 {selectedApp.address && (
                   <div className="col-span-2">
-                    <p className="text-xs text-slate-500">{app.lang === "ar" ? "العنوان" : "Address"}</p>
+                    <p className="text-xs text-slate-500">{isRTL ? "العنوان" : "Address"}</p>
                     <p className="text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                      <MapPin className="h-4 w-4 text-slate-400" />
+                      <MapPin className="h-4 w-4 text-[#4a9f95]" />
                       {selectedApp.address}
                     </p>
                   </div>
                 )}
+                
                 {selectedApp.admin_note && (
-                  <div className="col-span-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                  <div className="col-span-2 p-4 rounded-xl bg-[#2d6b63]/10 border border-[#2d6b63]/30">
+                    <p className="text-xs text-[#2d6b63] flex items-center gap-1">
                       <MessageSquare className="h-3.5 w-3.5" />
-                      {app.lang === "ar" ? "ملاحظة الأدمن" : "Admin Note"}
+                      {isRTL ? "ملاحظة الأدمن" : "Admin Note"}
                     </p>
                     <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{selectedApp.admin_note}</p>
                   </div>
                 )}
+                
                 {selectedApp.opening_time && selectedApp.closing_time && (
                   <div className="col-span-2">
-                    <p className="text-xs text-slate-500">{app.lang === "ar" ? "أوقات العمل" : "Working Hours"}</p>
-                    <p className="text-slate-700 dark:text-slate-300">
+                    <p className="text-xs text-slate-500">{isRTL ? "أوقات العمل" : "Working Hours"}</p>
+                    <p className="text-slate-700 dark:text-slate-300 font-mono">
                       {selectedApp.opening_time?.slice(0,5)} - {selectedApp.closing_time?.slice(0,5)}
                     </p>
                   </div>
                 )}
+                
                 {selectedApp.weekly_off_days && selectedApp.weekly_off_days.length > 0 && (
                   <div className="col-span-2">
-                    <p className="text-xs text-slate-500">{app.lang === "ar" ? "أيام العطل" : "Off Days"}</p>
+                    <p className="text-xs text-slate-500">{isRTL ? "أيام العطل" : "Off Days"}</p>
                     <p className="text-slate-700 dark:text-slate-300">
                       {selectedApp.weekly_off_days.map((day: string) => {
                         const dayMap: Record<string, string> = {
-                          Monday: app.lang === "ar" ? 'الإثنين' : 'Mon',
-                          Tuesday: app.lang === "ar" ? 'الثلاثاء' : 'Tue',
-                          Wednesday: app.lang === "ar" ? 'الأربعاء' : 'Wed',
-                          Thursday: app.lang === "ar" ? 'الخميس' : 'Thu',
-                          Friday: app.lang === "ar" ? 'الجمعة' : 'Fri',
-                          Saturday: app.lang === "ar" ? 'السبت' : 'Sat',
-                          Sunday: app.lang === "ar" ? 'الأحد' : 'Sun',
+                          Monday: isRTL ? 'الإثنين' : 'Mon',
+                          Tuesday: isRTL ? 'الثلاثاء' : 'Tue',
+                          Wednesday: isRTL ? 'الأربعاء' : 'Wed',
+                          Thursday: isRTL ? 'الخميس' : 'Thu',
+                          Friday: isRTL ? 'الجمعة' : 'Fri',
+                          Saturday: isRTL ? 'السبت' : 'Sat',
+                          Sunday: isRTL ? 'الأحد' : 'Sun',
                         };
                         return dayMap[day] || day;
                       }).join(', ')}
@@ -1038,22 +1304,72 @@ export function SellerApplicationsAdmin() {
                   </div>
                 )}
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
-                <p className="text-xs text-slate-500">
-                  {app.lang === "ar" ? "تاريخ الطلب" : "Request Date"}:{" "}
+              
+              <div className="flex items-center justify-between pt-3 border-t border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20">
+                <p className="text-xs text-slate-500 flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5 text-[#4a9f95]" />
+                  {isRTL ? "تاريخ الطلب" : "Request Date"}:{" "}
                   {new Date(selectedApp.created_at).toLocaleDateString(
-                    app.lang === "ar" ? "ar-SA" : "en-US",
+                    isRTL ? "ar-SA" : "en-US",
                     { year: "numeric", month: "long", day: "numeric" }
                   )}
                 </p>
-                <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
-                  {app.lang === "ar" ? "إغلاق" : "Close"}
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowDetailsDialog(false)}
+                  className="rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300"
+                >
+                  {isRTL ? "إغلاق" : "Close"}
                 </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ============================================================
+      // ✅ CSS Animations
+      // ============================================================ */}
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .animate-shimmer {
+          background-size: 200% auto;
+          animation: shimmer 3s linear infinite;
+        }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 6s linear infinite;
+        }
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+        .animate-bounce-slow {
+          animation: bounce-slow 2s ease-in-out infinite;
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-4px); }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+        @keyframes pulse-slow {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }
+
+export default SellerApplicationsAdmin;

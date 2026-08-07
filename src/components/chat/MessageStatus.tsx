@@ -27,16 +27,16 @@ interface MessageStatusProps {
 // ====== أيقونات الحالة ======
 const StatusIcons = {
   sending: ({ className }: { className?: string }) => (
-    <Loader2 className={cn("animate-spin text-gray-400", className)} />
+    <Loader2 className={cn("animate-spin text-[#2a655f]/50", className)} />
   ),
   sent: ({ className }: { className?: string }) => (
-    <Check className={cn("text-gray-400", className)} />
+    <Check className={cn("text-[#2a655f]/60", className)} />
   ),
   delivered: ({ className }: { className?: string }) => (
-    <CheckCheck className={cn("text-gray-400", className)} />
+    <CheckCheck className={cn("text-[#2a655f]/60", className)} />
   ),
   read: ({ className }: { className?: string }) => (
-    <CheckCheck className={cn("text-blue-500", className)} />
+    <CheckCheck className={cn("text-[#3a8a82]", className)} />
   ),
   failed: ({ className }: { className?: string }) => (
     <AlertCircle className={cn("text-red-500", className)} />
@@ -79,25 +79,19 @@ export function MessageStatus({
   const app = useApp();
   const lang = app.lang || "ar";
 
-  // إذا كانت الرسالة ليست لي، لا نعرض الحالة
   if (!isMine) {
     return null;
   }
 
-  // تحديد حجم الأيقونة
   const iconSize = {
     sm: "h-3 w-3",
     md: "h-4 w-4",
     lg: "h-5 w-5",
   }[size];
 
-  // الحصول على الأيقونة المناسبة
   const StatusIcon = StatusIcons[status] || StatusIcons.sent;
-
-  // الحصول على التسمية
   const label = StatusLabels[lang][status] || status;
 
-  // تنسيق الوقت
   const formatTime = (date?: string | null) => {
     if (!date) return "";
     const d = new Date(date);
@@ -107,12 +101,11 @@ export function MessageStatus({
     });
   };
 
-  // تحديد لون النص
   const textColor = {
-    sending: "text-gray-400",
-    sent: "text-gray-400",
-    delivered: "text-gray-400",
-    read: "text-blue-500",
+    sending: "text-[#2a655f]/50",
+    sent: "text-[#2a655f]/60",
+    delivered: "text-[#2a655f]/60",
+    read: "text-[#3a8a82]",
     failed: "text-red-500",
     pending: "text-yellow-500",
   }[status];
@@ -144,7 +137,6 @@ export function MessageStatus({
         </span>
       )}
 
-      {/* Tooltip عند التحويم */}
       <span className="sr-only">{label}</span>
     </div>
   );
@@ -193,10 +185,10 @@ export function MessageStatusWithTooltip({
         className={cn(
           "absolute z-50 hidden group-hover:block",
           "px-2 py-1 rounded-lg",
-          "bg-gray-900 dark:bg-gray-800",
+          "bg-[#0d1f1d] dark:bg-[#0a1513]",
           "text-white text-xs font-medium",
           "whitespace-nowrap",
-          "shadow-lg",
+          "shadow-lg border border-[#2a655f]/20",
           {
             "bottom-full mb-2 left-1/2 -translate-x-1/2": tooltipPosition === "top",
             "top-full mt-2 left-1/2 -translate-x-1/2": tooltipPosition === "bottom",
@@ -214,7 +206,7 @@ export function MessageStatusWithTooltip({
         {/* سهم صغير */}
         <div
           className={cn(
-            "absolute w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45",
+            "absolute w-2 h-2 bg-[#0d1f1d] dark:bg-[#0a1513] rotate-45 border border-[#2a655f]/20",
             {
               "bottom-[-4px] left-1/2 -translate-x-1/2": tooltipPosition === "top",
               "top-[-4px] left-1/2 -translate-x-1/2": tooltipPosition === "bottom",
@@ -253,10 +245,10 @@ export function SimpleMessageStatus({
   const StatusIcon = StatusIcons[status] || StatusIcons.sent;
 
   const color = {
-    sending: "text-gray-400",
-    sent: "text-gray-400",
-    delivered: "text-gray-400",
-    read: "text-blue-500",
+    sending: "text-[#2a655f]/50",
+    sent: "text-[#2a655f]/60",
+    delivered: "text-[#2a655f]/60",
+    read: "text-[#3a8a82]",
     failed: "text-red-500",
     pending: "text-yellow-500",
   }[status];
@@ -273,11 +265,11 @@ export function SimpleMessageStatus({
   );
 }
 
-// ====== مكون حالة جماعية (للمجموعات) ======
+// ====== مكون حالة جماعية ======
 interface GroupMessageStatusProps {
   status: MessageStatusType;
-  readBy: number; // عدد الأشخاص الذين قرأوا
-  total: number; // إجمالي الأشخاص
+  readBy: number;
+  total: number;
   isMine: boolean;
   className?: string;
 }
@@ -300,15 +292,14 @@ export function GroupMessageStatus({
   const StatusIcon = StatusIcons[status] || StatusIcons.sent;
 
   const textColor = {
-    sending: "text-gray-400",
-    sent: "text-gray-400",
-    delivered: "text-gray-400",
-    read: "text-blue-500",
+    sending: "text-[#2a655f]/50",
+    sent: "text-[#2a655f]/60",
+    delivered: "text-[#2a655f]/60",
+    read: "text-[#3a8a82]",
     failed: "text-red-500",
     pending: "text-yellow-500",
   }[status];
 
-  // بناء النص
   let label = "";
   if (lang === "ar") {
     if (readBy === 0) label = "لم يقرأ أحد";
@@ -355,10 +346,10 @@ export function MessageStatusWithDate({
   const StatusIcon = StatusIcons[status] || StatusIcons.sent;
 
   const textColor = {
-    sending: "text-gray-400",
-    sent: "text-gray-400",
-    delivered: "text-gray-400",
-    read: "text-blue-500",
+    sending: "text-[#2a655f]/50",
+    sent: "text-[#2a655f]/60",
+    delivered: "text-[#2a655f]/60",
+    read: "text-[#3a8a82]",
     failed: "text-red-500",
     pending: "text-yellow-500",
   }[status];

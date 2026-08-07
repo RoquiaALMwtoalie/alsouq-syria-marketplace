@@ -1,17 +1,33 @@
 // src/routes/store.$id.tsx
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { 
   Star, MessageCircle, Store as StoreIcon, Loader2, 
-  Clock, Calendar, MapPin, Globe, Building2 // ✅ أيقونات جديدة
+  Clock, Calendar, MapPin, Globe, Building2, Truck,
+  Sparkles, Package, Share2, Flame, BadgeCheck,
+  Search, X, ArrowUpDown, Grid3X3, List, ChevronDown,
+  RefreshCw, Eye, Heart, TrendingUp, Zap
 } from "lucide-react";
 import { useApp, useT } from "@/lib/i18n";
-import { useListings, useStoreProfile } from "@/lib/queries";
+import { useListings, useStoreProfile, useDeliveryCompanies } from "@/lib/queries";
 import { useGetOrCreateConversation } from "@/lib/hooks/useConversation";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/store/$id")({
   component: StorePage,
@@ -24,85 +40,233 @@ function StorePage() {
   const t = useT();
   const navigate = useNavigate();
   const [isOpeningConversation, setIsOpeningConversation] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   
+  // ====== State التوصيل ======
+  const [deliveryPrice, setDeliveryPrice] = useState<{
+    distance: number;
+    price: number;
+    isFree: boolean;
+    breakdown: any;
+    companyName: string;
+    governorateMatch: boolean;
+  } | null>(null);
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
+
+  // ====== State الفلتر والترتيب ======
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"recent" | "popular" | "price_asc" | "price_desc" | "rating">("recent");
+  const [viewFilter, setViewFilter] = useState<"all" | "offers">("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [allListings, setAllListings] = useState<any[]>([]);
+
   // ====== Hooks ======
-  const { data: store, isLoading } = useStoreProfile(id) as { data: any; isLoading: boolean };
-  const { data: listings = [] } = useListings({ ownerId: id, sort: "recent" });
+  const { data: store, isLoading: storeLoading } = useStoreProfile(id) as { data: any; isLoading: boolean };
   const getOrCreateConversation = useGetOrCreateConversation();
+  const { data: companies = [] } = useDeliveryCompanies({ active: true });
 
-  // ====== معالجة فتح المحادثة ======
- // src/routes/store.$id.tsx
+  // ====== جلب المنتجات مع Pagination وفلتر العروض ======
+  const { 
+    data: listingsData, 
+    isLoading: listingsLoading,
+    isFetching,
+  } = useListings({ 
+    ownerId: id, 
+    sort: sortBy,
+    page: page,
+    limit: limit,
+    search: searchQuery || undefined,
+    isOffer: viewFilter === "offers" ? true : undefined,
+  });
 
-const handleMessage = async () => {
-  if (!app.user) {
-    navigate({ to: "/auth/$mode", params: { mode: "login" } });
-    return;
-  }
+  // ✅ استخراج البيانات بالشكل الصحيح
+  const listings = listingsData?.data || [];
+  const totalCount = listingsData?.count || 0;
+  const totalPages = listingsData?.totalPages || 1;
 
-  if (app.user.id === id) {
-    toast.error(app.lang === "ar" ? "لا يمكنك مراسلة نفسك" : "You can't message yourself");
-    return;
-  }
+  // ✅ عدد العروض
+  const offersCount = listings.filter((item: any) => item.is_offer === true).length;
 
-  if (store?.allows_messaging === false) {
-    toast.error(app.lang === "ar" ? "هذا المتجر لا يسمح بالمراسلة" : "This store doesn't allow messaging");
-    return;
-  }
+  // ====== تجميع المنتجات ======
+  useEffect(() => {
+    if (page === 1) {
+      setAllListings(listings);
+    } else {
+      setAllListings(prev => [...prev, ...listings]);
+    }
+  }, [listings, page]);
 
-  setIsOpeningConversation(true);
+  // ====== إعادة تعيين الصفحة عند تغيير الفلتر ======
+  useEffect(() => {
+    setPage(1);
+    setAllListings([]);
+  }, [searchQuery, sortBy, viewFilter]);
 
-  try {
-    const conversation = await getOrCreateConversation.mutateAsync({
-      userId: app.user.id,
-      otherUserId: id,
-    });
+  // ====== حساب سعر التوصيل ======
+  useEffect(() => {
+    let isMounted = true;
 
-    // ✅ ✅ ✅ أرسل state مع الـ navigate ✅ ✅ ✅
-    navigate({
-      to: "/messages/$userId",
-      params: { userId: id },
-      search: { cid: conversation.id },
-      state: { fromStore: true, storeId: id, storeName: store.store_name || store.full_name },
-    });
-  } catch (error) {
-    console.error("❌ Error opening conversation:", error);
-    toast.error(
-      app.lang === "ar" 
-        ? "فشل فتح المحادثة. حاول مرة أخرى" 
-        : "Failed to open conversation. Please try again"
-    );
-  } finally {
-    setIsOpeningConversation(false);
-  }
-};
+    const calculateDelivery = async () => {
+      if (!store || !app.user) return;
+
+      setDeliveryLoading(true);
+      try {
+        const { data: userAddress, error: addressError } = await supabase
+          .from("user_addresses")
+          .select("governorate_id, lat, lng, address_text")
+          .eq("user_id", app.user.id)
+          .eq("is_default", true)
+          .maybeSingle();
+
+        if (addressError || !userAddress || !isMounted) return;
+
+        const storeGovernorateId = store.governorate_id;
+        
+        let matchingCompanies = companies.filter((c: any) => c.is_active === true);
+        if (storeGovernorateId) {
+          const inGov = matchingCompanies.filter((c: any) => c.governorate_id === storeGovernorateId);
+          if (inGov.length > 0) matchingCompanies = inGov;
+        }
+
+        const selectedCompany = matchingCompanies.sort((a: any, b: any) => 
+          (a.base_price || 0) - (b.base_price || 0)
+        )[0];
+
+        if (!selectedCompany || !isMounted) return;
+
+        let distance = 0;
+        if (store.lat && store.lng && userAddress.lat && userAddress.lng) {
+          distance = calculateDistance(store.lat, store.lng, userAddress.lat, userAddress.lng);
+        } else {
+          distance = storeGovernorateId === userAddress.governorate_id ? 5 : 15;
+        }
+
+        const price = calculateDeliveryPrice(selectedCompany, distance, 0);
+
+        if (isMounted) {
+          setDeliveryPrice({
+            distance: Math.round(distance * 100) / 100,
+            price,
+            isFree: price === 0,
+            companyName: selectedCompany.name_ar,
+            governorateMatch: storeGovernorateId === userAddress.governorate_id,
+            breakdown: {
+              basePrice: selectedCompany.base_price,
+              pricePerKm: selectedCompany.price_per_km,
+              distanceCost: distance * (selectedCompany.price_per_km || 0),
+              minFee: selectedCompany.min_delivery_fee,
+              maxFee: selectedCompany.max_delivery_fee,
+              freeThreshold: selectedCompany.free_delivery_threshold,
+              sameGovernorate: storeGovernorateId === userAddress.governorate_id,
+            }
+          });
+        }
+      } catch (error) {
+        console.error("❌ Error calculating delivery:", error);
+      } finally {
+        if (isMounted) setDeliveryLoading(false);
+      }
+    };
+
+    calculateDelivery();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [store, companies, app.user]);
+
+  // ====== دوال مساعدة ======
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) ** 2;
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+  }, []);
+
+  const calculateDeliveryPrice = useCallback((company: any, distanceInKm: number, orderTotal: number): number => {
+    if (orderTotal >= (company.free_delivery_threshold || 999999)) return 0;
+    let price = (company.base_price || 0) + (distanceInKm * (company.price_per_km || 0));
+    price = Math.max(price, company.min_delivery_fee || 0);
+    price = Math.min(price, company.max_delivery_fee || 999999);
+    return Math.round(price);
+  }, []);
+
+  // ====== تحميل المزيد ======
+  const loadMore = useCallback(() => {
+    if (page < totalPages && !isFetching) {
+      setPage(prev => prev + 1);
+    }
+  }, [page, totalPages, isFetching]);
+
+  // ====== فتح المحادثة ======
+  const handleMessage = async () => {
+    if (!app.user) {
+      navigate({ to: "/auth/$mode", params: { mode: "login" } });
+      return;
+    }
+    if (app.user.id === id) {
+      toast.error(app.lang === "ar" ? "لا يمكنك مراسلة نفسك" : "You can't message yourself");
+      return;
+    }
+    if (store?.allows_messaging === false) {
+      toast.error(app.lang === "ar" ? "هذا المتجر لا يسمح بالمراسلة" : "This store doesn't allow messaging");
+      return;
+    }
+
+    setIsOpeningConversation(true);
+    try {
+      const conversation = await getOrCreateConversation.mutateAsync({
+        userId: app.user.id,
+        otherUserId: id,
+      });
+
+      navigate({
+        to: "/messages/$userId",
+        params: { userId: id },
+        search: { cid: conversation.id },
+        state: { fromStore: true, storeId: id, storeName: store.store_name || store.full_name },
+      });
+    } catch (error) {
+      toast.error(app.lang === "ar" ? "فشل فتح المحادثة. حاول مرة أخرى" : "Failed to open conversation.");
+    } finally {
+      setIsOpeningConversation(false);
+    }
+  };
+
+  // ====== إعادة تعيين الفلتر ======
+  const resetFilters = useCallback(() => {
+    setSearchQuery("");
+    setSortBy("recent");
+    setViewFilter("all");
+    setPage(1);
+    setAllListings([]);
+  }, []);
 
   // ====== عرض التحميل ======
-  if (isLoading) {
+  if (storeLoading) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-20 text-center text-muted-foreground">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-        <p>{app.lang === "ar" ? "جاري تحميل المتجر..." : "Loading store..."}</p>
+      <div className="mx-auto max-w-7xl px-4 py-12 space-y-6">
+        <Skeleton className="h-48 md:h-72 w-full rounded-2xl" />
+        <div className="flex items-center gap-4 -mt-16 px-4">
+          <Skeleton className="h-24 w-24 rounded-2xl" />
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  // ====== المتجر غير موجود ======
   if (!store) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-20 text-center">
         <StoreIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-        <h2 className="text-2xl font-bold">
-          {app.lang === "ar" ? "المتجر غير موجود" : "Store not found"}
-        </h2>
-        <p className="text-muted-foreground mt-2">
-          {app.lang === "ar" 
-            ? "قد يكون المتجر قد تم حذفه أو تعطيله" 
-            : "The store may have been deleted or disabled"}
-        </p>
-        <Button 
-          className="mt-4"
-          onClick={() => navigate({ to: "/" })}
-        >
+        <h2 className="text-2xl font-bold">{app.lang === "ar" ? "المتجر غير موجود" : "Store not found"}</h2>
+        <Button className="mt-4 bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white" onClick={() => navigate({ to: "/" })}>
           {app.lang === "ar" ? "العودة للرئيسية" : "Back to home"}
         </Button>
       </div>
@@ -110,18 +274,16 @@ const handleMessage = async () => {
   }
 
   const name = store.store_name || store.full_name || (app.lang === "ar" ? "متجر" : "Store");
-  
-  // ✅ استخراج معلومات المتجر
   const storeType = store.store_type || "online";
-  const storeAddress = store.store_address || "";
-  const opensAt = store.store_opens_at || "";
-  const closesAt = store.store_closes_at || "";
-  const weeklyOffDays = store.weekly_off_days || [];
+  const isArabic = app.lang === "ar";
+  const isLoading = listingsLoading || isFetching;
+  const displayListings = page === 1 ? listings : allListings;
 
   return (
-    <div>
+    <div className="bg-gradient-to-b from-[#0d2e2a]/5 via-transparent to-[#2d6b63]/5 dark:from-[#0d2e2a]/20 dark:to-[#2d6b63]/10 min-h-screen">
+      
       {/* ====== غلاف المتجر ====== */}
-      <div className="relative h-48 md:h-72 bg-gradient-to-br from-primary to-primary-glow overflow-hidden">
+      <div className="relative h-48 md:h-72 bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] overflow-hidden">
         {store.store_cover_url && (
           <img 
             src={store.store_cover_url} 
@@ -129,151 +291,457 @@ const handleMessage = async () => {
             alt={name}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0d2e2a]/50 to-transparent" />
+        
+        <div className="absolute top-4 right-4 flex gap-2">
+          <Badge className="bg-white/10 backdrop-blur-sm text-white border-white/20 animate-pulse">
+            <Sparkles className="h-3 w-3 mr-1 animate-spin-slow" />
+            {isArabic ? "متجر مميز" : "Featured Store"}
+          </Badge>
+        </div>
       </div>
 
       {/* ====== معلومات المتجر ====== */}
-      <div className="mx-auto max-w-7xl px-4 -mt-16 relative">
-        <div className="rounded-2xl bg-card shadow-elegant p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4">
+      <div className="mx-auto max-w-7xl px-4 -mt-16 relative z-10">
+        <div className="rounded-2xl bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-xl shadow-2xl shadow-[#0d2e2a]/20 p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4 border border-[#0d2e2a]/10">
+          
           {/* شعار المتجر */}
-          <div className="h-24 w-24 rounded-2xl bg-muted overflow-hidden border-4 border-card shadow grid place-items-center text-primary font-black text-3xl">
-            {store.store_logo_url || store.avatar_url ? (
-              <img 
-                src={store.store_logo_url || store.avatar_url} 
-                className="h-full w-full object-cover" 
-                alt={name}
-              />
-            ) : (
-              name[0]?.toUpperCase() || "?"
+          <div className="relative group">
+            <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] overflow-hidden border-4 border-white dark:border-[#1e293b] shadow-xl grid place-items-center text-white font-black text-3xl flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+              {store.store_logo_url || store.avatar_url ? (
+                <img 
+                  src={store.store_logo_url || store.avatar_url} 
+                  className="h-full w-full object-cover" 
+                  alt={name}
+                />
+              ) : (
+                name[0]?.toUpperCase() || "?"
+              )}
+            </div>
+            {store.is_featured && (
+              <div className="absolute -top-1 -right-1">
+                <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 px-2 py-0.5 text-[8px] animate-bounce">
+                  <Flame className="h-2.5 w-2.5 inline mr-0.5" />
+                  {isArabic ? "رائج" : "Trending"}
+                </Badge>
+              </div>
             )}
           </div>
 
           {/* تفاصيل المتجر */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl md:text-3xl font-black">{name}</h1>
-              <StoreIcon className="h-5 w-5 text-primary" />
+              <h1 className="text-2xl md:text-3xl font-black text-[#0d2e2a] dark:text-white">{name}</h1>
+              <StoreIcon className="h-5 w-5 text-[#2d6b63] animate-pulse" />
               <StoreStatusBadge store={store} lang={app.lang} />
+              {store.is_verified && (
+                <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                  <BadgeCheck className="h-3 w-3 mr-1" />
+                  {isArabic ? "موثق" : "Verified"}
+                </Badge>
+              )}
             </div>
             
             {store.store_description && (
               <p className="text-muted-foreground mt-1 text-sm">{store.store_description}</p>
             )}
             
-            {/* ====== ✅ معلومات المتجر التفصيلية ====== */}
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-              {/* ✅ التقييم */}
-              <span className="flex items-center gap-1 text-accent">
-                <Star className="h-4 w-4 fill-current" />
+              <span className="flex items-center gap-1 text-[#4a9f95]">
+                <Star className="h-4 w-4 fill-current animate-pulse" />
                 {Number(store.rating || 0).toFixed(1)}
               </span>
+              <span className="flex items-center gap-1">
+                <Package className="h-3.5 w-3.5" />
+                {totalCount} {t("products_tab")}
+              </span>
               
-              {/* ✅ عدد المنتجات */}
-              <span>{listings.length} {t("products_tab")}</span>
-              
-              {/* ✅ نوع المتجر */}
-              <span className="flex items-center gap-1 bg-primary/10 px-2.5 py-0.5 rounded-full text-primary text-xs font-medium">
+              <span className="flex items-center gap-1 bg-[#0d2e2a]/10 px-2.5 py-0.5 rounded-full text-[#0d2e2a] text-xs font-medium">
                 {storeType === "online" ? (
                   <>
-                    <Globe className="h-3.5 w-3.5" />
-                    {app.lang === "ar" ? "متجر إلكتروني" : "Online Store"}
+                    <Globe className="h-3.5 w-3.5 animate-spin-slow" />
+                    {isArabic ? "متجر إلكتروني" : "Online Store"}
                   </>
                 ) : (
                   <>
                     <Building2 className="h-3.5 w-3.5" />
-                    {app.lang === "ar" ? "متجر فعلي" : "Physical Store"}
+                    {isArabic ? "متجر فعلي" : "Physical Store"}
                   </>
                 )}
               </span>
 
-              {/* ✅ العنوان (يظهر فقط للمتاجر الفعلية) */}
-              {storeType === "physical" && storeAddress && (
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {storeAddress}
-                </span>
-              )}
-              
-              {/* ✅ أوقات العمل (تظهر للجميع) */}
-              {(opensAt || closesAt) && (
+              {(store.store_opens_at || store.store_closes_at) && (
                 <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  {app.lang === "ar" ? "الدوام" : "Hours"}: 
-                  {(opensAt || "--:--").slice(0,5)} — 
-                  {(closesAt || "--:--").slice(0,5)}
+                  <Clock className="h-3.5 w-3.5 animate-pulse" />
+                  {(store.store_opens_at || "--:--").slice(0,5)} — {(store.store_closes_at || "--:--").slice(0,5)}
                 </span>
               )}
-              
-              {/* ✅ أيام العطل */}
-              {weeklyOffDays.length > 0 && (
-                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                  <Calendar className="h-3.5 w-3.5" />
-                  {app.lang === "ar" ? "عطل:" : "Off:"} 
-                  {weeklyOffDays.map((day: string) => {
-                    const dayMap: Record<string, string> = {
-                      Monday: app.lang === "ar" ? 'الإثنين' : 'Mon',
-                      Tuesday: app.lang === "ar" ? 'الثلاثاء' : 'Tue',
-                      Wednesday: app.lang === "ar" ? 'الأربعاء' : 'Wed',
-                      Thursday: app.lang === "ar" ? 'الخميس' : 'Thu',
-                      Friday: app.lang === "ar" ? 'الجمعة' : 'Fri',
-                      Saturday: app.lang === "ar" ? 'السبت' : 'Sat',
-                      Sunday: app.lang === "ar" ? 'الأحد' : 'Sun',
-                    };
-                    return dayMap[day] || day;
-                  }).join(', ')}
+
+              {store.store_address && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {store.store_address}
                 </span>
               )}
             </div>
           </div>
 
-          {/* ====== أزرار الإجراءات ====== */}
-          <div className="flex gap-2">
+          {/* أزرار الإجراءات */}
+          <div className="flex flex-col gap-2 flex-shrink-0">
             {store.allows_messaging !== false && app.user?.id !== id && (
               <Button
                 onClick={handleMessage}
                 disabled={isOpeningConversation}
-                className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-70 disabled:hover:scale-100"
+                className="gap-2 bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] hover:from-[#1a4f4a] hover:to-[#4a9f95] text-white shadow-lg shadow-[#0d2e2a]/30 hover:shadow-xl transition-all hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 group"
               >
                 {isOpeningConversation ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {app.lang === "ar" ? "جاري التحميل..." : "Loading..."}
-                  </>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <>
-                    <MessageCircle className="h-4 w-4" />
-                    {app.lang === "ar" ? "مراسلة المتجر" : "Message Store"}
-                  </>
+                  <MessageCircle className="h-4 w-4 group-hover:rotate-12 transition-transform" />
                 )}
+                {isArabic ? "مراسلة المتجر" : "Message Store"}
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(`/store/${id}`, '_blank')}
+              className="border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10"
+            >
+              <Share2 className="h-3.5 w-3.5 mr-1" />
+              {isArabic ? "مشاركة" : "Share"}
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* ====== قائمة المنتجات ====== */}
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <h2 className="text-xl md:text-2xl font-black mb-4">{t("products")}</h2>
-        {listings.length === 0 ? (
-          <div className="rounded-2xl bg-card p-12 text-center shadow-card text-muted-foreground">
-            <StoreIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-            <p className="text-lg font-medium">
-              {app.lang === "ar" ? "لا توجد منتجات بعد" : "No products yet"}
+      {/* ====== سعر التوصيل ====== */}
+      {app.user && deliveryPrice && !deliveryLoading && (
+        <div className="mx-auto max-w-7xl px-4 mt-4">
+          <Card className={cn(
+            "border-2 shadow-lg hover:shadow-xl transition-all duration-300",
+            deliveryPrice.governorateMatch 
+              ? 'border-[#2d6b63]/30 hover:border-[#2d6b63]/50' 
+              : 'border-amber-500/30 hover:border-amber-500/50'
+          )}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center">
+                    <Truck className="h-5 w-5 text-[#0d2e2a] animate-float" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-sm flex items-center gap-2">
+                      {isArabic ? "🚚 سعر التوصيل" : "🚚 Delivery Price"}
+                      <Badge className={cn(
+                        "border-0 text-[9px] px-1.5 py-0 animate-pulse",
+                        deliveryPrice.governorateMatch 
+                          ? 'bg-emerald-500/20 text-emerald-600' 
+                          : 'bg-amber-500/20 text-amber-600'
+                      )}>
+                        {deliveryPrice.governorateMatch 
+                          ? (isArabic ? "📍 نفس المحافظة" : "Same Governorate") 
+                          : (isArabic ? "📍 محافظة مختلفة" : "Diff Governorate")}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground flex items-center gap-2">
+                      <span>{isArabic ? `المسافة: ${deliveryPrice.distance} كم` : `Distance: ${deliveryPrice.distance} km`}</span>
+                      <span className="text-muted-foreground/30">|</span>
+                      <span className="text-[#2d6b63] font-medium">{deliveryPrice.companyName}</span>
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  {deliveryPrice.isFree ? (
+                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-sm px-3 py-1 animate-bounce">
+                      {isArabic ? "✅ مجاني" : "Free"}
+                    </Badge>
+                  ) : (
+                    <span className="text-2xl font-bold text-[#0d2e2a]">
+                      {deliveryPrice.price} SYP
+                    </span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ====== الفلتر والترتيب ====== */}
+      <section className="mx-auto max-w-7xl px-4 py-6">
+        
+        {/* شريط البحث والفلتر */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          
+          {/* البحث */}
+          <div className="relative w-full sm:w-64 group">
+            <Search className="absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted-foreground group-focus-within:text-[#0d2e2a] transition-colors" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+              placeholder={isArabic ? "🔍 بحث في المتجر..." : "🔍 Search in store..."}
+              className="pl-9 pr-3 h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-3 my-auto"
+              >
+                <X className="h-4 w-4 text-muted-foreground hover:text-[#0d2e2a] transition-colors" />
+              </button>
+            )}
+          </div>
+
+          {/* أزرار الفلتر والترتيب */}
+          <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+            
+            {/* ✅ فلتر المنتجات / العروض (مثل الكبسة) */}
+            <div className="relative flex items-center bg-[#0d2e2a]/5 dark:bg-[#0d2e2a]/20 rounded-xl p-1 border border-[#0d2e2a]/10">
+              <button
+                onClick={() => {
+                  setViewFilter("all");
+                  setPage(1);
+                  setAllListings([]);
+                }}
+                className={cn(
+                  "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+                  viewFilter === "all" 
+                    ? "text-white" 
+                    : "text-[#0d2e2a] dark:text-white/60 hover:text-[#0d2e2a] dark:hover:text-white"
+                )}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5" />
+                  {isArabic ? "منتجات" : "Products"}
+                  <Badge className="bg-white/20 text-white text-[8px] px-1.5 py-0">
+                    {totalCount}
+                  </Badge>
+                </span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setViewFilter("offers");
+                  setPage(1);
+                  setAllListings([]);
+                }}
+                className={cn(
+                  "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+                  viewFilter === "offers" 
+                    ? "text-white" 
+                    : "text-[#0d2e2a] dark:text-white/60 hover:text-[#0d2e2a] dark:hover:text-white"
+                )}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Flame className="h-3.5 w-3.5" />
+                  {isArabic ? "عروض" : "Offers"}
+                  <Badge className="bg-red-500/30 text-white text-[8px] px-1.5 py-0">
+                    {offersCount}
+                  </Badge>
+                </span>
+              </button>
+              
+              {/* الخلفية المتحركة (الكبسة) */}
+              <div 
+                className={cn(
+                  "absolute top-1 h-[calc(100%-8px)] w-[calc(50%-4px)] rounded-lg bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 ease-out",
+                  viewFilter === "all" ? "left-1" : "left-[calc(50%-2px)]"
+                )}
+              />
+            </div>
+
+            {/* ترتيب */}
+            <Select value={sortBy} onValueChange={(v: any) => {
+              setSortBy(v);
+              setPage(1);
+            }}>
+              <SelectTrigger className="w-[140px] h-10 rounded-xl border-[#0d2e2a]/20 bg-white dark:bg-[#1e293b]">
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="h-4 w-4 text-[#0d2e2a]" />
+                  <SelectValue placeholder={isArabic ? "ترتيب" : "Sort"} />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">{isArabic ? "🕐 الأحدث" : "🕐 Recent"}</SelectItem>
+                <SelectItem value="popular">{isArabic ? "🔥 الأكثر رواجاً" : "🔥 Popular"}</SelectItem>
+                <SelectItem value="price_asc">{isArabic ? "💰 السعر: منخفض→مرتفع" : "💰 Price: Low→High"}</SelectItem>
+                <SelectItem value="price_desc">{isArabic ? "💰 السعر: مرتفع→منخفض" : "💰 Price: High→Low"}</SelectItem>
+                <SelectItem value="rating">{isArabic ? "⭐ الأعلى تقييماً" : "⭐ Top Rated"}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* تبديل العرض */}
+            <div className="flex items-center bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 p-1">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={cn(
+                  "p-1.5 rounded-lg transition-all duration-300",
+                  viewMode === "grid" ? "bg-[#0d2e2a] text-white" : "text-muted-foreground hover:bg-[#0d2e2a]/10"
+                )}
+              >
+                <Grid3X3 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={cn(
+                  "p-1.5 rounded-lg transition-all duration-300",
+                  viewMode === "list" ? "bg-[#0d2e2a] text-white" : "text-muted-foreground hover:bg-[#0d2e2a]/10"
+                )}
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* إحصائيات النتائج */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="font-medium text-[#0d2e2a]">
+              {viewFilter === "offers" ? offersCount : totalCount}
+            </span>
+            {viewFilter === "offers" ? (isArabic ? "عرض" : "offers") : (isArabic ? "منتج" : "products")}
+            {searchQuery && (
+              <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border-[#0d2e2a]/20">
+                <Search className="h-3 w-3 mr-1" />
+                {searchQuery}
+              </Badge>
+            )}
+            {viewFilter === "offers" && (
+              <Badge className="bg-red-500/10 text-red-600 border-red-500/20">
+                <Flame className="h-3 w-3 mr-1" />
+                {isArabic ? "عروض حصرية" : "Exclusive Offers"}
+              </Badge>
+            )}
+          </div>
+          {isLoading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin text-[#2d6b63]" />
+              {isArabic ? "جاري التحميل..." : "Loading..."}
+            </div>
+          )}
+        </div>
+
+        {/* ====== قائمة المنتجات ====== */}
+        {displayListings.length === 0 && !isLoading ? (
+          <div className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 backdrop-blur-sm p-12 text-center border border-[#0d2e2a]/10">
+            <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40 animate-float" />
+            <p className="text-lg font-medium text-[#0d2e2a] dark:text-white">
+              {searchQuery
+                ? (isArabic ? "لا توجد منتجات تطابق البحث" : "No products match search")
+                : viewFilter === "offers"
+                ? (isArabic ? "لا توجد عروض حالياً" : "No offers available")
+                : (isArabic ? "لا توجد منتجات بعد" : "No products yet")}
             </p>
-            <p className="text-sm mt-1">
-              {app.lang === "ar" 
-                ? "سيتم إضافة المنتجات قريباً" 
-                : "Products will be added soon"}
-            </p>
+            {(searchQuery || viewFilter === "offers") && (
+              <Button 
+                variant="outline" 
+                onClick={resetFilters}
+                className="mt-4 border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                {isArabic ? "إعادة تعيين الفلتر" : "Reset filter"}
+              </Button>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {listings.map((item) => (
-              <ListingCard key={item.id} item={item} />
-            ))}
+          <>
+            <div className={cn(
+              "grid gap-4",
+              viewMode === "grid" 
+                ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" 
+                : "grid-cols-1"
+            )}>
+              {displayListings.map((item: any, index: number) => (
+                <div 
+                  key={item.id} 
+                  className="animate-fade-up"
+                  style={{ animationDelay: `${(index % 10) * 50}ms` }}
+                >
+                  <ListingCard item={item} viewMode={viewMode} />
+                </div>
+              ))}
+            </div>
+
+            {/* ✅ زر تحميل المزيد */}
+            {page < totalPages && (
+              <div ref={loadMoreRef} className="flex justify-center mt-6">
+                <Button
+                  variant="outline"
+                  onClick={loadMore}
+                  disabled={isFetching}
+                  className="rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10"
+                >
+                  {isFetching ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      {isArabic ? "جاري التحميل..." : "Loading..."}
+                    </>
+                  ) : (
+                    <>
+                      {isArabic ? "عرض المزيد" : "Load More"}
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {/* ✅ عند انتهاء المنتجات */}
+            {page >= totalPages && totalCount > limit && (
+              <div className="flex justify-center mt-6 text-sm text-muted-foreground">
+                {isArabic ? "🎉 تم تحميل جميع المنتجات" : "🎉 All products loaded"}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* إحصاءات إضافية */}
+        {totalCount > 0 && (
+          <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground border-t border-[#0d2e2a]/10 pt-4">
+            <span>
+              {isArabic 
+                ? `عرض ${displayListings.length} من ${viewFilter === "offers" ? offersCount : totalCount} ${viewFilter === "offers" ? "عرض" : "منتج"}` 
+                : `Showing ${displayListings.length} of ${viewFilter === "offers" ? offersCount : totalCount} ${viewFilter === "offers" ? "offers" : "products"}`}
+            </span>
+            <span className="flex items-center gap-2">
+              <Badge className="bg-[#0d2e2a]/5 text-[#0d2e2a] border-[#0d2e2a]/20">
+                {isArabic ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
+              </Badge>
+            </span>
           </div>
         )}
       </section>
+
+      {/* ====== CSS Animations ====== */}
+      <style>{`
+        @keyframes fade-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up { animation: fade-up 0.5s ease-out forwards; }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-6px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
+      `}</style>
     </div>
   );
 }
@@ -281,42 +749,33 @@ const handleMessage = async () => {
 // ====== دوال مساعدة ======
 
 export function isStoreCurrentlyOpen(store: any): boolean {
-  if (!store) return false;
-  if (store.store_online === false) return false;
-  
+  if (!store || store.store_online === false) return false;
   const opens = (store.store_opens_at || "").slice(0, 5);
   const closes = (store.store_closes_at || "").slice(0, 5);
-  
   if (!opens || !closes) return true;
-  
   const now = new Date();
   const cur = now.getHours() * 60 + now.getMinutes();
   const [oh, om] = opens.split(":").map(Number);
   const [ch, cm] = closes.split(":").map(Number);
   const o = oh * 60 + om;
   const c = ch * 60 + cm;
-  
   return o <= c ? cur >= o && cur <= c : cur >= o || cur <= c;
 }
 
 function StoreStatusBadge({ store, lang }: { store: any; lang: "ar" | "en" }) {
   const open = isStoreCurrentlyOpen(store);
-  
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-300 ${
       open 
-        ? "bg-secondary/15 text-secondary" 
+        ? "bg-[#2d6b63]/15 text-[#2d6b63] animate-pulse" 
         : "bg-muted text-muted-foreground"
     }`}>
       <span className={`h-2 w-2 rounded-full ${
-        open 
-          ? "bg-secondary animate-pulse" 
-          : "bg-muted-foreground"
+        open ? "bg-[#2d6b63] animate-pulse" : "bg-muted-foreground"
       }`} />
       {open 
-        ? (lang === "ar" ? "مفتوح الآن" : "Open now") 
-        : (lang === "ar" ? "مغلق" : "Closed")
-      }
+        ? (lang === "ar" ? "🟢 مفتوح الآن" : "🟢 Open now") 
+        : (lang === "ar" ? "🔴 مغلق" : "🔴 Closed")}
     </span>
   );
 }

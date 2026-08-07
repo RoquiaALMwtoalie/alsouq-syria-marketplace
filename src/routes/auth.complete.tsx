@@ -1,6 +1,8 @@
+// src/routes/auth/complete.tsx
+
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Phone, User as UserIcon, Sparkles } from "lucide-react";
+import { Phone, User as UserIcon, Sparkles, MapPin, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +16,149 @@ export const Route = createFileRoute("/auth/complete")({
   head: () => ({ meta: [{ title: "أكمل ملفك — السوق اليك" }] }),
 });
 
+// ============================================================
+// ✅ دالة استخراج المحافظة من العنوان
+// ============================================================
+async function extractGovernorateFromAddress(address: string, lat?: number, lng?: number): Promise<{ governorate_id: string; governorate_name: string }> {
+  try {
+    // ✅ 1. محاولة جلب المحافظة من الإحداثيات
+    if (lat && lng) {
+      const { data: governorates } = await supabase
+        .from('governorates')
+        .select('*');
+
+      if (governorates) {
+        for (const g of governorates) {
+          if (g.center_lat && g.center_lng) {
+            const distance = Math.sqrt(
+              Math.pow(lat - g.center_lat, 2) + 
+              Math.pow(lng - g.center_lng, 2)
+            );
+            if (distance < 0.5) {
+              return {
+                governorate_id: g.id,
+                governorate_name: g.name_ar
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // ✅ 2. محاولة استخراج المحافظة من النص
+    if (address) {
+      const { data: governorates } = await supabase
+        .from('governorates')
+        .select('*');
+
+      if (governorates) {
+        for (const g of governorates) {
+          if (address.includes(g.name_ar) || address.includes(g.name_en || '')) {
+            return {
+              governorate_id: g.id,
+              governorate_name: g.name_ar
+            };
+          }
+        }
+      }
+    }
+
+    // ✅ 3. إذا لم يتم العثور على محافظة، استخدم الافتراضية (دمشق)
+    const { data: defaultGov } = await supabase
+      .from('governorates')
+      .select('id, name_ar')
+      .eq('name_ar', 'دمشق')
+      .single();
+
+    if (defaultGov) {
+      return {
+        governorate_id: defaultGov.id,
+        governorate_name: defaultGov.name_ar
+      };
+    }
+
+    return { governorate_id: '', governorate_name: '' };
+  } catch (error) {
+    console.error('Error extracting governorate:', error);
+    return { governorate_id: '', governorate_name: '' };
+  }
+}
+
+// ============================================================
+// ✅ دالة حفظ العنوان مع المحافظة
+// ============================================================
+async function saveAddressWithGovernorate(
+  userId: string,
+  location: PickedLocation
+): Promise<{ success: boolean; error?: string; governorate_name?: string }> {
+  try {
+    // ✅ استخراج المحافظة
+    const { governorate_id, governorate_name } = await extractGovernorateFromAddress(
+      location.address,
+      location.lat,
+      location.lng
+    );
+
+    console.log('📍 Extracted governorate:', governorate_name, 'ID:', governorate_id);
+
+    const addressPayload = {
+      user_id: userId,
+      label: location.label || 'الرئيسي',
+      address_text: location.address.trim(),
+      details: location.details?.trim() || '',
+      lat: location.lat || 0,
+      lng: location.lng || 0,
+      governorate_id: governorate_id || null,
+      is_default: true,
+    };
+
+    // ✅ التحقق من وجود عنوان مسبق
+    const { data: existingAddress } = await supabase
+      .from("user_addresses")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (existingAddress?.id) {
+      const { error } = await supabase
+        .from("user_addresses")
+        .update(addressPayload)
+        .eq("id", existingAddress.id);
+
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("user_addresses")
+        .insert(addressPayload);
+
+      if (error) throw error;
+    }
+
+    // ✅ تحديث الـ profile مع الإحداثيات والمحافظة
+    const { error: updateProfileError } = await supabase
+      .from("profiles")
+      .update({
+        lat: location.lat || 0,
+        lng: location.lng || 0,
+        address_text: location.address.trim(),
+        governorate_id: governorate_id || null,
+      })
+      .eq("id", userId);
+
+    if (updateProfileError) {
+      console.error("❌ Error updating profile:", updateProfileError);
+      throw updateProfileError;
+    }
+
+    console.log('✅ Address saved with governorate:', governorate_name);
+    return { success: true, governorate_name };
+
+  } catch (error: any) {
+    console.error('❌ Error saving address:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 function CompleteProfilePage() {
   const app = useApp();
   const [fullName, setFullName] = useState("");
@@ -22,6 +167,10 @@ function CompleteProfilePage() {
   const [loading, setLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [checking, setChecking] = useState(true);
+  
+  // ✅ State للمحافظة المكتشفة
+  const [detectedGovernorate, setDetectedGovernorate] = useState<string>('');
+  const [isExtractingGovernorate, setIsExtractingGovernorate] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -63,10 +212,42 @@ function CompleteProfilePage() {
     })();
   }, []);
 
+  // ✅ استخراج المحافظة عند تغيير الموقع
+  useEffect(() => {
+    const extractGovernorate = async () => {
+      if (!location) {
+        setDetectedGovernorate('');
+        return;
+      }
+
+      setIsExtractingGovernorate(true);
+      try {
+        const result = await extractGovernorateFromAddress(
+          location.address,
+          location.lat,
+          location.lng
+        );
+        setDetectedGovernorate(result.governorate_name);
+      } catch (error) {
+        console.error('Error extracting governorate:', error);
+      } finally {
+        setIsExtractingGovernorate(false);
+      }
+    };
+
+    extractGovernorate();
+  }, [location]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!fullName.trim()) { toast.error(app.lang === "ar" ? "الاسم الكامل مطلوب" : "Full name required"); return; }
-    if (!phone.trim()) { toast.error(app.lang === "ar" ? "رقم الهاتف مطلوب" : "Phone required"); return; }
+    if (!fullName.trim()) { 
+      toast.error(app.lang === "ar" ? "الاسم الكامل مطلوب" : "Full name required"); 
+      return; 
+    }
+    if (!phone.trim()) { 
+      toast.error(app.lang === "ar" ? "رقم الهاتف مطلوب" : "Phone required"); 
+      return; 
+    }
     if (!isAdmin && (!location || !location.label.trim() || !location.address.trim() || !location.details.trim())) {
       toast.error(app.lang === "ar" ? "أكمل بيانات العنوان (الاسم، العنوان، الوصف)" : "Complete address (name, address, description)");
       return;
@@ -86,34 +267,35 @@ function CompleteProfilePage() {
       }
       await supabase.from("profiles").upsert(profilePatch, { onConflict: "id" });
 
+      // ✅ ✅ ✅ حفظ العنوان مع المحافظة (باستخدام الدالة الجديدة) ✅ ✅ ✅
+      let governorateName = '';
       if (!isAdmin && location) {
-        const { data: existingAddress } = await supabase
-          .from("user_addresses" as any)
-          .select("id")
-          .eq("user_id", uid)
-          .eq("is_default", true)
-          .maybeSingle();
-
-        const addressPayload = {
-          user_id: uid,
-          label: location.label.trim(),
-          address_text: location.address,
-          details: location.details,
-          lat: location.lat,
-          lng: location.lng,
-          is_default: true,
-        };
-
-        if (existingAddress?.id) {
-          await supabase.from("user_addresses" as any).update(addressPayload).eq("id", existingAddress.id);
+        const saveResult = await saveAddressWithGovernorate(uid, location);
+        if (saveResult.success) {
+          governorateName = saveResult.governorate_name || '';
+          console.log('✅ Address saved successfully');
         } else {
-          await supabase.from("user_addresses" as any).insert(addressPayload as any);
+          console.warn('⚠️ Address saved but governorate extraction failed:', saveResult.error);
         }
+      }
+
+      // ✅ عرض المحافظة المكتشفة للمستخدم
+      if (governorateName) {
+        toast.success(
+          app.lang === "ar" 
+            ? `✅ تم تحديد المحافظة: ${governorateName}` 
+            : `✅ Governorate detected: ${governorateName}`
+        );
+      } else if (detectedGovernorate) {
+        toast.success(
+          app.lang === "ar" 
+            ? `✅ تم تحديد المحافظة: ${detectedGovernorate}` 
+            : `✅ Governorate detected: ${detectedGovernorate}`
+        );
       }
 
       toast.success(app.lang === "ar" ? "تم إكمال ملفك" : "Profile completed");
       
-      // ✅ استخدم window.location.replace بدلاً من nav
       window.location.replace(isAdmin ? "/dashboard" : "/");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
@@ -161,22 +343,82 @@ function CompleteProfilePage() {
 
             <form className="space-y-3 mt-5" onSubmit={handleSubmit}>
               <div>
-                <Label className="text-xs font-semibold text-white/90 flex items-center gap-1"><UserIcon className="h-3.5 w-3.5" /> {app.lang === "ar" ? "الاسم الكامل *" : "Full name *"}</Label>
-                <Input className="mt-1 h-11 bg-white/90 text-foreground border-0" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                <Label className="text-xs font-semibold text-white/90 flex items-center gap-1">
+                  <UserIcon className="h-3.5 w-3.5" /> 
+                  {app.lang === "ar" ? "الاسم الكامل *" : "Full name *"}
+                </Label>
+                <Input 
+                  className="mt-1 h-11 bg-white/90 text-foreground border-0" 
+                  value={fullName} 
+                  onChange={(e) => setFullName(e.target.value)} 
+                  required 
+                />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-white/90 flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {app.lang === "ar" ? "رقم الهاتف *" : "Phone *"}</Label>
-                <Input className="mt-1 h-11 bg-white/90 text-foreground border-0" type="tel" dir="ltr" placeholder="+9639..." value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                <Label className="text-xs font-semibold text-white/90 flex items-center gap-1">
+                  <Phone className="h-3.5 w-3.5" /> 
+                  {app.lang === "ar" ? "رقم الهاتف *" : "Phone *"}
+                </Label>
+                <Input 
+                  className="mt-1 h-11 bg-white/90 text-foreground border-0" 
+                  type="tel" 
+                  dir="ltr" 
+                  placeholder="+9639..." 
+                  value={phone} 
+                  onChange={(e) => setPhone(e.target.value)} 
+                  required 
+                />
               </div>
 
               {!isAdmin && (
-                <div className="rounded-xl bg-white/90 text-foreground p-3">
-                  <AddressPicker value={location ?? undefined} onChange={setLocation} lang={app.lang} />
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-white/90 flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" /> 
+                    {app.lang === "ar" ? "📍 العنوان *" : "📍 Address *"}
+                  </Label>
+                  <div className="rounded-xl bg-white/90 text-foreground p-3">
+                    <AddressPicker 
+                      value={location ?? undefined} 
+                      onChange={setLocation} 
+                      lang={app.lang} 
+                    />
+                  </div>
+                  
+                  {/* ✅ عرض المحافظة المكتشفة */}
+                  {location && (
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30">
+                      {isExtractingGovernorate ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-emerald-300" />
+                      ) : (
+                        <MapPin className="h-4 w-4 text-emerald-300" />
+                      )}
+                      <span className="text-sm text-emerald-200">
+                        {isExtractingGovernorate 
+                          ? (app.lang === "ar" ? "جاري تحديد المحافظة..." : "Detecting governorate...")
+                          : detectedGovernorate 
+                            ? (app.lang === "ar" ? `🏛️ المحافظة: ${detectedGovernorate}` : `🏛️ Governorate: ${detectedGovernorate}`)
+                            : (app.lang === "ar" ? "⚠️ لم يتم تحديد المحافظة" : "⚠️ Governorate not detected")
+                        }
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <Button type="submit" size="lg" className="w-full h-11 bg-accent text-accent-foreground hover:opacity-90 shadow-lg" disabled={loading}>
-                {loading ? "…" : (app.lang === "ar" ? "حفظ ومتابعة" : "Save & continue")}
+              <Button 
+                type="submit" 
+                size="lg" 
+                className="w-full h-11 bg-accent text-accent-foreground hover:opacity-90 shadow-lg" 
+                disabled={loading}
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    {app.lang === "ar" ? "جاري..." : "Loading..."}
+                  </span>
+                ) : (
+                  app.lang === "ar" ? "حفظ ومتابعة" : "Save & continue"
+                )}
               </Button>
             </form>
 

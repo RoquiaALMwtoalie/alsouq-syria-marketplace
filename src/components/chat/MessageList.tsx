@@ -57,8 +57,8 @@ function DateSeparator({ date }: { date: string }) {
 
   return (
     <div className="flex items-center justify-center my-4">
-      <div className="px-4 py-1.5 bg-[#e4e6eb] dark:bg-[#3a3b4a] rounded-full">
-        <span className="text-xs font-medium text-muted-foreground">
+      <div className="px-4 py-1.5 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 rounded-full border border-[#2a655f]/10">
+        <span className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82]">
           {formatDate(date)}
         </span>
       </div>
@@ -83,9 +83,9 @@ function EmptyState({ conversationId }: { conversationId: string }) {
   }, [conversationId, app.user?.id]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center p-8">
-      <div className="h-20 w-20 rounded-full bg-[#e4e6eb] dark:bg-[#3a3b4a] flex items-center justify-center mb-4">
-        <MessagesSquare className="h-10 w-10 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-3xl">
+      <div className="h-20 w-20 rounded-full bg-[#2a655f]/10 dark:bg-[#2a655f]/20 flex items-center justify-center mb-4 border-2 border-[#2a655f]/20">
+        <MessagesSquare className="h-10 w-10 text-[#2a655f] dark:text-[#3a8a82]" />
       </div>
       <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
         {app.lang === "ar" ? "📩 لا توجد رسائل" : "📩 No messages"}
@@ -117,16 +117,16 @@ function ScrollToBottomButton({ onClick, unreadCount }: { onClick: () => void; u
       className={cn(
         "absolute bottom-4 left-1/2 -translate-x-1/2",
         "flex items-center gap-2 px-4 py-2",
-        "bg-[#0084ff] hover:bg-[#0073e6]",
+        "bg-[#2a655f] hover:bg-[#1a4f4a]",
         "text-white text-sm font-medium",
-        "rounded-full shadow-lg shadow-[#0084ff]/30",
+        "rounded-full shadow-lg shadow-[#2a655f]/30",
         "transition-all duration-300",
-        "hover:scale-105 active:scale-95"
+        "hover:scale-105 active:scale-95 border border-white/10"
       )}
     >
       <ChevronDown className="h-4 w-4" />
       {unreadCount > 0 && (
-        <span className="bg-white text-[#0084ff] text-xs font-bold rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center">
+        <span className="bg-white text-[#2a655f] text-xs font-bold rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center">
           {unreadCount}
         </span>
       )}
@@ -274,7 +274,7 @@ export function MessageList({
         )}
         style={{ height: maxHeight }}
       >
-        <Loader2 className="h-8 w-8 animate-spin text-[#0084ff]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#2a655f]" />
         <p className="text-sm text-muted-foreground mt-2">
           {app.lang === "ar" ? "جاري تحميل الرسائل..." : "Loading messages..."}
         </p>
@@ -297,13 +297,13 @@ export function MessageList({
     );
   }
 
-  // ====== ✅ التصميم الرئيسي - مثل الماسنجر ======
+  // ====== ✅ التصميم الرئيسي ======
   return (
     <div className="relative" style={{ height: maxHeight }}>
       {/* مؤشر تحميل المزيد */}
       {isFetchingNextPage && (
         <div className="flex justify-center py-4">
-          <Loader2 className="h-6 w-6 animate-spin text-[#0084ff]" />
+          <Loader2 className="h-6 w-6 animate-spin text-[#2a655f]" />
         </div>
       )}
 
@@ -318,12 +318,24 @@ export function MessageList({
           "overflow-y-auto overflow-x-hidden",
           "scroll-smooth",
           "px-2 py-4",
-          "bg-[#f0f2f5] dark:bg-[#1a1a2e]",
+          "bg-gradient-to-b from-[#f8fafc] to-[#f0f2f5] dark:from-[#0d1f1d] dark:to-[#0a1513]",
           className
         )}
         style={{ height: maxHeight }}
       >
-        <div className="flex flex-col gap-0.5">
+        {/* ✅ خطوط زخرفية خفيفة */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.02] dark:opacity-[0.04]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `
+              radial-gradient(circle at 20% 50%, #2a655f 1px, transparent 1px),
+              radial-gradient(circle at 80% 50%, #2a655f 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+            backgroundPosition: '0 0, 30px 30px'
+          }} />
+        </div>
+
+        <div className="flex flex-col gap-0.5 relative z-10">
           {groupedMessages.map((item, index) => {
             if (item.type === 'date') {
               return (
@@ -516,7 +528,7 @@ export function MessageListWithTyping({
         )}
         style={{ height: maxHeight }}
       >
-        <Loader2 className="h-8 w-8 animate-spin text-[#0084ff]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#2a655f]" />
         <p className="text-sm text-muted-foreground mt-2">
           {app.lang === "ar" ? "جاري تحميل الرسائل..." : "Loading messages..."}
         </p>
@@ -547,7 +559,7 @@ export function MessageListWithTyping({
       {/* مؤشر تحميل المزيد */}
       {isFetchingNextPage && (
         <div className="flex justify-center py-4">
-          <Loader2 className="h-6 w-6 animate-spin text-[#0084ff]" />
+          <Loader2 className="h-6 w-6 animate-spin text-[#2a655f]" />
         </div>
       )}
 
@@ -562,12 +574,24 @@ export function MessageListWithTyping({
           "overflow-y-auto overflow-x-hidden",
           "scroll-smooth",
           "px-2 py-4",
-          "bg-[#f0f2f5] dark:bg-[#1a1a2e]",
+          "bg-gradient-to-b from-[#f8fafc] to-[#f0f2f5] dark:from-[#0d1f1d] dark:to-[#0a1513]",
           className
         )}
         style={{ height: maxHeight }}
       >
-        <div className="flex flex-col gap-0.5">
+        {/* ✅ خطوط زخرفية */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.02] dark:opacity-[0.04]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `
+              radial-gradient(circle at 20% 50%, #2a655f 1px, transparent 1px),
+              radial-gradient(circle at 80% 50%, #2a655f 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+            backgroundPosition: '0 0, 30px 30px'
+          }} />
+        </div>
+
+        <div className="flex flex-col gap-0.5 relative z-10">
           {groupedMessages.map((item, index) => {
             if (item.type === 'date') {
               return (

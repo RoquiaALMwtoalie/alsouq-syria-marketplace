@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StoresRouteImport } from './routes/stores'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
@@ -16,8 +17,11 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as CartRouteImport } from './routes/cart'
@@ -25,14 +29,36 @@ import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as AiRouteImport } from './routes/ai'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DistributorsIndexRouteImport } from './routes/distributors/index'
+import { Route as DeliveryIndexRouteImport } from './routes/delivery/index'
+import { Route as TrackingTrackingNumberRouteImport } from './routes/tracking/$trackingNumber'
 import { Route as StoreIdRouteImport } from './routes/store.$id'
 import { Route as MessagesUserIdRouteImport } from './routes/messages_.$userId'
 import { Route as ListingIdRouteImport } from './routes/listing.$id'
+import { Route as DistributorSettingsRouteImport } from './routes/distributor/settings'
+import { Route as DistributorMessagesRouteImport } from './routes/distributor/messages'
+import { Route as DistributorDashboardRouteImport } from './routes/distributor/dashboard'
+import { Route as DistributorIdRouteImport } from './routes/distributor/$id'
+import { Route as DeliveryReportsRouteImport } from './routes/delivery/reports'
+import { Route as DeliveryMessagesRouteImport } from './routes/delivery/messages'
+import { Route as DeliveryDistributorsRouteImport } from './routes/delivery/distributors'
+import { Route as DeliveryDashboardRouteImport } from './routes/delivery/dashboard'
+import { Route as DeliveryCompleteRouteImport } from './routes/delivery/complete'
+import { Route as DeliverySlugRouteImport } from './routes/delivery/$slug'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as AuthCompleteRouteImport } from './routes/auth.complete'
 import { Route as AuthModeRouteImport } from './routes/auth.$mode'
+import { Route as DistributorReviewOrderIdRouteImport } from './routes/distributor/review/$orderId'
+import { Route as DistributorConversationUserIdRouteImport } from './routes/distributor/conversation.$userId'
+import { Route as DeliveryOrdersNewRouteImport } from './routes/delivery/orders/new'
+import { Route as DeliveryConversationUserIdRouteImport } from './routes/delivery/conversation.$userId'
 import { Route as ApiPublicUploadsSplatRouteImport } from './routes/api.public.uploads.$'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoresRoute = StoresRouteImport.update({
   id: '/stores',
   path: '/stores',
@@ -68,6 +94,16 @@ const ProductsRoute = ProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MessagesRoute = MessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
@@ -76,6 +112,11 @@ const MessagesRoute = MessagesRouteImport.update({
 const FavoritesRoute = FavoritesRouteImport.update({
   id: '/favorites',
   path: '/favorites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -113,6 +154,21 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DistributorsIndexRoute = DistributorsIndexRouteImport.update({
+  id: '/distributors/',
+  path: '/distributors/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryIndexRoute = DeliveryIndexRouteImport.update({
+  id: '/delivery/',
+  path: '/delivery/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrackingTrackingNumberRoute = TrackingTrackingNumberRouteImport.update({
+  id: '/tracking/$trackingNumber',
+  path: '/tracking/$trackingNumber',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoreIdRoute = StoreIdRouteImport.update({
   id: '/store/$id',
   path: '/store/$id',
@@ -126,6 +182,56 @@ const MessagesUserIdRoute = MessagesUserIdRouteImport.update({
 const ListingIdRoute = ListingIdRouteImport.update({
   id: '/listing/$id',
   path: '/listing/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributorSettingsRoute = DistributorSettingsRouteImport.update({
+  id: '/distributor/settings',
+  path: '/distributor/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributorMessagesRoute = DistributorMessagesRouteImport.update({
+  id: '/distributor/messages',
+  path: '/distributor/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributorDashboardRoute = DistributorDashboardRouteImport.update({
+  id: '/distributor/dashboard',
+  path: '/distributor/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributorIdRoute = DistributorIdRouteImport.update({
+  id: '/distributor/$id',
+  path: '/distributor/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryReportsRoute = DeliveryReportsRouteImport.update({
+  id: '/delivery/reports',
+  path: '/delivery/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryMessagesRoute = DeliveryMessagesRouteImport.update({
+  id: '/delivery/messages',
+  path: '/delivery/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryDistributorsRoute = DeliveryDistributorsRouteImport.update({
+  id: '/delivery/distributors',
+  path: '/delivery/distributors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryDashboardRoute = DeliveryDashboardRouteImport.update({
+  id: '/delivery/dashboard',
+  path: '/delivery/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryCompleteRoute = DeliveryCompleteRouteImport.update({
+  id: '/delivery/complete',
+  path: '/delivery/complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliverySlugRoute = DeliverySlugRouteImport.update({
+  id: '/delivery/$slug',
+  path: '/delivery/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
@@ -143,6 +249,29 @@ const AuthModeRoute = AuthModeRouteImport.update({
   path: '/auth/$mode',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DistributorReviewOrderIdRoute =
+  DistributorReviewOrderIdRouteImport.update({
+    id: '/distributor/review/$orderId',
+    path: '/distributor/review/$orderId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DistributorConversationUserIdRoute =
+  DistributorConversationUserIdRouteImport.update({
+    id: '/distributor/conversation/$userId',
+    path: '/distributor/conversation/$userId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DeliveryOrdersNewRoute = DeliveryOrdersNewRouteImport.update({
+  id: '/delivery/orders/new',
+  path: '/delivery/orders/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryConversationUserIdRoute =
+  DeliveryConversationUserIdRouteImport.update({
+    id: '/delivery/conversation/$userId',
+    path: '/delivery/conversation/$userId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicUploadsSplatRoute = ApiPublicUploadsSplatRouteImport.update({
   id: '/api/public/uploads/$',
   path: '/api/public/uploads/$',
@@ -157,8 +286,11 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
   '/favorites': typeof FavoritesRoute
   '/messages': typeof MessagesRoute
+  '/orders': typeof OrdersRoute
+  '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
@@ -166,12 +298,30 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/stores': typeof StoresRoute
+  '/terms': typeof TermsRoute
   '/auth/$mode': typeof AuthModeRoute
   '/auth/complete': typeof AuthCompleteRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/delivery/$slug': typeof DeliverySlugRoute
+  '/delivery/complete': typeof DeliveryCompleteRoute
+  '/delivery/dashboard': typeof DeliveryDashboardRoute
+  '/delivery/distributors': typeof DeliveryDistributorsRoute
+  '/delivery/messages': typeof DeliveryMessagesRoute
+  '/delivery/reports': typeof DeliveryReportsRoute
+  '/distributor/$id': typeof DistributorIdRoute
+  '/distributor/dashboard': typeof DistributorDashboardRoute
+  '/distributor/messages': typeof DistributorMessagesRoute
+  '/distributor/settings': typeof DistributorSettingsRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$userId': typeof MessagesUserIdRoute
   '/store/$id': typeof StoreIdRoute
+  '/tracking/$trackingNumber': typeof TrackingTrackingNumberRoute
+  '/delivery/': typeof DeliveryIndexRoute
+  '/distributors/': typeof DistributorsIndexRoute
+  '/delivery/conversation/$userId': typeof DeliveryConversationUserIdRoute
+  '/delivery/orders/new': typeof DeliveryOrdersNewRoute
+  '/distributor/conversation/$userId': typeof DistributorConversationUserIdRoute
+  '/distributor/review/$orderId': typeof DistributorReviewOrderIdRoute
   '/api/public/uploads/$': typeof ApiPublicUploadsSplatRoute
 }
 export interface FileRoutesByTo {
@@ -182,8 +332,11 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
   '/favorites': typeof FavoritesRoute
   '/messages': typeof MessagesRoute
+  '/orders': typeof OrdersRoute
+  '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
@@ -191,12 +344,30 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/stores': typeof StoresRoute
+  '/terms': typeof TermsRoute
   '/auth/$mode': typeof AuthModeRoute
   '/auth/complete': typeof AuthCompleteRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/delivery/$slug': typeof DeliverySlugRoute
+  '/delivery/complete': typeof DeliveryCompleteRoute
+  '/delivery/dashboard': typeof DeliveryDashboardRoute
+  '/delivery/distributors': typeof DeliveryDistributorsRoute
+  '/delivery/messages': typeof DeliveryMessagesRoute
+  '/delivery/reports': typeof DeliveryReportsRoute
+  '/distributor/$id': typeof DistributorIdRoute
+  '/distributor/dashboard': typeof DistributorDashboardRoute
+  '/distributor/messages': typeof DistributorMessagesRoute
+  '/distributor/settings': typeof DistributorSettingsRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$userId': typeof MessagesUserIdRoute
   '/store/$id': typeof StoreIdRoute
+  '/tracking/$trackingNumber': typeof TrackingTrackingNumberRoute
+  '/delivery': typeof DeliveryIndexRoute
+  '/distributors': typeof DistributorsIndexRoute
+  '/delivery/conversation/$userId': typeof DeliveryConversationUserIdRoute
+  '/delivery/orders/new': typeof DeliveryOrdersNewRoute
+  '/distributor/conversation/$userId': typeof DistributorConversationUserIdRoute
+  '/distributor/review/$orderId': typeof DistributorReviewOrderIdRoute
   '/api/public/uploads/$': typeof ApiPublicUploadsSplatRoute
 }
 export interface FileRoutesById {
@@ -208,8 +379,11 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
   '/favorites': typeof FavoritesRoute
   '/messages': typeof MessagesRoute
+  '/orders': typeof OrdersRoute
+  '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
@@ -217,12 +391,30 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/stores': typeof StoresRoute
+  '/terms': typeof TermsRoute
   '/auth/$mode': typeof AuthModeRoute
   '/auth/complete': typeof AuthCompleteRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/delivery/$slug': typeof DeliverySlugRoute
+  '/delivery/complete': typeof DeliveryCompleteRoute
+  '/delivery/dashboard': typeof DeliveryDashboardRoute
+  '/delivery/distributors': typeof DeliveryDistributorsRoute
+  '/delivery/messages': typeof DeliveryMessagesRoute
+  '/delivery/reports': typeof DeliveryReportsRoute
+  '/distributor/$id': typeof DistributorIdRoute
+  '/distributor/dashboard': typeof DistributorDashboardRoute
+  '/distributor/messages': typeof DistributorMessagesRoute
+  '/distributor/settings': typeof DistributorSettingsRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages_/$userId': typeof MessagesUserIdRoute
   '/store/$id': typeof StoreIdRoute
+  '/tracking/$trackingNumber': typeof TrackingTrackingNumberRoute
+  '/delivery/': typeof DeliveryIndexRoute
+  '/distributors/': typeof DistributorsIndexRoute
+  '/delivery/conversation/$userId': typeof DeliveryConversationUserIdRoute
+  '/delivery/orders/new': typeof DeliveryOrdersNewRoute
+  '/distributor/conversation/$userId': typeof DistributorConversationUserIdRoute
+  '/distributor/review/$orderId': typeof DistributorReviewOrderIdRoute
   '/api/public/uploads/$': typeof ApiPublicUploadsSplatRoute
 }
 export interface FileRouteTypes {
@@ -235,8 +427,11 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/dashboard'
+    | '/faq'
     | '/favorites'
     | '/messages'
+    | '/orders'
+    | '/privacy'
     | '/products'
     | '/profile'
     | '/reports'
@@ -244,12 +439,30 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/stores'
+    | '/terms'
     | '/auth/$mode'
     | '/auth/complete'
     | '/category/$slug'
+    | '/delivery/$slug'
+    | '/delivery/complete'
+    | '/delivery/dashboard'
+    | '/delivery/distributors'
+    | '/delivery/messages'
+    | '/delivery/reports'
+    | '/distributor/$id'
+    | '/distributor/dashboard'
+    | '/distributor/messages'
+    | '/distributor/settings'
     | '/listing/$id'
     | '/messages/$userId'
     | '/store/$id'
+    | '/tracking/$trackingNumber'
+    | '/delivery/'
+    | '/distributors/'
+    | '/delivery/conversation/$userId'
+    | '/delivery/orders/new'
+    | '/distributor/conversation/$userId'
+    | '/distributor/review/$orderId'
     | '/api/public/uploads/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -260,8 +473,11 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/dashboard'
+    | '/faq'
     | '/favorites'
     | '/messages'
+    | '/orders'
+    | '/privacy'
     | '/products'
     | '/profile'
     | '/reports'
@@ -269,12 +485,30 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/stores'
+    | '/terms'
     | '/auth/$mode'
     | '/auth/complete'
     | '/category/$slug'
+    | '/delivery/$slug'
+    | '/delivery/complete'
+    | '/delivery/dashboard'
+    | '/delivery/distributors'
+    | '/delivery/messages'
+    | '/delivery/reports'
+    | '/distributor/$id'
+    | '/distributor/dashboard'
+    | '/distributor/messages'
+    | '/distributor/settings'
     | '/listing/$id'
     | '/messages/$userId'
     | '/store/$id'
+    | '/tracking/$trackingNumber'
+    | '/delivery'
+    | '/distributors'
+    | '/delivery/conversation/$userId'
+    | '/delivery/orders/new'
+    | '/distributor/conversation/$userId'
+    | '/distributor/review/$orderId'
     | '/api/public/uploads/$'
   id:
     | '__root__'
@@ -285,8 +519,11 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/dashboard'
+    | '/faq'
     | '/favorites'
     | '/messages'
+    | '/orders'
+    | '/privacy'
     | '/products'
     | '/profile'
     | '/reports'
@@ -294,12 +531,30 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/stores'
+    | '/terms'
     | '/auth/$mode'
     | '/auth/complete'
     | '/category/$slug'
+    | '/delivery/$slug'
+    | '/delivery/complete'
+    | '/delivery/dashboard'
+    | '/delivery/distributors'
+    | '/delivery/messages'
+    | '/delivery/reports'
+    | '/distributor/$id'
+    | '/distributor/dashboard'
+    | '/distributor/messages'
+    | '/distributor/settings'
     | '/listing/$id'
     | '/messages_/$userId'
     | '/store/$id'
+    | '/tracking/$trackingNumber'
+    | '/delivery/'
+    | '/distributors/'
+    | '/delivery/conversation/$userId'
+    | '/delivery/orders/new'
+    | '/distributor/conversation/$userId'
+    | '/distributor/review/$orderId'
     | '/api/public/uploads/$'
   fileRoutesById: FileRoutesById
 }
@@ -311,8 +566,11 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
   DashboardRoute: typeof DashboardRoute
+  FaqRoute: typeof FaqRoute
   FavoritesRoute: typeof FavoritesRoute
   MessagesRoute: typeof MessagesRoute
+  OrdersRoute: typeof OrdersRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProductsRoute: typeof ProductsRoute
   ProfileRoute: typeof ProfileRoute
   ReportsRoute: typeof ReportsRoute
@@ -320,17 +578,42 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   StoresRoute: typeof StoresRoute
+  TermsRoute: typeof TermsRoute
   AuthModeRoute: typeof AuthModeRoute
   AuthCompleteRoute: typeof AuthCompleteRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  DeliverySlugRoute: typeof DeliverySlugRoute
+  DeliveryCompleteRoute: typeof DeliveryCompleteRoute
+  DeliveryDashboardRoute: typeof DeliveryDashboardRoute
+  DeliveryDistributorsRoute: typeof DeliveryDistributorsRoute
+  DeliveryMessagesRoute: typeof DeliveryMessagesRoute
+  DeliveryReportsRoute: typeof DeliveryReportsRoute
+  DistributorIdRoute: typeof DistributorIdRoute
+  DistributorDashboardRoute: typeof DistributorDashboardRoute
+  DistributorMessagesRoute: typeof DistributorMessagesRoute
+  DistributorSettingsRoute: typeof DistributorSettingsRoute
   ListingIdRoute: typeof ListingIdRoute
   MessagesUserIdRoute: typeof MessagesUserIdRoute
   StoreIdRoute: typeof StoreIdRoute
+  TrackingTrackingNumberRoute: typeof TrackingTrackingNumberRoute
+  DeliveryIndexRoute: typeof DeliveryIndexRoute
+  DistributorsIndexRoute: typeof DistributorsIndexRoute
+  DeliveryConversationUserIdRoute: typeof DeliveryConversationUserIdRoute
+  DeliveryOrdersNewRoute: typeof DeliveryOrdersNewRoute
+  DistributorConversationUserIdRoute: typeof DistributorConversationUserIdRoute
+  DistributorReviewOrderIdRoute: typeof DistributorReviewOrderIdRoute
   ApiPublicUploadsSplatRoute: typeof ApiPublicUploadsSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/stores': {
       id: '/stores'
       path: '/stores'
@@ -380,6 +663,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/messages': {
       id: '/messages'
       path: '/messages'
@@ -392,6 +689,13 @@ declare module '@tanstack/react-router' {
       path: '/favorites'
       fullPath: '/favorites'
       preLoaderRoute: typeof FavoritesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -443,6 +747,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/distributors/': {
+      id: '/distributors/'
+      path: '/distributors'
+      fullPath: '/distributors/'
+      preLoaderRoute: typeof DistributorsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/': {
+      id: '/delivery/'
+      path: '/delivery'
+      fullPath: '/delivery/'
+      preLoaderRoute: typeof DeliveryIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tracking/$trackingNumber': {
+      id: '/tracking/$trackingNumber'
+      path: '/tracking/$trackingNumber'
+      fullPath: '/tracking/$trackingNumber'
+      preLoaderRoute: typeof TrackingTrackingNumberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/store/$id': {
       id: '/store/$id'
       path: '/store/$id'
@@ -462,6 +787,76 @@ declare module '@tanstack/react-router' {
       path: '/listing/$id'
       fullPath: '/listing/$id'
       preLoaderRoute: typeof ListingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor/settings': {
+      id: '/distributor/settings'
+      path: '/distributor/settings'
+      fullPath: '/distributor/settings'
+      preLoaderRoute: typeof DistributorSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor/messages': {
+      id: '/distributor/messages'
+      path: '/distributor/messages'
+      fullPath: '/distributor/messages'
+      preLoaderRoute: typeof DistributorMessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor/dashboard': {
+      id: '/distributor/dashboard'
+      path: '/distributor/dashboard'
+      fullPath: '/distributor/dashboard'
+      preLoaderRoute: typeof DistributorDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor/$id': {
+      id: '/distributor/$id'
+      path: '/distributor/$id'
+      fullPath: '/distributor/$id'
+      preLoaderRoute: typeof DistributorIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/reports': {
+      id: '/delivery/reports'
+      path: '/delivery/reports'
+      fullPath: '/delivery/reports'
+      preLoaderRoute: typeof DeliveryReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/messages': {
+      id: '/delivery/messages'
+      path: '/delivery/messages'
+      fullPath: '/delivery/messages'
+      preLoaderRoute: typeof DeliveryMessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/distributors': {
+      id: '/delivery/distributors'
+      path: '/delivery/distributors'
+      fullPath: '/delivery/distributors'
+      preLoaderRoute: typeof DeliveryDistributorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/dashboard': {
+      id: '/delivery/dashboard'
+      path: '/delivery/dashboard'
+      fullPath: '/delivery/dashboard'
+      preLoaderRoute: typeof DeliveryDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/complete': {
+      id: '/delivery/complete'
+      path: '/delivery/complete'
+      fullPath: '/delivery/complete'
+      preLoaderRoute: typeof DeliveryCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/$slug': {
+      id: '/delivery/$slug'
+      path: '/delivery/$slug'
+      fullPath: '/delivery/$slug'
+      preLoaderRoute: typeof DeliverySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/category/$slug': {
@@ -485,6 +880,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthModeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/distributor/review/$orderId': {
+      id: '/distributor/review/$orderId'
+      path: '/distributor/review/$orderId'
+      fullPath: '/distributor/review/$orderId'
+      preLoaderRoute: typeof DistributorReviewOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor/conversation/$userId': {
+      id: '/distributor/conversation/$userId'
+      path: '/distributor/conversation/$userId'
+      fullPath: '/distributor/conversation/$userId'
+      preLoaderRoute: typeof DistributorConversationUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/orders/new': {
+      id: '/delivery/orders/new'
+      path: '/delivery/orders/new'
+      fullPath: '/delivery/orders/new'
+      preLoaderRoute: typeof DeliveryOrdersNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/conversation/$userId': {
+      id: '/delivery/conversation/$userId'
+      path: '/delivery/conversation/$userId'
+      fullPath: '/delivery/conversation/$userId'
+      preLoaderRoute: typeof DeliveryConversationUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/uploads/$': {
       id: '/api/public/uploads/$'
       path: '/api/public/uploads/$'
@@ -503,8 +926,11 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
   DashboardRoute: DashboardRoute,
+  FaqRoute: FaqRoute,
   FavoritesRoute: FavoritesRoute,
   MessagesRoute: MessagesRoute,
+  OrdersRoute: OrdersRoute,
+  PrivacyRoute: PrivacyRoute,
   ProductsRoute: ProductsRoute,
   ProfileRoute: ProfileRoute,
   ReportsRoute: ReportsRoute,
@@ -512,12 +938,30 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   StoresRoute: StoresRoute,
+  TermsRoute: TermsRoute,
   AuthModeRoute: AuthModeRoute,
   AuthCompleteRoute: AuthCompleteRoute,
   CategorySlugRoute: CategorySlugRoute,
+  DeliverySlugRoute: DeliverySlugRoute,
+  DeliveryCompleteRoute: DeliveryCompleteRoute,
+  DeliveryDashboardRoute: DeliveryDashboardRoute,
+  DeliveryDistributorsRoute: DeliveryDistributorsRoute,
+  DeliveryMessagesRoute: DeliveryMessagesRoute,
+  DeliveryReportsRoute: DeliveryReportsRoute,
+  DistributorIdRoute: DistributorIdRoute,
+  DistributorDashboardRoute: DistributorDashboardRoute,
+  DistributorMessagesRoute: DistributorMessagesRoute,
+  DistributorSettingsRoute: DistributorSettingsRoute,
   ListingIdRoute: ListingIdRoute,
   MessagesUserIdRoute: MessagesUserIdRoute,
   StoreIdRoute: StoreIdRoute,
+  TrackingTrackingNumberRoute: TrackingTrackingNumberRoute,
+  DeliveryIndexRoute: DeliveryIndexRoute,
+  DistributorsIndexRoute: DistributorsIndexRoute,
+  DeliveryConversationUserIdRoute: DeliveryConversationUserIdRoute,
+  DeliveryOrdersNewRoute: DeliveryOrdersNewRoute,
+  DistributorConversationUserIdRoute: DistributorConversationUserIdRoute,
+  DistributorReviewOrderIdRoute: DistributorReviewOrderIdRoute,
   ApiPublicUploadsSplatRoute: ApiPublicUploadsSplatRoute,
 }
 export const routeTree = rootRouteImport

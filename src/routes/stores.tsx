@@ -1,20 +1,21 @@
 // src/routes/stores.tsx
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useApp, useT } from "@/lib/i18n";
-import { useAllStores } from "@/lib/queries";
+import { useAllStores, useDeliveryCompanies } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Search, ArrowLeft, Star, Store, Package, X, 
   Sparkles, Filter, MapPin, Building2, MessageCircle,
-  Clock, Globe // ✅ أيقونات جديدة
+  Clock, Globe, Truck, ShieldCheck, Loader2
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/stores")({
   component: StoresPage,
@@ -27,8 +28,131 @@ function StoresPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "online" | "physical">("all");
+  const [userGovernorate, setUserGovernorate] = useState<string | null>(null);
+  const [userAddress, setUserAddress] = useState<{ lat: number; lng: number } | null>(null);
+  const [deliveryPrices, setDeliveryPrices] = useState<Record<string, { price: number; isFree: boolean; distance: number; companyName: string; sameGovernorate: boolean }>>({});
+  const [loadingDeliveries, setLoadingDeliveries] = useState<Record<string, boolean>>({});
   
   const { data: allStores = [], isLoading } = useAllStores(100);
+  const { data: companies = [] } = useDeliveryCompanies({ active: true });
+
+  // ✅ جلب محافظة المستخدم وإحداثياته
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!app.user) return;
+      
+      const { data: address } = await supabase
+        .from("user_addresses")
+        .select("governorate_id, lat, lng")
+        .eq("user_id", app.user.id)
+        .eq("is_default", true)
+        .maybeSingle();
+      
+      if (address) {
+        if (address.governorate_id) {
+          const { data: gov } = await supabase
+            .from("governorates")
+            .select("name_ar")
+            .eq("id", address.governorate_id)
+            .maybeSingle();
+          setUserGovernorate(gov?.name_ar || null);
+        }
+        if (address.lat && address.lng) {
+          setUserAddress({ lat: address.lat, lng: address.lng });
+        }
+      }
+    };
+    
+    fetchUserData();
+  }, [app.user]);
+
+  // ✅ حساب سعر التوصيل لكل متجر
+  useEffect(() => {
+    const calculateAllDeliveries = async () => {
+      if (!allStores.length || !companies.length || !app.user) return;
+      
+      const prices: Record<string, any> = {};
+      
+      for (const store of allStores) {
+        // ✅ تخطي إذا لم يكن هناك عنوان للمستخدم
+        if (!userAddress) {
+          prices[store.id] = { price: null, isFree: false, distance: 0, companyName: '', sameGovernorate: false };
+          continue;
+        }
+        
+        // ✅ إحداثيات المتجر
+        const storeLat = store.lat;
+        const storeLng = store.lng;
+        
+        // ✅ محافظة المتجر
+        const storeGovernorate = store.governorate_name || store.governorate?.name_ar;
+        
+        // ✅ البحث عن شركة توصيل
+        let matchingCompany = null;
+        
+        // ✅ 1. حاول البحث عن شركة في نفس المحافظة
+        if (storeGovernorate) {
+          matchingCompany = companies.find(
+            (c: any) => c.governorate?.name_ar === storeGovernorate && c.is_active === true
+          );
+        }
+        
+        // ✅ 2. إذا لم توجد شركة، استخدم أي شركة نشطة
+        if (!matchingCompany) {
+          matchingCompany = companies.find((c: any) => c.is_active === true);
+        }
+        
+        if (!matchingCompany) {
+          prices[store.id] = { price: null, isFree: false, distance: 0, companyName: '', sameGovernorate: false };
+          continue;
+        }
+        
+        // ✅ حساب المسافة
+        let distance = 0;
+        const sameGovernorate = userGovernorate === storeGovernorate;
+        
+        if (storeLat && storeLng && userAddress.lat && userAddress.lng) {
+          distance = calculateDistance(storeLat, storeLng, userAddress.lat, userAddress.lng);
+        } else {
+          distance = sameGovernorate ? 5 : 15;
+        }
+        
+        // ✅ حساب السعر
+        let price = (matchingCompany.base_price || 0) + (distance * (matchingCompany.price_per_km || 0));
+        price = Math.max(price, matchingCompany.min_delivery_fee || 0);
+        price = Math.min(price, matchingCompany.max_delivery_fee || 999999);
+        price = Math.round(price);
+        
+        // ✅ توصيل مجاني (إذا كان هناك حد أدنى)
+        const isFree = price === 0;
+        
+        prices[store.id] = {
+          price,
+          isFree,
+          distance: Math.round(distance * 100) / 100,
+          companyName: matchingCompany.name_ar,
+          sameGovernorate,
+        };
+      }
+      
+      setDeliveryPrices(prices);
+    };
+    
+    calculateAllDeliveries();
+  }, [allStores, companies, app.user, userGovernorate, userAddress]);
+
+  // ✅ دالة حساب المسافة
+  function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
 
   // ✅ فلترة ذكية وفورية
   const filteredStores = useMemo(() => {
@@ -92,6 +216,37 @@ function StoresPage() {
     });
   };
 
+  // ✅ عرض سعر التوصيل
+  const renderDeliveryPrice = (storeId: string) => {
+    const delivery = deliveryPrices[storeId];
+    if (!delivery) return null;
+    
+    if (delivery.price === null) {
+      return (
+        <span className="text-[10px] text-muted-foreground">
+          {app.lang === "ar" ? "غير متاح" : "N/A"}
+        </span>
+      );
+    }
+    
+    return (
+      <div className="flex items-center gap-1.5">
+        {delivery.isFree ? (
+          <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px] px-1.5 py-0">
+            {app.lang === "ar" ? "✅ مجاني" : "✅ Free"}
+          </Badge>
+        ) : (
+          <span className="text-xs font-bold text-primary">
+            {delivery.price} SYP
+          </span>
+        )}
+        {!delivery.sameGovernorate && (
+          <span className="text-[8px] text-amber-500">⚠️</span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <div className="mx-auto max-w-7xl px-4 py-8">
@@ -133,7 +288,7 @@ function StoresPage() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={app.lang === "ar" ? "🔍 ابحث عن متجر... (اكتب أي حرف)" : "🔍 Search for store... (type any letter)"}
+              placeholder={app.lang === "ar" ? "🔍 ابحث عن متجر..." : "🔍 Search for store..."}
               className="ps-12 h-14 rounded-2xl border-2 border-slate-200/50 bg-white/50 dark:border-slate-800/50 dark:bg-slate-900/50 focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all text-lg"
               autoFocus
             />
@@ -221,7 +376,7 @@ function StoresPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-64 rounded-2xl" />
+              <Skeleton key={i} className="h-72 rounded-2xl" />
             ))}
           </div>
         ) : filteredStores.length === 0 ? (
@@ -255,6 +410,7 @@ function StoresPage() {
               const opensAt = s.store_opens_at || "";
               const closesAt = s.store_closes_at || "";
               const offDays = s.weekly_off_days || [];
+              const delivery = deliveryPrices[s.id];
               
               return (
                 <Link
@@ -333,15 +489,25 @@ function StoresPage() {
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-3 mt-2 text-xs">
-                      <span className="flex items-center gap-1 text-accent">
-                        <Star className="h-3.5 w-3.5 fill-current" />
-                        {Number(s.avg_rating ?? 0).toFixed(1)}
-                      </span>
-                      <span className="text-muted-foreground">
-                        <Package className="h-3.5 w-3.5 inline mr-1" />
-                        {s.listing_count ?? 0} {t("products_tab")}
-                      </span>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="flex items-center gap-1 text-accent">
+                          <Star className="h-3.5 w-3.5 fill-current" />
+                          {Number(s.avg_rating ?? 0).toFixed(1)}
+                        </span>
+                        <span className="text-muted-foreground">
+                          <Package className="h-3.5 w-3.5 inline mr-1" />
+                          {s.listing_count ?? 0} {t("products_tab")}
+                        </span>
+                      </div>
+                      
+                      {/* ✅ ✅ ✅ عرض سعر التوصيل من برا ✅ ✅ ✅ */}
+                      {delivery && (
+                        <div className="flex items-center gap-1 bg-primary/5 px-2 py-0.5 rounded-full">
+                          <Truck className="h-3 w-3 text-primary" />
+                          {renderDeliveryPrice(s.id)}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>

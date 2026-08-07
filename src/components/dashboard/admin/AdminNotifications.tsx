@@ -1,5 +1,6 @@
 // src/components/dashboard/admin/AdminNotifications.tsx
-import { useState, useMemo, useEffect, useRef } from "react";
+
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useApp } from "@/lib/i18n";
 import { 
   Bell, Send, Users, Store, Package, Calendar, CheckCircle, XCircle,
@@ -8,7 +9,7 @@ import {
   Sparkles, Gift, Star, Check, X, ShoppingBag, Megaphone,
   User, UserCheck, UserX, Target, Rocket, Crown, Zap, Flame,
   ChevronDown, Layers, Building2, Phone, Mail, AtSign, Image as ImageIcon,
-  Upload, FolderOpen
+  Upload, FolderOpen, Shield, Link2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
   useUserNotifications,
@@ -103,8 +105,79 @@ const getNotificationConfig = (type: string) => {
 };
 
 // ============================================================
-// المكون الرئيسي
+// مكون الإحصائيات
 // ============================================================
+const StatsCards = React.memo(({ stats, isArabic }: any) => {
+  const items = [
+    { 
+      key: 'total', 
+      label: isArabic ? '📊 الإجمالي' : '📊 Total', 
+      value: stats?.total || 0, 
+      gradient: "from-[#0d2e2a] to-[#1a4f4a]",
+      icon: Bell,
+      desc: isArabic ? 'جميع الإشعارات' : 'All notifications',
+    },
+    { 
+      key: 'sent', 
+      label: isArabic ? '✅ مرسلة' : '✅ Sent', 
+      value: stats?.read || 0, 
+      gradient: "from-[#2d6b63] to-[#4a9f95]",
+      icon: CheckCircle,
+      desc: isArabic ? 'إشعارات مرسلة' : 'Sent notifications',
+    },
+    { 
+      key: 'unread', 
+      label: isArabic ? '📬 غير مقروءة' : '📬 Unread', 
+      value: stats?.unread || 0, 
+      gradient: "from-[#1a4f4a] to-[#2d6b63]",
+      icon: Clock,
+      desc: isArabic ? 'إشعارات غير مقروءة' : 'Unread notifications',
+    },
+    { 
+      key: 'scheduled', 
+      label: isArabic ? '📅 مجدولة' : '📅 Scheduled', 
+      value: stats?.scheduled || 0, 
+      gradient: "from-[#4a9f95] to-[#6bb5aa]",
+      icon: Calendar,
+      desc: isArabic ? 'إشعارات مجدولة' : 'Scheduled notifications',
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {items.map((item) => (
+        <div
+          key={item.key}
+          className={cn(
+            "group bg-gradient-to-br p-4 rounded-2xl text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] relative overflow-hidden cursor-default",
+            item.gradient
+          )}
+        >
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+            <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-white/10 blur-3xl animate-pulse" />
+          </div>
+          <div className="relative flex items-center justify-between">
+            <div>
+              <p className="text-[10px] opacity-80 font-medium tracking-wider uppercase">{item.label}</p>
+              <p className="text-2xl font-bold mt-0.5">{item.value}</p>
+              <p className="text-[10px] opacity-70 mt-0.5">{item.desc}</p>
+            </div>
+            <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+              <item.icon className="h-5 w-5 text-white/80" />
+            </div>
+          </div>
+          <div className="relative mt-2 h-0.5 w-full rounded-full bg-white/20 overflow-hidden">
+            <div 
+              className="h-full rounded-full bg-white/40 transition-all duration-1000" 
+              style={{ width: `${Math.min(100, (stats?.total > 0 ? (item.value / stats.total) * 100 : 0))}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+});
+StatsCards.displayName = 'StatsCards';
 
 export function AdminNotifications() {
   const app = useApp();
@@ -451,7 +524,7 @@ export function AdminNotifications() {
   };
 
   // ============================================================
-  // دوال التنسيق - باستخدام NOTIFICATION_CONFIG
+  // دوال التنسيق
   // ============================================================
 
   const getTargetLabel = (target: string) => {
@@ -468,7 +541,7 @@ export function AdminNotifications() {
   };
 
   // ============================================================
-  // التصيير - جدول الإشعارات
+  // التصيير
   // ============================================================
 
   return (
@@ -477,71 +550,88 @@ export function AdminNotifications() {
       {/* ===== HEADER ===== */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Bell className="h-6 w-6 text-[#2563eb]" />
-            {isRTL ? 'إدارة الإشعارات' : 'Notifications Management'}
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center shadow-lg shadow-[#0d2e2a]/30">
+              <Bell className="h-5 w-5 text-white animate-float" />
+            </div>
+            <span className="bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] bg-clip-text text-transparent">
+              {isRTL ? "إدارة الإشعارات" : "Notifications"}
+            </span>
+            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 text-[10px]">
+              <Sparkles className="h-2.5 w-2.5 mr-1 animate-pulse" />
+              {isRTL ? 'مباشر' : 'Live'}
+            </Badge>
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
             {isRTL 
-              ? `إدارة وإرسال الإشعارات للمستخدمين • ${stats?.total || 0} إشعار` 
-              : `Manage and send notifications to users • ${stats?.total || 0} notifications`}
+              ? `إدارة وإرسال الإشعارات للمستخدمين (${stats?.total || 0})`
+              : `Manage and send notifications to users (${stats?.total || 0})`}
+            <span className="h-1 w-1 rounded-full bg-[#0d2e2a]/30" />
+            <span className="text-xs text-[#2d6b63] flex items-center gap-1">
+              <Zap className="h-3 w-3 animate-pulse" />
+              {isRTL ? 'تحديث لحظي' : 'Real-time'}
+            </span>
           </p>
         </div>
+        
         <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { refetchNotifications(); refetchStats(); fetchAllUsers(); }}
-            className="rounded-xl"
-          >
-            <RefreshCw className="h-4 w-4 mr-1.5" />
-            {isRTL ? 'تحديث' : 'Refresh'}
-          </Button>
+          <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-[#0d2e2a]/20 shadow-sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { refetchNotifications(); refetchStats(); fetchAllUsers(); }}
+              className="rounded-lg h-9 px-3 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 transition-all duration-300 hover:scale-105"
+            >
+              <RefreshCw className="h-4 w-4 animate-spin-slow" />
+            </Button>
+          </div>
           
-          {/* ===== زر إنشاء إشعار جديد ===== */}
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-[#2563eb] hover:bg-[#1d4ed8] rounded-xl">
+              <Button className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 rounded-xl hover:scale-105">
                 <Plus className="h-4 w-4 mr-1.5" />
                 {isRTL ? 'إشعار جديد' : 'New Notification'}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/10 rounded-2xl">
               <DialogHeader>
-                <DialogTitle className="text-xl flex items-center gap-2">
-                  <Bell className="h-5 w-5 text-[#2563eb]" />
+                <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center">
+                    <Bell className="h-4 w-4 text-white" />
+                  </div>
                   {isRTL ? 'إنشاء إشعار جديد' : 'Create New Notification'}
                 </DialogTitle>
                 <DialogDescription>
                   {isRTL 
-                    ? 'املأ البيانات لإرسال إشعار للمستخدمين المستهدفين' 
+                    ? 'املأ البيانات لإرسال إشعار للمستخدمين المستهدفين'
                     : 'Fill in the details to send a notification to target users'}
                 </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-5 py-4">
-                
                 {/* ===== اللغة ===== */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-1">
+                    <Label className="text-[#0d2e2a] dark:text-white font-semibold flex items-center gap-1">
                       {isRTL ? 'العنوان (عربي)' : 'Title (Arabic)'}
-                      <span className="text-red-500">*</span>
+                      <span className="text-[#6bb5aa]">*</span>
                     </Label>
                     <Input
                       value={formData.title_ar}
                       onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
                       placeholder={isRTL ? 'أدخل عنوان الإشعار' : 'Enter notification title'}
-                      className="rounded-xl"
+                      className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{isRTL ? 'العنوان (إنجليزي)' : 'Title (English)'}</Label>
+                    <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                      {isRTL ? 'العنوان (إنجليزي)' : 'Title (English)'}
+                    </Label>
                     <Input
                       value={formData.title_en}
                       onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
                       placeholder="Enter notification title"
-                      className="rounded-xl"
+                      className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
                       dir="ltr"
                     />
                   </div>
@@ -550,41 +640,45 @@ export function AdminNotifications() {
                 {/* ===== المحتوى ===== */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-1">
+                    <Label className="text-[#0d2e2a] dark:text-white font-semibold flex items-center gap-1">
                       {isRTL ? 'المحتوى (عربي)' : 'Content (Arabic)'}
-                      <span className="text-red-500">*</span>
+                      <span className="text-[#6bb5aa]">*</span>
                     </Label>
                     <Textarea
                       value={formData.body_ar}
                       onChange={(e) => setFormData({ ...formData, body_ar: e.target.value })}
                       placeholder={isRTL ? 'أدخل محتوى الإشعار' : 'Enter notification content'}
                       rows={4}
-                      className="rounded-xl resize-none"
+                      className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 resize-none"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{isRTL ? 'المحتوى (إنجليزي)' : 'Content (English)'}</Label>
+                    <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                      {isRTL ? 'المحتوى (إنجليزي)' : 'Content (English)'}
+                    </Label>
                     <Textarea
                       value={formData.body_en}
                       onChange={(e) => setFormData({ ...formData, body_en: e.target.value })}
                       placeholder="Enter notification content"
                       rows={4}
-                      className="rounded-xl resize-none"
+                      className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 resize-none"
                       dir="ltr"
                     />
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="bg-[#0d2e2a]/10" />
 
                 {/* ===== النوع ===== */}
                 <div className="space-y-2">
-                  <Label>{isRTL ? 'نوع الإشعار' : 'Notification Type'}</Label>
+                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                    {isRTL ? 'نوع الإشعار' : 'Notification Type'}
+                  </Label>
                   <Select
                     value={formData.type}
                     onValueChange={(value) => setFormData({ ...formData, type: value as NotificationTypeV2 })}
                   >
-                    <SelectTrigger className="rounded-xl">
+                    <SelectTrigger className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20">
                       <SelectValue placeholder={isRTL ? 'اختر النوع' : 'Select type'} />
                     </SelectTrigger>
                     <SelectContent>
@@ -602,12 +696,14 @@ export function AdminNotifications() {
 
                 {/* ===== الهدف ===== */}
                 <div className="space-y-2">
-                  <Label>{isRTL ? 'المستهدفين' : 'Target Audience'}</Label>
+                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                    {isRTL ? 'المستهدفين' : 'Target Audience'}
+                  </Label>
                   <Select
                     value={formData.target}
                     onValueChange={(value) => setFormData({ ...formData, target: value as TargetType })}
                   >
-                    <SelectTrigger className="rounded-xl">
+                    <SelectTrigger className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20">
                       <SelectValue placeholder={isRTL ? 'اختر الفئة المستهدفة' : 'Select target audience'} />
                     </SelectTrigger>
                     <SelectContent>
@@ -624,14 +720,21 @@ export function AdminNotifications() {
 
                 {/* ===== المحافظات ===== */}
                 {formData.target === 'governorate' && (
-                  <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                    <Label>{isRTL ? 'اختر المحافظات' : 'Select Governorates'}</Label>
+                  <div className="space-y-2 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/10">
+                    <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                      {isRTL ? 'اختر المحافظات' : 'Select Governorates'}
+                    </Label>
                     <div className="flex flex-wrap gap-2">
                       {governorates.map((gov) => (
                         <Badge
                           key={gov.id}
                           variant={formData.governorate_ids.includes(gov.id) ? 'default' : 'outline'}
-                          className="cursor-pointer px-3 py-1.5 rounded-xl"
+                          className={cn(
+                            "cursor-pointer px-3 py-1.5 rounded-xl transition-all duration-300 hover:scale-105",
+                            formData.governorate_ids.includes(gov.id) 
+                              ? "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white border-0" 
+                              : "border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10"
+                          )}
                           onClick={() => {
                             const ids = formData.governorate_ids.includes(gov.id)
                               ? formData.governorate_ids.filter(id => id !== gov.id)
@@ -647,34 +750,34 @@ export function AdminNotifications() {
                       ))}
                     </div>
                     {formData.governorate_ids.length === 0 && (
-                      <p className="text-sm text-slate-400">
+                      <p className="text-sm text-[#6bb5aa]">
                         {isRTL ? '⚠️ اختر محافظة واحدة على الأقل' : '⚠️ Select at least one governorate'}
                       </p>
                     )}
                   </div>
                 )}
 
-                {/* ===== مستخدمين محددين مع فلتر ذكي ===== */}
+                {/* ===== مستخدمين محددين ===== */}
                 {formData.target === 'specific' && (
-                  <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                  <div className="space-y-2 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/10">
                     <div className="flex items-center justify-between">
-                      <Label>{isRTL ? 'اختر المستخدمين' : 'Select Users'}</Label>
-                      <Badge variant="secondary" className="rounded-xl">
+                      <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                        {isRTL ? 'اختر المستخدمين' : 'Select Users'}
+                      </Label>
+                      <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 rounded-xl">
                         {formData.specific_users.length} {isRTL ? 'مختار' : 'selected'}
                       </Badge>
                     </div>
                     
-                    {/* ===== فلتر المستخدمين ===== */}
                     <div className="flex flex-wrap gap-2">
                       <Input
                         value={usersSearch}
                         onChange={(e) => setUsersSearch(e.target.value)}
                         placeholder={isRTL ? '🔍 بحث باسم أو هاتف أو متجر' : '🔍 Search by name, phone or store'}
-                        className="flex-1 min-w-[150px] rounded-xl"
+                        className="flex-1 min-w-[150px] rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
                       />
-                      
                       <Select value={usersFilterGovernorate} onValueChange={setUsersFilterGovernorate}>
-                        <SelectTrigger className="w-[140px] rounded-xl">
+                        <SelectTrigger className="w-[140px] rounded-xl border-[#0d2e2a]/20">
                           <SelectValue placeholder={isRTL ? 'المحافظة' : 'Governorate'} />
                         </SelectTrigger>
                         <SelectContent>
@@ -688,7 +791,7 @@ export function AdminNotifications() {
                       </Select>
 
                       <Select value={usersFilterRole} onValueChange={setUsersFilterRole}>
-                        <SelectTrigger className="w-[130px] rounded-xl">
+                        <SelectTrigger className="w-[130px] rounded-xl border-[#0d2e2a]/20">
                           <SelectValue placeholder={isRTL ? 'الدور' : 'Role'} />
                         </SelectTrigger>
                         <SelectContent>
@@ -706,19 +809,18 @@ export function AdminNotifications() {
                           setUsersFilterGovernorate('all');
                           setUsersFilterRole('all');
                         }}
-                        className="rounded-xl"
+                        className="rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10"
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
 
-                    {/* ===== قائمة المستخدمين ===== */}
                     {isLoadingUsers ? (
                       <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-[#2563eb]" />
+                        <Loader2 className="h-8 w-8 animate-spin text-[#0d2e2a]" />
                       </div>
                     ) : (
-                      <ScrollArea className="h-[300px] border rounded-xl p-2">
+                      <ScrollArea className="h-[300px] border rounded-xl p-2 border-[#0d2e2a]/10">
                         {filteredUsers.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-8 text-slate-400">
                             <Users className="h-10 w-10 mb-2" />
@@ -730,11 +832,12 @@ export function AdminNotifications() {
                             return (
                               <div
                                 key={user.id}
-                                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                                className={cn(
+                                  "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all duration-200 hover:scale-[1.01]",
                                   isSelected 
-                                    ? 'bg-[#2563eb]/10 dark:bg-[#2563eb]/20' 
-                                    : 'hover:bg-slate-100 dark:hover:bg-slate-700/50'
-                                }`}
+                                    ? 'bg-[#0d2e2a]/10 dark:bg-[#0d2e2a]/20' 
+                                    : 'hover:bg-[#0d2e2a]/5'
+                                )}
                                 onClick={() => {
                                   const users = isSelected
                                     ? formData.specific_users.filter(u => u.id !== user.id)
@@ -742,20 +845,23 @@ export function AdminNotifications() {
                                   setFormData({ ...formData, specific_users: users });
                                 }}
                               >
-                                <Checkbox checked={isSelected} />
+                                <Checkbox 
+                                  checked={isSelected}
+                                  className="data-[state=checked]:bg-[#0d2e2a] data-[state=checked]:border-[#0d2e2a]"
+                                />
                                 <Avatar className="h-10 w-10">
                                   <AvatarImage src={user.avatar_url || undefined} />
-                                  <AvatarFallback className="bg-[#2563eb]/10 text-[#2563eb] text-xs">
+                                  <AvatarFallback className="bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white text-xs">
                                     {user.full_name?.charAt(0) || 'U'}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <p className="text-sm font-medium truncate">
+                                    <p className="text-sm font-medium truncate text-[#0d2e2a] dark:text-white">
                                       {user.full_name || isRTL ? 'مستخدم' : 'User'}
                                     </p>
                                     {user.is_seller && (
-                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-300 text-blue-600">
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-[#2d6b63]/30 text-[#2d6b63]">
                                         🏪 {isRTL ? 'بائع' : 'Seller'}
                                       </Badge>
                                     )}
@@ -766,7 +872,7 @@ export function AdminNotifications() {
                                     {user.governorate_name && <span>📍 {user.governorate_name}</span>}
                                   </div>
                                 </div>
-                                {isSelected && <Check className="h-4 w-4 text-[#2563eb] flex-shrink-0" />}
+                                {isSelected && <Check className="h-4 w-4 text-[#0d2e2a] flex-shrink-0" />}
                               </div>
                             );
                           })
@@ -774,17 +880,16 @@ export function AdminNotifications() {
                       </ScrollArea>
                     )}
 
-                    {/* ===== المستخدمين المختارين ===== */}
                     {formData.specific_users.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                      <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-[#0d2e2a]/10">
                         <span className="text-xs text-slate-400 flex items-center">
                           {isRTL ? 'المختارين:' : 'Selected:'}
                         </span>
                         {formData.specific_users.map((user) => (
-                          <Badge key={user.id} variant="secondary" className="gap-1 px-3 py-1.5 rounded-xl">
+                          <Badge key={user.id} variant="secondary" className="gap-1 px-3 py-1.5 rounded-xl bg-[#0d2e2a]/5 border border-[#0d2e2a]/10">
                             {user.full_name || user.id.slice(0, 8)}
                             <X
-                              className="h-3 w-3 cursor-pointer hover:text-red-500"
+                              className="h-3 w-3 cursor-pointer hover:text-rose-500 transition-colors"
                               onClick={() => {
                                 setFormData({
                                   ...formData,
@@ -799,11 +904,13 @@ export function AdminNotifications() {
                   </div>
                 )}
 
-                <Separator />
+                <Separator className="bg-[#0d2e2a]/10" />
 
-                {/* ===== الصورة - رفع وليس رابط ===== */}
+                {/* ===== الصورة ===== */}
                 <div className="space-y-3">
-                  <Label>{isRTL ? 'الصورة (اختياري)' : 'Image (Optional)'}</Label>
+                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                    {isRTL ? 'الصورة (اختياري)' : 'Image (Optional)'}
+                  </Label>
                   
                   <div className="flex items-center gap-3">
                     <input
@@ -821,7 +928,7 @@ export function AdminNotifications() {
                       variant="outline"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploading}
-                      className="rounded-xl"
+                      className="rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10"
                     >
                       {isUploading ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
@@ -835,7 +942,7 @@ export function AdminNotifications() {
                         type="button"
                         variant="ghost"
                         onClick={removeImage}
-                        className="text-red-500 hover:text-red-700 rounded-xl"
+                        className="text-rose-500 hover:text-rose-700 rounded-xl"
                       >
                         <X className="h-4 w-4 mr-1.5" />
                         {isRTL ? 'إزالة' : 'Remove'}
@@ -843,9 +950,8 @@ export function AdminNotifications() {
                     )}
                   </div>
 
-                  {/* ===== معاينة الصورة ===== */}
                   {(imagePreview || formData.image_url) && (
-                    <div className="relative w-48 h-48 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-700">
+                    <div className="relative w-48 h-48 rounded-xl overflow-hidden border-2 border-[#0d2e2a]/20">
                       <img
                         src={imagePreview || formData.image_url}
                         alt="Preview"
@@ -856,45 +962,48 @@ export function AdminNotifications() {
                       </div>
                     </div>
                   )}
-
-                  {formData.image_url && !imagePreview && (
-                    <p className="text-xs text-slate-400 truncate">
-                      {isRTL ? 'الصورة الحالية:' : 'Current image:'} {formData.image_url}
-                    </p>
-                  )}
                 </div>
 
                 {/* ===== رابط الإجراء ===== */}
                 <div className="space-y-2">
-                  <Label>{isRTL ? 'رابط الإجراء (اختياري)' : 'Action URL (Optional)'}</Label>
+                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                    {isRTL ? 'رابط الإجراء (اختياري)' : 'Action URL (Optional)'}
+                  </Label>
                   <Input
                     value={formData.link_url}
                     onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
                     placeholder="/products/123"
-                    className="rounded-xl"
+                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
                   />
                 </div>
 
                 {/* ===== جدولة الإرسال ===== */}
                 <div className="space-y-2">
-                  <Label>{isRTL ? 'جدولة الإرسال (اختياري)' : 'Schedule Send (Optional)'}</Label>
+                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                    {isRTL ? 'جدولة الإرسال (اختياري)' : 'Schedule Send (Optional)'}
+                  </Label>
                   <Input
                     type="datetime-local"
                     value={formData.scheduled_for}
                     onChange={(e) => setFormData({ ...formData, scheduled_for: e.target.value })}
-                    className="rounded-xl"
+                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
                   />
                 </div>
               </div>
 
-              <DialogFooter className="flex gap-2">
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} className="rounded-xl">
+              <DialogFooter className="gap-2 pt-4 border-t border-[#0d2e2a]/10">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCreateDialogOpen(false)}
+                  className="rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300"
+                >
+                  <X className="h-4 w-4 mr-1.5" />
                   {isRTL ? 'إلغاء' : 'Cancel'}
                 </Button>
                 <Button
                   onClick={handleSendNotification}
                   disabled={isSending || isUploading}
-                  className="bg-[#2563eb] hover:bg-[#1d4ed8] rounded-xl"
+                  className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 rounded-xl hover:scale-105 px-6"
                 >
                   {isSending ? (
                     <>
@@ -916,323 +1025,304 @@ export function AdminNotifications() {
         </div>
       </div>
 
-      {/* ===== الإحصائيات ===== */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="border-slate-200/60 dark:border-slate-700/60">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-500">{isRTL ? 'إجمالي' : 'Total'}</p>
-                <p className="text-2xl font-bold">{stats?.total || 0}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
+      {/* ===== STATS ===== */}
+      <StatsCards stats={stats} isArabic={isRTL} />
+
+      {/* ===== FILTERS ===== */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 group">
+          <Search className={`absolute inset-y-0 my-auto ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-focus-within:text-[#0d2e2a] transition-colors duration-300`} />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={isRTL ? '🔍 بحث في الإشعارات...' : '🔍 Search notifications...'}
+            className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300`}
+          />
+        </div>
+
+        <Select value={filterType} onValueChange={setFilterType}>
+          <SelectTrigger className="w-[180px] h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] hover:border-[#0d2e2a]/40 transition-colors">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-[#0d2e2a]" />
+              <SelectValue placeholder={isRTL ? 'النوع' : 'Type'} />
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-slate-200/60 dark:border-slate-700/60">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-500">{isRTL ? 'مرسلة' : 'Sent'}</p>
-                <p className="text-2xl font-bold text-green-600">{stats?.read || 0}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-slate-200/60 dark:border-slate-700/60">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-500">{isRTL ? 'غير مقروءة' : 'Unread'}</p>
-                <p className="text-2xl font-bold text-amber-600">{stats?.unread || 0}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-slate-200/60 dark:border-slate-700/60">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-500">{isRTL ? 'مجدولة' : 'Scheduled'}</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {notifications.filter((n: any) => n.scheduled_for && !n.is_sent).length}
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">📋 {isRTL ? 'جميع الأنواع' : 'All Types'}</SelectItem>
+            <SelectItem value={NOTIFICATION_TYPES.ANNOUNCEMENT}>📢 {isRTL ? 'إعلان' : 'Announcement'}</SelectItem>
+            <SelectItem value={NOTIFICATION_TYPES.PROMOTION}>🎯 {isRTL ? 'ترويجي' : 'Promotion'}</SelectItem>
+            <SelectItem value={NOTIFICATION_TYPES.OFFER}>🎁 {isRTL ? 'عرض خاص' : 'Special Offer'}</SelectItem>
+            <SelectItem value={NOTIFICATION_TYPES.MARKETING}>📊 {isRTL ? 'تسويقي' : 'Marketing'}</SelectItem>
+            <SelectItem value={NOTIFICATION_TYPES.SYSTEM}>⚙️ {isRTL ? 'نظام' : 'System'}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <div className="flex gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-[#0d2e2a]/20 shadow-sm">
+          {[
+            { id: 'all', label: isRTL ? 'الكل' : 'All' },
+            { id: 'sent', label: isRTL ? 'مرسلة' : 'Sent' },
+            { id: 'scheduled', label: isRTL ? 'مجدولة' : 'Scheduled' },
+            { id: 'draft', label: isRTL ? 'مسودات' : 'Drafts' },
+          ].map((tab) => (
+            <Button
+              key={tab.id}
+              variant={activeTab === tab.id ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab(tab.id as any)}
+              className={cn(
+                "rounded-lg transition-all duration-300",
+                activeTab === tab.id 
+                  ? "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white shadow-lg shadow-[#0d2e2a]/30" 
+                  : "text-[#0d2e2a] hover:bg-[#0d2e2a]/10"
+              )}
+            >
+              {tab.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
-      {/* ===== الفلتر والبحث ===== */}
-      <Card className="border-slate-200/60 dark:border-slate-700/60">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400`} />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={isRTL ? 'بحث في الإشعارات...' : 'Search notifications...'}
-                className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} rounded-xl border-slate-200 dark:border-slate-700`}
-              />
-            </div>
-            
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-[180px] rounded-xl">
-                <SelectValue placeholder={isRTL ? 'النوع' : 'Type'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{isRTL ? 'جميع الأنواع' : 'All Types'}</SelectItem>
-                <SelectItem value={NOTIFICATION_TYPES.ANNOUNCEMENT}>📢 {isRTL ? 'إعلان' : 'Announcement'}</SelectItem>
-                <SelectItem value={NOTIFICATION_TYPES.PROMOTION}>🎯 {isRTL ? 'ترويجي' : 'Promotion'}</SelectItem>
-                <SelectItem value={NOTIFICATION_TYPES.OFFER}>🎁 {isRTL ? 'عرض خاص' : 'Special Offer'}</SelectItem>
-                <SelectItem value={NOTIFICATION_TYPES.MARKETING}>📊 {isRTL ? 'تسويقي' : 'Marketing'}</SelectItem>
-                <SelectItem value={NOTIFICATION_TYPES.SYSTEM}>⚙️ {isRTL ? 'نظام' : 'System'}</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-              {[
-                { id: 'all', label: isRTL ? 'الكل' : 'All' },
-                { id: 'sent', label: isRTL ? 'مرسلة' : 'Sent' },
-                { id: 'scheduled', label: isRTL ? 'مجدولة' : 'Scheduled' },
-                { id: 'draft', label: isRTL ? 'مسودات' : 'Drafts' },
-              ].map((tab) => (
-                <Button
-                  key={tab.id}
-                  variant={activeTab === tab.id ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`rounded-lg ${activeTab === tab.id ? 'bg-[#2563eb] text-white' : ''}`}
-                >
-                  {tab.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ===== جدول الإشعارات - منظم ===== */}
-      <Card className="border-slate-200/60 dark:border-slate-700/60">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">
-              {isRTL ? 'قائمة الإشعارات' : 'Notifications List'}
-            </CardTitle>
-            <Badge variant="secondary" className="rounded-xl px-3 py-1">
-              {filteredNotifications.length}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
-                  <TableRow>
-                    <TableHead className="w-[30%] min-w-[200px] text-right">
-                      {isRTL ? 'الإشعار' : 'Notification'}
-                    </TableHead>
-                    <TableHead className="w-[12%] min-w-[100px] text-center">
-                      {isRTL ? 'النوع' : 'Type'}
-                    </TableHead>
-                    <TableHead className="w-[15%] min-w-[120px] text-center">
-                      {isRTL ? 'المستهدفين' : 'Target'}
-                    </TableHead>
-                    <TableHead className="w-[12%] min-w-[100px] text-center">
-                      {isRTL ? 'الحالة' : 'Status'}
-                    </TableHead>
-                    <TableHead className="w-[16%] min-w-[140px] text-center">
-                      {isRTL ? 'تاريخ الإرسال' : 'Sent Date'}
-                    </TableHead>
-                    <TableHead className="w-[15%] min-w-[140px] text-center">
-                      {isRTL ? 'إجراءات' : 'Actions'}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredNotifications.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12 text-slate-500">
-                        <div className="flex flex-col items-center gap-3">
-                          <Bell className="h-12 w-12 text-slate-300" />
-                          <p className="font-medium">
-                            {isRTL ? 'لا توجد إشعارات' : 'No notifications found'}
-                          </p>
-                          <p className="text-sm">
-                            {isRTL 
-                              ? 'ابدأ بإنشاء أول إشعار لك' 
-                              : 'Start by creating your first notification'}
-                          </p>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setIsCreateDialogOpen(true)}
-                            className="rounded-xl"
+      {/* ===== TABLE ===== */}
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 overflow-hidden shadow-lg shadow-[#0d2e2a]/5 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-300">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 hover:bg-transparent bg-gradient-to-r from-[#0d2e2a]/5 to-[#1a4f4a]/5">
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] min-w-[200px]">
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-3.5 w-3.5" />
+                    {isRTL ? 'الإشعار' : 'Notification'}
+                  </div>
+                </TableHead>
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Layers className="h-3.5 w-3.5" />
+                    {isRTL ? 'النوع' : 'Type'}
+                  </div>
+                </TableHead>
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Target className="h-3.5 w-3.5" />
+                    {isRTL ? 'المستهدفين' : 'Target'}
+                  </div>
+                </TableHead>
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Shield className="h-3.5 w-3.5" />
+                    {isRTL ? 'الحالة' : 'Status'}
+                  </div>
+                </TableHead>
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {isRTL ? 'التاريخ' : 'Date'}
+                  </div>
+                </TableHead>
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[140px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap className="h-3.5 w-3.5 animate-pulse" />
+                    {isRTL ? 'إجراءات' : 'Actions'}
+                  </div>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredNotifications.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-16 w-16 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center animate-bounce-slow">
+                        <Bell className="h-8 w-8 text-[#0d2e2a]/40" />
+                      </div>
+                      <p className="font-medium text-slate-900 dark:text-white">
+                        {isRTL ? 'لا توجد إشعارات' : 'No notifications'}
+                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {isRTL 
+                          ? 'ابدأ بإنشاء أول إشعار لك'
+                          : 'Start by creating your first notification'}
+                      </p>
+                      <Button
+                        onClick={() => setIsCreateDialogOpen(true)}
+                        className="mt-2 bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white rounded-xl transition-all duration-300 hover:scale-105"
+                      >
+                        <Plus className="h-4 w-4 mr-1.5" />
+                        {isRTL ? 'إنشاء إشعار' : 'Create Notification'}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredNotifications.map((notification: any) => {
+                  const config = getNotificationConfig(notification.type);
+                  const Icon = ICON_MAP[config.icon] || Bell;
+                  const isSent = notification.is_sent === true;
+                  const isScheduled = notification.scheduled_for && !isSent;
+                  const isRead = notification.is_read === true;
+                  
+                  return (
+                    <TableRow 
+                      key={notification.id} 
+                      className={cn(
+                        "border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/5 dark:hover:bg-[#0d2e2a]/10 transition-all duration-300 group",
+                        !isRead && isSent ? "bg-[#0d2e2a]/5 dark:bg-[#0d2e2a]/10" : ""
+                      )}
+                    >
+                      <TableCell className="py-3">
+                        <div className="flex items-start gap-3">
+                          <div className={cn(
+                            "p-2 rounded-lg flex-shrink-0 group-hover:scale-105 transition-transform duration-300",
+                            config.color
+                          )}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate text-[#0d2e2a] dark:text-white">
+                              {isRTL ? notification.title_ar : notification.title_en || notification.title_ar}
+                            </p>
+                            <p className="text-sm text-slate-500 truncate">
+                              {isRTL ? notification.body_ar : notification.body_en || notification.body_ar}
+                            </p>
+                            {!isRead && isSent && (
+                              <Badge className="mt-1 text-[10px] bg-[#2d6b63] text-white rounded-full px-2 py-0 animate-pulse">
+                                {isRTL ? 'جديد' : 'New'}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      
+                      <TableCell className="text-center py-3">
+                        <Badge className={cn(
+                          "border-0 px-3 py-1 whitespace-nowrap",
+                          config.color
+                        )}>
+                          {isRTL ? config.ar : config.en}
+                        </Badge>
+                      </TableCell>
+                      
+                      <TableCell className="text-center py-3">
+                        <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 rounded-xl whitespace-nowrap">
+                          {getTargetLabel(notification.metadata?.target || 'all')}
+                        </Badge>
+                      </TableCell>
+                      
+                      <TableCell className="text-center py-3">
+                        {isSent ? (
+                          <Badge className="bg-[#2d6b63]/10 text-[#2d6b63] border border-[#2d6b63]/20 rounded-xl whitespace-nowrap">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {isRTL ? 'مرسل' : 'Sent'}
+                          </Badge>
+                        ) : isScheduled ? (
+                          <Badge className="bg-[#1a4f4a]/10 text-[#1a4f4a] border border-[#1a4f4a]/20 rounded-xl whitespace-nowrap">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {isRTL ? 'مجدول' : 'Scheduled'}
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="bg-[#6bb5aa]/10 text-[#6bb5aa] border border-[#6bb5aa]/20 rounded-xl whitespace-nowrap">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {isRTL ? 'مسودة' : 'Draft'}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      
+                      <TableCell className="text-center py-3">
+                        <span className="text-sm text-slate-500 whitespace-nowrap">
+                          {notification.sent_at 
+                            ? formatDate(notification.sent_at)
+                            : notification.scheduled_for
+                              ? formatDate(notification.scheduled_for)
+                              : formatDate(notification.created_at)}
+                        </span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center py-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedNotification(notification);
+                              setIsViewDialogOpen(true);
+                            }}
+                            className="rounded-xl h-8 w-8 p-0 hover:bg-[#0d2e2a]/10 transition-all duration-300 hover:scale-105"
+                            title={isRTL ? 'عرض التفاصيل' : 'View details'}
                           >
-                            <Plus className="h-4 w-4 mr-1.5" />
-                            {isRTL ? 'إنشاء إشعار' : 'Create Notification'}
+                            <Eye className="h-4 w-4 text-[#2d6b63]" />
+                          </Button>
+                          
+                          {isSent && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMarkRead(notification.id, !isRead)}
+                              className="rounded-xl h-8 w-8 p-0 hover:bg-[#0d2e2a]/10 transition-all duration-300 hover:scale-105"
+                              title={isRTL ? (isRead ? 'تحديد كغير مقروء' : 'تحديد كمقروء') : (isRead ? 'Mark as unread' : 'Mark as read')}
+                            >
+                              {isRead ? (
+                                <EyeOff className="h-4 w-4 text-slate-400" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-[#2d6b63]" />
+                              )}
+                            </Button>
+                          )}
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-xl h-8 w-8 p-0 text-rose-500 hover:text-rose-600 hover:bg-rose-50/50 transition-all duration-300 hover:scale-105"
+                            onClick={() => handleDelete(notification.id)}
+                            title={isRTL ? 'حذف' : 'Delete'}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    filteredNotifications.map((notification: any) => {
-                      // ✅ استخدام NOTIFICATION_CONFIG بدلاً من الدوال المبعثرة
-                      const config = getNotificationConfig(notification.type);
-                      const Icon = ICON_MAP[config.icon] || Bell;
-                      const isSent = notification.is_sent === true;
-                      const isScheduled = notification.scheduled_for && !isSent;
-                      const isRead = notification.is_read === true;
-                      
-                      return (
-                        <TableRow 
-                          key={notification.id} 
-                          className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
-                            !isRead && isSent ? 'bg-blue-50/50 dark:bg-blue-950/10' : ''
-                          }`}
-                        >
-                          {/* عمود الإشعار */}
-                          <TableCell className="py-3">
-                            <div className="flex items-start gap-3">
-                              <div className={`p-2 rounded-lg flex-shrink-0 ${config.color}`}>
-                                <Icon className="h-4 w-4" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate">
-                                  {isRTL ? notification.title_ar : notification.title_en || notification.title_ar}
-                                </p>
-                                <p className="text-sm text-slate-500 truncate">
-                                  {isRTL ? notification.body_ar : notification.body_en || notification.body_ar}
-                                </p>
-                                {!isRead && isSent && (
-                                  <Badge variant="default" className="mt-1 text-[10px] bg-[#2563eb] rounded-full px-2 py-0">
-                                    {isRTL ? 'جديد' : 'New'}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          
-                          {/* عمود النوع - استخدام config */}
-                          <TableCell className="text-center py-3">
-                            <Badge className={`${config.color} whitespace-nowrap`}>
-                              {isRTL ? config.ar : config.en}
-                            </Badge>
-                          </TableCell>
-                          
-                          {/* عمود المستهدفين */}
-                          <TableCell className="text-center py-3">
-                            <Badge variant="outline" className="rounded-xl whitespace-nowrap">
-                              {getTargetLabel(notification.metadata?.target || 'all')}
-                            </Badge>
-                          </TableCell>
-                          
-                          {/* عمود الحالة */}
-                          <TableCell className="text-center py-3">
-                            {isSent ? (
-                              <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-xl whitespace-nowrap">
-                                <CheckCircle className="h-3 w-3 inline mr-1" />
-                                {isRTL ? 'مرسل' : 'Sent'}
-                              </Badge>
-                            ) : isScheduled ? (
-                              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-xl whitespace-nowrap">
-                                <Calendar className="h-3 w-3 inline mr-1" />
-                                {isRTL ? 'مجدول' : 'Scheduled'}
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="rounded-xl whitespace-nowrap">
-                                <Clock className="h-3 w-3 inline mr-1" />
-                                {isRTL ? 'مسودة' : 'Draft'}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          
-                          {/* عمود التاريخ */}
-                          <TableCell className="text-center py-3">
-                            <span className="text-sm text-slate-500 whitespace-nowrap">
-                              {notification.sent_at 
-                                ? formatDate(notification.sent_at)
-                                : notification.scheduled_for
-                                  ? formatDate(notification.scheduled_for)
-                                  : formatDate(notification.created_at)}
-                            </span>
-                          </TableCell>
-                          
-                          {/* عمود الإجراءات */}
-                          <TableCell className="text-center py-3">
-                            <div className="flex items-center justify-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedNotification(notification);
-                                  setIsViewDialogOpen(true);
-                                }}
-                                className="rounded-xl h-8 w-8 p-0"
-                                title={isRTL ? 'عرض التفاصيل' : 'View details'}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              
-                              {isSent && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleMarkRead(notification.id, !isRead)}
-                                  className="rounded-xl h-8 w-8 p-0"
-                                  title={isRTL ? (isRead ? 'تحديد كغير مقروء' : 'تحديد كمقروء') : (isRead ? 'Mark as unread' : 'Mark as read')}
-                                >
-                                  {isRead ? (
-                                    <EyeOff className="h-4 w-4 text-slate-400" />
-                                  ) : (
-                                    <Eye className="h-4 w-4 text-[#2563eb]" />
-                                  )}
-                                </Button>
-                              )}
-                              
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="rounded-xl h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                                onClick={() => handleDelete(notification.id)}
-                                title={isRTL ? 'حذف' : 'Delete'}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-      {/* ===== عرض تفاصيل الإشعار ===== */}
+        {/* ===== Footer ===== */}
+        <div className="px-4 py-2 border-t border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <span className="flex items-center gap-2">
+            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20">
+              {isRTL
+                ? `عرض ${filteredNotifications.length} من ${notifications.length}`
+                : `Showing ${filteredNotifications.length} of ${notifications.length}`}
+            </Badge>
+            <span className="text-[10px] text-[#2d6b63]">
+              {isRTL ? `إجمالي ${notifications.length}` : `Total ${notifications.length}`}
+            </span>
+          </span>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-[#0d2e2a]/5 text-[#0d2e2a] border border-[#0d2e2a]/20">
+              {activeTab === "all" && (isRTL ? "جميع" : "All")}
+              {activeTab === "sent" && (isRTL ? "مرسلة" : "Sent")}
+              {activeTab === "scheduled" && (isRTL ? "مجدولة" : "Scheduled")}
+              {activeTab === "draft" && (isRTL ? "مسودات" : "Drafts")}
+            </Badge>
+            {searchQuery && (
+              <Badge className="bg-[#1a4f4a]/10 text-[#1a4f4a] border border-[#1a4f4a]/20">
+                <Search className="h-3 w-3 mr-1" />
+                {searchQuery}
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ===== VIEW DETAILS DIALOG ===== */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] rounded-2xl border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/10">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-[#2563eb]" />
+            <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-3">
+              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center">
+                <Bell className="h-4 w-4 text-white" />
+              </div>
               {isRTL ? 'تفاصيل الإشعار' : 'Notification Details'}
             </DialogTitle>
           </DialogHeader>
@@ -1241,7 +1331,7 @@ export function AdminNotifications() {
             <div className="space-y-4 py-4">
               <div className="space-y-1">
                 <Label className="text-sm text-slate-500">{isRTL ? 'العنوان' : 'Title'}</Label>
-                <p className="font-semibold text-lg">
+                <p className="font-semibold text-lg text-[#0d2e2a] dark:text-white">
                   {isRTL ? selectedNotification.title_ar : selectedNotification.title_en || selectedNotification.title_ar}
                 </p>
               </div>
@@ -1259,7 +1349,7 @@ export function AdminNotifications() {
                   <img 
                     src={selectedNotification.image_url} 
                     alt="Notification"
-                    className="rounded-xl max-h-[200px] w-full object-cover"
+                    className="rounded-xl max-h-[200px] w-full object-cover border border-[#0d2e2a]/10"
                   />
                 </div>
               )}
@@ -1271,23 +1361,22 @@ export function AdminNotifications() {
                     href={selectedNotification.link_url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-[#2563eb] hover:underline break-all"
+                    className="text-[#2d6b63] hover:underline break-all"
                   >
                     {selectedNotification.link_url}
                   </a>
                 </div>
               )}
               
-              <Separator />
+              <Separator className="bg-[#0d2e2a]/10" />
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-sm text-slate-500">{isRTL ? 'النوع' : 'Type'}</Label>
-                  {/* ✅ استخدام config */}
                   {(() => {
                     const config = getNotificationConfig(selectedNotification.type);
                     return (
-                      <Badge className={config.color}>
+                      <Badge className={cn("border-0", config.color)}>
                         {isRTL ? config.ar : config.en}
                       </Badge>
                     );
@@ -1295,24 +1384,24 @@ export function AdminNotifications() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-sm text-slate-500">{isRTL ? 'المستهدفين' : 'Target'}</Label>
-                  <Badge variant="outline" className="rounded-xl">
+                  <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 rounded-xl">
                     {getTargetLabel(selectedNotification.metadata?.target || 'all')}
                   </Badge>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-sm text-slate-500">{isRTL ? 'الحالة' : 'Status'}</Label>
                   {selectedNotification.is_sent ? (
-                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-xl">
+                    <Badge className="bg-[#2d6b63]/10 text-[#2d6b63] border border-[#2d6b63]/20 rounded-xl">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       {isRTL ? 'مرسل' : 'Sent'}
                     </Badge>
                   ) : selectedNotification.scheduled_for ? (
-                    <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-xl">
+                    <Badge className="bg-[#1a4f4a]/10 text-[#1a4f4a] border border-[#1a4f4a]/20 rounded-xl">
                       <Calendar className="h-3 w-3 mr-1" />
                       {isRTL ? 'مجدول' : 'Scheduled'}
                     </Badge>
                   ) : (
-                    <Badge variant="secondary" className="rounded-xl">
+                    <Badge variant="secondary" className="bg-[#6bb5aa]/10 text-[#6bb5aa] border border-[#6bb5aa]/20 rounded-xl">
                       <Clock className="h-3 w-3 mr-1" />
                       {isRTL ? 'مسودة' : 'Draft'}
                     </Badge>
@@ -1320,7 +1409,7 @@ export function AdminNotifications() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-sm text-slate-500">{isRTL ? 'تاريخ الإنشاء' : 'Created'}</Label>
-                  <p className="text-sm">{formatDate(selectedNotification.created_at)}</p>
+                  <p className="text-sm text-[#0d2e2a]">{formatDate(selectedNotification.created_at)}</p>
                 </div>
               </div>
               
@@ -1331,7 +1420,7 @@ export function AdminNotifications() {
                     {selectedNotification.metadata.governorate_ids.map((id: string) => {
                       const gov = governorates.find(g => g.id === id);
                       return gov ? (
-                        <Badge key={id} variant="outline" className="rounded-xl">
+                        <Badge key={id} variant="outline" className="rounded-xl border-[#0d2e2a]/20">
                           {isRTL ? gov.name_ar : gov.name_en}
                         </Badge>
                       ) : null;
@@ -1343,7 +1432,12 @@ export function AdminNotifications() {
           )}
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)} className="rounded-xl">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsViewDialogOpen(false)}
+              className="rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300"
+            >
+              <X className="h-4 w-4 mr-1.5" />
               {isRTL ? 'إغلاق' : 'Close'}
             </Button>
           </DialogFooter>
@@ -1353,3 +1447,5 @@ export function AdminNotifications() {
     </div>
   );
 }
+
+export default AdminNotifications;

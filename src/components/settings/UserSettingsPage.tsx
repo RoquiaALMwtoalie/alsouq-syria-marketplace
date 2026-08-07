@@ -15,7 +15,9 @@ import {
   Shield, CheckCircle2, AlertCircle, Settings as SettingsIcon,
   Globe, Moon, Sun, Bell, BellOff, Volume2, VolumeX,
   Plus, Trash2, Edit, Home, Building, MapPinned, Check,
-  Loader2, Star, StarOff, Eye, EyeOff
+  Loader2, Star, StarOff, Eye, EyeOff, Sparkles, Zap,
+  Crown, Gem, ShieldCheck, Rocket, Award, Compass,
+  type LucideIcon
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,26 +45,49 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
-// ============================================================
-// 📦 أنواع البيانات
-// ============================================================
-interface UserAddress {
-  id: string;
-  user_id: string;
-  label: string;
-  address_text: string;
-  details: string;
-  lat: number | null;
-  lng: number | null;
-  is_default: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// ✅ أيقونة متحركة مع تموجات
+const AnimatedIcon = ({ 
+  Icon, 
+  className = "",
+  color = "text-[#2a655f]",
+  delay = 0,
+  size = "h-5 w-5",
+  glow = false
+}: { 
+  Icon: LucideIcon, 
+  className?: string,
+  color?: string,
+  delay?: number,
+  size?: string,
+  glow?: boolean
+}) => {
+  return (
+    <div 
+      className="relative inline-flex items-center justify-center"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="animate-float-icon group-hover:animate-pulse-slow">
+        <Icon className={cn(
+          "transition-all duration-500 group-hover:scale-110 group-hover:rotate-12",
+          color,
+          size,
+          className
+        )} />
+      </div>
+      {glow && (
+        <>
+          <span className="absolute -inset-2 rounded-full border-2 border-[#2a655f]/20 animate-ripple opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <span className="absolute -inset-4 rounded-full border-2 border-[#3a8a82]/10 animate-ripple delay-700 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+          <span className="absolute -inset-6 rounded-full border-2 border-[#4a9f95]/5 animate-ripple delay-1500 opacity-0 group-hover:opacity-100 transition-opacity duration-900" />
+        </>
+      )}
+    </div>
+  );
+};
 
-// ============================================================
 // ✅ دالة التحقق من توفر رقم الهاتف
-// ============================================================
 async function isPhoneAvailable(phone: string, userId: string): Promise<{
   available: boolean;
   message?: string;
@@ -100,7 +125,7 @@ async function isPhoneAvailable(phone: string, userId: string): Promise<{
 }
 
 // ============================================================
-// 🏠 مكون إدارة العناوين
+// 🏠 AddressManager - بألوان السستم
 // ============================================================
 function AddressManager({ userId, lang }: { userId: string; lang: string }) {
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
@@ -119,7 +144,6 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
   
   const [selectedLocation, setSelectedLocation] = useState<PickedLocation | null>(null);
 
-  // ===== تحميل العناوين =====
   useEffect(() => {
     if (userId) {
       loadAddresses();
@@ -146,7 +170,6 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
     }
   };
 
-  // ===== إضافة عنوان جديد =====
   const handleAddAddress = async () => {
     if (!selectedLocation) {
       toast.error(lang === "ar" ? "الرجاء اختيار الموقع على الخريطة" : "Please select a location on the map");
@@ -203,7 +226,6 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
     }
   };
 
-  // ===== تعديل عنوان =====
   const handleUpdateAddress = async () => {
     if (!editingAddress) return;
     if (!selectedLocation) {
@@ -258,7 +280,6 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
     }
   };
 
-  // ===== حذف عنوان =====
   const handleDeleteAddress = async (id: string) => {
     try {
       const { error } = await supabase
@@ -276,7 +297,6 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
     }
   };
 
-  // ===== تعيين عنوان كافتراضي =====
   const handleSetDefault = async (id: string) => {
     try {
       await supabase
@@ -299,7 +319,6 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
     }
   };
 
-  // ===== فتح نافذة التعديل =====
   const openEditDialog = (address: UserAddress) => {
     setEditingAddress(address);
     setSelectedLocation({
@@ -314,17 +333,16 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#2a655f]" />
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* قائمة العناوين */}
       {addresses.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
-          <MapPin className="h-12 w-12 mx-auto mb-3 opacity-30" />
+          <AnimatedIcon Icon={MapPin} className="h-12 w-12 mx-auto mb-3 opacity-30" color="text-[#2a655f]" size="h-12 w-12" delay={0} />
           <p>{lang === "ar" ? "لا توجد عناوين مسجلة" : "No addresses saved"}</p>
           <p className="text-sm">
             {lang === "ar" ? "أضف عنوانك الأول" : "Add your first address"}
@@ -337,8 +355,8 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
               key={addr.id}
               className={`p-4 rounded-xl border-2 transition-all ${
                 addr.is_default
-                  ? "border-blue-400 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-700"
-                  : "border-slate-200/50 dark:border-slate-800/50 hover:border-blue-300/50"
+                  ? "border-[#2a655f] bg-[#2a655f]/10 dark:bg-[#2a655f]/20"
+                  : "border-slate-200/50 dark:border-slate-800/50 hover:border-[#2a655f]/50"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -348,7 +366,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                       {addr.label}
                     </span>
                     {addr.is_default && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500 text-white">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2a655f] text-white">
                         {lang === "ar" ? "افتراضي" : "Default"}
                       </span>
                     )}
@@ -363,16 +381,16 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      className="h-8 w-8 rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20"
                       onClick={() => handleSetDefault(addr.id)}
                     >
-                      <Star className="h-4 w-4 text-muted-foreground hover:text-blue-600" />
+                      <Star className="h-4 w-4 text-muted-foreground hover:text-[#2a655f]" />
                     </Button>
                   )}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    className="h-8 w-8 rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20"
                     onClick={() => openEditDialog(addr)}
                   >
                     <Edit className="h-4 w-4 text-muted-foreground" />
@@ -418,10 +436,9 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
         </div>
       )}
 
-      {/* زر إضافة عنوان جديد */}
       <Button
         variant="outline"
-        className="w-full rounded-xl border-dashed border-2 hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-all h-12"
+        className="w-full rounded-xl border-dashed border-2 border-[#2a655f]/30 hover:border-[#2a655f]/60 hover:bg-[#2a655f]/5 transition-all h-12"
         onClick={() => {
           setIsAdding(true);
           setNewAddress({ 
@@ -435,7 +452,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
           setSelectedLocation(null);
         }}
       >
-        <Plus className="h-4 w-4 mr-2" />
+        <AnimatedIcon Icon={Plus} className="h-4 w-4 mr-2" color="text-[#2a655f]" size="h-4 w-4" delay={0} />
         {lang === "ar" ? "إضافة عنوان جديد" : "Add New Address"}
       </Button>
 
@@ -468,7 +485,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
 
           <div className="space-y-4 py-4">
             <div>
-              <Label className="text-sm font-medium">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 {lang === "ar" ? "تسمية العنوان *" : "Address Label *"}
               </Label>
               <Input
@@ -477,15 +494,15 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                   setNewAddress({ ...newAddress, label: e.target.value })
                 }
                 placeholder={lang === "ar" ? "مثال: المنزل، العمل" : "e.g. Home, Work"}
-                className="mt-1.5 rounded-xl"
+                className="mt-1.5 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30"
               />
             </div>
 
             <div>
-              <Label className="text-sm font-medium">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 {lang === "ar" ? "اختر الموقع على الخريطة *" : "Pick Location on Map *"}
               </Label>
-              <div className="mt-1.5 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+              <div className="mt-1.5 rounded-xl overflow-hidden border border-[#2a655f]/30">
                 <AddressPicker
                   value={selectedLocation}
                   onChange={setSelectedLocation}
@@ -497,7 +514,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
             </div>
 
             <div className="mt-2">
-              <Label className="text-sm font-medium">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 {lang === "ar" ? "الوصف التفصيلي *" : "Detailed Description *"}
               </Label>
               <textarea
@@ -512,7 +529,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                 }
                 rows={4}
                 required
-                className="mt-1.5 w-full px-4 py-3 rounded-xl border border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-blue-400/60 focus:bg-card focus:outline-none transition-all resize-none text-sm"
+                className="mt-1.5 w-full px-4 py-3 rounded-xl border border-[#2a655f]/30 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/60 focus:ring-2 focus:ring-[#2a655f]/30 focus:outline-none transition-all resize-none text-sm"
               />
               <p className="text-xs text-muted-foreground mt-1.5">
                 {lang === "ar"
@@ -521,7 +538,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
               </p>
             </div>
 
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 mt-2">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-[#2a655f]/10 dark:bg-[#2a655f]/20 mt-2">
               <input
                 type="checkbox"
                 id="isDefault"
@@ -529,9 +546,9 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                 onChange={(e) =>
                   setNewAddress({ ...newAddress, is_default: e.target.checked })
                 }
-                className="h-4 w-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-[#2a655f]/30 text-[#2a655f] focus:ring-[#2a655f]/30"
               />
-              <Label htmlFor="isDefault" className="text-sm font-medium cursor-pointer">
+              <Label htmlFor="isDefault" className="text-sm font-medium cursor-pointer text-slate-700 dark:text-slate-200">
                 {lang === "ar" ? "تعيين كعنوان افتراضي" : "Set as default address"}
               </Label>
             </div>
@@ -543,9 +560,9 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
             </Button>
             <Button
               onClick={handleAddAddress}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+              className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-lg shadow-[#0d2e2a]/30"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <AnimatedIcon Icon={Plus} className="h-4 w-4 mr-2" color="text-white" size="h-4 w-4" delay={0} />
               {lang === "ar" ? "إضافة" : "Add"}
             </Button>
           </DialogFooter>
@@ -569,7 +586,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
           {editingAddress && (
             <div className="space-y-4 py-4">
               <div>
-                <Label className="text-sm font-medium">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   {lang === "ar" ? "تسمية العنوان *" : "Address Label *"}
                 </Label>
                 <Input
@@ -578,15 +595,15 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                     setEditingAddress({ ...editingAddress, label: e.target.value })
                   }
                   placeholder={lang === "ar" ? "مثال: المنزل، العمل" : "e.g. Home, Work"}
-                  className="mt-1.5 rounded-xl"
+                  className="mt-1.5 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30"
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-medium">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   {lang === "ar" ? "اختر الموقع على الخريطة *" : "Pick Location on Map *"}
                 </Label>
-                <div className="mt-1.5 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                <div className="mt-1.5 rounded-xl overflow-hidden border border-[#2a655f]/30">
                   <AddressPicker
                     value={selectedLocation}
                     onChange={setSelectedLocation}
@@ -598,7 +615,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
               </div>
 
               <div className="mt-2">
-                <Label className="text-sm font-medium">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   {lang === "ar" ? "الوصف التفصيلي *" : "Detailed Description *"}
                 </Label>
                 <textarea
@@ -613,16 +630,11 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                   }
                   rows={4}
                   required
-                  className="mt-1.5 w-full px-4 py-3 rounded-xl border border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-blue-400/60 focus:bg-card focus:outline-none transition-all resize-none text-sm"
+                  className="mt-1.5 w-full px-4 py-3 rounded-xl border border-[#2a655f]/30 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/60 focus:ring-2 focus:ring-[#2a655f]/30 focus:outline-none transition-all resize-none text-sm"
                 />
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  {lang === "ar"
-                    ? "📍 كلما كان الوصف أدق، وصل الطلب أسرع وأسهل. اذكر أقرب علامة مميزة."
-                    : "📍 The more precise your description, the faster and easier delivery gets. Mention the nearest landmark."}
-                </p>
               </div>
 
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 mt-2">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-[#2a655f]/10 dark:bg-[#2a655f]/20 mt-2">
                 <input
                   type="checkbox"
                   id="editIsDefault"
@@ -630,9 +642,9 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                   onChange={(e) =>
                     setEditingAddress({ ...editingAddress, is_default: e.target.checked })
                   }
-                  className="h-4 w-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-[#2a655f]/30 text-[#2a655f] focus:ring-[#2a655f]/30"
                 />
-                <Label htmlFor="editIsDefault" className="text-sm font-medium cursor-pointer">
+                <Label htmlFor="editIsDefault" className="text-sm font-medium cursor-pointer text-slate-700 dark:text-slate-200">
                   {lang === "ar" ? "تعيين كعنوان افتراضي" : "Set as default address"}
                 </Label>
               </div>
@@ -645,9 +657,9 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
             </Button>
             <Button
               onClick={handleUpdateAddress}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+              className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-lg shadow-[#0d2e2a]/30"
             >
-              <Save className="h-4 w-4 mr-2" />
+              <AnimatedIcon Icon={Save} className="h-4 w-4 mr-2" color="text-white" size="h-4 w-4" delay={0} />
               {lang === "ar" ? "حفظ التغييرات" : "Save Changes"}
             </Button>
           </DialogFooter>
@@ -658,7 +670,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
 }
 
 // ============================================================
-// 🧑 مكون الملف الشخصي - مع التحقق من الرقم
+// 🧑 ProfileTab - بألوان السستم
 // ============================================================
 function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void }) {
   const app = useApp();
@@ -679,7 +691,6 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
     }
   }, [profile]);
 
-  // ===== التحقق من الرقم عند التغيير =====
   const handlePhoneChange = async (value: string) => {
     setPhone(value);
     setPhoneError(null);
@@ -695,7 +706,6 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
   async function saveProfile() {
     if (!app.user) return;
     
-    // ✅ التحقق من رقم الهاتف
     if (phone && phone.trim().length >= 5) {
       const phoneCheck = await isPhoneAvailable(phone.trim(), app.user.id);
       if (!phoneCheck.available) {
@@ -715,7 +725,6 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
         },
       });
 
-      // ✅ تحديث app.user فوراً
       if (app.user) {
         app.updateUser({
           name: fullName,
@@ -734,10 +743,10 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
   }
 
   return (
-    <Card className="border-slate-200/50 dark:border-slate-800/50 shadow-sm">
+    <Card className="border border-[#2a655f]/20 shadow-lg shadow-[#2a655f]/10">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="h-5 w-5 text-blue-600" />
+        <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-white">
+          <AnimatedIcon Icon={User} className="h-5 w-5" color="text-[#2a655f]" size="h-5 w-5" delay={0} glow={true} />
           {app.lang === "ar" ? "معلومات الملف الشخصي" : "Profile Information"}
         </CardTitle>
         <CardDescription>
@@ -747,10 +756,9 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* ✅ الصورة الشخصية - مع رفع مباشر */}
         <div className="space-y-3">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <Camera className="h-4 w-4 text-blue-600" />
+          <Label className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2">
+            <AnimatedIcon Icon={Camera} className="h-4 w-4" color="text-[#2a655f]" size="h-4 w-4" delay={100} />
             {app.lang === "ar" ? "الصورة الشخصية" : "Profile Picture"}
             <span className="text-xs text-muted-foreground font-normal">
               ({app.lang === "ar" ? "اختياري" : "Optional"})
@@ -758,11 +766,11 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
           </Label>
           
           <div className="flex items-center gap-6">
-            <Avatar className="h-20 w-20 rounded-2xl border-2 border-slate-200 dark:border-slate-700">
+            <Avatar className="h-20 w-20 rounded-2xl border-2 border-[#2a655f]/30">
               {avatarUrl ? (
                 <AvatarImage src={avatarUrl} alt={fullName} />
               ) : (
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-2xl">
+                <AvatarFallback className="bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white text-2xl">
                   {fullName?.charAt(0)?.toUpperCase() || "U"}
                 </AvatarFallback>
               )}
@@ -784,23 +792,21 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
           </div>
         </div>
 
-        {/* الاسم */}
         <div>
-          <Label className="text-sm font-medium">
+          <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             {app.lang === "ar" ? "الاسم الكامل" : "Full Name"}
           </Label>
           <Input
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder={app.lang === "ar" ? "أدخل اسمك الكامل" : "Enter your full name"}
-            className="mt-1.5 rounded-xl"
+            className="mt-1.5 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30"
           />
         </div>
 
-        {/* رقم الهاتف - مع التحقق */}
         <div>
-          <Label className="text-sm font-medium flex items-center gap-1">
-            <Phone className="h-4 w-4" />
+          <Label className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1">
+            <AnimatedIcon Icon={Phone} className="h-4 w-4" color="text-[#2a655f]" size="h-4 w-4" delay={200} />
             {app.lang === "ar" ? "رقم الهاتف" : "Phone Number"}
             <span className="text-xs text-muted-foreground font-normal">
               ({app.lang === "ar" ? "فريد" : "Unique"})
@@ -810,7 +816,7 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
             value={phone}
             onChange={(e) => handlePhoneChange(e.target.value)}
             placeholder={app.lang === "ar" ? "أدخل رقم هاتفك" : "Enter your phone number"}
-            className={`mt-1.5 rounded-xl ${phoneError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+            className={`mt-1.5 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 ${phoneError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
             dir="ltr"
           />
           {phoneError && (
@@ -830,7 +836,7 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
         <Button
           onClick={saveProfile}
           disabled={isSaving || !!phoneError}
-          className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-600/25 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-lg shadow-[#0d2e2a]/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed h-12"
         >
           {isSaving ? (
             <span className="flex items-center gap-2">
@@ -839,7 +845,7 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
             </span>
           ) : (
             <>
-              <Save className="h-4 w-4 mr-2" />
+              <AnimatedIcon Icon={Save} className="h-4 w-4 mr-2" color="text-white" size="h-4 w-4" delay={0} />
               {app.lang === "ar" ? "حفظ التغييرات" : "Save Changes"}
             </>
           )}
@@ -850,7 +856,7 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
 }
 
 // ============================================================
-// 🔒 تبويب الأمان - مع تغيير كلمة المرور بشكل احترافي
+// 🔒 SecurityTab - بألوان السستم
 // ============================================================
 function SecurityTab() {
   const app = useApp();
@@ -863,9 +869,7 @@ function SecurityTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  // ===== التحقق من صحة كلمة المرور =====
   const validatePassword = () => {
-    // ✅ التحقق من أن كلمة المرور الجديدة مختلفة عن الحالية
     if (currentPassword && newPassword === currentPassword) {
       setPasswordError(app.lang === "ar" 
         ? "⚠️ كلمة المرور الجديدة يجب أن تكون مختلفة عن القديمة" 
@@ -894,9 +898,7 @@ function SecurityTab() {
     return true;
   };
 
-  // ===== تغيير كلمة المرور =====
   const handleChangePassword = async () => {
-    // ✅ تحقق من أن كلمة المرور الجديدة مختلفة عن القديمة
     if (currentPassword === newPassword) {
       toast.error(app.lang === "ar" 
         ? "⚠️ كلمة المرور الجديدة يجب أن تكون مختلفة عن القديمة" 
@@ -907,7 +909,6 @@ function SecurityTab() {
     
     if (!validatePassword()) return;
     
-    // ✅ التحقق من وجود البريد الإلكتروني
     if (!app.user?.email) {
       toast.error(app.lang === "ar" 
         ? "❌ لا يوجد بريد إلكتروني مرتبط بالحساب" 
@@ -918,7 +919,6 @@ function SecurityTab() {
 
     setIsLoading(true);
     try {
-      // ✅ أولاً: التحقق من كلمة المرور الحالية
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: app.user.email,
         password: currentPassword,
@@ -933,13 +933,11 @@ function SecurityTab() {
         return;
       }
 
-      // ✅ ثانياً: تغيير كلمة المرور
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
       
       if (error) {
-        // ✅ معالجة أخطاء محددة من Supabase
         if (error.message?.includes("same as the old password") || 
             error.message?.includes("should be different from the old password")) {
           toast.error(app.lang === "ar" 
@@ -969,7 +967,6 @@ function SecurityTab() {
     } catch (error: any) {
       console.error("Error changing password:", error);
       
-      // ✅ معالجة الأخطاء بشكل أفضل
       if (error.message?.includes("same as the old password") || 
           error.message?.includes("should be different from the old password")) {
         toast.error(app.lang === "ar" 
@@ -988,10 +985,10 @@ function SecurityTab() {
   };
 
   return (
-    <Card className="border-slate-200/50 dark:border-slate-800/50 shadow-sm">
+    <Card className="border border-[#2a655f]/20 shadow-lg shadow-[#2a655f]/10">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-emerald-600" />
+        <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-white">
+          <AnimatedIcon Icon={Shield} className="h-5 w-5" color="text-[#2a655f]" size="h-5 w-5" delay={0} glow={true} />
           {app.lang === "ar" ? "الأمان وكلمة المرور" : "Security & Password"}
         </CardTitle>
         <CardDescription>
@@ -1001,17 +998,15 @@ function SecurityTab() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* تغيير كلمة المرور - تصميم احترافي */}
-        <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/30">
+        <div className="p-4 rounded-xl bg-[#2a655f]/10 dark:bg-[#2a655f]/20 border border-[#2a655f]/30">
           <p className="font-medium text-slate-900 dark:text-white flex items-center gap-2 mb-4">
-            <Lock className="h-4 w-4 text-blue-600" />
+            <AnimatedIcon Icon={Lock} className="h-4 w-4" color="text-[#2a655f]" size="h-4 w-4" delay={100} />
             {app.lang === "ar" ? "تغيير كلمة المرور" : "Change Password"}
           </p>
 
           <div className="space-y-3">
-            {/* كلمة المرور الحالية */}
             <div>
-              <Label className="text-sm font-medium">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 {app.lang === "ar" ? "كلمة المرور الحالية *" : "Current Password *"}
               </Label>
               <div className="relative mt-1">
@@ -1023,7 +1018,7 @@ function SecurityTab() {
                     ? "أدخل كلمة المرور الحالية" 
                     : "Enter current password"
                   }
-                  className="h-11 rounded-xl pr-10"
+                  className="h-11 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 pr-10"
                 />
                 <button
                   type="button"
@@ -1039,9 +1034,8 @@ function SecurityTab() {
               </div>
             </div>
 
-            {/* كلمة المرور الجديدة */}
             <div>
-              <Label className="text-sm font-medium">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 {app.lang === "ar" ? "كلمة المرور الجديدة *" : "New Password *"}
               </Label>
               <div className="relative mt-1">
@@ -1056,7 +1050,7 @@ function SecurityTab() {
                     ? "أدخل كلمة المرور الجديدة (8 أحرف على الأقل)" 
                     : "Enter new password (at least 8 characters)"
                   }
-                  className="h-11 rounded-xl pr-10"
+                  className="h-11 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 pr-10"
                 />
                 <button
                   type="button"
@@ -1072,9 +1066,8 @@ function SecurityTab() {
               </div>
             </div>
 
-            {/* تأكيد كلمة المرور */}
             <div>
-              <Label className="text-sm font-medium">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 {app.lang === "ar" ? "تأكيد كلمة المرور *" : "Confirm Password *"}
               </Label>
               <div className="relative mt-1">
@@ -1089,7 +1082,7 @@ function SecurityTab() {
                     ? "أعد إدخال كلمة المرور الجديدة" 
                     : "Re-enter new password"
                   }
-                  className="h-11 rounded-xl pr-10"
+                  className="h-11 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 pr-10"
                 />
                 <button
                   type="button"
@@ -1105,7 +1098,6 @@ function SecurityTab() {
               </div>
             </div>
 
-            {/* رسالة الخطأ */}
             {passwordError && (
               <div className="flex items-center gap-2 p-3 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-800/30">
                 <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
@@ -1113,7 +1105,6 @@ function SecurityTab() {
               </div>
             )}
 
-            {/* ✅ تحذير إضافي: كلمة المرور الجديدة نفس القديمة */}
             {currentPassword && newPassword && currentPassword === newPassword && (
               <div className="flex items-center gap-2 p-3 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
                 <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
@@ -1125,7 +1116,6 @@ function SecurityTab() {
               </div>
             )}
 
-            {/* مؤشر قوة كلمة المرور */}
             {newPassword.length > 0 && !passwordError && currentPassword !== newPassword && (
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -1134,7 +1124,7 @@ function SecurityTab() {
                       className={`h-full rounded-full transition-all duration-300 ${
                         newPassword.length < 8 ? 'w-1/3 bg-red-500' :
                         newPassword.length < 10 ? 'w-2/3 bg-yellow-500' :
-                        'w-full bg-green-500'
+                        'w-full bg-[#2a655f]'
                       }`}
                     />
                   </div>
@@ -1150,7 +1140,7 @@ function SecurityTab() {
             <Button
               onClick={handleChangePassword}
               disabled={isLoading || !currentPassword || !newPassword || !confirmPassword || currentPassword === newPassword}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-lg shadow-blue-500/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white font-bold shadow-lg shadow-[#0d2e2a]/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -1159,14 +1149,14 @@ function SecurityTab() {
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4" />
+                  <AnimatedIcon Icon={CheckCircle2} className="h-4 w-4" color="text-white" size="h-4 w-4" delay={0} />
                   {app.lang === "ar" ? "تغيير كلمة المرور" : "Change Password"}
                 </span>
               )}
             </Button>
 
             <p className="text-xs text-muted-foreground flex items-start gap-1">
-              <Shield className="h-3 w-3 text-blue-500 flex-shrink-0 mt-0.5" />
+              <AnimatedIcon Icon={Shield} className="h-3 w-3 text-[#2a655f] flex-shrink-0 mt-0.5" color="text-[#2a655f]" size="h-3 w-3" delay={200} />
               {app.lang === "ar" 
                 ? "💡 استخدم كلمة مرور قوية تحتوي على أحرف كبيرة وصغيرة وأرقام ورموز"
                 : "💡 Use a strong password with uppercase, lowercase, numbers, and symbols"}
@@ -1179,7 +1169,7 @@ function SecurityTab() {
 }
 
 // ============================================================
-// ⚙️ تبويب التفضيلات
+// ⚙️ PreferencesTab - بألوان السستم
 // ============================================================
 function PreferencesTab() {
   const app = useApp();
@@ -1187,10 +1177,10 @@ function PreferencesTab() {
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   return (
-    <Card className="border-slate-200/50 dark:border-slate-800/50 shadow-sm">
+    <Card className="border border-[#2a655f]/20 shadow-lg shadow-[#2a655f]/10">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Globe className="h-5 w-5 text-purple-600" />
+        <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-white">
+          <AnimatedIcon Icon={Globe} className="h-5 w-5" color="text-[#2a655f]" size="h-5 w-5" delay={0} glow={true} />
           {app.lang === "ar" ? "التفضيلات والإعدادات" : "Preferences & Settings"}
         </CardTitle>
         <CardDescription>
@@ -1200,13 +1190,12 @@ function PreferencesTab() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* الوضع الليلي */}
-        <div className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+        <div className="flex items-center justify-between p-3 rounded-xl hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10 transition border border-transparent hover:border-[#2a655f]/20">
           <div className="flex items-center gap-3">
             {app.theme === "dark" ? (
-              <Moon className="h-5 w-5 text-indigo-600" />
+              <AnimatedIcon Icon={Moon} className="h-5 w-5" color="text-[#2a655f]" size="h-5 w-5" delay={100} />
             ) : (
-              <Sun className="h-5 w-5 text-amber-600" />
+              <AnimatedIcon Icon={Sun} className="h-5 w-5" color="text-[#2a655f]" size="h-5 w-5" delay={100} />
             )}
             <div>
               <p className="font-medium text-slate-900 dark:text-white">
@@ -1222,16 +1211,16 @@ function PreferencesTab() {
           <Switch
             checked={app.theme === "dark"}
             onCheckedChange={app.toggleTheme}
+            className="data-[state=checked]:bg-[#2a655f]"
           />
         </div>
 
-        {/* الإشعارات */}
-        <div className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+        <div className="flex items-center justify-between p-3 rounded-xl hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10 transition border border-transparent hover:border-[#2a655f]/20">
           <div className="flex items-center gap-3">
             {notificationsEnabled ? (
-              <Bell className="h-5 w-5 text-blue-600" />
+              <AnimatedIcon Icon={Bell} className="h-5 w-5" color="text-[#2a655f]" size="h-5 w-5" delay={200} />
             ) : (
-              <BellOff className="h-5 w-5 text-slate-400" />
+              <AnimatedIcon Icon={BellOff} className="h-5 w-5" color="text-slate-400" size="h-5 w-5" delay={200} />
             )}
             <div>
               <p className="font-medium text-slate-900 dark:text-white">
@@ -1247,16 +1236,16 @@ function PreferencesTab() {
           <Switch
             checked={notificationsEnabled}
             onCheckedChange={setNotificationsEnabled}
+            className="data-[state=checked]:bg-[#2a655f]"
           />
         </div>
 
-        {/* الصوت */}
-        <div className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+        <div className="flex items-center justify-between p-3 rounded-xl hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10 transition border border-transparent hover:border-[#2a655f]/20">
           <div className="flex items-center gap-3">
             {soundEnabled ? (
-              <Volume2 className="h-5 w-5 text-emerald-600" />
+              <AnimatedIcon Icon={Volume2} className="h-5 w-5" color="text-[#2a655f]" size="h-5 w-5" delay={300} />
             ) : (
-              <VolumeX className="h-5 w-5 text-slate-400" />
+              <AnimatedIcon Icon={VolumeX} className="h-5 w-5" color="text-slate-400" size="h-5 w-5" delay={300} />
             )}
             <div>
               <p className="font-medium text-slate-900 dark:text-white">
@@ -1272,13 +1261,13 @@ function PreferencesTab() {
           <Switch
             checked={soundEnabled}
             onCheckedChange={setSoundEnabled}
+            className="data-[state=checked]:bg-[#2a655f]"
           />
         </div>
 
-        {/* اللغة */}
-        <div className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+        <div className="flex items-center justify-between p-3 rounded-xl hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10 transition border border-transparent hover:border-[#2a655f]/20">
           <div className="flex items-center gap-3">
-            <Globe className="h-5 w-5 text-purple-600" />
+            <AnimatedIcon Icon={Globe} className="h-5 w-5" color="text-[#2a655f]" size="h-5 w-5" delay={400} />
             <div>
               <p className="font-medium text-slate-900 dark:text-white">
                 {app.lang === "ar" ? "اللغة" : "Language"}
@@ -1292,9 +1281,9 @@ function PreferencesTab() {
             variant="outline"
             size="sm"
             onClick={() => app.setLang(app.lang === "ar" ? "en" : "ar")}
-            className="rounded-xl"
+            className="rounded-xl border-[#2a655f]/30 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/60 transition-all"
           >
-            <Globe className="h-4 w-4 mr-2" />
+            <AnimatedIcon Icon={Globe} className="h-4 w-4 mr-2" color="text-[#2a655f]" size="h-4 w-4" delay={500} />
             {app.lang === "ar" ? "English" : "العربية"}
           </Button>
         </div>
@@ -1314,8 +1303,8 @@ export function UserSettingsPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center max-w-md p-8">
-          <div className="h-20 w-20 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
-            <Lock className="h-10 w-10 text-red-500" />
+          <div className="h-20 w-20 rounded-full bg-[#2a655f]/10 dark:bg-[#2a655f]/20 flex items-center justify-center mx-auto mb-4">
+            <Lock className="h-10 w-10 text-[#2a655f]" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
             {app.lang === "ar" ? "يرجى تسجيل الدخول" : "Please Login"}
@@ -1327,7 +1316,7 @@ export function UserSettingsPage() {
           </p>
           <Button 
             onClick={() => window.location.href = "/auth/login"} 
-            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-600/25"
+            className="rounded-xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-lg shadow-[#0d2e2a]/30"
           >
             {app.lang === "ar" ? "تسجيل الدخول" : "Login"}
           </Button>
@@ -1339,14 +1328,21 @@ export function UserSettingsPage() {
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
       <div className="flex items-center gap-3">
-        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
-          <SettingsIcon className="h-6 w-6 text-white" />
+        <div className="relative">
+          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center shadow-2xl shadow-[#0d2e2a]/30">
+            <AnimatedIcon Icon={SettingsIcon} className="h-7 w-7 text-white" color="text-white" size="h-7 w-7" delay={0} />
+          </div>
+          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#2a655f]/30 to-[#3a8a82]/30 blur-xl animate-pulse" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             {app.lang === "ar" ? "الإعدادات الشخصية" : "Personal Settings"}
+            <Badge className="bg-[#2a655f] text-white text-[8px] font-bold">
+              {app.lang === "ar" ? "محدث" : "Updated"}
+            </Badge>
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground flex items-center gap-2">
+            <AnimatedIcon Icon={Sparkles} className="h-3.5 w-3.5" color="text-[#2a655f]" size="h-3.5 w-3.5" delay={100} />
             {app.lang === "ar"
               ? "إدارة ملفك الشخصي وعناوينك وإعدادات الحساب"
               : "Manage your profile, addresses, and account settings"}
@@ -1355,21 +1351,21 @@ export function UserSettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-lg rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
-          <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900">
-            <User className="h-4 w-4 mr-2" />
+        <TabsList className="grid grid-cols-4 w-full max-w-lg rounded-xl bg-[#2a655f]/10 dark:bg-[#2a655f]/20 p-1">
+          <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-lg data-[state=active]:shadow-[#2a655f]/20 transition-all">
+            <AnimatedIcon Icon={User} className="h-4 w-4 mr-2" color="text-[#2a655f]" size="h-4 w-4" delay={0} />
             {app.lang === "ar" ? "الملف" : "Profile"}
           </TabsTrigger>
-          <TabsTrigger value="addresses" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900">
-            <MapPin className="h-4 w-4 mr-2" />
+          <TabsTrigger value="addresses" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-lg data-[state=active]:shadow-[#2a655f]/20 transition-all">
+            <AnimatedIcon Icon={MapPin} className="h-4 w-4 mr-2" color="text-[#2a655f]" size="h-4 w-4" delay={100} />
             {app.lang === "ar" ? "العناوين" : "Addresses"}
           </TabsTrigger>
-          <TabsTrigger value="security" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900">
-            <Shield className="h-4 w-4 mr-2" />
+          <TabsTrigger value="security" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-lg data-[state=active]:shadow-[#2a655f]/20 transition-all">
+            <AnimatedIcon Icon={Shield} className="h-4 w-4 mr-2" color="text-[#2a655f]" size="h-4 w-4" delay={200} />
             {app.lang === "ar" ? "الأمان" : "Security"}
           </TabsTrigger>
-          <TabsTrigger value="preferences" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900">
-            <Globe className="h-4 w-4 mr-2" />
+          <TabsTrigger value="preferences" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-lg data-[state=active]:shadow-[#2a655f]/20 transition-all">
+            <AnimatedIcon Icon={Globe} className="h-4 w-4 mr-2" color="text-[#2a655f]" size="h-4 w-4" delay={300} />
             {app.lang === "ar" ? "التفضيلات" : "Preferences"}
           </TabsTrigger>
         </TabsList>
@@ -1379,10 +1375,10 @@ export function UserSettingsPage() {
         </TabsContent>
 
         <TabsContent value="addresses">
-          <Card className="border-slate-200/50 dark:border-slate-800/50 shadow-sm">
+          <Card className="border border-[#2a655f]/20 shadow-lg shadow-[#2a655f]/10">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPinned className="h-5 w-5 text-emerald-600" />
+              <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-white">
+                <AnimatedIcon Icon={MapPinned} className="h-5 w-5" color="text-[#2a655f]" size="h-5 w-5" delay={0} glow={true} />
                 {app.lang === "ar" ? "عناويني" : "My Addresses"}
               </CardTitle>
               <CardDescription>
@@ -1405,6 +1401,33 @@ export function UserSettingsPage() {
           <PreferencesTab />
         </TabsContent>
       </Tabs>
+
+      <style>{`
+        @keyframes float-icon {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          25% { transform: translateY(-6px) rotate(3deg); }
+          75% { transform: translateY(4px) rotate(-2deg); }
+        }
+        .animate-float-icon {
+          animation: float-icon 3s ease-in-out infinite;
+        }
+        
+        @keyframes ripple {
+          0% { transform: scale(0.8); opacity: 1; }
+          100% { transform: scale(2.5); opacity: 0; }
+        }
+        .animate-ripple {
+          animation: ripple 3s ease-out infinite;
+        }
+        
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }

@@ -75,7 +75,7 @@ export class ProductService {
    * ✅ حفظ الألوان
    */
   static async saveColors(listingId: string, colors: any[]) {
-    if (!colors || colors.length === 0) return { inserted: 0 };
+    if (!colors || colors.length === 0) return { inserted: 0, errors: [] };
     
     const entries: any[] = [];
     const errors: string[] = [];
@@ -173,11 +173,21 @@ export class ProductService {
       }
     }
     
+    // ✅ ✅ ✅ أيضاً احذف الصور
+    const { error: imagesError } = await supabase
+      .from("listing_images")
+      .delete()
+      .eq("listing_id", listingId);
+    
+    if (imagesError) {
+      errors.push(`❌ فشل حذف الصور: ${imagesError.message}`);
+    }
+    
     return errors;
   }
   
   /**
-   * ✅ حفظ كل بيانات المنتج دفعة واحدة
+   * ✅ حفظ كل بيانات المنتج دفعة واحدة (بدون تكرار)
    */
   static async saveAllProductData(
     listingId: string,
@@ -193,30 +203,44 @@ export class ProductService {
       variations: { inserted: 0 },
     };
     
+    // ✅ 1. حفظ الخيارات في product_options
     if (data.options) {
       results.options = await ProductService.saveOptions(listingId, data.options);
     }
     
+    // ✅ 2. حفظ الألوان في product_colors
     if (data.colors) {
       results.colors = await ProductService.saveColors(listingId, data.colors);
     }
     
+    // ✅ 3. حفظ التركيبات في product_variations
     if (data.variations) {
       results.variations = await ProductService.saveVariations(listingId, data.variations);
     }
     
-    // ✅ تحديث metadata
-    await supabase
-      .from("listings")
-      .update({
-        metadata: {
-          options: data.options || {},
-          variations: data.variations || [],
-          colors: data.colors || [],
-        }
-      })
-      .eq("id", listingId);
+    // ❌ ❌ ❌ تم إزالة تحديث metadata نهائياً
+    // لا تحفظ أي بيانات في metadata لتجنب التكرار
+    
+    console.log('✅ Product data saved successfully (without metadata duplication)');
     
     return results;
+  }
+  
+  /**
+   * ✅ ✅ ✅ دالة جديدة: تحديث metadata فقط للبيانات الإضافية (مشاهدات، SEO، إلخ)
+   * هذه الدالة لا تُستخدم للفيرنتات، فقط للبيانات الإضافية
+   */
+  static async updateMetadata(listingId: string, metadata: Record<string, any>) {
+    const { error } = await supabase
+      .from("listings")
+      .update({ metadata })
+      .eq("id", listingId);
+    
+    if (error) {
+      console.error('❌ Error updating metadata:', error);
+      throw new Error(`فشل تحديث metadata: ${error.message}`);
+    }
+    
+    return true;
   }
 }

@@ -431,19 +431,32 @@ class ConversationService {
   }
 
   // ====== 6️⃣ ✅ تعيين الرسائل كمقروءة (محسّن) ======
-  async markAsRead(conversationId: string, userId: string): Promise<void> {
-    // ✅ تصفير عدد غير المقروء لكلا الطرفين
-    const { error: convError } = await supabase
+// ✅ في conversationService.ts
+async markAsRead(conversationId: string, userId: string): Promise<void> {
+  try {
+    // ✅ 1. التحقق من الجلسة
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      throw new Error("You must be logged in to mark messages as read");
+    }
+
+    // ✅ 2. جلب بيانات المحادثة
+    const { data: conv, error: fetchError } = await supabase
       .from("conversations")
-      .update({
-        unread_count_participant1: 0,
-        unread_count_participant2: 0,
-      })
-      .eq("id", conversationId);
+      .select("participant1_id, participant2_id")
+      .eq("id", conversationId)
+      .single();
 
-    if (convError) throw new Error(convError.message);
+    if (fetchError) throw new Error("Conversation not found");
+    if (!conv) throw new Error("Conversation not found");
 
-    // ✅ تحديث read_at لجميع رسائل المستخدم في هذه المحادثة
+    // ✅ 3. التحقق من أن المستخدم مشارك في المحادثة
+    if (conv.participant1_id !== userId && conv.participant2_id !== userId) {
+      throw new Error("You are not a participant in this conversation");
+    }
+
+    // ✅ 4. تحديث read_at (RLS سيمنع أي شخص آخر)
     const { error: msgError } = await supabase
       .from("messages")
       .update({ read_at: new Date().toISOString() })
@@ -451,8 +464,33 @@ class ConversationService {
       .eq("receiver_id", userId)
       .is("read_at", null);
 
-    if (msgError) throw new Error(msgError.message);
+    if (msgError) {
+      console.error("❌ Error updating messages read_at:", msgError);
+      throw new Error("Failed to mark messages as read");
+    }
+
+    // ✅ 5. تحديث عداد المحادثة
+    const updateField = conv.participant1_id === userId 
+      ? "unread_count_participant1" 
+      : "unread_count_participant2";
+
+    const { error: convError } = await supabase
+      .from("conversations")
+      .update({ [updateField]: 0 })
+      .eq("id", conversationId);
+
+    if (convError) {
+      console.error("❌ Error updating conversation count:", convError);
+      // لا نرمي خطأ هنا لأن الرسائل قد تم تحديثها
+    }
+
+    console.log(`✅ Messages marked as read for user ${userId}`);
+    
+  } catch (error) {
+    console.error("❌ markAsRead error:", error);
+    throw error;
   }
+}
 
   // ====== 7️⃣ حذف محادثة ======
   async deleteConversation(conversationId: string, userId: string): Promise<void> {

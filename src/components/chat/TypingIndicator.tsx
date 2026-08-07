@@ -21,7 +21,7 @@ const TypingDots = () => {
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
-          className="h-2 w-2 rounded-full bg-blue-500 dark:bg-blue-400"
+          className="h-2 w-2 rounded-full bg-[#2a655f] dark:bg-[#3a8a82]"
           initial={{ scale: 0.8, opacity: 0.3 }}
           animate={{
             scale: [0.8, 1.2, 0.8],
@@ -49,7 +49,7 @@ export function TypingIndicator({
 }: TypingIndicatorProps) {
   const app = useApp();
   
-  // ✅ استخدام selector مباشر بدلاً من useTypingUsers
+  // ✅ استخدام selector مباشر
   const typingUsers = useConversationStore(
     (state) => state.typingUsers
   );
@@ -98,15 +98,15 @@ export function TypingIndicator({
         transition={{ duration: 0.3 }}
         className={cn(
           "flex items-center gap-3 px-4 py-2",
-          "bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30",
-          "border border-blue-200/30 dark:border-blue-800/30",
+          "bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/20 dark:to-[#3a8a82]/20",
+          "border border-[#2a655f]/20 dark:border-[#2a655f]/30",
           "rounded-2xl shadow-sm",
           className
         )}
       >
         {/* النص والنقاط المتحركة */}
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+          <span className="text-sm font-medium text-[#2a655f] dark:text-[#3a8a82]">
             {typingText}
           </span>
           <TypingDots />
@@ -145,7 +145,7 @@ export function SimpleTypingIndicator({
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400",
+          "flex items-center gap-2 text-sm text-[#2a655f] dark:text-[#3a8a82]",
           className
         )}
       >

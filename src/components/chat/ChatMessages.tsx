@@ -145,43 +145,31 @@ export function ChatMessages({
     }
   }, [conversations, conversationId, userId]);
 
-  // ====== ✅ تحديد الرسائل كمقروءة (محسّن مع onSuccess) ======
+  // ====== ✅ تحديد الرسائل كمقروءة ======
   useEffect(() => {
     if (conversationId && userId) {
-      console.log("📖 Calling markAsRead for:", userId, "in:", conversationId);
-      
-      // ✅ تنفيذ markAsRead مع onSuccess
       markAsRead.mutate(
         { conversationId, userId },
         {
           onSuccess: () => {
-            console.log("✅ markAsRead completed successfully");
-            // ✅ تحديث الـ Store
             markAsReadInStore(conversationId);
-            // ✅ ✅ إجبار تحديث الكاش للعداد
             queryClient.invalidateQueries({ queryKey: ["unread-count", userId] });
             queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
-          },
-          onError: (error) => {
-            console.error("❌ markAsRead failed:", error);
           },
         }
       );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, userId]);
 
-  // ====== الحصول على قائمة الرسائل المسطحة ======
   const messages = messagesData?.pages.flat() || [];
 
-  // ====== دالة التمرير للرسالة (للبحث) ======
   const scrollToMessage = (messageId: string) => {
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
       element.style.transition = "background-color 0.5s, box-shadow 0.5s";
-      element.style.backgroundColor = "rgba(59, 130, 246, 0.15)";
-      element.style.boxShadow = "0 0 20px rgba(59, 130, 246, 0.2)";
+      element.style.backgroundColor = "rgba(42, 101, 95, 0.15)";
+      element.style.boxShadow = "0 0 20px rgba(42, 101, 95, 0.2)";
       element.style.borderRadius = "8px";
       setTimeout(() => {
         element.style.backgroundColor = "transparent";
@@ -190,7 +178,6 @@ export function ChatMessages({
     }
   };
 
-  // ====== دوال المكالمة الصوتية ======
   const handleVoiceCall = () => {
     const roomName = `voice-${conversationId}-${Date.now()}`;
     setCallRoomName(roomName);
@@ -202,7 +189,6 @@ export function ChatMessages({
     setCallRoomName('');
   };
 
-  // ====== دوال مكالمة الفيديو ======
   const handleVideoCall = () => {
     const roomName = `video-${conversationId}-${Date.now()}`;
     setCallRoomName(roomName);
@@ -214,19 +200,11 @@ export function ChatMessages({
     setCallRoomName('');
   };
 
-  // ====== إرسال رسالة ======
   const handleSendMessage = async (content: string, file?: File, location?: { latitude: number; longitude: number }) => {
-    console.log("📤📤📤 CHATMESSAGES - handleSendMessage:", {
-      content,
-      file: file?.name,
-      hasFile: !!file,
-      hasLocation: !!location,
-    });
-
     if (!content && !file && !location) return;
 
     try {
-      const result = await sendMessage.mutateAsync({
+      await sendMessage.mutateAsync({
         receiverId: otherUserId,
         content: location ? `📍 ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}` : content,
         file,
@@ -235,11 +213,8 @@ export function ChatMessages({
         location: location || undefined,
       });
 
-      console.log("✅ Message sent result:", result);
-
       setReplyTo(null);
       setReplyToMessage(null);
-
     } catch (error) {
       console.error("❌ Error sending message:", error);
       toast.error(
@@ -250,19 +225,16 @@ export function ChatMessages({
     }
   };
 
-  // ====== الرد على رسالة ======
   const handleReply = (message: IMessageItem) => {
     setReplyTo(message);
     setReplyToMessage(message);
   };
 
-  // ====== إلغاء الرد ======
   const handleCancelReply = () => {
     setReplyTo(null);
     setReplyToMessage(null);
   };
 
-  // ====== إعادة توجيه رسالة ======
   const handleForward = (message: IMessageItem) => {
     setForwardedMessage(message);
     toast.info(
@@ -272,12 +244,10 @@ export function ChatMessages({
     );
   };
 
-  // ====== حذف رسالة ======
   const handleDeleteMessage = (messageId: string) => {
     deleteMessageForEveryone.mutate({ messageId });
   };
 
-  // ====== حذف المحادثة ======
   const handleDeleteConversation = () => {
     if (userId) {
       deleteConversation.mutate(
@@ -292,10 +262,8 @@ export function ChatMessages({
     }
   };
 
-  // ====== ✅ كتم المحادثة - النسخة الفعلية ======
   const handleMute = async () => {
     if (!userId || !conversationId) return;
-
     try {
       const { data: conv, error: fetchError } = await supabase
         .from("conversations")
@@ -306,46 +274,22 @@ export function ChatMessages({
       if (fetchError) throw fetchError;
 
       const isParticipant1 = conv.participant1_id === userId;
-      const updateField = isParticipant1 
-        ? "is_muted_participant1" 
-        : "is_muted_participant2";
-      const currentValue = isParticipant1 
-        ? conv.is_muted_participant1 
-        : conv.is_muted_participant2;
+      const updateField = isParticipant1 ? "is_muted_participant1" : "is_muted_participant2";
+      const currentValue = isParticipant1 ? conv.is_muted_participant1 : conv.is_muted_participant2;
       const newValue = !currentValue;
 
-      const { error } = await supabase
-        .from("conversations")
-        .update({ [updateField]: newValue })
-        .eq("id", conversationId);
-
-      if (error) throw error;
-
+      await supabase.from("conversations").update({ [updateField]: newValue }).eq("id", conversationId);
       toggleMuteConversation(conversationId);
-
-      toast.success(
-        newValue
-          ? (app.lang === "ar" ? "🔇 تم كتم الإشعارات" : "🔇 Notifications muted")
-          : (app.lang === "ar" ? "🔔 تم إلغاء كتم الإشعارات" : "🔔 Notifications unmuted")
-      );
-
+      toast.success(newValue ? (app.lang === "ar" ? "🔇 تم كتم الإشعارات" : "🔇 Muted") : (app.lang === "ar" ? "🔔 تم إلغاء الكتم" : "🔔 Unmuted"));
       setIsMuted(newValue);
       refetch();
-
     } catch (error) {
-      console.error("Error muting conversation:", error);
-      toast.error(
-        app.lang === "ar"
-          ? "❌ فشل تحديث إعدادات الإشعارات"
-          : "❌ Failed to update notification settings"
-      );
+      toast.error(app.lang === "ar" ? "❌ فشل تحديث الإشعارات" : "❌ Failed");
     }
   };
 
-  // ====== ✅ تثبيت المحادثة - النسخة الفعلية ======
   const handlePin = async () => {
     if (!userId || !conversationId) return;
-
     try {
       const { data: conv, error: fetchError } = await supabase
         .from("conversations")
@@ -356,153 +300,83 @@ export function ChatMessages({
       if (fetchError) throw fetchError;
 
       const isParticipant1 = conv.participant1_id === userId;
-      const updateField = isParticipant1 
-        ? "pinned_at_participant1" 
-        : "pinned_at_participant2";
-      const currentValue = isParticipant1 
-        ? conv.pinned_at_participant1 
-        : conv.pinned_at_participant2;
+      const updateField = isParticipant1 ? "pinned_at_participant1" : "pinned_at_participant2";
+      const currentValue = isParticipant1 ? conv.pinned_at_participant1 : conv.pinned_at_participant2;
       const newValue = currentValue ? null : new Date().toISOString();
 
-      const { error } = await supabase
-        .from("conversations")
-        .update({ [updateField]: newValue })
-        .eq("id", conversationId);
-
-      if (error) throw error;
-
+      await supabase.from("conversations").update({ [updateField]: newValue }).eq("id", conversationId);
       togglePinConversation(conversationId);
-
-      toast.success(
-        newValue
-          ? (app.lang === "ar" ? "📌 تم تثبيت المحادثة" : "📌 Conversation pinned")
-          : (app.lang === "ar" ? "📌 تم إلغاء تثبيت المحادثة" : "📌 Conversation unpinned")
-      );
-
+      toast.success(newValue ? (app.lang === "ar" ? "📌 تم التثبيت" : "📌 Pinned") : (app.lang === "ar" ? "📌 تم إلغاء التثبيت" : "📌 Unpinned"));
       setIsPinned(!!newValue);
       refetch();
-
     } catch (error) {
-      console.error("Error pinning conversation:", error);
-      toast.error(
-        app.lang === "ar"
-          ? "❌ فشل تثبيت المحادثة"
-          : "❌ Failed to pin conversation"
-      );
+      toast.error(app.lang === "ar" ? "❌ فشل التثبيت" : "❌ Failed");
     }
   };
 
-  // ====== ✅ أرشفة المحادثة - النسخة الفعلية ======
   const handleArchive = async () => {
     if (!userId || !conversationId) return;
-
     try {
-      const { data: conv, error: fetchError } = await supabase
-        .from("conversations")
-        .select("participant1_id, participant2_id")
-        .eq("id", conversationId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const isParticipant1 = conv.participant1_id === userId;
-      const updateField = isParticipant1 
-        ? "is_archived_participant1" 
-        : "is_archived_participant2";
-
-      const { error } = await supabase
-        .from("conversations")
-        .update({ [updateField]: true })
-        .eq("id", conversationId);
-
-      if (error) throw error;
-
+      const { data: conv } = await supabase.from("conversations").select("participant1_id").eq("id", conversationId).single();
+      const updateField = conv?.participant1_id === userId ? "is_archived_participant1" : "is_archived_participant2";
+      await supabase.from("conversations").update({ [updateField]: true }).eq("id", conversationId);
       deleteFromStore(conversationId);
-
-      toast.success(
-        app.lang === "ar"
-          ? "📦 تم أرشفة المحادثة"
-          : "📦 Conversation archived"
-      );
-
+      toast.success(app.lang === "ar" ? "📦 تمت الأرشفة" : "📦 Archived");
       navigate({ to: "/messages" });
-
     } catch (error) {
-      console.error("Error archiving conversation:", error);
-      toast.error(
-        app.lang === "ar"
-          ? "❌ فشل أرشفة المحادثة"
-          : "❌ Failed to archive conversation"
-      );
+      toast.error(app.lang === "ar" ? "❌ فشل الأرشفة" : "❌ Failed");
     }
   };
 
-  // ====== اختيار الرسائل ======
   const handleSelect = (messageId: string) => {
-    setSelectedMessages(prev =>
-      prev.includes(messageId)
-        ? prev.filter(id => id !== messageId)
-        : [...prev, messageId]
-    );
+    setSelectedMessages(prev => prev.includes(messageId) ? prev.filter(id => id !== messageId) : [...prev, messageId]);
   };
 
-  // ====== إلغاء اختيار الكل ======
   const handleClearSelection = () => {
     setSelectedMessages([]);
     setIsSelecting(false);
   };
 
-  // ====== معالج الكتابة ======
   const handleTyping = (isTyping: boolean) => {
     sendTyping(isTyping);
   };
 
-  // ====== عرض التحميل ======
   if (isLoading) {
     return (
-      <div
-        className={cn(
-          "flex flex-col items-center justify-center h-full",
-          className
-        )}
-      >
-        <Loader2 className="h-8 w-8 animate-spin text-[#0084ff]" />
-        <p className="text-sm text-muted-foreground mt-2">
-          {app.lang === "ar" ? "جاري تحميل المحادثة..." : "Loading conversation..."}
+      <div className={cn("flex flex-col items-center justify-center h-full bg-slate-50 dark:bg-slate-950", className)}>
+        <Loader2 className="h-10 w-10 animate-spin text-[#2a655f]" />
+        <p className="text-sm font-bold text-muted-foreground mt-3">
+          {app.lang === "ar" ? "جاري تحميل محادثتك الآمنة..." : "Loading secure chat..."}
         </p>
       </div>
     );
   }
 
-  // ====== إذا لم توجد محادثة ======
   if (!conversationId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-        <div className="h-20 w-20 rounded-full bg-[#e4e6eb] dark:bg-[#3a3b4a] flex items-center justify-center mb-4">
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-slate-50 dark:bg-slate-950">
+        <div className="h-20 w-20 rounded-3xl bg-[#2a655f]/10 border border-[#2a655f]/20 flex items-center justify-center mb-4 shadow-inner">
           <span className="text-4xl">💬</span>
         </div>
-        <h3 className="text-xl font-semibold">
-          {app.lang === "ar" ? "اختر محادثة" : "Select a conversation"}
+        <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+          {app.lang === "ar" ? "اختر محادثة لبدء الدردشة" : "Select a conversation"}
         </h3>
         <p className="text-sm text-muted-foreground mt-2">
-          {app.lang === "ar"
-            ? "اختر محادثة من القائمة لبدء المراسلة"
-            : "Select a conversation from the list to start messaging"}
+          {app.lang === "ar" ? "تواصل بسلاسة وأمان مع المتاجر والبائعين" : "Connect smoothly and securely"}
         </p>
       </div>
     );
   }
 
-  // ====== ✅ التصميم الرئيسي - مثل الماسنجر ======
   return (
     <div
       ref={containerRef}
       className={cn(
-        "flex flex-col h-full bg-[#f0f2f5] dark:bg-[#1a1a2e]",
+        "flex flex-col h-full bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 dark:from-slate-950 dark:via-[#112926]/30 dark:to-slate-950 relative overflow-hidden",
         className
       )}
     >
-      {/* ✅ مكون البحث */}
+      {/* مكون البحث داخل المحادثة */}
       {isSearchOpen && (
         <MessageSearch
           messages={messages}
@@ -511,7 +385,7 @@ export function ChatMessages({
         />
       )}
 
-      {/* ✅ الرأس */}
+      {/* الهيدر الاحترافي المتناسق مع السستم */}
       <ChatHeader
         user={{
           id: otherUserId,
@@ -535,9 +409,7 @@ export function ChatMessages({
         onSearch={() => setIsSearchOpen(true)}
         onCall={handleVoiceCall}
         onVideoCall={handleVideoCall}
-        onViewProfile={() => {
-          navigate({ to: "/profile" });
-        }}
+        onViewProfile={() => navigate({ to: "/profile" })}
         onViewStore={() => {
           if (isStore) {
             navigate({ to: "/store/$id", params: { id: otherUserId } });
@@ -545,84 +417,83 @@ export function ChatMessages({
         }}
       />
 
-      {/* ✅ قائمة الرسائل */}
-      <div className="flex-1 overflow-hidden">
-        <MessageList
-          messages={messages}
-          userId={userId}
-          conversationId={conversationId}
-          isLoading={isLoading}
-          isFetchingNextPage={isFetchingNextPage}
-          hasNextPage={hasNextPage}
-          onLoadMore={() => fetchNextPage()}
-          onReply={handleReply}
-          onForward={handleForward}
-          onDelete={handleDeleteMessage}
-          onPin={() => {}}
-          onSelect={handleSelect}
-          selectedMessages={selectedMessages}
-          isSelecting={isSelecting}
-          maxHeight="100%"
-          showDateSeparators={true}
-          showAvatar={true}
-          className="h-full"
-        />
+      {/* قائمة الرسائل مع تصميم عصري وبدون هوية الماسنجر الزرقاء القديمة */}
+      <div className="flex-1 overflow-hidden p-2 sm:p-4">
+        <div className="h-full w-full rounded-3xl overflow-hidden shadow-2xl border border-[#2a655f]/20 bg-white/95 dark:bg-[#1a2b28]/95 backdrop-blur-xl">
+          <MessageList
+            messages={messages}
+            userId={userId}
+            conversationId={conversationId}
+            isLoading={isLoading}
+            isFetchingNextPage={isFetchingNextPage}
+            hasNextPage={hasNextPage}
+            onLoadMore={() => fetchNextPage()}
+            onReply={handleReply}
+            onForward={handleForward}
+            onDelete={handleDeleteMessage}
+            onPin={() => {}}
+            onSelect={handleSelect}
+            selectedMessages={selectedMessages}
+            isSelecting={isSelecting}
+            maxHeight="100%"
+            showDateSeparators={true}
+            showAvatar={true}
+            className="h-full"
+          />
+        </div>
       </div>
 
-      {/* ✅ حقل الإدخال - خلفية بيضاء */}
-      <div className="p-3 bg-white dark:bg-[#242538] border-t border-[#e4e6eb] dark:border-[#3a3b4a]">
-        <ChatInput
-          onSendMessage={handleSendMessage}
-          onTyping={handleTyping}
-          onRecordVoice={(audioBlob) => {
-            console.log("🎤 Audio recorded:", audioBlob);
-            toast.success(
-              app.lang === "ar"
-                ? "✅ تم تسجيل الصوت"
-                : "✅ Voice recorded"
-            );
-          }}
-          onSendLocation={() => {
-            console.log("📍 Location shared");
-          }}
-          isLoading={sendMessage.isPending}
-          replyTo={replyTo ? {
-            id: replyTo.id,
-            content: replyTo.content,
-            senderName: replyTo.sender_id === userId
-              ? (app.lang === "ar" ? "أنت" : "You")
-              : otherUser?.store_name || otherUser?.full_name || (app.lang === "ar" ? "مستخدم" : "User"),
-          } : null}
-          onCancelReply={handleCancelReply}
-          maxLength={2000}
-        />
+      {/* حقل الإدخال الاحترافي والآمن */}
+      <div className="p-3 bg-white/90 dark:bg-[#173d38]/90 backdrop-blur-md border-t border-[#2a655f]/20 shadow-lg">
+        <div className="max-w-4xl mx-auto">
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            onTyping={handleTyping}
+            onRecordVoice={(audioBlob) => {
+              toast.success(app.lang === "ar" ? "✅ تم تسجيل الصوت بنجاح" : "✅ Voice recorded");
+            }}
+            onSendLocation={() => {
+              toast.info(app.lang === "ar" ? "📍 تم إرسال الموقع" : "📍 Location shared");
+            }}
+            isLoading={sendMessage.isPending}
+            replyTo={replyTo ? {
+              id: replyTo.id,
+              content: replyTo.content,
+              senderName: replyTo.sender_id === userId
+                ? (app.lang === "ar" ? "أنت" : "You")
+                : otherUser?.store_name || otherUser?.full_name || (app.lang === "ar" ? "مستخدم" : "User"),
+            } : null}
+            onCancelReply={handleCancelReply}
+            maxLength={2000}
+          />
+        </div>
       </div>
 
-      {/* ✅ شريط اختيار الرسائل */}
+      {/* شريط تحديد الرسائل العائم المتناسق */}
       <AnimatePresence>
         {selectedMessages.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="flex items-center justify-between px-4 py-2 bg-[#0084ff]/10 dark:bg-[#0084ff]/20 border-t border-[#0084ff]/20"
+            className="flex items-center justify-between px-6 py-3 bg-[#2a655f]/90 text-white backdrop-blur-md border-t border-emerald-400/30 shadow-2xl"
           >
-            <span className="text-sm font-medium text-[#0084ff]">
-              {selectedMessages.length} {app.lang === "ar" ? "محددة" : "selected"}
+            <span className="text-sm font-bold">
+              {selectedMessages.length} {app.lang === "ar" ? "عناصر محددة" : "selected"}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleClearSelection}
-                className="rounded-lg text-[#0084ff] hover:bg-[#0084ff]/10"
+                className="rounded-xl text-white hover:bg-white/10 font-semibold"
               >
                 {app.lang === "ar" ? "إلغاء" : "Cancel"}
               </Button>
               <Button
                 variant="destructive"
                 size="sm"
-                className="rounded-lg"
+                className="rounded-xl font-bold shadow-md"
                 onClick={() => {
                   selectedMessages.forEach(id => {
                     deleteMessageForEveryone.mutate({ messageId: id });
@@ -630,28 +501,14 @@ export function ChatMessages({
                   handleClearSelection();
                 }}
               >
-                {app.lang === "ar" ? "حذف" : "Delete"}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-lg"
-                onClick={() => {
-                  toast.info(
-                    app.lang === "ar"
-                      ? "📤 ميزة إعادة التوجيه الجماعي قيد التطوير"
-                      : "📤 Bulk forward feature in development"
-                  );
-                }}
-              >
-                {app.lang === "ar" ? "توجيه" : "Forward"}
+                {app.lang === "ar" ? "حذف للجميع" : "Delete"}
               </Button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ✅ مكون المكالمة الصوتية */}
+      {/* مكونات مكالمات الصوت والفيديو */}
       {isVoiceCall && (
         <VoiceCall
           roomName={callRoomName}
@@ -660,7 +517,6 @@ export function ChatMessages({
         />
       )}
 
-      {/* ✅ مكون مكالمة الفيديو */}
       {isVideoCall && (
         <VideoCall
           roomName={callRoomName}
@@ -668,161 +524,6 @@ export function ChatMessages({
           onEnd={handleEndVideoCall}
         />
       )}
-    </div>
-  );
-}
-
-// ====== نسخة مبسطة ======
-interface SimpleChatMessagesProps {
-  userId: string;
-  conversationId: string;
-  otherUserId: string;
-  className?: string;
-}
-
-export function SimpleChatMessages({
-  userId,
-  conversationId,
-  otherUserId,
-  className,
-}: SimpleChatMessagesProps) {
-  const app = useApp();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-
-  const { data: messagesData, isLoading } = useMessages(conversationId);
-  const sendMessage = useSendMessage();
-  const markAsRead = useMarkAsRead();
-  const { data: userStatus } = useUserStatus(otherUserId);
-
-  const [otherUser, setOtherUser] = useState<any>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", otherUserId)
-        .single();
-      if (data) setOtherUser(data);
-    };
-    fetchUser();
-  }, [otherUserId]);
-
-  // ✅ تحديد الرسائل كمقروءة (محسّن مع onSuccess)
-  useEffect(() => {
-    if (conversationId && userId) {
-      console.log("📖 [Simple] Calling markAsRead for:", userId, "in:", conversationId);
-      
-      markAsRead.mutate(
-        { conversationId, userId },
-        {
-          onSuccess: () => {
-            console.log("✅ [Simple] markAsRead completed successfully");
-            // ✅ ✅ إجبار تحديث الكاش للعداد
-            queryClient.invalidateQueries({ queryKey: ["unread-count", userId] });
-            queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
-          },
-          onError: (error) => {
-            console.error("❌ [Simple] markAsRead failed:", error);
-          },
-        }
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId, userId]);
-
-  const messages = messagesData?.pages.flat() || [];
-
-  const handleSend = (content: string) => {
-    sendMessage.mutate({
-      receiverId: otherUserId,
-      content,
-      type: 'text',
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-[#0084ff]" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full bg-[#f0f2f5] dark:bg-[#1a1a2e]">
-      <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-[#242538] border-b border-[#e4e6eb] dark:border-[#3a3b4a]">
-        <button
-          onClick={() => navigate({ to: "/messages" })}
-          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition"
-        >
-          ←
-        </button>
-        <div className="flex-1">
-          <p className="font-semibold">
-            {otherUser?.store_name || otherUser?.full_name || "User"}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {userStatus?.is_online
-              ? (app.lang === "ar" ? "🟢 متصل" : "🟢 Online")
-              : (app.lang === "ar" ? "غير متصل" : "Offline")}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#f0f2f5] dark:bg-[#1a1a2e]">
-        {messages.map((msg: any) => {
-          const isMine = msg.sender_id === userId;
-          return (
-            <div
-              key={msg.id}
-              className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                  isMine
-                    ? "bg-[#0084ff] text-white rounded-br-sm shadow-sm"
-                    : "bg-white dark:bg-[#3a3b4a] text-slate-900 dark:text-white rounded-bl-sm shadow-sm"
-                }`}
-              >
-                <p className="text-sm">{msg.content}</p>
-                <p className="text-[10px] opacity-70 mt-1">
-                  {new Date(msg.created_at).toLocaleTimeString()}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="p-3 bg-white dark:bg-[#242538] border-t border-[#e4e6eb] dark:border-[#3a3b4a]">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder={app.lang === "ar" ? "اكتب رسالتك..." : "Type a message..."}
-            className="flex-1 px-4 py-2 rounded-full border border-[#e4e6eb] dark:border-[#3a3b4a] focus:outline-none focus:ring-2 focus:ring-[#0084ff] bg-white dark:bg-[#242538]"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                handleSend(e.currentTarget.value.trim());
-                e.currentTarget.value = "";
-              }
-            }}
-          />
-          <button
-            className="px-4 py-2 bg-[#0084ff] text-white rounded-full hover:bg-[#0073e6] transition"
-            onClick={() => {
-              const input = document.querySelector("input");
-              if (input?.value.trim()) {
-                handleSend(input.value.trim());
-                input.value = "";
-              }
-            }}
-          >
-            {app.lang === "ar" ? "إرسال" : "Send"}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

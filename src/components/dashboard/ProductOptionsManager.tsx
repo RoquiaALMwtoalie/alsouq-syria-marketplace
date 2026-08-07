@@ -1,3 +1,5 @@
+// src/components/dashboard/ProductOptionsManager.tsx
+
 import { useState, useEffect, useMemo } from "react";
 import { 
   Plus, X, Layers, Palette, Ruler, Box, Droplet, 
@@ -9,7 +11,8 @@ import {
   Globe, MapPin, Calendar, User, Hash, 
   Ruler as RulerIcon, Scale, Battery, Camera,
   HardDrive, Cpu, Wifi, Bluetooth,
-  Monitor, type LucideIcon, AlertCircle, Edit2, Save
+  Monitor, type LucideIcon, AlertCircle, Edit2, Save,
+  Info, HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,31 +26,22 @@ import { ImageInput } from "@/components/ImageInput";
 // 📦 جميع أنواع الخيارات المتاحة
 // ============================================================
 const OPTION_TYPES = [
-  { id: 'colors', label: 'الألوان', icon: Palette, color: 'blue', emoji: '🎨' },
-  { id: 'sizes', label: 'المقاسات', icon: Ruler, color: 'emerald', emoji: '📏' },
-  { id: 'models', label: 'النماذج', icon: Box, color: 'purple', emoji: '📐' },
-  { id: 'materials', label: 'المواد', icon: Droplet, color: 'amber', emoji: '🧵' },
-  { id: 'fabric', label: 'نوع القماش', icon: Shirt, color: 'pink', emoji: '👕' },
-  { id: 'style', label: 'النمط', icon: Sparkles, color: 'pink', emoji: '✨' },
-  { id: 'season', label: 'الموسم', icon: Calendar, color: 'orange', emoji: '🌤️' },
-  { id: 'gender', label: 'الجنس', icon: User, color: 'purple', emoji: '👫' },
-  { id: 'brand', label: 'الماركة', icon: Tag, color: 'indigo', emoji: '🏷️' },
-  { id: 'storage', label: 'سعة التخزين', icon: HardDrive, color: 'blue', emoji: '💾' },
-  { id: 'ram', label: 'الذاكرة (RAM)', icon: Cpu, color: 'purple', emoji: '🧠' },
-  { id: 'processor', label: 'المعالج', icon: Cpu, color: 'cyan', emoji: '⚡' },
-  { id: 'battery', label: 'سعة البطارية', icon: Battery, color: 'emerald', emoji: '🔋' },
-  { id: 'screen_size', label: 'حجم الشاشة', icon: Smartphone, color: 'blue', emoji: '📱' },
-  { id: 'camera', label: 'دقة الكاميرا', icon: Camera, color: 'purple', emoji: '📷' },
-  { id: 'connectivity', label: 'الاتصال', icon: Wifi, color: 'cyan', emoji: '📶' },
-  { id: 'bluetooth', label: 'البلوتوث', icon: Bluetooth, color: 'blue', emoji: '🔵' },
-  { id: 'dimensions', label: 'الأبعاد', icon: RulerIcon, color: 'amber', emoji: '📐' },
-  { id: 'weight_kg', label: 'الوزن (كغم)', icon: Scale, color: 'orange', emoji: '⚖️' },
-  { id: 'material_type', label: 'نوع المادة', icon: Home, color: 'amber', emoji: '🏠' },
-  { id: 'shoe_size', label: 'مقاس الحذاء', icon: Footprints, color: 'blue', emoji: '👟' },
-  { id: 'shoe_type', label: 'نوع الحذاء', icon: Footprints, color: 'purple', emoji: '👞' },
-  { id: 'watch_band', label: 'نوع السوار', icon: Watch, color: 'amber', emoji: '⌚' },
-  { id: 'occasion', label: 'المناسبة', icon: Gift, color: 'red', emoji: '🎁' },
-  { id: 'age_group', label: 'الفئة العمرية', icon: User, color: 'purple', emoji: '👶' },
+  { id: 'colors', label: 'الألوان', icon: Palette, color: '#2a655f', emoji: '🎨', description: 'أضف ألوان المنتج مع صور' },
+  { id: 'sizes', label: 'المقاسات', icon: Ruler, color: '#2a655f', emoji: '📏', description: 'أضف المقاسات المتوفرة' },
+  { id: 'models', label: 'النماذج', icon: Box, color: '#2a655f', emoji: '📐', description: 'أضف النماذج المختلفة' },
+  { id: 'materials', label: 'المواد', icon: Droplet, color: '#2a655f', emoji: '🧵', description: 'أضف أنواع المواد' },
+  { id: 'fabric', label: 'نوع القماش', icon: Shirt, color: '#2a655f', emoji: '👕', description: 'أضف أنواع الأقمشة' },
+  { id: 'style', label: 'النمط', icon: Sparkles, color: '#2a655f', emoji: '✨', description: 'أضف أنماط التصميم' },
+  { id: 'season', label: 'الموسم', icon: Calendar, color: '#2a655f', emoji: '🌤️', description: 'أضف المواسم' },
+  { id: 'gender', label: 'الجنس', icon: User, color: '#2a655f', emoji: '👫', description: 'أضف الفئات الجنسية' },
+  { id: 'brand', label: 'الماركة', icon: Tag, color: '#2a655f', emoji: '🏷️', description: 'أضف الماركات' },
+  { id: 'storage', label: 'سعة التخزين', icon: HardDrive, color: '#2a655f', emoji: '💾', description: 'أضف سعات التخزين' },
+  { id: 'ram', label: 'الذاكرة (RAM)', icon: Cpu, color: '#2a655f', emoji: '🧠', description: 'أضف سعات الذاكرة' },
+  { id: 'processor', label: 'المعالج', icon: Cpu, color: '#2a655f', emoji: '⚡', description: 'أضف أنواع المعالجات' },
+  { id: 'battery', label: 'سعة البطارية', icon: Battery, color: '#2a655f', emoji: '🔋', description: 'أضف سعات البطارية' },
+  { id: 'screen_size', label: 'حجم الشاشة', icon: Smartphone, color: '#2a655f', emoji: '📱', description: 'أضف أحجام الشاشات' },
+  { id: 'camera', label: 'دقة الكاميرا', icon: Camera, color: '#2a655f', emoji: '📷', description: 'أضف دقات الكاميرا' },
+  { id: 'connectivity', label: 'الاتصال', icon: Wifi, color: '#2a655f', emoji: '📶', description: 'أضف أنواع الاتصال' },
 ];
 
 // ============================================================
@@ -100,6 +94,7 @@ export function ProductOptionsManager({
   const [colorImages, setColorImages] = useState<Record<string, string>>(externalColorImages);
   const [tempColorImage, setTempColorImage] = useState("");
   const [editingVariation, setEditingVariation] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(true);
 
   // ✅ مزامنة الـ variations مع الـ props
   useEffect(() => {
@@ -122,95 +117,204 @@ export function ProductOptionsManager({
     }
   };
 
-  // ✅ توليد التركيبات
- // ✅ توليد التركيبات من جميع الخيارات (وليس نوعين فقط)
-const generateVariations = () => {
-  const activeTypes: Record<string, string[]> = {};
-  Object.keys(value).forEach(key => {
-    if (value[key] && value[key].length > 0) {
-      activeTypes[key] = value[key];
+  // ✅ ✅ ✅ توليد التركيبات التلقائي (جديد) ✅ ✅ ✅
+  useEffect(() => {
+    // ✅ التحقق من وجود خيارين على الأقل
+    const activeTypes = Object.keys(value).filter(key => value[key] && value[key].length > 0);
+    
+    if (activeTypes.length < 2) {
+      return;
     }
-  });
-  
-  const typeKeys = Object.keys(activeTypes);
-  
-  if (typeKeys.length < 2) {
-    toast.error(lang === "ar" 
-      ? "يجب اختيار نوعين من الخيارات على الأقل (مثل: ألوان + مقاسات)" 
-      : "Select at least two option types (e.g., Colors + Sizes)"
-    );
-    return;
-  }
 
-  // ✅ التحقق من أن كل لون له صورة
-  if (activeTypes.colors) {
-    const colorsWithoutImage = activeTypes.colors.filter(c => !colorImages[c]);
-    if (colorsWithoutImage.length > 0) {
-      toast.error(
-        lang === "ar" 
-          ? `⚠️ الألوان التالية بدون صورة: ${colorsWithoutImage.join(', ')}` 
-          : `⚠️ The following colors have no image: ${colorsWithoutImage.join(', ')}`
+    // ✅ التحقق من أن الألوان لها صور (إذا كانت موجودة)
+    if (value.colors) {
+      const colorsWithoutImage = value.colors.filter(c => !colorImages[c]);
+      if (colorsWithoutImage.length > 0) {
+        return;
+      }
+    }
+
+    // ✅ توليد التركيبات تلقائياً
+    const generatedVariations = generateVariationsAuto(value, colorImages);
+    
+    if (generatedVariations.length > 0) {
+      // ✅ تجنب التكرار
+      const existingKeys = new Set(
+        localVariations.map(v => JSON.stringify(v.combination))
+      );
+      
+      const newVariations = generatedVariations.filter(v => 
+        !existingKeys.has(JSON.stringify(v.combination))
+      );
+      
+      if (newVariations.length > 0) {
+        const updated = [...localVariations, ...newVariations];
+        setLocalVariations(updated);
+        if (onVariationsChange) {
+          onVariationsChange(updated);
+        }
+        
+        // ✅ إشعار للمستخدم
+        toast.success(
+          lang === "ar" 
+            ? `✅ تم توليد ${newVariations.length} تركيبة تلقائياً` 
+            : `✅ ${newVariations.length} variations generated automatically`
+        );
+      }
+    }
+  }, [value, colorImages]); // ✅ يتغير عند تغيير الخيارات أو الصور
+
+  // ✅ ✅ ✅ دالة توليد التركيبات التلقائية ✅ ✅ ✅
+  const generateVariationsAuto = (
+    currentValue: Record<string, string[]>, 
+    currentColorImages: Record<string, string>
+  ): Variation[] => {
+    const activeTypes: Record<string, string[]> = {};
+    Object.keys(currentValue).forEach(key => {
+      if (currentValue[key] && currentValue[key].length > 0) {
+        activeTypes[key] = currentValue[key];
+      }
+    });
+    
+    const typeKeys = Object.keys(activeTypes);
+    if (typeKeys.length < 2) return [];
+
+    if (activeTypes.colors) {
+      const colorsWithoutImage = activeTypes.colors.filter(c => !currentColorImages[c]);
+      if (colorsWithoutImage.length > 0) return [];
+    }
+
+    const allVariations: Variation[] = [];
+
+    const generateAllCombinations = (types: string[], index: number, current: Record<string, string>) => {
+      if (index === types.length) {
+        const exists = allVariations.some(v => {
+          return Object.keys(current).every(key => v.combination[key] === current[key]);
+        });
+        
+        if (!exists) {
+          allVariations.push({
+            id: `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            combination: { ...current },
+            is_available: true,
+          });
+        }
+        return;
+      }
+
+      const type = types[index];
+      const values = activeTypes[type];
+      
+      values.forEach(val => {
+        current[type] = val;
+        generateAllCombinations(types, index + 1, current);
+      });
+    };
+
+    generateAllCombinations(typeKeys, 0, {});
+    return allVariations;
+  };
+
+  // ✅ توليد التركيبات يدوياً (يستخدم للزر)
+  const generateVariations = () => {
+    const activeTypes: Record<string, string[]> = {};
+    Object.keys(value).forEach(key => {
+      if (value[key] && value[key].length > 0) {
+        activeTypes[key] = value[key];
+      }
+    });
+    
+    const typeKeys = Object.keys(activeTypes);
+    
+    if (typeKeys.length < 2) {
+      toast.error(lang === "ar" 
+        ? "⚠️ يجب اختيار نوعين من الخيارات على الأقل (مثل: ألوان + مقاسات)" 
+        : "⚠️ Select at least two option types (e.g., Colors + Sizes)"
       );
       return;
     }
-  }
 
-  // ✅ توليد التركيبات من جميع الأنواع (Cartesian Product)
-  const generateAllCombinations = (types: string[], index: number, current: Record<string, string>) => {
-    if (index === types.length) {
-      // ✅ التحقق من عدم وجود تكرار
-      const exists = localVariations.some(v => {
-        return Object.keys(current).every(key => v.combination[key] === current[key]);
-      });
-      
-      if (!exists) {
-        allVariations.push({
-          id: `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          combination: { ...current },
-          is_available: true,
-        });
+    // ✅ التحقق من أن كل لون له صورة
+    if (activeTypes.colors) {
+      const colorsWithoutImage = activeTypes.colors.filter(c => !colorImages[c]);
+      if (colorsWithoutImage.length > 0) {
+        toast.error(
+          lang === "ar" 
+            ? `⚠️ الألوان التالية بدون صورة: ${colorsWithoutImage.join(', ')}` 
+            : `⚠️ The following colors have no image: ${colorsWithoutImage.join(', ')}`
+        );
+        return;
       }
-      return;
     }
 
-    const type = types[index];
-    const values = activeTypes[type];
-    
-    values.forEach(val => {
-      current[type] = val;
-      generateAllCombinations(types, index + 1, current);
-    });
+    // ✅ توليد التركيبات
+    const generateAllCombinations = (types: string[], index: number, current: Record<string, string>) => {
+      if (index === types.length) {
+        const exists = localVariations.some(v => {
+          return Object.keys(current).every(key => v.combination[key] === current[key]);
+        });
+        
+        if (!exists) {
+          allVariations.push({
+            id: `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            combination: { ...current },
+            is_available: true,
+          });
+        }
+        return;
+      }
+
+      const type = types[index];
+      const values = activeTypes[type];
+      
+      values.forEach(val => {
+        current[type] = val;
+        generateAllCombinations(types, index + 1, current);
+      });
+    };
+
+    const allVariations: Variation[] = [];
+    generateAllCombinations(typeKeys, 0, {});
+
+    if (allVariations.length > 0) {
+      // ✅ تجنب التكرار مع الموجود
+      const existingKeys = new Set(
+        localVariations.map(v => JSON.stringify(v.combination))
+      );
+      
+      const newVariations = allVariations.filter(v => 
+        !existingKeys.has(JSON.stringify(v.combination))
+      );
+      
+      if (newVariations.length > 0) {
+        const updatedVariations = [...localVariations, ...newVariations];
+        setLocalVariations(updatedVariations);
+        if (onVariationsChange) {
+          onVariationsChange(updatedVariations);
+        }
+        
+        toast.success(
+          lang === "ar" 
+            ? `✅ تم إضافة ${newVariations.length} تركيبة جديدة (من ${typeKeys.length} أنواع)` 
+            : `✅ Added ${newVariations.length} new variations (from ${typeKeys.length} types)`
+        );
+      } else {
+        toast.info(lang === "ar" ? "💡 جميع التركيبات موجودة بالفعل" : "💡 All variations already exist");
+      }
+    } else {
+      toast.info(lang === "ar" ? "💡 جميع التركيبات موجودة بالفعل" : "💡 All variations already exist");
+    }
   };
-
-  const allVariations: Variation[] = [];
-  generateAllCombinations(typeKeys, 0, {});
-
-  if (allVariations.length > 0) {
-    const updatedVariations = [...localVariations, ...allVariations];
-    setLocalVariations(updatedVariations);
-    if (onVariationsChange) {
-      onVariationsChange(updatedVariations);
-    }
-    
-    toast.success(
-      lang === "ar" 
-        ? `✅ تم إضافة ${allVariations.length} تركيبة جديدة (من ${typeKeys.length} أنواع)` 
-        : `✅ Added ${allVariations.length} new variations (from ${typeKeys.length} types)`
-    );
-  } else {
-    toast.info(lang === "ar" ? "💡 جميع التركيبات موجودة بالفعل" : "💡 All variations already exist");
-  }
-};
 
   // ✅ إضافة خيار
   const addOption = (type: string, imageUrl?: string) => {
     const val = newValue.trim();
     if (!val) {
-      toast.error(lang === "ar" ? "الرجاء إدخال قيمة" : "Please enter a value");
+      toast.error(lang === "ar" ? "⚠️ الرجاء إدخال قيمة" : "⚠️ Please enter a value");
       return false;
     }
     if (value[type]?.includes(val)) {
-      toast.error(lang === "ar" ? "هذه القيمة موجودة بالفعل" : "This value already exists");
+      toast.error(lang === "ar" ? "⚠️ هذه القيمة موجودة بالفعل" : "⚠️ This value already exists");
       return false;
     }
     
@@ -241,6 +345,7 @@ const generateVariations = () => {
     
     setNewValue("");
     setTempColorImage("");
+    toast.success(lang === "ar" ? `✅ تم إضافة "${val}"` : `✅ Added "${val}"`);
     return true;
   };
 
@@ -258,6 +363,7 @@ const generateVariations = () => {
       setColorImages(newImages);
       notifyColorsChange(newValues, newImages);
     }
+    toast.info(lang === "ar" ? `🗑️ تم حذف "${option}"` : `🗑️ Deleted "${option}"`);
   };
 
   // ✅ حذف جميع الخيارات من نوع معين
@@ -270,6 +376,7 @@ const generateVariations = () => {
       setColorImages({});
       notifyColorsChange([], {});
     }
+    toast.info(lang === "ar" ? "🗑️ تم حذف الكل" : "🗑️ Deleted all");
   };
 
   // ✅ تبديل حالة التركيبة
@@ -302,28 +409,7 @@ const generateVariations = () => {
     toast.success(lang === "ar" ? "✅ تم حذف جميع التركيبات" : "✅ All variations deleted");
   };
 
-  const getColorClass = (color: string) => {
-    const map: Record<string, string> = {
-      blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/40',
-      emerald: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800/40',
-      purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800/40',
-      amber: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/40',
-      orange: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-800/40',
-      pink: 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 hover:bg-pink-200 dark:hover:bg-pink-800/40',
-      indigo: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40',
-      red: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800/40',
-      cyan: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-200 dark:hover:bg-cyan-800/40',
-      gold: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/40',
-    };
-    return map[color] || map.blue;
-  };
-
-  const filteredTypes = OPTION_TYPES.filter(type => 
-    type.label.includes(searchTerm) || 
-    type.id.includes(searchTerm) ||
-    type.emoji.includes(searchTerm)
-  );
-
+  // ✅ حساب الإحصائيات
   const totalOptions = Object.values(value).reduce((acc, arr) => acc + arr.length, 0);
   const availableVariations = localVariations.filter(v => v.is_available).length;
   const unavailableVariations = localVariations.filter(v => !v.is_available).length;
@@ -333,16 +419,80 @@ const generateVariations = () => {
     image: colorImages[name] || '',
   }));
 
+  // ✅ تحديد اللون النشط
+  const getActiveColor = (color: string) => {
+    return color === '#2a655f' ? 'border-[#2a655f] bg-[#2a655f]/10 shadow-[#2a655f]/20' : 'border-slate-200/50 hover:border-[#2a655f]/30';
+  };
+
+  const filteredTypes = OPTION_TYPES.filter(type => 
+    type.label.includes(searchTerm) || 
+    type.id.includes(searchTerm) ||
+    type.emoji.includes(searchTerm)
+  );
+
   return (
     <div className="space-y-6">
+      {/* ===== كارد المساعدة ===== */}
+      {showHelp && (
+        <div className="relative overflow-hidden rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 p-5 animate-in fade-in slide-in-from-top-5 duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#2a655f]/5 blur-3xl" />
+          <div className="flex items-start justify-between relative">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-[#2a655f]/10 animate-pulse">
+                <HelpCircle className="h-5 w-5 text-[#2a655f]" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                  {lang === "ar" ? "💡 كيف تعمل خيارات المنتج؟" : "💡 How do product options work?"}
+                </p>
+                <div className="text-xs text-muted-foreground space-y-1 mt-1">
+                  <p className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
+                    {lang === "ar" 
+                      ? "1️⃣ اختر نوع الخيار (ألوان، مقاسات، إلخ)" 
+                      : "1️⃣ Select option type (Colors, Sizes, etc.)"}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
+                    {lang === "ar" 
+                      ? "2️⃣ اكتب القيمة وارفع صورة (للألوان فقط)" 
+                      : "2️⃣ Enter value and upload image (for colors only)"}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
+                    {lang === "ar" 
+                      ? "3️⃣ اضغط 'إضافة' لإضافة الخيار" 
+                      : "3️⃣ Click 'Add' to add the option"}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
+                    {lang === "ar" 
+                      ? "4️⃣ بعد إضافة خيارين على الأقل، تتولد التركيبات تلقائياً" 
+                      : "4️⃣ After adding at least 2 options, variations generate automatically"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 hover:rotate-90"
+              onClick={() => setShowHelp(false)}
+            >
+              <X className="h-4 w-4 text-[#2a655f]" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* ===== Header ===== */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white shadow-lg shadow-[#2a655f]/20 animate-pulse">
             <Layers className="h-5 w-5" />
           </div>
           <div>
-            <h4 className="text-lg font-semibold">
+            <h4 className="text-lg font-semibold text-slate-900 dark:text-white">
               {lang === "ar" ? "خيارات المنتج" : "Product Options"}
             </h4>
             <p className="text-xs text-muted-foreground flex items-center gap-2">
@@ -362,7 +512,7 @@ const generateVariations = () => {
           <Button
             variant="outline"
             size="sm"
-            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200/50 dark:border-red-800/30 transition-all duration-300 hover:scale-105"
             onClick={removeAllVariations}
           >
             <Trash2 className="h-4 w-4 mr-1.5" />
@@ -372,18 +522,18 @@ const generateVariations = () => {
       </div>
 
       {/* ===== Search ===== */}
-      <div className="relative">
+      <div className="relative group">
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder={lang === "ar" ? "🔍 ابحث عن خيار..." : "🔍 Search for an option..."}
-          className="w-full h-10 px-4 rounded-xl border border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+          className="w-full h-10 px-4 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 text-sm hover:border-[#2a655f]/30"
         />
         {searchTerm && (
           <button
             onClick={() => setSearchTerm("")}
-            className="absolute inset-y-0 end-3 flex items-center text-muted-foreground hover:text-foreground"
+            className="absolute inset-y-0 end-3 flex items-center text-muted-foreground hover:text-[#2a655f] transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -402,19 +552,22 @@ const generateVariations = () => {
               key={type.id}
               onClick={() => !readOnly && setActiveType(type.id)}
               className={cn(
-                "flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all duration-300",
+                "flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all duration-300 group",
                 isActive && !readOnly
-                  ? `border-${type.color}-500 bg-${type.color}-50/50 dark:bg-${type.color}-950/20 shadow-md shadow-${type.color}-500/10 scale-105`
-                  : "border-slate-200/50 dark:border-slate-800/50 hover:border-blue-300/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/30",
+                  ? "border-[#2a655f] bg-[#2a655f]/10 dark:bg-[#2a655f]/20 shadow-lg shadow-[#2a655f]/20 scale-105"
+                  : "border-slate-200/50 dark:border-slate-800/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10",
                 readOnly && "cursor-default opacity-75"
               )}
             >
-              <span className="text-lg">{type.emoji}</span>
-              <span className="text-[11px] font-medium text-center leading-tight">{type.label}</span>
+              <span className="text-lg group-hover:scale-110 transition-transform duration-300">{type.emoji}</span>
+              <span className="text-[11px] font-medium text-center leading-tight group-hover:text-[#2a655f] transition-colors">{type.label}</span>
               {count > 0 && (
-                <Badge className={`text-[10px] px-1.5 py-0 bg-${type.color}-500 text-white border-0`}>
+                <Badge className="bg-[#2a655f] text-white border-0 text-[10px] px-1.5 py-0 animate-pulse">
                   {count}
                 </Badge>
+              )}
+              {isActive && (
+                <span className="h-1 w-4 rounded-full bg-[#2a655f] animate-pulse" />
               )}
             </button>
           );
@@ -423,20 +576,20 @@ const generateVariations = () => {
 
       {/* ===== Active Option Type ===== */}
       {activeType && !readOnly && (
-        <div className="rounded-xl border border-slate-200/50 dark:border-slate-800/50 p-4 bg-slate-50/30 dark:bg-slate-800/20">
+        <div className="rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4 bg-gradient-to-r from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-lg">
                 {OPTION_TYPES.find(t => t.id === activeType)?.emoji}
               </span>
-              <Label className="text-sm font-medium">
+              <Label className="text-sm font-semibold text-[#2a655f] dark:text-[#3a8a82]">
                 {OPTION_TYPES.find(t => t.id === activeType)?.label}
               </Label>
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="outline" className="text-[10px] border-[#2a655f]/30 text-[#2a655f]">
                 {value[activeType]?.length || 0}
               </Badge>
               {activeType === 'colors' && (
-                <Badge className="text-[10px] bg-red-100 text-red-700 border-red-200">
+                <Badge className="text-[10px] bg-red-100 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/30 animate-pulse">
                   📸 صورة مطلوبة
                 </Badge>
               )}
@@ -445,7 +598,7 @@ const generateVariations = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50 h-7 px-2 rounded-lg"
+                className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50/50 dark:hover:bg-red-950/20 h-7 px-2 rounded-lg transition-all duration-300 hover:scale-105"
                 onClick={() => removeAll(activeType)}
               >
                 <Trash2 className="h-3 w-3 mr-1" />
@@ -458,7 +611,7 @@ const generateVariations = () => {
           {activeType === 'colors' && colorList.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {colorList.map(({ name, image }) => (
-                <div key={name} className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-lg px-2 py-1 border border-slate-200/50 group">
+                <div key={name} className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-lg px-2 py-1 border border-slate-200/50 group hover:border-[#2a655f]/30 transition-all duration-300">
                   {image ? (
                     <img src={image} alt={name} className="w-6 h-6 rounded object-cover" />
                   ) : (
@@ -467,7 +620,7 @@ const generateVariations = () => {
                   <span className="text-xs font-medium">{name}</span>
                   <button
                     onClick={() => removeOption(activeType, name)}
-                    className="text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                    className="text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 hover:scale-110"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -479,11 +632,11 @@ const generateVariations = () => {
           {activeType !== 'colors' && value[activeType]?.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {value[activeType].map((val: string) => (
-                <Badge key={val} className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1.5 text-sm group">
+                <Badge key={val} className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1.5 text-sm group hover:border-[#2a655f]/30 transition-all duration-300">
                   {val}
                   <button
                     onClick={() => removeOption(activeType, val)}
-                    className="ml-2 text-muted-foreground hover:text-red-500 transition-colors"
+                    className="ml-2 text-muted-foreground hover:text-red-500 transition-colors hover:scale-110"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -517,7 +670,7 @@ const generateVariations = () => {
                     ? `أضف ${OPTION_TYPES.find(t => t.id === activeType)?.label || ''}...` 
                     : `Add ${OPTION_TYPES.find(t => t.id === activeType)?.id || ''}...`
                 }
-                className="h-9 text-sm rounded-lg flex-1"
+                className="h-9 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
               />
             </div>
             
@@ -533,7 +686,7 @@ const generateVariations = () => {
                     folder="product-colors"
                     lang={lang}
                     label=""
-                    previewClassName="h-9 w-12 rounded-lg object-cover"
+                    previewClassName="h-9 w-12 rounded-lg object-cover border-2 border-[#2a655f]/20 hover:border-[#2a655f]/40 transition-all"
                     showLabel={false}
                   />
                   {!tempColorImage && (
@@ -560,34 +713,71 @@ const generateVariations = () => {
                   addOption(activeType);
                 }
               }}
-              className="h-9 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 transition-all"
+              className="h-9 px-4 rounded-lg bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-md shadow-[#2a655f]/20 hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105"
             >
               <Plus className="h-4 w-4 mr-1.5" />
               {lang === "ar" ? "إضافة" : "Add"}
             </Button>
           </div>
+
+          {/* ===== رسالة توجيهية ===== */}
+          {value[activeType]?.length === 0 && (
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1 animate-pulse">
+              <Info className="h-3 w-3 text-[#2a655f]" />
+              {lang === "ar" 
+                ? `💡 اكتب قيمة ثم اضغط "إضافة" لإضافة ${OPTION_TYPES.find(t => t.id === activeType)?.label}` 
+                : `💡 Enter a value then click "Add" to add ${OPTION_TYPES.find(t => t.id === activeType)?.id}`}
+            </p>
+          )}
         </div>
       )}
 
       {/* ===== Variations Section ===== */}
       {!readOnly && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              onClick={generateVariations}
-              className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              {lang === "ar" ? "🔄 توليد التركيبات" : "🔄 Generate Variations"}
-            </Button>
-          </div>
+          {/* ✅ مؤشر التوليد التلقائي */}
+          {Object.keys(value).filter(key => value[key] && value[key].length > 0).length >= 2 && (
+            <div className="rounded-xl border-2 border-emerald-200/50 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-3">
+              <p className="text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-emerald-500 animate-pulse" />
+                {lang === "ar" 
+                  ? `✅ يتم توليد التركيبات تلقائياً عند إضافة أو حذف الخيارات` 
+                  : `✅ Variations are generated automatically when adding or removing options`}
+              </p>
+            </div>
+          )}
+
+          {/* ✅ زر توليد يدوي (اختياري) */}
+          {Object.keys(value).filter(key => value[key] && value[key].length > 0).length >= 2 && (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                onClick={generateVariations}
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-[1.02] group"
+              >
+                <RefreshCw className="h-4 w-4 mr-2 group-hover:rotate-180 transition-transform duration-700" />
+                {lang === "ar" ? "🔄 توليد التركيبات يدوياً" : "🔄 Generate Variations Manually"}
+              </Button>
+            </div>
+          )}
+
+          {/* ===== رسالة توجيهية للتوليد ===== */}
+          {Object.keys(value).filter(key => value[key] && value[key].length > 0).length < 2 && (
+            <div className="rounded-xl border-2 border-yellow-200/50 dark:border-yellow-800/30 bg-yellow-50/50 dark:bg-yellow-950/20 p-3 animate-pulse">
+              <p className="text-xs text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {lang === "ar" 
+                  ? "💡 أضف خيارين على الأقل (مثل: ألوان + مقاسات) لتوليد التركيبات تلقائياً" 
+                  : "💡 Add at least 2 options (e.g., Colors + Sizes) to generate variations automatically"}
+              </p>
+            </div>
+          )}
 
           {localVariations.length > 0 && (
-            <div className="rounded-xl border border-slate-200/50 dark:border-slate-800/50 p-4 bg-slate-50/30 dark:bg-slate-800/20">
+            <div className="rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4 bg-gradient-to-r from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">
+                  <span className="text-sm font-semibold text-[#2a655f] dark:text-[#3a8a82]">
                     {lang === "ar" ? "📊 التركيبات" : "📊 Variations"}
                   </span>
                   <Badge variant="outline" className="text-[10px] bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/30">
@@ -602,7 +792,7 @@ const generateVariations = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50 h-7 px-2 rounded-lg"
+                  className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50/50 dark:hover:bg-red-950/20 h-7 px-2 rounded-lg transition-all duration-300 hover:scale-105"
                   onClick={removeAllVariations}
                 >
                   <Trash2 className="h-3 w-3 mr-1" />
@@ -613,14 +803,13 @@ const generateVariations = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
                 {localVariations.map((variation) => {
                   const isAvailable = variation.is_available;
-                  const comboStr = Object.values(variation.combination).join(' • ');
                   const comboKeys = Object.keys(variation.combination);
                   
                   return (
                     <div
                       key={variation.id}
                       className={cn(
-                        "flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer group",
+                        "flex items-center justify-between p-2.5 rounded-xl border-2 transition-all duration-300 cursor-pointer group",
                         isAvailable 
                           ? 'border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:border-emerald-500' 
                           : 'border-red-500/30 bg-red-50/30 dark:bg-red-950/10 opacity-60 hover:border-red-500'
@@ -651,7 +840,7 @@ const generateVariations = () => {
                             e.stopPropagation();
                             removeVariation(variation.id);
                           }}
-                          className="text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                          className="text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 hover:scale-110"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
@@ -681,9 +870,9 @@ const generateVariations = () => {
       )}
 
       {totalOptions > 0 && (
-        <div className="rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/30 p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
-            <CheckCircle2 className="h-4 w-4" />
+        <div className="rounded-xl bg-gradient-to-r from-[#2a655f]/10 to-[#2a655f]/5 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-[#2a655f] dark:text-[#3a8a82]">
+            <CheckCircle2 className="h-4 w-4 animate-pulse" />
             <span>
               {lang === "ar" ? "✅ تم إضافة " : "✅ Added "}
               {Object.entries(value)
@@ -695,6 +884,11 @@ const generateVariations = () => {
                 .join(", ")}
             </span>
           </div>
+          {localVariations.length > 0 && (
+            <Badge className="bg-[#2a655f] text-white border-0">
+              {localVariations.length} {lang === "ar" ? "تركيبة" : "variations"}
+            </Badge>
+          )}
         </div>
       )}
     </div>
