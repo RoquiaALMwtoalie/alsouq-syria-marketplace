@@ -38,7 +38,7 @@ const { saveAs } = pkg;
 
 // ===== استيراد مكونات الصفحات =====
 import { ProductsPage } from "./ProductsPage";
-import { RecentOrders } from "./RecentOrders";
+import { OrdersPage } from "./OrdersPage";
 import { BookingsPage } from "./BookingsPage";
 import { CustomersPage } from "./CustomersPage";
 import { StatsPage } from "./StatsPage";
@@ -1525,13 +1525,13 @@ const sliderData = useMemo(() => [
             )}
 
             {/* ===== تبويب الطلبات ===== */}
-            {tab === 'orders' && (
-              <div className="space-y-6">
-                <RecentOrders />
-                <ChartsSection showOrders={true} />
-              </div>
-            )}
-
+{/* ===== تبويب الطلبات ===== */}
+{tab === 'orders' && (
+  <div className="space-y-6">
+    <OrdersPage />  {/* ✅ الآن الأزرار رح تظهر */}
+    <ChartsSection showOrders={true} />
+  </div>
+)}
             {/* ===== تبويب الحجوزات ===== */}
             {tab === 'bookings' && (
               <div className="space-y-6">

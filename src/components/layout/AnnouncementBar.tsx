@@ -35,7 +35,7 @@ export function AnnouncementBar() {
           animation-play-state: paused !important;
         }
 
-        {/* تصميم شريط التمرير السفلي للتحكم اليدوي */}
+        /* تصميم شريط التمرير السفلي للتحكم اليدوي */
         .announcement-scrollbar::-webkit-scrollbar {
           height: 4px;
         }
@@ -59,7 +59,7 @@ export function AnnouncementBar() {
         dir={isRtl ? "rtl" : "ltr"}
       >
         
-        {/* شارة العنوان (تستقر في اليمين تماماً للعربية، وفي اليسار للإنجليزية) */}
+        {/* شارة العنوان (تم التحديث إلى إعلانات / Announcements) */}
         <div className="shrink-0 flex items-center gap-2 bg-black/30 px-3.5 py-1 rounded-full border border-emerald-400/40 shadow-inner z-10">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -67,7 +67,7 @@ export function AnnouncementBar() {
           </span>
           <Megaphone className="h-3.5 w-3.5 text-emerald-300 animate-bounce" />
           <span className="text-xs font-black tracking-wider text-emerald-200">
-            {isRtl ? "تحديثات السوق لعندك" : "Market Updates"}
+            {isRtl ? "إعلانات" : "Announcements"}
           </span>
         </div>
 

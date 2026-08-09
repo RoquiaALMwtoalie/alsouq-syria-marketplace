@@ -336,7 +336,7 @@ export function BookingsPage() {
       await supabase
         .from('notifications')
         .insert({
-          recipient_id: booking.customer_id,
+         user_id: booking.customer_id,
           type: 'booking_accepted',
           title_ar: `✅ تم قبول حجزك`,
           body_ar: `تم قبول حجز "${booking.listings?.title_ar}" من قبل المتجر. يمكنك الآن التوجه للحجز.`,
@@ -402,7 +402,7 @@ export function BookingsPage() {
       await supabase
         .from('notifications')
         .insert({
-          recipient_id: booking.customer_id,
+        user_id: booking.customer_id,
           type: 'booking_rejected',
           title_ar: `❌ تم رفض حجزك`,
           body_ar: `تم رفض حجز "${booking.listings?.title_ar}" من قبل المتجر. السبب: ${rejectReason.trim()}`,

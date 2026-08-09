@@ -6,7 +6,9 @@ import {
   Sparkles, Filter, Search, MapPin, TrendingUp, Zap, Flame,
   Crown, Gem, Award, Clock, ThumbsUp, Eye, Truck, Coffee,
   Layers, Grid3X3, List, Percent, Tag, ArrowUpDown,
-  Heart, ShoppingBag, Gift, Flower2, BadgePercent
+  Heart, ShoppingBag, Gift, Flower2, BadgePercent,
+  RefreshCw, ArrowLeft, ChevronLeft, ChevronRight,
+  CircleDot, Rocket, Sparkle, Compass, Wand2
 } from "lucide-react";
 import { useApp, useT } from "@/lib/i18n";
 import { useGovernorates, useListings, useStoresByCategory, useCategories } from "@/lib/queries";
@@ -27,7 +29,7 @@ export const Route = createFileRoute("/category/$slug")({
 });
 
 // ============================================================
-// ✅ SortDropdown - احترافي مع حركات
+// ✅ SortDropdown
 // ============================================================
 function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val: string) => void; lang: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -110,10 +112,10 @@ function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val
 }
 
 // ============================================================
-// ✅ Stats Badge متحرك
+// ✅ Stats Badge
 // ============================================================
 const AnimatedBadge = ({ count, label, icon: Icon, color }: any) => (
-  <div className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#2a655f]/10 border border-[#2a655f]/20 hover:bg-[#2a655f]/20 transition-all duration-300 hover:scale-105">
+  <div className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#2a655f]/10 border border-[#2a655f]/20 hover:bg-[#2a655f]/20 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#2a655f]/20">
     <Icon className={cn("h-4 w-4 animate-pulse", color || "text-[#2a655f]")} />
     <span className="text-sm font-bold text-[#2a655f] dark:text-[#4a9f95]">{count}</span>
     <span className="text-xs text-muted-foreground">{label}</span>
@@ -172,17 +174,14 @@ function CategoryPage() {
   const items = useMemo(() => {
     let filtered = rows;
     
-    // فلتر التقييم
     if (rating > 0) {
       filtered = filtered.filter((r: any) => Number(r.rating) >= rating);
     }
     
-    // فلتر السعر
     filtered = filtered.filter((r: any) => 
       Number(r.price) >= priceRange[0] && Number(r.price) <= priceRange[1]
     );
     
-    // فلتر المتاحة فقط
     if (showAvailableOnly) {
       filtered = filtered.filter((r: any) => r.is_available !== false);
     }
@@ -190,7 +189,6 @@ function CategoryPage() {
     return filtered;
   }, [rows, rating, priceRange, showAvailableOnly]);
 
-  // ✅ إحصائيات
   const stats = {
     total: rows.length,
     filtered: items.length,
@@ -200,7 +198,6 @@ function CategoryPage() {
 
   const Filters = (
     <div className="space-y-6">
-      {/* ✅ بحث */}
       <div>
         <div className="font-semibold mb-2 text-sm text-[#2a655f] dark:text-[#4a9f95] flex items-center gap-2">
           <Search className="h-4 w-4" />
@@ -217,7 +214,6 @@ function CategoryPage() {
         </div>
       </div>
 
-      {/* ✅ المحافظة */}
       <div>
         <div className="font-semibold mb-2 text-sm text-[#2a655f] dark:text-[#4a9f95] flex items-center gap-2">
           <MapPin className="h-4 w-4" />
@@ -234,7 +230,6 @@ function CategoryPage() {
         </Select>
       </div>
 
-      {/* ✅ نطاق السعر */}
       <div>
         <div className="font-semibold mb-2 text-sm text-[#2a655f] dark:text-[#4a9f95] flex items-center gap-2">
           <Tag className="h-4 w-4" />
@@ -256,7 +251,6 @@ function CategoryPage() {
         </div>
       </div>
 
-      {/* ✅ التقييم */}
       <div>
         <div className="font-semibold mb-2 text-sm text-[#2a655f] dark:text-[#4a9f95] flex items-center gap-2">
           <Star className="h-4 w-4" />
@@ -278,7 +272,6 @@ function CategoryPage() {
         </div>
       </div>
 
-      {/* ✅ المتاحة فقط */}
       <div className="flex items-center gap-3 p-3 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
         <Checkbox 
           checked={showAvailableOnly} 
@@ -290,7 +283,6 @@ function CategoryPage() {
         </span>
       </div>
 
-      {/* ✅ زر إعادة تعيين */}
       <Button 
         variant="outline" 
         onClick={() => { setGov("all"); setRating(0); setSearch(""); setPriceRange([0, 1000000]); setShowAvailableOnly(false); }}
@@ -302,7 +294,6 @@ function CategoryPage() {
     </div>
   );
 
-  // ✅ إذا كان التحميل جاري
   if (categoriesLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -350,42 +341,80 @@ function CategoryPage() {
   const categoryImage = category.image_url;
   const isArabic = app.lang === "ar";
 
+  // ✅ وصف التصنيف
+  const categoryDescription = app.lang === "ar" 
+    ? (category.description_ar || `استكشف مجموعة مميزة من ${categoryName} في السوق عندك. تشكيلة واسعة من المنتجات والخدمات بجودة عالية وأسعار تنافسية.`)
+    : (category.description_en || `Explore a unique collection of ${categoryName} at Souqi. A wide range of products and services with high quality and competitive prices.`);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#2a655f]/5 via-transparent to-[#3a8a82]/5">
       
-      {/* ===== Header ===== */}
-      <div className="relative h-56 md:h-80 overflow-hidden">
+      {/* ===== Header مع صورة الخلفية ===== */}
+      <div className="relative h-[320px] md:h-[400px] overflow-hidden bg-[#1b433e]">
+        
+        {/* ✅ صورة الخلفية الخاصة بالتصنيف (واضحة جداً) */}
         {categoryImage ? (
-          <img 
-            src={categoryImage} 
-            className="absolute inset-0 h-full w-full object-cover scale-105 transition-transform duration-700 group-hover:scale-110" 
-            alt={categoryName} 
-          />
+          <div className="absolute inset-0 z-0 overflow-hidden">
+            <img 
+              src={categoryImage} 
+              alt={categoryName} 
+              className="h-full w-full object-cover scale-100" 
+            />
+            {/* تدرج خفيف من الأسفل والأطراف فقط لضمان قراءة النص مع إبقاء الصورة واضحة جداً */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/70" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/80 via-transparent to-transparent" />
+          </div>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-[#2a655f] to-[#1a4f4a]" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#2a655f]/70 to-[#1a4f4a]/60 mix-blend-multiply" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/90 via-[#0d2e2a]/40 to-transparent" />
         
         <div className="absolute inset-0 flex items-end">
-          <div className="mx-auto max-w-7xl px-4 w-full pb-8 text-white">
-            <div className="text-sm opacity-80 flex items-center gap-2">
-              <Link to="/" className="hover:text-[#4a9f95] transition-colors">{t("home")}</Link>
-              <span className="text-white/40">/</span>
-              <span className="text-white/80">{categoryName}</span>
+          <div className="mx-auto max-w-7xl px-4 w-full pb-8 text-white relative z-10">
+            
+            {/* ===== Breadcrumb ===== */}
+            <div className="flex items-center gap-2 mb-2">
+              <Link to="/" className="text-white/80 hover:text-white transition-colors text-xs font-medium flex items-center gap-1 group bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/20">
+                <ChevronLeft className="h-3 w-3 group-hover:-translate-x-1 transition-transform duration-300" />
+                {app.lang === "ar" ? "الرئيسية" : "Home"}
+              </Link>
+              <span className="text-white/40 text-xs">/</span>
+              <Link to="/categories" className="text-white/70 hover:text-white transition-colors text-xs font-medium hover:underline underline-offset-2">
+                {app.lang === "ar" ? "التصنيفات" : "Categories"}
+              </Link>
+              <span className="text-white/40 text-xs">/</span>
+              <span className="text-white font-bold text-xs bg-white/20 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-white/30">
+                {categoryName}
+              </span>
             </div>
             
-            <div className="flex items-end justify-between mt-4 flex-wrap gap-4">
+            {/* ===== المحتوى الرئيسي مع تحسين الخط والأيقونات المتحركة ===== */}
+            <div className="flex items-end justify-between mt-3 flex-wrap gap-4">
               <div className="flex items-center gap-4">
+                {/* الأيقونة المتحركة */}
                 <div className="relative group">
-                  <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl shadow-black/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400/30 to-teal-400/30 blur-lg animate-pulse" />
+                  <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-2xl shadow-black/30 border border-white/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
                     <Icon className="h-8 w-8 md:h-10 md:w-10 text-white animate-float" />
+                    {/* جزيئات متحركة حول الأيقونة */}
+                    <Sparkle className="absolute -top-2 -right-2 h-4 w-4 text-yellow-300 animate-spin-slow" />
+                    <CircleDot className="absolute -bottom-1 -left-2 h-3 w-3 text-emerald-300 animate-pulse" />
                   </div>
-                  <div className="absolute -inset-2 rounded-full bg-white/5 blur-xl animate-pulse" />
                 </div>
+                
                 <div>
-                  <h1 className="text-3xl md:text-5xl font-black drop-shadow-lg">{categoryName}</h1>
-                  <div className="flex items-center gap-3 mt-1 flex-wrap">
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white drop-shadow-2xl tracking-tight flex items-center gap-3">
+                    {categoryName}
+                    <Badge className="bg-gradient-to-r from-emerald-400/30 to-teal-400/30 text-white border border-white/30 backdrop-blur-sm text-[10px] px-2.5 py-1 rounded-full font-bold animate-pulse">
+                      <Rocket className="h-3 w-3 mr-1 inline animate-bounce" />
+                      {app.lang === "ar" ? "رئيسي" : "Main"}
+                    </Badge>
+                  </h1>
+                  
+                  <p className="text-white/95 text-sm md:text-base max-w-2xl leading-relaxed mt-1.5 drop-shadow-lg font-medium tracking-wide">
+                    {categoryDescription}
+                  </p>
+                  
+                  <div className="flex items-center gap-3 mt-2 flex-wrap">
                     <AnimatedBadge count={stats.total} label={isArabic ? "منتج" : "products"} icon={Package} />
                     <AnimatedBadge count={stats.offers} label={isArabic ? "عرض" : "offers"} icon={Flame} color="text-orange-500" />
                     <AnimatedBadge count={stats.stores} label={isArabic ? "متجر" : "stores"} icon={Store} color="text-[#4a9f95]" />
@@ -394,8 +423,8 @@ function CategoryPage() {
               </div>
               
               {isOffersPage && (
-                <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-sm px-4 py-2 shadow-lg shadow-red-500/30 animate-pulse">
-                  <Flame className="h-4 w-4 mr-1.5 animate-bounce" />
+                <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-sm px-4 py-2 shadow-lg shadow-red-500/30 animate-pulse rounded-full font-bold flex items-center gap-2">
+                  <Flame className="h-4 w-4 animate-bounce" />
                   {isArabic ? "🔥 عروض حصرية" : "🔥 Exclusive Offers"}
                 </Badge>
               )}
@@ -661,46 +690,34 @@ function CategoryPage() {
       {/* ===== CSS Animations ===== */}
       <style>{`
         @keyframes fade-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-up {
-          animation: fade-up 0.5s ease-out forwards;
-        }
+        .animate-fade-up { animation: fade-up 0.5s ease-out forwards; }
+
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-6px); }
+          50% { transform: translateY(-8px); }
         }
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+
         @keyframes bounce {
           0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
+          50% { transform: scale(1.15); }
         }
-        .animate-bounce {
-          animation: bounce 0.5s ease-in-out infinite;
-        }
+        .animate-bounce { animation: bounce 0.5s ease-in-out infinite; }
+
         @keyframes pulse-slow {
           0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+          50% { opacity: 0.6; }
         }
-        .animate-pulse-slow {
-          animation: pulse-slow 2s ease-in-out infinite;
-        }
+        .animate-pulse-slow { animation: pulse-slow 2s ease-in-out infinite; }
+
         @keyframes spin-slow {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-        .animate-spin-slow {
-          animation: spin-slow 8s linear infinite;
-        }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
       `}</style>
     </div>
   );

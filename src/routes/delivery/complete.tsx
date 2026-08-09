@@ -18,6 +18,72 @@ export const Route = createFileRoute("/delivery/complete")({
   head: () => ({ meta: [{ title: "أكمل بيانات شركتك — السوق اليك" }] }),
 });
 
+// ✅ دالة استخراج المحافظة من العنوان
+async function extractGovernorateFromAddress(address: string, lat?: number, lng?: number): Promise<{ governorate_id: string; governorate_name: string }> {
+  try {
+    // 1. حاول استخراج المحافظة من الإحداثيات
+    if (lat && lng) {
+      const { data: governorates } = await supabase
+        .from('governorates')
+        .select('*');
+
+      if (governorates) {
+        for (const g of governorates) {
+          if (g.center_lat && g.center_lng) {
+            const distance = Math.sqrt(
+              Math.pow(lat - g.center_lat, 2) + 
+              Math.pow(lng - g.center_lng, 2)
+            );
+            if (distance < 0.5) {
+              return {
+                governorate_id: g.id,
+                governorate_name: g.name_ar
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // 2. حاول استخراج المحافظة من النص
+    if (address) {
+      const { data: governorates } = await supabase
+        .from('governorates')
+        .select('*');
+
+      if (governorates) {
+        for (const g of governorates) {
+          if (address.includes(g.name_ar) || address.includes(g.name_en || '')) {
+            return {
+              governorate_id: g.id,
+              governorate_name: g.name_ar
+            };
+          }
+        }
+      }
+    }
+
+    // 3. قيمة افتراضية (دمشق)
+    const { data: defaultGov } = await supabase
+      .from('governorates')
+      .select('id, name_ar')
+      .eq('name_ar', 'دمشق')
+      .single();
+
+    if (defaultGov) {
+      return {
+        governorate_id: defaultGov.id,
+        governorate_name: defaultGov.name_ar
+      };
+    }
+
+    return { governorate_id: '', governorate_name: '' };
+  } catch (error) {
+    console.error('Error extracting governorate:', error);
+    return { governorate_id: '', governorate_name: '' };
+  }
+}
+
 function DeliveryCompletePage() {
   const app = useApp();
   const [loading, setLoading] = useState(false);
@@ -25,7 +91,6 @@ function DeliveryCompletePage() {
   const [companyData, setCompanyData] = useState<any>(null);
   const [location, setLocation] = useState<PickedLocation | null>(null);
   
-  // ✅ ✅ ✅ حالة اختيار طريقة العنوان ✅ ✅ ✅
   const [addressMethod, setAddressMethod] = useState<"manual" | "map">("manual");
   
   const { data: company, isLoading: companyLoading } = useMyDeliveryCompany(app.user?.id);
@@ -100,28 +165,49 @@ function DeliveryCompletePage() {
       is_verified: true,
     };
 
-    // ✅ ✅ ✅ إذا اختار الخريطة، استخدم العنوان من الخريطة ✅ ✅ ✅
+    let governorateId = "";
+
+    // ✅ ✅ ✅ إذا اختار الخريطة ✅ ✅ ✅
     if (addressMethod === "map" && location) {
       patch.address_ar = location.address;
       patch.address_en = location.address;
       
-      // حفظ الإحداثيات
+      // استخراج المحافظة من الموقع
+      const result = await extractGovernorateFromAddress(
+        location.address,
+        location.lat,
+        location.lng
+      );
+      governorateId = result.governorate_id;
+      
+      // حفظ الإحداثيات والمحافظة في البروفايل
       const { error: updateProfileError } = await supabase
         .from("profiles")
         .update({
           lat: location.lat || 0,
           lng: location.lng || 0,
           address_text: location.address.trim(),
+          governorate_id: governorateId || null,
         })
         .eq("id", app.user?.id);
       
       if (updateProfileError) {
-        console.error("❌ خطأ في تحديث إحداثيات البروفايل:", updateProfileError);
+        console.error("❌ خطأ في تحديث البروفايل:", updateProfileError);
       }
     } else {
-      // ✅ ✅ ✅ إذا اختار يدوي، استخدم القيم المدخلة ✅ ✅ ✅
+      // ✅ ✅ ✅ إذا اختار يدوي ✅ ✅ ✅
       patch.address_ar = formData.get("address_ar") as string;
       patch.address_en = formData.get("address_en") as string;
+      
+      // استخراج المحافظة من النص
+      const result = await extractGovernorateFromAddress(patch.address_ar);
+      governorateId = result.governorate_id;
+    }
+
+    // ✅ ✅ ✅ إضافة المحافظة إلى الشركة ✅ ✅ ✅
+    if (governorateId) {
+      patch.governorate_id = governorateId;
+      console.log("📍 Saving governorate_id to company:", governorateId);
     }
 
     setLoading(true);
@@ -298,7 +384,6 @@ function DeliveryCompletePage() {
                       rows={2}
                       className="bg-white/90 text-foreground border-0 focus:ring-2 focus:ring-[#2a655f]/50"
                     />
-                    {/* ✅ ✅ ✅ حذفنا الحقل الإنجليزي ✅ ✅ ✅ */}
                   </div>
                 </div>
               ) : (

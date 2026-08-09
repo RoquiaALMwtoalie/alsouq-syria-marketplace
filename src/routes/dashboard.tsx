@@ -176,7 +176,7 @@ function Dashboard() {
           .from('notifications')
           .update({ is_read: true })
           .eq('id', notification.id)
-          .eq('recipient_id', app.user!.id);
+         .eq('user_id', app.user!.id)
         
         if (error) throw error;
         await refetchNotifications();
@@ -198,7 +198,7 @@ function Dashboard() {
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId)
-        .eq('recipient_id', app.user!.id);
+      .eq('user_id', app.user!.id)
       
       if (error) throw error;
       await refetchNotifications();
@@ -214,7 +214,7 @@ function Dashboard() {
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
-        .eq('recipient_id', app.user!.id)
+       .eq('user_id', app.user!.id)
         .eq('is_read', false);
       
       if (error) throw error;

@@ -469,10 +469,15 @@ function AuthPage() {
         throw signInError;
       }
 
-      const redirect = await getAuthRedirect(signInData.user);
+    const redirect = await getAuthRedirect(signInData.user);
 
-      toast.success(app.lang === "ar" ? "✅ تم تسجيل الدخول" : "✅ Signed in");
-      window.location.replace(redirect.url);
+toast.success(app.lang === "ar" ? "✅ تم تسجيل الدخول" : "✅ Signed in");
+
+// ✅ ✅ ✅ استخدام navigate مع state بدلاً من window.location.replace
+nav({
+  to: redirect.url,
+  state: { showLoginSplash: true }
+});
 
     } catch (err: any) {
       console.error("❌ Login error:", err);
@@ -1026,31 +1031,70 @@ function AuthPage() {
                       </div>
                     )}
                   </>
-                ) : (
-                  <>
-                    <div>
-                      {(app.lang === "ar" ? "لديك حساب؟" : "Have an account?")}{" "}
-                      <Link to="/auth/$mode" params={{ mode: "login" }} className="text-emerald-300 font-semibold hover:text-emerald-200 transition hover:underline">
-                        {t("login")}
-                      </Link>
-                    </div>
-                    
-                    <div className="pt-2 border-t border-white/10 mt-2 space-y-1">
-                      <Link 
-                        to="/auth/register-delivery" 
-                        className="block text-sm text-emerald-300 hover:text-emerald-200 transition font-medium"
-                      >
-                        🚚 {app.lang === "ar" ? "تسجيل كشركة توصيل" : "Register as Delivery Company"}
-                      </Link>
-                      <Link 
-                        to="/auth/register-distributor" 
-                        className="block text-sm text-blue-300 hover:text-blue-200 transition font-medium"
-                      >
-                        📦 {app.lang === "ar" ? "تسجيل كموزع" : "Register as Distributor"}
-                      </Link>
-                    </div>
-                  </>
-                )}
+               ) : (
+  <>
+    <div>
+      {(app.lang === "ar" ? "لديك حساب؟" : "Have an account?")}{" "}
+      <Link to="/auth/$mode" params={{ mode: "login" }} className="text-emerald-300 font-semibold hover:text-emerald-200 transition hover:underline">
+        {t("login")}
+      </Link>
+    </div>
+    
+    {/* ✅ ✅ ✅ زر التصفح كزائر - ملفت وأنيق ✅ ✅ ✅ */}
+    <div className="relative pt-2">
+      <div className="relative">
+        {/* خط فاصل متوهج */}
+        <div className="absolute -top-2 left-0 right-0 flex items-center gap-2">
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
+          <span className="text-[9px] text-emerald-400/40 font-bold tracking-widest whitespace-nowrap">
+            {app.lang === "ar" ? "أو" : "OR"}
+          </span>
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
+        </div>
+        
+        <Link
+          to="/"
+          className="group relative block w-full mt-3"
+        >
+          <Button
+            variant="outline"
+            className="w-full h-11 rounded-xl border-2 border-emerald-400/40 hover:border-emerald-400/70 bg-emerald-500/10 hover:bg-emerald-500/20 text-white font-bold text-sm transition-all duration-300 hover:scale-[1.02] active:scale-95 relative overflow-hidden shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40"
+          >
+            {/* ✨ لمعان متحرك */}
+            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+            
+            {/* ✅ أيقونات متحركة */}
+            <span className="relative flex items-center justify-center gap-2.5">
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse delay-200" />
+                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse delay-400" />
+              </span>
+              
+              <span className="text-emerald-200 font-extrabold tracking-wide">
+                {app.lang === "ar" ? "👀 تصفح كزائر" : "👀 Browse as Guest"}
+              </span>
+              
+              <span className="inline-block animate-pulse text-emerald-300">
+                →
+              </span>
+            </span>
+          </Button>
+        </Link>
+        
+        {/* ✅ نص توضيحي صغير تحت الزر */}
+        <p className="text-[10px] text-emerald-300/60 mt-1.5 flex items-center justify-center gap-1">
+          <Shield className="h-3 w-3 text-emerald-400/40" />
+          {app.lang === "ar" 
+            ? "✨ تصفح المتجر واكتشف المنتجات بدون تسجيل" 
+            : "✨ Browse the store and discover products without signing up"}
+        </p>
+      </div>
+    </div>
+    
+    {/* ❌❌❌ تم إزالة: تسجيل كشركة توصيل و تسجيل كموزع ❌❌❌ */}
+  </>
+)}
               </div>
             </form>
           </div>
@@ -1236,7 +1280,7 @@ function SupportButton() {
       await supabase
         .from("notifications")
         .insert({
-          recipient_id: adminId,
+          user_id: adminId,
           type: "support",
           title_ar: "📩 رسالة دعم جديدة",
           body_ar: `📞 من: ${userPhone}\n${isRegistered ? '✅ مسجل' : '❌ زائر'}\nالموضوع: ${subject || "دعم"}`,

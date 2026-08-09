@@ -426,7 +426,7 @@ function ListingDetailPage() {
         .from('notifications')
         .insert([
           {
-            recipient_id: listing.owner_id,
+             user_id: app.user.id,
             type: 'booking',
             title_ar: `📅 حجز جديد على "${listing.title_ar}"`,
             body_ar: `قام ${app.user.name} بحجز ${bookingData.guests} ضيف/ضيوف في ${new Date(bookingData.startDate).toLocaleDateString('ar-SA')}`,
@@ -444,7 +444,7 @@ function ListingDetailPage() {
             },
           },
           {
-            recipient_id: app.user.id,
+           user_id: app.user.id,
             type: 'booking_confirmation',
             title_ar: `✅ تم إرسال طلب الحجز`,
             body_ar: `تم إرسال طلب حجز "${listing.title_ar}" إلى المتجر في انتظار التأكيد`,

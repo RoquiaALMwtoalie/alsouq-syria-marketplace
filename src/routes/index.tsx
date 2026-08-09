@@ -6,7 +6,8 @@ import {
   Dumbbell, Gamepad2, Palette, Wrench, Utensils, Sparkles, BadgePercent, Gift, Flower2,
   ArrowRight, Package, Store, Star, ChevronLeft, ChevronRight, Heart, Flame,
   TrendingUp, Zap, Crown, Gem, Award, Clock, ThumbsUp, Eye, Truck, Coffee,
-  Layers, Grid3X3, List, Percent, Tag, MapPin, Navigation,
+  Layers, Grid3X3, List, Percent, Tag, MapPin, Navigation, 
+  ArrowLeft,
   Globe, // ✅ أضف هذا
   Building2 // ✅ وأضف هذا إذا كنت تستخدمه
 } from "lucide-react";
@@ -27,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+// ✅ صحيح
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -220,7 +222,10 @@ function Home() {
       </section>
 
       {/* ===== FEATURED CATEGORIES ===== */}
-      <CategorySlider categories={featuredCategories} />
+     <CategorySlider 
+  categories={featuredCategories} 
+  getCategoryIcon={getCategoryIcon} 
+/>
 
       {/* ===== DEALS OF THE DAY ===== */}
       {allDeals.length > 0 && (
@@ -495,13 +500,28 @@ function Home() {
 // ============================================================
 // CATEGORY SLIDER
 // ============================================================
-function CategorySlider({ categories }: { categories: any[] }) {
+
+
+export function CategorySlider({ categories }: { categories: any[] }) {
   const app = useApp();
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const isRtl = app.lang === "ar";
 
-  if (categories.length === 0) return null;
+  if (!categories || categories.length === 0) return null;
 
-  const duplicatedCategories = [...categories, ...categories, ...categories];
+  const duplicatedCategories = [...categories, ...categories, ...categories, ...categories];
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (containerRef.current) {
+      const scrollAmount = 320;
+      const factor = direction === 'left' ? -1 : 1;
+      containerRef.current.scrollBy({ 
+        left: scrollAmount * factor, 
+        behavior: 'smooth' 
+      });
+    }
+  };
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
@@ -512,111 +532,186 @@ function CategorySlider({ categories }: { categories: any[] }) {
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-black text-foreground">
-              {app.lang === "ar" ? "الأقسام المميزة" : "Featured Categories"}
+              {isRtl ? "الأقسام المميزة" : "Featured Categories"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {app.lang === "ar" ? "اختيارات مميزة من السوق عندك" : "Handpicked by Souqi"}
+              {isRtl ? "اختيارات مميزة من السوق عندك" : "Handpicked by Souqi"}
             </p>
           </div>
         </div>
-        <Link to="/categories">
-          <Button variant="ghost" size="sm" className="gap-1 text-[#2a655f] font-semibold group">
-            {app.lang === "ar" ? "عرض الكل" : "View All"}
-            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-1.5">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-8 w-8 rounded-full border-emerald-500/30 text-[#2a655f] hover:bg-emerald-50"
+              onClick={() => scroll('left')}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-8 w-8 rounded-full border-emerald-500/30 text-[#2a655f] hover:bg-emerald-50"
+              onClick={() => scroll('right')}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <Link to="/categories">
+            <Button variant="ghost" size="sm" className="gap-1 text-[#2a655f] font-semibold group">
+              {isRtl ? "عرض الكل" : "View All"}
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      <div 
-        dir="ltr"
-        className="relative overflow-x-auto rounded-2xl custom-scrollbar pb-3 select-none"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
-        <div 
-          className="marquee-track"
-          style={{ 
-            animationPlayState: isPaused ? 'paused' : 'running' 
-          }}
+      <div className="relative group overflow-hidden rounded-2xl">
+        <button
+          onClick={() => scroll('left')}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/60 hover:bg-[#2a655f] text-white transition-all duration-300 hover:scale-110 border border-white/20 shadow-xl cursor-pointer opacity-0 group-hover:opacity-100"
+          aria-label="Scroll left"
         >
-          {duplicatedCategories.map((c: any, index: number) => {
-            const Icon = getCategoryIcon(c.icon);
-            const imageUrl = c.image_url;
-            const isOffer = c.slug === "offers";
-            
-            return (
-              <div
-                key={`${c.id}-${index}`}
-                className="marquee-item px-2"
-              >
-                <Link
-                  to="/category/$slug"
-                  params={{ slug: c.slug }}
-                  className="group relative block w-[160px] md:w-[200px] rounded-2xl overflow-hidden transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-[#2a655f]/30"
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => scroll('right')}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/60 hover:bg-[#2a655f] text-white transition-all duration-300 hover:scale-110 border border-white/20 shadow-xl cursor-pointer opacity-0 group-hover:opacity-100"
+          aria-label="Scroll right"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+
+        <div 
+          ref={containerRef}
+          dir="ltr"
+          className="relative overflow-x-auto custom-scrollbar pb-3 select-none"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          <div 
+            className="marquee-track flex gap-4"
+            style={{ 
+              animationPlayState: isPaused ? 'paused' : 'running',
+              animationDuration: '160s'
+            }}
+          >
+            {duplicatedCategories.map((c: any, index: number) => {
+              const Icon = getCategoryIcon(c.icon);
+              const imageUrl = c.image_url;
+              
+              // التحقق مما إذا كان التصنيف يحتوي على كلمة عرض، عروض، خصم، خصومات، أو slug offers
+              const nameAr = c.name_ar || "";
+              const nameEn = c.name_en || "";
+              const slug = c.slug || "";
+              const isOffer = 
+                slug.toLowerCase().includes("offer") || 
+                slug.toLowerCase().includes("discount") ||
+                nameAr.includes("عرض") || 
+                nameAr.includes("عروض") || 
+                nameAr.includes("خصم") || 
+                nameAr.includes("خصومات") ||
+                nameEn.toLowerCase().includes("offer") || 
+                nameEn.toLowerCase().includes("discount");
+              
+              return (
+                <div
+                  key={`${c.id}-${index}`}
+                  className="marquee-item px-1 flex-shrink-0"
                 >
-                  <div className="relative h-[120px] md:h-[150px] w-full overflow-hidden">
-                    {imageUrl ? (
-                      <img 
-                        src={imageUrl} 
-                        alt={app.lang === "ar" ? c.name_ar : c.name_en}
-                        className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#2a655f]/60 to-[#3a8a82]/60" />
-                    )}
-                    
-                    <div className={cn(
-                      "absolute inset-0",
+                  <Link
+                    to="/category/$slug"
+                    params={{ slug: c.slug }}
+                    className={cn(
+                      "group relative block w-[160px] md:w-[200px] rounded-2xl overflow-hidden transition-all duration-500 hover:scale-105 hover:shadow-2xl",
                       isOffer 
-                        ? "bg-gradient-to-t from-[#2a655f]/90 via-[#2a655f]/50 to-transparent" 
-                        : "bg-gradient-to-t from-[#0d2e2a]/80 via-[#0d2e2a]/30 to-transparent"
-                    )} />
-                    
-                    <div className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-                      <Icon className="h-4 w-4 text-white" />
-                    </div>
-                    
-                    <div className="absolute bottom-0 inset-x-0 p-3">
-                      <h3 className="text-white font-bold text-sm md:text-base line-clamp-1">
-                        {app.lang === "ar" ? c.name_ar : c.name_en}
-                      </h3>
-                      <p className="text-white/70 text-[10px] md:text-xs">
-                        {app.lang === "ar" ? "استكشف الآن →" : "Explore now →"}
-                      </p>
-                    </div>
-                    
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-[#2a655f] text-white border-0 text-[8px] px-1.5 py-0.5 shadow-lg">
-                        ⭐ {app.lang === "ar" ? "مميز" : "Featured"}
-                      </Badge>
-                    </div>
-                    
-                    {isOffer && (
-                      <div className="absolute top-3 left-3">
-                        <Badge className="bg-red-500 text-white border-0 text-[8px] px-1.5 py-0.5 shadow-lg animate-pulse">
-                          🔥 {app.lang === "ar" ? "عروض" : "Offers"}
-                        </Badge>
-                      </div>
+                        ? "p-[3px] glowing-border shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-pulse" 
+                        : "hover:shadow-[#2a655f]/30"
                     )}
-                  </div>
-                </Link>
-              </div>
-            );
-          })}
+                  >
+                    <div className={cn(
+                      "relative h-[120px] md:h-[150px] w-full overflow-hidden rounded-[14px]",
+                      isOffer && "bg-gradient-to-r from-red-500 via-amber-400 to-red-500 bg-[length:200%_200%] animate-gradient-flow"
+                    )}>
+                      {imageUrl ? (
+                        <img 
+                          src={imageUrl} 
+                          alt={isRtl ? c.name_ar : c.name_en}
+                          className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#2a655f]/60 to-[#3a8a82]/60" />
+                      )}
+                      
+                      <div className={cn(
+                        "absolute inset-0",
+                        isOffer 
+                          ? "bg-gradient-to-t from-red-950/90 via-red-900/40 to-transparent" 
+                          : "bg-gradient-to-t from-[#0d2e2a]/80 via-[#0d2e2a]/30 to-transparent"
+                      )} />
+                      
+                      <div className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+                        <Icon className="h-4 w-4 text-white" />
+                      </div>
+                      
+                      <div className="absolute bottom-0 inset-x-0 p-3">
+                        <h3 className="text-white font-bold text-sm md:text-base line-clamp-1 flex items-center gap-1" dir={isRtl ? "rtl" : "ltr"}>
+                          {isOffer && <span className="animate-bounce">🔥</span>}
+                          {isRtl ? c.name_ar : c.name_en}
+                        </h3>
+                        <p className="text-white/70 text-[10px] md:text-xs">
+                          {isRtl ? "استكشف الآن ←" : "Explore now →"}
+                        </p>
+                      </div>
+                      
+                      <div className="absolute top-3 left-3">
+                        {isOffer ? (
+                          <Badge className="bg-gradient-to-r from-red-600 to-amber-500 text-white border-0 text-[9px] px-2 py-0.5 shadow-xl animate-bounce font-black">
+                            ⚡ {isRtl ? "عرض خاص" : "Hot Deal"}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-[#2a655f] text-white border-0 text-[8px] px-1.5 py-0.5 shadow-lg">
+                            ⭐ {isRtl ? "مميز" : "Featured"}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       <style>{`
         @keyframes marquee-scroll {
           0% { transform: translateX(0); }
-          100% { transform: translateX(calc(-100% / 3)); }
+          100% { transform: translateX(calc(-25%)); }
+        }
+        @keyframes border-glow {
+          0% { box-shadow: 0 0 5px #ef4444, 0 0 10px #f59e0b, inset 0 0 5px #ef4444; }
+          50% { box-shadow: 0 0 20px #ef4444, 0 0 35px #f59e0b, inset 0 0 12px #f59e0b; }
+          100% { box-shadow: 0 0 5px #ef4444, 0 0 10px #f59e0b, inset 0 0 5px #ef4444; }
+        }
+        @keyframes gradient-flow {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .glowing-border {
+          animation: border-glow 2s infinite ease-in-out;
+        }
+        .animate-gradient-flow {
+          animation: gradient-flow 4s ease infinite;
         }
         .marquee-track {
           display: flex;
           width: max-content;
-          animation: marquee-scroll 40s linear infinite;
+          animation: marquee-scroll 160s linear infinite;
           will-change: transform;
         }
         .marquee-item {
@@ -641,7 +736,6 @@ function CategorySlider({ categories }: { categories: any[] }) {
     </section>
   );
 }
-
 // ============================================================
 // FEATURED SECTION
 // ============================================================
@@ -1074,111 +1168,22 @@ function NearbyStores() {
           <p className="font-bold text-base text-foreground">{isArabic ? "🚫 لا توجد متاجر قريبة متاحة حالياً." : "🚫 No nearby stores available."}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {nearbyStores.map((store: any, index: number) => (
-            <div 
-              key={store.id} 
-              className="animate-fade-up group flex flex-col h-full"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <Link 
-                to="/store/$id" 
-                params={{ id: store.id }} 
-                className="relative flex flex-col h-full rounded-[24px] bg-card shadow-lg overflow-hidden border-2 border-[#2a655f]/20 hover:border-[#2a655f] transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#2a655f]/30 group"
-              >
-                {/* تأثير إضاءة متوهج عند التمرير خلف البطاقة */}
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#2a655f] to-teal-400 rounded-[26px] opacity-0 group-hover:opacity-30 blur-md transition duration-500 -z-10"></div>
-
-                {/* صورة الغلاف */}
-                <div className="relative h-36 w-full bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] overflow-hidden flex-shrink-0">
-                  {store.store_cover_url ? (
-                    <img 
-                      src={store.store_cover_url} 
-                      className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-85" 
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-teal-500/20 via-transparent to-black/40" />
-                  )}
-                  
-                  {/* شارة المسافة المتحركة */}
-                  <div className="absolute top-3 start-3 z-10">
-                    <Badge className="bg-black/80 backdrop-blur-md text-white border border-white/20 text-[11px] px-3 py-1.5 flex items-center gap-1.5 shadow-xl font-bold">
-                      <Navigation className="h-3 w-3 text-emerald-400 animate-spin" style={{ animationDuration: '6s' }} />
-                      <span className="truncate max-w-[90px]">{store.distanceText}</span>
-                    </Badge>
-                  </div>
-
-                  {/* شارة حالة المتجر (مفتوح / مغلق) مع نبض حيوي */}
-                  <div className="absolute top-3 end-3 z-10">
-                    {isStoreCurrentlyOpen(store) ? (
-                      <Badge className="bg-emerald-500 text-white border-0 text-[11px] font-black px-3 py-1 shadow-lg flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-white animate-ping"></span>
-                        <span>{isArabic ? "مفتوح" : "Open"}</span>
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-rose-600 text-white border-0 text-[11px] font-black px-3 py-1 shadow-lg">
-                        <span>{isArabic ? "مغلق" : "Closed"}</span>
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                {/* محتوى البطاقة */}
-                <div className="p-5 pt-3 flex flex-col flex-1 justify-between bg-card relative">
-                  <div className="flex items-start gap-3.5">
-                    
-                    {/* شعار المتجر العائم مع تأثير إضاءة خاص */}
-                    <div className="relative -mt-10 flex-shrink-0">
-                      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#2a655f] to-teal-400 opacity-60 blur group-hover:opacity-100 transition duration-300 animate-pulse"></div>
-                      <div className="relative h-16 w-16 rounded-2xl bg-card border-2 border-[#2a655f] shadow-xl overflow-hidden flex items-center justify-center text-[#2a655f] font-black text-2xl group-hover:scale-105 transition-transform duration-300 z-10">
-                        {store.store_logo_url ? (
-                          <img src={store.store_logo_url} className="h-full w-full object-cover" alt="" loading="lazy" decoding="async" />
-                        ) : (
-                          <span className="text-xl font-black text-[#2a655f]">
-                            {(store.store_name || store.full_name || "?")[0]?.toUpperCase() || "?"}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* اسم المتجر وشارات النوع المتحركة */}
-                    <div className="flex-1 min-w-0 pt-0.5">
-                      <div className="font-black text-base md:text-lg truncate group-hover:text-[#2a655f] transition-colors duration-300 leading-tight" dir={isArabic ? "rtl" : "ltr"}>
-                        {store.store_name || store.full_name || (isArabic ? "متجر" : "Store")}
-                      </div>
-                      
-                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        {store.is_featured && (
-                          <Flame className="h-4 w-4 text-amber-500 fill-amber-500 animate-bounce flex-shrink-0" />
-                        )}
-                        {store.store_type === 'physical' && (
-                          <span className="text-[10px] font-extrabold text-[#2a655f] bg-[#2a655f]/15 px-2.5 py-0.5 rounded-lg flex items-center gap-1 border border-[#2a655f]/20">
-                            <Building2 className="h-3 w-3" />
-                            {isArabic ? 'متجر فعلي' : 'Physical'}
-                          </span>
-                        )}
-                        {store.store_type === 'online' && (
-                          <span className="text-[10px] font-extrabold text-indigo-600 bg-indigo-500/15 px-2.5 py-0.5 rounded-lg flex items-center gap-1 border border-indigo-500/20">
-                            <Globe className="h-3 w-3" />
-                            {isArabic ? 'متجر إلكتروني' : 'Online'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* وصف المتجر بارتفاع ومحاذاة ثابتة */}
-                  <div className="text-xs text-muted-foreground line-clamp-2 mt-3.5 leading-relaxed min-h-[2.2rem] font-medium">
-                    {store.store_description || (isArabic ? "متجر موثوق على السوق عندك، تسوق الآن بأفضل الأسعار والعروض" : "A trusted store on Souqi, shop now")}
-                  </div>
-                </div>
-              </Link>
-            </div>
-          ))}
-        </div>
+      // ✅ التعديل المطلوب في NearbyStores
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  {nearbyStores.map((store: any, index: number) => (
+    <div key={store.id} className="animate-fade-up" style={{ animationDelay: `${index * 100}ms` }}>
+      <StoreCard 
+        store={store} 
+        badge={
+          <Badge className="bg-black/80 backdrop-blur-md text-white border border-white/20 text-[10px] px-2 py-0.5 flex items-center gap-1">
+            <Navigation className="h-3 w-3" />
+            {store.distanceText}
+          </Badge>
+        }
+      />
+    </div>
+  ))}
+</div>
       )}
     </section>
   );
@@ -1186,55 +1191,117 @@ function NearbyStores() {
 // ============================================================
 // STORE CARD
 // ============================================================
-function StoreCard({ store, badge }: { store: any; badge?: React.ReactNode }) {
+
+export function StoreCard({ store, badge }: StoreCardProps) {
   const app = useApp();
   const t = useT();
-  
+  const isRtl = app.lang === "ar";
+
+  const storeName = store.store_name || store.full_name || (isRtl ? "متجر مميز" : "Featured Store");
+  const storeDesc = store.store_description || (isRtl ? "متجر موثوق على السوق عندك لبيع أفضل المنتجات" : "A trusted store on Souqi for the best products");
+  const coverUrl = store.store_cover_url;
+  const logoUrl = store.store_logo_url || store.avatar_url;
+  const rating = Number(store.avg_rating ?? 0).toFixed(1);
+  const productsCount = store.listing_count ?? 0;
+  const isVerified = store.is_verified || store.verified || true;
+
   return (
     <Link 
       to="/store/$id" 
       params={{ id: store.id }} 
-      className="group rounded-2xl bg-card shadow-card overflow-hidden border border-[#2a655f]/10 hover:border-[#2a655f]/30 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#2a655f]/20"
+      className="group relative rounded-3xl bg-white dark:bg-slate-900 overflow-hidden border border-slate-200/80 dark:border-slate-800 hover:border-[#2a655f]/60 shadow-lg hover:shadow-2xl hover:shadow-[#2a655f]/25 transition-all duration-500 hover:-translate-y-2 flex flex-col h-[330px] select-none"
     >
-      <div className="relative h-28 bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] overflow-hidden">
-        {store.store_cover_url && (
+      {/* 🖼️ غلاف المتجر العلوي بتصميم فاخر */}
+      <div className="relative h-[130px] w-full bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#3a8a82] overflow-hidden shrink-0">
+        {coverUrl ? (
           <img 
-            src={store.store_cover_url} 
+            src={coverUrl} 
             className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" 
-            alt="" 
+            alt={storeName} 
             loading="lazy"
             decoding="async"
           />
+        ) : (
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-400/20 via-transparent to-transparent opacity-60" />
         )}
-        {badge && <div className="absolute top-2 end-2">{badge}</div>}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        {/* طبقة تظليل تدرجية لتحسين وضوح العناصر */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+
+        {/* شارة التوثيق أو الـ Badge المخصصة */}
+        <div className="absolute top-3 end-3 flex items-center gap-1.5 z-10">
+          {badge}
+          {isVerified && (
+            <Badge className="bg-emerald-500/90 backdrop-blur-md text-white border-0 shadow-lg text-[10px] font-bold px-2 py-0.5 flex items-center gap-1 rounded-full">
+              <Sparkles className="h-3 w-3" />
+              {isRtl ? "موثوق" : "Verified"}
+            </Badge>
+          )}
+        </div>
       </div>
-      <div className="p-4 -mt-8 relative">
-        <div className="h-14 w-14 rounded-xl bg-card border-4 border-card shadow-md overflow-hidden grid place-items-center text-[#2a655f] font-black text-xl group-hover:scale-110 transition-transform duration-300">
-          {store.store_logo_url || store.avatar_url ? (
-            <img 
-              src={store.store_logo_url || store.avatar_url} 
-              className="h-full w-full object-cover" 
-              alt="" 
-              loading="lazy"
-              decoding="async"
-            />
-          ) : ((store.store_name || store.full_name || "?")[0])}
+
+      {/* 🏢 محتوى المتجر وتفاصيله */}
+      <div className="px-5 pt-0 pb-4 flex-1 flex flex-col justify-between relative">
+        
+        {/* الشعار الدائري البارز (Logo) */}
+        <div className="flex items-end justify-between -mt-9 mb-2 relative z-10">
+          <div className="h-16 w-16 rounded-2xl bg-white dark:bg-slate-900 p-1 shadow-xl border-2 border-white dark:border-slate-800 group-hover:border-[#2a655f] transition-all duration-300 group-hover:scale-105 shrink-0 overflow-hidden grid place-items-center">
+            {logoUrl ? (
+              <img 
+                src={logoUrl} 
+                className="h-full w-full object-cover rounded-xl" 
+                alt={storeName} 
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <div className="h-full w-full rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white font-black text-xl flex items-center justify-center">
+                {storeName[0]?.toUpperCase() || <Store className="h-6 w-6" />}
+              </div>
+            )}
+          </div>
+
+          {/* تقييم المتجر النجمي */}
+          <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/50 px-2.5 py-1 rounded-full shadow-sm">
+            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+            <span className="text-xs font-black text-amber-800 dark:text-amber-300">{rating}</span>
+          </div>
         </div>
-        <div className="mt-2 font-bold line-clamp-1 group-hover:text-[#2a655f] transition-colors duration-300">
-          {store.store_name || store.full_name || (app.lang === "ar" ? "متجر" : "Store")}
+
+        {/* اسم المتجر، شارة "متجر إلكتروني"، والوصف */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100 line-clamp-1 group-hover:text-[#2a655f] transition-colors duration-300">
+              {storeName}
+            </h3>
+            
+            {/* 🌟 شارة متجر إلكتروني / أونلاين بدرجات السستم المخصصة */}
+            <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#2a655f]/10 dark:bg-[#2a655f]/20 text-[#2a655f] dark:text-[#3a8a82] border border-[#2a655f]/20 shadow-sm">
+              <Globe className="h-2.5 w-2.5" />
+              {isRtl ? "متجر إلكتروني" : "Online Store"}
+            </span>
+          </div>
+
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed min-h-[32px]">
+            {storeDesc}
+          </p>
         </div>
-        <div className="text-xs text-muted-foreground line-clamp-2 min-h-8">
-          {store.store_description || (app.lang === "ar" ? "متجر على السوق عندك" : "A store on Souqi")}
-        </div>
-        <div className="flex items-center gap-3 mt-3 text-xs">
-          <span className="flex items-center gap-1 text-[#2a655f]">
-            <Star className="h-3.5 w-3.5 fill-current" />
-            {Number(store.avg_rating ?? 0).toFixed(1)}
-          </span>
-          <span className="text-muted-foreground">
-            {store.listing_count ?? 0} {t("products_tab")}
-          </span>
+
+        {/* إحصائيات سفلية وزر الاستكشاف */}
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs mt-2">
+          <div className="flex items-center gap-1.5 font-semibold text-[#2a655f] dark:text-[#3a8a82]">
+            <Package className="h-4 w-4" />
+            <span>{productsCount} {t("products_tab") || (isRtl ? "منتج" : "Products")}</span>
+          </div>
+
+          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 group-hover:text-[#2a655f] transition-colors">
+            <span>{isRtl ? "زيارة المتجر" : "Visit Store"}</span>
+            {isRtl ? (
+              <ChevronLeft className="h-3.5 w-3.5 group-hover:-translate-x-1 transition-transform" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+            )}
+          </div>
         </div>
       </div>
     </Link>

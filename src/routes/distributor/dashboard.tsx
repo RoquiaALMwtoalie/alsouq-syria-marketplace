@@ -2,7 +2,7 @@
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useApp, useT } from "@/lib/i18n";
-import { useDeliveryOrders, useDistributors, useUpdateDeliveryOrderStatus, useUserNotifications } from "@/lib/queries";
+import { useDeliveryOrders, useDistributors, useUserNotifications } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Truck, Package, MapPin, Phone, Mail, Clock, 
@@ -29,6 +29,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -85,14 +87,15 @@ function DistributorDashboardPage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [showMapOrderId, setShowMapOrderId] = useState<string | null>(null);
+  const [statusNotes, setStatusNotes] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // ✅ State للإشعارات
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   // ✅ جلب البيانات
-  const { data: allOrders = [], isLoading: ordersLoading } = useDeliveryOrders(app.user?.id);
-  const { data: distributors = [] } = useDistributors({ isAvailable: true });
-  const updateStatus = useUpdateDeliveryOrderStatus();
+  const { data: allOrders = [], isLoading: ordersLoading, refetch: refetchOrders } = useDeliveryOrders(app.user?.id);
+  const { data: distributors = [], refetch: refetchDistributors } = useDistributors({ isAvailable: true });
   const { data: notifications = [] } = useUserNotifications(app.user?.id, { limit: 50 });
 
   // ✅ عدد الإشعارات غير المقروءة
@@ -218,28 +221,187 @@ function DistributorDashboardPage() {
     }
   };
 
-  // ✅ تحديث حالة الطلب
+  // ✅ ✅ ✅ تحديث حالة الطلب مع إشعارات (محسّن)
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    if (!currentDistributor?.id) {
+      toast.error(isArabic ? "❌ لا يوجد موزع" : "❌ No distributor found");
+      return;
+    }
+
+    setIsUpdating(true);
+    
     try {
-      await updateStatus.mutateAsync({
-        id: orderId,
-        status: newStatus as any,
-        distributorId: currentDistributor?.id,
-      });
+      // 1. جلب بيانات الطلب
+      const { data: deliveryOrder, error: orderError } = await supabase
+        .from("delivery_orders")
+        .select(`
+          *,
+          orders:order_id (
+            id,
+            buyer_id,
+            seller_id,
+            listings:listing_id (
+              id,
+              title_ar,
+              title_en,
+              owner_id
+            )
+          )
+        `)
+        .eq("id", orderId)
+        .single();
+
+      if (orderError) throw orderError;
       
+      const mainOrder = deliveryOrder?.orders;
+
+      // 2. تحديث delivery_orders
+      const updateData: any = { 
+        status: newStatus,
+        notes_ar: statusNotes || null,
+        notes_en: statusNotes || null,
+      };
+      
+      if (newStatus === 'picked_up') {
+        updateData.picked_up_at = new Date().toISOString();
+      } else if (newStatus === 'in_transit') {
+        // لا نضيف تاريخ
+      } else if (newStatus === 'delivered') {
+        updateData.delivered_at = new Date().toISOString();
+      } else if (newStatus === 'cancelled') {
+        updateData.cancelled_at = new Date().toISOString();
+      }
+
+      const { error: updateDeliveryError } = await supabase
+        .from("delivery_orders")
+        .update(updateData)
+        .eq("id", orderId);
+
+      if (updateDeliveryError) throw updateDeliveryError;
+
+      // 3. تحديث orders الرئيسي
+      if (mainOrder) {
+        const orderStatus = newStatus === 'delivered' ? 'delivered' : 
+                           newStatus === 'cancelled' ? 'cancelled' : 'processing';
+        const deliveryStatus = newStatus === 'delivered' ? 'delivered' : newStatus;
+
+        const { error: updateOrderError } = await supabase
+          .from("orders")
+          .update({
+            status: orderStatus,
+            delivery_status: deliveryStatus,
+            delivered_at: newStatus === 'delivered' ? new Date().toISOString() : null,
+          })
+          .eq("id", mainOrder.id);
+
+        if (updateOrderError) throw updateOrderError;
+      }
+
+      // ✅ 4. إشعار للمشتري (عند التوصيل فقط)
+      if (mainOrder?.buyer_id && newStatus === 'delivered') {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: mainOrder.buyer_id,
+            type: "order_delivered",
+            title_ar: "✅ تم توصيل طلبك!",
+            body_ar: `تم توصيل طلبك "${mainOrder.listings?.title_ar || 'طلب رقم ' + mainOrder.id.substring(0,8)}" بواسطة ${currentDistributor?.full_name_ar || 'الموزع'}`,
+            title_en: `✅ Your order has been delivered!`,
+            body_en: `Your order "${mainOrder.listings?.title_en || 'Order ' + mainOrder.id.substring(0,8)}" has been delivered by ${currentDistributor?.full_name_en || 'distributor'}`,
+            link_url: `/orders/${mainOrder.id}`,
+            metadata: {
+              order_id: mainOrder.id,
+              delivery_order_id: orderId,
+              delivered_at: new Date().toISOString(),
+              distributor_name: currentDistributor?.full_name_ar,
+            }
+          });
+      }
+
+      // ✅ 5. إشعار للبائع (عند التوصيل فقط)
+      if (mainOrder?.listings?.owner_id && newStatus === 'delivered') {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: mainOrder.listings.owner_id,
+            type: "order_delivered",
+            title_ar: "✅ تم توصيل طلبك",
+            body_ar: `تم توصيل طلب "${mainOrder.listings?.title_ar}" إلى العميل بواسطة ${currentDistributor?.full_name_ar || 'الموزع'}`,
+            title_en: `✅ Your order has been delivered`,
+            body_en: `Order "${mainOrder.listings?.title_en}" has been delivered to customer by ${currentDistributor?.full_name_en || 'distributor'}`,
+            link_url: `/orders/${mainOrder.id}`,
+            metadata: {
+              order_id: mainOrder.id,
+              delivery_order_id: orderId,
+              delivered_at: new Date().toISOString(),
+              distributor_name: currentDistributor?.full_name_ar,
+            }
+          });
+      }
+
+      // ✅ 6. إشعار لشركة التوصيل (للمدراء)
+      if (deliveryOrder?.delivery_company_id) {
+        const statusLabels: Record<string, string> = {
+          picked_up: isArabic ? "تم استلام الطلب" : "Order picked up",
+          in_transit: isArabic ? "الطلب في الطريق" : "Order in transit",
+          delivered: isArabic ? "تم توصيل الطلب" : "Order delivered",
+          cancelled: isArabic ? "تم إلغاء الطلب" : "Order cancelled",
+        };
+        
+        const { data: companyAdmins } = await supabase
+          .from("delivery_company_admins")
+          .select("user_id")
+          .eq("company_id", deliveryOrder.delivery_company_id);
+
+        if (companyAdmins && companyAdmins.length > 0) {
+          const adminIds = companyAdmins.map((a: any) => a.user_id);
+          
+          await supabase
+            .from("notifications")
+            .insert(
+              adminIds.map((userId: string) => ({
+                user_id: userId,
+                type: "delivery_status_update",
+                title_ar: `📦 ${statusLabels[newStatus] || newStatus}`,
+                body_ar: `طلب #${deliveryOrder.tracking_number || orderId.substring(0,8)} - ${statusLabels[newStatus] || newStatus}${statusNotes ? `\nملاحظات: ${statusNotes}` : ''}`,
+                title_en: `📦 ${statusLabels[newStatus] || newStatus}`,
+                body_en: `Order #${deliveryOrder.tracking_number || orderId.substring(0,8)} - ${statusLabels[newStatus] || newStatus}${statusNotes ? `\nNotes: ${statusNotes}` : ''}`,
+                link_url: `/delivery/orders/${orderId}`,
+                metadata: {
+                  order_id: mainOrder?.id,
+                  delivery_order_id: orderId,
+                  status: newStatus,
+                  notes: statusNotes,
+                  distributor_id: currentDistributor?.id,
+                  distributor_name: currentDistributor?.full_name_ar,
+                }
+              }))
+            );
+        }
+      }
+
       toast.success(
         app.lang === "ar" 
           ? `✅ تم تحديث حالة الطلب إلى ${getStatusLabel(newStatus)}` 
           : `✅ Order status updated to ${getStatusLabel(newStatus)}`
       );
       
+      // ✅ إعادة جلب البيانات
+      await refetchOrders();
+      await refetchDistributors();
+      
       setIsStatusDialogOpen(false);
+      setStatusNotes("");
+      
     } catch (error) {
+      console.error("Error updating status:", error);
       toast.error(
         app.lang === "ar" 
           ? "❌ حدث خطأ في تحديث الحالة" 
           : "❌ Error updating status"
       );
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -264,7 +426,7 @@ function DistributorDashboardPage() {
         {/* ===== HEADER مع اسم التطبيق ===== */}
         <div className="relative bg-gradient-to-r from-[#0d2e2a] via-[#1a4f4a] to-[#2a655f] text-white overflow-hidden">
           
-          {/* ✅ خلفية متحركة */}
+          {/* خلفية متحركة */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 animate-pulse" />
             <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 animate-pulse" style={{ animationDelay: '2s' }} />
@@ -273,7 +435,7 @@ function DistributorDashboardPage() {
           
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
           
-          {/* ✅ سيارة تمشي في الهيدر */}
+          {/* سيارة تمشي في الهيدر */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
             <div className="absolute top-1/2 -translate-y-1/2 animate-drive-across">
               <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm px-6 py-3 rounded-full border border-white/10">
@@ -290,9 +452,9 @@ function DistributorDashboardPage() {
           
           <div className="relative mx-auto max-w-7xl px-4 py-4 md:py-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
-              {/* ✅ اسم التطبيق + معلومات الموزع */}
+              {/* اسم التطبيق + معلومات الموزع */}
               <div className="flex items-center gap-4">
-                {/* ✅ شعار التطبيق مع حركة */}
+                {/* شعار التطبيق مع حركة */}
                 <div className="relative">
                   <div className="h-16 w-16 rounded-full bg-gradient-to-br from-emerald-400 to-[#0d2e2a] border-2 border-white/30 flex items-center justify-center overflow-hidden shadow-lg shadow-[#0d2e2a]/20 group-hover:scale-110 transition-all duration-500 animate-float">
                     <span className="text-2xl font-bold text-white">س</span>
@@ -303,15 +465,15 @@ function DistributorDashboardPage() {
                 </div>
                 
                 <div>
-                  {/* ✅ اسم التطبيق "السوق" */}
-                <div className="flex items-center gap-2">
-  <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-emerald-200 bg-clip-text text-transparent animate-gradient">
-    {isArabic ? "🛍️ السوق لعندك" : "🛍️ Souqi L3ndak"}
-  </h1>
-  <Badge className="bg-emerald-500/30 text-emerald-200 border-0 text-[8px] px-1.5 py-0 animate-pulse">
-    {isArabic ? "🚚 توصيل" : "🚚 Delivery"}
-  </Badge>
-</div>
+                  {/* اسم التطبيق "السوق" */}
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-emerald-200 bg-clip-text text-transparent animate-gradient">
+                      {isArabic ? "🛍️ السوق لعندك" : "🛍️ Souqi L3ndak"}
+                    </h1>
+                    <Badge className="bg-emerald-500/30 text-emerald-200 border-0 text-[8px] px-1.5 py-0 animate-pulse">
+                      {isArabic ? "🚚 توصيل" : "🚚 Delivery"}
+                    </Badge>
+                  </div>
                   
                   <div className="text-white/80 text-sm flex items-center gap-2">
                     <Sparkles className="h-3 w-3 animate-spin-slow" />
@@ -326,16 +488,16 @@ function DistributorDashboardPage() {
                 </div>
               </div>
               
-              {/* ✅ الأزرار على اليمين مع حركات */}
+              {/* الأزرار على اليمين مع حركات */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 
-                {/* ✅ زر الإشعارات */}
+                {/* زر الإشعارات */}
                 <DistributorNotifications 
                   userId={app.user?.id} 
                   isArabic={isArabic} 
                 />
 
-                {/* ✅ ✅ ✅ زر المحادثات - يفتح /distributor/messages ✅ ✅ ✅ */}
+                {/* زر المحادثات - يفتح /distributor/messages */}
                 <Link
                   to="/distributor/messages"
                   className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative flex items-center justify-center"
@@ -348,7 +510,7 @@ function DistributorDashboardPage() {
                   )}
                 </Link>
 
-                {/* ✅ زر اللغة مع حركة */}
+                {/* زر اللغة مع حركة */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button 
@@ -369,7 +531,7 @@ function DistributorDashboardPage() {
                   </TooltipContent>
                 </Tooltip>
 
-                {/* ✅ زر الحساب */}
+                {/* زر الحساب */}
                 <DistributorAccountMenu 
                   userData={{
                     id: app.user?.id || '',
@@ -507,6 +669,7 @@ function DistributorDashboardPage() {
                     order={order} 
                     onStatusUpdate={() => {
                       setSelectedOrder(order);
+                      setStatusNotes("");
                       setIsStatusDialogOpen(true);
                     }}
                     onToggleMap={() => {
@@ -539,6 +702,25 @@ function DistributorDashboardPage() {
               </DialogDescription>
             </DialogHeader>
             
+            {/* ✅ ملاحظات */}
+            <div className="mt-2">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                {isArabic ? "📝 ملاحظات (اختياري)" : "📝 Notes (Optional)"}
+              </Label>
+              <Textarea
+                value={statusNotes}
+                onChange={(e) => setStatusNotes(e.target.value)}
+                placeholder={isArabic 
+                  ? "أضف ملاحظات عن حالة الطلب (مثال: تم الاستلام من المتجر، الطريق مزدحم، ...)" 
+                  : "Add notes about the order status (e.g., picked up from store, traffic, ...)"}
+                className="mt-1 min-h-[60px] resize-none"
+                dir={isArabic ? "rtl" : "ltr"}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {statusNotes.length}/500
+              </p>
+            </div>
+            
             <div className="grid grid-cols-2 gap-3 mt-4">
               {[
                 { value: "picked_up", label: isArabic ? "📦 تم الاستلام" : "📦 Picked up", icon: Package, color: "blue" },
@@ -554,12 +736,27 @@ function DistributorDashboardPage() {
                     `hover:border-${option.color}-500 hover:bg-${option.color}-50 dark:hover:bg-${option.color}-950/20`
                   )}
                   onClick={() => handleStatusUpdate(selectedOrder?.id, option.value)}
-                  disabled={updateStatus.isPending}
+                  disabled={isUpdating}
                 >
-                  <option.icon className="h-5 w-5 group-hover:scale-110 transition-all duration-300" />
+                  {isUpdating ? (
+                    <RefreshCw className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <option.icon className="h-5 w-5 group-hover:scale-110 transition-all duration-300" />
+                  )}
                   <span className="text-xs">{option.label}</span>
                 </Button>
               ))}
+            </div>
+            
+            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
+              <p className="text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span>
+                  {isArabic 
+                    ? "سيتم إرسال إشعارات للمشتري والبائع وشركة التوصيل عند تغيير الحالة"
+                    : "Notifications will be sent to buyer, seller and delivery company when status changes"}
+                </span>
+              </p>
             </div>
           </DialogContent>
         </Dialog>
@@ -760,7 +957,7 @@ function OrderCard({
             </Button>
           )}
           
-          {/* ✅ زر عرض الخريطة */}
+          {/* زر عرض الخريطة */}
           {address && (
             <Button 
               variant="outline" 
@@ -790,7 +987,7 @@ function OrderCard({
         </div>
       </div>
 
-      {/* ✅ الخريطة */}
+      {/* الخريطة */}
       {showMap && address && (
         <div className="mt-4 animate-in slide-in-from-top-3 duration-300">
           <OrderTrackingMap 

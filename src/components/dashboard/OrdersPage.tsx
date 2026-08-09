@@ -4,31 +4,47 @@ import React, { useState, useMemo, useCallback } from "react";
 import { 
   ShoppingBag, Package, Truck, CheckCircle2, XCircle, Clock, 
   Search, Filter, RefreshCw, FileSpreadsheet, FileText,
-  ChevronLeft, ChevronRight, Eye, Trash2, DollarSign,
-  MapPin, Calendar, User, Store, Phone, Mail, MessageCircle,
-  TrendingUp, TrendingDown, Award, Target, Sparkles, Rocket,
-  ChevronDown, MoreVertical, Printer, Download, Copy, Check,
-  AlertCircle, HelpCircle, Star, Users, Clock as ClockIcon,
-  ArrowUpRight, ArrowDownRight, Zap, Shield, Crown
+  ChevronLeft, ChevronRight, Eye, X, Layers,
+  AlertCircle, Sparkles, Rocket, DollarSign,
+  Calendar, User, Phone, MessageCircle,
+  TrendingUp, Star, Users, Clock as ClockIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useApp, useT, formatPrice } from "@/lib/i18n";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useApp, formatPrice } from "@/lib/i18n";
 import { useMyOrders } from "@/lib/queries";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import * as XLSX from 'xlsx';
 import pkg from 'file-saver';
+import { supabase } from "@/integrations/supabase/client";
+import { notifyDeliveryCompanyAdmins } from "@/lib/delivery-notifications";
 const { saveAs } = pkg;
+
+// ============================================================
+// ✅ ORDERS PAGE - نسخة محسّنة مع Pagination احترافي
+// ============================================================
 
 export const OrdersPage = React.memo(function OrdersPage() {
   const app = useApp();
-  const t = useT();
   
-  // ✅ جلب جميع طلبات المتجر
+  // ===== STATES =====
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectOrderId, setRejectOrderId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [isRejecting, setIsRejecting] = useState(false);
+
+  // ===== API =====
   const { 
     data: allOrders = [], 
     isLoading, 
@@ -37,38 +53,25 @@ export const OrdersPage = React.memo(function OrdersPage() {
     isFetching 
   } = useMyOrders(app.user?.id);
 
-  // ✅ حالة الفلترة والبحث
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "processing" | "shipped" | "delivered" | "cancelled">("all");
-  const [filterType, setFilterType] = useState<"all" | "order" | "booking">("all");
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-
-  // ✅ فلترة الطلبات حسب البائع (المتجر)
+  // ===== FILTER ORDERS BY SELLER =====
   const storeOrders = useMemo(() => {
-    // ✅ تصفية الطلبات الخاصة بالبائع الحالي
     return allOrders.filter((order: any) => order.seller_id === app.user?.id);
   }, [allOrders, app.user?.id]);
 
-  // ✅ فلترة إضافية حسب البحث والحالة والنوع
+  // ===== APPLY FILTERS =====
   const filteredOrders = useMemo(() => {
     let result = storeOrders;
 
-    // ✅ فلترة حسب الحالة
     if (filterStatus !== "all") {
       result = result.filter((order: any) => order.status === filterStatus);
     }
 
-    // ✅ فلترة حسب النوع (طلب عادي / حجز)
     if (filterType === "booking") {
       result = result.filter((order: any) => order.is_booking === true || order.type === "booking");
     } else if (filterType === "order") {
       result = result.filter((order: any) => !order.is_booking && order.type !== "booking");
     }
 
-    // ✅ فلترة حسب البحث
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((order: any) => {
@@ -86,23 +89,33 @@ export const OrdersPage = React.memo(function OrdersPage() {
       });
     }
 
-    // ✅ ترتيب من الأحدث للأقدم
     return result.sort((a: any, b: any) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }, [storeOrders, searchQuery, filterStatus, filterType]);
 
-  // ✅ Pagination
-  const totalPages = Math.ceil(filteredOrders.length / limit);
+  // ===== ✅ PAGINATION =====
+  const totalItems = filteredOrders.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  
   const paginatedOrders = useMemo(() => {
-    const start = (page - 1) * limit;
-    return filteredOrders.slice(start, start + limit);
-  }, [filteredOrders, page, limit]);
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredOrders.slice(start, end);
+  }, [filteredOrders, currentPage, itemsPerPage]);
 
-  // ✅ إحصائيات الطلبات
+  // ===== Reset to page 1 when filters change =====
+  const handleFilterChange = useCallback((callback: () => void) => {
+    callback();
+    setCurrentPage(1);
+  }, []);
+
+  // ===== STATS =====
   const stats = useMemo(() => ({
     total: storeOrders.length,
     pending: storeOrders.filter((o: any) => o.status === "pending").length,
+    accepted: storeOrders.filter((o: any) => o.status === "accepted").length,
+    rejected: storeOrders.filter((o: any) => o.status === "rejected").length,
     processing: storeOrders.filter((o: any) => o.status === "processing").length,
     shipped: storeOrders.filter((o: any) => o.status === "shipped").length,
     delivered: storeOrders.filter((o: any) => o.status === "delivered").length,
@@ -110,17 +123,18 @@ export const OrdersPage = React.memo(function OrdersPage() {
     bookings: storeOrders.filter((o: any) => o.is_booking === true || o.type === "booking").length,
   }), [storeOrders]);
 
-  // ✅ إجمالي الإيرادات
   const totalRevenue = useMemo(() => {
     return storeOrders
       .filter((o: any) => o.status === "delivered" || o.status === "completed")
       .reduce((sum: number, order: any) => sum + (Number(order.total) || 0), 0);
   }, [storeOrders]);
 
-  // ✅ دوال مساعدة
+  // ===== HELPERS =====
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
       pending: app.lang === "ar" ? "قيد المراجعة" : "Pending",
+      accepted: app.lang === "ar" ? "مقبول" : "Accepted",
+      rejected: app.lang === "ar" ? "مرفوض" : "Rejected",
       processing: app.lang === "ar" ? "قيد المعالجة" : "Processing",
       shipped: app.lang === "ar" ? "تم الشحن" : "Shipped",
       delivered: app.lang === "ar" ? "تم التوصيل" : "Delivered",
@@ -133,6 +147,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       pending: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+      accepted: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+      rejected: "bg-red-500/10 text-red-600 border-red-500/20",
       processing: "bg-blue-500/10 text-blue-600 border-blue-500/20",
       shipped: "bg-purple-500/10 text-purple-600 border-purple-500/20",
       delivered: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
@@ -145,6 +161,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
   const getStatusIcon = (status: string) => {
     const icons: Record<string, any> = {
       pending: Clock,
+      accepted: CheckCircle2,
+      rejected: XCircle,
       processing: RefreshCw,
       shipped: Truck,
       delivered: CheckCircle2,
@@ -154,7 +172,172 @@ export const OrdersPage = React.memo(function OrdersPage() {
     return icons[status] || Clock;
   };
 
-  // ✅ تصدير إلى Excel
+  // ===== ACCEPT ORDER =====
+  const handleAcceptOrder = useCallback(async (orderId: string) => {
+    try {
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select(`
+          *,
+          listings:listing_id (
+            id,
+            title_ar,
+            owner_id,
+            profiles:owner_id (
+              store_name,
+              store_address,
+              lat,
+              lng
+            )
+          )
+        `)
+        .eq("id", orderId)
+        .single();
+
+      if (orderError) throw orderError;
+
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({ 
+          status: 'accepted',
+          accepted_at: new Date().toISOString()
+        })
+        .eq("id", orderId);
+
+      if (updateError) throw updateError;
+
+      const { data: company, error: companyError } = await supabase
+        .from("delivery_companies")
+        .select("*")
+        .eq("governorate_id", order.governorate_id)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (company && !companyError) {
+        const { error: deliveryError } = await supabase
+          .from("delivery_orders")
+          .insert({
+            order_id: orderId,
+            delivery_company_id: company.id,
+            pickup_address: order.listings?.profiles?.store_address || "عنوان المتجر",
+            pickup_latitude: order.listings?.profiles?.lat || 0,
+            pickup_longitude: order.listings?.profiles?.lng || 0,
+            delivery_address: order.delivery_address,
+            delivery_latitude: order.delivery_lat,
+            delivery_longitude: order.delivery_lng,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+          });
+
+        if (deliveryError) console.error("❌ Error creating delivery order:", deliveryError);
+
+        await notifyDeliveryCompanyAdmins(company.id, {
+          type: "new_delivery",
+          title_ar: "🚚 طلب توصيل جديد",
+          body_ar: `لديك طلب توصيل جديد إلى ${order.delivery_address || "عنوان العميل"}`,
+          link_url: `/delivery/orders/${orderId}`,
+          metadata: {
+            order_id: orderId,
+            delivery_address: order.delivery_address,
+            company_id: company.id,
+          }
+        });
+      }
+
+      if (order.buyer_id) {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: order.buyer_id,
+            type: "order_accepted",
+            title_ar: "✅ تم قبول طلبك",
+            body_ar: `تم قبول طلبك "${order.listings?.title_ar}" وسيتم شحنه قريباً`,
+            link_url: `/orders/${orderId}`,
+          });
+      }
+
+      toast.success(app.lang === "ar" ? "✅ تم قبول الطلب" : "✅ Order accepted");
+      refetchOrders();
+
+    } catch (error) {
+      console.error("❌ Error accepting order:", error);
+      toast.error(app.lang === "ar" ? "❌ حدث خطأ في قبول الطلب" : "❌ Error accepting order");
+    }
+  }, [app.lang, refetchOrders]);
+
+  // ===== REJECT ORDER =====
+  const handleRejectOrder = useCallback(async (orderId: string, reason: string) => {
+    if (!reason.trim()) {
+      toast.error(app.lang === "ar" ? "❌ الرجاء إدخال سبب الرفض" : "❌ Please enter a rejection reason");
+      return;
+    }
+
+    setIsRejecting(true);
+
+    try {
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select(`
+          buyer_id,
+          listings:listing_id (
+            title_ar,
+            title_en
+          )
+        `)
+        .eq("id", orderId)
+        .single();
+
+      if (orderError) throw orderError;
+
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({ 
+          status: 'rejected',
+          rejected_at: new Date().toISOString(),
+          rejected_by: app.user?.id,
+          rejection_reason: reason.trim()
+        })
+        .eq("id", orderId);
+
+      if (updateError) throw updateError;
+
+      const productTitle = app.lang === "ar" 
+        ? order.listings?.title_ar 
+        : order.listings?.title_en || order.listings?.title_ar;
+
+      if (order.buyer_id) {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: order.buyer_id,
+            type: "order_rejected",
+            title_ar: "❌ تم رفض طلبك",
+            body_ar: `تم رفض طلبك "${productTitle}" من قبل المتجر. السبب: ${reason.trim()}`,
+            title_en: "❌ Your order was rejected",
+            body_en: `Your order "${productTitle}" was rejected by the store. Reason: ${reason.trim()}`,
+            link_url: `/orders/${orderId}`,
+            metadata: {
+              rejection_reason: reason.trim(),
+              order_id: orderId,
+            }
+          });
+      }
+
+      toast.success(app.lang === "ar" ? "✅ تم رفض الطلب مع إرسال السبب" : "✅ Order rejected with reason");
+      refetchOrders();
+      setRejectDialogOpen(false);
+      setRejectOrderId(null);
+      setRejectReason("");
+
+    } catch (error) {
+      console.error("❌ Error rejecting order:", error);
+      toast.error(app.lang === "ar" ? "❌ حدث خطأ في رفض الطلب" : "❌ Error rejecting order");
+    } finally {
+      setIsRejecting(false);
+    }
+  }, [app.lang, app.user?.id, refetchOrders]);
+
+  // ===== EXPORTS =====
   const exportToExcel = useCallback(() => {
     const exportData = filteredOrders.map((order: any) => ({
       'رقم الطلب': String(order.id).slice(0, 8),
@@ -164,19 +347,19 @@ export const OrdersPage = React.memo(function OrdersPage() {
       'الحالة': getStatusLabel(order.status),
       'التاريخ': new Date(order.created_at).toLocaleDateString(app.lang === 'ar' ? 'ar-SA' : 'en-US'),
       'النوع': order.is_booking || order.type === "booking" ? 'حجز' : 'طلب',
+      'سبب الرفض': order.rejection_reason || '—',
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'الطلبات');
-    ws['!cols'] = [{ wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 12 }];
+    ws['!cols'] = [{ wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 30 }];
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
     saveAs(blob, `طلبات_المتجر_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.xlsx`);
     toast.success(app.lang === "ar" ? "✅ تم تصدير الطلبات إلى Excel" : "✅ Orders exported to Excel");
   }, [filteredOrders, app.lang, app.currency]);
 
-  // ✅ تصدير إلى Word
   const exportToWord = useCallback(() => {
     let html = `
       <html dir="rtl"><head><meta charset="UTF-8">
@@ -198,7 +381,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
         <div class="stat"><div class="value">${formatPrice(totalRevenue, app.currency, app.lang)}</div><div class="label">إجمالي الإيرادات</div></div>
       </div>
       <table><thead><tr>
-        <th>#</th><th>رقم الطلب</th><th>المنتج</th><th>الكمية</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th>
+        <th>#</th><th>رقم الطلب</th><th>المنتج</th><th>الكمية</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th><th>سبب الرفض</th>
       </tr></thead><tbody>
     `;
     filteredOrders.slice(0, 100).forEach((order: any, i: number) => {
@@ -210,6 +393,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
         <td>${formatPrice(Number(order.total) || 0, app.currency, app.lang)}</td>
         <td>${getStatusLabel(order.status)}</td>
         <td>${new Date(order.created_at).toLocaleDateString('ar-SA')}</td>
+        <td>${order.rejection_reason || '—'}</td>
       </tr>`;
     });
     html += `</tbody></table></body></html>`;
@@ -218,13 +402,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
     toast.success(app.lang === "ar" ? "✅ تم تصدير الطلبات إلى Word" : "✅ Orders exported to Word");
   }, [filteredOrders, stats, totalRevenue, app.lang, app.currency]);
 
-  // ✅ فتح تفاصيل الطلب
-  const openOrderDetail = useCallback((order: any) => {
-    setSelectedOrder(order);
-    setDetailDialogOpen(true);
-  }, []);
-
-  // ✅ عرض حالة التحميل المحسنة
+  // ===== LOADING =====
   if (isLoading || isFetching) {
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-6">
@@ -233,21 +411,15 @@ export const OrdersPage = React.memo(function OrdersPage() {
           <div className="absolute inset-0 flex items-center justify-center">
             <Package className="h-8 w-8 text-[#2a655f] animate-pulse" />
           </div>
-          <div className="absolute -inset-4 rounded-full border-2 border-[#2a655f]/10 animate-ping" />
         </div>
-        <div className="text-center space-y-2">
-          <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 animate-pulse">
-            {app.lang === "ar" ? "⏳ جاري تحميل طلباتك..." : "⏳ Loading your orders..."}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {app.lang === "ar" ? "قد يستغرق هذا بضع ثوانٍ" : "This may take a few seconds"}
-          </p>
-        </div>
+        <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 animate-pulse">
+          {app.lang === "ar" ? "⏳ جاري تحميل طلباتك..." : "⏳ Loading your orders..."}
+        </p>
       </div>
     );
   }
 
-  // ✅ عرض حالة الخطأ
+  // ===== ERROR =====
   if (isError) {
     return (
       <div className="rounded-3xl border-2 border-red-200/50 dark:border-red-800/30 p-20 text-center bg-red-50/50 dark:bg-red-950/20">
@@ -267,47 +439,37 @@ export const OrdersPage = React.memo(function OrdersPage() {
     );
   }
 
+  // ===== RENDER =====
   return (
     <div className="space-y-6">
       
       {/* ===== HEADER ===== */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="relative">
-          <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
-          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#3a8a82]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
-          
+        <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
-            <div className="relative group">
-              <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
-              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#2a655f]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                <ShoppingBag className="h-5 w-5 group-hover:animate-bounce" />
-              </div>
+            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25">
+              <ShoppingBag className="h-5 w-5" />
             </div>
             {app.lang === "ar" ? "طلباتي" : "My Orders"}
-            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20 text-sm px-3 py-1">
               {stats.total}
             </Badge>
           </h1>
           
-          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10">
-              <ClockIcon className="h-3.5 w-3.5 text-yellow-500 animate-pulse" />
-              <span className="text-yellow-600 font-medium">{stats.pending}</span>
-              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "قيد المراجعة" : "pending"}</span>
+          <div className="flex items-center gap-3 flex-wrap mt-1 text-sm text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-50 border border-yellow-200/50">
+              <Clock className="h-3.5 w-3.5 text-yellow-500" />
+              {stats.pending} {app.lang === "ar" ? "قيد المراجعة" : "pending"}
             </span>
-            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/50">
               <Truck className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-emerald-600 font-medium">{stats.delivered}</span>
-              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "تم التوصيل" : "delivered"}</span>
+              {stats.delivered} {app.lang === "ar" ? "تم التوصيل" : "delivered"}
             </span>
-            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200/50">
               <DollarSign className="h-3.5 w-3.5 text-purple-500" />
-              <span className="text-purple-600 font-medium">{formatPrice(totalRevenue, app.currency, app.lang)}</span>
-              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "إيرادات" : "revenue"}</span>
+              {formatPrice(totalRevenue, app.currency, app.lang)}
             </span>
-          </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -316,7 +478,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
             size="sm" 
             onClick={exportToExcel} 
             disabled={filteredOrders.length === 0} 
-            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 transition-all duration-300 hover:scale-105"
+            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
           >
             <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Excel
           </Button>
@@ -325,7 +487,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
             size="sm" 
             onClick={exportToWord} 
             disabled={filteredOrders.length === 0} 
-            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 transition-all duration-300 hover:scale-105"
+            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
           >
             <FileText className="h-4 w-4 mr-1.5" /> Word
           </Button>
@@ -333,7 +495,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
             variant="outline" 
             size="sm" 
             onClick={() => refetchOrders()} 
-            className="rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5 transition-all duration-300 group"
+            className="rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
           >
             <RefreshCw className="h-4 w-4 mr-1.5 group-hover:rotate-180 transition-transform duration-700" /> 
             {app.lang === "ar" ? "تحديث" : "Refresh"}
@@ -342,10 +504,12 @@ export const OrdersPage = React.memo(function OrdersPage() {
       </div>
 
       {/* ===== STATS CARDS ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {[
           { key: 'total', label: app.lang === 'ar' ? 'الإجمالي' : 'Total', value: stats.total, icon: ShoppingBag, color: 'text-[#2a655f]', bg: 'bg-[#2a655f]/10' },
           { key: 'pending', label: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: stats.pending, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-500/10' },
+          { key: 'accepted', label: app.lang === 'ar' ? 'مقبول' : 'Accepted', value: stats.accepted, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+          { key: 'rejected', label: app.lang === 'ar' ? 'مرفوض' : 'Rejected', value: stats.rejected, icon: XCircle, color: 'text-red-600', bg: 'bg-red-500/10' },
           { key: 'processing', label: app.lang === 'ar' ? 'قيد المعالجة' : 'Processing', value: stats.processing, icon: RefreshCw, color: 'text-blue-600', bg: 'bg-blue-500/10' },
           { key: 'shipped', label: app.lang === 'ar' ? 'تم الشحن' : 'Shipped', value: stats.shipped, icon: Truck, color: 'text-purple-600', bg: 'bg-purple-500/10' },
           { key: 'delivered', label: app.lang === 'ar' ? 'تم التوصيل' : 'Delivered', value: stats.delivered, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
@@ -353,13 +517,11 @@ export const OrdersPage = React.memo(function OrdersPage() {
         ].map((stat) => (
           <div 
             key={stat.key} 
-            className="group relative bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-3 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
+            className="group relative bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-3 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden"
           >
-            <div className={`absolute inset-0 bg-gradient-to-br from-${stat.color.split('-')[1]}/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-            
             <div className="relative flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   {stat.label}
                 </p>
                 <p className={`text-xl font-bold mt-0.5 ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
@@ -370,25 +532,23 @@ export const OrdersPage = React.memo(function OrdersPage() {
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </div>
             </div>
-            
-            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#2a655f] to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
           </div>
         ))}
       </div>
 
       {/* ===== SEARCH & FILTERS ===== */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 group">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors duration-300" />
+        <div className="relative flex-1">
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400" />
           <Input 
             value={searchQuery} 
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }} 
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
             placeholder={app.lang === "ar" ? "🔍 ابحث في الطلبات..." : "🔍 Search orders..."} 
-            className="ps-9 h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300" 
+            className="ps-9 h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20" 
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery("")}
+              onClick={() => { setSearchQuery(""); setCurrentPage(1); }}
               className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
             >
               <X className="h-4 w-4" />
@@ -396,8 +556,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
           )}
         </div>
         
-        <Select value={filterStatus} onValueChange={(v: any) => { setFilterStatus(v); setPage(1); }}>
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30">
+        <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setCurrentPage(1); }}>
+          <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
               <SelectValue placeholder={app.lang === "ar" ? "الحالة" : "Status"} />
@@ -406,6 +566,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
           <SelectContent className="rounded-xl border-[#2a655f]/20">
             <SelectItem value="all">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
             <SelectItem value="pending">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
+            <SelectItem value="accepted">✅ {app.lang === "ar" ? "مقبول" : "Accepted"}</SelectItem>
+            <SelectItem value="rejected">❌ {app.lang === "ar" ? "مرفوض" : "Rejected"}</SelectItem>
             <SelectItem value="processing">🔄 {app.lang === "ar" ? "قيد المعالجة" : "Processing"}</SelectItem>
             <SelectItem value="shipped">🚚 {app.lang === "ar" ? "تم الشحن" : "Shipped"}</SelectItem>
             <SelectItem value="delivered">✅ {app.lang === "ar" ? "تم التوصيل" : "Delivered"}</SelectItem>
@@ -413,8 +575,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
           </SelectContent>
         </Select>
         
-        <Select value={filterType} onValueChange={(v: any) => { setFilterType(v); setPage(1); }}>
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30">
+        <Select value={filterType} onValueChange={(v) => { setFilterType(v); setCurrentPage(1); }}>
+          <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
             <div className="flex items-center gap-2">
               <Layers className="h-4 w-4 text-slate-400" />
               <SelectValue placeholder={app.lang === "ar" ? "النوع" : "Type"} />
@@ -427,7 +589,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
           </SelectContent>
         </Select>
         
-        <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
+        <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
           <SelectTrigger className="w-[90px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
             <SelectValue placeholder="10" />
           </SelectTrigger>
@@ -442,8 +604,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setPage(1); }} 
-          className="h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 group"
+          onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setItemsPerPage(10); setCurrentPage(1); }} 
+          className="h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5"
         >
           <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
           {app.lang === "ar" ? "مسح الكل" : "Clear All"}
@@ -452,56 +614,29 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
       {/* ===== ORDERS TABLE ===== */}
       {storeOrders.length === 0 ? (
-        <div className="relative rounded-3xl border-2 border-dashed border-[#2a655f]/30 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-transparent group hover:border-[#2a655f]/50 transition-all duration-500">
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          
-          <div className="relative">
-            <div className="absolute -top-12 -left-12 h-32 w-32 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
-            <div className="absolute -bottom-12 -right-12 h-32 w-32 rounded-full bg-[#3a8a82]/5 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-            
-            <div className="relative inline-block">
-              <div className="h-24 w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto animate-bounce">
-                <ShoppingBag className="h-12 w-12 text-[#2a655f]/60" />
-              </div>
-            </div>
-            
-            <h3 className="text-2xl font-bold mt-6 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] bg-clip-text text-transparent">
-              {app.lang === "ar" ? "📦 لا توجد طلبات بعد" : "📦 No orders yet"}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-              {app.lang === "ar" 
-                ? "عندما يقوم العملاء بشراء منتجاتك، ستظهر طلباتهم هنا" 
-                : "When customers purchase your products, their orders will appear here"}
-            </p>
-            
-            <div className="mt-8 flex items-center justify-center gap-6 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
-                {app.lang === "ar" ? "في انتظار الطلبات" : "Waiting for orders"}
-              </span>
-              <span className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
-              <span className="flex items-center gap-1.5">
-                <Rocket className="h-3.5 w-3.5 text-[#2a655f] animate-bounce" />
-                {app.lang === "ar" ? "ابدأ بتسويق منتجاتك" : "Start marketing your products"}
-              </span>
-            </div>
+        <div className="rounded-3xl border-2 border-dashed border-[#2a655f]/30 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-transparent">
+          <div className="h-24 w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto animate-bounce">
+            <ShoppingBag className="h-12 w-12 text-[#2a655f]/60" />
           </div>
+          <h3 className="text-2xl font-bold mt-6 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] bg-clip-text text-transparent">
+            {app.lang === "ar" ? "📦 لا توجد طلبات بعد" : "📦 No orders yet"}
+          </h3>
+          <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+            {app.lang === "ar" 
+              ? "عندما يقوم العملاء بشراء منتجاتك، ستظهر طلباتهم هنا" 
+              : "When customers purchase your products, their orders will appear here"}
+          </p>
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="relative rounded-3xl border-2 border-dashed border-slate-200/50 dark:border-slate-800/50 p-20 text-center bg-gradient-to-b from-slate-50/50 to-transparent group hover:border-[#2a655f]/30 transition-all duration-500">
-          <Search className="h-20 w-20 text-muted-foreground/40 mx-auto group-hover:scale-110 transition-transform duration-500" />
+        <div className="rounded-3xl border-2 border-dashed border-slate-200/50 dark:border-slate-800/50 p-20 text-center">
+          <Search className="h-20 w-20 text-muted-foreground/40 mx-auto" />
           <h3 className="text-xl font-semibold text-muted-foreground mt-4">
             {app.lang === "ar" ? "🔍 لا توجد نتائج مطابقة" : "🔍 No matching results"}
           </h3>
-          <p className="text-sm text-muted-foreground/60 mt-1">
-            {app.lang === "ar" 
-              ? `لم نعثر على طلبات تطابق "${searchQuery || 'البحث'}"` 
-              : `No orders match "${searchQuery || 'search'}"`}
-          </p>
           <Button 
             variant="outline" 
             className="mt-4 rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
-            onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); }}
+            onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setCurrentPage(1); }}
           >
             <X className="h-4 w-4 mr-2" />
             {app.lang === "ar" ? "مسح الفلاتر" : "Clear filters"}
@@ -509,8 +644,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
         </div>
       ) : (
         <>
-          {/* ===== ORDERS TABLE ===== */}
-          <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
+          <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden shadow-lg">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -536,16 +670,17 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {paginatedOrders.map((order: any, index: number) => {
+                  {paginatedOrders.map((order: any) => {
                     const StatusIcon = getStatusIcon(order.status);
                     const statusColor = getStatusColor(order.status);
                     const isBooking = order.is_booking === true || order.type === "booking";
+                    const isPending = order.status === "pending";
                     
                     return (
                       <tr 
                         key={order.id} 
                         className="group hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10 transition-colors duration-300 cursor-pointer"
-                        onClick={() => openOrderDetail(order)}
+                        onClick={() => { setSelectedOrder(order); setDetailDialogOpen(true); }}
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
@@ -627,18 +762,60 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         </td>
                         
                         <td className="px-4 py-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
+                          <div className="flex items-center justify-center gap-1 flex-wrap">
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all group-hover:scale-110"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                openOrderDetail(order);
+                                setSelectedOrder(order);
+                                setDetailDialogOpen(true);
                               }}
                             >
                               <Eye className="h-4 w-4 text-[#2a655f]" />
                             </Button>
+                            
+                            {isPending && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="h-8 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md shadow-emerald-500/30 transition-all duration-300 hover:scale-105"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAcceptOrder(order.id);
+                                  }}
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                                  {app.lang === "ar" ? "قبول" : "Accept"}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="h-8 px-3 rounded-lg text-xs font-bold shadow-md shadow-red-500/30 transition-all duration-300 hover:scale-105"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setRejectOrderId(order.id);
+                                    setRejectReason("");
+                                    setRejectDialogOpen(true);
+                                  }}
+                                >
+                                  <XCircle className="h-3.5 w-3.5 mr-1" />
+                                  {app.lang === "ar" ? "رفض" : "Reject"}
+                                </Button>
+                              </>
+                            )}
+                            
+                            {!isPending && (
+                              <Badge className={`${statusColor} border text-[9px] px-2 py-0.5`}>
+                                {order.status === "accepted" && "✅ " + (app.lang === "ar" ? "مقبول" : "Accepted")}
+                                {order.status === "rejected" && "❌ " + (app.lang === "ar" ? "مرفوض" : "Rejected")}
+                                {order.status === "processing" && "🔄 " + (app.lang === "ar" ? "قيد المعالجة" : "Processing")}
+                                {order.status === "shipped" && "🚚 " + (app.lang === "ar" ? "تم الشحن" : "Shipped")}
+                                {order.status === "delivered" && "✅ " + (app.lang === "ar" ? "تم التوصيل" : "Delivered")}
+                                {order.status === "cancelled" && "❌ " + (app.lang === "ar" ? "ملغي" : "Cancelled")}
+                              </Badge>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -649,83 +826,92 @@ export const OrdersPage = React.memo(function OrdersPage() {
             </div>
           </div>
 
-          {/* ===== PAGINATION ===== */}
+          {/* ===== ✅ PAGINATION ===== */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex-wrap gap-3">
               <span className="text-xs text-slate-500 flex items-center gap-2">
                 <TrendingUp className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
-                {app.lang === "ar" ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
+                {app.lang === "ar" ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+                <span className="text-muted-foreground/50">|</span>
+                <span className="text-muted-foreground">
+                  {totalItems} {app.lang === "ar" ? "طلب" : "orders"}
+                </span>
               </span>
+              
               <div className="flex items-center gap-1">
+                {/* First page */}
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => setPage(1)} 
-                  disabled={page === 1} 
-                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50"
+                  onClick={() => setCurrentPage(1)} 
+                  disabled={currentPage === 1} 
+                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 disabled:opacity-50"
                 >
                   <span className="text-xs font-bold">«</span>
                 </Button>
+                
+                {/* Previous page */}
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => setPage(page - 1)} 
-                  disabled={page === 1} 
-                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50"
+                  onClick={() => setCurrentPage(currentPage - 1)} 
+                  disabled={currentPage === 1} 
+                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 disabled:opacity-50"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 
-                <div className="flex items-center gap-1 px-3">
+                {/* Page numbers */}
+                <div className="flex items-center gap-1 px-2">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const p = i + 1;
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
                     return (
                       <Button
-                        key={p}
-                        variant={p === page ? "default" : "ghost"}
+                        key={pageNum}
+                        variant={pageNum === currentPage ? "default" : "ghost"}
                         size="sm"
-                        onClick={() => setPage(p)}
+                        onClick={() => setCurrentPage(pageNum)}
                         className={cn(
                           "h-8 w-8 p-0 rounded-xl text-xs font-medium transition-all duration-300",
-                          p === page 
+                          pageNum === currentPage 
                             ? "bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md shadow-[#2a655f]/25" 
                             : "hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
                         )}
                       >
-                        {p}
+                        {pageNum}
                       </Button>
                     );
                   })}
-                  {totalPages > 5 && page < totalPages - 2 && (
-                    <>
-                      <span className="text-xs text-muted-foreground">...</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setPage(totalPages)}
-                        className="h-8 w-8 p-0 rounded-xl text-xs font-medium hover:bg-[#2a655f]/10 hover:text-[#2a655f] transition-all duration-300"
-                      >
-                        {totalPages}
-                      </Button>
-                    </>
-                  )}
                 </div>
                 
+                {/* Next page */}
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => setPage(page + 1)} 
-                  disabled={page === totalPages} 
-                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50"
+                  onClick={() => setCurrentPage(currentPage + 1)} 
+                  disabled={currentPage === totalPages} 
+                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 disabled:opacity-50"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
+                
+                {/* Last page */}
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => setPage(totalPages)} 
-                  disabled={page === totalPages} 
-                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50"
+                  onClick={() => setCurrentPage(totalPages)} 
+                  disabled={currentPage === totalPages} 
+                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 disabled:opacity-50"
                 >
                   <span className="text-xs font-bold">»</span>
                 </Button>
@@ -737,18 +923,18 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
       {/* ===== ORDER DETAIL DIALOG ===== */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-[#2a655f]/10">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#2a655f]/20 bg-white dark:bg-slate-900 p-6">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-9 w-9 rounded-full bg-black/50 hover:bg-black/70 text-white z-30 transition-all duration-300 hover:scale-110 hover:rotate-90"
+            className="absolute top-4 end-4 h-9 w-9 rounded-full bg-black/50 hover:bg-black/70 text-white z-30"
             onClick={() => setDetailDialogOpen(false)}
           >
             <X className="h-5 w-5" />
           </Button>
 
           {selectedOrder && (
-            <div className="p-6 md:p-8">
+            <div>
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -764,7 +950,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* معلومات المنتج */}
                 <div className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <Package className="h-3.5 w-3.5 text-[#2a655f]" />
@@ -787,7 +972,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   )}
                 </div>
 
-                {/* معلومات العميل */}
                 <div className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <User className="h-3.5 w-3.5 text-[#2a655f]" />
@@ -805,7 +989,18 @@ export const OrdersPage = React.memo(function OrdersPage() {
                 </div>
               </div>
 
-              {/* ملاحظات */}
+              {selectedOrder.status === "rejected" && selectedOrder.rejection_reason && (
+                <div className="mt-4 p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-800/30">
+                  <p className="text-xs font-medium text-red-600 dark:text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <XCircle className="h-3.5 w-3.5" />
+                    {app.lang === "ar" ? "سبب الرفض" : "Rejection Reason"}
+                  </p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
+                    {selectedOrder.rejection_reason}
+                  </p>
+                </div>
+              )}
+
               {selectedOrder.notes && (
                 <div className="mt-4 p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200/50 dark:border-yellow-800/30">
                   <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -818,8 +1013,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                 </div>
               )}
 
-              {/* تاريخ الطلب */}
-              <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex items-center justify-between">
+              <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 text-[#2a655f]" />
                   {app.lang === "ar" ? "تاريخ الطلب:" : "Order date:"}
@@ -836,19 +1030,109 @@ export const OrdersPage = React.memo(function OrdersPage() {
         </DialogContent>
       </Dialog>
 
+      {/* ===== REJECT ORDER DIALOG ===== */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent className="max-w-md rounded-2xl border-red-200/50 dark:border-red-800/30 bg-white dark:bg-slate-900 p-6 shadow-2xl shadow-red-500/10">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-xl font-bold text-red-600 dark:text-red-400">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
+                <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              {app.lang === "ar" ? "رفض الطلب" : "Reject Order"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-4">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
+              <p className="text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span>
+                  {app.lang === "ar" 
+                    ? "سيتم إرسال سبب الرفض إلى العميل ليتمكن من فهم سبب الرفض"
+                    : "The rejection reason will be sent to the customer so they can understand why"}
+                </span>
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1.5">
+                {app.lang === "ar" ? "سبب الرفض" : "Rejection Reason"}
+                <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder={app.lang === "ar" 
+                  ? "اكتب سبب رفض الطلب (مثال: المنتج غير متوفر، سعر غير صحيح، ...)"
+                  : "Write the reason for rejecting the order (e.g., product unavailable, incorrect price, ...)"
+                }
+                className="w-full min-h-[100px] p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-red-400 focus:ring-2 focus:ring-red-400/20 resize-none"
+                dir={app.lang === "ar" ? "rtl" : "ltr"}
+              />
+              <p className="text-xs text-muted-foreground mt-1 text-right">
+                {rejectReason.length}/500
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {[
+                app.lang === "ar" ? "المنتج غير متوفر" : "Product unavailable",
+                app.lang === "ar" ? "سعر غير صحيح" : "Incorrect price",
+                app.lang === "ar" ? "عنوان غير صحيح" : "Invalid address",
+                app.lang === "ar" ? "مشكلة في الدفع" : "Payment issue",
+                app.lang === "ar" ? "سبب آخر" : "Other reason",
+              ].map((reason, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setRejectReason(reason)}
+                  className="px-3 py-1.5 text-xs rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-800 transition-all duration-200"
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRejectDialogOpen(false);
+                  setRejectOrderId(null);
+                  setRejectReason("");
+                }}
+                className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                {app.lang === "ar" ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (rejectOrderId) {
+                    handleRejectOrder(rejectOrderId, rejectReason);
+                  }
+                }}
+                disabled={!rejectReason.trim() || isRejecting}
+                className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-105 disabled:opacity-50"
+              >
+                {isRejecting ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    {app.lang === "ar" ? "جاري الرفض..." : "Rejecting..."}
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    {app.lang === "ar" ? "تأكيد الرفض" : "Confirm Reject"}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 });
 
-// ✅ إضافة CSS للحركات (في نهاية الملف)
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes spin-slow {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  .animate-spin-slow {
-    animation: spin-slow 2s linear infinite;
-  }
-`;
-document.head.appendChild(style);
+export default OrdersPage;

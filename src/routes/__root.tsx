@@ -43,6 +43,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 // ===== نهاية Imports الإشعارات =====
 
+// ===== ✅ استيراد LoginSplash بدلاً من DeliverySplash =====
+import { LoginSplash } from "@/components/LoginSplash";
+
 // ===== ✅ إضافة استيراد isPushSupported =====
 import { isPushSupported } from '@/lib/pushNotifications';
 // بعد الـ imports الموجودة
@@ -59,9 +62,6 @@ import {
   useCategoriesRealtime,
 } from "@/lib/hooks";
 
-// ===== ✅ ✅ ✅ ProgressBar Component (منقول من Footer) ✅ ✅ ✅
-// src/__root.tsx
-
 // ===== ✅ ✅ ✅ ProgressBar Component - z-index معدل ✅ ✅ ✅
 const ProgressBar = ({ progress }: { progress: number }) => {
   return (
@@ -76,7 +76,7 @@ const ProgressBar = ({ progress }: { progress: number }) => {
   );
 };
 
-// ... باقي الكود ...
+// ===== دالة 404 =====
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -94,6 +94,7 @@ function NotFoundComponent() {
   );
 }
 
+// ===== دالة Error =====
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   useEffect(() => { reportLovableError(error, { boundary: "root" }); }, [error]);
@@ -113,6 +114,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+// ===== Route Definition =====
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
@@ -139,23 +141,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-// src/__root.tsx
-
-// ... باقي الـ imports ...
-
+// ===== RootShell =====
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html 
       lang="ar" 
       dir="rtl" 
       style={{ 
-        overflowY: 'scroll',  // ✅ شريط تمرير دائم - يمنع اهتزاز الشاشة
+        overflowY: 'scroll',
         scrollBehavior: 'smooth'
       }}
     >
       <head><HeadContent /></head>
       <body style={{ 
-        overflowX: 'hidden',  // ✅ منع التمرير الأفقي
+        overflowX: 'hidden',
         width: '100%'
       }}>
         {children}
@@ -165,9 +164,7 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-// ... باقي الكود ...
-
-// ===== ✅ ✅ ✅ مكون طلب الإشعارات الاحترافي =====
+// ===== ✅ ✅ ✅ مكون طلب الإشعارات الاحترافي - بألوان السستم =====
 function NotificationPermissionHandler() {
   const app = useApp();
   const [showBanner, setShowBanner] = useState(false);
@@ -242,7 +239,7 @@ function NotificationPermissionHandler() {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[100] animate-in slide-in-from-bottom-full duration-500">
       <div className="mx-auto max-w-7xl px-4 pb-4">
-        <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-2xl shadow-blue-500/30 p-4 md:p-5 border border-white/20">
+        <div className="relative bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#3a8a82] rounded-2xl shadow-2xl shadow-[#2a655f]/30 p-4 md:p-5 border border-[#4a9f95]/30">
           <button
             onClick={handleCloseBanner}
             className="absolute top-2 right-2 md:top-3 md:right-3 text-white/60 hover:text-white transition-colors"
@@ -252,16 +249,17 @@ function NotificationPermissionHandler() {
 
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="flex-shrink-0">
-              <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-                <BellRing className="h-6 w-6 md:h-7 md:w-7 text-white" />
+              <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-white/20 backdrop-blur flex items-center justify-center border border-white/20 shadow-lg shadow-[#2a655f]/20">
+                <BellRing className="h-6 w-6 md:h-7 md:w-7 text-white animate-pulse" />
               </div>
             </div>
 
             <div className="flex-1 text-center sm:text-right">
-              <h4 className="text-white font-bold text-sm md:text-base">
+              <h4 className="text-white font-bold text-sm md:text-base flex items-center justify-center sm:justify-start gap-2">
+                <span className="inline-block h-2 w-2 rounded-full bg-emerald-300 animate-ping" />
                 {app.lang === "ar" ? "🔔 فعّل الإشعارات" : "🔔 Enable Notifications"}
               </h4>
-              <p className="text-white/80 text-xs md:text-sm mt-0.5">
+              <p className="text-emerald-100/90 text-xs md:text-sm mt-0.5 font-medium">
                 {app.lang === "ar" 
                   ? "احصل على تحديثات فورية عن الطلبات والعروض الجديدة" 
                   : "Get instant updates about orders and new offers"}
@@ -271,20 +269,22 @@ function NotificationPermissionHandler() {
             <div className="flex items-center gap-2 flex-shrink-0">
               <Button
                 onClick={handleEnableNotifications}
-                className="h-10 md:h-11 px-4 md:px-6 rounded-xl bg-white text-blue-600 hover:bg-white/90 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm md:text-base"
+                className="h-10 md:h-11 px-4 md:px-6 rounded-xl bg-white text-[#2a655f] hover:bg-emerald-50 font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm md:text-base border-2 border-white/30"
               >
-                <BellRing className="h-4 w-4 mr-2" />
-                {app.lang === "ar" ? "تفعيل" : "Enable"}
+                <BellRing className="h-4 w-4 mr-2 text-[#2a655f]" />
+                {app.lang === "ar" ? "تفعيل الآن" : "Enable Now"}
               </Button>
               <Button
                 variant="ghost"
                 onClick={handleCloseBanner}
-                className="h-10 md:h-11 px-3 md:px-4 rounded-xl text-white hover:bg-white/10 transition-colors text-sm"
+                className="h-10 md:h-11 px-3 md:px-4 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors text-sm border border-white/20"
               >
                 {app.lang === "ar" ? "ليس الآن" : "Not now"}
               </Button>
             </div>
           </div>
+          
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-300/50 to-transparent" />
         </div>
       </div>
     </div>
@@ -292,7 +292,6 @@ function NotificationPermissionHandler() {
 }
 
 // ===== مكون الإشعارات الداخلي =====
-// ===== مكون الإشعارات الداخلي - بألوان السستم ومتحرك =====
 function NotificationsProvider() {
   const app = useApp();
   
@@ -309,7 +308,7 @@ function NotificationsProvider() {
           .from('notifications')
           .update({ is_read: true })
           .eq('id', notification.id)
-          .eq('recipient_id', app.user!.id);
+         .eq('user_id', app.user!.id)
         
         if (error) throw error;
         await refetchNotifications();
@@ -331,7 +330,7 @@ function NotificationsProvider() {
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId)
-        .eq('recipient_id', app.user!.id);
+      .eq('user_id', app.user!.id)
       
       if (error) throw error;
       await refetchNotifications();
@@ -347,7 +346,7 @@ function NotificationsProvider() {
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
-        .eq('recipient_id', app.user!.id)
+       .eq('user_id', app.user!.id)
         .eq('is_read', false);
       
       if (error) throw error;
@@ -428,12 +427,10 @@ function NotificationsProvider() {
               animation: 'pulseGlow 3s ease-in-out infinite'
             }}
           >
-            {/* ✅ تموجات حول الزر */}
             <span className="absolute -inset-1 rounded-full border-2 border-[#2a655f]/20 animate-ripple opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <span className="absolute -inset-3 rounded-full border-2 border-[#3a8a82]/10 animate-ripple delay-700 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             <span className="absolute -inset-5 rounded-full border-2 border-[#4a9f95]/5 animate-ripple delay-1500 opacity-0 group-hover:opacity-100 transition-opacity duration-900" />
             
-            {/* ✅ الأيقونة */}
             <Bell className={`
               h-6 w-6 text-white 
               group-hover:scale-110 group-hover:rotate-12 
@@ -441,7 +438,6 @@ function NotificationsProvider() {
               animate-float-bell
             `} />
             
-            {/* ✅ العدد */}
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 h-6 min-w-6 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center animate-pulse border-2 border-white shadow-lg shadow-red-500/50">
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -509,7 +505,6 @@ function NotificationsProvider() {
             </div>
           </div>
 
-          {/* LIST - نفس الكود السابق */}
           <div className="max-h-[60vh] overflow-y-auto p-2 space-y-1.5">
             {notifications.length === 0 ? (
               <div className="py-16 text-center">
@@ -688,11 +683,10 @@ function NotificationsProvider() {
   );
 }
 
-// ===== ✅ ✅ ✅ مكون إدارة Realtime (داخل AppProvider) ✅ ✅ ✅
+// ===== ✅ ✅ ✅ مكون إدارة Realtime =====
 function RealtimeManager() {
   const app = useApp();
 
-  // ✅ تفعيل كل الـ Realtime هنا (داخل AppProvider)
   useProfileWithUpdate();
   useFavoritesRealtime(app.user?.id);
   useListingsRealtime();
@@ -705,23 +699,101 @@ function RealtimeManager() {
   return null;
 }
 
+// ===== ✅ ✅ ✅ مكون SimpleRedirect =====
+function SimpleRedirect() {
+  const app = useApp();
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [loading, setLoading] = useState(true);
+  const redirectedRef = useRef(false);
+
+  useEffect(() => {
+    if (redirectedRef.current) return;
+
+    const checkAndRedirect = async () => {
+      if (!app.user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", app.user.id);
+
+        if (error) throw error;
+        
+        const roles = data?.map((r: any) => r.role) || [];
+        const isAdmin = roles.includes("admin");
+        const isDeliveryCompany = roles.includes("delivery_company");
+        const isDistributor = roles.includes("distributor");
+
+        if (isDistributor && pathname.startsWith("/distributor")) {
+          setLoading(false);
+          return;
+        }
+        if (isDeliveryCompany && pathname.startsWith("/delivery")) {
+          setLoading(false);
+          return;
+        }
+        if (isAdmin && pathname.startsWith("/admin")) {
+          setLoading(false);
+          return;
+        }
+
+        if (isDistributor && (pathname === "/" || pathname === "")) {
+          redirectedRef.current = true;
+          console.log("🚚 [Redirect] Distributor → /distributor/dashboard");
+          navigate({ to: "/distributor/dashboard" });
+          return;
+        }
+
+        if (isDeliveryCompany && (pathname === "/" || pathname === "")) {
+          redirectedRef.current = true;
+          console.log("🏢 [Redirect] Delivery → /delivery/dashboard");
+          navigate({ to: "/delivery/dashboard" });
+          return;
+        }
+
+        if (!isAdmin && !isDeliveryCompany && !isDistributor) {
+          if (pathname.startsWith("/distributor") || pathname.startsWith("/delivery") || pathname.startsWith("/admin")) {
+            redirectedRef.current = true;
+            console.log("👤 [Redirect] Customer → /");
+            navigate({ to: "/" });
+            return;
+          }
+        }
+
+      } catch (error) {
+        console.error("Error checking roles:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAndRedirect();
+  }, [app.user, pathname, navigate]);
+
+  return null;
+}
+
 // ============================================================
-// ✅ RootComponent
+// ✅ RootComponent - مصحح مع LoginSplash
 // ============================================================
+// src/__root.tsx - الكود المصحح
+
 // ============================================================
-// ✅ RootComponent
-// ============================================================
-// ============================================================
-// ✅ RootComponent
+// ✅ RootComponent - لا يستخدم useApp
 // ============================================================
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const location = useRouterState({ select: (s) => s.location });
   
-  // ✅ ✅ ✅ State لشريط التقدم ✅ ✅ ✅
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  // ✅ ✅ ✅ useEffect لشريط التقدم ✅ ✅ ✅
+  // ✅ شريط التقدم
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
@@ -760,115 +832,91 @@ function RootComponent() {
     pathname.startsWith("/messages") ||
     pathname.startsWith("/messages_");
 
-  // ✅ ✅ ✅ مكون التوجيه المدمج - معدل للسماح للأدمن بالصفحة الرئيسية ✅ ✅ ✅
-  function SimpleRedirect() {
-    const app = useApp();
-    const navigate = useNavigate();
-    const pathname = useRouterState({ select: (s) => s.location.pathname });
-    const [loading, setLoading] = useState(true);
-    const redirectedRef = useRef(false);
-
-    useEffect(() => {
-      if (redirectedRef.current) return;
-
-      const checkAndRedirect = async () => {
-        if (!app.user) {
-          setLoading(false);
-          return;
-        }
-
-        try {
-          const { data, error } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", app.user.id);
-
-          if (error) throw error;
-          
-          const roles = data?.map((r: any) => r.role) || [];
-          const isAdmin = roles.includes("admin");
-          const isDeliveryCompany = roles.includes("delivery_company");
-          const isDistributor = roles.includes("distributor");
-
-          // ✅ إذا كان المستخدم في الصفحة الصحيحة
-          if (isDistributor && pathname.startsWith("/distributor")) {
-            setLoading(false);
-            return;
-          }
-          if (isDeliveryCompany && pathname.startsWith("/delivery")) {
-            setLoading(false);
-            return;
-          }
-          if (isAdmin && pathname.startsWith("/admin")) {
-            setLoading(false);
-            return;
-          }
-
-          // ✅ ✅ ✅ الأدمن يستطيع البقاء في الصفحة الرئيسية ✅ ✅ ✅
-          // لا نقوم بتوجيه الأدمن
-
-          // ✅ توجيه الموزع فقط من الصفحة الرئيسية
-          if (isDistributor && (pathname === "/" || pathname === "")) {
-            redirectedRef.current = true;
-            console.log("🚚 [Redirect] Distributor → /distributor/dashboard");
-            navigate({ to: "/distributor/dashboard" });
-            return;
-          }
-
-          // ✅ توجيه شركة التوصيل فقط من الصفحة الرئيسية
-          if (isDeliveryCompany && (pathname === "/" || pathname === "")) {
-            redirectedRef.current = true;
-            console.log("🏢 [Redirect] Delivery → /delivery/dashboard");
-            navigate({ to: "/delivery/dashboard" });
-            return;
-          }
-
-          // ✅ منع الوصول غير المصرح به
-          if (!isAdmin && !isDeliveryCompany && !isDistributor) {
-            if (pathname.startsWith("/distributor") || pathname.startsWith("/delivery") || pathname.startsWith("/admin")) {
-              redirectedRef.current = true;
-              console.log("👤 [Redirect] Customer → /");
-              navigate({ to: "/" });
-              return;
-            }
-          }
-
-        } catch (error) {
-          console.error("Error checking roles:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      checkAndRedirect();
-    }, [app.user, pathname, navigate]);
-
-    return null;
-  }
-
+  // ✅ ✅ ✅ تمرير location و hideChrome و scrollProgress إلى RootContent
   return (
     <QueryClientProvider client={queryClient}>
       <AppProvider>
-        <RealtimeManager />
-        <SimpleRedirect />
-        <NotificationPermissionHandler />
-        
-        {/* ✅ ✅ ✅ شريط التقدم ✅ ✅ ✅ */}
-        <ProgressBar progress={scrollProgress} />
-        
-        <ClientOnly>
-          <div className="min-h-screen flex flex-col">
-            {!hideChrome && <AnnouncementBar />}
-            {!hideChrome && <Header />}
- 
-            <main className="flex-1"><Outlet /></main>
-            {!hideChrome && <Footer />}
-            {!hideChrome && <SupportButton />}
-          </div>
-        </ClientOnly>
-        
-        <Toaster position="top-center" richColors />
+        <RootContent 
+          hideChrome={hideChrome} 
+          scrollProgress={scrollProgress} 
+          location={location}
+        />
       </AppProvider>
     </QueryClientProvider>
+  );
+}
+
+// ============================================================
+// ✅ RootContent - يستخدم useApp (داخل AppProvider)
+// ============================================================
+// src/__root.tsx - الجزء المعدل
+
+// ============================================================
+// ✅ RootContent - يستخدم useApp (داخل AppProvider)
+// ============================================================
+// src/__root.tsx - الكود المصحح النهائي
+
+// ============================================================
+// ✅ RootContent - يستخدم useApp (داخل AppProvider)
+// ============================================================
+function RootContent({ 
+  hideChrome, 
+  scrollProgress, 
+  location 
+}: { 
+  hideChrome: boolean; 
+  scrollProgress: number;
+  location: any;
+}) {
+  const app = useApp();
+  const [showSplash, setShowSplash] = useState(false);
+
+  useEffect(() => {
+    // إذا لم يتم تسجيل الدخول بعد، أغلق السبلاش
+    if (!app?.user) {
+      setShowSplash(false);
+      return;
+    }
+
+    // ✅ إظهار السبلاش فور توفر بيانات المستخدم ودون قيود sessionStorage معقدة
+    setShowSplash(true);
+
+  }, [app?.user?.id]); // يتفعل بمجرد تعرف النظام على المستخدم
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
+
+  // عدم إظهار السبلاش داخل صفحات الـ Auth
+  const isAuthPage = location?.pathname?.startsWith("/auth") || 
+                     location?.pathname?.startsWith("/reset-password");
+
+  if (showSplash && !isAuthPage) {
+    return (
+      <LoginSplash 
+        onComplete={handleSplashComplete}
+      />
+    );
+  }
+
+  return (
+    <>
+      <RealtimeManager />
+      <SimpleRedirect />
+      <NotificationPermissionHandler />
+      <ProgressBar progress={scrollProgress} />
+      
+      <ClientOnly>
+        <div className="min-h-screen flex flex-col">
+          {!hideChrome && <AnnouncementBar />}
+          {!hideChrome && <Header />}
+          <main className="flex-1"><Outlet /></main>
+          {!hideChrome && <Footer />}
+          {!hideChrome && <SupportButton />}
+        </div>
+      </ClientOnly>
+      
+      <Toaster position="top-center" richColors />
+    </>
   );
 }

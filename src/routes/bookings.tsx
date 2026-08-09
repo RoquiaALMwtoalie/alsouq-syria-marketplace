@@ -244,7 +244,7 @@ function BookingsPage() {
         await supabase
           .from("notifications")
           .insert({
-            recipient_id: booking.provider_id,
+       user_id: booking.provider_id,
             type: "booking_cancelled",
             title_ar: `❌ تم إلغاء الحجز`,
             body_ar: `قام العميل بإلغاء حجز "${booking.listings?.title_ar}"`,

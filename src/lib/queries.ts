@@ -186,7 +186,7 @@ export function useSimilarListings(categoryId: string | undefined, currentId: st
           categories(slug, name_ar, name_en),
           governorates(slug, name_ar, name_en),
           listing_images(url, sort_order),
-          profiles:owner_id(store_name, full_name, avatar_url),
+         profiles:owner_id(store_name, full_name, avatar_url, store_logo_url, store_cover_url),
           colors:product_colors (*),        // ✅ أضف هذا
           options:product_options (*),      // ✅ أضف هذا
           variations:product_variations (*) // ✅ أضف هذا
@@ -244,7 +244,7 @@ export function useListings(filter: ListingsFilter = {}) {
           categories(slug, name_ar, name_en),
           governorates(slug, name_ar, name_en),
           listing_images(url, sort_order),
-          profiles:owner_id(store_name, full_name, avatar_url),
+          profiles:owner_id(store_name, full_name, avatar_url, store_logo_url, store_cover_url),
           colors:product_colors (*),
           options:product_options (*),
           variations:product_variations (*)
@@ -715,8 +715,24 @@ export function useMyOrders(userId: string | undefined) {
 export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { buyer_id: string; seller_id: string; listing_id: string; total: number; quantity?: number; notes?: string }) => {
-      const { data, error } = await supabase.from("orders").insert(input).select().single();
+    mutationFn: async (input: { 
+      buyer_id: string; 
+      seller_id: string; 
+      listing_id: string; 
+      total: number; 
+      quantity?: number; 
+      notes?: string ;
+         governorate_id?: string; 
+    }) => {
+      const { data, error } = await supabase
+        .from("orders")
+        .insert({
+          ...input,
+          status: 'pending',  // ✅ اضف هذا
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
       if (error) throw error;
       return data;
     },
@@ -755,9 +771,6 @@ export function useCreateBooking() {
 }
 /* ---------- Bookings ---------- */
 
-// ... (الدوال الموجودة: useMyBookings, useCreateBooking)
-
-// ✅ إلغاء حجز
 export async function cancelBooking(bookingId: string, userId: string) {
   const { data, error } = await supabase
     .from("bookings")
@@ -1838,10 +1851,10 @@ export function useMostFavoritedListings(limit = 12) {
       
       // Fetch profiles for the listings
       const ownerIds = data.map((item: any) => item.owner_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, store_name, store_logo_url")
-        .in("id", ownerIds);
+     const { data: profiles } = await supabase
+  .from("profiles")
+  .select("id, store_name, store_logo_url, store_cover_url")
+  .in("id", ownerIds);
       
       const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
       return data.map((item: any) => ({
@@ -1911,10 +1924,10 @@ export function useTrendingListings(limit = 12) {
       
       // Fetch profiles for the listings
       const ownerIds = data.map((item: any) => item.owner_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, store_name, store_logo_url")
-        .in("id", ownerIds);
+     const { data: profiles } = await supabase
+  .from("profiles")
+  .select("id, store_name, store_logo_url, store_cover_url")
+  .in("id", ownerIds);
       
       const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
       return data.map((item: any) => ({
@@ -2015,7 +2028,7 @@ export function useNotifications(userId: string | undefined) {
       const { data, error } = await supabase
         .from("notifications")
         .select("*")
-        .eq("recipient_id", userId)
+       .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -2055,7 +2068,7 @@ export function useMarkAllNotificationsRead() {
       const { error } = await supabase
         .from("notifications")
         .update({ is_read: true })
-        .eq("recipient_id", userId)
+       .eq("user_id", userId)
         .eq("is_read", false);
       if (error) throw error;
     },
@@ -2080,28 +2093,36 @@ export function useSendNotification() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      recipientId,
+      userId,
       type,
       titleAr,
       bodyAr,
       referenceId,
       metadata,
     }: {
-      recipientId: string;
+      userId: string;
       type: string;
       titleAr: string;
       bodyAr: string;
       referenceId?: string;
       metadata?: Record<string, any>;
     }) => {
-      const { data, error } = await supabase.rpc("send_custom_notification", {
-        p_recipient_id: recipientId,
-        p_type: type,
-        p_title_ar: titleAr,
-        p_body_ar: bodyAr,
-        p_reference_id: referenceId || null,
-        p_metadata: metadata || {},
-      });
+      // ✅ استخدم insert بدلاً من RPC
+      const { data, error } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: userId,
+          type: type,
+          title_ar: titleAr,
+          body_ar: bodyAr,
+          reference_id: referenceId || null,
+          metadata: metadata || {},
+          is_read: false,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      
       if (error) throw error;
       return data;
     },
@@ -2145,7 +2166,7 @@ export function useRealtimeNotifications(userId: string | undefined) {
         event: 'INSERT',
         schema: 'public',
         table: 'notifications',
-        filter: `recipient_id=eq.${userId}`,
+       filter: `user_id=eq.${userId}`,
       },
       (payload) => {
         const notification = payload.new as any;
@@ -2198,7 +2219,7 @@ export function useUnreadNotificationsCount(userId: string | undefined) {
       const { count, error } = await supabase
         .from("notifications")
         .select("*", { count: 'exact', head: true })
-        .eq("recipient_id", userId)
+       .eq("user_id", userId)
         .eq("is_read", false);
       if (error) throw error;
       return count || 0;
@@ -3006,7 +3027,7 @@ export function useSendAdminNotification() {
       const { data, error } = await supabase
         .from('notifications')
         .insert({
-          recipient_id: input.recipientId,
+         user_id: input.recipientId, 
           type: input.type,
           title_ar: input.titleAr,
           body_ar: input.bodyAr,
@@ -3043,7 +3064,7 @@ export function useSendBulkAdminNotifications() {
       imageUrl?: string;
     }>) => {
       const inserts = notifications.map(n => ({
-        recipient_id: n.recipientId,
+             user_id: n.recipientId,
         type: n.type,
         title_ar: n.titleAr,
         body_ar: n.bodyAr,
@@ -3687,42 +3708,7 @@ export function useCreateDeliveryOrder() {
 // ============================================================
 // 📦 MUTATION: تحديث حالة طلب التوصيل
 // ============================================================
-export function useUpdateDeliveryOrderStatus() {
-  const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({
-      id,
-      status,
-      distributorId,
-    }: {
-      id: string;
-      status: DeliveryOrder['status'];
-      distributorId?: string;
-    }) => {
-      const payload: any = { status };
-      if (distributorId) payload.distributor_id = distributorId;
-      
-      // ✅ إضافة التواريخ حسب الحالة
-      if (status === 'picked_up') payload.picked_up_at = new Date().toISOString();
-      if (status === 'delivered') payload.delivered_at = new Date().toISOString();
-      if (status === 'cancelled') payload.cancelled_at = new Date().toISOString();
-
-      const { data, error } = await supabase
-        .from("delivery_orders")
-        .update(payload)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as DeliveryOrder;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["delivery-orders"] });
-    },
-  });
-}
 
 // ============================================================
 // 📦 MUTATION: تتبع الموزع
@@ -4137,6 +4123,406 @@ export function useUpdateComplaint() {
 // ✅ نهاية الكود الجديد
 // ============================================================
 // ====== 🔥 NEW: Get or Create Conversation ======
+
+// ============================================================
+// 🚚 DELIVERY ORDERS - قبول ورفض من شركة التوصيل
+// ============================================================
+
+// ✅ قبول طلب توصيل مع تعيين موزع
+// src/lib/queries.ts
+
+// ============================================================
+// 🚚 DELIVERY ORDERS - قبول ورفض من شركة التوصيل
+// ============================================================
+
+// ✅ قبول طلب توصيل مع تعيين موزع ووقت متوقع
+export function useAcceptDeliveryOrder() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      deliveryOrderId, 
+      distributorId,
+      orderId,
+      estimatedDeliveryAt,
+      estimatedPickupAt,
+    }: { 
+      deliveryOrderId: string; 
+      distributorId: string;
+      orderId: string;
+      estimatedDeliveryAt: string;  // ISO string
+      estimatedPickupAt?: string;    // ISO string (اختياري)
+    }) => {
+      // 1. جلب بيانات الطلب للإشعارات
+      const { data: order, error: orderFetchError } = await supabase
+        .from("orders")
+        .select(`
+          *,
+          listings:listing_id (
+            id,
+            title_ar,
+            title_en,
+            owner_id
+          )
+        `)
+        .eq("id", orderId)
+        .single();
+
+      if (orderFetchError) throw orderFetchError;
+
+      // 2. تحديث delivery_order
+      const updateData: any = {
+        status: 'assigned',
+        distributor_id: distributorId,
+        assigned_at: new Date().toISOString(),
+        estimated_delivery_at: estimatedDeliveryAt,
+      };
+      
+      if (estimatedPickupAt) {
+        updateData.estimated_pickup_at = estimatedPickupAt;
+      }
+
+      const { data: deliveryOrder, error: deliveryError } = await supabase
+        .from("delivery_orders")
+        .update(updateData)
+        .eq("id", deliveryOrderId)
+        .select()
+        .single();
+
+      if (deliveryError) throw deliveryError;
+
+      // 3. تحديث order الرئيسي
+      const { error: orderError } = await supabase
+        .from("orders")
+        .update({
+          status: 'shipped',  // ✅ تغيير الحالة إلى shipped
+          accepted_at: new Date().toISOString(),
+          distributor_id: distributorId,
+          delivery_status: 'assigned',
+          estimated_delivery_at: estimatedDeliveryAt,
+        })
+        .eq("id", orderId);
+
+      if (orderError) throw orderError;
+
+      // 4. جلب بيانات الموزع للإشعار
+      const { data: distributor, error: distError } = await supabase
+        .from("distributors")
+        .select("full_name_ar, full_name_en, user_id, phone")
+        .eq("id", distributorId)
+        .single();
+
+      if (distError) console.error("❌ Error fetching distributor:", distError);
+
+      // ✅ 5. إشعار للموزع (تم تعيينه)
+      if (distributor?.user_id) {
+        const deliveryDate = new Date(estimatedDeliveryAt);
+        const formattedDate = deliveryDate.toLocaleDateString(
+          'ar-SA',
+          { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+        );
+
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: distributor.user_id,
+            type: "new_delivery_assigned",
+            title_ar: "🚚 طلب توصيل جديد",
+            body_ar: `تم تعيينك لتوصيل طلب "${order.listings?.title_ar || 'رقم ' + orderId.substring(0,8)}" - الوقت المتوقع للوصول: ${formattedDate}`,
+            title_en: `New delivery assigned: ${order.listings?.title_en || 'Order ' + orderId.substring(0,8)}`,
+            body_en: `You have been assigned to deliver order "${order.listings?.title_en || 'Order ' + orderId.substring(0,8)}" - Estimated delivery: ${deliveryDate.toLocaleString('en-US')}`,
+            link_url: `/delivery/orders/${orderId}`,
+            metadata: {
+              delivery_order_id: deliveryOrderId,
+              order_id: orderId,
+              distributor_id: distributorId,
+              estimated_delivery_at: estimatedDeliveryAt,
+              customer_phone: order.buyer_phone,
+              customer_address: order.delivery_address,
+            }
+          });
+      }
+
+      // ✅ 6. إشعار للمشتري (العميل) مع الوقت المتوقع
+      if (order?.buyer_id) {
+        const deliveryDate = new Date(estimatedDeliveryAt);
+        const formattedDate = deliveryDate.toLocaleDateString(
+          'ar-SA',
+          { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+        );
+
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: order.buyer_id,
+            type: "order_shipped",
+            title_ar: "🚚 تم شحن طلبك!",
+            body_ar: `تم شحن طلبك "${order.listings?.title_ar}" بواسطة ${distributor?.full_name_ar || 'الموزع'} - الوقت المتوقع للوصول: ${formattedDate}`,
+            title_en: `Your order has been shipped!`,
+            body_en: `Your order "${order.listings?.title_en || order.listings?.title_ar}" has been shipped via ${distributor?.full_name_en || 'distributor'} - Estimated delivery: ${deliveryDate.toLocaleString('en-US')}`,
+            link_url: `/orders/${orderId}`,
+            metadata: {
+              order_id: orderId,
+              distributor_id: distributorId,
+              estimated_delivery_at: estimatedDeliveryAt,
+              distributor_phone: distributor?.phone,
+            }
+          });
+      }
+
+      // ✅ 7. إشعار للبائع (صاحب المتجر)
+      if (order?.listings?.owner_id) {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: order.listings.owner_id,
+            type: "order_accepted",
+            title_ar: "✅ تم قبول طلب التوصيل",
+            body_ar: `تم قبول طلب "${order.listings?.title_ar}" من شركة التوصيل وتعيين موزع - الوقت المتوقع للوصول: ${new Date(estimatedDeliveryAt).toLocaleDateString('ar-SA', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`,
+            link_url: `/orders/${orderId}`,
+            metadata: {
+              order_id: orderId,
+              distributor_id: distributorId,
+              estimated_delivery_at: estimatedDeliveryAt,
+            }
+          });
+      }
+
+      return deliveryOrder;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["delivery-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast.success("✅ تم قبول الطلب وتعيين الموزع مع إرسال الإشعارات");
+    },
+    onError: (error) => {
+      console.error("❌ Error accepting delivery:", error);
+      toast.error("❌ فشل قبول الطلب");
+    },
+  });
+}
+
+// ✅ رفض طلب توصيل مع سبب
+export function useRejectDeliveryOrder() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      deliveryOrderId, 
+      orderId,
+      reason 
+    }: { 
+      deliveryOrderId: string; 
+      orderId: string;
+      reason: string;
+    }) => {
+      // 1. جلب بيانات الطلب للإشعارات
+      const { data: order, error: orderFetchError } = await supabase
+        .from("orders")
+        .select(`
+          buyer_id,
+          listings:listing_id (
+            title_ar,
+            title_en,
+            owner_id
+          )
+        `)
+        .eq("id", orderId)
+        .single();
+
+      if (orderFetchError) throw orderFetchError;
+
+      // 2. تحديث delivery_order
+      const { data: deliveryOrder, error: deliveryError } = await supabase
+        .from("delivery_orders")
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          rejection_reason: reason.trim(),
+          notes_ar: `مرفوض: ${reason.trim()}`,
+          notes_en: `Rejected: ${reason.trim()}`,
+        })
+        .eq("id", deliveryOrderId)
+        .select()
+        .single();
+
+      if (deliveryError) throw deliveryError;
+
+      // 3. تحديث order الرئيسي
+      const { error: orderError } = await supabase
+        .from("orders")
+        .update({
+          status: 'rejected',
+          rejected_at: new Date().toISOString(),
+          rejection_reason: reason.trim(),
+        })
+        .eq("id", orderId);
+
+      if (orderError) throw orderError;
+
+      // 4. إشعار للبائع
+      if (order?.listings?.owner_id) {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: order.listings.owner_id,
+            type: "order_rejected",
+            title_ar: "❌ تم رفض طلب التوصيل",
+            body_ar: `تم رفض طلب "${order.listings?.title_ar}" من شركة التوصيل. السبب: ${reason.trim()}`,
+            link_url: `/orders/${orderId}`,
+            metadata: {
+              rejection_reason: reason.trim(),
+              order_id: orderId,
+            }
+          });
+      }
+
+      // 5. إشعار للمشتري
+      if (order?.buyer_id) {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: order.buyer_id,
+            type: "order_rejected",
+            title_ar: "❌ تم رفض طلبك",
+            body_ar: `آسفون، تم رفض طلبك "${order.listings?.title_ar}" من شركة التوصيل. السبب: ${reason.trim()}`,
+            link_url: `/orders/${orderId}`,
+            metadata: {
+              rejection_reason: reason.trim(),
+              order_id: orderId,
+            }
+          });
+      }
+
+      return deliveryOrder;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["delivery-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast.success("✅ تم رفض الطلب مع إرسال السبب");
+    },
+  });
+}
+
+// ✅ تحديث حالة طلب التوصيل (للاستخدامات الأخرى)
+// ✅ احتفظ بهذا التعريف (الأول)
+export function useUpdateDeliveryOrderStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      status,
+      distributorId,
+    }: {
+      id: string;
+      status: DeliveryOrder['status'];
+      distributorId?: string;
+    }) => {
+      const payload: any = { status };
+      if (distributorId) payload.distributor_id = distributorId;
+      
+      if (status === 'picked_up') payload.picked_up_at = new Date().toISOString();
+      if (status === 'delivered') payload.delivered_at = new Date().toISOString();
+      if (status === 'cancelled') payload.cancelled_at = new Date().toISOString();
+
+      const { data, error } = await supabase
+        .from("delivery_orders")
+        .update(payload)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as DeliveryOrder;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["delivery-orders"] });
+    },
+  });
+}
+
+
+// ✅ جلب الموزعين الأقرب للعميل
+export function useNearestDistributors(orderId: string) {
+  return useQuery({
+    queryKey: ["nearest-distributors", orderId],
+    enabled: !!orderId,
+    queryFn: async () => {
+      // 1. جلب بيانات الطلب (العنوان والإحداثيات)
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select("delivery_lat, delivery_lng, delivery_address, governorate_id")
+        .eq("id", orderId)
+        .single();
+
+      if (orderError) throw orderError;
+
+      // 2. جلب الموزعين المتاحين في نفس المحافظة
+      const { data: distributors, error: distError } = await supabase
+        .from("distributors")
+        .select(`
+          id,
+          user_id,
+          full_name_ar,
+          full_name_en,
+          phone,
+          avatar_url,
+          rating,
+          is_available,
+          completed_orders,
+          lat,
+          lng,
+          governorate_id
+        `)
+        .eq("is_available", true)
+        .eq("is_active", true)
+        .eq("governorate_id", order.governorate_id);
+
+      if (distError) throw distError;
+
+      // 3. حساب المسافة لكل موزع
+      const distributorsWithDistance = distributors.map((dist: any) => {
+        let distance = Infinity;
+        let distanceText = "غير محدد";
+        
+        if (dist.lat && dist.lng && order.delivery_lat && order.delivery_lng) {
+          distance = calculateDistance(
+            dist.lat, dist.lng,
+            order.delivery_lat, order.delivery_lng
+          );
+          distanceText = distance < 1 
+            ? `${Math.round(distance * 1000)} م`
+            : `${distance.toFixed(1)} كم`;
+        }
+        
+        return {
+          ...dist,
+          distance,
+          distanceText,
+        };
+      });
+
+      // 4. ترتيب حسب الأقرب
+      return distributorsWithDistance
+        .sort((a: any, b: any) => a.distance - b.distance)
+        .slice(0, 20);
+    },
+  });
+}
+
+// ✅ دالة حساب المسافة (هافرسين)
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
 export function useGetOrCreateConversation() {
   const queryClient = useQueryClient();
   

@@ -88,7 +88,7 @@ export function SupportButton() {
       await supabase
         .from("notifications")
         .insert({
-          recipient_id: adminId,
+        user_id: adminId,
           type: "support",
           title_ar: "📩 رسالة دعم جديدة",
           body_ar: `📞 من: ${userPhone}\n${isRegistered ? '✅ مسجل' : '❌ زائر'}\nالموضوع: ${subject || "دعم"}`,

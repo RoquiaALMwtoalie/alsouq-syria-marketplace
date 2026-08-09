@@ -10,7 +10,11 @@ import {
   useUpdateDeliveryCompany,
   useUpdateDistributor,
   useUserRoles,
-  useGovernorates
+  useGovernorates,
+  useAcceptDeliveryOrder,
+  useRejectDeliveryOrder,
+  useNearestDistributors,
+  useUpdateDeliveryOrderStatus,
 } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -25,7 +29,11 @@ import {
   UserPlus, UserCog, UserMinus, MessageCircle, BellOff, Sparkles, Gift, Store, Globe, ShoppingBag,
   Megaphone, Rocket, Gem, Crown, Flame, Compass, Target, Zap, Award, BadgeCheck,
   KeyRound, Lock, Unlock, EyeOff, CheckSquare, MapPinHouse,
-  LayoutDashboard, Users as UsersIcon, TrendingUp as TrendingUpIcon
+  LayoutDashboard, Users as UsersIcon, TrendingUp as TrendingUpIcon,
+  Edit3,  // ← أضف هذه
+  Map,    // ← أضف هذه
+  Info,   // ← أضف هذه
+  FileText // ← أضف هذه
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -103,7 +111,7 @@ import {
 import { DeliveryAdminsManager } from "@/components/dashboard/delivery/DeliveryAdminsManager";
 import { DeliveryAccountMenu } from "@/components/dashboard/delivery/DeliveryAccountMenu";
 import { ImageInput } from "@/components/ImageInput";
-
+import { AddressPicker, type PickedLocation } from "@/components/AddressPicker";
 const ICON_MAP: Record<string, any> = {
   'clock': Clock,
   'check-circle': CheckCircle,
@@ -149,7 +157,10 @@ function DeliveryDashboardPage() {
   const app = useApp();
   const t = useT();
   const navigate = useNavigate();
-
+// في بداية الدالة DeliveryDashboardPage
+const [addressMethod, setAddressMethod] = useState<"manual" | "map">("manual");
+const [location, setLocation] = useState<PickedLocation | null>(null);
+const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<"orders" | "distributors" | "analytics" | "admins">("orders");
@@ -165,10 +176,22 @@ function DeliveryDashboardPage() {
   const [existingUserData, setExistingUserData] = useState<any>(null);
   const [pendingFormData, setPendingFormData] = useState<any>(null);
 
+  // ✅ State لقبول ورفض الطلبات
+  const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [selectedDeliveryOrderId, setSelectedDeliveryOrderId] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedDistributorId, setSelectedDistributorId] = useState<string>("");
+  const [rejectReason, setRejectReason] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [distributorSearch, setDistributorSearch] = useState("");
+  const [estimatedDeliveryHours, setEstimatedDeliveryHours] = useState<number>(2);
+  const [estimatedPickupHours, setEstimatedPickupHours] = useState<number>(0.5);
+
   // ✅ جلب البيانات
   const { data: orders = [], isLoading: ordersLoading, refetch: refetchOrders } = useDeliveryOrders(app.user?.id);
   const { data: distributors = [], isLoading: distributorsLoading, refetch: refetchDistributors } = useDistributors({});
-  const { data: company, refetch: refetchCompany } = useMyDeliveryCompany(app.user?.id);
+const { data: company, isLoading: companyLoading, refetch: refetchCompany } = useMyDeliveryCompany(app.user?.id);
   const { data: governorates = [] } = useGovernorates();
   const { data: allCompanies } = useDeliveryCompanies({ active: true });
   const { data: userRoles = [], refetch: refetchUserRoles } = useUserRoles(app.user?.id);
@@ -183,15 +206,36 @@ function DeliveryDashboardPage() {
   const markRead = useMarkNotificationReadV2();
   const markAllRead = useMarkAllNotificationsReadV2();
 
+  // ✅ Mutations جديدة للقبول والرفض
+  const acceptOrderMutation = useAcceptDeliveryOrder();
+  const rejectOrderMutation = useRejectDeliveryOrder();
+
+  // ✅ جلب الموزعين الأقرب
+  const { data: nearestDistributors, isLoading: nearestLoading } = useNearestDistributors(
+    selectedOrderId || ""
+  );
+
   const unreadNotificationsCount = notifications.filter((n: any) => !n.is_read).length;
   const isArabic = app.lang === "ar";
+ 
 
-  // ✅ ✅ ✅ المشكلة الأولى: تأكد من أن isDeliveryCompany صحيح ✅ ✅ ✅
-// ✅ تأكد من استخدام useMemo بشكل صحيح
-const isDeliveryCompany = useMemo(() => {
-  if (!Array.isArray(userRoles)) return false;
-  return userRoles.includes('delivery_company') || userRoles.includes('delivery_company_admin');
-}, [userRoles]);
+  // ✅ التحقق من اكتمال بيانات الشركة
+  useEffect(() => {
+    if (companyLoading) return;
+    
+    if (company && !company.is_verified) {
+      navigate({ to: "/delivery/complete" });
+      toast.info(
+        isArabic 
+          ? "📋 يرجى إكمال بيانات شركتك أولاً"
+          : "📋 Please complete your company data first"
+      );
+    }
+  }, [company, companyLoading, navigate, isArabic]);
+  const isDeliveryCompany = useMemo(() => {
+    if (!Array.isArray(userRoles)) return false;
+    return userRoles.includes('delivery_company') || userRoles.includes('delivery_company_admin');
+  }, [userRoles]);
 
   console.log("🔍 [DELIVERY DASHBOARD] isDeliveryCompany:", isDeliveryCompany);
   console.log("🔍 [DELIVERY DASHBOARD] userRoles:", userRoles);
@@ -253,6 +297,81 @@ const isDeliveryCompany = useMemo(() => {
     if (!app.user?.id) return null;
     return distributors.find((d: any) => d.user_id === app.user.id);
   }, [distributors, app.user?.id]);
+
+  // ✅ قبول الطلب مع وقت متوقع
+  const handleAcceptDelivery = useCallback(async () => {
+    if (!selectedDeliveryOrderId || !selectedOrderId || !selectedDistributorId) {
+      toast.error(isArabic ? "❌ الرجاء اختيار موزع" : "❌ Please select a distributor");
+      return;
+    }
+
+    if (!estimatedDeliveryHours || estimatedDeliveryHours <= 0) {
+      toast.error(isArabic ? "❌ الرجاء إدخال وقت متوقع للوصول" : "❌ Please enter estimated delivery time");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const now = new Date();
+      const estimatedDelivery = new Date(now.getTime() + estimatedDeliveryHours * 60 * 60 * 1000);
+      const estimatedPickup = new Date(now.getTime() + (estimatedPickupHours || 0.5) * 60 * 60 * 1000);
+
+      await acceptOrderMutation.mutateAsync({
+        deliveryOrderId: selectedDeliveryOrderId,
+        orderId: selectedOrderId,
+        distributorId: selectedDistributorId,
+        estimatedDeliveryAt: estimatedDelivery.toISOString(),
+        estimatedPickupAt: estimatedPickup.toISOString(),
+      });
+      
+      setAcceptDialogOpen(false);
+      setSelectedDeliveryOrderId(null);
+      setSelectedOrderId(null);
+      setSelectedDistributorId("");
+      setEstimatedDeliveryHours(2);
+      setEstimatedPickupHours(0.5);
+      refetchOrders();
+    } catch (error) {
+      console.error("❌ Error accepting delivery:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [
+    selectedDeliveryOrderId, 
+    selectedOrderId, 
+    selectedDistributorId, 
+    estimatedDeliveryHours,
+    estimatedPickupHours,
+    acceptOrderMutation, 
+    refetchOrders, 
+    isArabic
+  ]);
+
+  // ✅ رفض الطلب
+  const handleRejectDelivery = useCallback(async () => {
+    if (!selectedDeliveryOrderId || !selectedOrderId || !rejectReason.trim()) {
+      toast.error(isArabic ? "❌ الرجاء إدخال سبب الرفض" : "❌ Please enter a rejection reason");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await rejectOrderMutation.mutateAsync({
+        deliveryOrderId: selectedDeliveryOrderId,
+        orderId: selectedOrderId,
+        reason: rejectReason.trim(),
+      });
+      setRejectDialogOpen(false);
+      setSelectedDeliveryOrderId(null);
+      setSelectedOrderId(null);
+      setRejectReason("");
+      refetchOrders();
+    } catch (error) {
+      console.error("❌ Error rejecting delivery:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedDeliveryOrderId, selectedOrderId, rejectReason, rejectOrderMutation, refetchOrders, isArabic]);
 
   // ✅ دوال الإشعارات
   const handleNotificationClick = useCallback(async (notification: any) => {
@@ -355,46 +474,70 @@ const isDeliveryCompany = useMemo(() => {
   }, [app.user, getOrCreateConversation, navigate, isArabic]);
 
   // ✅ تحديث الشركة
-  const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const formData = new FormData(form);
 
-    const patch: any = {
-      name_ar: formData.get("name_ar") as string,
-      name_en: formData.get("name_en") as string,
-      phone: formData.get("phone") as string,
-      address_ar: formData.get("address_ar") as string,
-      address_en: formData.get("address_en") as string,
-      description_ar: formData.get("description_ar") as string,
-      description_en: formData.get("description_en") as string,
-      base_price: parseFloat(formData.get("base_price") as string) || 0,
-      price_per_km: parseFloat(formData.get("price_per_km") as string) || 0,
-      free_delivery_threshold: parseFloat(formData.get("free_delivery_threshold") as string) || 0,
-      min_delivery_fee: parseFloat(formData.get("min_delivery_fee") as string) || 0,
-      max_delivery_fee: parseFloat(formData.get("max_delivery_fee") as string) || 999999,
-      avg_delivery_time: parseInt(formData.get("avg_delivery_time") as string) || 60,
-      has_tracking: formData.get("has_tracking") === "on",
-      has_insurance: formData.get("has_insurance") === "on",
-      has_cod: formData.get("has_cod") === "on",
-      has_express: formData.get("has_express") === "on",
-      is_active: formData.get("is_active") === "on",
-    };
+  const patch: any = {
+    name_ar: formData.get("name_ar") as string,
+    name_en: formData.get("name_en") as string,
+    phone: formData.get("phone") as string,
+    description_ar: formData.get("description_ar") as string,
+    description_en: formData.get("description_en") as string,
+    base_price: parseFloat(formData.get("base_price") as string) || 0,
+    price_per_km: parseFloat(formData.get("price_per_km") as string) || 0,
+    free_delivery_threshold: parseFloat(formData.get("free_delivery_threshold") as string) || 0,
+    min_delivery_fee: parseFloat(formData.get("min_delivery_fee") as string) || 0,
+    max_delivery_fee: parseFloat(formData.get("max_delivery_fee") as string) || 999999,
+    avg_delivery_time: parseInt(formData.get("avg_delivery_time") as string) || 60,
+    has_tracking: formData.get("has_tracking") === "on",
+    has_insurance: formData.get("has_insurance") === "on",
+    has_cod: formData.get("has_cod") === "on",
+    has_express: formData.get("has_express") === "on",
+    is_active: formData.get("is_active") === "on",
+  };
 
-    try {
-      await updateCompanyMutation.mutateAsync({
-        id: company.id,
-        patch
-      });
-      toast.success(isArabic ? "✅ تم تحديث معلومات الشركة" : "✅ Company updated successfully");
-      setShowCompanyDialog(false);
-      await refetchCompany();
-    } catch (error) {
-      toast.error(isArabic ? "❌ فشل التحديث" : "❌ Update failed");
-      console.error(error);
+  // ✅✅✅ إذا اختار الخريطة ✅✅✅
+  if (addressMethod === "map" && location) {
+    patch.address_ar = location.address;
+    patch.address_en = location.address;
+    
+    const { error: updateProfileError } = await supabase
+      .from("profiles")
+      .update({
+        lat: location.lat || 0,
+        lng: location.lng || 0,
+        address_text: location.address.trim(),
+      })
+      .eq("id", app.user?.id);
+    
+    if (updateProfileError) {
+      console.error("❌ خطأ في تحديث إحداثيات البروفايل:", updateProfileError);
     }
-  }, [company, updateCompanyMutation, isArabic, refetchCompany]);
+  } else {
+    patch.address_ar = formData.get("address_ar") as string;
+    patch.address_en = formData.get("address_ar") as string;
+  }
 
+  // ✅✅✅ إضافة صورة الشعار ✅✅✅
+  if (logoUrl) {
+    patch.logo_url = logoUrl;
+  }
+
+  try {
+    await updateCompanyMutation.mutateAsync({
+      id: company.id,
+      patch
+    });
+    toast.success(isArabic ? "✅ تم تحديث معلومات الشركة" : "✅ Company updated successfully");
+    setShowCompanyDialog(false);
+    await refetchCompany();
+  } catch (error) {
+    toast.error(isArabic ? "❌ فشل التحديث" : "❌ Update failed");
+    console.error(error);
+  }
+}, [company, updateCompanyMutation, isArabic, refetchCompany, addressMethod, location, logoUrl, app.user?.id]);
   // ✅ تحديث الموزع
   const handleUpdateDistributor = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -482,7 +625,6 @@ const isDeliveryCompany = useMemo(() => {
     const { full_name_ar, full_name_en, phone, address_ar, address_en, governorate_id, is_available, distributor_type, avatar_url } = pendingFormData;
 
     try {
-      // تحديث الاسم
       if (full_name_ar && full_name_ar !== existingUserData.full_name) {
         await supabase
           .from("profiles")
@@ -490,13 +632,11 @@ const isDeliveryCompany = useMemo(() => {
           .eq("id", userId);
       }
 
-      // إضافة دور الموزع
       await supabase.from("user_roles").insert({
         user_id: userId,
         role: "distributor"
       });
 
-      // إضافة الموزع - باستخدام RPC
       const { data: distributorId, error: distributorError } = await supabase.rpc('add_distributor', {
         p_user_id: userId,
         p_full_name_ar: full_name_ar || existingUserData.full_name || `موزع ${phone}`,
@@ -562,7 +702,6 @@ const isDeliveryCompany = useMemo(() => {
     }
 
     try {
-      // التحقق من وجود المستخدم
       const { data: existingProfile } = await supabase
         .from("profiles")
         .select("id, full_name, phone, avatar_url")
@@ -570,7 +709,6 @@ const isDeliveryCompany = useMemo(() => {
         .maybeSingle();
 
       if (existingProfile) {
-        // التحقق إذا كان بالفعل موزع
         const { data: existingDistributor } = await supabase
           .from("distributors")
           .select("id")
@@ -586,7 +724,6 @@ const isDeliveryCompany = useMemo(() => {
           return;
         }
 
-        // فتح Dialog
         setExistingUserData(existingProfile);
         setPendingFormData({
           full_name_ar,
@@ -604,7 +741,6 @@ const isDeliveryCompany = useMemo(() => {
         return;
       }
 
-      // المستخدم غير موجود، ننشئ حساب جديد
       if (!password || password.length < 6) {
         toast.error(isArabic ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
         return;
@@ -764,795 +900,550 @@ const isDeliveryCompany = useMemo(() => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {/* ✅ NOTIFICATIONS - مشكلة رقم 1: استخدم Dialog العادي مع Badge أحمر */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      {/* ✅ استخدم Dialog العادي بدلاً من NotificationDialog */}
-                      <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
-                          >
-                            <Bell className="h-4 w-4" />
-                            {unreadNotificationsCount > 0 && (
-                              <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
-                                {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
-                              </span>
-                            )}
-                          </Button>
-                        </DialogTrigger>
+           <div className="flex items-center gap-1.5 flex-wrap">
+  {/* NOTIFICATIONS */}
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <div>
+        <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+          <DialogTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                </span>
+              )}
+            </Button>
+          </DialogTrigger>
+          {/* ... باقي كود الـ Dialog ... */}
+        </Dialog>
+      </div>
+    </TooltipTrigger>
+    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+      <p>{isArabic ? "الإشعارات" : "Notifications"}</p>
+    </TooltipContent>
+  </Tooltip>
 
-                        <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden border-0 shadow-2xl bg-white dark:bg-slate-900">
-                          {/* محتوى الإشعارات مثل الموجود */}
-                          <div className="sticky top-0 z-10 bg-gradient-to-r from-[#0d2e2a]/10 to-[#0d2e2a]/5 dark:from-[#0d2e2a]/30 dark:to-[#0d2e2a]/20 backdrop-blur-xl border-b border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="relative">
-                                  <div className="h-10 w-10 rounded-xl bg-[#0d2e2a] flex items-center justify-center shadow-lg shadow-[#0d2e2a]/25">
-                                    <Bell className="h-5 w-5 text-white" />
-                                  </div>
-                                  {unreadNotificationsCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white flex items-center justify-center border-2 border-white dark:border-slate-900">
-                                      {unreadNotificationsCount}
-                                    </span>
-                                  )}
-                                </div>
-                                <div>
-                                  <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white">
-                                    {isArabic ? "الإشعارات" : "Notifications"}
-                                  </DialogTitle>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                                    {unreadNotificationsCount > 0
-                                      ? isArabic
-                                        ? `${unreadNotificationsCount} إشعار غير مقروء`
-                                        : `${unreadNotificationsCount} unread`
-                                      : isArabic
-                                        ? "كل الإشعارات مقروءة"
-                                        : "All caught up"}
-                                  </p>
-                                </div>
-                              </div>
+  {/* MESSAGES */}
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
+        onClick={handleMessages}
+      >
+        <MessageCircle className="h-4 w-4" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+      <p>{isArabic ? "الرسائل" : "Messages"}</p>
+    </TooltipContent>
+  </Tooltip>
 
-                              <div className="flex items-center gap-2">
-                                {unreadNotificationsCount > 0 && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-xs gap-1.5 rounded-xl hover:bg-[#0d2e2a]/10 dark:hover:bg-[#0d2e2a]/30 text-[#0d2e2a] dark:text-[#3a8a82] hover:text-[#0d2e2a]/80 dark:hover:text-[#3a8a82]/80 transition-all"
-                                    onClick={handleMarkAllAsRead}
-                                    disabled={markAllRead.isPending}
-                                  >
-                                    {markAllRead.isPending ? (
-                                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#0d2e2a] border-t-transparent" />
-                                    ) : (
-                                      <CheckSquare className="h-3.5 w-3.5" />
-                                    )}
-                                    {isArabic ? "تحديد الكل كمقروء" : "Mark all read"}
-                                  </Button>
-                                )}
+  {/* LANGUAGE */}
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
+        onClick={toggleLanguage}
+      >
+        <Languages className="h-4 w-4" />
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+      <p>{isArabic ? "تبديل اللغة" : "Switch Language"}</p>
+    </TooltipContent>
+  </Tooltip>
 
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all"
-                                  onClick={() => setNotificationsOpen(false)}
-                                >
-                                  <X className="h-5 w-5" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
+  <div className="w-px h-6 bg-white/10 mx-0.5" />
 
-                          <div className="max-h-[60vh] overflow-y-auto p-2 space-y-1.5">
-                            {notifications.length === 0 ? (
-                              <div className="py-16 text-center">
-                                <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
-                                  <BellOff className="h-8 w-8 text-slate-300 dark:text-slate-600" />
-                                </div>
-                                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                                  {isArabic ? "لا توجد إشعارات" : "No notifications"}
-                                </p>
-                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                                  {isArabic
-                                    ? "ستظهر الإشعارات هنا عند استلامها"
-                                    : "Notifications will appear here"}
-                                </p>
-                              </div>
-                            ) : (
-                              notifications.map((notification: any) => {
-                                const isUnread = !notification.is_read;
-                                const config = getNotificationConfig(notification.type);
-                                const Icon = ICON_MAP[config.icon] || Bell;
-
-                                return (
-                                  <div
-                                    key={notification.id}
-                                    className={`group relative rounded-xl transition-all duration-300 ${isUnread
-                                        ? "bg-gradient-to-r from-[#0d2e2a]/10 to-[#0d2e2a]/5 dark:from-[#0d2e2a]/30 dark:to-[#0d2e2a]/20 border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 hover:shadow-md"
-                                        : "hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
-                                      }`}
-                                  >
-                                    <div
-                                      className="flex items-start gap-3 p-3 cursor-pointer"
-                                      onClick={() => handleNotificationClick(notification)}
-                                    >
-                                      <div className="flex-shrink-0">
-                                        {notification.image_url ? (
-                                          <div className="relative">
-                                            <img
-                                              src={notification.image_url}
-                                              alt=""
-                                              className="h-11 w-11 rounded-xl object-cover border-2 border-slate-200/50 dark:border-slate-700/50"
-                                              onError={(e) => {
-                                                (e.target as HTMLImageElement).style.display = 'none';
-                                              }}
-                                            />
-                                            {isUnread && (
-                                              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#0d2e2a] ring-2 ring-white dark:ring-slate-900" />
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${config.color} border`}>
-                                            <Icon className="h-5 w-5" />
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div className="flex-1 min-w-0">
-                                            <p className={`text-sm ${isUnread ? "font-semibold text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400"}`}>
-                                              {notification.title_ar || notification.title_en || "إشعار"}
-                                            </p>
-                                            <p className={`text-xs mt-0.5 line-clamp-2 ${isUnread ? "text-slate-700 dark:text-slate-300" : "text-slate-500 dark:text-slate-500"}`}>
-                                              {notification.body_ar || notification.body_en || notification.message}
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-1.5">
-                                              <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                                                <Clock className="h-3 w-3" />
-                                                {formatTime(notification.created_at)}
-                                              </span>
-                                              {notification.type && (
-                                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${config.color} border`}>
-                                                  {isArabic ? config.ar : config.en}
-                                                </span>
-                                              )}
-                                            </div>
-                                          </div>
-
-                                          <div className="flex-shrink-0 flex items-center gap-1">
-                                            {isUnread && (
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 rounded-lg hover:bg-[#0d2e2a]/10 dark:hover:bg-[#0d2e2a]/30 text-[#0d2e2a] hover:text-[#0d2e2a]/80 transition-all opacity-0 group-hover:opacity-100"
-                                                onClick={(e) => handleMarkAsRead(notification.id, e)}
-                                              >
-                                                <CheckCircle className="h-3.5 w-3.5" />
-                                              </Button>
-                                            )}
-                                            <DropdownMenu>
-                                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                                <Button
-                                                  variant="ghost"
-                                                  size="icon"
-                                                  className="h-7 w-7 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all opacity-0 group-hover:opacity-100"
-                                                >
-                                                  <MoreVertical className="h-3.5 w-3.5 text-slate-400" />
-                                                </Button>
-                                              </DropdownMenuTrigger>
-                                              <DropdownMenuContent align="end" className="rounded-xl p-1 min-w-[160px]">
-                                                {isUnread && (
-                                                  <DropdownMenuItem
-                                                    className="rounded-lg text-sm cursor-pointer gap-2"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleMarkAsRead(notification.id, e);
-                                                    }}
-                                                  >
-                                                    <CheckCircle className="h-4 w-4" />
-                                                    {isArabic ? "تحديد كمقروء" : "Mark as read"}
-                                                  </DropdownMenuItem>
-                                                )}
-                                                {notification.link_url && (
-                                                  <DropdownMenuItem
-                                                    className="rounded-lg text-sm cursor-pointer gap-2"
-                                                    onClick={() => {
-                                                      navigate({ to: notification.link_url as any });
-                                                      setNotificationsOpen(false);
-                                                    }}
-                                                  >
-                                                    <Bell className="h-4 w-4" />
-                                                    {isArabic ? "عرض التفاصيل" : "View details"}
-                                                  </DropdownMenuItem>
-                                                )}
-                                                <DropdownMenuItem
-                                                  className="rounded-lg text-sm cursor-pointer gap-2 text-red-500 hover:text-red-600 hover:bg-red-50/50 dark:hover:bg-red-950/30"
-                                                  onClick={async (e) => {
-                                                    e.stopPropagation();
-                                                    try {
-                                                      await supabase
-                                                        .from('notifications')
-                                                        .delete()
-                                                        .eq('id', notification.id);
-                                                      await refetchNotifications();
-                                                      toast.success(isArabic ? "تم حذف الإشعار" : "Notification deleted");
-                                                    } catch (error) {
-                                                      console.error('Error deleting notification:', error);
-                                                      toast.error(isArabic ? "حدث خطأ أثناء الحذف" : "Error deleting notification");
-                                                    }
-                                                  }}
-                                                >
-                                                  <Trash2 className="h-4 w-4" />
-                                                  {isArabic ? "حذف" : "Delete"}
-                                                </DropdownMenuItem>
-                                              </DropdownMenuContent>
-                                            </DropdownMenu>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-
-                          {notifications.length > 0 && (
-                            <div className="sticky bottom-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 p-3 flex items-center justify-between">
-                              <span className="text-xs text-slate-400 dark:text-slate-500">
-                                {notifications.length} {isArabic ? "إشعار" : "notifications"}
-                                {unreadNotificationsCount > 0 && ` · ${unreadNotificationsCount} ${isArabic ? "غير مقروء" : "unread"}`}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
-                                onClick={() => setNotificationsOpen(false)}
-                              >
-                                {isArabic ? "إغلاق" : "Close"}
-                              </Button>
-                            </div>
-                          )}
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-                    <p>{isArabic ? "الإشعارات" : "Notifications"}</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* ✅ MESSAGES - مع العدد الأحمر */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
-                      onClick={handleMessages}
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      {unreadCount > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </span>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-                    <p>{isArabic ? "الرسائل" : "Messages"}</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
-                      onClick={toggleLanguage}
-                    >
-                      <Languages className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-                    <p>{isArabic ? "تبديل اللغة" : "Switch Language"}</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <div className="w-px h-6 bg-white/10 mx-0.5" />
-
-                <DeliveryAccountMenu
-                  userData={{
-                    id: app.user?.id || '',
-                    full_name: company?.name_ar || app.user?.name || (isArabic ? 'مدير شركة' : 'Company Manager'),
-                    phone: company?.phone || app.user?.phone || '',
-                    avatar_url: company?.logo_url || '',
-                    role: 'delivery_company'
-                  }}
-                  companyName={company?.name_ar}
-                  isArabic={isArabic}
-                />
-
-                <div className="w-px h-6 bg-white/10 mx-0.5" />
-
-                {currentDistributor && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
-                          >
-                            <UserCircle className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="rounded-2xl max-h-[90vh] overflow-y-auto">
-                          {/* محتوى تعديل الموزع */}
-                          <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
-                              <UserCircle className="h-6 w-6 text-[#0d2e2a]" />
-                              {isArabic ? "تعديل معلومات الموزع" : "Edit Distributor Info"}
-                            </DialogTitle>
-                            <DialogDescription>
-                              {isArabic ? "تحديث بياناتك الشخصية كموزع" : "Update your personal information as a distributor"}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <form onSubmit={handleUpdateDistributor} className="space-y-4">
-                            {/* ... النموذج كما هو ... */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "الاسم (عربي)" : "Name (Arabic)"} *
-                                </Label>
-                                <Input
-                                  name="full_name_ar"
-                                  defaultValue={currentDistributor.full_name_ar || ''}
-                                  placeholder={isArabic ? "الاسم بالعربية" : "Name in Arabic"}
-                                  required
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "الاسم (إنجليزي)" : "Name (English)"}
-                                </Label>
-                                <Input
-                                  name="full_name_en"
-                                  defaultValue={currentDistributor.full_name_en || ''}
-                                  placeholder={isArabic ? "الاسم بالإنجليزية" : "Name in English"}
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                {isArabic ? "رقم الهاتف" : "Phone Number"} *
-                              </Label>
-                              <Input
-                                name="phone"
-                                defaultValue={currentDistributor.phone || ''}
-                                type="tel"
-                                placeholder="09XXXXXXXX"
-                                required
-                                className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "العنوان (عربي)" : "Address (Arabic)"}
-                                </Label>
-                                <Input
-                                  name="address_ar"
-                                  defaultValue={currentDistributor.address_ar || ''}
-                                  placeholder={isArabic ? "العنوان بالعربية" : "Address in Arabic"}
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "العنوان (إنجليزي)" : "Address (English)"}
-                                </Label>
-                                <Input
-                                  name="address_en"
-                                  defaultValue={currentDistributor.address_en || ''}
-                                  placeholder={isArabic ? "العنوان بالإنجليزية" : "Address in English"}
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
-                              <input
-                                type="checkbox"
-                                name="is_available"
-                                defaultChecked={currentDistributor.is_available}
-                                className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                              />
-                              <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white cursor-pointer">
-                                {isArabic ? "🟢 متاح للعمل" : "🟢 Available for work"}
-                              </Label>
-                            </div>
-
-                            <DialogFooter className="gap-2 pt-4 border-t border-[#0d2e2a]/10">
-                              <Button type="button" variant="outline" onClick={() => setShowDistributorDialog(false)}>
-                                <X className="h-4 w-4 mr-1" />
-                                {isArabic ? "إلغاء" : "Cancel"}
-                              </Button>
-                              <Button
-                                type="submit"
-                                className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white hover:from-[#1a4f4a] hover:to-[#0d2e2a] transition-all duration-300"
-                              >
-                                <Save className="h-4 w-4 mr-1" />
-                                {isArabic ? "حفظ التغييرات" : "Save Changes"}
-                              </Button>
-                            </DialogFooter>
-                          </form>
-                        </DialogContent>
-                      </Dialog>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-                      <p>{isArabic ? "حسابي" : "My Account"}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-
-                {/* ✅ ✅ ✅ زر تعديل الشركة - المشكلة رقم 2: تحقق من الشرط */}
-                {company && isDeliveryCompany && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Dialog open={showCompanyDialog} onOpenChange={setShowCompanyDialog}>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
-                          >
-                            <Building2 className="h-4 w-4" />
-                            {/* ✅ إضافة مؤشر صغير للدلالة على وجود زر */}
-                            <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-[#1a4f4a] animate-pulse" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="rounded-2xl max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
-                              <Building2 className="h-6 w-6 text-[#0d2e2a]" />
-                              {isArabic ? "تعديل معلومات الشركة" : "Edit Company Info"}
-                            </DialogTitle>
-                            <DialogDescription>
-                              {isArabic ? "تحديث بيانات شركة التوصيل" : "Update delivery company information"}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <form onSubmit={handleUpdateCompany} className="space-y-4">
-                            {/* ... النموذج كامل كما هو ... */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "اسم الشركة (عربي)" : "Company Name (Arabic)"} *
-                                </Label>
-                                <Input
-                                  name="name_ar"
-                                  defaultValue={company.name_ar || ''}
-                                  placeholder={isArabic ? "اسم الشركة بالعربية" : "Company name in Arabic"}
-                                  required
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "اسم الشركة (إنجليزي)" : "Company Name (English)"} *
-                                </Label>
-                                <Input
-                                  name="name_en"
-                                  defaultValue={company.name_en || ''}
-                                  placeholder={isArabic ? "اسم الشركة بالإنجليزية" : "Company name in English"}
-                                  required
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "رقم الهاتف" : "Phone Number"}
-                                </Label>
-                                <Input
-                                  name="phone"
-                                  defaultValue={company.phone || ''}
-                                  type="tel"
-                                  placeholder="09XXXXXXXX"
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "العنوان (عربي)" : "Address (Arabic)"}
-                                </Label>
-                                <Input
-                                  name="address_ar"
-                                  defaultValue={company.address_ar || ''}
-                                  placeholder={isArabic ? "العنوان بالعربية" : "Address in Arabic"}
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "العنوان (إنجليزي)" : "Address (English)"}
-                                </Label>
-                                <Input
-                                  name="address_en"
-                                  defaultValue={company.address_en || ''}
-                                  placeholder={isArabic ? "العنوان بالإنجليزية" : "Address in English"}
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "الوصف (عربي)" : "Description (Arabic)"}
-                                </Label>
-                                <Textarea
-                                  name="description_ar"
-                                  defaultValue={company.description_ar || ''}
-                                  placeholder={isArabic ? "وصف الشركة بالعربية" : "Company description in Arabic"}
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 min-h-[80px]"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "الوصف (إنجليزي)" : "Description (English)"}
-                                </Label>
-                                <Textarea
-                                  name="description_en"
-                                  defaultValue={company.description_en || ''}
-                                  placeholder={isArabic ? "وصف الشركة بالإنجليزية" : "Company description in English"}
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 min-h-[80px]"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              <div className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
-                                <input
-                                  type="checkbox"
-                                  name="has_tracking"
-                                  defaultChecked={company.has_tracking}
-                                  className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                                <Label className="text-xs font-medium cursor-pointer">
-                                  {isArabic ? "تتبع" : "Tracking"}
-                                </Label>
-                              </div>
-                              <div className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
-                                <input
-                                  type="checkbox"
-                                  name="has_insurance"
-                                  defaultChecked={company.has_insurance}
-                                  className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                                <Label className="text-xs font-medium cursor-pointer">
-                                  {isArabic ? "تأمين" : "Insurance"}
-                                </Label>
-                              </div>
-                              <div className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
-                                <input
-                                  type="checkbox"
-                                  name="has_cod"
-                                  defaultChecked={company.has_cod}
-                                  className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                                <Label className="text-xs font-medium cursor-pointer">
-                                  {isArabic ? "دفع عند الاستلام" : "Cash on Delivery"}
-                                </Label>
-                              </div>
-                              <div className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
-                                <input
-                                  type="checkbox"
-                                  name="has_express"
-                                  defaultChecked={company.has_express}
-                                  className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                                />
-                                <Label className="text-xs font-medium cursor-pointer">
-                                  {isArabic ? "توصيل سريع" : "Express"}
-                                </Label>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              <div className="space-y-1">
-                                <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "السعر الأساسي" : "Base Price"}
-                                </Label>
-                                <div className="relative">
-                                  <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
-                                    {app.currency}
-                                  </span>
-                                  <Input
-                                    name="base_price"
-                                    type="number"
-                                    step="0.01"
-                                    defaultValue={company.base_price || 0}
-                                    placeholder={isArabic ? "سعر ثابت يضاف لكل طلب" : "Fixed price added to every order"}
-                                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7"
-                                  />
-                                </div>
-                                <p className="text-[9px] text-muted-foreground">
-                                  {isArabic ? "يضاف لكل طلب بغض النظر عن المسافة" : "Added to every order regardless of distance"}
-                                </p>
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "سعر الكيلومتر" : "Price per KM"}
-                                </Label>
-                                <div className="relative">
-                                  <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
-                                    {app.currency}
-                                  </span>
-                                  <Input
-                                    name="price_per_km"
-                                    type="number"
-                                    step="0.01"
-                                    defaultValue={company.price_per_km || 0}
-                                    placeholder={isArabic ? "سعر كل كيلومتر إضافي" : "Price per additional kilometer"}
-                                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7"
-                                  />
-                                </div>
-                                <p className="text-[9px] text-muted-foreground">
-                                  {isArabic ? "يضرب بالمسافة بين المتجر والعميل" : "Multiplied by distance between store and customer"}
-                                </p>
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "الحد الأدنى" : "Min Fee"}
-                                </Label>
-                                <div className="relative">
-                                  <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
-                                    {app.currency}
-                                  </span>
-                                  <Input
-                                    name="min_delivery_fee"
-                                    type="number"
-                                    step="0.01"
-                                    defaultValue={company.min_delivery_fee || 0}
-                                    placeholder={isArabic ? "أقل سعر للتوصيل" : "Minimum delivery price"}
-                                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7"
-                                  />
-                                </div>
-                                <p className="text-[9px] text-muted-foreground">
-                                  {isArabic ? "السعر لا يقل عن هذا الرقم" : "Price will not go below this amount"}
-                                </p>
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "الحد الأقصى" : "Max Fee"}
-                                </Label>
-                                <div className="relative">
-                                  <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
-                                    {app.currency}
-                                  </span>
-                                  <Input
-                                    name="max_delivery_fee"
-                                    type="number"
-                                    step="0.01"
-                                    defaultValue={company.max_delivery_fee || 999999}
-                                    placeholder={isArabic ? "أعلى سعر للتوصيل" : "Maximum delivery price"}
-                                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7"
-                                  />
-                                </div>
-                                <p className="text-[9px] text-muted-foreground">
-                                  {isArabic ? "السعر لا يزيد عن هذا الرقم" : "Price will not exceed this amount"}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              <div className="space-y-1">
-                                <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "قيمة التوصيل المجاني" : "Free Delivery Threshold"}
-                                </Label>
-                                <div className="relative">
-                                  <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
-                                    {app.currency}
-                                  </span>
-                                  <Input
-                                    name="free_delivery_threshold"
-                                    type="number"
-                                    step="0.01"
-                                    defaultValue={company.free_delivery_threshold || 0}
-                                    placeholder={isArabic ? "الطلب يصبح مجاني عند هذا المبلغ" : "Order becomes free at this amount"}
-                                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7"
-                                  />
-                                </div>
-                                <p className="text-[9px] text-muted-foreground">
-                                  {isArabic ? "إذا تجاوز الطلب هذا المبلغ يصبح التوصيل مجاني" : "If order exceeds this amount, delivery is free"}
-                                </p>
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                                  {isArabic ? "متوسط وقت التوصيل" : "Avg Delivery Time"}
-                                </Label>
-                                <Input
-                                  name="avg_delivery_time"
-                                  type="number"
-                                  defaultValue={company.avg_delivery_time || 60}
-                                  placeholder={isArabic ? "بالدقائق" : "In minutes"}
-                                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9"
-                                />
-                                <p className="text-[9px] text-muted-foreground">
-                                  {isArabic ? "متوسط وقت التوصيل بالدقائق" : "Average delivery time in minutes"}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
-                              <input
-                                type="checkbox"
-                                name="is_active"
-                                defaultChecked={company.is_active}
-                                className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                              />
-                              <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white cursor-pointer">
-                                {isArabic ? "🟢 الشركة نشطة" : "🟢 Company is active"}
-                              </Label>
-                            </div>
-
-                            <DialogFooter className="gap-2 pt-4 border-t border-[#0d2e2a]/10">
-                              <Button type="button" variant="outline" onClick={() => setShowCompanyDialog(false)}>
-                                <X className="h-4 w-4 mr-1" />
-                                {isArabic ? "إلغاء" : "Cancel"}
-                              </Button>
-                              <Button
-                                type="submit"
-                                className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white hover:from-[#1a4f4a] hover:to-[#0d2e2a] transition-all duration-300"
-                              >
-                                <Save className="h-4 w-4 mr-1" />
-                                {isArabic ? "حفظ التغييرات" : "Save Changes"}
-                              </Button>
-                            </DialogFooter>
-                          </form>
-                        </DialogContent>
-                      </Dialog>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-                      <p>{isArabic ? "تعديل الشركة" : "Edit Company"}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-
-                <div className="w-px h-6 bg-white/10 mx-0.5" />
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      className="h-9 px-4 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#2a655f] text-white transition-all duration-300 hover:scale-105 font-medium text-xs shadow-lg shadow-[#2a655f]/30"
-                      onClick={() => navigate({ to: "/delivery/orders/new" })}
-                    >
-                      <Plus className="h-3.5 w-3.5 mr-1" />
-                      {isArabic ? "طلب جديد" : "New Order"}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-                    <p>{isArabic ? "إنشاء طلب توصيل جديد" : "Create New Delivery Order"}</p>
-                  </TooltipContent>
-                </Tooltip>
+{company && isDeliveryCompany && (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Dialog open={showCompanyDialog} onOpenChange={setShowCompanyDialog}>
+        <DialogTrigger asChild>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative group"
+          >
+            <Building2 className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
+            <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-[#1a4f4a] animate-pulse" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="rounded-2xl max-h-[90vh] overflow-y-auto p-0 border-0 shadow-2xl">
+          {/* رأس الديالوج */}
+          <div className="sticky top-0 z-10 bg-gradient-to-r from-[#0d2e2a] via-[#1a4f4a] to-[#2a655f] p-6 text-white rounded-t-2xl">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-white" />
               </div>
+              <div>
+                <DialogTitle className="text-xl font-bold">
+                  {isArabic ? "🏢 تعديل معلومات الشركة" : "🏢 Edit Company Info"}
+                </DialogTitle>
+                <p className="text-white/80 text-sm mt-0.5">
+                  {isArabic ? "تحديث بيانات شركة التوصيل" : "Update delivery company information"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* ✅✅✅ صورة الشركة ✅✅✅ */}
+            <div className="flex flex-col items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border-2 border-dashed border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 transition-all duration-300">
+              <ImageInput
+                value={logoUrl || company?.logo_url || ""}
+                onChange={(value) => setLogoUrl(value)}
+                userId={app.user?.id}
+                folder="delivery-companies"
+                lang={app.lang}
+                label={isArabic ? "📸 شعار الشركة" : "📸 Company Logo"}
+                previewClassName="h-24 w-24 rounded-full object-cover border-4 border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 transition-all duration-300"
+                hint={isArabic ? "اضغط لرفع شعار الشركة" : "Click to upload company logo"}
+              />
+              <p className="text-xs text-muted-foreground">
+                {isArabic ? "🖼️ يفضل استخدام صورة مربعة 500×500 بكسل" : "🖼️ Prefer square image 500×500px"}
+              </p>
+            </div>
+
+            <form onSubmit={handleUpdateCompany} className="space-y-5">
+              {/* ===== الاسم ===== */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
+                    <Building2 className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
+                    {isArabic ? "اسم الشركة (عربي)" : "Company Name (Arabic)"} *
+                  </Label>
+                  <Input
+                    name="name_ar"
+                    defaultValue={company?.name_ar || ''}
+                    placeholder={isArabic ? "شركة التوصيل السريع" : "Fast Delivery Company"}
+                    required
+                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
+                    <Globe className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
+                    {isArabic ? "اسم الشركة (إنجليزي)" : "Company Name (English)"} *
+                  </Label>
+                  <Input
+                    name="name_en"
+                    defaultValue={company?.name_en || ''}
+                    placeholder={isArabic ? "Fast Delivery Company" : "Fast Delivery Company"}
+                    required
+                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
+                  />
+                </div>
+              </div>
+
+              {/* ===== رقم الهاتف ===== */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
+                  <Phone className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
+                  {isArabic ? "رقم الهاتف" : "Phone Number"} *
+                </Label>
+                <Input
+                  name="phone"
+                  defaultValue={company?.phone || ''}
+                  type="tel"
+                  placeholder="09XXXXXXXX"
+                  required
+                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
+                />
+              </div>
+
+              {/* ===== ✅✅✅ اختيار طريقة إدخال العنوان ✅✅✅ ===== */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
+                  {isArabic ? "📍 طريقة إدخال العنوان" : "📍 Address Input Method"}
+                </Label>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setAddressMethod("manual")}
+                    className={`
+                      flex items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300
+                      ${addressMethod === "manual" 
+                        ? "bg-[#0d2e2a]/10 border-2 border-[#0d2e2a] shadow-lg scale-[1.02]" 
+                        : "bg-slate-100/50 dark:bg-slate-800/50 border-2 border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-200/50 hover:scale-[1.02]"}
+                    `}
+                  >
+                    <Edit3 className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      {isArabic ? "📝 كتابة يدوية" : "✏️ Manual"}
+                    </span>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setAddressMethod("map")}
+                    className={`
+                      flex items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300
+                      ${addressMethod === "map" 
+                        ? "bg-[#0d2e2a]/10 border-2 border-[#0d2e2a] shadow-lg scale-[1.02]" 
+                        : "bg-slate-100/50 dark:bg-slate-800/50 border-2 border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-200/50 hover:scale-[1.02]"}
+                    `}
+                  >
+                    <Map className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      {isArabic ? "🗺️ اختيار من الخريطة" : "🗺️ Map"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* ===== ✅✅✅ حقل العنوان بناءً على الاختيار ✅✅✅ ===== */}
+              {addressMethod === "manual" ? (
+                <div className="space-y-2 animate-in fade-in-50 duration-300">
+                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+                    {isArabic ? "العنوان" : "Address"} *
+                  </Label>
+                  <Textarea
+                    name="address_ar"
+                    defaultValue={company?.address_ar || ''}
+                    placeholder={isArabic ? "مثال: شارع الأندلس، مبنى 5، الطابق 3" : "Example: Al-Andalus Street, Building 5, Floor 3"}
+                    required
+                    rows={2}
+                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2 animate-in fade-in-50 duration-300">
+                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+                    {isArabic ? "اختر موقعك على الخريطة" : "Select your location on the map"} *
+                  </Label>
+                  <div className="rounded-xl border-2 border-[#0d2e2a]/20 p-3 bg-white dark:bg-slate-900 focus-within:border-[#0d2e2a] transition-all duration-300 hover:shadow-md">
+                    <AddressPicker
+                      value={location || (company?.lat && company?.lng ? {
+                        lat: company.lat,
+                        lng: company.lng,
+                        address: company.address_ar || ''
+                      } : undefined)}
+                      onChange={setLocation}
+                      lang={app.lang}
+                    />
+                  </div>
+                  {location && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in-50 duration-300">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      ✅ {isArabic ? "تم اختيار الموقع" : "Location selected"}
+                    </p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <Info className="h-3 w-3" />
+                    {isArabic 
+                      ? "📍 سيتم استخدام العنوان المختار من الخريطة تلقائياً" 
+                      : "📍 The selected address from the map will be used automatically"}
+                  </p>
+                </div>
+              )}
+
+              {/* ===== الوصف ===== */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
+                    {isArabic ? "الوصف (عربي)" : "Description (Arabic)"}
+                  </Label>
+                  <Textarea
+                    name="description_ar"
+                    defaultValue={company?.description_ar || ''}
+                    placeholder={isArabic ? "وصف الشركة بالعربية" : "Company description in Arabic"}
+                    rows={3}
+                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
+                    {isArabic ? "الوصف (إنجليزي)" : "Description (English)"}
+                  </Label>
+                  <Textarea
+                    name="description_en"
+                    defaultValue={company?.description_en || ''}
+                    placeholder={isArabic ? "وصف الشركة بالإنجليزية" : "Company description in English"}
+                    rows={3}
+                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
+                  />
+                </div>
+              </div>
+
+              {/* ===== التسعير ===== */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
+                  <DollarSign className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
+                  {isArabic ? "💰 التسعير" : "💰 Pricing"}
+                </Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
+                      {isArabic ? "السعر الأساسي" : "Base Price"} *
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
+                        {app.currency}
+                      </span>
+                      <Input
+                        name="base_price"
+                        type="number"
+                        step="0.01"
+                        defaultValue={company?.base_price || 0}
+                        required
+                        className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7 transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
+                      {isArabic ? "سعر الكيلومتر" : "Price per KM"} *
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
+                        {app.currency}
+                      </span>
+                      <Input
+                        name="price_per_km"
+                        type="number"
+                        step="0.01"
+                        defaultValue={company?.price_per_km || 0}
+                        required
+                        className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7 transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
+                      {isArabic ? "الحد الأدنى" : "Min Fee"} *
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
+                        {app.currency}
+                      </span>
+                      <Input
+                        name="min_delivery_fee"
+                        type="number"
+                        step="0.01"
+                        defaultValue={company?.min_delivery_fee || 0}
+                        required
+                        className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7 transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
+                      {isArabic ? "الحد الأقصى" : "Max Fee"} *
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
+                        {app.currency}
+                      </span>
+                      <Input
+                        name="max_delivery_fee"
+                        type="number"
+                        step="0.01"
+                        defaultValue={company?.max_delivery_fee || 999999}
+                        required
+                        className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7 transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ===== قيمة التوصيل المجاني ووقت التوصيل ===== */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
+                    {isArabic ? "قيمة التوصيل المجاني" : "Free Delivery Threshold"}
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
+                      {app.currency}
+                    </span>
+                    <Input
+                      name="free_delivery_threshold"
+                      type="number"
+                      step="0.01"
+                      defaultValue={company?.free_delivery_threshold || 0}
+                      className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7 transition-all duration-300"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
+                    {isArabic ? "متوسط وقت التوصيل" : "Avg Delivery Time"} *
+                  </Label>
+                  <Input
+                    name="avg_delivery_time"
+                    type="number"
+                    defaultValue={company?.avg_delivery_time || 60}
+                    required
+                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 transition-all duration-300"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    {isArabic ? "⏱️ بالدقائق" : "⏱️ In minutes"}
+                  </p>
+                </div>
+              </div>
+
+              {/* ===== الخيارات (Checkboxes) ===== */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
+                  <CheckSquare className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
+                  {isArabic ? "⚙️ الخيارات" : "⚙️ Options"}
+                </Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <label className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 rounded-xl border border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 cursor-pointer transition-all duration-300 group">
+                    <input
+                      type="checkbox"
+                      name="has_tracking"
+                      defaultChecked={company?.has_tracking ?? true}
+                      className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                    />
+                    <Label className="text-xs font-medium cursor-pointer group-hover:text-[#0d2e2a] transition-colors">
+                      {isArabic ? "📍 تتبع" : "📍 Tracking"}
+                    </Label>
+                  </label>
+                  <label className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 rounded-xl border border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 cursor-pointer transition-all duration-300 group">
+                    <input
+                      type="checkbox"
+                      name="has_insurance"
+                      defaultChecked={company?.has_insurance ?? true}
+                      className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                    />
+                    <Label className="text-xs font-medium cursor-pointer group-hover:text-[#0d2e2a] transition-colors">
+                      {isArabic ? "🛡️ تأمين" : "🛡️ Insurance"}
+                    </Label>
+                  </label>
+                  <label className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 rounded-xl border border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 cursor-pointer transition-all duration-300 group">
+                    <input
+                      type="checkbox"
+                      name="has_cod"
+                      defaultChecked={company?.has_cod ?? true}
+                      className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                    />
+                    <Label className="text-xs font-medium cursor-pointer group-hover:text-[#0d2e2a] transition-colors">
+                      {isArabic ? "💵 دفع عند الاستلام" : "💵 Cash on Delivery"}
+                    </Label>
+                  </label>
+                  <label className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 rounded-xl border border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 cursor-pointer transition-all duration-300 group">
+                    <input
+                      type="checkbox"
+                      name="has_express"
+                      defaultChecked={company?.has_express ?? true}
+                      className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                    />
+                    <Label className="text-xs font-medium cursor-pointer group-hover:text-[#0d2e2a] transition-colors">
+                      {isArabic ? "⚡ توصيل سريع" : "⚡ Express"}
+                    </Label>
+                  </label>
+                </div>
+              </div>
+
+              {/* ===== حالة النشاط ===== */}
+              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl border-2 border-emerald-200/50 dark:border-emerald-800/30 hover:border-emerald-400/50 transition-all duration-300">
+                <input
+                  type="checkbox"
+                  name="is_active"
+                  defaultChecked={company?.is_active ?? true}
+                  className="h-5 w-5 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500/20 transition-all duration-300"
+                />
+                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white cursor-pointer flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${company?.is_active !== false ? 'bg-emerald-400' : 'bg-gray-400'} opacity-75`} />
+                    <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${company?.is_active !== false ? 'bg-emerald-500' : 'bg-gray-500'}`} />
+                  </span>
+                  {isArabic ? "🟢 الشركة نشطة" : "🟢 Company is active"}
+                </Label>
+              </div>
+
+              {/* ===== أزرار ===== */}
+              <DialogFooter className="gap-3 pt-4 border-t-2 border-[#0d2e2a]/10">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowCompanyDialog(false)}
+                  className="rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/5 hover:border-[#0d2e2a]/40 transition-all duration-300 flex-1"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  {isArabic ? "إلغاء" : "Cancel"}
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white rounded-xl shadow-lg shadow-[#0d2e2a]/30 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] flex-1"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {isArabic ? "💾 حفظ التغييرات" : "💾 Save Changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </TooltipTrigger>
+    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+      <p>{isArabic ? "🏢 تعديل الشركة" : "🏢 Edit Company"}</p>
+    </TooltipContent>
+  </Tooltip>
+)}
+
+  <div className="w-px h-6 bg-white/10 mx-0.5" />
+
+  {/* 👤 DELIVERY ACCOUNT MENU (آخر شي عاليسار) */}
+  <DeliveryAccountMenu
+    userData={{
+      id: app.user?.id || '',
+      full_name: company?.name_ar || app.user?.name || (isArabic ? 'مدير شركة' : 'Company Manager'),
+      phone: company?.phone || app.user?.phone || '',
+      avatar_url: company?.logo_url || '',
+      role: 'delivery_company'
+    }}
+    companyName={company?.name_ar}
+    isArabic={isArabic}
+  />
+
+  <div className="w-px h-6 bg-white/10 mx-0.5" />
+
+  {/* 📦 DISTRIBUTOR DIALOG */}
+  {currentDistributor && (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
+          <DialogTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
+            >
+              <UserCircle className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          {/* ... كود الديالوج ... */}
+        </Dialog>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+        <p>{isArabic ? "حسابي" : "My Account"}</p>
+      </TooltipContent>
+    </Tooltip>
+  )}
+</div>
             </div>
           </div>
         </div>
@@ -1638,7 +1529,6 @@ const isDeliveryCompany = useMemo(() => {
           {/* ORDERS TAB */}
           {activeTab === "orders" && (
             <div className="animate-in slide-in-from-top-5 duration-300">
-              {/* ... محتوى الطلبات كما هو ... */}
               <div className="flex flex-wrap items-center gap-3 mb-6">
                 <div className="relative flex-1 min-w-[200px] max-w-sm group">
                   <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#0d2e2a] transition-colors duration-300" />
@@ -1688,7 +1578,24 @@ const isDeliveryCompany = useMemo(() => {
               ) : (
                 <div className="space-y-3">
                   {filteredOrders.map((order: any) => (
-                    <OrderCard key={order.id} order={order} isArabic={isArabic} />
+                    <OrderCard 
+                      key={order.id} 
+                      order={order} 
+                      isArabic={isArabic}
+                      onAccept={() => {
+                        setSelectedDeliveryOrderId(order.id);
+                        setSelectedOrderId(order.order_id);
+                        setSelectedDistributorId("");
+                        setDistributorSearch("");
+                        setAcceptDialogOpen(true);
+                      }}
+                      onReject={() => {
+                        setSelectedDeliveryOrderId(order.id);
+                        setSelectedOrderId(order.order_id);
+                        setRejectReason("");
+                        setRejectDialogOpen(true);
+                      }}
+                    />
                   ))}
                 </div>
               )}
@@ -1972,7 +1879,6 @@ const isDeliveryCompany = useMemo(() => {
           {/* ANALYTICS TAB */}
           {activeTab === "analytics" && (
             <div className="animate-in slide-in-from-top-5 duration-300">
-              {/* ... محتوى التحليلات كما هو ... */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="border-2 border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 transition-all duration-300 shadow-xl shadow-[#0d2e2a]/5">
                   <CardHeader>
@@ -2079,7 +1985,355 @@ const isDeliveryCompany = useMemo(() => {
           )}
         </div>
 
-        {/* ===== Dialog تحويل المستخدم إلى موزع ===== */}
+        {/* ===== ACCEPT DELIVERY DIALOG ===== */}
+        <Dialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
+          <DialogContent className="max-w-lg rounded-2xl border-emerald-200/50 dark:border-emerald-800/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-emerald-500/10 overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                  <Truck className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold">
+                    {isArabic ? "🚚 قبول طلب التوصيل" : "🚚 Accept Delivery Order"}
+                  </DialogTitle>
+                  <p className="text-white/80 text-sm mt-0.5">
+                    {isArabic
+                      ? "اختر موزعاً وحدد وقت التوصيل المتوقع"
+                      : "Select a distributor and set estimated delivery time"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 flex-1 overflow-y-auto">
+              {nearestLoading ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500/20 border-t-emerald-500" />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {isArabic ? "جاري تحميل الموزعين..." : "Loading distributors..."}
+                  </p>
+                </div>
+              ) : !nearestDistributors || nearestDistributors.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+                  <p className="font-medium text-slate-700 dark:text-slate-300">
+                    {isArabic ? "❌ لا يوجد موزعين متاحين" : "❌ No distributors available"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isArabic
+                      ? "يرجى إضافة موزعين للشركة أو تفعيل موزع موجود"
+                      : "Please add distributors to the company or activate an existing one"}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="relative mb-4">
+                    <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder={isArabic ? "🔍 ابحث باسم أو رقم الموزع..." : "🔍 Search by name or phone..."}
+                      value={distributorSearch}
+                      onChange={(e) => setDistributorSearch(e.target.value)}
+                      className="ps-9 h-10 rounded-xl border-slate-200/50 dark:border-slate-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                    />
+                  </div>
+
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {nearestDistributors
+                      .filter((d: any) => {
+                        const search = distributorSearch.toLowerCase().trim();
+                        if (!search) return true;
+                        const nameAr = d.full_name_ar?.toLowerCase() || "";
+                        const nameEn = d.full_name_en?.toLowerCase() || "";
+                        const phone = d.phone?.toLowerCase() || "";
+                        return nameAr.includes(search) || nameEn.includes(search) || phone.includes(search);
+                      })
+                      .map((dist: any) => (
+                        <div
+                          key={dist.id}
+                          onClick={() => setSelectedDistributorId(dist.id)}
+                          className={cn(
+                            "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-md",
+                            selectedDistributorId === dist.id
+                              ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-md shadow-emerald-500/20"
+                              : "border-slate-200/50 dark:border-slate-700/50 hover:border-emerald-300/50 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/10"
+                          )}
+                        >
+                          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {dist.avatar_url ? (
+                              <img src={dist.avatar_url} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                                {dist.full_name_ar?.charAt(0) || dist.full_name_en?.charAt(0) || "M"}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-semibold text-slate-900 dark:text-white">
+                                {isArabic ? dist.full_name_ar : dist.full_name_en || dist.full_name_ar}
+                              </p>
+                              <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 text-[9px]">
+                                ● {isArabic ? "متاح" : "Available"}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {dist.phone}
+                              </span>
+                              <span className="text-muted-foreground/30">|</span>
+                              <span className="flex items-center gap-1">
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                {Number(dist.rating || 0).toFixed(1)}
+                              </span>
+                              <span className="text-muted-foreground/30">|</span>
+                              <span className={cn(
+                                "font-medium",
+                                dist.distance < 5 ? "text-emerald-600" : "text-amber-600"
+                              )}>
+                                📍 {dist.distanceText}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className={cn(
+                            "h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
+                            selectedDistributorId === dist.id
+                              ? "border-emerald-500 bg-emerald-500"
+                              : "border-slate-300 dark:border-slate-600"
+                          )}>
+                            {selectedDistributorId === dist.id && (
+                              <Check className="h-4 w-4 text-white" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+
+                  <div className="mt-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                      <Clock className="h-3.5 w-3.5 text-[#0d2e2a]" />
+                      {isArabic ? "⏰ الوقت المتوقع للوصول" : "⏰ Estimated Delivery Time"}
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-slate-600 dark:text-slate-300">
+                          {isArabic ? "عدد الساعات حتى الوصول" : "Hours until delivery"}
+                        </Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Input
+                            type="number"
+                            min={0.5}
+                            step={0.5}
+                            value={estimatedDeliveryHours}
+                            onChange={(e) => setEstimatedDeliveryHours(parseFloat(e.target.value) || 0)}
+                            className="h-9 rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 w-full"
+                          />
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {isArabic ? "ساعة" : "hrs"}
+                          </span>
+                        </div>
+                        {estimatedDeliveryHours > 0 && (
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1">
+                            🕐 {new Date(Date.now() + estimatedDeliveryHours * 60 * 60 * 1000).toLocaleTimeString(
+                              isArabic ? 'ar-SA' : 'en-US',
+                              { hour: '2-digit', minute: '2-digit' }
+                            )}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs text-slate-600 dark:text-slate-300">
+                          {isArabic ? "وقت الاستلام المتوقع" : "Estimated pickup time"}
+                        </Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Input
+                            type="number"
+                            min={0.25}
+                            step={0.25}
+                            value={estimatedPickupHours}
+                            onChange={(e) => setEstimatedPickupHours(parseFloat(e.target.value) || 0)}
+                            className="h-9 rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 w-full"
+                          />
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {isArabic ? "ساعة" : "hrs"}
+                          </span>
+                        </div>
+                        {estimatedPickupHours > 0 && (
+                          <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1">
+                            🕐 {new Date(Date.now() + estimatedPickupHours * 60 * 60 * 1000).toLocaleTimeString(
+                              isArabic ? 'ar-SA' : 'en-US',
+                              { hour: '2-digit', minute: '2-digit' }
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {nearestDistributors.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-3 text-center">
+                      {isArabic
+                        ? `🟢 ${nearestDistributors.length} موزع متاح · مرتب حسب الأقرب`
+                        : `🟢 ${nearestDistributors.length} distributors available · sorted by proximity`}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setAcceptDialogOpen(false);
+                    setSelectedDeliveryOrderId(null);
+                    setSelectedOrderId(null);
+                    setSelectedDistributorId("");
+                    setDistributorSearch("");
+                  }}
+                  className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  <X className="h-4 w-4 mr-1.5" />
+                  {isArabic ? "إلغاء" : "Cancel"}
+                </Button>
+                <Button
+                  onClick={handleAcceptDelivery}
+                  disabled={!selectedDistributorId || isProcessing}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  {isProcessing ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      {isArabic ? "جاري..." : "Processing..."}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      {isArabic ? "تأكيد القبول" : "Confirm Accept"}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ===== REJECT DELIVERY DIALOG ===== */}
+        <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+          <DialogContent className="max-w-md rounded-2xl border-red-200/50 dark:border-red-800/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-red-500/10 overflow-hidden">
+            <div className="bg-gradient-to-r from-red-600 to-rose-600 p-5 text-white">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                  <XCircle className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold">
+                    {isArabic ? "❌ رفض طلب التوصيل" : "❌ Reject Delivery Order"}
+                  </DialogTitle>
+                  <p className="text-white/80 text-sm mt-0.5">
+                    {isArabic
+                      ? "أدخل سبب الرفض لإرساله للعميل والبائع"
+                      : "Enter the rejection reason to send to customer and seller"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
+                <p className="text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>
+                    {isArabic
+                      ? "سيتم إرسال سبب الرفض إلى البائع والعميل"
+                      : "The rejection reason will be sent to the seller and customer"}
+                  </span>
+                </p>
+              </div>
+
+              <div className="mt-4">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1.5">
+                  {isArabic ? "سبب الرفض" : "Rejection Reason"}
+                  <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder={isArabic
+                    ? "اكتب سبب رفض الطلب (مثال: لا يوجد موزع متاح، المنطقة غير مغطاة، ...)"
+                    : "Write the reason for rejecting the order (e.g., no distributor available, area not covered, ...)"
+                  }
+                  className="w-full min-h-[100px] p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-red-400 focus:ring-2 focus:ring-red-400/20 transition-all duration-200 resize-none"
+                  dir={isArabic ? "rtl" : "ltr"}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {rejectReason.length}/500
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-3">
+                {[
+                  isArabic ? "لا يوجد موزع متاح" : "No distributor available",
+                  isArabic ? "المنطقة غير مغطاة" : "Area not covered",
+                  isArabic ? "الطلب خارج أوقات العمل" : "Order outside working hours",
+                  isArabic ? "مشكلة في العنوان" : "Address issue",
+                  isArabic ? "العميل غير متاح" : "Customer unavailable",
+                  isArabic ? "سبب آخر" : "Other reason",
+                ].map((reason, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setRejectReason(reason)}
+                    className="px-3 py-1.5 text-xs rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-800 transition-all duration-200"
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRejectDialogOpen(false);
+                  setSelectedDeliveryOrderId(null);
+                  setSelectedOrderId(null);
+                  setRejectReason("");
+                }}
+                className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                <X className="h-4 w-4 mr-1.5" />
+                {isArabic ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRejectDelivery}
+                disabled={!rejectReason.trim() || isProcessing}
+                className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              >
+                {isProcessing ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    {isArabic ? "جاري الرفض..." : "Rejecting..."}
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    {isArabic ? "تأكيد الرفض" : "Confirm Reject"}
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ===== CONVERT USER DIALOG ===== */}
         <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
           <DialogContent className="max-w-md rounded-2xl overflow-hidden p-0">
             <div className="bg-gradient-to-r from-[#0d2e2a] to-[#2a655f] p-6 text-white">
@@ -2330,9 +2584,19 @@ function ModernStatCard({
 }
 
 // ============================================================
-// 📦 OrderCard
+// 📦 OrderCard - مع أزرار قبول ورفض
 // ============================================================
-function OrderCard({ order, isArabic }: { order: any; isArabic: boolean }) {
+function OrderCard({ 
+  order, 
+  isArabic,
+  onAccept,
+  onReject
+}: { 
+  order: any; 
+  isArabic: boolean;
+  onAccept: () => void;
+  onReject: () => void;
+}) {
   const app = useApp();
 
   const statusColors: Record<string, string> = {
@@ -2354,6 +2618,8 @@ function OrderCard({ order, isArabic }: { order: any; isArabic: boolean }) {
     cancelled: isArabic ? "ملغي" : "Cancelled",
     failed: isArabic ? "فشل" : "Failed",
   };
+
+  const isPending = order.status === "pending";
 
   return (
     <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-[#0d2e2a]/30 transition-all duration-300 hover:scale-[1.01] group">
@@ -2389,7 +2655,37 @@ function OrderCard({ order, isArabic }: { order: any; isArabic: boolean }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* ✅ أزرار قبول ورفض للطلبات المعلقة */}
+          {isPending && (
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                className="h-7 px-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold shadow-md shadow-emerald-500/30 transition-all duration-300 hover:scale-105"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAccept();
+                }}
+              >
+                <CheckCircle className="h-3 w-3 mr-1" />
+                {isArabic ? "قبول" : "Accept"}
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 px-2.5 rounded-lg text-[10px] font-bold shadow-md shadow-red-500/30 transition-all duration-300 hover:scale-105"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReject();
+                }}
+              >
+                <XCircle className="h-3 w-3 mr-1" />
+                {isArabic ? "رفض" : "Reject"}
+              </Button>
+            </div>
+          )}
+
           <Button
             variant="ghost"
             size="sm"
@@ -2398,6 +2694,7 @@ function OrderCard({ order, isArabic }: { order: any; isArabic: boolean }) {
           >
             <Eye className="h-4 w-4" />
           </Button>
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 rounded-xl hover:bg-[#0d2e2a]/10 transition-all duration-300">
@@ -2480,7 +2777,7 @@ function DistributorCard({ distributor, isArabic }: { distributor: any; isArabic
   );
 }
 
-// ✅ دالة formatTime المفقودة
+// ✅ دالة formatTime
 function formatTime(date: string): string {
   const now = new Date();
   const then = new Date(date);

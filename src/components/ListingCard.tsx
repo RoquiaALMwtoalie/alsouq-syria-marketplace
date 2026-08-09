@@ -1,7 +1,7 @@
 // src/components/ListingCard.tsx
 
 import { Link } from "@tanstack/react-router";
-import { Star, MapPin, Heart, ImageIcon, ShoppingCart, Store, Eye, BadgePercent, Trash2, Sparkles } from "lucide-react";
+import { Star, MapPin, Heart, ImageIcon, ShoppingCart, Store, BadgePercent, Trash2, Sparkles } from "lucide-react";
 import { useApp, formatPrice, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useState, memo, useCallback, useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 interface ListingCardProps {
   item: ListingWithRelations;
@@ -25,7 +26,6 @@ interface ListingCardProps {
   onAddToCart?: (item: any, e: React.MouseEvent) => void;
 }
 
-// ✅ ✅ ✅ استخدم React.memo ✅ ✅ ✅
 export const ListingCard = memo(function ListingCard({ 
   item, 
   variant = "grid", 
@@ -36,7 +36,6 @@ export const ListingCard = memo(function ListingCard({
   const addToCartMutation = useAddToCart();
   const clearCartMutation = useClearCart();
   
-  // ✅ ✅ ✅ useMemo للقيم المحسوبة ✅ ✅ ✅
   const fav = useMemo(() => app.favorites.includes(item.id), [app.favorites, item.id]);
   const title = useMemo(() => 
     app.lang === "ar" ? item.title_ar : (item.title_en || item.title_ar),
@@ -59,10 +58,21 @@ export const ListingCard = memo(function ListingCard({
   );
   
   const storeName = useMemo(() => 
+    (item as any).profile?.store_name || 
     (item as any).profiles?.store_name || 
     (item as any).owner?.store_name || 
+    (item as any).profile?.full_name || 
     (item as any).profiles?.full_name || 
     (item as any).owner?.full_name || 
+    "",
+    [item]
+  );
+
+  const storeCover = useMemo(() => 
+    (item as any).profile?.store_cover_url || 
+    (item as any).profile?.store_logo_url ||
+    (item as any).profiles?.store_cover_url || 
+    (item as any).profiles?.store_logo_url ||
     "",
     [item]
   );
@@ -84,19 +94,15 @@ export const ListingCard = memo(function ListingCard({
     [item.old_price_usd, oldPrice]
   );
   
-  // ✅ State للـ Dialog
   const [showStoreConflictDialog, setShowStoreConflictDialog] = useState(false);
   const [conflictData, setConflictData] = useState<any>(null);
   const [currentStoreName, setCurrentStoreName] = useState("");
   const [newStoreName, setNewStoreName] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // ✅ ✅ ✅ useCallback للدوال ✅ ✅ ✅
   const handleAddToCart = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    console.log("🛒 [ListingCard] Add to cart clicked:", item.id);
     
     if (!item || !item.id) {
       toast.error("المنتج غير موجود");
@@ -114,10 +120,7 @@ export const ListingCard = memo(function ListingCard({
         listingId: item.id,
         quantity: 1,
         onStoreConflict: async (data: any) => {
-          console.log("⚠️ [ListingCard] Store conflict!", data);
-          
           setIsProcessing(true);
-          
           const { data: currentStore } = await supabase
             .from("profiles")
             .select("store_name")
@@ -147,34 +150,27 @@ export const ListingCard = memo(function ListingCard({
 
   const handleConfirmSwitchStore = useCallback(async () => {
     if (!conflictData || !app.user) return;
-    
     setIsProcessing(true);
-    
     try {
       await clearCartMutation.mutateAsync({ userId: app.user.id });
-      
       await addToCartMutation.mutateAsync({
         userId: app.user.id,
         listingId: item.id,
         quantity: 1,
       });
-      
       toast.success(
         app.lang === "ar" 
-          ? `✅ تم تبديل المتجر من "${currentStoreName}" إلى "${newStoreName}" وإضافة المنتج للسلة`
-          : `✅ Store switched from "${currentStoreName}" to "${newStoreName}" and product added to cart`
+          ? `✅ تم تبديل المتجر إلى "${newStoreName}" وإضافة المنتج`
+          : `✅ Store switched to "${newStoreName}" and product added`
       );
-      
       setShowStoreConflictDialog(false);
       setConflictData(null);
-      
     } catch (error) {
-      console.error("❌ Error switching store:", error);
       toast.error(app.lang === "ar" ? "❌ حدث خطأ أثناء تبديل المتجر" : "❌ Error switching store");
     } finally {
       setIsProcessing(false);
     }
-  }, [app.user, app.lang, conflictData, clearCartMutation, addToCartMutation, item.id, currentStoreName, newStoreName]);
+  }, [app.user, app.lang, conflictData, clearCartMutation, addToCartMutation, item.id, newStoreName]);
 
   const handleToggleFavorite = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -182,7 +178,6 @@ export const ListingCard = memo(function ListingCard({
     app.toggleFavorite(item.id);
   }, [app, item.id]);
 
-  // ✅ ✅ ✅ الصورة مع Lazy Loading ✅ ✅ ✅
   const renderImage = useCallback(() => {
     if (cover) {
       return (
@@ -204,30 +199,29 @@ export const ListingCard = memo(function ListingCard({
     );
   }, [cover, title]);
 
-  // ✅ ✅ ✅ عرض السعر مع الخصم ✅ ✅ ✅
   const renderPrice = useCallback(() => {
     if (isOffer && oldPrice) {
       return (
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-red-500 line-through font-medium">
+            <span className="text-xs text-rose-500 line-through font-semibold">
               {formatPrice(oldPrice, app.currency, app.lang)}
             </span>
-            <span className="text-[10px] text-red-400/70">
+            <span className="text-[10px] text-muted-foreground/60">
               ≈ {oldPriceUSD?.toFixed(2)} USD
             </span>
           </div>
           
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-black text-[#2a655f]">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-lg md:text-xl font-black text-[#2a655f] dark:text-[#3a8a82] tracking-tight">
               {formatPrice(price, app.currency, app.lang)}
             </span>
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-              وفر {discountPercent}%
+            <span className="text-[10px] font-bold text-white bg-gradient-to-r from-red-600 to-orange-500 px-2 py-0.5 rounded-full shadow-md animate-pulse">
+              {discountPercent}% OFF
             </span>
           </div>
           
-          <div className="text-xs font-medium text-muted-foreground/80 bg-muted/30 px-2 py-0.5 rounded inline-block">
+          <div className="text-[11px] font-medium text-muted-foreground/80">
             ≈ {priceInUSD.toFixed(2)} USD
           </div>
         </div>
@@ -235,11 +229,11 @@ export const ListingCard = memo(function ListingCard({
     }
     
     return (
-      <div className="space-y-1">
-        <span className="text-xl font-black text-[#2a655f]">
+      <div className="space-y-0.5">
+        <span className="text-lg md:text-xl font-black text-[#2a655f] dark:text-[#3a8a82] tracking-tight">
           {formatPrice(price, app.currency, app.lang)}
         </span>
-        <div className="text-xs font-medium text-muted-foreground/80 bg-muted/30 px-2 py-0.5 rounded inline-block">
+        <div className="text-[11px] font-medium text-muted-foreground/80">
           ≈ {priceInUSD.toFixed(2)} USD
         </div>
       </div>
@@ -247,209 +241,160 @@ export const ListingCard = memo(function ListingCard({
   }, [isOffer, oldPrice, price, priceInUSD, discountPercent, app.currency, app.lang]);
 
   // ============================================================
-  // ✅ عرض Grid (شبكة)
+  // ✅ عرض Grid (شبكة) - إطار أغمق بلون السستم (#1b433e)
   // ============================================================
   if (variant === "grid") {
     return (
       <>
-        <div className="group relative rounded-2xl overflow-hidden bg-card shadow-card hover:shadow-2xl hover:shadow-[#2a655f]/15 transition-all duration-500 hover:-translate-y-2 border-2 border-[#2a655f]/20 hover:border-[#2a655f]/60">
-          <Link to="/listing/$id" params={{ id: item.id }}>
-            <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-[#2a655f]/5 to-[#2a655f]/10">
+        <div className={cn(
+          "group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-md hover:shadow-2xl hover:shadow-[#2a655f]/30 transition-all duration-500 hover:-translate-y-1.5 flex flex-col h-[410px]",
+          isOffer 
+            ? "border-2 border-red-500/80 glowing-offer-card" 
+            : "border-2 border-[#1b433e] dark:border-[#3a8a82]/80 hover:border-[#2a655f]"
+        )}>
+          <Link to="/listing/$id" params={{ id: item.id }} className="flex flex-col h-full">
+            <div className="relative h-[210px] w-full overflow-hidden bg-gradient-to-br from-[#2a655f]/5 to-[#3a8a82]/10 shrink-0">
               {renderImage()}
               
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               
+              {/* شارة الخصم للعروض */}
               {isOffer && discountPercent > 0 && (
-                <div className="absolute top-3 right-3 z-20 animate-fade-up">
-                  <div className="relative">
-                    <div className="bg-gradient-to-br from-red-500 via-red-600 to-rose-700 text-white px-3 py-2 rounded-xl shadow-2xl flex items-center gap-1.5 border border-white/20 transform group-hover:scale-110 transition-transform duration-300">
-                      <BadgePercent className="h-4 w-4" />
-                      <span className="text-sm font-black tracking-tight">{discountPercent}%</span>
-                      <span className="text-[10px] font-medium opacity-90">خصم</span>
-                    </div>
-                    <div className="absolute -inset-1 bg-red-500/20 blur-xl -z-10 rounded-full animate-pulse" />
+                <div className="absolute top-3 right-3 z-20">
+                  <div className="bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 text-white px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-1 border-2 border-white/40 animate-bounce font-black">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="text-xs">خصم {discountPercent}%</span>
                   </div>
                 </div>
               )}
               
-              {storeName && (
-                <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white/95 z-10 group-hover:bg-black/80 transition-all duration-300">
-                  <Store className="h-3 w-3" />
-                  <span className="line-clamp-1 max-w-[120px]">{storeName}</span>
-                </div>
-              )}
-              
-              <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-white z-10 group-hover:bg-black/80 transition-all duration-300">
+              {/* التقييم */}
+              <div className="absolute top-3 left-3 flex items-center gap-1 rounded-full bg-black/70 backdrop-blur-md px-2.5 py-1 text-xs font-semibold text-white z-10">
                 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                {Number(item.rating || 0).toFixed(1)}
+                <span>{Number(item.rating || 0).toFixed(1)}</span>
               </div>
               
-              <button
-                onClick={handleAddToCart}
-                className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/30 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-xl opacity-0 group-hover:opacity-100 z-10"
-              >
-                <ShoppingCart className="h-4.5 w-4.5" />
-              </button>
-              
+              {/* زر المفضلة */}
               <button
                 onClick={handleToggleFavorite}
-                className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white text-rose-500 shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 z-10 opacity-0 group-hover:opacity-100"
+                className="absolute top-12 right-3 h-8 w-8 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-rose-500 shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 z-10 opacity-0 group-hover:opacity-100"
               >
                 <Heart className={`h-4 w-4 transition-colors ${fav ? "fill-rose-500 text-rose-500" : "text-rose-500"}`} />
               </button>
-              
-              {isOffer && (
-                <div className="absolute top-16 right-3 z-20">
-                  <div className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1 animate-pulse">
-                    <Sparkles className="h-3 w-3" />
-                    <span>عرض</span>
+
+              {/* ✅ تصميم احترافي فاخر لشارة المتجر (صورة واسم) في الأسفل على اليسار */}
+              {(storeCover || storeName) && (
+                <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 bg-gradient-to-r from-black/80 via-black/70 to-[#1b433e]/80 backdrop-blur-md p-1.5 pe-3.5 rounded-full border border-white/20 shadow-xl max-w-[210px] group-hover:border-[#3a8a82] transition-colors">
+                  <div className="h-7 w-7 rounded-full border border-white/40 shadow-inner overflow-hidden bg-white flex-shrink-0 grid place-items-center">
+                    {storeCover ? (
+                      <img 
+                        src={storeCover} 
+                        alt={storeName || "Store"} 
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <Store className="h-3.5 w-3.5 text-[#2a655f]" />
+                    )}
                   </div>
+                  <span className="text-[11px] font-bold text-white tracking-wide line-clamp-1">
+                    {storeName || (app.lang === "ar" ? "متجر" : "Store")}
+                  </span>
                 </div>
               )}
             </div>
             
-            <div className="p-4">
-              <h3 className="font-semibold text-sm line-clamp-1 group-hover:text-[#2a655f] transition-colors duration-300">
-                {title}
-              </h3>
-              
-              <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                <MapPin className="h-3 w-3 shrink-0" />
-                <span className="line-clamp-1">{gov || "جميع المحافظات"}</span>
-                {cat && (
-                  <>
-                    <span className="text-muted-foreground/50">•</span>
-                    <span className="line-clamp-1">{cat}</span>
-                  </>
-                )}
+            <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+              <div>
+                <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1.5">
+                  <MapPin className="h-3 w-3 shrink-0 text-[#2a655f]" />
+                  <span className="line-clamp-1">{gov || "جميع المحافظات"}</span>
+                  {cat && (
+                    <>
+                      <span>•</span>
+                      <span className="line-clamp-1 text-[#2a655f] font-medium">{cat}</span>
+                    </>
+                  )}
+                </div>
+
+                <h3 className="font-bold text-sm line-clamp-2 text-slate-800 dark:text-slate-100 group-hover:text-[#2a655f] transition-colors duration-300 leading-snug h-[40px]">
+                  {title}
+                </h3>
               </div>
               
-              <div className="mt-3">
-                {renderPrice()}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                  {renderPrice()}
+                </div>
+                
+                <Button
+                  size="icon"
+                  onClick={handleAddToCart}
+                  className="h-10 w-10 rounded-xl bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 shrink-0"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </Link>
         </div>
 
-        {/* ✅ مودال تعارض المتجر */}
-        <Dialog open={showStoreConflictDialog} onOpenChange={setShowStoreConflictDialog}>
-          <DialogContent className="max-w-md rounded-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-xl text-[#0d2e2a]">
-                <ShoppingCart className="h-6 w-6 text-amber-500" />
-                {app.lang === "ar" ? "⚠️ سلة من متجر آخر" : "⚠️ Cart from another store"}
-              </DialogTitle>
-              <DialogDescription className="text-base">
-                {app.lang === "ar" 
-                  ? `لديك منتجات في السلة من "${currentStoreName}"`
-                  : `You have items in your cart from "${currentStoreName}"`}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="py-4 space-y-4">
-              <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/30">
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  {app.lang === "ar" 
-                    ? `📦 السلة تحتوي على منتجات من "${currentStoreName}"`
-                    : `📦 Your cart currently has items from "${currentStoreName}"`}
-                </p>
-                <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                  {app.lang === "ar" 
-                    ? `🛒 المنتج الجديد من "${newStoreName}"`
-                    : `🛒 The new product is from "${newStoreName}"`}
-                </p>
-              </div>
-              
-              <div className="text-sm text-muted-foreground">
-                {app.lang === "ar" 
-                  ? "لا يمكن إضافة منتجات من أكثر من متجر واحد في نفس السلة"
-                  : "You cannot add products from different stores in the same cart"}
-              </div>
-              
-              <div className="text-xs text-muted-foreground/70 bg-slate-50 dark:bg-slate-800/30 p-3 rounded-lg">
-                {app.lang === "ar" 
-                  ? `💡 سيتم تفريغ السلة الحالية وإضافة المنتج من "${newStoreName}"`
-                  : `💡 The current cart will be cleared and the product from "${newStoreName}" will be added`}
-              </div>
-            </div>
-            
-            <DialogFooter className="gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowStoreConflictDialog(false)}
-                className="rounded-xl"
-              >
-                {app.lang === "ar" ? "إلغاء" : "Cancel"}
-              </Button>
-              <Button 
-                onClick={handleConfirmSwitchStore}
-                disabled={isProcessing}
-                className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white rounded-xl transition-all duration-300 hover:scale-[1.02]"
-              >
-                {isProcessing ? (
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                    {app.lang === "ar" ? "جاري التبديل..." : "Switching..."}
-                  </div>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {app.lang === "ar" ? "تفريغ السلة وإضافة الجديد" : "Clear cart and add new"}
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <StoreConflictModal />
       </>
     );
   }
 
   // ============================================================
-  // ✅ عرض List (قائمة)
+  // ✅ عرض List (قائمة) - إطار أغمق بلون السستم (#1b433e)
   // ============================================================
   return (
     <>
-      <div className="group relative rounded-2xl overflow-hidden bg-card shadow-card hover:shadow-2xl hover:shadow-[#2a655f]/15 transition-all duration-500 hover:-translate-y-1 border-2 border-[#2a655f]/20 hover:border-[#2a655f]/60">
+      <div className={cn(
+        "group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-md hover:shadow-2xl hover:shadow-[#2a655f]/20 transition-all duration-500 hover:-translate-y-1",
+        isOffer 
+          ? "border-2 border-red-500/80 glowing-offer-card" 
+          : "border-2 border-[#1b433e] dark:border-[#3a8a82]/80 hover:border-[#2a655f]"
+      )}>
         {isOffer && discountPercent > 0 && (
-          <div className="absolute top-3 right-3 z-20 animate-fade-up">
-            <div className="relative">
-              <div className="bg-gradient-to-br from-red-500 via-red-600 to-rose-700 text-white px-3 py-2 rounded-xl shadow-2xl flex items-center gap-1.5 border border-white/20 transform group-hover:scale-110 transition-transform duration-300">
-                <BadgePercent className="h-4 w-4" />
-                <span className="text-sm font-black tracking-tight">{discountPercent}%</span>
-                <span className="text-[10px] font-medium opacity-90">خصم</span>
-              </div>
-              <div className="absolute -inset-1 bg-red-500/20 blur-xl -z-10 rounded-full animate-pulse" />
+          <div className="absolute top-3 right-3 z-25">
+            <div className="bg-gradient-to-r from-red-600 to-amber-500 text-white px-3.5 py-1 rounded-xl shadow-lg flex items-center gap-1 border border-white/20 animate-pulse font-bold text-xs">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>عرض خاص {discountPercent}%</span>
             </div>
           </div>
         )}
 
-        <Link to="/listing/$id" params={{ id: item.id }} className="flex flex-col sm:flex-row">
-          <div className="relative w-full sm:w-56 h-48 sm:h-auto shrink-0 overflow-hidden bg-gradient-to-br from-[#2a655f]/5 to-[#2a655f]/10">
+        <Link to="/listing/$id" params={{ id: item.id }} className="flex flex-col sm:flex-row h-full">
+          <div className="relative w-full sm:w-56 h-48 sm:h-auto shrink-0 overflow-hidden bg-gradient-to-br from-[#2a655f]/5 to-[#3a8a82]/15">
             {renderImage()}
-            
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             
             <button
               onClick={handleToggleFavorite}
-              className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white text-rose-500 shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 z-10 opacity-0 group-hover:opacity-100"
+              className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-rose-500 shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 z-10 opacity-0 group-hover:opacity-100"
             >
               <Heart className={`h-4 w-4 transition-colors ${fav ? "fill-rose-500 text-rose-500" : "text-rose-500"}`} />
             </button>
             
-            {isOffer && (
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
-                <div className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-500 text-white text-[10px] font-black px-4 py-1 rounded-full shadow-lg flex items-center gap-1 animate-pulse">
-                  <Sparkles className="h-3 w-3" />
-                  <span>عرض حصري</span>
+            {/* ✅ شارة المتجر الفاخرة لعرض القائمة */}
+            {(storeCover || storeName) && (
+              <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 bg-gradient-to-r from-black/80 via-black/70 to-[#1b433e]/80 backdrop-blur-md p-1.5 pe-3.5 rounded-full border border-white/20 shadow-xl max-w-[210px] group-hover:border-[#3a8a82] transition-colors">
+                <div className="h-7 w-7 rounded-full border border-white/40 shadow-inner overflow-hidden bg-white flex-shrink-0 grid place-items-center">
+                  {storeCover ? (
+                    <img 
+                      src={storeCover} 
+                      alt={storeName || "Store"} 
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <Store className="h-3.5 w-3.5 text-[#2a655f]" />
+                  )}
                 </div>
-              </div>
-            )}
-            
-            {storeName && (
-              <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white/95 z-10 group-hover:bg-black/80 transition-all duration-300">
-                <Store className="h-3 w-3" />
-                <span className="line-clamp-1 max-w-[120px]">{storeName}</span>
+                <span className="text-[11px] font-bold text-white tracking-wide line-clamp-1">
+                  {storeName || (app.lang === "ar" ? "متجر" : "Store")}
+                </span>
               </div>
             )}
           </div>
@@ -457,119 +402,129 @@ export const ListingCard = memo(function ListingCard({
           <div className="flex-1 p-5 flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300">
                   <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                   {Number(item.rating || 0).toFixed(1)}
                 </span>
-                <span className="text-muted-foreground/30">|</span>
+                <span className="text-muted-foreground/30">•</span>
                 <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
+                  <MapPin className="h-3 w-3 text-[#2a655f]" />
                   {gov || "جميع المحافظات"}
                 </span>
                 {cat && (
                   <>
-                    <span className="text-muted-foreground/30">|</span>
-                    <span>{cat}</span>
+                    <span className="text-muted-foreground/30">•</span>
+                    <span className="text-[#2a655f] font-medium">{cat}</span>
                   </>
                 )}
               </div>
               
-              <h3 className="mt-1.5 font-bold text-base line-clamp-2 group-hover:text-[#2a655f] transition-colors duration-300">
+              <h3 className="mt-2 font-bold text-base md:text-lg line-clamp-2 text-slate-800 dark:text-slate-100 group-hover:text-[#2a655f] transition-colors duration-300">
                 {title}
               </h3>
             </div>
             
-            <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-              <div className="space-y-1">
+            <div className="mt-4 flex flex-wrap items-end justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div>
                 {renderPrice()}
               </div>
               
-              <button
+              <Button
                 onClick={handleAddToCart}
-                className="h-9 px-4 rounded-full bg-[#2a655f] hover:bg-[#3a8a82] text-white font-medium text-sm flex items-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-[#2a655f]/30 hover:scale-105"
+                className="h-10 px-5 rounded-xl bg-[#2a655f] hover:bg-[#3a8a82] text-white font-semibold text-xs flex items-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-[#2a655f]/30 hover:scale-105"
               >
-                <ShoppingCart className="h-3.5 w-3.5" />
-                {t("add_to_cart")}
-              </button>
+                <ShoppingCart className="h-4 w-4" />
+                {t("add_to_cart") || "إضافة للسلة"}
+              </Button>
             </div>
           </div>
         </Link>
       </div>
 
-      {/* ✅ مودال تعارض المتجر */}
+      <StoreConflictModal />
+    </>
+  );
+
+  function StoreConflictModal() {
+    return (
       <Dialog open={showStoreConflictDialog} onOpenChange={setShowStoreConflictDialog}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl text-[#0d2e2a]">
-              <ShoppingCart className="h-6 w-6 text-amber-500" />
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-[#2a655f]">
+              <ShoppingCart className="h-5 w-5 text-amber-500" />
               {app.lang === "ar" ? "⚠️ سلة من متجر آخر" : "⚠️ Cart from another store"}
             </DialogTitle>
-            <DialogDescription className="text-base">
+            <DialogDescription className="text-xs text-slate-500">
               {app.lang === "ar" 
-                ? `لديك منتجات في السلة من "${currentStoreName}"`
+                ? `لديك منتجات في السلة من متجر "${currentStoreName}"`
                 : `You have items in your cart from "${currentStoreName}"`}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4 space-y-4">
-            <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/30">
-              <p className="text-sm text-amber-700 dark:text-amber-400">
-                {app.lang === "ar" 
-                  ? `📦 السلة تحتوي على منتجات من "${currentStoreName}"`
-                  : `📦 Your cart currently has items from "${currentStoreName}"`}
+          <div className="py-3 space-y-3">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/60 dark:border-amber-800/40 text-xs space-y-1.5">
+              <p className="text-amber-800 dark:text-amber-300 font-medium">
+                📦 {app.lang === "ar" ? `سلتك الحالية تتبع لـ: ${currentStoreName}` : `Current cart: ${currentStoreName}`}
               </p>
-              <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                {app.lang === "ar" 
-                  ? `🛒 المنتج الجديد من "${newStoreName}"`
-                  : `🛒 The new product is from "${newStoreName}"`}
+              <p className="text-amber-800 dark:text-amber-300 font-medium">
+                🛒 {app.lang === "ar" ? `المنتج الجديد يتبع لـ: ${newStoreName}` : `New product: ${newStoreName}`}
               </p>
             </div>
             
-            <div className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               {app.lang === "ar" 
-                ? "لا يمكن إضافة منتجات من أكثر من متجر واحد في نفس السلة"
-                : "You cannot add products from different stores in the same cart"}
-            </div>
-            
-            <div className="text-xs text-muted-foreground/70 bg-slate-50 dark:bg-slate-800/30 p-3 rounded-lg">
-              {app.lang === "ar" 
-                ? `💡 سيتم تفريغ السلة الحالية وإضافة المنتج من "${newStoreName}"`
-                : `💡 The current cart will be cleared and the product from "${newStoreName}" will be added`}
-            </div>
+                ? "لا يمكن الجمع بين منتجات من متاجر مختلفة في نفس الطلب. هل تريد تفريغ السلة وإضافة هذا المنتج الجديد؟"
+                : "You cannot mix products from different stores in the same order. Clear cart and add new?"}
+            </p>
           </div>
           
           <DialogFooter className="gap-2">
             <Button 
               variant="outline" 
               onClick={() => setShowStoreConflictDialog(false)}
-              className="rounded-xl"
+              className="rounded-xl text-xs h-10"
             >
               {app.lang === "ar" ? "إلغاء" : "Cancel"}
             </Button>
             <Button 
               onClick={handleConfirmSwitchStore}
               disabled={isProcessing}
-              className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white rounded-xl transition-all duration-300 hover:scale-[1.02]"
+              className="bg-[#2a655f] hover:bg-[#3a8a82] text-white rounded-xl text-xs h-10 shadow-md"
             >
               {isProcessing ? (
                 <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
                   {app.lang === "ar" ? "جاري التبديل..." : "Switching..."}
                 </div>
               ) : (
                 <>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {app.lang === "ar" ? "تفريغ السلة وإضافة الجديد" : "Clear cart and add new"}
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                  {app.lang === "ar" ? "تفريغ السلة وإضافة الجديد" : "Clear & Add New"}
                 </>
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
-  );
+    );
+  }
 });
 
-// ✅ ✅ ✅ أضف displayName للـ Debug ✅ ✅ ✅
+// أنماط التوهج الخاصة بالعروض
+const styleTag = typeof document !== 'undefined' ? document.createElement('style') : null;
+if (styleTag) {
+  styleTag.innerHTML = `
+    @keyframes offer-glow {
+      0% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.4), 0 0 20px rgba(245, 158, 11, 0.2); }
+      50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.8), 0 0 40px rgba(245, 158, 11, 0.5); }
+      100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.4), 0 0 20px rgba(245, 158, 11, 0.2); }
+    }
+    .glowing-offer-card {
+      animation: offer-glow 2.5s infinite ease-in-out;
+    }
+  `;
+  document.head.appendChild(styleTag);
+}
+
 ListingCard.displayName = 'ListingCard';
 export default ListingCard;
