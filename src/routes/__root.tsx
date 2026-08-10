@@ -57,7 +57,7 @@ import {
   useListingsRealtime,
   useCartRealtime,
   useOrdersRealtime,
-  useBookingsRealtime,
+
   useStoresRealtime,
   useCategoriesRealtime,
 } from "@/lib/hooks";
@@ -692,7 +692,7 @@ function RealtimeManager() {
   useListingsRealtime();
   useCartRealtime(app.user?.id);
   useOrdersRealtime(app.user?.id);
-  useBookingsRealtime(app.user?.id);
+
   useStoresRealtime();
   useCategoriesRealtime();
 
@@ -912,7 +912,7 @@ function RootContent({
           {!hideChrome && <Header />}
           <main className="flex-1"><Outlet /></main>
           {!hideChrome && <Footer />}
-         
+          {!hideChrome && <SupportButton />}
         </div>
       </ClientOnly>
       

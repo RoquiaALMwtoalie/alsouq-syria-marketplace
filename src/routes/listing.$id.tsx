@@ -17,8 +17,7 @@ import { useListing, useListingReviews, useSimilarListings } from "@/lib/queries
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { BookingModal } from "@/components/booking/BookingModal";
-import { useCreateBooking } from "@/lib/queries";
+// ✅ ✅ ✅ أضف هذا السطر
 import { translateOptionType } from "@/lib/utils/constants";
 import { ClientOnly } from "@/components/ClientOnly";
 import { useCart, useAddToCart, useClearCart } from "@/lib/hooks/useCart";
@@ -31,7 +30,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 export const Route = createFileRoute("/listing/$id")({
   component: ListingDetailPage,
   head: () => ({ meta: [{ title: "تفاصيل المنتج — السوق لعندك" }] }),
@@ -66,8 +64,7 @@ function ListingDetailPage() {
   const [selectedVariation, setSelectedVariation] = useState<any | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
   const [mainImage, setMainImage] = useState<string>("");
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [isBookingLoading, setIsBookingLoading] = useState(false);
+  // ❌ تم إزالة isBookingModalOpen, isBookingLoading
   const [showStoreConflict, setShowStoreConflict] = useState(false);
   const [currentStoreName, setCurrentStoreName] = useState("");
   const [newStoreName, setNewStoreName] = useState("");
@@ -96,20 +93,17 @@ function ListingDetailPage() {
   const toggleFavoriteMutation = useToggleFavorite();
   const isFavorite = listing ? app.favorites.includes(listing.id) : false;
   
-  // ✅ Create Booking
-  const createBooking = useCreateBooking();
+  // ❌ تم إزالة createBooking
   
-  // ✅ ✅ ✅ استخراج البيانات - مصحح (من product_variations وليس metadata)
+  // ✅ استخراج البيانات
   const images = useMemo(() => {
     const imgList = listing?.listing_images?.map((img: any) => img.url) || [];
     if (listing?.cover_url) imgList.unshift(listing.cover_url);
     return imgList;
   }, [listing]);
 
-  // ✅ الألوان من product_colors
   const colors = useMemo(() => (listing as any)?.colors || [], [listing]);
   
-  // ✅ المقاسات من product_options
   const sizes = useMemo(() => {
     const options = (listing as any)?.options || [];
     return options
@@ -117,27 +111,33 @@ function ListingDetailPage() {
       .map((opt: any) => opt.option_value);
   }, [listing]);
   
-  // ✅ التركيبات من product_variations
   const variations = useMemo(() => (listing as any)?.variations || [], [listing]);
 
   const avgRating = useMemo(() => (listing as any)?.avg_rating || listing?.rating || 0, [listing]);
   const reviewsCount = useMemo(() => (listing as any)?.reviews_count || reviews.length || 0, [listing, reviews]);
 
   const storeName = useMemo(() => 
-    (listing as any)?.profiles?.store_name || 
+    (listing as any)?.profile?.store_name ||    
+    (listing as any)?.profiles?.store_name ||   
     (listing as any)?.owner?.store_name || 
+    (listing as any)?.profile?.full_name || 
     (listing as any)?.profiles?.full_name || 
     (listing as any)?.owner?.full_name || 
     "متجر",
   [listing]);
 
-  const allowsBookings = useMemo(() => 
-    (listing as any)?.profiles?.allows_bookings || 
-    (listing as any)?.owner?.allows_bookings || 
-    false,
+  const storeLogo = useMemo(() => 
+    (listing as any)?.profile?.store_logo_url || 
+    (listing as any)?.profiles?.store_logo_url || 
+    (listing as any)?.owner?.store_logo_url || 
+    (listing as any)?.profile?.avatar_url || 
+    (listing as any)?.profiles?.avatar_url || 
+    (listing as any)?.owner?.avatar_url || 
+    null,
   [listing]);
 
-  // ✅ ✅ ✅ التحقق من وجود المنتج في السلة
+  // ❌ تم إزالة allowsBookings
+
   const isInCart = useMemo(() => {
     return cart?.items?.some((item: any) => item.listing_id === listing?.id);
   }, [cart, listing]);
@@ -147,7 +147,6 @@ function ListingDetailPage() {
     return item?.quantity || 0;
   }, [cart, listing]);
 
-  // ✅ ✅ ✅ ترتيب التركيبات (حسب اللون ثم المقاس)
   const sortedVariations = useMemo(() => {
     return [...variations].sort((a, b) => {
       const colorA = a.combination?.color || '';
@@ -159,7 +158,6 @@ function ListingDetailPage() {
     });
   }, [variations]);
 
-  // ✅ ✅ ✅ تصفية التركيبات
   const filteredVariations = useMemo(() => {
     const isVariationAvailable = (variation: any) => variation.is_active !== false;
     
@@ -175,9 +173,7 @@ function ListingDetailPage() {
     });
   }, [sortedVariations, selectedColor, selectedSize]);
 
-  // ✅ ✅ ✅ اختيار تلقائي
   useEffect(() => {
-    // ✅ إذا كان في لون واحد
     if (colors.length === 1 && !selectedColor) {
       setSelectedColor(colors[0].color_name_ar);
       if (colors[0].image_url) {
@@ -187,14 +183,12 @@ function ListingDetailPage() {
   }, [colors, selectedColor]);
 
   useEffect(() => {
-    // ✅ إذا كان في مقاس واحد
     if (sizes.length === 1 && !selectedSize) {
       setSelectedSize(sizes[0]);
     }
   }, [sizes, selectedSize]);
 
   useEffect(() => {
-    // ✅ إذا تطابق اللون والمقاس مع تركيبة
     if (selectedColor && selectedSize && !selectedVariation) {
       const matching = variations.find((v: any) => 
         v.combination?.color === selectedColor && 
@@ -207,7 +201,6 @@ function ListingDetailPage() {
     }
   }, [selectedColor, selectedSize, variations, selectedVariation]);
 
-  // ✅ ✅ ✅ تهيئة الصورة الرئيسية
   useEffect(() => {
     if (listing?.cover_url) {
       setMainImage(listing.cover_url);
@@ -216,7 +209,6 @@ function ListingDetailPage() {
     }
   }, [listing, images]);
 
-  // ✅ ✅ ✅ دوال معالجة
   const handleColorSelect = useCallback((colorName: string, colorImage?: string) => {
     if (selectedColor === colorName) {
       setSelectedColor(null);
@@ -259,7 +251,6 @@ function ListingDetailPage() {
     }
   }, [selectedVariation, colors]);
 
-  // ✅ ✅ ✅ دالة إضافة للسلة
   const handleAddToCart = useCallback(async () => {
     if (!app.user) {
       toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
@@ -300,6 +291,8 @@ function ListingDetailPage() {
         selectedColor: selectedColor || undefined,
         selectedSize: selectedSize || undefined,
         selectedVariationId: selectedVariation?.id || undefined,
+        variationPrice: selectedVariation?.price || undefined,
+        variationCombination: selectedVariation?.combination || undefined,
         onStoreConflict: async (data: any) => {
           const { data: currentStore } = await supabase
             .from("profiles")
@@ -320,7 +313,9 @@ function ListingDetailPage() {
             quantity, 
             selectedColor, 
             selectedSize, 
-            selectedVariationId: selectedVariation?.id 
+            selectedVariationId: selectedVariation?.id,
+            variationPrice: selectedVariation?.price,
+            variationCombination: selectedVariation?.combination,
           });
           setShowStoreConflict(true);
         },
@@ -363,7 +358,6 @@ function ListingDetailPage() {
     }
   }, [app.user, listing, colors, sizes, selectedColor, selectedSize, selectedVariation, quantity, addToCartMutation, navigate, app.lang]);
 
-  // ✅ ✅ ✅ دالة تأكيد تفريغ السلة
   const handleConfirmClearCart = useCallback(async () => {
     if (!app.user || !pendingAddData) return;
     
@@ -377,6 +371,8 @@ function ListingDetailPage() {
         selectedColor: pendingAddData.selectedColor,
         selectedSize: pendingAddData.selectedSize,
         selectedVariationId: pendingAddData.selectedVariationId,
+        variationPrice: pendingAddData.variationPrice,
+        variationCombination: pendingAddData.variationCombination,
       });
       
       toast.success(
@@ -395,93 +391,8 @@ function ListingDetailPage() {
     }
   }, [app.user, pendingAddData, clearCartMutation, addToCartMutation, app.lang]);
 
-  // ✅ ✅ ✅ دالة تأكيد الحجز
-  const handleBookingConfirm = useCallback(async (bookingData: any) => {
-    if (!app.user) {
-      toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
-      navigate({ to: "/login" });
-      return;
-    }
+  // ❌ تم إزالة handleBookingConfirm
 
-    if (!listing) {
-      toast.error(app.lang === "ar" ? "المنتج غير موجود" : "Product not found");
-      return;
-    }
-
-    setIsBookingLoading(true);
-    try {
-      const result = await createBooking.mutateAsync({
-        listing_id: listing.id,
-        customer_id: app.user.id,
-        provider_id: listing.owner_id,
-        starts_at: bookingData.startDate.toISOString(),
-        ends_at: bookingData.endDate ? bookingData.endDate.toISOString() : null,
-        guests: bookingData.guests,
-        total: bookingData.total,
-        currency: app.currency,
-        notes: bookingData.notes || "",
-      });
-
-      await supabase
-        .from('notifications')
-        .insert([
-          {
-             user_id: app.user.id,
-            type: 'booking',
-            title_ar: `📅 حجز جديد على "${listing.title_ar}"`,
-            body_ar: `قام ${app.user.name} بحجز ${bookingData.guests} ضيف/ضيوف في ${new Date(bookingData.startDate).toLocaleDateString('ar-SA')}`,
-            title_en: `📅 New booking for "${listing.title_en || listing.title_ar}"`,
-            body_en: `${app.user.name} booked ${bookingData.guests} guest(s) on ${new Date(bookingData.startDate).toLocaleDateString('en-US')}`,
-            link_url: `/dashboard/bookings`,
-            metadata: {
-              booking_id: result.id,
-              listing_id: listing.id,
-              customer_id: app.user.id,
-              guests: bookingData.guests,
-              total: bookingData.total,
-              start_date: bookingData.startDate,
-              end_date: bookingData.endDate,
-            },
-          },
-          {
-           user_id: app.user.id,
-            type: 'booking_confirmation',
-            title_ar: `✅ تم إرسال طلب الحجز`,
-            body_ar: `تم إرسال طلب حجز "${listing.title_ar}" إلى المتجر في انتظار التأكيد`,
-            title_en: `✅ Booking request sent`,
-            body_en: `Booking request for "${listing.title_en || listing.title_ar}" sent to the store. Waiting for confirmation.`,
-            link_url: `/bookings`,
-            metadata: {
-              booking_id: result.id,
-              listing_id: listing.id,
-              status: 'pending',
-            },
-          }
-        ]);
-
-      toast.success(
-        app.lang === "ar" 
-          ? "✅ تم إرسال طلب الحجز بنجاح! في انتظار تأكيد المتجر." 
-          : "✅ Booking request sent successfully! Waiting for store confirmation.",
-        { duration: 5000 }
-      );
-
-      setIsBookingModalOpen(false);
-      navigate({ to: "/bookings" });
-
-    } catch (error: any) {
-      console.error("❌ Booking error:", error);
-      toast.error(
-        app.lang === "ar" 
-          ? "❌ حدث خطأ أثناء الحجز، حاول مرة أخرى" 
-          : "❌ An error occurred, please try again"
-      );
-    } finally {
-      setIsBookingLoading(false);
-    }
-  }, [app.user, listing, createBooking, navigate, app.lang, app.currency]);
-
-  // ✅ ✅ ✅ التنقل بين الصور
   const nextImage = useCallback(() => {
     if (selectedColor) {
       const color = colors.find((c: any) => c.color_name_ar === selectedColor);
@@ -504,7 +415,6 @@ function ListingDetailPage() {
     setActiveImage((prev) => (prev - 1 + images.length) % images.length);
   }, [selectedColor, colors, images.length]);
 
-  // ✅ ✅ ✅ مشاركة المنتج
   const handleShare = useCallback(async () => {
     try {
       await navigator.share({
@@ -518,7 +428,6 @@ function ListingDetailPage() {
     }
   }, [listing, app.lang]);
 
-  // ✅ ✅ ✅ دالة إضافة/إزالة من المفضلة
   const handleToggleFavorite = useCallback(async () => {
     if (!app.user) {
       toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
@@ -547,17 +456,14 @@ function ListingDetailPage() {
     }
   }, [app.user, listing, isFavorite, toggleFavoriteMutation, app.lang]);
 
-  // ✅ Scroll to top
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [id]);
 
-  // ✅ حالة التحميل
   if (isLoading) {
     return <LoadingSkeleton />;
   }
 
-  // ✅ إذا المنتج غير موجود
   if (isError || !listing) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -602,7 +508,7 @@ function ListingDetailPage() {
 
           <div className="grid lg:grid-cols-2 gap-10">
             
-            {/* ===== LEFT - قسم الصور (نفسه) ===== */}
+            {/* ===== LEFT - قسم الصور ===== */}
             <div className="space-y-4">
               <div 
                 className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 to-primary/10 border border-border/30 shadow-xl cursor-zoom-in"
@@ -702,7 +608,6 @@ function ListingDetailPage() {
             {/* ===== RIGHT - معلومات المنتج ===== */}
             <div className="space-y-6">
               
-              {/* ===== التقييم والمحافظة ===== */}
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2 bg-yellow-50 dark:bg-yellow-950/30 px-4 py-2 rounded-full border border-yellow-200/30">
                   <div className="flex items-center gap-0.5">
@@ -722,20 +627,32 @@ function ListingDetailPage() {
                 </div>
               </div>
 
-              {/* ===== العنوان ===== */}
               <h1 className="text-3xl md:text-4xl font-bold leading-tight">
                 {app.lang === "ar" ? listing.title_ar : (listing.title_en || listing.title_ar)}
               </h1>
 
-              {/* ===== اسم المتجر ===== */}
               <Link 
                 to="/store/$id" 
                 params={{ id: listing.owner_id }}
                 className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 transition-all border border-primary/10 group"
               >
-                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-110 transition-transform">
-                  {storeName.charAt(0).toUpperCase()}
+                <div className="h-14 w-14 rounded-2xl overflow-hidden border-2 border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0 bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a]">
+                  {storeLogo ? (
+                    <img 
+                      src={storeLogo} 
+                      alt={storeName}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder-store.png';
+                      }}
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-white font-bold text-2xl">
+                      {storeName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </div>
+                
                 <div className="flex-1">
                   <div className="font-bold text-lg group-hover:text-primary transition">{storeName}</div>
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -751,16 +668,11 @@ function ListingDetailPage() {
               {/* ===== السعر ===== */}
               <div className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-2xl border border-primary/10">
                 <div className="flex flex-col gap-3">
-                  {listing.is_offer && (listing.old_price || listing.old_price_usd) && (
+                  {listing.is_offer && listing.old_price && (
                     <div className="flex items-center gap-4 flex-wrap">
                       {listing.old_price && (
                         <span className="text-lg text-red-500 line-through font-medium">
                           {formatPrice(Number(listing.old_price), app.currency, app.lang)}
-                        </span>
-                      )}
-                      {listing.old_price_usd && (
-                        <span className="text-sm text-red-400 line-through">
-                          ${Number(listing.old_price_usd).toFixed(2)}
                         </span>
                       )}
                       {listing.old_price && listing.price && (
@@ -776,11 +688,6 @@ function ListingDetailPage() {
                       <span className="text-4xl md:text-5xl font-black text-primary">
                         {formatPrice(Number(listing.price), app.currency, app.lang)}
                       </span>
-                      {listing.price_usd && (
-                        <span className="text-lg font-semibold text-muted-foreground">
-                          ${Number(listing.price_usd).toFixed(2)}
-                        </span>
-                      )}
                     </div>
                     
                     <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
@@ -789,19 +696,12 @@ function ListingDetailPage() {
                         <span className="font-medium">{app.lang === "ar" ? "سوري" : "SYP"}</span>
                         <span className="text-foreground font-semibold">{formatPrice(Number(listing.price), app.currency, app.lang)}</span>
                       </span>
-                      {listing.price_usd && (
-                        <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/50 px-3 py-1 rounded-full">
-                          <span className="text-base">💵</span>
-                          <span className="font-medium">{app.lang === "ar" ? "دولار" : "USD"}</span>
-                          <span className="text-foreground font-semibold">${Number(listing.price_usd).toFixed(2)}</span>
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* ===== ✅ الألوان - تصميم متناسق مع نظامك ===== */}
+              {/* ===== الألوان ===== */}
               {colors.length > 0 && (
                 <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
                   <div className="flex items-center justify-between mb-3">
@@ -873,7 +773,7 @@ function ListingDetailPage() {
                 </div>
               )}
 
-              {/* ===== ✅ المقاسات - تصميم متناسق ===== */}
+              {/* ===== المقاسات ===== */}
               {sizes.length > 0 && (
                 <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
                   <p className="text-sm font-medium text-muted-foreground mb-3">
@@ -903,19 +803,19 @@ function ListingDetailPage() {
                 </div>
               )}
 
-              {/* ===== ✅ جدول التركيبات - مثل نون وبألوان النظام ===== */}
+              {/* ===== جدول التركيبات ===== */}
               {variations.length > 0 && (
                 <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                      <Layers className="h-4 w-4 text-[#0d2e2a]" />
-                      {app.lang === "ar" ? "التركيبات المتوفرة" : "Available Variations"}
-                      {filteredVariations.length > 0 && (
-                        <Badge className="bg-[#0d2e2a] text-white border-0 text-[10px]">
-                          {filteredVariations.length} {app.lang === "ar" ? "متوفرة" : "available"}
-                        </Badge>
-                      )}
-                    </p>
+                  <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+  <Layers className="h-4 w-4 text-[#0d2e2a]" />
+  {app.lang === "ar" ? "التركيبات المتوفرة" : "Available Variations"}
+  {filteredVariations.length > 0 && (
+    <Badge className="bg-[#0d2e2a] text-white border-0 text-[10px]">
+      {filteredVariations.length} {app.lang === "ar" ? "متوفرة" : "available"}
+    </Badge>
+  )}
+</div>
                     {selectedVariation && (
                       <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px]">
                         ✅ {app.lang === "ar" ? "مختار" : "Selected"}
@@ -923,7 +823,6 @@ function ListingDetailPage() {
                     )}
                   </div>
                   
-                  {/* ✅ جدول التركيبات مثل نون */}
                   <div className="border rounded-xl overflow-hidden shadow-sm">
                     <table className="w-full text-sm">
                       <thead className="bg-[#0d2e2a]/5 dark:bg-slate-800/50">
@@ -1037,7 +936,6 @@ function ListingDetailPage() {
                 </div>
               )}
 
-              {/* ===== الوصف ===== */}
               {listing.description_ar && (
                 <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
                   <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
@@ -1050,7 +948,6 @@ function ListingDetailPage() {
                 </div>
               )}
 
-              {/* ===== حالة التوفر ===== */}
               <div className="flex items-center gap-2 p-3 bg-slate-50/80 dark:bg-slate-800/50 rounded-xl">
                 <div className={cn(
                   "h-3 w-3 rounded-full",
@@ -1063,7 +960,6 @@ function ListingDetailPage() {
                 </span>
               </div>
 
-              {/* ===== الكمية ===== */}
               <div className="flex items-center gap-4">
                 <span className="font-semibold">{app.lang === "ar" ? "الكمية:" : "Quantity:"}</span>
                 <div className="flex items-center border-2 rounded-2xl overflow-hidden shadow-sm border-[#0d2e2a]/20">
@@ -1083,7 +979,6 @@ function ListingDetailPage() {
                 </div>
               </div>
 
-              {/* ===== ✅ أزرار الشراء - مع حالة السلة ===== */}
               <div className="space-y-3">
                 <Button 
                   size="lg" 
@@ -1156,26 +1051,8 @@ function ListingDetailPage() {
                     <Share2 className="h-5 w-5 text-[#0d2e2a]" />
                   </Button>
                 </div>
-                
-                {/* ✅ زر الحجز */}
-                {allowsBookings && (
-                  <Button 
-                    size="lg" 
-                    variant="secondary" 
-                    className="w-full h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all text-lg font-bold hover:scale-[1.02] active:scale-[0.98]"
-                    onClick={() => setIsBookingModalOpen(true)}
-                    disabled={!listing.is_available}
-                  >
-                    <CalendarDays className="h-5 w-5 me-3" />
-                    {app.lang === "ar" ? "احجز الآن" : "Book Now"}
-                    <Badge className="bg-white/20 text-white border-0 ms-3">
-                      {app.lang === "ar" ? "متوفر" : "Available"}
-                    </Badge>
-                  </Button>
-                )}
               </div>
 
-              {/* ===== مميزات إضافية ===== */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t">
                 {[
                   { icon: Truck, label: app.lang === "ar" ? "توصيل سريع" : "Fast Delivery" },
@@ -1192,7 +1069,7 @@ function ListingDetailPage() {
             </div>
           </div>
 
-          {/* ===== تقييمات العملاء (نفسه) ===== */}
+          {/* ===== تقييمات العملاء ===== */}
           {reviews.length > 0 && (
             <div className="mt-16">
               <div className="flex items-center justify-between mb-6">
@@ -1248,7 +1125,7 @@ function ListingDetailPage() {
             </div>
           )}
 
-          {/* ===== منتجات مشابهة (نفسه) ===== */}
+          {/* ===== منتجات مشابهة ===== */}
           {similarListings.length > 0 && (
             <div className="mt-16">
               <div className="flex items-center justify-between mb-6">
@@ -1304,16 +1181,6 @@ function ListingDetailPage() {
           )}
         </div>
 
-        {/* ===== مودال الحجز ===== */}
-        <BookingModal
-          isOpen={isBookingModalOpen}
-          onClose={() => setIsBookingModalOpen(false)}
-          listing={listing}
-          storeName={storeName}
-          onConfirm={handleBookingConfirm}
-          isLoading={isBookingLoading}
-        />
-
         {/* ===== مودال تعارض المتجر ===== */}
         <Dialog open={showStoreConflict} onOpenChange={setShowStoreConflict}>
           <DialogContent className="max-w-md rounded-2xl">
@@ -1365,6 +1232,8 @@ function ListingDetailPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        
+        {/* ❌ تم إزالة BookingModal */}
       </div>
     </ClientOnly>
   );

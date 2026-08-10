@@ -229,96 +229,70 @@ const offers = offersData.data || [];
   getCategoryIcon={getCategoryIcon} 
 />
 
-      {/* ===== DEALS OF THE DAY ===== */}
-      {allDeals.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 grid place-items-center text-white shadow-md animate-pulse">
-                <Percent className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-xl md:text-2xl font-black text-foreground flex items-center gap-2">
-                  {app.lang === "ar" ? "🔥 عروض اليوم" : "🔥 Deals of the Day"}
-                  <Badge className="bg-red-500 text-white text-[10px] animate-pulse">
-                    {app.lang === "ar" ? `${allDeals.length} عرض` : `${allDeals.length} Offers`}
-                  </Badge>
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {app.lang === "ar" ? `أكبر ${allDeals.length} خصم في السوق` : `Top ${allDeals.length} discounts`}
-                </p>
-              </div>
-            </div>
-            <Link to="/category/$slug" params={{ slug: "offers" }}>
-              <Button variant="ghost" size="sm" className="gap-1 text-[#2a655f] font-semibold group">
-                {app.lang === "ar" ? "عرض الكل" : "View All"}
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-          </div>
-          
-          <div 
-            dir="ltr"
-            className="relative overflow-x-auto rounded-2xl custom-scrollbar-deals pb-3 select-none"
-            onMouseEnter={(e) => {
-              const track = e.currentTarget.querySelector(".marquee-track-deals");
-              if (track) track.classList.add("paused");
-            }}
-            onMouseLeave={(e) => {
-              const track = e.currentTarget.querySelector(".marquee-track-deals");
-              if (track) track.classList.remove("paused");
-            }}
-          >
-            <div className="marquee-track-deals gap-4 py-2">
-              {[...allDeals, ...allDeals, ...allDeals].map((item, index) => (
-                <div key={`${item.id}-${index}`} className="marquee-item-deals w-[200px] md:w-[250px] shrink-0">
-                  <div className="relative group">
-                    <div className="absolute -top-2 -left-2 z-10 bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg animate-pulse">
-                      {item.discount_percent}% OFF
-                    </div>
-                    <ListingCard item={item} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+ {/* ✅ العرض الاحترافي مثل نون - مع إمكانية التبديل بين العرض الكل والعروض */}
+{allDeals.length > 0 && (
+  <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
+    {/* Header مع إحصائيات */}
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🔥</span>
+          <h2 className="text-2xl font-bold">
+            {app.lang === "ar" ? "عروض اليوم" : "Today's Deals"}
+          </h2>
+          <Badge className="bg-red-500 text-white">
+            {allDeals.length}
+          </Badge>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">
+          {app.lang === "ar" 
+            ? `خصومات تصل إلى ${Math.max(...allDeals.map(d => d.discount_percent || 0))}%` 
+            : `Up to ${Math.max(...allDeals.map(d => d.discount_percent || 0))}% off`
+          }
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Link to="/category/$slug" params={{ slug: "offers" }}>
+          <Button variant="outline" size="sm" className="rounded-full">
+            {app.lang === "ar" ? "عرض الكل" : "View All"}
+            <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
+        </Link>
+      </div>
+    </div>
 
-          <style>{`
-            @keyframes marquee-scroll-deals {
-              0% { transform: translateX(0); }
-              100% { transform: translateX(calc(-100% / 3)); }
-            }
-            .marquee-track-deals {
-              display: flex;
-              width: max-content;
-              animation: marquee-scroll-deals 450s linear infinite;
-              will-change: transform;
-            }
-            .marquee-track-deals.paused {
-              animation-play-state: paused !important;
-            }
-            .marquee-item-deals {
-              flex-shrink: 0;
-            }
-            .custom-scrollbar-deals::-webkit-scrollbar {
-              height: 6px;
-            }
-            .custom-scrollbar-deals::-webkit-scrollbar-track {
-              background: rgba(42, 101, 95, 0.1);
-              border-radius: 10px;
-              margin: 0 10px;
-            }
-            .custom-scrollbar-deals::-webkit-scrollbar-thumb {
-              background: #2a655f;
-              border-radius: 10px;
-            }
-            .custom-scrollbar-deals::-webkit-scrollbar-thumb:hover {
-              background: #3a8a82;
-            }
-          `}</style>
-        </section>
-      )}
-
+    {/* العروض كـ Grid مع إمكانية التمرير */}
+    <div className="relative">
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        {allDeals.map((item, index) => (
+          <div key={item.id} className="min-w-[200px] md:min-w-[250px] flex-shrink-0">
+            <ListingCard item={item} />
+          </div>
+        ))}
+      </div>
+      
+      {/* أزرار التمرير (مثل نون) */}
+      <button 
+        className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 backdrop-blur shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+        onClick={() => {
+          const container = document.querySelector('.scrollbar-hide');
+          if (container) container.scrollLeft -= 300;
+        }}
+      >
+        <ChevronLeft className="h-6 w-6" />
+      </button>
+      <button 
+        className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 backdrop-blur shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+        onClick={() => {
+          const container = document.querySelector('.scrollbar-hide');
+          if (container) container.scrollLeft += 300;
+        }}
+      >
+        <ChevronRight className="h-6 w-6" />
+      </button>
+    </div>
+  </section>
+)}
       {/* ===== FEATURED PRODUCTS ===== */}
       <FeaturedSection />
 
@@ -1007,21 +981,23 @@ const fetchInitialData = async () => {
 
     // جلب عدد المنتجات لكل متجر
     const storeIds = stores.map((s: any) => s.id);
-    const { data: listings, error: listingsError } = await supabase
-      .from("listings")
-      .select("owner_id, count:owner_id", { count: "exact" })
-      .in("owner_id", storeIds)
-      .eq("status", "published")
-      .groupBy("owner_id");
+ // ✅ الكود الصحيح (بدون groupBy)
+const { data: listings, error: listingsError } = await supabase
+  .from("listings")
+  .select("owner_id")
+  .in("owner_id", storeIds)
+  .eq("status", "published");
 
-    if (listingsError) {
-      console.error("❌ Error fetching listings count:", listingsError);
-    }
+if (listingsError) {
+  console.error("❌ Error fetching listings count:", listingsError);
+}
 
-    const listingsCountMap = new Map();
-    (listings || []).forEach((item: any) => {
-      listingsCountMap.set(item.owner_id, item.count || 0);
-    });
+// ✅ حساب العدد يدوياً
+const listingsCountMap = new Map();
+(listings || []).forEach((item: any) => {
+  const ownerId = item.owner_id;
+  listingsCountMap.set(ownerId, (listingsCountMap.get(ownerId) || 0) + 1);
+});
 
     // فلترة المتاجر التي لديها منتجات فقط
     let storesWithProducts = stores.filter((store: any) => {

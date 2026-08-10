@@ -175,40 +175,41 @@ export function useGovernorates() { return useQuery(governoratesQuery); }
 
 /* ---------- Listings ---------- */
 // ✅ جلب منتجات مشابهة بناءً على التصنيف
+// src/lib/queries.ts
+
 export function useSimilarListings(categoryId: string | undefined, currentId: string | undefined, limit = 4) {
   return useQuery({
-    queryKey: ["listings", "similar", categoryId, currentId],
+    queryKey: ["listings", "similar", categoryId, currentId, limit],
     enabled: !!categoryId && !!currentId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("listings")
-        .select(`
-          *,
-          categories(slug, name_ar, name_en),
-          governorates(slug, name_ar, name_en),
-          listing_images(url, sort_order),
-         profiles:owner_id(store_name, full_name, avatar_url, store_logo_url, store_cover_url),
-          colors:product_colors (*),        // ✅ أضف هذا
-          options:product_options (*),      // ✅ أضف هذا
-  variations:product_variations (
-  id,
-  sku,
-  combination,
-  price,
-  stock_quantity,
-  is_active,
-  image_url,
-  color_id
-)
-        `)
-        .eq("status", "published")
-        .eq("category_id", categoryId!)
-        .neq("id", currentId!)
-        .order("rating", { ascending: false })
-        .limit(limit);
+      console.log("📡 [useSimilarListings] Fetching similar listings...");
       
-      if (error) throw error;
-      return data ?? [];
+      // ✅ نطلب عدداً زائداً بواقع عنصر واحد لتعويض العنصر المستبعد (المنتج الحالي)
+      const { data, error } = await supabase
+        .rpc('get_public_products_with_variations', {
+          p_limit: limit + 1, 
+          p_offset: 0,
+          p_sort: 'rating',
+          p_is_offer: null,
+          p_category_id: categoryId,
+          p_is_featured: null // 👈 تمرير المعامل السادس لتتوافق الدالة مع التحديث الأخير تماماً
+        });
+      
+      if (error) {
+        console.error("❌ [useSimilarListings] RPC Error:", error);
+        throw error;
+      }
+      
+      const listings = Array.isArray(data) ? data : [];
+      
+      // استبعاد المنتج الحالي وقص القائمة لتطابق الـ limit المطلوب تماماً
+      const filtered = listings
+        .filter((item: any) => item.id !== currentId)
+        .slice(0, limit);
+      
+      console.log(`✅ [useSimilarListings] Found ${filtered.length} similar listings`);
+      
+      return filtered;
     },
   });
 }
@@ -241,18 +242,34 @@ async function fetchProfilesForListings(listings: any[]) {
 
 // src/lib/queries.ts - تعديل useListings
 
+// src/lib/queries.ts
+
+// src/lib/queries.ts
+
 export function useListings(filter: ListingsFilter = {}) {
   return useQuery({
     queryKey: ["listings", filter],
     queryFn: async () => {
       console.log("🔍 [useListings] START - Filter:", filter);
       
-      // ✅ ✅ ✅ استخدم RPC
+      let categoryId = null;
+      if (filter.categorySlug) {
+        const { data: category } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("slug", filter.categorySlug)
+          .maybeSingle();
+        categoryId = category?.id || null;
+      }
+      
       const { data, error } = await supabase
-        .rpc('get_public_listings_with_variations', {
+        .rpc('get_public_products_with_variations', {
           p_limit: filter.limit || 12,
           p_offset: filter.page ? (filter.page - 1) * (filter.limit || 12) : 0,
-          p_sort: filter.sort || 'recent'
+          p_sort: filter.sort || 'recent',
+          p_is_offer: filter.isOffer || null,
+          p_category_id: categoryId,
+          p_is_featured: filter.isFeatured || null // 👈 إضافة المعامل السادس المفقود لتتطابق تماماً مع الدالة المحدثة
         });
       
       if (error) {
@@ -261,7 +278,29 @@ export function useListings(filter: ListingsFilter = {}) {
       }
       
       const listings = Array.isArray(data) ? data : [];
-      console.log(`✅ [useListings] Found ${listings.length} listings`);
+      
+      console.log(`📊 [useListings] Total listings: ${listings.length}`);
+      
+      listings.forEach((item: any, index: number) => {
+        const variations = item.variations || [];
+        const colors = item.colors || [];
+        const options = item.options || [];
+        
+        console.log(`📦 Product ${index + 1}: ${item.title_ar}`);
+        console.log(`   ✅ Variations: ${variations.length}`);
+        console.log(`   ✅ Colors: ${colors.length}`);
+        console.log(`   ✅ Options: ${options.length}`);
+        
+        if (variations.length > 0) {
+          console.log(`   🔍 First variation:`, JSON.stringify(variations[0], null, 2));
+        }
+      });
+      
+      const featured = listings.find((item: any) => item.is_featured === true);
+      if (featured) {
+        console.log('⭐ [useListings] Featured product:', featured.title_ar);
+        console.log('⭐ [useListings] Featured variations:', featured.variations?.length || 0);
+      }
       
       return {
         data: listings,
@@ -277,13 +316,15 @@ export function useListings(filter: ListingsFilter = {}) {
 // ✅ 1. فصل الـ queryFn
 // src/lib/queries.ts
 
+// src/lib/queries.ts
+
 const fetchMyListings = async (ownerId: string) => {
   console.log("🔄 [fetchMyListings] Fetching listings for user:", ownerId);
   
-  // ✅ استخدم الـ RPC Function
+  // ✅ استخدم الدالة الخاصة للمستخدم (ليست public)
   const { data, error } = await supabase
-    .rpc('get_listings_with_variations', { 
-      p_owner_id: ownerId 
+    .rpc('get_listings_with_variations', {
+      p_owner_id: ownerId
     });
   
   if (error) {
@@ -291,20 +332,16 @@ const fetchMyListings = async (ownerId: string) => {
     throw error;
   }
   
-  // ✅ تأكد من أن data هي مصفوفة
   const listings = Array.isArray(data) ? data : [];
   
   console.log(`✅ [fetchMyListings] Found ${listings.length} listings`);
   
   if (listings.length > 0) {
-    console.log("🔍 [fetchMyListings] First listing:", listings[0]);
-    console.log("🔍 [fetchMyListings] Variations:", listings[0]?.variations);
-    console.log("🔍 [fetchMyListings] Variations count:", listings[0]?.variations?.length || 0);
+    console.log("🔍 [fetchMyListings] First listing variations:", listings[0]?.variations?.length || 0);
   }
   
   return listings;
 };
-
 // ✅ باقي الكود كما هو
 export const myListingsQueryOptions = (ownerId: string | undefined) => 
   queryOptions({
@@ -326,88 +363,33 @@ export function useMyListings(ownerId: string | undefined) {
   return useQuery(myListingsQueryOptions(ownerId));
 }
 
+// src/lib/queries.ts
+
 export function useListing(id: string | undefined) {
   return useQuery({
     queryKey: ["listing", id],
     enabled: !!id,
     queryFn: async () => {
-      console.log("🔍 [useListing] Fetching listing:", id);
+      console.log("🚀 [useListing] Fetching product:", id);
       
+      // ✅ استخدم الدالة الخاصة لمنتج واحد
       const { data, error } = await supabase
-        .from("listings")
-        .select(`
-          *,
-          categories:category_id (
-            id,
-            name_ar,
-            name_en,
-            slug
-          ),
-          governorates:governorate_id (
-            id,
-            name_ar,
-            name_en,
-            slug
-          ),
-          listing_images (
-            id,
-            url,
-            sort_order
-          ),
-          profiles:owner_id (
-            id,
-            full_name,
-            avatar_url,
-            phone,
-            bio,
-            store_name,
-            store_logo_url,
-            store_cover_url,
-            allows_messaging,
-            allows_bookings,
-            store_online,
-            store_opens_at,
-            store_closes_at
-          ),
-          colors:product_colors (
-            id,
-            color_name_ar,
-            color_name_en,
-            color_hex,
-            image_url,
-            sort_order
-          ),
-          options:product_options (
-            id,
-            option_type,
-            option_value,
-            option_label_ar,
-            option_label_en,
-            sort_order
-          ),
-          variations:product_variations (
-  id,
-  sku,
-  combination,
-  price,
-  stock_quantity,
-  is_active,
-  image_url,
-  color_id
-)
-        `)
-        .eq("id", id!)
-        .maybeSingle();
+        .rpc('get_product_details', {
+          p_product_id: id
+        });
       
       if (error) {
-        console.error("❌ [useListing] Error:", error);
+        console.error("❌ [useListing] RPC Error:", error);
         throw error;
       }
       
-      console.log("✅ [useListing] Data:", data);
-      console.log("✅ [useListing] Colors:", data?.colors);
-      console.log("✅ [useListing] Options:", data?.options);
-      console.log("✅ [useListing] Variations:", data?.variations);
+      if (data?.error) {
+        console.error("❌ [useListing] Product error:", data.error);
+        return null;
+      }
+      
+      console.log("✅ [useListing] Product found:", data?.title_ar);
+      console.log("✅ [useListing] Variations count:", data?.variations?.length || 0);
       
       return data;
     },
@@ -437,7 +419,48 @@ export function useCreateListing() {
     },
   });
 }
+// src/lib/queries.ts
 
+// ============================================================
+// 📦 ALL DEALS - جميع العروض
+// ============================================================
+
+export function useAllDeals(limit = 12) {
+  return useQuery({
+    queryKey: ["listings", "deals", limit],
+    queryFn: async () => {
+      console.log("📡 [useAllDeals] Fetching deals...");
+      
+      const { data, error } = await supabase
+        .rpc('get_public_products_with_variations', {
+          p_limit: limit,
+          p_offset: 0,
+          p_sort: 'discount_desc',
+          p_is_offer: true,  // ✅ فقط العروض
+          p_category_id: null,
+          p_is_featured: null // 👈 إضافة المعامل السادس المفقود لتتطابق تماماً مع الدالة في قاعدة البيانات
+        });
+      
+      if (error) {
+        console.error("❌ [useAllDeals] RPC Error:", error);
+        throw error;
+      }
+      
+      const listings = Array.isArray(data) ? data : [];
+      console.log(`✅ [useAllDeals] Found ${listings.length} deals`);
+      
+      if (listings.length > 0) {
+        console.log("🔍 [useAllDeals] First deal variations:", listings[0]?.variations?.length || 0);
+      }
+      
+      return {
+        data: listings,
+        count: listings.length,
+        totalPages: limit ? Math.ceil(listings.length / limit) : 1,
+      };
+    },
+  });
+}
 export function useUpdateListing() {
   const qc = useQueryClient();
   return useMutation({
@@ -559,6 +582,8 @@ export function useCreateReview() {
 }
 /* ---------- Orders ---------- */
 
+// src/lib/queries.ts
+
 export function useMyOrders(userId: string | undefined) {
   return useQuery({
     queryKey: ["orders", userId],
@@ -566,14 +591,71 @@ export function useMyOrders(userId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("*, listings(title_ar, title_en, cover_url)")
+        .select(`
+          *,
+          order_items (
+            id,
+            listing_id,
+            quantity,
+            price,
+            currency,
+            listings (
+              id,
+              title_ar,
+              title_en,
+              cover_url,
+              owner_id,
+              profile:profiles!owner_id (
+                id,
+                store_name,
+                full_name,
+                store_logo_url,
+                store_phone
+              )
+            )
+          ),
+          listings (
+            id,
+            title_ar,
+            title_en,
+            cover_url,
+            profile:profiles!owner_id (
+              id,
+              store_name,
+              full_name,
+              store_logo_url,
+              store_phone
+            )
+          )
+        `)
         .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
         .order("created_at", { ascending: false });
+      
       if (error) throw error;
-      return data ?? [];
+      
+      // ✅ تحويل البيانات للتوافق مع الواجهة القديمة
+      const transformedData = data?.map((order: any) => {
+        // إذا كان عندنا order_items، استخدمها
+        if (order.order_items && order.order_items.length > 0) {
+          return {
+            ...order,
+            // ✅ أول منتج في order_items يكون الرئيسي (للتوافق)
+            listing_id: order.order_items[0]?.listing_id,
+            quantity: order.order_items.reduce((sum: number, item: any) => sum + item.quantity, 0),
+            total: order.order_items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0),
+            // ✅ تجميع listings من order_items
+            listings: order.order_items[0]?.listings || order.listings,
+          };
+        }
+        // إذا كان الطلب قديماً (بدون order_items)
+        return order;
+      });
+      
+      return transformedData ?? [];
     },
   });
 }
+// src/lib/queries.ts
 
 export function useCreateOrder() {
   const qc = useQueryClient();
@@ -581,25 +663,69 @@ export function useCreateOrder() {
     mutationFn: async (input: { 
       buyer_id: string; 
       seller_id: string; 
-      listing_id: string; 
+      items: Array<{
+        listing_id: string;
+        quantity: number;
+        price: number;
+        currency?: string;
+      }>;
       total: number; 
-      quantity?: number; 
-      notes?: string ;
-         governorate_id?: string; 
+      notes?: string;
+      governorate_id?: string;
+      delivery_address?: string;
+      delivery_lat?: number;
+      delivery_lng?: number;
+      buyer_name?: string;
+      buyer_phone?: string;
     }) => {
-      const { data, error } = await supabase
+      
+      // ✅ 1. إنشاء الطلب الرئيسي
+      const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
-          ...input,
-          status: 'pending',  // ✅ اضف هذا
+          buyer_id: input.buyer_id,
+          seller_id: input.seller_id,
+          total: input.total,
+          notes: input.notes || null,
+          governorate_id: input.governorate_id || null,
+          delivery_address: input.delivery_address || null,
+          delivery_lat: input.delivery_lat || null,
+          delivery_lng: input.delivery_lng || null,
+          buyer_name: input.buyer_name || null,
+          buyer_phone: input.buyer_phone || null,
+          status: 'pending',
+          currency: input.items[0]?.currency || 'SYP',
           created_at: new Date().toISOString(),
         })
         .select()
         .single();
-      if (error) throw error;
-      return data;
+      
+      if (orderError) throw orderError;
+
+      // ✅ 2. إضافة المنتجات إلى order_items
+      const orderItems = input.items.map((item) => ({
+        order_id: order.id,
+        listing_id: item.listing_id,
+        quantity: item.quantity,
+        price: item.price,
+        currency: item.currency || 'SYP',
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      // ✅ 3. إرجاع الطلب مع العناصر
+      return {
+        ...order,
+        order_items: orderItems,
+      };
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["orders"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
   });
 }
 
@@ -1114,7 +1240,7 @@ export function useReviewSellerApplication() {
       // 3. إذا كانت الموافقة
       if (input.status === "approved") {
         
-        // ✅ 3a. فقط طلبات فتح متجر تنسخ البيانات
+        // ✅ 3a. طلبات فتح متجر: نسخ البيانات إلى profiles
         if (appData.application_type === 'store') {
           const { error: profileError } = await supabase
             .from("profiles")
@@ -1140,12 +1266,11 @@ export function useReviewSellerApplication() {
           if (profileError) throw profileError;
         }
 
-        // ✅ 3b. طلبات إضافة منتج: فقط نضيف دور seller (لا نلمس profiles)
-        // ✅ ويمكن تحديث حالة المنتج في listings إذا لزم الأمر
+        // ✅ 3b. طلبات إضافة منتج: فقط تحديث حالة المنتج
         if (appData.application_type === 'product') {
           console.log("📝 Product application approved - skipping profile update");
           
-          // ✅ اختياري: تحديث حالة المنتج في listings
+          // تحديث حالة المنتج في listings
           const productNameMatch = appData.store_description?.match(/طلب إضافة منتج: (.+)/);
           const productName = productNameMatch ? productNameMatch[1] : null;
 
@@ -1177,15 +1302,49 @@ export function useReviewSellerApplication() {
           }
         }
 
-        // 4. إضافة دور seller للمستخدم (لكل أنواع الطلبات)
-        const { error: roleError } = await supabase
+        // ✅ 4. إدارة دور المستخدم بشكل صحيح (الحل الجديد)
+        // 4a. التحقق من وجود دور للمستخدم
+        const { data: existingRole, error: roleFetchError } = await supabase
           .from("user_roles")
-          .upsert({
-            user_id: appData.user_id,
-            role: "seller"
-          });
-        
-        if (roleError) throw roleError;
+          .select("id, role")
+          .eq("user_id", appData.user_id)
+          .maybeSingle();
+
+        if (roleFetchError) {
+          console.error("❌ Error fetching user role:", roleFetchError);
+          throw roleFetchError;
+        }
+
+        if (!existingRole) {
+          // 🔹 المستخدم ليس لديه أي دور → إدراج دور seller
+          const { error: insertError } = await supabase
+            .from("user_roles")
+            .insert({
+              user_id: appData.user_id,
+              role: "seller"
+            });
+          
+          if (insertError) throw insertError;
+          console.log("✅ New seller role inserted for user:", appData.user_id);
+          
+        } else if (existingRole.role === "customer") {
+          // 🔹 المستخدم مشتري → تحديثه إلى seller
+          const { error: updateRoleError } = await supabase
+            .from("user_roles")
+            .update({ role: "seller" })
+            .eq("id", existingRole.id);
+          
+          if (updateRoleError) throw updateRoleError;
+          console.log("✅ User role updated from customer to seller:", appData.user_id);
+          
+        } else if (existingRole.role === "seller") {
+          // 🔹 المستخدم بالفعل بائع → لا تفعل شيئاً
+          console.log("ℹ️ User already has seller role:", appData.user_id);
+          
+        } else {
+          // 🔹 أي دور آخر (admin, etc) → لا نغيره
+          console.log("ℹ️ User has role:", existingRole.role, "- keeping it");
+        }
       }
     },
     onSuccess: () => {
@@ -1779,36 +1938,39 @@ export function useSetStoreActive() {
    ============================================================ */
 
 // Products with the most user hearts (favorites_count > 0)
+// src/lib/queries.ts
+
 export function useMostFavoritedListings(limit = 12) {
   return useQuery({
     queryKey: ["listings", "most-favorited", limit],
     queryFn: async () => {
+      console.log("📡 [useMostFavoritedListings] Fetching most favorited listings...");
+      
       const { data, error } = await supabase
-        .from("listings")
-        .select("*, categories(slug, name_ar, name_en), governorates(slug, name_ar, name_en), listing_images(url, sort_order)")
-        .eq("status", "published")
-        .gt("favorites_count", 0)
-        .order("favorites_count", { ascending: false })
-        .limit(limit);
-      if (error) throw error;
-      if (!data || data.length === 0) return [];
+        .rpc('get_public_products_with_variations', {
+          p_limit: limit,
+          p_offset: 0,
+          p_sort: 'popular',
+          p_is_offer: null,
+          p_category_id: null,
+          p_is_featured: null // 👈 إضافة المعامل السادس المفقود لتتطابق تماماً مع الدالة في قاعدة البيانات
+        });
       
-      // Fetch profiles for the listings
-      const ownerIds = data.map((item: any) => item.owner_id);
-     const { data: profiles } = await supabase
-  .from("profiles")
-  .select("id, store_name, store_logo_url, store_cover_url")
-  .in("id", ownerIds);
+      if (error) {
+        console.error("❌ [useMostFavoritedListings] RPC Error:", error);
+        throw error;
+      }
       
-      const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
-      return data.map((item: any) => ({
-        ...item,
-        profile: profileMap.get(item.owner_id) || null
-      }));
+      const listings = Array.isArray(data) ? data : [];
+      console.log(`✅ [useMostFavoritedListings] Found ${listings.length} listings`);
+      
+      // ✅ فلترة المنتجات التي لها favorites_count > 0
+      const filtered = listings.filter((item: any) => (item.favorites_count || 0) > 0);
+      
+      return filtered;
     },
   });
 }
-
 // Stores whose products accumulate the most user hearts
 export function useMostFavoritedStores(limit = 12) {
   return useQuery({
@@ -1851,37 +2013,47 @@ export function useMostFavoritedStores(limit = 12) {
 }
 
 // Admin-picked trending listings (is_featured=true)
+// src/lib/queries.ts
+
+// src/lib/queries.ts
+
+// src/lib/queries.ts
+
+// src/lib/queries.ts
+
 export function useTrendingListings(limit = 12) {
   return useQuery({
     queryKey: ["listings", "trending", limit],
     queryFn: async () => {
+      console.log("📡 [useTrendingListings] Fetching trending listings...");
+      
       const { data, error } = await supabase
-        .from("listings")
-        .select("*, categories(slug, name_ar, name_en), governorates(slug, name_ar, name_en), listing_images(url, sort_order)")
-        .eq("status", "published")
-        .eq("is_featured", true)
-        .order("featured_sort", { ascending: true })
-        .order("created_at", { ascending: false })
-        .limit(limit);
-      if (error) throw error;
-      if (!data || data.length === 0) return [];
+        .rpc('get_public_products_with_variations', {
+          p_limit: limit,
+          p_offset: 0,
+          p_sort: 'featured',  // ✅ ترتيب المميزين
+          p_is_offer: null,
+          p_category_id: null,
+          p_is_featured: true  // ✅ فلتر المميزين فقط
+        });
       
-      // Fetch profiles for the listings
-      const ownerIds = data.map((item: any) => item.owner_id);
-     const { data: profiles } = await supabase
-  .from("profiles")
-  .select("id, store_name, store_logo_url, store_cover_url")
-  .in("id", ownerIds);
+      if (error) {
+        console.error("❌ [useTrendingListings] RPC Error:", error);
+        throw error;
+      }
       
-      const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
-      return data.map((item: any) => ({
-        ...item,
-        profile: profileMap.get(item.owner_id) || null
-      }));
+      const listings = Array.isArray(data) ? data : [];
+      console.log(`✅ [useTrendingListings] Found ${listings.length} trending listings`);
+      
+      if (listings.length > 0) {
+        console.log("🔍 [useTrendingListings] First item:", listings[0]);
+        console.log("🔍 [useTrendingListings] Variations:", listings[0]?.variations?.length || 0);
+      }
+      
+      return listings;
     },
   });
 }
-
 // Admin-picked trending stores (profiles.is_featured=true)
 export function useTrendingStores(limit = 12) {
   return useQuery({

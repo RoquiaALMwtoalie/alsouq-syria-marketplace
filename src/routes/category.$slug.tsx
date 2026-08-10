@@ -129,6 +129,10 @@ function CategoryPage() {
   const { slug } = Route.useParams();
   const app = useApp();
   const t = useT();
+  
+  // ✅ 1. isOffersPage في البداية (مهم جداً)
+  const isOffersPage = slug === "offers";
+  
   const { data: govs = [] } = useGovernorates();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const searchParams = Route.useSearch() as { q?: string; gov?: string } | undefined;
@@ -141,17 +145,18 @@ function CategoryPage() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
 
+  // ✅ 2. category بعد isOffersPage
   const category = useMemo(() => {
+    if (isOffersPage) return null;
     return categories.find((c: any) => c.slug === slug);
-  }, [categories, slug]);
+  }, [categories, slug, isOffersPage]);
 
   useEffect(() => {
     setSearch(searchParams?.q ?? "");
     setGov(searchParams?.gov ?? "all");
   }, [searchParams?.q, searchParams?.gov]);
 
-  const isOffersPage = slug === "offers";
-
+  // ✅ 3. useListings بعد isOffersPage
   const { data: listingsData = { data: [], count: 0, totalPages: 0 }, isLoading } = useListings({
     categorySlug: isOffersPage ? undefined : slug,
     isOffer: isOffersPage ? true : undefined,
@@ -311,7 +316,8 @@ function CategoryPage() {
     );
   }
 
-  if (!category) {
+  // ✅ 4. التحقق من وجود التصنيف (تجاهل offers)
+  if (!isOffersPage && !category) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <div className="relative inline-block">
@@ -336,15 +342,24 @@ function CategoryPage() {
     );
   }
 
-  const Icon = getCategoryIcon(category.icon);
-  const categoryName = app.lang === "ar" ? category.name_ar : category.name_en;
-  const categoryImage = category.image_url;
+  // ✅ 5. التعامل مع category إذا كان null (في حالة offers)
+  const Icon = category ? getCategoryIcon(category.icon) : getCategoryIcon("default");
+  const categoryName = category 
+    ? (app.lang === "ar" ? category.name_ar : category.name_en)
+    : (app.lang === "ar" ? "🔥 جميع العروض" : "🔥 All Offers");
+  const categoryImage = category?.image_url || null;
   const isArabic = app.lang === "ar";
 
-  // ✅ وصف التصنيف
-  const categoryDescription = app.lang === "ar" 
-    ? (category.description_ar || `استكشف مجموعة مميزة من ${categoryName} في السوق عندك. تشكيلة واسعة من المنتجات والخدمات بجودة عالية وأسعار تنافسية.`)
-    : (category.description_en || `Explore a unique collection of ${categoryName} at Souqi. A wide range of products and services with high quality and competitive prices.`);
+  // ✅ وصف مخصص للعروض
+  const categoryDescription = isOffersPage
+    ? (app.lang === "ar" 
+        ? "اكتشف أفضل العروض والخصومات الحصرية في السوق عندك. تخفيضات تصل إلى 70% على مجموعة واسعة من المنتجات."
+        : "Discover the best exclusive offers and discounts at Souqi. Up to 70% off on a wide range of products.")
+    : (category 
+        ? (app.lang === "ar" 
+            ? (category.description_ar || `استكشف مجموعة مميزة من ${categoryName} في السوق عندك. تشكيلة واسعة من المنتجات والخدمات بجودة عالية وأسعار تنافسية.`)
+            : (category.description_en || `Explore a unique collection of ${categoryName} at Souqi. A wide range of products and services with high quality and competitive prices.`))
+        : "");
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#2a655f]/5 via-transparent to-[#3a8a82]/5">
@@ -404,10 +419,12 @@ function CategoryPage() {
                 <div>
                   <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white drop-shadow-2xl tracking-tight flex items-center gap-3">
                     {categoryName}
-                    <Badge className="bg-gradient-to-r from-emerald-400/30 to-teal-400/30 text-white border border-white/30 backdrop-blur-sm text-[10px] px-2.5 py-1 rounded-full font-bold animate-pulse">
-                      <Rocket className="h-3 w-3 mr-1 inline animate-bounce" />
-                      {app.lang === "ar" ? "رئيسي" : "Main"}
-                    </Badge>
+                    {!isOffersPage && (
+                      <Badge className="bg-gradient-to-r from-emerald-400/30 to-teal-400/30 text-white border border-white/30 backdrop-blur-sm text-[10px] px-2.5 py-1 rounded-full font-bold animate-pulse">
+                        <Rocket className="h-3 w-3 mr-1 inline animate-bounce" />
+                        {app.lang === "ar" ? "رئيسي" : "Main"}
+                      </Badge>
+                    )}
                   </h1>
                   
                   <p className="text-white/95 text-sm md:text-base max-w-2xl leading-relaxed mt-1.5 drop-shadow-lg font-medium tracking-wide">

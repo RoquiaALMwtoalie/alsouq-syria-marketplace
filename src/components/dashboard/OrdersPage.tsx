@@ -8,6 +8,7 @@ import {
   AlertCircle, Sparkles, Rocket, DollarSign,
   Calendar, User, Phone, MessageCircle,
   TrendingUp, Star, Users, Clock as ClockIcon,
+  MapPin, Store
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,10 +23,11 @@ import * as XLSX from 'xlsx';
 import pkg from 'file-saver';
 import { supabase } from "@/integrations/supabase/client";
 import { notifyDeliveryCompanyAdmins } from "@/lib/delivery-notifications";
+import { Link } from "@tanstack/react-router";
 const { saveAs } = pkg;
 
 // ============================================================
-// ✅ ORDERS PAGE - نسخة محسّنة مع Pagination احترافي
+// ✅ ORDERS PAGE - جدول بسيط مع تفاصيل عند الضغط
 // ============================================================
 
 export const OrdersPage = React.memo(function OrdersPage() {
@@ -75,16 +77,14 @@ export const OrdersPage = React.memo(function OrdersPage() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((order: any) => {
-        const productName = app.lang === "ar" 
-          ? order.listings?.title_ar || ""
-          : order.listings?.title_en || order.listings?.title_ar || "";
         const id = order.id?.toLowerCase() || "";
         const customerName = order.buyer_name?.toLowerCase() || "";
+        const customerPhone = order.buyer_phone?.toLowerCase() || "";
         const notes = order.notes?.toLowerCase() || "";
         
-        return productName.includes(q) || 
-               id.includes(q) || 
+        return id.includes(q) || 
                customerName.includes(q) ||
+               customerPhone.includes(q) ||
                notes.includes(q);
       });
     }
@@ -103,12 +103,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
     const end = start + itemsPerPage;
     return filteredOrders.slice(start, end);
   }, [filteredOrders, currentPage, itemsPerPage]);
-
-  // ===== Reset to page 1 when filters change =====
-  const handleFilterChange = useCallback((callback: () => void) => {
-    callback();
-    setCurrentPage(1);
-  }, []);
 
   // ===== STATS =====
   const stats = useMemo(() => ({
@@ -173,15 +167,26 @@ export const OrdersPage = React.memo(function OrdersPage() {
   };
 
   // ===== ACCEPT ORDER =====
-  const handleAcceptOrder = useCallback(async (orderId: string) => {
-    try {
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .select(`
-          *,
-          listings:listing_id (
+// src/components/dashboard/OrdersPage.tsx
+
+// ===== ACCEPT ORDER (معدل - يرسل اسم المتجر) =====
+const handleAcceptOrder = useCallback(async (orderId: string) => {
+  try {
+    // ✅ جلب الطلب مع order_items وبيانات المتجر
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select(`
+        *,
+        order_items (
+          id,
+          listing_id,
+          quantity,
+          price,
+          listings (
             id,
             title_ar,
+            title_en,
+            cover_url,
             owner_id,
             profiles:owner_id (
               store_name,
@@ -190,170 +195,266 @@ export const OrdersPage = React.memo(function OrdersPage() {
               lng
             )
           )
-        `)
-        .eq("id", orderId)
-        .single();
+        ),
+        listings:listing_id (
+          id,
+          title_ar,
+          owner_id,
+          profiles:owner_id (
+            store_name,
+            store_address,
+            lat,
+            lng
+          )
+        )
+      `)
+      .eq("id", orderId)
+      .single();
 
-      if (orderError) throw orderError;
+    if (orderError) throw orderError;
 
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({ 
-          status: 'accepted',
-          accepted_at: new Date().toISOString()
-        })
-        .eq("id", orderId);
-
-      if (updateError) throw updateError;
-
-      const { data: company, error: companyError } = await supabase
-        .from("delivery_companies")
-        .select("*")
-        .eq("governorate_id", order.governorate_id)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (company && !companyError) {
-        const { error: deliveryError } = await supabase
-          .from("delivery_orders")
-          .insert({
-            order_id: orderId,
-            delivery_company_id: company.id,
-            pickup_address: order.listings?.profiles?.store_address || "عنوان المتجر",
-            pickup_latitude: order.listings?.profiles?.lat || 0,
-            pickup_longitude: order.listings?.profiles?.lng || 0,
-            delivery_address: order.delivery_address,
-            delivery_latitude: order.delivery_lat,
-            delivery_longitude: order.delivery_lng,
-            status: 'pending',
-            created_at: new Date().toISOString(),
-          });
-
-        if (deliveryError) console.error("❌ Error creating delivery order:", deliveryError);
-
-        await notifyDeliveryCompanyAdmins(company.id, {
-          type: "new_delivery",
-          title_ar: "🚚 طلب توصيل جديد",
-          body_ar: `لديك طلب توصيل جديد إلى ${order.delivery_address || "عنوان العميل"}`,
-          link_url: `/delivery/orders/${orderId}`,
-          metadata: {
-            order_id: orderId,
-            delivery_address: order.delivery_address,
-            company_id: company.id,
-          }
-        });
-      }
-
-      if (order.buyer_id) {
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: order.buyer_id,
-            type: "order_accepted",
-            title_ar: "✅ تم قبول طلبك",
-            body_ar: `تم قبول طلبك "${order.listings?.title_ar}" وسيتم شحنه قريباً`,
-            link_url: `/orders/${orderId}`,
-          });
-      }
-
-      toast.success(app.lang === "ar" ? "✅ تم قبول الطلب" : "✅ Order accepted");
-      refetchOrders();
-
-    } catch (error) {
-      console.error("❌ Error accepting order:", error);
-      toast.error(app.lang === "ar" ? "❌ حدث خطأ في قبول الطلب" : "❌ Error accepting order");
-    }
-  }, [app.lang, refetchOrders]);
-
-  // ===== REJECT ORDER =====
-  const handleRejectOrder = useCallback(async (orderId: string, reason: string) => {
-    if (!reason.trim()) {
-      toast.error(app.lang === "ar" ? "❌ الرجاء إدخال سبب الرفض" : "❌ Please enter a rejection reason");
+    // ✅ التحقق من أن المشتري ليس البائع
+    if (order.buyer_id === order.seller_id) {
+      toast.warning(
+        app.lang === "ar" 
+          ? "⚠️ لا يمكنك قبول طلب من متجرك الخاص" 
+          : "⚠️ You cannot accept an order from your own store"
+      );
       return;
     }
 
-    setIsRejecting(true);
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update({ 
+        status: 'accepted',
+        accepted_at: new Date().toISOString()
+      })
+      .eq("id", orderId);
 
-    try {
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .select(`
-          buyer_id,
-          listings:listing_id (
-            title_ar,
-            title_en
-          )
-        `)
-        .eq("id", orderId)
-        .single();
+    if (updateError) throw updateError;
 
-      if (orderError) throw orderError;
-
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({ 
-          status: 'rejected',
-          rejected_at: new Date().toISOString(),
-          rejected_by: app.user?.id,
-          rejection_reason: reason.trim()
-        })
-        .eq("id", orderId);
-
-      if (updateError) throw updateError;
-
-      const productTitle = app.lang === "ar" 
-        ? order.listings?.title_ar 
-        : order.listings?.title_en || order.listings?.title_ar;
-
-      if (order.buyer_id) {
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: order.buyer_id,
-            type: "order_rejected",
-            title_ar: "❌ تم رفض طلبك",
-            body_ar: `تم رفض طلبك "${productTitle}" من قبل المتجر. السبب: ${reason.trim()}`,
-            title_en: "❌ Your order was rejected",
-            body_en: `Your order "${productTitle}" was rejected by the store. Reason: ${reason.trim()}`,
-            link_url: `/orders/${orderId}`,
-            metadata: {
-              rejection_reason: reason.trim(),
-              order_id: orderId,
-            }
-          });
+    // ✅ ✅ ✅ استخراج اسم المتجر (وليس اسم المنتج)
+    let storeName = '';
+    
+    // ✅ أولاً: حاول جلب اسم المتجر من order_items
+    if (order.order_items && order.order_items.length > 0) {
+      const firstItem = order.order_items[0];
+      const listing = firstItem?.listings;
+      if (listing?.profiles) {
+        storeName = app.lang === "ar" 
+          ? (listing.profiles.store_name || listing.profiles.full_name || 'المتجر')
+          : (listing.profiles.store_name || listing.profiles.full_name || 'Store');
       }
-
-      toast.success(app.lang === "ar" ? "✅ تم رفض الطلب مع إرسال السبب" : "✅ Order rejected with reason");
-      refetchOrders();
-      setRejectDialogOpen(false);
-      setRejectOrderId(null);
-      setRejectReason("");
-
-    } catch (error) {
-      console.error("❌ Error rejecting order:", error);
-      toast.error(app.lang === "ar" ? "❌ حدث خطأ في رفض الطلب" : "❌ Error rejecting order");
-    } finally {
-      setIsRejecting(false);
+    } 
+    // ✅ ثانياً: استخدم listings القديم (للتوافق مع الطلبات القديمة)
+    else if (order.listings?.profiles) {
+      storeName = app.lang === "ar" 
+        ? (order.listings.profiles.store_name || order.listings.profiles.full_name || 'المتجر')
+        : (order.listings.profiles.store_name || order.listings.profiles.full_name || 'Store');
     }
-  }, [app.lang, app.user?.id, refetchOrders]);
+    
+    // ✅ إذا لم نجد اسم متجر، استخدم اسم افتراضي
+    if (!storeName) {
+      storeName = app.lang === "ar" ? "المتجر" : "Store";
+    }
 
+    // ✅ عدد المنتجات في الطلب
+    const itemsCount = order.order_items?.length || 1;
+
+    // ✅ إرسال إشعار للمشتري (مع اسم المتجر)
+    if (order.buyer_id && order.buyer_id !== order.seller_id) {
+      await supabase
+        .from("notifications")
+        .insert({
+          user_id: order.buyer_id,
+          type: "order_accepted",
+          title_ar: "✅ تم قبول طلبك",
+          body_ar: `تم قبول طلبك من متجر "${storeName}" (${itemsCount} منتج${itemsCount > 1 ? 'ات' : ''}) وسيتم شحنه قريباً 🚚`,
+          title_en: "✅ Your order has been accepted",
+          body_en: `Your order from "${storeName}" (${itemsCount} item${itemsCount > 1 ? 's' : ''}) has been accepted and will be shipped soon 🚚`,
+          link_url: `/orders/${orderId}`,
+          metadata: {
+            order_id: orderId,
+            store_name: storeName,
+            items_count: itemsCount,
+          }
+        });
+    }
+
+    // ✅ إنشاء طلب توصيل
+    const { data: company, error: companyError } = await supabase
+      .from("delivery_companies")
+      .select("*")
+      .eq("governorate_id", order.governorate_id)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (company && !companyError) {
+      const { error: deliveryError } = await supabase
+        .from("delivery_orders")
+        .insert({
+          order_id: orderId,
+          delivery_company_id: company.id,
+          pickup_address: order.order_items?.[0]?.listings?.profiles?.store_address || 
+                           order.listings?.profiles?.store_address || 
+                           "عنوان المتجر",
+          pickup_latitude: order.order_items?.[0]?.listings?.profiles?.lat || 
+                           order.listings?.profiles?.lat || 0,
+          pickup_longitude: order.order_items?.[0]?.listings?.profiles?.lng || 
+                            order.listings?.profiles?.lng || 0,
+          delivery_address: order.delivery_address,
+          delivery_latitude: order.delivery_lat,
+          delivery_longitude: order.delivery_lng,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+        });
+
+      if (deliveryError) console.error("❌ Error creating delivery order:", deliveryError);
+
+      await notifyDeliveryCompanyAdmins(company.id, {
+        type: "new_delivery",
+        title_ar: "🚚 طلب توصيل جديد",
+        body_ar: `لديك طلب توصيل جديد من متجر "${storeName}" إلى ${order.delivery_address || "عنوان العميل"}`,
+        link_url: `/delivery/orders/${orderId}`,
+        metadata: {
+          order_id: orderId,
+          delivery_address: order.delivery_address,
+          company_id: company.id,
+          store_name: storeName,
+        }
+      });
+    }
+
+    toast.success(app.lang === "ar" ? "✅ تم قبول الطلب" : "✅ Order accepted");
+    refetchOrders();
+
+  } catch (error) {
+    console.error("❌ Error accepting order:", error);
+    toast.error(app.lang === "ar" ? "❌ حدث خطأ في قبول الطلب" : "❌ Error accepting order");
+  }
+}, [app.lang, refetchOrders]);
+  // ===== REJECT ORDER =====
+// ===== REJECT ORDER (معدل - يرسل اسم المتجر) =====
+const handleRejectOrder = useCallback(async (orderId: string, reason: string) => {
+  if (!reason.trim()) {
+    toast.error(app.lang === "ar" ? "❌ الرجاء إدخال سبب الرفض" : "❌ Please enter a rejection reason");
+    return;
+  }
+
+  setIsRejecting(true);
+
+  try {
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select(`
+        buyer_id,
+        order_items (
+          listings (
+            title_ar,
+            title_en,
+            profiles:owner_id (
+              store_name,
+              full_name
+            )
+          )
+        ),
+        listings:listing_id (
+          title_ar,
+          title_en,
+          profiles:owner_id (
+            store_name,
+            full_name
+          )
+        )
+      `)
+      .eq("id", orderId)
+      .single();
+
+    if (orderError) throw orderError;
+
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update({ 
+        status: 'rejected',
+        rejected_at: new Date().toISOString(),
+        rejected_by: app.user?.id,
+        rejection_reason: reason.trim()
+      })
+      .eq("id", orderId);
+
+    if (updateError) throw updateError;
+
+    // ✅ ✅ ✅ استخراج اسم المتجر
+    let storeName = '';
+    
+    if (order.order_items && order.order_items.length > 0) {
+      const firstItem = order.order_items[0];
+      const listing = firstItem?.listings;
+      if (listing?.profiles) {
+        storeName = app.lang === "ar" 
+          ? (listing.profiles.store_name || listing.profiles.full_name || 'المتجر')
+          : (listing.profiles.store_name || listing.profiles.full_name || 'Store');
+      }
+    } else if (order.listings?.profiles) {
+      storeName = app.lang === "ar" 
+        ? (order.listings.profiles.store_name || order.listings.profiles.full_name || 'المتجر')
+        : (order.listings.profiles.store_name || order.listings.profiles.full_name || 'Store');
+    }
+    
+    if (!storeName) {
+      storeName = app.lang === "ar" ? "المتجر" : "Store";
+    }
+
+    const itemsCount = order.order_items?.length || 1;
+
+    if (order.buyer_id) {
+      await supabase
+        .from("notifications")
+        .insert({
+          user_id: order.buyer_id,
+          type: "order_rejected",
+          title_ar: "❌ تم رفض طلبك",
+          body_ar: `تم رفض طلبك من متجر "${storeName}" (${itemsCount} منتج${itemsCount > 1 ? 'ات' : ''}). السبب: ${reason.trim()}`,
+          title_en: "❌ Your order was rejected",
+          body_en: `Your order from "${storeName}" (${itemsCount} item${itemsCount > 1 ? 's' : ''}) was rejected. Reason: ${reason.trim()}`,
+          link_url: `/orders/${orderId}`,
+          metadata: {
+            rejection_reason: reason.trim(),
+            order_id: orderId,
+            store_name: storeName,
+          }
+        });
+    }
+
+    toast.success(app.lang === "ar" ? "✅ تم رفض الطلب مع إرسال السبب" : "✅ Order rejected with reason");
+    refetchOrders();
+    setRejectDialogOpen(false);
+    setRejectOrderId(null);
+    setRejectReason("");
+
+  } catch (error) {
+    console.error("❌ Error rejecting order:", error);
+    toast.error(app.lang === "ar" ? "❌ حدث خطأ في رفض الطلب" : "❌ Error rejecting order");
+  } finally {
+    setIsRejecting(false);
+  }
+}, [app.lang, app.user?.id, refetchOrders]);
   // ===== EXPORTS =====
   const exportToExcel = useCallback(() => {
     const exportData = filteredOrders.map((order: any) => ({
       'رقم الطلب': String(order.id).slice(0, 8),
-      'المنتج': app.lang === "ar" ? order.listings?.title_ar : (order.listings?.title_en || order.listings?.title_ar) || '—',
-      'الكمية': order.quantity || 1,
-      'الإجمالي': formatPrice(Number(order.total) || 0, app.currency, app.lang),
+      'العميل': order.buyer_name || (app.lang === "ar" ? 'عميل' : 'Customer'),
+      'رقم العميل': order.buyer_phone || '—',
       'الحالة': getStatusLabel(order.status),
       'التاريخ': new Date(order.created_at).toLocaleDateString(app.lang === 'ar' ? 'ar-SA' : 'en-US'),
-      'النوع': order.is_booking || order.type === "booking" ? 'حجز' : 'طلب',
-      'سبب الرفض': order.rejection_reason || '—',
+      'الوقت': new Date(order.created_at).toLocaleTimeString(app.lang === 'ar' ? 'ar-SA' : 'en-US'),
+      'الإجمالي': formatPrice(Number(order.total) || 0, app.currency, app.lang),
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'الطلبات');
-    ws['!cols'] = [{ wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 30 }];
+    ws['!cols'] = [{ wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 18 }];
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
     saveAs(blob, `طلبات_المتجر_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.xlsx`);
@@ -381,19 +482,19 @@ export const OrdersPage = React.memo(function OrdersPage() {
         <div class="stat"><div class="value">${formatPrice(totalRevenue, app.currency, app.lang)}</div><div class="label">إجمالي الإيرادات</div></div>
       </div>
       <table><thead><tr>
-        <th>#</th><th>رقم الطلب</th><th>المنتج</th><th>الكمية</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th><th>سبب الرفض</th>
+        <th>#</th><th>رقم الطلب</th><th>العميل</th><th>رقم العميل</th><th>الحالة</th><th>التاريخ</th><th>الوقت</th><th>الإجمالي</th>
       </tr></thead><tbody>
     `;
     filteredOrders.slice(0, 100).forEach((order: any, i: number) => {
       html += `<tr>
         <td>${i+1}</td>
         <td>${String(order.id).slice(0, 8)}</td>
-        <td>${app.lang === "ar" ? order.listings?.title_ar : (order.listings?.title_en || order.listings?.title_ar) || '—'}</td>
-        <td>${order.quantity || 1}</td>
-        <td>${formatPrice(Number(order.total) || 0, app.currency, app.lang)}</td>
+        <td>${order.buyer_name || (app.lang === "ar" ? 'عميل' : 'Customer')}</td>
+        <td>${order.buyer_phone || '—'}</td>
         <td>${getStatusLabel(order.status)}</td>
         <td>${new Date(order.created_at).toLocaleDateString('ar-SA')}</td>
-        <td>${order.rejection_reason || '—'}</td>
+        <td>${new Date(order.created_at).toLocaleTimeString('ar-SA')}</td>
+        <td>${formatPrice(Number(order.total) || 0, app.currency, app.lang)}</td>
       </tr>`;
     });
     html += `</tbody></table></body></html>`;
@@ -649,20 +750,20 @@ export const OrdersPage = React.memo(function OrdersPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 border-b border-slate-200/50 dark:border-slate-700/50">
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
-                      {app.lang === "ar" ? "المنتج" : "Product"}
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
+                      {app.lang === "ar" ? "رقم الطلب" : "Order #"}
                     </th>
                     <th className="px-4 py-3 text-right font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
                       {app.lang === "ar" ? "العميل" : "Customer"}
                     </th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
-                      {app.lang === "ar" ? "الإجمالي" : "Total"}
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
+                      {app.lang === "ar" ? "رقم العميل" : "Phone"}
                     </th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
+                      {app.lang === "ar" ? "الوقت" : "Time"}
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
                       {app.lang === "ar" ? "الحالة" : "Status"}
-                    </th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider hidden md:table-cell">
-                      {app.lang === "ar" ? "التاريخ" : "Date"}
                     </th>
                     <th className="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
                       {app.lang === "ar" ? "الإجراءات" : "Actions"}
@@ -673,7 +774,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   {paginatedOrders.map((order: any) => {
                     const StatusIcon = getStatusIcon(order.status);
                     const statusColor = getStatusColor(order.status);
-                    const isBooking = order.is_booking === true || order.type === "booking";
                     const isPending = order.status === "pending";
                     
                     return (
@@ -682,85 +782,72 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         className="group hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10 transition-colors duration-300 cursor-pointer"
                         onClick={() => { setSelectedOrder(order); setDetailDialogOpen(true); }}
                       >
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            {order.listings?.cover_url ? (
-                              <img 
-                                src={order.listings.cover_url} 
-                                alt=""
-                                className="h-12 w-12 rounded-lg object-cover border border-slate-200/50 dark:border-slate-700/50 group-hover:scale-105 transition-transform duration-300"
-                              />
-                            ) : (
-                              <div className="h-12 w-12 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200/50 dark:border-slate-700/50">
-                                <Package className="h-5 w-5 text-slate-400" />
-                              </div>
+                        {/* رقم الطلب */}
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex flex-col items-center">
+                            <span className="font-mono font-bold text-sm text-slate-700 dark:text-slate-300">
+                              #{String(order.id).slice(0, 8)}
+                            </span>
+                            {order.is_booking && (
+                              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-0 text-[9px] mt-0.5">
+                                📅 {app.lang === "ar" ? "حجز" : "Booking"}
+                              </Badge>
                             )}
-                            <div>
-                              <p className="font-semibold text-slate-900 dark:text-white line-clamp-1 group-hover:text-[#2a655f] transition-colors">
-                                {app.lang === "ar" 
-                                  ? order.listings?.title_ar 
-                                  : order.listings?.title_en || order.listings?.title_ar}
-                              </p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-muted-foreground">
-                                  #{String(order.id).slice(0, 8)}
-                                </span>
-                                {isBooking && (
-                                  <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-0 text-[9px]">
-                                    📅 {app.lang === "ar" ? "حجز" : "Booking"}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
                           </div>
                         </td>
                         
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="font-medium text-slate-800 dark:text-slate-200">
+                        {/* اسم العميل */}
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <User className="h-3.5 w-3.5 text-[#2a655f]" />
+                            <span className="font-medium text-slate-800 dark:text-slate-200">
                               {order.buyer_name || (app.lang === "ar" ? "عميل" : "Customer")}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {order.buyer_phone || ""}
-                            </p>
+                            </span>
                           </div>
                         </td>
                         
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="font-bold text-[#2a655f] dark:text-[#3a8a82]">
-                              {formatPrice(Number(order.total) || 0, app.currency, app.lang)}
-                            </p>
-                            {order.quantity && (
-                              <p className="text-xs text-muted-foreground">
-                                {order.quantity} {app.lang === "ar" ? "وحدة" : "units"}
-                              </p>
-                            )}
+                        {/* رقم العميل */}
+                        <td className="px-4 py-3 text-center">
+                          {order.buyer_phone ? (
+                            <div className="flex items-center justify-center gap-1.5">
+                              <Phone className="h-3.5 w-3.5 text-[#2a655f]" />
+                              <span className="font-mono text-sm text-slate-600 dark:text-slate-300">
+                                {order.buyer_phone}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        
+                        {/* الوقت */}
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex flex-col items-center">
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                              {new Date(order.created_at).toLocaleDateString(
+                                app.lang === "ar" ? "ar-SA" : "en-US",
+                                { day: 'numeric', month: 'short' }
+                              )}
+                            </span>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <ClockIcon className="h-3 w-3" />
+                              {new Date(order.created_at).toLocaleTimeString(
+                                app.lang === "ar" ? "ar-SA" : "en-US",
+                                { hour: '2-digit', minute: '2-digit' }
+                              )}
+                            </span>
                           </div>
                         </td>
                         
-                        <td className="px-4 py-3">
-                          <Badge className={`${statusColor} border text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1.5 w-fit`}>
+                        {/* الحالة */}
+                        <td className="px-4 py-3 text-center">
+                          <Badge className={`${statusColor} border text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1.5 w-fit mx-auto`}>
                             <StatusIcon className="h-3 w-3" />
                             {getStatusLabel(order.status)}
                           </Badge>
                         </td>
                         
-                        <td className="px-4 py-3 hidden md:table-cell">
-                          <p className="text-sm text-slate-600 dark:text-slate-300">
-                            {new Date(order.created_at).toLocaleDateString(
-                              app.lang === "ar" ? "ar-SA" : "en-US",
-                              { day: 'numeric', month: 'short', year: 'numeric' }
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(order.created_at).toLocaleTimeString(
-                              app.lang === "ar" ? "ar-SA" : "en-US",
-                              { hour: '2-digit', minute: '2-digit' }
-                            )}
-                          </p>
-                        </td>
-                        
+                        {/* الإجراءات */}
                         <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-1 flex-wrap">
                             <Button
@@ -839,7 +926,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
               </span>
               
               <div className="flex items-center gap-1">
-                {/* First page */}
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -850,7 +936,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   <span className="text-xs font-bold">«</span>
                 </Button>
                 
-                {/* Previous page */}
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -861,7 +946,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 
-                {/* Page numbers */}
                 <div className="flex items-center gap-1 px-2">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                     let pageNum;
@@ -894,7 +978,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   })}
                 </div>
                 
-                {/* Next page */}
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -905,7 +988,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
                 
-                {/* Last page */}
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -941,7 +1023,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     {app.lang === "ar" ? "تفاصيل الطلب" : "Order Details"}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    #{String(selectedOrder.id).slice(0, 8)}
+                    #{String(selectedOrder.id).slice(0, 12)}
                   </p>
                 </div>
                 <Badge className={getStatusColor(selectedOrder.status)}>
@@ -949,48 +1031,179 @@ export const OrdersPage = React.memo(function OrdersPage() {
                 </Badge>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <Package className="h-3.5 w-3.5 text-[#2a655f]" />
-                    {app.lang === "ar" ? "المنتج" : "Product"}
-                  </p>
-                  <p className="text-lg font-semibold mt-1 text-slate-900 dark:text-white">
-                    {app.lang === "ar" 
-                      ? selectedOrder.listings?.title_ar 
-                      : selectedOrder.listings?.title_en || selectedOrder.listings?.title_ar}
-                  </p>
-                  {selectedOrder.quantity && (
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {app.lang === "ar" ? "الكمية:" : "Quantity:"} {selectedOrder.quantity}
+              {/* ✅ معلومات العميل */}
+              <div className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5 text-[#2a655f]" />
+                      {app.lang === "ar" ? "العميل" : "Customer"}
                     </p>
-                  )}
-                  {selectedOrder.total && (
-                    <p className="text-2xl font-bold text-[#2a655f] dark:text-[#3a8a82] mt-2">
-                      {formatPrice(Number(selectedOrder.total) || 0, app.currency, app.lang)}
+                    <p className="text-lg font-semibold mt-1 text-slate-900 dark:text-white">
+                      {selectedOrder.buyer_name || (app.lang === "ar" ? "عميل" : "Customer")}
                     </p>
-                  )}
+                    {selectedOrder.buyer_phone && (
+                      <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                        <Phone className="h-3.5 w-3.5" />
+                        {selectedOrder.buyer_phone}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-[#2a655f]" />
+                      {app.lang === "ar" ? "تاريخ الطلب" : "Order Date"}
+                    </p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mt-1">
+                      {new Date(selectedOrder.created_at).toLocaleString(
+                        app.lang === "ar" ? "ar-SA" : "en-US",
+                        { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+                      )}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <User className="h-3.5 w-3.5 text-[#2a655f]" />
-                    {app.lang === "ar" ? "العميل" : "Customer"}
-                  </p>
-                  <p className="text-lg font-semibold mt-1 text-slate-900 dark:text-white">
-                    {selectedOrder.buyer_name || (app.lang === "ar" ? "عميل" : "Customer")}
-                  </p>
-                  {selectedOrder.buyer_phone && (
-                    <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                      <Phone className="h-3.5 w-3.5" />
-                      {selectedOrder.buyer_phone}
+                {/* ✅ عنوان التوصيل */}
+                {selectedOrder.delivery_address && (
+                  <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 text-[#2a655f]" />
+                      {app.lang === "ar" ? "عنوان التوصيل" : "Delivery Address"}
                     </p>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 mt-0.5">
+                      {selectedOrder.delivery_address}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* ✅ ✅ ✅ قائمة المنتجات المطلوبة (من order_items) */}
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2 mb-3">
+                  <Package className="h-3.5 w-3.5 text-[#2a655f]" />
+                  {app.lang === "ar" ? "المنتجات المطلوبة" : "Ordered Products"}
+                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                    {selectedOrder.order_items?.length || 1}
+                  </Badge>
+                </p>
+                
+                <div className="space-y-3">
+                  {/* ✅ إذا كان عندنا order_items */}
+                  {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
+                    // ✅ عرض كل منتج على حدة من order_items
+                    selectedOrder.order_items.map((item: any, index: number) => {
+                      const listing = item.listings || item;
+                      return (
+                        <div 
+                          key={item.id || index}
+                          className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
+                        >
+                          <div className="flex items-center gap-4">
+                            {listing?.cover_url ? (
+                              <img 
+                                src={listing.cover_url} 
+                                alt=""
+                                className="h-16 w-16 rounded-xl object-cover border border-slate-200/50 dark:border-slate-700/50"
+                              />
+                            ) : (
+                              <div className="h-16 w-16 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center border border-slate-200/50 dark:border-slate-700/50">
+                                <Package className="h-6 w-6 text-slate-400" />
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground bg-[#2a655f]/10 px-2 py-0.5 rounded-full">
+                                  #{index + 1}
+                                </span>
+                                <p className="font-bold text-lg text-slate-900 dark:text-white">
+                                  {app.lang === "ar" 
+                                    ? listing?.title_ar || 'منتج'
+                                    : listing?.title_en || listing?.title_ar || 'Product'}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                                <span>{app.lang === "ar" ? "الكمية:" : "Qty:"} {item.quantity || 1}</span>
+                                <span className="text-muted-foreground/30">|</span>
+                                <span className="font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                                  {formatPrice(Number(item.price) * (item.quantity || 1), app.currency, app.lang)}
+                                </span>
+                              </div>
+                              {/* ✅ عرض التركيبة (لون، مقاس) إن وجدت */}
+                              {item.variation_combination && Object.keys(item.variation_combination).length > 0 && (
+                                <div className="flex items-center gap-2 mt-1">
+                                  {Object.entries(item.variation_combination).map(([key, value]) => (
+                                    <Badge key={key} variant="secondary" className="text-[9px] bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20">
+                                      {key === "colors" ? "🎨" : key === "sizes" ? "📏" : "🔹"} {String(value)}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <Link to="/listing/$id" params={{ id: item.listing_id }}>
+                              <Button variant="ghost" size="sm" className="rounded-lg hover:bg-[#2a655f]/10">
+                                <Eye className="h-4 w-4 text-[#2a655f]" />
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    // ✅ إذا كان طلباً قديماً (بدون order_items) - عرض منتج واحد
+                    <div className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                      <div className="flex items-center gap-4">
+                        {selectedOrder.listings?.cover_url ? (
+                          <img 
+                            src={selectedOrder.listings.cover_url} 
+                            alt=""
+                            className="h-16 w-16 rounded-xl object-cover border border-slate-200/50 dark:border-slate-700/50"
+                          />
+                        ) : (
+                          <div className="h-16 w-16 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center border border-slate-200/50 dark:border-slate-700/50">
+                            <Package className="h-6 w-6 text-slate-400" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <p className="font-bold text-lg text-slate-900 dark:text-white">
+                            {app.lang === "ar" 
+                              ? selectedOrder.listings?.title_ar 
+                              : selectedOrder.listings?.title_en || selectedOrder.listings?.title_ar}
+                          </p>
+                          <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                            <span>{app.lang === "ar" ? "الكمية:" : "Qty:"} {selectedOrder.quantity || 1}</span>
+                            <span className="text-muted-foreground/30">|</span>
+                            <span className="font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                              {formatPrice(Number(selectedOrder.total) || 0, app.currency, app.lang)}
+                            </span>
+                          </div>
+                        </div>
+                        <Link to="/listing/$id" params={{ id: selectedOrder.listing_id }}>
+                          <Button variant="ghost" size="sm" className="rounded-lg hover:bg-[#2a655f]/10">
+                            <Eye className="h-4 w-4 text-[#2a655f]" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
 
+              {/* ✅ ملاحظات الطلب */}
+              {selectedOrder.notes && (
+                <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200/50 dark:border-yellow-800/30 mb-4">
+                  <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    {app.lang === "ar" ? "ملاحظات العميل" : "Customer Notes"}
+                  </p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
+                    {selectedOrder.notes}
+                  </p>
+                </div>
+              )}
+
+              {/* ✅ سبب الرفض */}
               {selectedOrder.status === "rejected" && selectedOrder.rejection_reason && (
-                <div className="mt-4 p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-800/30">
+                <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-800/30 mb-4">
                   <p className="text-xs font-medium text-red-600 dark:text-red-400 uppercase tracking-wider flex items-center gap-1.5">
                     <XCircle className="h-3.5 w-3.5" />
                     {app.lang === "ar" ? "سبب الرفض" : "Rejection Reason"}
@@ -1001,29 +1214,37 @@ export const OrdersPage = React.memo(function OrdersPage() {
                 </div>
               )}
 
-              {selectedOrder.notes && (
-                <div className="mt-4 p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200/50 dark:border-yellow-800/30">
-                  <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <MessageCircle className="h-3.5 w-3.5" />
-                    {app.lang === "ar" ? "ملاحظات" : "Notes"}
-                  </p>
-                  <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
-                    {selectedOrder.notes}
-                  </p>
+              {/* ✅ إجمالي الطلب */}
+              <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {app.lang === "ar" ? "إجمالي الطلب" : "Order Total"}
+                  </span>
+                  <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                    {formatPrice(Number(selectedOrder.total) || 0, app.currency, app.lang)}
+                  </span>
                 </div>
-              )}
-
-              <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4 text-[#2a655f]" />
-                  {app.lang === "ar" ? "تاريخ الطلب:" : "Order date:"}
-                  <span className="font-medium text-slate-700 dark:text-slate-300">
-                    {new Date(selectedOrder.created_at).toLocaleDateString(
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {selectedOrder.order_items?.length || 1} {app.lang === "ar" ? "منتج" : "items"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(selectedOrder.created_at).toLocaleString(
                       app.lang === "ar" ? "ar-SA" : "en-US",
                       { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
                     )}
                   </span>
                 </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setDetailDialogOpen(false)}
+                  className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10"
+                >
+                  {app.lang === "ar" ? "إغلاق" : "Close"}
+                </Button>
               </div>
             </div>
           )}
@@ -1063,8 +1284,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder={app.lang === "ar" 
-                  ? "اكتب سبب رفض الطلب (مثال: المنتج غير متوفر، سعر غير صحيح، ...)"
-                  : "Write the reason for rejecting the order (e.g., product unavailable, incorrect price, ...)"
+                  ? "اكتب سبب رفض الطلب..."
+                  : "Write the reason for rejecting the order..."
                 }
                 className="w-full min-h-[100px] p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-red-400 focus:ring-2 focus:ring-red-400/20 resize-none"
                 dir={app.lang === "ar" ? "rtl" : "ltr"}

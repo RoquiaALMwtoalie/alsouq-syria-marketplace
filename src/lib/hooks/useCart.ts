@@ -7,6 +7,8 @@ import { toast } from "sonner";
 // ============================================================
 // ✅ أنواع البيانات
 // ============================================================
+// src/lib/hooks/useCart.ts
+
 export interface CartItem {
   id: string;
   cart_id: string;
@@ -18,7 +20,7 @@ export interface CartItem {
   selected_color?: string;
   selected_size?: string;
   selected_variation_id?: string;
-  variation_combination?: Record<string, string>;  // ✅ أضف هذا
+  variation_combination?: Record<string, string>;
   variation_snapshot?: any;
   subtotal: number;
   subtotal_usd?: number;
@@ -30,6 +32,15 @@ export interface CartItem {
     owner_id: string;
     price: number;
     price_usd?: number;
+    // ✅ ✅ ✅ أضف profile هنا
+    profile?: {
+      id: string;
+      store_name: string;
+      store_logo_url: string;
+      store_cover_url: string;
+      full_name: string;
+      avatar_url: string;
+    };
   };
   created_at: string;
   updated_at: string;
@@ -58,6 +69,8 @@ export interface Cart {
 // ============================================================
 // ✅ 1. جلب السلة (محسّن)
 // ============================================================
+// src/lib/hooks/useCart.ts
+
 export function useCart(userId: string | undefined) {
   return useQuery({
     queryKey: ["cart", userId],
@@ -94,7 +107,7 @@ export function useCart(userId: string | undefined) {
         return null;
       }
       
-      // ✅ جلب عناصر السلة
+      // ✅ ✅ ✅ جلب عناصر السلة مع بيانات الملف الشخصي
       const { data: items, error: itemsError } = await supabase
         .from("cart_items")
         .select(`
@@ -106,7 +119,15 @@ export function useCart(userId: string | undefined) {
             cover_url,
             owner_id,
             price,
-            price_usd
+            price_usd,
+            profile:profiles!owner_id (
+              id,
+              store_name,
+              store_logo_url,
+              store_cover_url,
+              full_name,
+              avatar_url
+            )
           )
         `)
         .eq("cart_id", cart.id)
@@ -132,9 +153,8 @@ export function useCart(userId: string | undefined) {
       } as Cart;
     },
     
-    // ✅ إعدادات مهمة لمنع الـ re-fetching المتكرر
-    staleTime: 1000 * 60 * 5, // 5 دقائق
-    gcTime: 1000 * 60 * 10,   // 10 دقائق
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: true,
@@ -142,9 +162,11 @@ export function useCart(userId: string | undefined) {
     retryDelay: 1000,
   });
 }
-
 // ============================================================
 // ✅ 2. التحقق من توافق المنتج مع السلة
+// ============================================================
+// ============================================================
+// ✅ 2. التحقق من توافق المنتج مع السلة (محدث ومضمون 100%)
 // ============================================================
 export function useCheckCartCompatibility() {
   return useMutation({
@@ -157,13 +179,12 @@ export function useCheckCartCompatibility() {
       listingId: string;
       newOwnerId: string;
     }) => {
+      // 1. جلب السلة النشطة للمستخدم
       const { data: cart, error } = await supabase
         .from("carts")
-        .select("id, store_id, total_items")
+        .select("id, status")
         .eq("user_id", userId)
         .eq("status", "active")
-        .order("total_items", { ascending: false })
-        .limit(1)
         .maybeSingle();
       
       if (error) throw error;
@@ -172,15 +193,33 @@ export function useCheckCartCompatibility() {
         return { compatible: true, cartId: null, hasItems: false };
       }
       
-      if (cart.total_items === 0) {
+      // 2. جلب أول عنصر داخل السلة لمعرفة متجر المنتجات الحالية
+      const { data: existingItems, error: itemsError } = await supabase
+        .from("cart_items")
+        .select(`
+          id,
+          listing:listing_id (
+            owner_id
+          )
+        `)
+        .eq("cart_id", cart.id)
+        .limit(1);
+        
+      if (itemsError) throw itemsError;
+      
+      // إذا كانت السلة فارغة تماماً، فالمنتج متوافق
+      if (!existingItems || existingItems.length === 0) {
         return { compatible: true, cartId: cart.id, hasItems: false };
       }
       
-      if (cart.store_id && cart.store_id !== newOwnerId) {
+      // 3. مقارنة صاحب المنتج الموجود في السلة مع صاحب المنتج الجديد المراد إضافته
+      const currentStoreId = (existingItems[0]?.listing as any)?.owner_id;
+      
+      if (currentStoreId && currentStoreId !== newOwnerId) {
         return { 
           compatible: false, 
           cartId: cart.id,
-          currentStoreId: cart.store_id,
+          currentStoreId: currentStoreId,
           newStoreId: newOwnerId,
           hasItems: true,
         };

@@ -47,7 +47,6 @@ export const ConvertToOfferDialog = ({
   const [newPrice, setNewPrice] = useState<number>(0);
   const [error, setError] = useState<string>("");
 
-  // ✅ اقتراح سعر تلقائي (خصم 20%)
   useEffect(() => {
     if (product?.price) {
       const originalPrice = Number(product.price);
@@ -67,47 +66,47 @@ export const ConvertToOfferDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg rounded-2xl border-emerald-200/50 dark:border-emerald-800/30 bg-white dark:bg-slate-900 shadow-2xl shadow-emerald-900/20">
+      <DialogContent className="w-[95vw] max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-slate-900 shadow-2xl shadow-[#2a655f]/10 p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
         
-        {/* Header */}
-        <DialogHeader>
+        {/* ===== Header ===== */}
+        <div className="p-5 pb-3 border-b border-[#2a655f]/10">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-              <Gift className="h-6 w-6 text-white" />
+            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 flex-shrink-0">
+              <Gift className="h-5 w-5 text-white" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-bold">
+              <DialogTitle className="text-lg font-bold text-[#2a655f]">
                 {lang === "ar" ? "🎁 تحويل إلى عرض" : "🎁 Convert to Offer"}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs text-muted-foreground">
                 {lang === "ar"
-                  ? `أدخل السعر الجديد للمنتج "${product.title_ar}"`
-                  : `Enter the new price for "${product.title_ar}"`}
+                  ? `تحويل "${product.title_ar}" إلى عرض خاص`
+                  : `Convert "${product.title_en || product.title_ar}" to a special offer`}
               </DialogDescription>
             </div>
           </div>
-        </DialogHeader>
+        </div>
 
-        {/* Body */}
-        <div className="space-y-6 py-4">
+        {/* ===== Body ===== */}
+        <div className="p-5 space-y-4">
           
           {/* معلومات المنتج الحالي */}
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50">
+          <div className="p-3 rounded-xl bg-[#2a655f]/5 dark:bg-[#2a655f]/10 border border-[#2a655f]/10">
             <div className="flex items-center gap-3">
               <img
                 src={product.cover_url || "/placeholder.png"}
                 alt={product.title_ar}
-                className="w-16 h-16 rounded-xl object-cover border-2 border-white shadow-md"
+                className="w-14 h-14 rounded-xl object-cover border-2 border-white shadow-md flex-shrink-0"
               />
-              <div>
-                <p className="font-medium text-slate-800 dark:text-slate-200">
+              <div className="min-w-0">
+                <p className="font-medium text-sm text-slate-800 dark:text-slate-200 truncate">
                   {product.title_ar}
                 </p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-sm text-muted-foreground">
-                    {lang === "ar" ? "السعر الحالي:" : "Current price:"}
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <span className="text-xs text-muted-foreground">
+                    {lang === "ar" ? "السعر الحالي:" : "Current:"}
                   </span>
-                  <span className="text-lg font-bold text-[#2a655f]">
+                  <span className="text-base font-bold text-[#2a655f]">
                     {formatPrice(originalPrice, currency, lang)}
                   </span>
                 </div>
@@ -116,14 +115,18 @@ export const ConvertToOfferDialog = ({
           </div>
 
           {/* إدخال السعر الجديد */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-emerald-500" />
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <DollarSign className="h-4 w-4 text-[#2a655f]" />
               {lang === "ar" ? "السعر الجديد بعد الخصم" : "New Price After Discount"}
+              <span className="text-red-500 text-xs">*</span>
             </Label>
             
             <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              {/* ✅ ل.س بدلاً من $ */}
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                <span className="text-sm font-bold text-[#2a655f]/60">ل.س</span>
+              </div>
               <Input
                 type="number"
                 value={newPrice || ""}
@@ -138,7 +141,7 @@ export const ConvertToOfferDialog = ({
                     setError(lang === "ar" ? "السعر الجديد يجب أن يكون أقل من السعر الأصلي" : "New price must be less than original price");
                   }
                 }}
-                className="pl-10 h-12 text-lg rounded-xl border-emerald-200/50 dark:border-emerald-800/30 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                className="ps-12 h-11 text-base rounded-xl border-[#2a655f]/20 dark:border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 bg-white dark:bg-slate-900"
                 placeholder={lang === "ar" ? "أدخل السعر الجديد..." : "Enter new price..."}
                 min={0}
                 max={originalPrice - 1}
@@ -157,19 +160,19 @@ export const ConvertToOfferDialog = ({
 
             {/* عرض نسبة الخصم */}
             {isValid && (
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
+              <div className="flex items-center gap-3 p-2.5 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/10">
                 <div className="flex items-center gap-2">
-                  <Percent className="h-5 w-5 text-emerald-500" />
-                  <span className="text-sm font-medium">
-                    {lang === "ar" ? "نسبة الخصم:" : "Discount:"}
+                  <Percent className="h-4 w-4 text-[#2a655f]" />
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                    {lang === "ar" ? "الخصم:" : "Discount:"}
                   </span>
-                  <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-sm font-bold px-3 py-1">
+                  <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-xs font-bold px-2.5 py-0.5">
                     {discountPercent}%
                   </Badge>
                 </div>
-                <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-[#2a655f] to-[#3a8a82] transition-all duration-500"
                     style={{ width: `${Math.min(discountPercent, 100)}%` }}
                   />
                 </div>
@@ -178,8 +181,8 @@ export const ConvertToOfferDialog = ({
 
             {/* الخطأ */}
             {error && (
-              <div className="flex items-center gap-2 text-red-500 text-sm">
-                <AlertCircle className="h-4 w-4" />
+              <div className="flex items-center gap-2 text-red-500 text-xs">
+                <AlertCircle className="h-3.5 w-3.5" />
                 {error}
               </div>
             )}
@@ -187,40 +190,38 @@ export const ConvertToOfferDialog = ({
 
           {/* معاينة العرض */}
           {isValid && (
-            <div className="mt-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-2 border-emerald-200/50 dark:border-emerald-800/30">
-              <div className="flex items-start gap-4">
+            <div className="p-3 rounded-xl bg-[#2a655f]/5 dark:bg-[#2a655f]/10 border-2 border-[#2a655f]/20">
+              <div className="flex items-start gap-3">
                 <div className="relative flex-shrink-0">
                   <img
                     src={product.cover_url || "/placeholder.png"}
                     alt={product.title_ar}
-                    className="w-20 h-20 rounded-xl object-cover border-2 border-white shadow-md"
+                    className="w-16 h-16 rounded-xl object-cover border-2 border-white shadow-md"
                   />
                   {isValid && discountPercent > 0 && (
-                    <div className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg animate-pulse">
+                    <div className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg animate-pulse">
                       -{discountPercent}%
                     </div>
                   )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                  <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-200 truncate">
                     {product.title_ar}
                   </h4>
                   
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className="text-xl font-bold text-red-600 dark:text-red-400">
                       {formatPrice(newPrice || 0, currency, lang)}
                     </span>
-                    <span className="text-sm text-muted-foreground line-through">
+                    <span className="text-xs text-muted-foreground line-through">
                       {formatPrice(originalPrice, currency, lang)}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1 mt-1 flex-wrap">
-                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-0 text-xs">
-                      🎯 {lang === "ar" ? "توفير" : "Save"} {formatPrice(originalPrice - newPrice, currency, lang)}
-                    </Badge>
-                  </div>
+                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-0 text-[9px] mt-1">
+                    🎯 {lang === "ar" ? "توفير" : "Save"} {formatPrice(originalPrice - newPrice, currency, lang)}
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -228,30 +229,30 @@ export const ConvertToOfferDialog = ({
 
           {/* نصيحة */}
           {isValid && (
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200/50 dark:border-blue-800/30">
+            <div className="p-2.5 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200/50 dark:border-blue-800/30">
               <div className="flex items-start gap-2">
-                <Sparkles className="h-4 w-4 text-blue-500 mt-0.5" />
-                <div className="text-xs text-blue-700 dark:text-blue-300">
-                  <p className="font-medium">
+                <Sparkles className="h-3.5 w-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div className="text-[10px] text-blue-700 dark:text-blue-300">
+                  <span className="font-medium">
                     {lang === "ar" ? "💡 نصيحة:" : "💡 Tip:"}
-                  </p>
-                  <p className="text-blue-600/70 dark:text-blue-400/70">
+                  </span>
+                  <span className="text-blue-600/70 dark:text-blue-400/70">
                     {lang === "ar"
-                      ? `الخصم ${discountPercent}% سيجذب المزيد من العملاء`
-                      : `${discountPercent}% discount will attract more customers`}
-                  </p>
+                      ? ` الخصم ${discountPercent}% سيجذب المزيد من العملاء`
+                      : ` ${discountPercent}% discount will attract more customers`}
+                  </span>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* الأزرار */}
-        <div className="flex items-center gap-3 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+        {/* ===== Footer ===== */}
+        <div className="p-4 pt-3 border-t border-[#2a655f]/10 flex items-center gap-2">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="flex-1 rounded-xl border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 h-11 transition-all duration-300"
+            className="flex-1 rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 h-10 text-sm transition-all duration-300"
           >
             {lang === "ar" ? "إلغاء" : "Cancel"}
           </Button>
@@ -263,16 +264,16 @@ export const ConvertToOfferDialog = ({
               }
             }}
             disabled={!isValid || isConverting}
-            className="flex-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:scale-[1.02] h-11 transition-all duration-300 group"
+            className="flex-1 rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 hover:scale-[1.02] h-10 text-sm transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isConverting ? (
               <span className="flex items-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
                 {lang === "ar" ? "جاري التحويل..." : "Converting..."}
               </span>
             ) : (
               <>
-                <Gift className="h-4 w-4 mr-2 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" />
+                <Gift className="h-3.5 w-3.5 mr-1.5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" />
                 {lang === "ar" ? "تحويل إلى عرض" : "Convert to Offer"}
               </>
             )}

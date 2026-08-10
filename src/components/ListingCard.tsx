@@ -1,7 +1,7 @@
 // src/components/ListingCard.tsx
 
-import { Link } from "@tanstack/react-router";
-import { Star, MapPin, Heart, ImageIcon, ShoppingCart, Store, BadgePercent, Trash2, Sparkles, Layers, Eye } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Star, MapPin, Heart, ImageIcon, ShoppingCart, Store, Sparkles, Trash2, Eye } from "lucide-react";
 import { useApp, formatPrice, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,7 @@ export const ListingCard = memo(function ListingCard({
 }: ListingCardProps) {
   const app = useApp();
   const t = useT();
+  const navigate = useNavigate();
   const addToCartMutation = useAddToCart();
   const clearCartMutation = useClearCart();
   
@@ -79,7 +80,6 @@ export const ListingCard = memo(function ListingCard({
   
   const price = useMemo(() => Number(item.price), [item.price]);
   
-  // ✅ التحقق من وجود تركيبات
   const hasVariations = useMemo(() => 
     item.variations && item.variations.length > 0,
     [item.variations]
@@ -228,38 +228,44 @@ export const ListingCard = memo(function ListingCard({
     );
   }, [isOffer, oldPrice, price, discountPercent, app.currency, app.lang]);
 
-  // ============================================================
-  // ✅ عرض التركيبات (مشترك بين Grid و List)
-  // ============================================================
   const renderVariations = useCallback((maxDisplay: number = 3) => {
-    if (!item.variations || item.variations.length === 0) return null;
+    const variationsArray = item.variations || [];
+    
+    if (!variationsArray || variationsArray.length === 0) {
+      return null;
+    }
     
     return (
       <div className="flex flex-wrap gap-1">
-        {item.variations.slice(0, maxDisplay).map((variation: any, idx: number) => (
-          <Badge 
-            key={idx}
-            variant="outline"
-            className="text-[9px] px-1.5 py-0 border-[#2a655f]/20 bg-[#2a655f]/5 dark:bg-[#2a655f]/10"
-          >
-            {Object.values(variation.combination || {}).join(' • ')}
-            <span className="font-bold text-[#2a655f] mr-0.5">
-              {formatPrice(variation.price || item.price, app.currency, app.lang)}
-            </span>
-          </Badge>
-        ))}
-        {item.variations.length > maxDisplay && (
+        {variationsArray.slice(0, maxDisplay).map((variation: any, idx: number) => {
+          const combinationText = variation.combination 
+            ? Object.entries(variation.combination)
+                .map(([_, value]) => `${value}`)
+                .join(' / ')
+            : '';
+
+          return (
+            <Badge 
+              key={idx}
+              variant="outline"
+              className="text-[9px] px-1.5 py-0 border-[#2a655f]/20 bg-[#2a655f]/5 dark:bg-[#2a655f]/10"
+            >
+              <span>{combinationText}</span>
+              <span className="font-bold text-[#2a655f] mr-1">
+                ({formatPrice(variation.price || item.price, app.currency, app.lang)})
+              </span>
+            </Badge>
+          );
+        })}
+        {variationsArray.length > maxDisplay && (
           <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-[#2a655f]/20">
-            +{item.variations.length - maxDisplay}
+            +{variationsArray.length - maxDisplay}
           </Badge>
         )}
       </div>
     );
   }, [item.variations, item.price, app.currency, app.lang]);
 
-  // ============================================================
-  // ✅ عرض Grid (شبكة)
-  // ============================================================
   if (variant === "grid") {
     return (
       <>
@@ -275,7 +281,6 @@ export const ListingCard = memo(function ListingCard({
               
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               
-              {/* شارة الخصم للعروض */}
               {isOffer && discountPercent > 0 && (
                 <div className="absolute top-3 right-3 z-20">
                   <div className="bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 text-white px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-1 border-2 border-white/40 animate-bounce font-black">
@@ -285,13 +290,11 @@ export const ListingCard = memo(function ListingCard({
                 </div>
               )}
               
-              {/* التقييم */}
               <div className="absolute top-3 left-3 flex items-center gap-1 rounded-full bg-black/70 backdrop-blur-md px-2.5 py-1 text-xs font-semibold text-white z-10">
                 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                 <span>{Number(item.rating || 0).toFixed(1)}</span>
               </div>
               
-              {/* زر المفضلة */}
               <button
                 onClick={handleToggleFavorite}
                 className="absolute top-12 right-3 h-8 w-8 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-rose-500 shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 z-10 opacity-0 group-hover:opacity-100"
@@ -299,7 +302,6 @@ export const ListingCard = memo(function ListingCard({
                 <Heart className={`h-4 w-4 transition-colors ${fav ? "fill-rose-500 text-rose-500" : "text-rose-500"}`} />
               </button>
 
-              {/* شارة المتجر */}
               {(storeCover || storeName) && (
                 <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 bg-gradient-to-r from-black/80 via-black/70 to-[#1b433e]/80 backdrop-blur-md p-1.5 pe-3.5 rounded-full border border-white/20 shadow-xl max-w-[210px] group-hover:border-[#3a8a82] transition-colors">
                   <div className="h-7 w-7 rounded-full border border-white/40 shadow-inner overflow-hidden bg-white flex-shrink-0 grid place-items-center">
@@ -340,7 +342,6 @@ export const ListingCard = memo(function ListingCard({
                 </h3>
               </div>
               
-              {/* ✅ عرض التركيبات في وضع Grid */}
               {renderVariations(3)}
               
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
@@ -348,16 +349,18 @@ export const ListingCard = memo(function ListingCard({
                   {renderPrice()}
                 </div>
                 
-                {/* ✅ زر الإضافة مع دعم التركيبات */}
                 {hasVariations ? (
-                  <Link to="/listing/$id" params={{ id: item.id }}>
-                    <Button
-                      size="icon"
-                      className="h-10 w-10 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white shadow-md shadow-indigo-500/30 transition-all duration-300 hover:scale-105 shrink-0"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                  <Button
+                    size="icon"
+                    className="h-10 w-10 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white shadow-md shadow-indigo-500/30 transition-all duration-300 hover:scale-105 shrink-0"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigate({ to: "/listing/$id", params: { id: item.id } });
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
                 ) : (
                   <Button
                     size="icon"
@@ -377,9 +380,6 @@ export const ListingCard = memo(function ListingCard({
     );
   }
 
-  // ============================================================
-  // ✅ عرض List (قائمة)
-  // ============================================================
   return (
     <>
       <div className={cn(
@@ -408,7 +408,6 @@ export const ListingCard = memo(function ListingCard({
               <Heart className={`h-4 w-4 transition-colors ${fav ? "fill-rose-500 text-rose-500" : "text-rose-500"}`} />
             </button>
             
-            {/* شارة المتجر */}
             {(storeCover || storeName) && (
               <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 bg-gradient-to-r from-black/80 via-black/70 to-[#1b433e]/80 backdrop-blur-md p-1.5 pe-3.5 rounded-full border border-white/20 shadow-xl max-w-[210px] group-hover:border-[#3a8a82] transition-colors">
                 <div className="h-7 w-7 rounded-full border border-white/40 shadow-inner overflow-hidden bg-white flex-shrink-0 grid place-items-center">
@@ -456,7 +455,6 @@ export const ListingCard = memo(function ListingCard({
               </h3>
             </div>
             
-            {/* ✅ عرض التركيبات في وضع List */}
             {renderVariations(4)}
             
             <div className="mt-2 flex flex-wrap items-end justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -464,7 +462,6 @@ export const ListingCard = memo(function ListingCard({
                 {renderPrice()}
               </div>
               
-              {/* ✅ زر الإضافة مع دعم التركيبات */}
               {hasVariations ? (
                 <Link to="/listing/$id" params={{ id: item.id }}>
                   <Button
@@ -492,9 +489,6 @@ export const ListingCard = memo(function ListingCard({
     </>
   );
 
-  // ============================================================
-  // ✅ مودال تعارض المتجر
-  // ============================================================
   function StoreConflictModal() {
     return (
       <Dialog open={showStoreConflictDialog} onOpenChange={setShowStoreConflictDialog}>
@@ -560,7 +554,6 @@ export const ListingCard = memo(function ListingCard({
   }
 });
 
-// أنماط التوهج الخاصة بالعروض
 const styleTag = typeof document !== 'undefined' ? document.createElement('style') : null;
 if (styleTag) {
   styleTag.innerHTML = `

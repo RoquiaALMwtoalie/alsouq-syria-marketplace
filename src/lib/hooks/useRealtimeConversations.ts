@@ -1,6 +1,6 @@
 // src/lib/hooks/useRealtimeConversations.ts
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useConversationStore } from "@/lib/stores/conversationStore";
@@ -19,90 +19,45 @@ const QUERY_KEYS = {
 let notificationSound: HTMLAudioElement | null = null;
 let soundEnabled = true;
 
-// ✅ محاولة تحميل الصوت من عدة مصادر
 const getNotificationSound = (): HTMLAudioElement => {
   if (notificationSound) return notificationSound;
   
-  // ✅ محاولة استخدام الملف المحلي أولاً
   try {
     notificationSound = new Audio("/notification.mp3");
     notificationSound.volume = 0.3;
     notificationSound.load();
   } catch {
-    // ✅ إذا فشل، استخدم رابط خارجي
     try {
       notificationSound = new Audio("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3");
       notificationSound.volume = 0.3;
       notificationSound.load();
     } catch {
-      // ✅ إذا فشل كل شيء، استخدم Web Audio API
-      try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        oscillator.frequency.value = 800;
-        oscillator.type = 'sine';
-        gainNode.gain.value = 0.3;
-        
-        // تشغيل نغمة قصيرة
-        const audioBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.15, audioContext.sampleRate);
-        const data = audioBuffer.getChannelData(0);
-        for (let i = 0; i < data.length; i++) {
-          data[i] = Math.sin(i * 0.1) * 0.5;
-        }
-        
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContext.destination);
-        notificationSound = {
-          play: () => {
-            source.start(0);
-            return Promise.resolve();
-          },
-          pause: () => {},
-          currentTime: 0,
-          volume: 0.3,
-        } as HTMLAudioElement;
-      } catch {
-        // ✅ آخر حل: كائن فارغ
-        notificationSound = {
-          play: () => Promise.resolve(),
-          pause: () => {},
-          currentTime: 0,
-          volume: 0.3,
-        } as HTMLAudioElement;
-      }
+      notificationSound = {
+        play: () => Promise.resolve(),
+        pause: () => {},
+        currentTime: 0,
+        volume: 0.3,
+      } as HTMLAudioElement;
     }
   }
-  
   return notificationSound;
 };
 
-// ====== تشغيل الصوت ======
 const playNotificationSound = () => {
   if (!soundEnabled) return;
-  
   try {
     const sound = getNotificationSound();
     if (sound) {
       sound.currentTime = 0;
-      sound.play().catch(() => {
-        // تجاهل الأخطاء
-      });
+      sound.play().catch(() => {});
     }
-  } catch (error) {
-    // تجاهل الأخطاء
-  }
+  } catch {}
 };
 
-// ====== تفعيل/تعطيل الصوت ======
 export const toggleSound = (enabled: boolean) => {
   soundEnabled = enabled;
 };
 
-// ====== إشعار المتصفح (Browser Notification) ======
 const sendBrowserNotification = (title: string, body: string, icon?: string) => {
   if (!('Notification' in window) || Notification.permission !== 'granted') {
     return;
@@ -119,14 +74,11 @@ const sendBrowserNotification = (title: string, body: string, icon?: string) => 
       silent: false,
     });
 
-    // إغلاق تلقائي بعد 7 ثواني
     setTimeout(() => notification.close(), 7000);
 
-    // عند النقر على الإشعار
     notification.onclick = () => {
       window.focus();
       notification.close();
-      // فتح المحادثة
       const match = body.match(/\/messages\/([^?]+)/);
       if (match) {
         window.location.href = `/messages/${match[1]}`;
@@ -139,46 +91,33 @@ const sendBrowserNotification = (title: string, body: string, icon?: string) => 
   }
 };
 
-// ====== طلب إذن الإشعارات ======
 export const requestNotificationPermission = async (): Promise<boolean> => {
-  if (!('Notification' in window)) {
-    console.log('This browser does not support notifications');
-    return false;
-  }
-
-  if (Notification.permission === 'granted') {
-    return true;
-  }
-
-  if (Notification.permission === 'denied') {
-    console.log('Notification permission denied');
-    return false;
-  }
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
 
   try {
     const result = await Notification.requestPermission();
     return result === 'granted';
   } catch (error) {
-    console.error('Error requesting notification permission:', error);
     return false;
   }
 };
 
-// ====== الـ Hook الرئيسي ======
+// ============================================================
+// ====== الـ Hook الرئيسي (مُحسّن لمنع الـ Re-renders اللانهائية)
+// ============================================================
 export function useRealtimeConversations(userId: string | undefined) {
   const queryClient = useQueryClient();
   const app = useApp();
   
-  // ====== Store ======
-  const {
-    addMessage,
-    markAsRead: markAsReadInStore,
-    setTyping,
-    updateConversation,
-    setConversations,
-  } = useConversationStore();
+  // استخدام الـ Refs لتثبيت قيم اللغات والحالات لمنع إعادة تهيئة القنوات
+  const langRef = useRef(app.lang);
+  useEffect(() => {
+    langRef.current = app.lang;
+  }, [app.lang]);
 
-  // ====== Refs لتتبع القنوات ======
+  // Refs لتتبع القنوات وحمايتها من التكرار
   const channelsRef = useRef<{
     messages?: any;
     conversations?: any;
@@ -186,8 +125,7 @@ export function useRealtimeConversations(userId: string | undefined) {
     typing?: any;
   }>({});
 
-  // ====== تنظيف القنوات ======
-  const cleanupChannels = () => {
+  const cleanupChannels = useCallback(() => {
     Object.values(channelsRef.current).forEach((channel) => {
       if (channel) {
         try {
@@ -196,12 +134,11 @@ export function useRealtimeConversations(userId: string | undefined) {
       }
     });
     channelsRef.current = {};
-  };
+  }, []);
 
-  // ====== طلب إذن الإشعارات عند التحميل ======
+  // طلب إذن الإشعارات مرة واحدة عند التحميل
   useEffect(() => {
     if (userId) {
-      // طلب إذن الإشعارات بعد 5 ثواني من التحميل
       const timer = setTimeout(() => {
         requestNotificationPermission();
       }, 5000);
@@ -209,17 +146,21 @@ export function useRealtimeConversations(userId: string | undefined) {
     }
   }, [userId]);
 
+  // الاشتراك في قنوات الـ Realtime بناءً على الـ userId فقط
   useEffect(() => {
     if (!userId) {
       cleanupChannels();
       return;
     }
 
+    // إذا كانت القنوات مفعلة مسبقاً لنفس المستخدم، لا داعي لإعادة إنشائها
+    if (channelsRef.current.messages) {
+      return;
+    }
+
     console.log("🔄 Setting up Realtime channels for user:", userId);
 
-    // ============================================================
     // 1️⃣ قناة الرسائل الجديدة
-    // ============================================================
     const messagesChannel = supabase
       .channel(`messages-${userId}`)
       .on(
@@ -234,7 +175,6 @@ export function useRealtimeConversations(userId: string | undefined) {
           const newMessage = payload.new as any;
           console.log("📩 New message received:", newMessage);
 
-          // ✅ 1. تحديث الـ Cache
           queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.messages(newMessage.conversation_id),
           });
@@ -245,32 +185,28 @@ export function useRealtimeConversations(userId: string | undefined) {
             queryKey: QUERY_KEYS.unreadCount(userId),
           });
 
-          // ✅ 2. تحديث الـ Store
-          addMessage(newMessage.conversation_id, newMessage);
+          const store = useConversationStore.getState();
+          store.addMessage(newMessage.conversation_id, newMessage);
 
-          // ✅ 3. تحديث آخر رسالة في المحادثة
-          const conversationUpdate = {
+          store.updateConversation({
             id: newMessage.conversation_id,
             last_message: newMessage.content,
             last_message_at: newMessage.created_at,
             last_message_sender_id: newMessage.sender_id,
-          };
-          updateConversation(conversationUpdate as any);
+          } as any);
 
-          // ✅ 4. إشعار إذا كانت المحادثة غير نشطة
-          const { activeConversationId } = useConversationStore.getState();
-          const isActive = activeConversationId === newMessage.conversation_id;
+          const isActive = store.activeConversationId === newMessage.conversation_id;
           
           if (!isActive) {
-            // ✅ إشعار داخل التطبيق (Toast)
+            const isAr = langRef.current === "ar";
             toast.info(
-              app.lang === "ar" ? "📩 رسالة جديدة" : "📩 New message",
+              isAr ? "📩 رسالة جديدة" : "📩 New message",
               {
-                description: newMessage.content?.substring(0, 60) || (app.lang === "ar" ? "رسالة جديدة" : "New message"),
+                description: newMessage.content?.substring(0, 60) || (isAr ? "رسالة جديدة" : "New message"),
                 duration: 6000,
                 position: "top-right",
                 action: {
-                  label: app.lang === "ar" ? "عرض" : "View",
+                  label: isAr ? "عرض" : "View",
                   onClick: () => {
                     window.location.href = `/messages/${newMessage.sender_id}?cid=${newMessage.conversation_id}`;
                   },
@@ -278,17 +214,14 @@ export function useRealtimeConversations(userId: string | undefined) {
               }
             );
 
-            // ✅ 5. صوت الإشعار
             playNotificationSound();
 
-            // ✅ 6. إشعار المتصفح (Push Notification)
             sendBrowserNotification(
-              app.lang === "ar" ? "📩 رسالة جديدة" : "📩 New Message",
-              newMessage.content?.substring(0, 80) || (app.lang === "ar" ? "لديك رسالة جديدة" : "You have a new message"),
+              isAr ? "📩 رسالة جديدة" : "📩 New Message",
+              newMessage.content?.substring(0, 80) || (isAr ? "لديك رسالة جديدة" : "You have a new message"),
               '/favicon.ico'
             );
 
-            // ✅ 7. تحديث عدد الإشعارات في عنوان الصفحة
             const { conversations } = useConversationStore.getState();
             const unreadCount = conversations.reduce(
               (total, conv) => total + (conv.unread_count_participant1 || 0) + (conv.unread_count_participant2 || 0),
@@ -310,19 +243,14 @@ export function useRealtimeConversations(userId: string | undefined) {
         },
         (payload) => {
           const updated = payload.new as any;
-          console.log("📝 Message updated:", updated);
           queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.messages(updated.conversation_id),
           });
         }
       )
-      .subscribe((status) => {
-        console.log(`📡 Messages channel status: ${status}`);
-      });
+      .subscribe();
 
-    // ============================================================
     // 2️⃣ قناة تحديثات المحادثات
-    // ============================================================
     const conversationsChannel = supabase
       .channel(`conversations-${userId}`)
       .on(
@@ -335,14 +263,9 @@ export function useRealtimeConversations(userId: string | undefined) {
         },
         (payload) => {
           const updated = payload.new as any;
-          console.log("📋 Conversation updated:", updated);
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.conversations(userId),
-          });
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.unreadCount(userId),
-          });
-          updateConversation(updated);
+          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
+          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.unreadCount(userId) });
+          useConversationStore.getState().updateConversation(updated);
         }
       )
       .on(
@@ -355,23 +278,14 @@ export function useRealtimeConversations(userId: string | undefined) {
         },
         (payload) => {
           const updated = payload.new as any;
-          console.log("📋 Conversation updated (participant2):", updated);
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.conversations(userId),
-          });
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.unreadCount(userId),
-          });
-          updateConversation(updated);
+          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
+          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.unreadCount(userId) });
+          useConversationStore.getState().updateConversation(updated);
         }
       )
-      .subscribe((status) => {
-        console.log(`📡 Conversations channel status: ${status}`);
-      });
+      .subscribe();
 
-    // ============================================================
     // 3️⃣ قناة حالة المستخدمين (Online/Offline)
-    // ============================================================
     const presenceChannel = supabase
       .channel(`presence-${userId}`)
       .on(
@@ -383,35 +297,22 @@ export function useRealtimeConversations(userId: string | undefined) {
         },
         (payload) => {
           const updated = payload.new as any;
-          console.log("👤 User status updated:", updated.id, updated.is_online);
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.onlineStatus(updated.id),
-          });
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.conversations(userId),
-          });
+          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.onlineStatus(updated.id) });
+          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
         }
       )
-      .subscribe((status) => {
-        console.log(`📡 Presence channel status: ${status}`);
-      });
+      .subscribe();
 
-    // ============================================================
     // 4️⃣ قناة مؤشر الكتابة (Typing)
-    // ============================================================
     const typingChannel = supabase
       .channel(`typing-${userId}`)
       .on("broadcast", { event: "typing" }, (payload) => {
         const { userId: typingUserId, conversationId, isTyping } = payload.payload;
         if (typingUserId === userId) return;
-        console.log(`✏️ Typing: ${typingUserId} in ${conversationId}: ${isTyping}`);
-        setTyping(conversationId, typingUserId, isTyping);
+        useConversationStore.getState().setTyping(conversationId, typingUserId, isTyping);
       })
-      .subscribe((status) => {
-        console.log(`📡 Typing channel status: ${status}`);
-      });
+      .subscribe();
 
-    // حفظ القنوات في الـ ref
     channelsRef.current = {
       messages: messagesChannel,
       conversations: conversationsChannel,
@@ -419,35 +320,25 @@ export function useRealtimeConversations(userId: string | undefined) {
       typing: typingChannel,
     };
 
-    // ============================================================
-    // 5️⃣ تحديث عنوان الصفحة بعدد الإشعارات
-    // ============================================================
+    // 5️⃣ تحديث عنوان الصفحة ديناميكياً
     const updateTitle = () => {
       const { conversations } = useConversationStore.getState();
       const unreadCount = conversations.reduce(
         (total, conv) => total + (conv.unread_count_participant1 || 0) + (conv.unread_count_participant2 || 0),
         0
       );
-      
-      if (unreadCount > 0) {
-        document.title = `(${unreadCount}) السوق اليك`;
-      } else {
-        document.title = "السوق اليك";
-      }
+      document.title = unreadCount > 0 ? `(${unreadCount}) السوق اليك` : "السوق اليك";
     };
 
-    const unsubscribe = useConversationStore.subscribe(updateTitle);
+    const unsubscribeStore = useConversationStore.subscribe(updateTitle);
 
-    // ============================================================
-    // 6️⃣ التنظيف عند إلغاء التثبيت
-    // ============================================================
     return () => {
       console.log("🧹 Cleaning up Realtime channels");
       cleanupChannels();
-      unsubscribe();
+      unsubscribeStore();
       document.title = "السوق اليك";
     };
-  }, [userId, queryClient, addMessage, updateConversation, setTyping, app.lang]);
+  }, [userId, queryClient, cleanupChannels]);
 }
 
 // ============================================================
@@ -459,7 +350,7 @@ export function useSendTypingIndicator(
 ) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const sendTyping = (isTyping: boolean) => {
+  return useCallback((isTyping: boolean) => {
     if (!conversationId || !userId) return;
 
     if (timeoutRef.current) {
@@ -467,29 +358,19 @@ export function useSendTypingIndicator(
       timeoutRef.current = null;
     }
 
-    // ✅ استخدام send() مع shouldRetry لتجنب التحذير
     try {
       supabase.channel(`typing-${userId}`).send({
         type: "broadcast",
         event: "typing",
-        payload: {
-          userId,
-          conversationId,
-          isTyping,
-        },
+        payload: { userId, conversationId, isTyping },
         shouldRetry: true,
       });
-    } catch (error) {
-      // إذا فشل send، جرب httpSend
+    } catch {
       try {
         supabase.channel(`typing-${userId}`).httpSend({
           type: "broadcast",
           event: "typing",
-          payload: {
-            userId,
-            conversationId,
-            isTyping,
-          },
+          payload: { userId, conversationId, isTyping },
         });
       } catch {}
     }
@@ -500,20 +381,14 @@ export function useSendTypingIndicator(
           supabase.channel(`typing-${userId}`).send({
             type: "broadcast",
             event: "typing",
-            payload: {
-              userId,
-              conversationId,
-              isTyping: false,
-            },
+            payload: { userId, conversationId, isTyping: false },
             shouldRetry: true,
           });
         } catch {}
         timeoutRef.current = null;
       }, 3000);
     }
-  };
-
-  return sendTyping;
+  }, [conversationId, userId]);
 }
 
 // ============================================================
@@ -522,7 +397,7 @@ export function useSendTypingIndicator(
 export function useSendReadReceipt() {
   const queryClient = useQueryClient();
 
-  const sendReadReceipt = async (conversationId: string, userId: string) => {
+  return useCallback(async (conversationId: string, userId: string) => {
     try {
       await supabase
         .from("messages")
@@ -531,22 +406,14 @@ export function useSendReadReceipt() {
         .eq("receiver_id", userId)
         .is("read_at", null);
 
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.messages(conversationId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.conversations(userId),
-      });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.messages(conversationId) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
 
-      const markAsReadInStore = useConversationStore.getState().markAsRead;
-      markAsReadInStore(conversationId);
-
+      useConversationStore.getState().markAsRead(conversationId);
     } catch (error) {
       console.error("Error sending read receipt:", error);
     }
-  };
-
-  return sendReadReceipt;
+  }, [queryClient]);
 }
 
 // ============================================================
@@ -554,14 +421,14 @@ export function useSendReadReceipt() {
 // ============================================================
 export function useNotificationSound() {
   const [isEnabled, setIsEnabled] = useState(soundEnabled);
+  const app = useApp();
 
-  const toggleSound = () => {
+  const toggleSoundState = () => {
     const newState = !isEnabled;
     setIsEnabled(newState);
     soundEnabled = newState;
     
     if (newState) {
-      // تشغيل صوت تجريبي
       try {
         const sound = getNotificationSound();
         if (sound) {
@@ -581,9 +448,7 @@ export function useNotificationSound() {
     }
   };
 
-  const app = useApp();
-
-  return { isEnabled, toggleSound, playSound };
+  return { isEnabled, toggleSound: toggleSoundState, playSound };
 }
 
 // ============================================================
@@ -595,11 +460,12 @@ export function usePushNotifications() {
   const app = useApp();
 
   useEffect(() => {
-    setIsSupported("Notification" in window);
-    if (isSupported) {
+    const supported = "Notification" in window;
+    setIsSupported(supported);
+    if (supported) {
       setPermission(Notification.permission);
     }
-  }, [isSupported]);
+  }, []);
 
   const requestPermission = async () => {
     if (!isSupported) {
@@ -619,7 +485,6 @@ export function usePushNotifications() {
         return false;
       }
     } catch (error) {
-      console.error("Error requesting notification permission:", error);
       return false;
     }
   };
@@ -634,20 +499,10 @@ export function usePushNotifications() {
         ...options,
       });
 
-      setTimeout(() => {
-        notification.close();
-      }, 7000);
-
+      setTimeout(() => notification.close(), 7000);
       return notification;
-    } catch (error) {
-      console.error("Error sending notification:", error);
-    }
+    } catch (error) {}
   };
 
-  return {
-    permission,
-    isSupported,
-    requestPermission,
-    sendNotification,
-  };
+  return { permission, isSupported, requestPermission, sendNotification };
 }

@@ -4,9 +4,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { 
   ShoppingBag, Trash2, Plus, Minus, ArrowRight, Store, Shield, 
   Truck, Clock, Award, Sparkles, Tag, X, Loader2, Gift, CheckCircle2,
-  MapPin, Edit2, PlusCircle, Navigation, Home, Building2
+  MapPin, Edit2, PlusCircle, Navigation, Home, Building2, AlertCircle
 } from "lucide-react";
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useApp, formatPrice } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateOrder } from "@/lib/queries";
@@ -26,12 +26,24 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/cart")({
   component: CartPage,
@@ -65,10 +77,22 @@ function CartPage() {
   const [newLocation, setNewLocation] = useState<PickedLocation | null>(null);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   
+  // ✅ ✅ ✅ State لإضافة عنوان جديد (إجباري)
+  const [newAddressLabel, setNewAddressLabel] = useState("");
+  const [newAddressDetails, setNewAddressDetails] = useState("");
+  
   // ✅ State للتوصيل
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryCompany, setDeliveryCompany] = useState<any>(null);
   const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(false);
+
+  // ✅ State لديالوغ تفريغ السلة
+  const [showClearCartDialog, setShowClearCartDialog] = useState(false);
+
+  // ✅ ✅ ✅ استخدام useRef لمنع إعادة التحميل غير المحدودة
+  const isFirstRender = useRef(true);
+  const deliveryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previousCartState = useRef<string>("");
 
   // ✅ جلب السلة
   const { 
@@ -110,7 +134,7 @@ function CartPage() {
     fetchUserAddresses();
   }, [app.user]);
 
-  // ✅✅✅ تعريف items (قبل useEffect حق التوصيل)
+  // ✅✅✅ تعريف items (محسن مع تتبع التغييرات)
   const items = useMemo(() => {
     if (!cart?.items) return [];
     
@@ -129,61 +153,128 @@ function CartPage() {
     });
   }, [cart?.items]);
 
-  // ✅✅✅ حساب التوصيل (بعد تعريف items)
+  // ✅ ✅ ✅ استخراج اسم المتجر وصورته من أول منتج في السلة
+  const storeInfo = useMemo(() => {
+    if (items.length === 0) {
+      return { 
+        name: app.lang === "ar" ? "متجر" : "Store",
+        logo: null,
+        cover: null
+      };
+    }
+    
+    const firstItem = items[0];
+    const listing = firstItem.listing || firstItem;
+    
+    const name = 
+      (listing as any)?.profile?.store_name ||    
+      (listing as any)?.profiles?.store_name ||   
+      (listing as any)?.owner?.store_name || 
+      (listing as any)?.profile?.full_name || 
+      (listing as any)?.profiles?.full_name || 
+      (listing as any)?.owner?.full_name || 
+      "متجر";
+    
+    const logo = 
+      (listing as any)?.profile?.store_logo_url || 
+      (listing as any)?.profiles?.store_logo_url || 
+      (listing as any)?.owner?.store_logo_url || 
+      (listing as any)?.profile?.avatar_url || 
+      (listing as any)?.profiles?.avatar_url || 
+      (listing as any)?.owner?.avatar_url || 
+      null;
+    
+    const cover = 
+      (listing as any)?.profile?.store_cover_url || 
+      (listing as any)?.profiles?.store_cover_url || 
+      (listing as any)?.owner?.store_cover_url || 
+      null;
+    
+    return {
+      name: name || (app.lang === "ar" ? "متجر" : "Store"),
+      logo: logo,
+      cover: cover
+    };
+  }, [items, app.lang]);
+
+  // ✅✅✅ حساب التوصيل (محسن جداً - بدون حلقات لا نهائية)
   useEffect(() => {
-    const calculateDelivery = async () => {
-      if (!selectedAddress || !cart?.store?.id) {
-        setDeliveryFee(0);
-        return;
-      }
-      
-      setIsCalculatingDelivery(true);
-      try {
-        const { data: companies } = await supabase
-          .from("delivery_companies")
-          .select("*")
-          .eq("is_active", true)
-          .limit(1);
-        
-        const company = companies?.[0];
-        if (!company) {
+    // ✅ منع التنفيذ في أول ريندر
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    // ✅ إلغاء الـ timeout السابق
+    if (deliveryTimeoutRef.current) {
+      clearTimeout(deliveryTimeoutRef.current);
+    }
+
+    // ✅ تأخير الحساب لتجنب التحديثات المتكررة
+    deliveryTimeoutRef.current = setTimeout(() => {
+      const calculateDelivery = async () => {
+        if (!selectedAddress || !cart?.store?.id) {
           setDeliveryFee(0);
-          setDeliveryCompany(null);
           return;
         }
         
-        let distance = 5;
-        if (selectedAddress.lat && selectedAddress.lng) {
-          distance = 5 + Math.random() * 10;
+        setIsCalculatingDelivery(true);
+        try {
+          const { data: companies } = await supabase
+            .from("delivery_companies")
+            .select("*")
+            .eq("is_active", true)
+            .limit(1);
+          
+          const company = companies?.[0];
+          if (!company) {
+            setDeliveryFee(0);
+            setDeliveryCompany(null);
+            return;
+          }
+          
+          let distance = 5;
+          if (selectedAddress.lat && selectedAddress.lng) {
+            distance = 5 + Math.random() * 10;
+          }
+          
+          let fee = (company.base_price || 0) + (distance * (company.price_per_km || 0));
+          fee = Math.max(fee, company.min_delivery_fee || 0);
+          fee = Math.min(fee, company.max_delivery_fee || 999999);
+          fee = Math.round(fee);
+          
+          const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+          const freeThreshold = company.free_delivery_threshold || 0;
+          
+          if (freeThreshold > 0 && subtotal >= freeThreshold) {
+            fee = 0;
+          }
+          
+          setDeliveryFee(fee);
+          setDeliveryCompany(company);
+          
+        } catch (error) {
+          console.error("❌ Error calculating delivery:", error);
+          setDeliveryFee(0);
+        } finally {
+          setIsCalculatingDelivery(false);
         }
-        
-        let fee = (company.base_price || 0) + (distance * (company.price_per_km || 0));
-        fee = Math.max(fee, company.min_delivery_fee || 0);
-        fee = Math.min(fee, company.max_delivery_fee || 999999);
-        fee = Math.round(fee);
-        
-        const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-        const freeThreshold = company.free_delivery_threshold || 0;
-        
-        if (freeThreshold > 0 && subtotal >= freeThreshold) {
-          fee = 0;
-        }
-        
-        setDeliveryFee(fee);
-        setDeliveryCompany(company);
-        
-      } catch (error) {
-        console.error("❌ Error calculating delivery:", error);
-        setDeliveryFee(0);
-      } finally {
-        setIsCalculatingDelivery(false);
+      };
+      
+      calculateDelivery();
+    }, 300);
+
+    // ✅ تنظيف الـ timeout عند إلغاء الـ effect
+    return () => {
+      if (deliveryTimeoutRef.current) {
+        clearTimeout(deliveryTimeoutRef.current);
       }
     };
     
-    calculateDelivery();
-  }, [selectedAddress, cart?.store?.id, items]);
+    // ✅ ✅ ✅ إزالة items من dependencies
+  }, [selectedAddress, cart?.store?.id]);
 
-  // ✅✅✅ حساب الإجماليات (بعد items و deliveryFee)
+  // ✅✅✅ حساب الإجماليات (محسن)
   const totals = useMemo(() => {
     const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
     const total = subtotal + deliveryFee - promoDiscount;
@@ -204,25 +295,39 @@ function CartPage() {
       setSelectedAddressId(addressId);
       setSelectedAddress(address);
       
-      // ✅ إلغاء كود الخصم عند تغيير العنوان (قد يتغير التوصيل)
       if (promoApplied) {
         removePromoCode();
       }
     }
   }, [userAddresses, promoApplied]);
 
-  // ✅ إضافة عنوان جديد
+  // ✅ ✅ ✅ إضافة عنوان جديد (مع التحقق من الإجبارية)
   const handleAddAddress = useCallback(async () => {
-    if (!app.user || !newLocation) return;
+    if (!app.user || !newLocation) {
+      toast.error(app.lang === "ar" ? "⚠️ الرجاء اختيار الموقع على الخريطة" : "⚠️ Please select a location on the map");
+      return;
+    }
+    
+    // ✅ ✅ ✅ التحقق من اسم العنوان (إجباري)
+    if (!newAddressLabel.trim()) {
+      toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال اسم للعنوان (مثال: المنزل، العمل)" : "⚠️ Please enter a label for the address (e.g. Home, Work)");
+      return;
+    }
+    
+    // ✅ ✅ ✅ التحقق من التفاصيل الإضافية (إجباري)
+    if (!newAddressDetails.trim()) {
+      toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال تفاصيل إضافية للعنوان (رقم الطابق، رقم الشقة، معلم قريب)" : "⚠️ Please enter additional details (floor, apartment, nearby landmark)");
+      return;
+    }
     
     try {
       const { error } = await supabase
         .from("user_addresses")
         .insert({
           user_id: app.user.id,
-          label: newLocation.label || (app.lang === "ar" ? "عنوان جديد" : "New Address"),
+          label: newAddressLabel.trim(),
           address_text: newLocation.address,
-          details: newLocation.details || "",
+          details: newAddressDetails.trim(),
           lat: newLocation.lat || 0,
           lng: newLocation.lng || 0,
           is_default: userAddresses.length === 0,
@@ -232,7 +337,6 @@ function CartPage() {
       
       toast.success(app.lang === "ar" ? "✅ تم إضافة العنوان بنجاح" : "✅ Address added successfully");
       
-      // ✅ إعادة تحميل العناوين
       const { data } = await supabase
         .from("user_addresses")
         .select("*")
@@ -242,8 +346,9 @@ function CartPage() {
       setUserAddresses(data || []);
       setShowAddAddressDialog(false);
       setNewLocation(null);
+      setNewAddressLabel("");
+      setNewAddressDetails("");
       
-      // ✅ اختيار العنوان الجديد
       if (data && data.length > 0) {
         setSelectedAddressId(data[0].id);
         setSelectedAddress(data[0]);
@@ -253,7 +358,7 @@ function CartPage() {
       console.error("❌ Error adding address:", error);
       toast.error(app.lang === "ar" ? "❌ فشل إضافة العنوان" : "❌ Failed to add address");
     }
-  }, [app.user, newLocation, userAddresses.length, app.lang]);
+  }, [app.user, newLocation, newAddressLabel, newAddressDetails, userAddresses.length, app.lang]);
 
   // ✅ إزالة كود الخصم
   const removePromoCode = useCallback(() => {
@@ -382,15 +487,21 @@ function CartPage() {
     }
   }, [app.user, updateCartItem, items, promoApplied, removePromoCode, app.lang]);
 
-  // ✅ تفريغ السلة
-  const handleClearCart = useCallback(async () => {
+  // ✅ تفريغ السلة - فتح الديالوغ
+  const handleClearCart = useCallback(() => {
     if (!app.user) return;
-    if (!confirm(app.lang === "ar" ? "هل أنت متأكد من تفريغ السلة؟" : "Are you sure you want to clear your cart?")) return;
+    setShowClearCartDialog(true);
+  }, [app.user]);
+
+  // ✅ تأكيد تفريغ السلة
+  const confirmClearCart = useCallback(async () => {
+    if (!app.user) return;
     
     try {
       await clearCart.mutateAsync({ userId: app.user.id });
       if (promoApplied) removePromoCode();
       toast.success(app.lang === "ar" ? "🧹 تم تفريغ السلة" : "🧹 Cart cleared");
+      setShowClearCartDialog(false);
     } catch (error) {
       console.error("❌ Error clearing cart:", error);
       toast.error(app.lang === "ar" ? "❌ حدث خطأ" : "❌ An error occurred");
@@ -398,84 +509,133 @@ function CartPage() {
   }, [app.user, clearCart, promoApplied, removePromoCode, app.lang]);
 
   // ✅ إتمام الشراء
-  const checkout = useCallback(async () => {
-    if (!app.user) {
-      toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
-      navigate({ to: "/auth/$mode", params: { mode: "login" } });
-      return;
-    }
+// src/routes/cart.tsx - استبدل دالة checkout بهذه
 
-    if (items.length === 0) {
-      toast.error(app.lang === "ar" ? "السلة فارغة" : "Cart is empty");
-      return;
-    }
+const checkout = useCallback(async () => {
+  if (!app.user) {
+    toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
+    navigate({ to: "/auth/$mode", params: { mode: "login" } });
+    return;
+  }
 
-    if (!selectedAddress) {
-      toast.error(app.lang === "ar" ? "يرجى اختيار عنوان التوصيل" : "Please select a delivery address");
-      return;
-    }
+  if (items.length === 0) {
+    toast.error(app.lang === "ar" ? "السلة فارغة" : "Cart is empty");
+    return;
+  }
 
-    try {
-      for (const item of items) {
-        const listing = item.listing || item;
-        const sellerId = listing.owner_id || item.listing_id;
-        const governorateId = listing.governorate_id || null;
-        
-        // 1. إنشاء الطلب
-        const order = await createOrder.mutateAsync({
-          buyer_id: app.user.id,
-          seller_id: sellerId,
-          listing_id: item.listing_id,
-          total: item.subtotal || (Number(item.price) * item.quantity),
-          quantity: item.quantity,
-          governorate_id: governorateId,
+  if (!selectedAddress) {
+    toast.error(app.lang === "ar" ? "يرجى اختيار عنوان التوصيل" : "Please select a delivery address");
+    return;
+  }
+
+  try {
+    // ✅ ✅ ✅ تجميع المنتجات حسب البائع (seller_id)
+    const groupedBySeller = items.reduce((acc: any, item: any) => {
+      const listing = item.listing || item;
+      const sellerId = listing.owner_id || item.listing_id;
+      if (!acc[sellerId]) acc[sellerId] = [];
+      acc[sellerId].push(item);
+      return acc;
+    }, {});
+
+    // ✅ ✅ ✅ لكل بائع، ننشئ طلب واحد مع order_items
+    for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
+      const itemsList = sellerItems as any[];
+      
+      // حساب الإجمالي لهذه المجموعة
+      const total = itemsList.reduce((sum, item) => {
+        const price = Number(item.price);
+        const quantity = Number(item.quantity);
+        return sum + (price * quantity);
+      }, 0);
+
+      // ✅ جلب governorate_id من أول منتج
+      const firstItem = itemsList[0];
+      const firstListing = firstItem.listing || firstItem;
+      const governorateId = firstListing.governorate_id || null;
+
+      // ✅ 1. إنشاء الطلب الرئيسي
+      const orderData: any = {
+        buyer_id: app.user.id,
+        seller_id: sellerId,
+        total: total,
+        notes: `طلب من ${storeInfo.name}`,
+        governorate_id: governorateId,
+        delivery_address: selectedAddress.address_text,
+        delivery_lat: selectedAddress.lat || 0,
+        delivery_lng: selectedAddress.lng || 0,
+        buyer_name: app.user.full_name || app.user.email || 'عميل',
+        buyer_phone: app.user.phone || '',
+        status: 'pending',
+        currency: itemsList[0]?.currency || 'SYP',
+        created_at: new Date().toISOString(),
+      };
+
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert(orderData)
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // ✅ 2. إضافة المنتجات كـ order_items
+      const orderItems = itemsList.map((item: any) => ({
+        order_id: order.id,
+        listing_id: item.listing_id,
+        quantity: item.quantity,
+        price: Number(item.price),
+        currency: item.currency || 'SYP',
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      // ✅ 3. إرسال إشعار للبائع (مرة واحدة فقط لكل طلب)
+      await supabase
+        .from("notifications")
+        .insert({
+          user_id: sellerId,
+          type: "new_order",
+          title_ar: "📦 طلب جديد",
+          body_ar: `لديك طلب جديد من ${app.user?.full_name || 'عميل'} (${itemsList.length} منتجات)`,
+          title_en: "📦 New Order",
+          body_en: `You have a new order from ${app.user?.full_name || 'Customer'} (${itemsList.length} products)`,
+          link_url: `/orders/${order.id}`,
+          metadata: {
+            order_id: order.id,
+            buyer_id: app.user.id,
+            total: total,
+            items_count: itemsList.length,
+          }
         });
-
-        // 2. إرسال إشعار للمتجر (البائع)
-        if (sellerId) {
-          await supabase
-            .from("notifications")
-            .insert({
-              user_id: sellerId,
-              type: "new_order",
-              title_ar: "📦 طلب جديد",
-              body_ar: `لديك طلب جديد من ${app.user?.full_name || 'عميل'} على منتج "${listing.title_ar}"`,
-              title_en: "📦 New Order",
-              body_en: `You have a new order from ${app.user?.full_name || 'Customer'} for "${listing.title_en || listing.title_ar}"`,
-              link_url: `/orders/${order.id}`,
-              metadata: {
-                order_id: order.id,
-                buyer_id: app.user.id,
-                listing_id: item.listing_id,
-                total: item.subtotal,
-                quantity: item.quantity,
-              }
-            });
-        }
-      }
-
-      await clearCart.mutateAsync({ userId: app.user.id });
-      if (promoApplied) removePromoCode();
-
-      toast.success(
-        app.lang === "ar" 
-          ? "✅ تم إرسال طلبك بنجاح! سنتواصل معك قريباً." 
-          : "✅ Order placed successfully! We'll contact you soon.",
-        { duration: 5000 }
-      );
-
-      navigate({ to: "/orders" });
-
-    } catch (error: any) {
-      console.error("❌ Checkout error:", error);
-      toast.error(
-        app.lang === "ar" 
-          ? `❌ حدث خطأ أثناء إتمام الطلب: ${error.message || 'يرجى المحاولة مرة أخرى'}`
-          : `❌ An error occurred during checkout: ${error.message || 'Please try again'}`
-      );
     }
-  }, [app.user, items, createOrder, clearCart, promoApplied, removePromoCode, navigate, app.lang, selectedAddress]);
-  
+
+    // ✅ 4. تفريغ السلة
+    await clearCart.mutateAsync({ userId: app.user.id });
+    if (promoApplied) removePromoCode();
+
+    toast.success(
+      app.lang === "ar" 
+        ? `✅ تم إرسال طلبك بنجاح! (${Object.keys(groupedBySeller).length} طلب)`
+        : `✅ Orders placed successfully! (${Object.keys(groupedBySeller).length} orders)`,
+      { duration: 5000 }
+    );
+
+    navigate({ to: "/orders" });
+
+  } catch (error: any) {
+    console.error("❌ Checkout error:", error);
+    toast.error(
+      app.lang === "ar" 
+        ? `❌ حدث خطأ أثناء إتمام الطلب: ${error.message || 'يرجى المحاولة مرة أخرى'}`
+        : `❌ An error occurred during checkout: ${error.message || 'Please try again'}`
+    );
+  }
+}, [app.user, items, createOrder, clearCart, promoApplied, removePromoCode, navigate, app.lang, selectedAddress, storeInfo.name]);
   if (isLoading || isLoadingAddresses) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
@@ -489,7 +649,6 @@ function CartPage() {
     );
   }
 
-  // ✅ إذا كانت السلة فارغة
   if (!cart || items.length === 0) {
     return (
       <div className="min-h-[70vh] bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
@@ -522,7 +681,6 @@ function CartPage() {
     );
   }
 
-  // ✅ عرض السلة
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
       <div className="mx-auto max-w-7xl px-4">
@@ -539,11 +697,54 @@ function CartPage() {
                 {totals.itemCount} {app.lang === "ar" ? "منتجات" : "items"}
               </Badge>
             </h1>
-            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-              <Store className="h-4 w-4 text-[#2a655f]" />
-              {cart.store?.store_name || (app.lang === "ar" ? "سلة واحدة من متجر واحد" : "Single store cart")}
-            </p>
+            
+            {/* ✅ عرض اسم المتجر مع اللوغو */}
+            <div className="mt-2 flex items-center gap-3 p-2.5 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10 hover:border-[#2a655f]/30 transition-all duration-300 max-w-md">
+              <div className="h-9 w-9 rounded-lg overflow-hidden border-2 border-[#2a655f]/20 flex-shrink-0 bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a]">
+                {storeInfo.logo ? (
+                  <img 
+                    src={storeInfo.logo} 
+                    alt={storeInfo.name}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '';
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-white font-bold text-sm">
+                    {storeInfo.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-800 dark:text-white truncate">
+                  {storeInfo.name}
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <Shield className="h-3 w-3 text-emerald-500" />
+                  <span className="text-[10px] text-muted-foreground">
+                    {app.lang === "ar" ? "متجر موثوق" : "Trusted Store"}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/30">•</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {items.length} {app.lang === "ar" ? "منتج" : "products"}
+                  </span>
+                </div>
+              </div>
+              <Link to={`/store/${items[0]?.listing?.owner_id || items[0]?.listing_id}`}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 px-3 rounded-lg text-[10px] text-[#2a655f] hover:bg-[#2a655f]/10 hover:text-[#2a655f] hover:scale-105 transition-all duration-300"
+                >
+                  {app.lang === "ar" ? "زيارة" : "Visit"}
+                  <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </Link>
+            </div>
           </div>
+          
           <div className="flex items-center gap-3">
             <Button 
               variant="outline" 
@@ -584,14 +785,14 @@ function CartPage() {
                       {app.lang === "ar" ? "📍 عنوان التوصيل" : "📍 Delivery Address"}
                     </p>
                     {selectedAddress ? (
-                      <p className="font-medium text-sm text-slate-800 dark:text-white line-clamp-1">
+                      <div className="font-medium text-sm text-slate-800 dark:text-white line-clamp-1">
                         {selectedAddress.address_text}
                         {selectedAddress.label && (
                           <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px] ml-2">
                             {selectedAddress.label}
                           </Badge>
                         )}
-                      </p>
+                      </div>
                     ) : (
                       <p className="text-sm text-amber-500 font-medium">
                         {app.lang === "ar" ? "⚠️ لم يتم اختيار عنوان" : "⚠️ No address selected"}
@@ -638,7 +839,7 @@ function CartPage() {
               )}
             </div>
 
-            {/* ✅ قائمة المنتجات - معدلة لدعم التركيبات */}
+            {/* ✅ قائمة المنتجات */}
             {items.map((item: any) => {
               const listing = item.listing || item;
               
@@ -666,7 +867,7 @@ function CartPage() {
                             {app.lang === "ar" ? listing.title_ar : (listing.title_en || listing.title_ar)}
                           </h3>
                           
-                          {/* ✅ عرض التركيبة المختارة - مع دعم variation_combination */}
+                          {/* ✅ عرض التركيبة المختارة */}
                           <div className="flex flex-wrap items-center gap-2 mt-1">
                             {item.variation_combination && Object.keys(item.variation_combination).length > 0 ? (
                               <>
@@ -692,14 +893,16 @@ function CartPage() {
                             )}
                           </div>
                           
-                          {/* ✅ السعر - استخدام سعر العنصر (التركيبة) */}
+                          {/* ✅ السعر - مع سعر المشطوب فقط للعروض */}
                           <div className="mt-2 flex items-center gap-3">
                             <span className="text-xl font-bold text-[#2a655f] dark:text-[#3a8a82]">
                               {formatPrice(Number(item.price || listing.price), app.currency, app.lang)}
                             </span>
-                            <span className="text-xs text-muted-foreground line-through">
-                              {formatPrice(Number(item.price || listing.price) * 1.2, app.currency, app.lang)}
-                            </span>
+                            {listing.is_offer && listing.old_price && (
+                              <span className="text-xs text-muted-foreground line-through">
+                                {formatPrice(Number(listing.old_price), app.currency, app.lang)}
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -924,7 +1127,6 @@ function CartPage() {
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-            {/* ✅ قائمة العناوين */}
             {userAddresses.length > 0 ? (
               <div className="space-y-2">
                 {userAddresses.map((addr: any) => (
@@ -953,14 +1155,15 @@ function CartPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm flex items-center gap-2">
+                        {/* ✅ ✅ ✅ تم تغيير <p> إلى <div> لحل مشكلة الـ Hydration */}
+                        <div className="font-semibold text-sm flex items-center gap-2">
                           {addr.label || (app.lang === "ar" ? "عنوان" : "Address")}
                           {addr.is_default && (
                             <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[9px]">
                               {app.lang === "ar" ? "افتراضي" : "Default"}
                             </Badge>
                           )}
-                        </p>
+                        </div>
                         <p className="text-xs text-muted-foreground line-clamp-1">{addr.address_text}</p>
                         {addr.details && (
                           <p className="text-xs text-muted-foreground/70 line-clamp-1">{addr.details}</p>
@@ -980,7 +1183,6 @@ function CartPage() {
               </div>
             )}
             
-            {/* ✅ زر إضافة عنوان */}
             <Button
               variant="outline"
               onClick={() => {
@@ -1006,10 +1208,17 @@ function CartPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: إضافة عنوان جديد ===== */}
-      <Dialog open={showAddAddressDialog} onOpenChange={setShowAddAddressDialog}>
-        <DialogContent className="rounded-2xl max-w-md border-[#2a655f]/20 shadow-2xl shadow-[#2a655f]/10">
-          <DialogHeader>
+      {/* ===== DIALOG: إضافة عنوان جديد (مصحح مع إجبارية الاسم والتفاصيل) ===== */}
+      <Dialog open={showAddAddressDialog} onOpenChange={(open) => {
+        setShowAddAddressDialog(open);
+        if (!open) {
+          setNewLocation(null);
+          setNewAddressLabel("");
+          setNewAddressDetails("");
+        }
+      }}>
+        <DialogContent className="rounded-2xl max-w-md max-h-[90vh] border-[#2a655f]/20 shadow-2xl shadow-[#2a655f]/10 flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
                 <PlusCircle className="h-5 w-5 text-emerald-500" />
@@ -1027,13 +1236,63 @@ function CartPage() {
             </div>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
+          {/* ✅ ✅ ✅ جسم قابل للتمرير مع حقول إدخال إجبارية */}
+          <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1">
+            
+            {/* ✅ حقل اسم العنوان (إجباري) */}
+            <div>
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1">
+                <Home className="h-4 w-4 text-[#2a655f]" />
+                {app.lang === "ar" ? "اسم العنوان" : "Address Label"}
+                <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                value={newAddressLabel}
+                onChange={(e) => setNewAddressLabel(e.target.value)}
+                placeholder={app.lang === "ar" ? "مثال: المنزل، العمل، المكتب" : "e.g. Home, Work, Office"}
+                className="mt-1.5 h-11 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
+              />
+              {!newAddressLabel.trim() && (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {app.lang === "ar" ? "⚠️ هذا الحقل مطلوب" : "⚠️ This field is required"}
+                </p>
+              )}
+            </div>
+            
+            {/* ✅ الخريطة */}
             <AddressPicker 
               value={newLocation ?? undefined} 
               onChange={setNewLocation} 
               lang={app.lang} 
             />
             
+            {/* ✅ حقل التفاصيل الإضافية (إجباري) */}
+            <div>
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1">
+                <MapPin className="h-4 w-4 text-[#2a655f]" />
+                {app.lang === "ar" ? "تفاصيل إضافية" : "Additional Details"}
+                <span className="text-red-500">*</span>
+                <span className="text-xs text-muted-foreground">({app.lang === "ar" ? "مطلوب" : "Required"})</span>
+              </Label>
+              <Textarea
+                value={newAddressDetails}
+                onChange={(e) => setNewAddressDetails(e.target.value)}
+                placeholder={app.lang === "ar" 
+                  ? "رقم الطابق، رقم الشقة، معلم قريب..." 
+                  : "Floor number, apartment number, nearby landmark..."}
+                rows={2}
+                className="mt-1.5 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20 resize-none"
+              />
+              {!newAddressDetails.trim() && (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {app.lang === "ar" ? "⚠️ هذا الحقل مطلوب" : "⚠️ This field is required"}
+                </p>
+              )}
+            </div>
+            
+            {/* ✅ عرض الموقع المختار */}
             {newLocation && (
               <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
                 <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
@@ -1045,12 +1304,15 @@ function CartPage() {
             )}
           </div>
           
-          <DialogFooter className="gap-3">
+          {/* ✅ ✅ ✅ الأزرار ثابتة في الأسفل */}
+          <DialogFooter className="flex-shrink-0 gap-3 pt-4 border-t border-[#2a655f]/10">
             <Button
               variant="outline"
               onClick={() => {
                 setShowAddAddressDialog(false);
                 setNewLocation(null);
+                setNewAddressLabel("");
+                setNewAddressDetails("");
               }}
               className="rounded-xl border-slate-200/50 dark:border-slate-700/50"
             >
@@ -1058,7 +1320,7 @@ function CartPage() {
             </Button>
             <Button
               onClick={handleAddAddress}
-              disabled={!newLocation}
+              disabled={!newLocation || !newAddressLabel.trim() || !newAddressDetails.trim()}
               className="rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-[1.02]"
             >
               <PlusCircle className="h-4 w-4 mr-2" />
@@ -1067,6 +1329,87 @@ function CartPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ===== DIALOG: تأكيد تفريغ السلة ===== */}
+      <AlertDialog open={showClearCartDialog} onOpenChange={setShowClearCartDialog}>
+        <AlertDialogContent className="rounded-2xl border-[#2a655f]/20 shadow-2xl shadow-[#2a655f]/10 max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center animate-pulse">
+                <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-xl font-bold text-[#2a655f] dark:text-white">
+                  {app.lang === "ar" ? "🗑️ تفريغ السلة" : "🗑️ Clear Cart"}
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-muted-foreground">
+                  {app.lang === "ar" 
+                    ? "هل أنت متأكد من رغبتك في تفريغ سلة التسوق؟ هذا الإجراء لا يمكن التراجع عنه."
+                    : "Are you sure you want to clear your shopping cart? This action cannot be undone."}
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+
+          <div className="my-4 max-h-48 overflow-y-auto space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              {app.lang === "ar" ? `📦 سيتم حذف ${items.length} منتج` : `📦 ${items.length} items will be removed`}
+            </p>
+            {items.slice(0, 5).map((item: any) => {
+              const listing = item.listing || item;
+              return (
+                <div key={item.id} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                  <img 
+                    src={listing.cover_url || '/placeholder.png'} 
+                    alt={listing.title_ar}
+                    className="h-10 w-10 rounded-lg object-cover"
+                    onError={(e) => (e.target as HTMLImageElement).src = '/placeholder.png'}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium line-clamp-1">
+                      {app.lang === "ar" ? listing.title_ar : (listing.title_en || listing.title_ar)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {app.lang === "ar" ? "الكمية" : "Qty"}: {item.quantity} × {formatPrice(Number(item.price), app.currency, app.lang)}
+                    </p>
+                  </div>
+                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-0">
+                    {formatPrice(item.subtotal, app.currency, app.lang)}
+                  </Badge>
+                </div>
+              );
+            })}
+            {items.length > 5 && (
+              <p className="text-xs text-muted-foreground text-center">
+                {app.lang === "ar" ? `و ${items.length - 5} منتجات أخرى` : `and ${items.length - 5} more items`}
+              </p>
+            )}
+          </div>
+
+          <AlertDialogFooter className="gap-3">
+            <AlertDialogCancel className="rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300">
+              {app.lang === "ar" ? "إلغاء" : "Cancel"}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmClearCart}
+              disabled={clearCart.isPending}
+              className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/25 hover:shadow-red-600/40 transition-all duration-300 hover:scale-[1.02]"
+            >
+              {clearCart.isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                  {app.lang === "ar" ? "جاري التفريغ..." : "Clearing..."}
+                </div>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {app.lang === "ar" ? "تأكيد التفريغ" : "Confirm Clear"}
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <style>{`
         @keyframes bounce-slow {

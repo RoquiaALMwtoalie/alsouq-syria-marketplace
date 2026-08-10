@@ -1,7 +1,7 @@
 // src/routes/orders.tsx
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useApp, formatPrice } from "@/lib/i18n";
 import { useMyOrders, useCreateReview, useCreateComplaint } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Package, Truck, CheckCircle2, Clock, XCircle, 
   Loader2, ShoppingBag, Star, AlertTriangle, 
-  MessageCircle, ChevronDown, ChevronUp, Eye,
-  Calendar, CreditCard, Send, ThumbsUp, ThumbsDown
+  ChevronDown, ChevronUp, Eye,
+  Calendar, CreditCard, Send, ThumbsUp, ThumbsDown,
+  User, Store, Sparkles, Zap, Rocket, Shield, Award, Timer,
+  Layers, MessageCircle, Phone
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -20,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { StarRating } from "@/components/StarRating";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/orders")({
   component: OrdersPage,
@@ -38,6 +41,7 @@ function OrdersPage() {
   const [ratingOrder, setRatingOrder] = useState<string | null>(null);
   const [ratingValue, setRatingValue] = useState<number>(0);
   const [isRating, setIsRating] = useState(false);
+  const [isCancelling, setIsCancelling] = useState<string | null>(null);
   
   // ✅ Complaint Dialog
   const [complaintDialogOpen, setComplaintDialogOpen] = useState(false);
@@ -45,6 +49,186 @@ function OrdersPage() {
   const [complaintSubject, setComplaintSubject] = useState("");
   const [complaintDescription, setComplaintDescription] = useState("");
   const [isSubmittingComplaint, setIsSubmittingComplaint] = useState(false);
+
+  // ============================================================
+  // ✅ ✅ ✅ تجميع الطلبات حسب معرف الطلب (order_id) مع دعم order_items
+  // ============================================================
+  const groupedOrders = useMemo(() => {
+    const groups: Record<string, {
+      orderId: string;
+      storeId: string;
+      storeName: string;
+      storeLogo: string | null;
+      storePhone: string | null;
+      items: any[];
+      totalItems: number;
+      totalPrice: number;
+      status: string;
+      createdAt: string;
+      updatedAt: string;
+      buyerName: string;
+      buyerPhone: string;
+      notes: string;
+      rejectionReason: string | null;
+    }> = {};
+
+    orders.forEach((order: any) => {
+      const orderId = order.id;
+      const storeId = order.seller_id || 'unknown';
+      
+      // ✅ ✅ ✅ جلب اسم المتجر من أول عنصر في order_items أو من listings
+      let storeName = '';
+      let storeLogo: string | null = null;
+      let storePhone: string | null = null;
+      
+      // ✅ أولاً: حاول جلب من order_items
+      if (order.order_items && order.order_items.length > 0) {
+        const firstItem = order.order_items[0];
+        const listing = firstItem?.listings;
+        if (listing?.profile) {
+          storeName = listing.profile.store_name || 
+                      listing.profile.full_name || 
+                      (app.lang === "ar" ? "متجر" : "Store");
+          storeLogo = listing.profile.store_logo_url || null;
+          storePhone = listing.profile.store_phone || null;
+        } else if (listing) {
+          storeName = app.lang === "ar" ? "متجر" : "Store";
+        }
+      }
+      
+      // ✅ ثانياً: إذا ما وجدنا من order_items، استخدم listings القديم
+      if (!storeName && order.listings?.profile) {
+        storeName = order.listings.profile.store_name || 
+                    order.listings.profile.full_name || 
+                    (app.lang === "ar" ? "متجر" : "Store");
+        storeLogo = order.listings.profile.store_logo_url || null;
+        storePhone = order.listings.profile.store_phone || null;
+      }
+      
+      // ✅ ثالثاً: إذا ما وجدنا نهائياً
+      if (!storeName) {
+        storeName = app.lang === "ar" ? "متجر" : "Store";
+      }
+
+      if (!groups[orderId]) {
+        groups[orderId] = {
+          orderId,
+          storeId,
+          storeName,
+          storeLogo,
+          storePhone,
+          items: [],
+          totalItems: 0,
+          totalPrice: 0,
+          status: order.status,
+          createdAt: order.created_at,
+          updatedAt: order.updated_at,
+          buyerName: order.buyer_name || (app.lang === "ar" ? "عميل" : "Customer"),
+          buyerPhone: order.buyer_phone || '',
+          notes: order.notes || '',
+          rejectionReason: order.rejection_reason || null,
+        };
+      }
+
+      // ✅ ✅ ✅ إضافة العناصر من order_items أو من order نفسه
+      let itemsToAdd = [];
+      
+      if (order.order_items && order.order_items.length > 0) {
+        // ✅ استخدام order_items
+        itemsToAdd = order.order_items.map((item: any) => ({
+          ...item,
+          // ✅ التأكد من وجود listings
+          listings: item.listings || null,
+          // ✅ إضافة الحقول المفقودة للتوافق
+          id: item.id,
+          listing_id: item.listing_id,
+          quantity: item.quantity,
+          total: Number(item.price) * item.quantity,
+          price: item.price,
+          status: order.status,
+          created_at: order.created_at,
+          order_id: order.id,
+        }));
+      } else {
+        // ✅ للتوافق مع الطلبات القديمة (بدون order_items)
+        itemsToAdd = [{
+          ...order,
+          listings: order.listings || null,
+          order_id: order.id,
+        }];
+      }
+      
+      // ✅ إضافة العناصر إلى المجموعة
+      itemsToAdd.forEach((item: any) => {
+        groups[orderId].items.push(item);
+      });
+      
+      // ✅ حساب الإجماليات
+      groups[orderId].totalItems += itemsToAdd.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0);
+      groups[orderId].totalPrice += itemsToAdd.reduce((sum: number, item: any) => sum + (Number(item.total) || Number(item.price) * (item.quantity || 1) || 0), 0);
+      
+      // ✅ تحديث الحالة (أعلى أولوية: pending > accepted > shipped > delivered > rejected > cancelled)
+      const statusPriority: Record<string, number> = {
+        pending: 5,
+        accepted: 4,
+        shipped: 3,
+        assigned: 3,
+        delivered: 2,
+        completed: 2,
+        rejected: 1,
+        cancelled: 0,
+      };
+      
+      const currentPriority = statusPriority[groups[orderId].status] || 0;
+      const newPriority = statusPriority[order.status] || 0;
+      
+      if (newPriority > currentPriority) {
+        groups[orderId].status = order.status;
+      }
+    });
+
+    // ✅ تحويل إلى مصفوفة وترتيب حسب التاريخ (الأحدث أولاً)
+    return Object.values(groups).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [orders, app.lang]);
+
+  // ============================================================
+  // ✅ ✅ ✅ دالة إلغاء الطلب كامل (وليس كل منتج على حدة)
+  // ============================================================
+  const handleCancelOrder = async (orderId: string) => {
+    if (!app.user) return;
+    
+    if (!confirm(app.lang === "ar" 
+      ? "⚠️ هل أنت متأكد من رغبتك في إلغاء هذا الطلب بالكامل؟ هذا الإجراء لا يمكن التراجع عنه."
+      : "⚠️ Are you sure you want to cancel this entire order? This action cannot be undone."
+    )) return;
+    
+    setIsCancelling(orderId);
+    
+    try {
+      // ✅ تحديث حالة الطلب إلى cancelled
+      const { error } = await supabase
+        .from("orders")
+        .update({ 
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", orderId)
+        .eq("buyer_id", app.user.id);
+      
+      if (error) throw error;
+      
+      toast.success(app.lang === "ar" ? "✅ تم إلغاء الطلب بالكامل بنجاح" : "✅ Order cancelled successfully");
+      refetch();
+      
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      toast.error(app.lang === "ar" ? "❌ فشل إلغاء الطلب" : "❌ Failed to cancel order");
+    } finally {
+      setIsCancelling(null);
+    }
+  };
 
   // ============================================================
   // ✅ دالة تقييم المنتج
@@ -67,7 +251,7 @@ function OrdersPage() {
       toast.success("⭐ تم تقييم المنتج بنجاح!");
       setRatingOrder(null);
       setRatingValue(0);
-      refetch(); // ✅ تحديث الطلبات عشان تظهر "تم التقييم"
+      refetch();
       
     } catch (error) {
       console.error("Error rating:", error);
@@ -91,8 +275,11 @@ function OrdersPage() {
     setIsSubmittingComplaint(true);
     
     try {
+      // ✅ نرسل شكوى على أول منتج في الطلبية
+      const firstItem = selectedOrder.items[0];
+      
       await createComplaint.mutateAsync({
-        order_id: selectedOrder.id,
+        order_id: firstItem.order_id || firstItem.id,
         user_id: app.user.id,
         subject: complaintSubject.trim(),
         description: complaintDescription.trim(),
@@ -112,42 +299,97 @@ function OrdersPage() {
   };
 
   // ============================================================
-  // ✅ حالة الطلب - حسب enum عندك
+  // ✅ حالة الطلب
   // ============================================================
   const getOrderStatus = (status: string) => {
-    const map: Record<string, { label: string; color: string; icon: any; description: string }> = {
+    const map: Record<string, { label: string; color: string; icon: any; description: string; bg: string; border: string }> = {
       pending: { 
         label: app.lang === "ar" ? "⏳ قيد الانتظار" : "⏳ Pending", 
-        color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
-        icon: Clock,
+        color: "text-amber-600 dark:text-amber-400",
+        bg: "bg-amber-50/80 dark:bg-amber-950/30",
+        border: "border-amber-200/60 dark:border-amber-800/40",
+        icon: Timer,
         description: app.lang === "ar" ? "في انتظار موافقة البائع" : "Waiting for seller approval"
       },
       accepted: { 
         label: app.lang === "ar" ? "✅ تم القبول" : "✅ Accepted", 
-        color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+        color: "text-[#2a655f] dark:text-[#3a8a82]",
+        bg: "bg-[#2a655f]/5 dark:bg-[#2a655f]/20",
+        border: "border-[#2a655f]/20 dark:border-[#2a655f]/30",
         icon: CheckCircle2,
         description: app.lang === "ar" ? "تم قبول الطلب من قبل البائع" : "Order accepted by seller"
       },
-      completed: { 
-        label: app.lang === "ar" ? "📦 مكتمل" : "📦 Completed", 
-        color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+      shipped: { 
+        label: app.lang === "ar" ? "🚚 تم الشحن" : "🚚 Shipped", 
+        color: "text-indigo-600 dark:text-indigo-400",
+        bg: "bg-indigo-50/80 dark:bg-indigo-950/30",
+        border: "border-indigo-200/60 dark:border-indigo-800/40",
+        icon: Truck,
+        description: app.lang === "ar" ? "تم شحن الطلب بواسطة شركة التوصيل" : "Order shipped by delivery company"
+      },
+      assigned: { 
+        label: app.lang === "ar" ? "📋 تم التعيين" : "📋 Assigned", 
+        color: "text-purple-600 dark:text-purple-400",
+        bg: "bg-purple-50/80 dark:bg-purple-950/30",
+        border: "border-purple-200/60 dark:border-purple-800/40",
+        icon: User,
+        description: app.lang === "ar" ? "تم تعيين موزع لتوصيل الطلب" : "Distributor assigned for delivery"
+      },
+      delivered: { 
+        label: app.lang === "ar" ? "📦 تم التوصيل" : "📦 Delivered", 
+        color: "text-emerald-600 dark:text-emerald-400",
+        bg: "bg-emerald-50/80 dark:bg-emerald-950/30",
+        border: "border-emerald-200/60 dark:border-emerald-800/40",
         icon: CheckCircle2,
-        description: app.lang === "ar" ? "تم تسليم الطلب بنجاح" : "Order delivered successfully"
+        description: app.lang === "ar" ? "تم توصيل الطلب بنجاح" : "Order delivered successfully"
+      },
+      completed: { 
+        label: app.lang === "ar" ? "✅ مكتمل" : "✅ Completed", 
+        color: "text-emerald-600 dark:text-emerald-400",
+        bg: "bg-emerald-50/80 dark:bg-emerald-950/30",
+        border: "border-emerald-200/60 dark:border-emerald-800/40",
+        icon: Award,
+        description: app.lang === "ar" ? "تم تسليم الطلب بنجاح" : "Order completed successfully"
       },
       rejected: { 
         label: app.lang === "ar" ? "❌ مرفوض" : "❌ Rejected", 
-        color: "bg-red-500/10 text-red-600 border-red-500/20",
+        color: "text-red-600 dark:text-red-400",
+        bg: "bg-red-50/80 dark:bg-red-950/30",
+        border: "border-red-200/60 dark:border-red-800/40",
         icon: XCircle,
         description: app.lang === "ar" ? "تم رفض الطلب من قبل البائع" : "Order rejected by seller"
       },
       cancelled: { 
         label: app.lang === "ar" ? "🚫 ملغي" : "🚫 Cancelled", 
-        color: "bg-rose-500/10 text-rose-600 border-rose-500/20",
+        color: "text-rose-600 dark:text-rose-400",
+        bg: "bg-rose-50/80 dark:bg-rose-950/30",
+        border: "border-rose-200/60 dark:border-rose-800/40",
         icon: XCircle,
         description: app.lang === "ar" ? "تم إلغاء الطلب" : "Order cancelled"
       },
     };
     return map[status] || map.pending;
+  };
+
+  // ============================================================
+  // ✅ التحقق من إمكانية الإلغاء (فقط pending)
+  // ============================================================
+  const canCancel = (status: string) => {
+    return status === 'pending';
+  };
+
+  // ============================================================
+  // ✅ التحقق من إمكانية التقييم
+  // ============================================================
+  const canRate = (status: string) => {
+    return status === 'completed' || status === 'delivered';
+  };
+
+  // ============================================================
+  // ✅ التحقق من الطلبات النشطة
+  // ============================================================
+  const isActiveOrder = (status: string) => {
+    return status === 'pending' || status === 'accepted' || status === 'shipped' || status === 'assigned';
   };
 
   // ============================================================
@@ -176,24 +418,25 @@ function OrdersPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
-              <div className="p-2 rounded-2xl bg-[#0d2e2a] text-white">
+              <div className="p-2 rounded-2xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white shadow-lg shadow-[#0d2e2a]/30">
                 <ShoppingBag className="h-6 w-6" />
               </div>
               {app.lang === "ar" ? "طلباتي" : "My Orders"}
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {orders.length} {app.lang === "ar" ? "طلب" : "orders"}
+            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
+              {groupedOrders.length} {app.lang === "ar" ? "طلب" : "orders"} • {orders.length} {app.lang === "ar" ? "منتج" : "items"}
             </p>
           </div>
           <Link to="/">
-            <Button variant="outline" className="rounded-xl">
+            <Button variant="outline" className="rounded-xl border-[#2a655f]/20 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/40 transition-all duration-300">
               {app.lang === "ar" ? "متابعة التسوق" : "Continue Shopping"}
             </Button>
           </Link>
         </div>
 
-        {/* ===== ORDERS LIST ===== */}
-        {orders.length === 0 ? (
+        {/* ===== ORDERS LIST (GROUPED BY ORDER ID) ===== */}
+        {groupedOrders.length === 0 ? (
           <div className="text-center py-20 bg-card rounded-3xl border-2 border-dashed border-slate-200/50 dark:border-slate-800/50">
             <div className="text-7xl mb-4">📦</div>
             <h3 className="text-2xl font-semibold">
@@ -205,209 +448,380 @@ function OrdersPage() {
                 : "You haven't placed any orders yet"}
             </p>
             <Link to="/products">
-              <Button className="mt-6 bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white rounded-xl">
+              <Button className="mt-6 bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white rounded-xl shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 hover:scale-105">
                 {app.lang === "ar" ? "ابدأ التسوق" : "Start Shopping"}
               </Button>
             </Link>
           </div>
         ) : (
           <div className="space-y-4">
-            {orders.map((order: any) => {
-              const status = getOrderStatus(order.status);
+            {groupedOrders.map((group) => {
+              const status = getOrderStatus(group.status);
               const StatusIcon = status.icon;
-              const isExpanded = expandedOrder === order.id;
-              const isCompleted = order.status === 'completed';
-              const hasReview = order.reviewed || false;
+              const isExpanded = expandedOrder === group.orderId;
+              const isActive = isActiveOrder(group.status);
+              
+              // ✅ هل يمكن إلغاء الطلب كامل؟ (فقط إذا كانت الحالة pending)
+              const canCancelOrder = canCancel(group.status);
+              
+              // ✅ هل يمكن تقييم أي منتج في الطلبية؟
+              const hasRateableItem = group.items.some((o: any) => canRate(o.status));
+              
+              // ✅ هل جميع المنتجات مرفوضة؟
+              const allRejected = group.items.every((o: any) => o.status === 'rejected');
+              
+              // ✅ هل جميع المنتجات ملغية؟
+              const allCancelled = group.items.every((o: any) => o.status === 'cancelled');
               
               return (
                 <div 
-                  key={order.id}
-                  className="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200/50 dark:border-slate-700/50 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
+                  key={group.orderId}
+                  className={cn(
+                    "bg-white dark:bg-slate-900/90 rounded-2xl overflow-hidden transition-all duration-500 shadow-sm hover:shadow-xl",
+                    "border",
+                    isActive 
+                      ? "border-[#2a655f]/30 dark:border-[#2a655f]/40 shadow-[#2a655f]/10 hover:shadow-[#2a655f]/25" 
+                      : "border-slate-200/50 dark:border-slate-700/50 hover:shadow-md"
+                  )}
                 >
                   {/* ===== ORDER HEADER ===== */}
                   <div 
-                    className="p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors"
-                    onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                    className={cn(
+                      "p-4 cursor-pointer transition-all duration-300",
+                      isActive 
+                        ? "bg-gradient-to-r from-[#2a655f]/5 via-[#2a655f]/10 to-[#2a655f]/5 dark:from-[#2a655f]/10 dark:via-[#2a655f]/20 dark:to-[#2a655f]/10 hover:from-[#2a655f]/10 hover:via-[#2a655f]/20 hover:to-[#2a655f]/10" 
+                        : "hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
+                    )}
+                    onClick={() => setExpandedOrder(isExpanded ? null : group.orderId)}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-4">
+                      
+                      {/* ✅ القسم الأيسر: لوغو المتجر + اسمه + عدد المنتجات + التاريخ + السعر */}
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
-                          {order.listings?.cover_url ? (
+                        
+                        {/* ✅ لوغو المتجر */}
+                        <div className="relative h-14 w-14 rounded-2xl overflow-hidden flex-shrink-0 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-md hover:shadow-xl transition-all duration-300">
+                          {group.storeLogo ? (
                             <img 
-                              src={order.listings.cover_url} 
-                              alt={order.listings.title_ar}
-                              className="h-full w-full object-cover"
+                              src={group.storeLogo} 
+                              alt={group.storeName}
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '';
+                                e.target.style.display = 'none';
+                              }}
                             />
                           ) : (
-                            <Package className="h-6 w-6 text-muted-foreground" />
+                            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white font-bold text-xl">
+                              {group.storeName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {isActive && (
+                            <div className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-400 animate-pulse ring-2 ring-white dark:ring-slate-900 shadow-lg shadow-emerald-400/50">
+                              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping" />
+                            </div>
                           )}
                         </div>
+                        
+                        {/* ✅ معلومات المتجر + الطلبية */}
                         <div>
-                          <p className="font-semibold line-clamp-1">
-                            {order.listings?.title_ar || app.lang === "ar" ? "منتج" : "Product"}
-                          </p>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Store className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82]" />
+                            <span className="font-bold text-base text-slate-800 dark:text-white">
+                              {group.storeName}
+                            </span>
+                            {isActive && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold border border-emerald-500/30 animate-pulse">
+                                <Zap className="h-2.5 w-2.5" />
+                                {app.lang === "ar" ? "نشط" : "Active"}
+                              </span>
+                            )}
+                            {allRejected && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 text-red-600 dark:text-red-400 text-[9px] font-bold border border-red-500/30">
+                                <XCircle className="h-2.5 w-2.5" />
+                                {app.lang === "ar" ? "مرفوض" : "Rejected"}
+                              </span>
+                            )}
+                            {allCancelled && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[9px] font-bold border border-rose-500/30">
+                                <XCircle className="h-2.5 w-2.5" />
+                                {app.lang === "ar" ? "ملغي" : "Cancelled"}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* ✅ عدد المنتجات + التاريخ + السعر الإجمالي */}
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                            <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                              <Layers className="h-3 w-3 text-[#2a655f]" />
+                              {group.totalItems} {app.lang === "ar" ? "منتج" : "items"}
+                            </span>
+                            <span className="text-muted-foreground/30">•</span>
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              {new Date(order.created_at).toLocaleDateString(
+                              {new Date(group.createdAt).toLocaleDateString(
                                 app.lang === "ar" ? "ar-SA" : "en-US",
                                 { day: 'numeric', month: 'short', year: 'numeric' }
                               )}
                             </span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
+                            <span className="text-muted-foreground/30">•</span>
+                            <span className="flex items-center gap-1 font-bold text-[#2a655f] dark:text-[#3a8a82]">
                               <CreditCard className="h-3 w-3" />
-                              {formatPrice(order.total, app.currency, app.lang)}
+                              {formatPrice(group.totalPrice, app.currency, app.lang)}
                             </span>
                           </div>
                         </div>
                       </div>
 
+                      {/* ✅ القسم الأيمن: الحالة + زر التوسيع */}
                       <div className="flex items-center gap-3">
-                        <Badge className={cn("border-0 flex items-center gap-1 px-3 py-1", status.color)}>
-                          <StatusIcon className="h-3 w-3" />
+                        <Badge className={cn(
+                          "border-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold shadow-sm",
+                          status.bg,
+                          status.border,
+                          status.color,
+                          isActive && "animate-pulse"
+                        )}>
+                          <StatusIcon className="h-3.5 w-3.5" />
                           {status.label}
                         </Badge>
                         {isExpanded ? (
-                          <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                          <ChevronUp className="h-5 w-5 text-muted-foreground transition-transform duration-300" />
                         ) : (
-                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                          <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-300" />
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {/* ===== ORDER DETAILS (EXPANDED) ===== */}
+                  {/* ===== DETAILS (EXPANDED) ===== */}
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-2 border-t border-slate-200/50 dark:border-slate-700/50 animate-fade-up">
-                      <div className="grid gap-4">
+                      <div className="space-y-4">
                         
                         {/* ✅ حالة الطلب مع وصف */}
-                        <div className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl">
+                        <div className={cn(
+                          "p-4 rounded-xl border",
+                          status.bg,
+                          status.border
+                        )}>
                           <div className="flex items-center gap-3">
-                            <StatusIcon className={cn("h-5 w-5", status.color.replace('bg-', 'text-').replace('/10', ''))} />
+                            <StatusIcon className={cn("h-5 w-5", status.color)} />
                             <div>
-                              <p className="font-semibold">{status.label}</p>
+                              <p className="font-bold text-sm">{status.label}</p>
                               <p className="text-xs text-muted-foreground">{status.description}</p>
                             </div>
                           </div>
                         </div>
 
-                        {/* ✅ معلومات الطلب */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl">
+                        {/* ✅ معلومات العميل */}
+                        <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                           <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {app.lang === "ar" ? "العميل" : "Customer"}
+                            </p>
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{group.buyerName}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
                               {app.lang === "ar" ? "رقم الطلب" : "Order ID"}
                             </p>
-                            <p className="text-sm font-mono font-semibold">{order.id.slice(0, 12)}</p>
+                            <p className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">{group.orderId.slice(0, 12)}</p>
                           </div>
-                          <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                              {app.lang === "ar" ? "الكمية" : "Quantity"}
+                          {group.buyerPhone && (
+                            <div className="col-span-2">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {app.lang === "ar" ? "رقم الهاتف" : "Phone"}
+                              </p>
+                              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{group.buyerPhone}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* ✅ قائمة المنتجات في هذه الطلبية */}
+                        <div className="space-y-3">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                            <Package className="h-3.5 w-3.5" />
+                            {app.lang === "ar" ? "المنتجات" : "Products"}
+                            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                              {group.items.length}
+                            </Badge>
+                          </p>
+                          
+                          {group.items.map((item: any) => {
+                            // ✅ ✅ ✅ جلب الـ listings من item مباشرة (من order_items)
+                            const listing = item.listings || item;
+                            
+                            return (
+                              <div 
+                                key={item.id || item.listing_id}
+                                className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
+                              >
+                                <div className="flex items-center gap-4">
+                                  {/* صورة المنتج */}
+                                  <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                                    {listing?.cover_url ? (
+                                      <img 
+                                        src={listing.cover_url} 
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = '/placeholder.png';
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                                        <Package className="h-5 w-5 text-slate-400" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* معلومات المنتج */}
+                                  <div className="flex-1">
+                                    <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                                      {app.lang === "ar" 
+                                        ? listing?.title_ar || 'منتج'
+                                        : listing?.title_en || listing?.title_ar || 'Product'}
+                                    </p>
+                                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                                      <span>{app.lang === "ar" ? "الكمية:" : "Qty:"} {item.quantity || 1}</span>
+                                      <span className="text-muted-foreground/30">•</span>
+                                      <span className="font-semibold text-[#2a655f] dark:text-[#3a8a82]">
+                                        {formatPrice(
+                                          item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
+                                          app.currency, 
+                                          app.lang
+                                        )}
+                                      </span>
+                                      <span className="text-muted-foreground/30">•</span>
+                                      <Badge className={cn(
+                                        "border-0 text-[9px] px-2 py-0.5",
+                                        getOrderStatus(item.status || group.status).bg,
+                                        getOrderStatus(item.status || group.status).color
+                                      )}>
+                                        {getOrderStatus(item.status || group.status).label}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* ✅ زر عرض المنتج */}
+                                  <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10">
+                                      <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
+                                    </Button>
+                                  </Link>
+                                </div>
+
+                                {/* ✅ ✅ ✅ أزرار التقييم فقط (تم إزالة زر الإلغاء من هنا) */}
+                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                                  {canRate(item.status || group.status) && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {app.lang === "ar" ? "قيم:" : "Rate:"}
+                                      </span>
+                                      <StarRating
+                                        rating={item.rating || 0}
+                                        onRatingChange={(value) => {
+                                          setRatingOrder(item.id || item.listing_id);
+                                          setRatingValue(value);
+                                          handleRateOrder(item.order_id || group.orderId, item.listing_id, value);
+                                        }}
+                                        readonly={isRating && ratingOrder === (item.id || item.listing_id)}
+                                        size="sm"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* ✅ ✅ ✅ زر إلغاء الطلب كامل (في الأسفل) */}
+                        {canCancelOrder && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-[1.02] group"
+                            onClick={() => handleCancelOrder(group.orderId)}
+                            disabled={isCancelling === group.orderId}
+                          >
+                            {isCancelling === group.orderId ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                {app.lang === "ar" ? "جاري الإلغاء..." : "Cancelling..."}
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                                {app.lang === "ar" ? "🚫 إلغاء الطلب بالكامل" : "🚫 Cancel Entire Order"}
+                              </>
+                            )}
+                          </Button>
+                        )}
+
+                        {/* ✅ ملاحظات الطلب */}
+                        {group.notes && (
+                          <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200/50 dark:border-yellow-800/30">
+                            <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
+                              <MessageCircle className="h-3.5 w-3.5" />
+                              {app.lang === "ar" ? "ملاحظات" : "Notes"}
                             </p>
-                            <p className="text-sm font-semibold">{order.quantity || 1}</p>
+                            <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{group.notes}</p>
                           </div>
-                          <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                              {app.lang === "ar" ? "المجموع" : "Total"}
+                        )}
+
+                        {/* ✅ سبب الرفض (إذا كان مرفوض) */}
+                        {group.rejectionReason && (
+                          <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-800/30">
+                            <p className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                              <XCircle className="h-3.5 w-3.5" />
+                              {app.lang === "ar" ? "سبب الرفض" : "Rejection Reason"}
                             </p>
-                            <p className="text-sm font-bold text-[#0d2e2a]">
-                              {formatPrice(order.total, app.currency, app.lang)}
-                            </p>
+                            <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{group.rejectionReason}</p>
+                          </div>
+                        )}
+
+                        {/* ✅ إجمالي الطلبية */}
+                        <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              {app.lang === "ar" ? "إجمالي الطلبية" : "Total Order"}
+                            </span>
+                            <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                              {formatPrice(group.totalPrice, app.currency, app.lang)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-xs text-muted-foreground">
+                              {group.totalItems} {app.lang === "ar" ? "منتج" : "items"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(group.createdAt).toLocaleString(
+                                app.lang === "ar" ? "ar-SA" : "en-US",
+                                { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+                              )}
+                            </span>
                           </div>
                         </div>
 
-                        {/* ✅ زر عرض المنتج */}
-                        <Link to="/listing/$id" params={{ id: order.listing_id }}>
-                          <Button variant="outline" size="sm" className="w-full rounded-xl">
-                            <Eye className="h-4 w-4 mr-2" />
-                            {app.lang === "ar" ? "عرض المنتج" : "View Product"}
-                          </Button>
-                        </Link>
-
-                        {/* ✅ ✅ ✅ التقييم (فقط إذا كان completed) */}
-                        {isCompleted && (
-                          <div className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl">
-                            <div className="flex items-center gap-4">
-                              <span className="text-sm font-medium text-muted-foreground">
-                                {app.lang === "ar" ? "⭐ قيم المنتج:" : "⭐ Rate product:"}
-                              </span>
-                              
-                              {hasReview ? (
-                                <div className="flex items-center gap-2">
-                                  <StarRating 
-                                    rating={order.rating || 0} 
-                                    readonly 
-                                    size="md" 
-                                  />
-                                  <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px]">
-                                    {app.lang === "ar" ? "✅ تم التقييم" : "✅ Rated"}
-                                  </Badge>
-                                </div>
-                              ) : (
-                                <StarRating
-                                  rating={ratingOrder === order.id ? ratingValue : 0}
-                                  onRatingChange={(value) => {
-                                    setRatingOrder(order.id);
-                                    setRatingValue(value);
-                                    handleRateOrder(order.id, order.listing_id, value);
-                                  }}
-                                  readonly={isRating && ratingOrder === order.id}
-                                  size="md"
-                                />
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* ✅ ✅ ✅ زر الشكوى (فقط إذا كان completed) */}
-                        {isCompleted && (
+                        {/* ✅ زر الشكوى (إذا كان أي منتج completed أو delivered) */}
+                        {hasRateableItem && (
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full rounded-xl border-amber-500/30 text-amber-600 hover:bg-amber-50 hover:border-amber-500 transition-all duration-300"
+                            className="w-full rounded-xl border-amber-500/30 text-amber-600 hover:bg-amber-50 hover:border-amber-500 transition-all duration-300 group"
                             onClick={() => {
-                              setSelectedOrder(order);
+                              setSelectedOrder(group);
                               setComplaintDialogOpen(true);
                             }}
                           >
-                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            <AlertTriangle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
                             {app.lang === "ar" ? "📢 تقديم شكوى" : "📢 Submit Complaint"}
                           </Button>
-                        )}
-
-                        {/* ✅ زر التواصل مع البائع (لغير الملغي والمكتمل) */}
-                        {order.status !== 'cancelled' && order.status !== 'completed' && (
-                          <Link to="/messages/$userId" params={{ userId: order.seller_id }}>
-                            <Button variant="outline" size="sm" className="w-full rounded-xl border-blue-500/30 text-blue-600 hover:bg-blue-50 transition-all duration-300">
-                              <MessageCircle className="h-4 w-4 mr-2" />
-                              {app.lang === "ar" ? "💬 التواصل مع البائع" : "💬 Contact Seller"}
-                            </Button>
-                          </Link>
-                        )}
-
-                        {/* ✅ حالة مرفوض - عرض سبب */}
-                        {order.status === 'rejected' && (
-                          <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-800/30">
-                            <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-2">
-                              <ThumbsDown className="h-4 w-4" />
-                              {app.lang === "ar" 
-                                ? "⚠️ تم رفض طلبك من قبل البائع" 
-                                : "⚠️ Your order was rejected by the seller"}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* ✅ حالة ملغي - عرض سبب */}
-                        {order.status === 'cancelled' && (
-                          <div className="p-4 bg-rose-50/50 dark:bg-rose-950/20 rounded-xl border border-rose-200/50 dark:border-rose-800/30">
-                            <p className="text-sm text-rose-600 dark:text-rose-400 flex items-center gap-2">
-                              <ThumbsDown className="h-4 w-4" />
-                              {app.lang === "ar" 
-                                ? "🚫 تم إلغاء هذا الطلب" 
-                                : "🚫 This order was cancelled"}
-                            </p>
-                          </div>
                         )}
                       </div>
                     </div>
@@ -421,7 +835,7 @@ function OrdersPage() {
 
       {/* ===== COMPLAINT DIALOG ===== */}
       <Dialog open={complaintDialogOpen} onOpenChange={setComplaintDialogOpen}>
-        <DialogContent className="max-w-lg rounded-2xl">
+        <DialogContent className="max-w-lg rounded-2xl border-[#2a655f]/20 shadow-2xl shadow-[#2a655f]/10">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl text-[#0d2e2a]">
               <AlertTriangle className="h-6 w-6 text-amber-500" />
@@ -429,8 +843,8 @@ function OrdersPage() {
             </DialogTitle>
             <DialogDescription>
               {app.lang === "ar" 
-                ? `شكوى بخصوص الطلب رقم ${selectedOrder?.id?.slice(0, 12)}`
-                : `Complaint for order #${selectedOrder?.id?.slice(0, 12)}`}
+                ? `شكوى بخصوص الطلبية من "${selectedOrder?.storeName || ''}"`
+                : `Complaint for order from "${selectedOrder?.storeName || ''}"`}
             </DialogDescription>
           </DialogHeader>
 
@@ -471,14 +885,14 @@ function OrdersPage() {
             <Button
               variant="outline"
               onClick={() => setComplaintDialogOpen(false)}
-              className="rounded-xl"
+              className="rounded-xl border-slate-200/50 hover:bg-slate-100/50"
             >
               {app.lang === "ar" ? "إلغاء" : "Cancel"}
             </Button>
             <Button
               onClick={handleSubmitComplaint}
               disabled={isSubmittingComplaint}
-              className="bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white rounded-xl transition-all duration-300 hover:scale-[1.02]"
+              className="bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white rounded-xl shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 hover:scale-[1.02]"
             >
               {isSubmittingComplaint ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
