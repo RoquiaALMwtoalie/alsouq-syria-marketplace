@@ -941,6 +941,28 @@ const fetchInitialData = async () => {
           .order("is_default", { ascending: false })
       : Promise.resolve({ data: null });
 
+    // ✅✅✅ التعديل 1: جلب الـ sellers فقط من user_roles
+    const { data: sellers, error: sellersError } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "seller");
+
+    if (sellersError) {
+      console.error("❌ Error fetching sellers:", sellersError);
+      setNearbyStores([]);
+      setLoading(false);
+      return;
+    }
+
+    const sellerIds = sellers?.map((s: any) => s.user_id) || [];
+    
+    if (sellerIds.length === 0) {
+      setNearbyStores([]);
+      setLoading(false);
+      return;
+    }
+
+    // ✅✅✅ التعديل 2: جلب البروفايلات للـ sellers فقط
     const storesPromise = supabase
       .from("profiles")
       .select(`
@@ -949,6 +971,7 @@ const fetchInitialData = async () => {
         store_type, lat, lng, governorate_id, is_featured,
         allows_messaging, store_opens_at, store_closes_at, store_address
       `)
+      .in("id", sellerIds)  // ✅ فقط الـ sellers
       .eq("store_active", true)
       .not("store_name", "is", null);
 
@@ -982,7 +1005,6 @@ const fetchInitialData = async () => {
       return;
     }
 
-    // ✅ ✅ ✅ هذا هو الجزء الجديد
     // جلب عدد المنتجات لكل متجر
     const storeIds = stores.map((s: any) => s.id);
     const { data: listings, error: listingsError } = await supabase
@@ -1001,13 +1023,13 @@ const fetchInitialData = async () => {
       listingsCountMap.set(item.owner_id, item.count || 0);
     });
 
-    // ✅ فلترة المتاجر التي لديها منتجات فقط
+    // فلترة المتاجر التي لديها منتجات فقط
     let storesWithProducts = stores.filter((store: any) => {
       const count = listingsCountMap.get(store.id) || 0;
       return count > 0;
     });
 
-    // ✅ إضافة عدد المنتجات
+    // إضافة عدد المنتجات
     storesWithProducts = storesWithProducts.map((store: any) => ({
       ...store,
       listing_count: listingsCountMap.get(store.id) || 0
@@ -1019,7 +1041,7 @@ const fetchInitialData = async () => {
       return;
     }
 
-    // ✅ استخدم storesWithProducts بدلاً من stores
+    // حساب المسافات
     let storesWithDistance = storesWithProducts.map((store: any) => {
       let distance = Infinity;
       let distanceText = app.lang === "ar" ? "غير محدد" : "Unknown";
