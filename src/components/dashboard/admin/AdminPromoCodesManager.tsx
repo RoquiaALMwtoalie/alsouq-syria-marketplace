@@ -28,6 +28,9 @@ export interface PromoCode {
   updated_at: string;
   created_by: string | null;
   metadata: Record<string, any>;
+  store_id: string | null;        // ✅ أضف هذا
+  store_name: string | null;      // ✅ أضف هذا
+  store_ids: any;                 // ✅ أضف هذا (JSONB)
 }
 
 // ============================================================
@@ -158,6 +161,9 @@ export async function createPromoCode(data: Partial<PromoCode>): Promise<PromoCo
       expires_at: data.expires_at || null,
       created_by: data.created_by || null,
       metadata: data.metadata || {},
+      store_id: data.store_id || null,      // ✅ جديد
+      store_name: data.store_name || null,  // ✅ جديد
+      store_ids: data.store_ids || [],      // ✅ جديد
     })
     .select()
     .single();
@@ -185,6 +191,9 @@ export async function updatePromoCode(id: string, data: Partial<PromoCode>): Pro
       expires_at: data.expires_at || null,
       updated_at: new Date().toISOString(),
       metadata: data.metadata || {},
+      store_id: data.store_id || null,      // ✅ جديد
+      store_name: data.store_name || null,  // ✅ جديد
+      store_ids: data.store_ids || [],      // ✅ جديد
     })
     .eq("id", id)
     .select()

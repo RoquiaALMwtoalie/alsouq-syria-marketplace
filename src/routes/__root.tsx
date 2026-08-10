@@ -912,7 +912,7 @@ function RootContent({
           {!hideChrome && <Header />}
           <main className="flex-1"><Outlet /></main>
           {!hideChrome && <Footer />}
-          {!hideChrome && <SupportButton />}
+         
         </div>
       </ClientOnly>
       

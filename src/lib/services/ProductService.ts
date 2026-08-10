@@ -119,16 +119,51 @@ export class ProductService {
   }
   
   /**
-   * ✅ حفظ التركيبات
+   * ✅ حفظ التركيبات مع ربط الألوان وإجبار السعر
    */
   static async saveVariations(listingId: string, variations: any[]) {
     if (!variations || variations.length === 0) return { inserted: 0 };
     
+    // ✅ 1. جلب ألوان المنتج للربط
+    const { data: colors, error: colorsError } = await supabase
+      .from("product_colors")
+      .select("id, color_name_ar")
+      .eq("listing_id", listingId);
+    
+    if (colorsError) {
+      console.error('❌ Error fetching colors:', colorsError);
+    }
+    
+    // ✅ 2. إنشاء خريطة للبحث عن اللون بالاسم
+    const colorMap = new Map();
+    (colors || []).forEach((c: any) => {
+      colorMap.set(c.color_name_ar, c.id);
+    });
+    
     const entries: any[] = [];
+    let hasPriceError = false;
     
     variations.forEach((v, index) => {
       if (!v.combination || Object.keys(v.combination).length === 0) {
         return;
+      }
+      
+      // ✅ التحقق من وجود السعر
+      if (!v.price || v.price <= 0) {
+        console.warn(`⚠️ Variation ${index} has no price, using default 0`);
+        hasPriceError = true;
+      }
+      
+      // ✅ 3. البحث عن color_id من الـ combination
+      let colorId = null;
+      if (v.combination.colors) {
+        const colorName = v.combination.colors;
+        colorId = colorMap.get(colorName) || null;
+      }
+      
+      // ✅ 4. إذا كان v.color_id موجوداً، استخدمه
+      if (v.color_id) {
+        colorId = v.color_id;
       }
       
       entries.push({
@@ -136,10 +171,15 @@ export class ProductService {
         combination: v.combination,
         is_active: v.is_available !== false,
         sku: v.sku || `VAR-${listingId.substring(0, 8)}-${Date.now()}-${index}`,
-        price: v.price || null,
-        stock_quantity: v.stock_quantity || 0,
+        price: v.price || 0,  // ✅ السعر إجباري، إذا لم يوجد استخدم 0
+
+        color_id: colorId,  // ✅ ربط اللون
       });
     });
+    
+    if (hasPriceError) {
+      console.warn('⚠️ Some variations have no price, they will be saved with price 0');
+    }
     
     if (entries.length > 0) {
       const { error } = await supabase
@@ -218,10 +258,8 @@ export class ProductService {
       results.variations = await ProductService.saveVariations(listingId, data.variations);
     }
     
-    // ❌ ❌ ❌ تم إزالة تحديث metadata نهائياً
-    // لا تحفظ أي بيانات في metadata لتجنب التكرار
-    
-    console.log('✅ Product data saved successfully (without metadata duplication)');
+    console.log('✅ Product data saved successfully');
+    console.log(`📊 Results: ${results.options.inserted} options, ${results.colors.inserted} colors, ${results.variations.inserted} variations`);
     
     return results;
   }

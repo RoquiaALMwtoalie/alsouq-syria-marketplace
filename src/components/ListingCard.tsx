@@ -1,7 +1,7 @@
 // src/components/ListingCard.tsx
 
 import { Link } from "@tanstack/react-router";
-import { Star, MapPin, Heart, ImageIcon, ShoppingCart, Store, BadgePercent, Trash2, Sparkles } from "lucide-react";
+import { Star, MapPin, Heart, ImageIcon, ShoppingCart, Store, BadgePercent, Trash2, Sparkles, Layers, Eye } from "lucide-react";
 import { useApp, formatPrice, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,9 +78,11 @@ export const ListingCard = memo(function ListingCard({
   );
   
   const price = useMemo(() => Number(item.price), [item.price]);
-  const priceInUSD = useMemo(() => 
-    item.price_usd || (price / 14500),
-    [item.price_usd, price]
+  
+  // ✅ التحقق من وجود تركيبات
+  const hasVariations = useMemo(() => 
+    item.variations && item.variations.length > 0,
+    [item.variations]
   );
   
   const isOffer = useMemo(() => item.is_offer === true, [item.is_offer]);
@@ -88,10 +90,6 @@ export const ListingCard = memo(function ListingCard({
   const oldPrice = useMemo(() => 
     item.old_price ? Number(item.old_price) : null,
     [item.old_price]
-  );
-  const oldPriceUSD = useMemo(() => 
-    item.old_price_usd || (oldPrice ? (oldPrice / 14500) : null),
-    [item.old_price_usd, oldPrice]
   );
   
   const [showStoreConflictDialog, setShowStoreConflictDialog] = useState(false);
@@ -207,9 +205,6 @@ export const ListingCard = memo(function ListingCard({
             <span className="text-xs text-rose-500 line-through font-semibold">
               {formatPrice(oldPrice, app.currency, app.lang)}
             </span>
-            <span className="text-[10px] text-muted-foreground/60">
-              ≈ {oldPriceUSD?.toFixed(2)} USD
-            </span>
           </div>
           
           <div className="flex items-center justify-between gap-1">
@@ -220,34 +215,56 @@ export const ListingCard = memo(function ListingCard({
               {discountPercent}% OFF
             </span>
           </div>
-          
-          <div className="text-[11px] font-medium text-muted-foreground/80">
-            ≈ {priceInUSD.toFixed(2)} USD
-          </div>
         </div>
       );
     }
     
     return (
-      <div className="space-y-0.5">
+      <div>
         <span className="text-lg md:text-xl font-black text-[#2a655f] dark:text-[#3a8a82] tracking-tight">
           {formatPrice(price, app.currency, app.lang)}
         </span>
-        <div className="text-[11px] font-medium text-muted-foreground/80">
-          ≈ {priceInUSD.toFixed(2)} USD
-        </div>
       </div>
     );
-  }, [isOffer, oldPrice, price, priceInUSD, discountPercent, app.currency, app.lang]);
+  }, [isOffer, oldPrice, price, discountPercent, app.currency, app.lang]);
 
   // ============================================================
-  // ✅ عرض Grid (شبكة) - إطار أغمق بلون السستم (#1b433e)
+  // ✅ عرض التركيبات (مشترك بين Grid و List)
+  // ============================================================
+  const renderVariations = useCallback((maxDisplay: number = 3) => {
+    if (!item.variations || item.variations.length === 0) return null;
+    
+    return (
+      <div className="flex flex-wrap gap-1">
+        {item.variations.slice(0, maxDisplay).map((variation: any, idx: number) => (
+          <Badge 
+            key={idx}
+            variant="outline"
+            className="text-[9px] px-1.5 py-0 border-[#2a655f]/20 bg-[#2a655f]/5 dark:bg-[#2a655f]/10"
+          >
+            {Object.values(variation.combination || {}).join(' • ')}
+            <span className="font-bold text-[#2a655f] mr-0.5">
+              {formatPrice(variation.price || item.price, app.currency, app.lang)}
+            </span>
+          </Badge>
+        ))}
+        {item.variations.length > maxDisplay && (
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-[#2a655f]/20">
+            +{item.variations.length - maxDisplay}
+          </Badge>
+        )}
+      </div>
+    );
+  }, [item.variations, item.price, app.currency, app.lang]);
+
+  // ============================================================
+  // ✅ عرض Grid (شبكة)
   // ============================================================
   if (variant === "grid") {
     return (
       <>
         <div className={cn(
-          "group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-md hover:shadow-2xl hover:shadow-[#2a655f]/30 transition-all duration-500 hover:-translate-y-1.5 flex flex-col h-[410px]",
+          "group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-md hover:shadow-2xl hover:shadow-[#2a655f]/30 transition-all duration-500 hover:-translate-y-1.5 flex flex-col h-[440px]",
           isOffer 
             ? "border-2 border-red-500/80 glowing-offer-card" 
             : "border-2 border-[#1b433e] dark:border-[#3a8a82]/80 hover:border-[#2a655f]"
@@ -282,7 +299,7 @@ export const ListingCard = memo(function ListingCard({
                 <Heart className={`h-4 w-4 transition-colors ${fav ? "fill-rose-500 text-rose-500" : "text-rose-500"}`} />
               </button>
 
-              {/* ✅ تصميم احترافي فاخر لشارة المتجر (صورة واسم) في الأسفل على اليسار */}
+              {/* شارة المتجر */}
               {(storeCover || storeName) && (
                 <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 bg-gradient-to-r from-black/80 via-black/70 to-[#1b433e]/80 backdrop-blur-md p-1.5 pe-3.5 rounded-full border border-white/20 shadow-xl max-w-[210px] group-hover:border-[#3a8a82] transition-colors">
                   <div className="h-7 w-7 rounded-full border border-white/40 shadow-inner overflow-hidden bg-white flex-shrink-0 grid place-items-center">
@@ -305,7 +322,7 @@ export const ListingCard = memo(function ListingCard({
               )}
             </div>
             
-            <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+            <div className="p-4 flex-1 flex flex-col justify-between space-y-2">
               <div>
                 <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1.5">
                   <MapPin className="h-3 w-3 shrink-0 text-[#2a655f]" />
@@ -323,18 +340,33 @@ export const ListingCard = memo(function ListingCard({
                 </h3>
               </div>
               
+              {/* ✅ عرض التركيبات في وضع Grid */}
+              {renderVariations(3)}
+              
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div>
                   {renderPrice()}
                 </div>
                 
-                <Button
-                  size="icon"
-                  onClick={handleAddToCart}
-                  className="h-10 w-10 rounded-xl bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 shrink-0"
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                </Button>
+                {/* ✅ زر الإضافة مع دعم التركيبات */}
+                {hasVariations ? (
+                  <Link to="/listing/$id" params={{ id: item.id }}>
+                    <Button
+                      size="icon"
+                      className="h-10 w-10 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white shadow-md shadow-indigo-500/30 transition-all duration-300 hover:scale-105 shrink-0"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    size="icon"
+                    onClick={handleAddToCart}
+                    className="h-10 w-10 rounded-xl bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 shrink-0"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </Link>
@@ -346,7 +378,7 @@ export const ListingCard = memo(function ListingCard({
   }
 
   // ============================================================
-  // ✅ عرض List (قائمة) - إطار أغمق بلون السستم (#1b433e)
+  // ✅ عرض List (قائمة)
   // ============================================================
   return (
     <>
@@ -376,7 +408,7 @@ export const ListingCard = memo(function ListingCard({
               <Heart className={`h-4 w-4 transition-colors ${fav ? "fill-rose-500 text-rose-500" : "text-rose-500"}`} />
             </button>
             
-            {/* ✅ شارة المتجر الفاخرة لعرض القائمة */}
+            {/* شارة المتجر */}
             {(storeCover || storeName) && (
               <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 bg-gradient-to-r from-black/80 via-black/70 to-[#1b433e]/80 backdrop-blur-md p-1.5 pe-3.5 rounded-full border border-white/20 shadow-xl max-w-[210px] group-hover:border-[#3a8a82] transition-colors">
                 <div className="h-7 w-7 rounded-full border border-white/40 shadow-inner overflow-hidden bg-white flex-shrink-0 grid place-items-center">
@@ -424,18 +456,33 @@ export const ListingCard = memo(function ListingCard({
               </h3>
             </div>
             
-            <div className="mt-4 flex flex-wrap items-end justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            {/* ✅ عرض التركيبات في وضع List */}
+            {renderVariations(4)}
+            
+            <div className="mt-2 flex flex-wrap items-end justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <div>
                 {renderPrice()}
               </div>
               
-              <Button
-                onClick={handleAddToCart}
-                className="h-10 px-5 rounded-xl bg-[#2a655f] hover:bg-[#3a8a82] text-white font-semibold text-xs flex items-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-[#2a655f]/30 hover:scale-105"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                {t("add_to_cart") || "إضافة للسلة"}
-              </Button>
+              {/* ✅ زر الإضافة مع دعم التركيبات */}
+              {hasVariations ? (
+                <Link to="/listing/$id" params={{ id: item.id }}>
+                  <Button
+                    className="h-10 px-5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-semibold text-xs flex items-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/30 hover:scale-105"
+                  >
+                    <Eye className="h-4 w-4" />
+                    {app.lang === "ar" ? "اختيار" : "Choose"}
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  onClick={handleAddToCart}
+                  className="h-10 px-5 rounded-xl bg-[#2a655f] hover:bg-[#3a8a82] text-white font-semibold text-xs flex items-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-[#2a655f]/30 hover:scale-105"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  {t("add_to_cart") || "إضافة للسلة"}
+                </Button>
+              )}
             </div>
           </div>
         </Link>
@@ -445,6 +492,9 @@ export const ListingCard = memo(function ListingCard({
     </>
   );
 
+  // ============================================================
+  // ✅ مودال تعارض المتجر
+  // ============================================================
   function StoreConflictModal() {
     return (
       <Dialog open={showStoreConflictDialog} onOpenChange={setShowStoreConflictDialog}>

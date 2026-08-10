@@ -18,6 +18,7 @@ export interface CartItem {
   selected_color?: string;
   selected_size?: string;
   selected_variation_id?: string;
+  variation_combination?: Record<string, string>;  // ✅ أضف هذا
   variation_snapshot?: any;
   subtotal: number;
   subtotal_usd?: number;
@@ -191,12 +192,8 @@ export function useCheckCartCompatibility() {
 }
 
 // ============================================================
-// ✅ 3. إضافة للسلة (محسّن)
+// ✅ 3. إضافة للسلة (محسّن مع دعم التركيبات)
 // ============================================================
-// src/lib/hooks/useCart.ts
-
-// src/lib/hooks/useCart.ts
-
 export function useAddToCart() {
   const queryClient = useQueryClient();
   const checkCompatibility = useCheckCartCompatibility();
@@ -209,6 +206,8 @@ export function useAddToCart() {
       selectedColor,
       selectedSize,
       selectedVariationId,
+      variationPrice,              // ✅ سعر التركيبة
+      variationCombination,        // ✅ تركيبة (لون، مقاس، إلخ)
       onStoreConflict,
     }: {
       userId: string;
@@ -217,6 +216,8 @@ export function useAddToCart() {
       selectedColor?: string;
       selectedSize?: string;
       selectedVariationId?: string;
+      variationPrice?: number;     // ✅ جديد
+      variationCombination?: Record<string, string>;  // ✅ جديد
       onStoreConflict?: (data: any) => void;
     }) => {
       console.log("🛒 [useAddToCart] START - userId:", userId, "listingId:", listingId);
@@ -233,6 +234,9 @@ export function useAddToCart() {
       }
       
       console.log("✅ [useAddToCart] Listing found:", listing.title_ar);
+      
+      // ✅ تحديد السعر (استخدم سعر التركيبة إذا وجد)
+      const finalPrice = variationPrice || listing?.price || 0;
       
       const compatibility = await checkCompatibility.mutateAsync({
         userId,
@@ -272,14 +276,13 @@ export function useAddToCart() {
       
       console.log("🛒 [useAddToCart] cartId:", cartId);
       
-      // ✅ ✅ ✅ الحل النهائي: بناء الـ query ديناميكياً
+      // ✅ التحقق من وجود العنصر بنفس التركيبة
       let query = supabase
         .from("cart_items")
         .select("id, quantity")
         .eq("cart_id", cartId)
         .eq("listing_id", listingId);
 
-      // ✅ أضف الشروط فقط إذا كانت القيم موجودة
       if (selectedColor) {
         query = query.eq("selected_color", selectedColor);
       }
@@ -321,24 +324,23 @@ export function useAddToCart() {
       } else {
         console.log("🔄 [useAddToCart] Adding new item...");
         
-        // ✅ ✅ ✅ بنفس الطريقة في الإدراج
+        // ✅ بناء بيانات الإدراج مع دعم التركيبات
         const insertData: any = {
           cart_id: cartId,
           listing_id: listingId,
           quantity: quantity,
-          price: listing.price,
+          price: finalPrice,  // ✅ استخدم سعر التركيبة
           price_usd: listing.price_usd,
           currency: listing.currency || 'SYP',
           variation_snapshot: {
             title_ar: listing.title_ar,
             title_en: listing.title_en,
             cover_url: listing.cover_url,
-            price: listing.price,
+            price: finalPrice,
             price_usd: listing.price_usd,
           },
         };
 
-        // ✅ أضف فقط إذا كانت القيم موجودة
         if (selectedColor) {
           insertData.selected_color = selectedColor;
         }
@@ -347,6 +349,10 @@ export function useAddToCart() {
         }
         if (selectedVariationId) {
           insertData.selected_variation_id = selectedVariationId;
+        }
+        // ✅ ✅ ✅ حفظ التركيبة كاملة
+        if (variationCombination) {
+          insertData.variation_combination = variationCombination;
         }
 
         const { data: newItem, error: insertError } = await supabase
@@ -380,6 +386,7 @@ export function useAddToCart() {
     },
   });
 }
+
 // ============================================================
 // ✅ 4. تحديث عنصر في السلة (المهم)
 // ============================================================

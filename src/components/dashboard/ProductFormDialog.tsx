@@ -35,18 +35,15 @@ interface ProductFormDialogProps {
   lang: string;
 }
 
+// ✅ تم إزالة price_usd و old_price_usd و delivery_method و delivery_note
 const emptyForm = {
   title_ar: "",
   description_ar: "",
   price: 0,
-  price_usd: 0,
   old_price: 0,
-  old_price_usd: 0,
   is_offer: false,
   is_available: true,
-  delivery_method: "pickup" as const,
   payment_method: "cash" as const,
-  delivery_note: "",
   kind: "product" as ListingKind,
   category_id: "",
   governorate_id: "",
@@ -54,7 +51,8 @@ const emptyForm = {
   image_urls: [""],
 };
 
-const TAB_ORDER = ['basic', 'pricing', 'images', 'options', 'delivery'];
+// ✅ تم إزالة delivery من التبويبات
+const TAB_ORDER = ['basic', 'pricing', 'images', 'options'];
 
 export function ProductFormDialog({
   open,
@@ -167,16 +165,19 @@ export function ProductFormDialog({
         if (form.old_price < 0) return false;
       }
       
-      // ✅ السعر بالدولار اختياري (لا نتحقق منه)
       return true;
     }
     if (tab === 'images') {
       return !!form.cover_url?.trim();
     }
     if (tab === 'options') {
-      return true;
-    }
-    if (tab === 'delivery') {
+      // ✅ التحقق من سعر كل تركيبة
+      if (variations.length > 0) {
+        const variationsWithoutPrice = variations.filter(v => !v.price || v.price <= 0);
+        if (variationsWithoutPrice.length > 0) {
+          return false; // ❌ يمنع الانتقال
+        }
+      }
       return true;
     }
     return true;
@@ -186,6 +187,19 @@ export function ProductFormDialog({
     const currentIndex = TAB_ORDER.indexOf(activeTab);
     if (currentIndex < TAB_ORDER.length - 1) {
       if (!isTabValid(activeTab)) {
+        // ✅ رسالة خاصة لتبويب الخيارات
+        if (activeTab === 'options') {
+          const variationsWithoutPrice = variations.filter(v => !v.price || v.price <= 0);
+          if (variationsWithoutPrice.length > 0) {
+            toast.error(
+              lang === "ar" 
+                ? `⚠️ هناك ${variationsWithoutPrice.length} تركيبة بدون سعر، الرجاء تحديد السعر لكل تركيبة` 
+                : `⚠️ ${variationsWithoutPrice.length} variations have no price, please set price for each variation`
+            );
+            return;
+          }
+        }
+        
         toast.warning(
           lang === "ar" 
             ? "⚠️ يرجى إكمال البيانات المطلوبة في هذا القسم أولاً" 
@@ -212,18 +226,15 @@ export function ProductFormDialog({
     if (product) {
       const availableValue = product.is_available !== undefined ? product.is_available : true;
       
+      // ✅ تم إزالة price_usd و old_price_usd و delivery_method و delivery_note
       setForm({
         title_ar: product.title_ar || "",
         description_ar: product.description_ar || "",
         price: product.price || 0,
-        price_usd: product.price_usd || 0,
         old_price: product.old_price || 0,
-        old_price_usd: product.old_price_usd || 0,
         is_offer: product.is_offer || false,
         is_available: availableValue,
-        delivery_method: product.delivery_method || "pickup",
         payment_method: product.payment_method || "cash",
-        delivery_note: product.delivery_note || "",
         kind: product.kind || "product",
         category_id: product.category_id || "",
         governorate_id: product.governorate_id || "",
@@ -298,7 +309,7 @@ export function ProductFormDialog({
       setGovernorateSearch("");
     }
     setActiveTab("basic");
-  }, [product, productType, open]);
+  }, [product, productType, open, cats, govs]);
 
   const handlePriceChange = (value: string, field: string) => {
     const num = Number(value);
@@ -335,12 +346,17 @@ export function ProductFormDialog({
       if (colorsWithoutImage.length > 0) return false;
     }
     
+    // ✅ تحقق من سعر التركيبات قبل النشر
+    if (variations.length > 0) {
+      const variationsWithoutPrice = variations.filter(v => !v.price || v.price <= 0);
+      if (variationsWithoutPrice.length > 0) return false;
+    }
+    
     return true;
   };
 
 
  // ✅ ✅ ✅ التحقق والإرسال ✅ ✅ ✅
-// ✅ ✅ ✅ التحقق والإرسال ✅ ✅ ✅
 const validateAndSubmit = async () => {
   console.log("🔍 [validateAndSubmit] ===== STARTING VALIDATION =====");
   console.log("🔍 [validateAndSubmit] Product type:", productType);
@@ -487,6 +503,21 @@ const validateAndSubmit = async () => {
     console.log("ℹ️ [validateAndSubmit] Active options < 2, skipping variations check");
   }
   
+  // ✅ التحقق من سعر التركيبات قبل النشر
+  if (variations.length > 0) {
+    const variationsWithoutPrice = variations.filter(v => !v.price || v.price <= 0);
+    if (variationsWithoutPrice.length > 0) {
+      console.log("❌ [validateAndSubmit] Variations without price:", variationsWithoutPrice.length);
+      toast.error(
+        app.lang === "ar" 
+          ? `⚠️ هناك ${variationsWithoutPrice.length} تركيبة بدون سعر، الرجاء تحديد السعر لكل تركيبة` 
+          : `⚠️ ${variationsWithoutPrice.length} variations have no price, please set price for each variation`
+      );
+      setActiveTab("options");
+      return;
+    }
+  }
+  
   // ============================================================
   // ✅ إرسال البيانات
   // ============================================================
@@ -495,6 +526,7 @@ const validateAndSubmit = async () => {
   
   setIsSubmitting(true);
   try {
+    // ✅ تم إزالة price_usd و delivery_method من البيانات
     const allData = { 
       ...form, 
       options: {
@@ -502,7 +534,10 @@ const validateAndSubmit = async () => {
         colors: tempColors.map((c: any) => c.color_name_ar),
         sizes: sizes,
       },
-      variations,
+      variations: variations.map(v => ({
+        ...v,
+        price: v.price || form.price,
+      })),
       colors: tempColors,
     };
     
@@ -576,24 +611,24 @@ const validateAndSubmit = async () => {
     return app.lang === "ar" ? "املأ البيانات التالية لإضافة منتج جديد" : "Fill in the details below to add a new product";
   };
 
+  // ✅ تم إزالة delivery من getTabLabel
   const getTabLabel = (tab: string) => {
     const labels: Record<string, string> = {
       basic: lang === "ar" ? "أساسيات" : "Basic",
       pricing: lang === "ar" ? "السعر" : "Pricing",
       images: lang === "ar" ? "الصور" : "Images",
       options: lang === "ar" ? "خيارات" : "Options",
-      delivery: lang === "ar" ? "الدفع" : "Payment",
     };
     return labels[tab] || tab;
   };
 
+  // ✅ تم إزالة delivery من getTabIcon
   const getTabIcon = (tab: string) => {
     const icons: Record<string, any> = {
       basic: Info,
       pricing: DollarSign,
       images: Camera,
       options: Layers,
-      delivery: CreditCard,
     };
     return icons[tab] || Info;
   };
@@ -700,7 +735,7 @@ const validateAndSubmit = async () => {
           {/* ===== Tabs ===== */}
           <div className="mt-3">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-5 gap-1.5 bg-[#2a655f]/5 dark:bg-[#2a655f]/20 p-1.5 rounded-2xl border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+              <TabsList className="grid grid-cols-4 gap-1.5 bg-[#2a655f]/5 dark:bg-[#2a655f]/20 p-1.5 rounded-2xl border border-[#2a655f]/10 dark:border-[#2a655f]/20">
                 {TAB_ORDER.map((tab) => {
                   const Icon = getTabIcon(tab);
                   const isActive = activeTab === tab;
@@ -987,7 +1022,8 @@ const validateAndSubmit = async () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* ✅ فقط حقل السعر بالليرة السورية */}
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <DollarSign className="h-3.5 w-3.5 text-[#2a655f]" />
@@ -1005,29 +1041,6 @@ const validateAndSubmit = async () => {
                       onChange={(e) => handlePriceChange(e.target.value, "price")}
                       placeholder="0"
                       className="ps-12 h-12 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <DollarSign className="h-3.5 w-3.5 text-[#2a655f]" />
-                    {lang === "ar" ? "السعر ($)" : "Price (USD)"}
-                    <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-600 border-slate-200">
-                      {lang === "ar" ? "اختياري" : "Optional"}
-                    </Badge>
-                  </Label>
-                  <div className="relative mt-1.5">
-                    <div className="absolute inset-y-0 start-3 flex items-center">
-                      <span className="text-sm font-bold text-[#2a655f]/60">$</span>
-                    </div>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={form.price_usd}
-                      onChange={(e) => handlePriceChange(e.target.value, "price_usd")}
-                      placeholder="0.00"
-                      className="ps-10 h-12 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                     />
                   </div>
                 </div>
@@ -1052,7 +1065,7 @@ const validateAndSubmit = async () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
                       <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                         <Tag className="h-3.5 w-3.5 text-[#2a655f]" />
@@ -1070,29 +1083,6 @@ const validateAndSubmit = async () => {
                           onChange={(e) => handlePriceChange(e.target.value, "old_price")}
                           placeholder="0"
                           className="ps-12 h-12 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <DollarSign className="h-3.5 w-3.5 text-[#2a655f]" />
-                        {lang === "ar" ? "السعر القديم ($)" : "Old Price (USD)"}
-                        <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-600 border-slate-200">
-                          {lang === "ar" ? "اختياري" : "Optional"}
-                        </Badge>
-                      </Label>
-                      <div className="relative mt-1.5">
-                        <div className="absolute inset-y-0 start-3 flex items-center">
-                          <span className="text-sm font-bold text-[#2a655f]/60">$</span>
-                        </div>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={form.old_price_usd}
-                          onChange={(e) => handlePriceChange(e.target.value, "old_price_usd")}
-                          placeholder="0.00"
-                          className="ps-10 h-12 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                         />
                       </div>
                     </div>
@@ -1247,68 +1237,6 @@ const validateAndSubmit = async () => {
                 sizes={sizes}
                 onSizesChange={handleSizesUpdate}
               />
-            </div>
-          )}
-
-          {/* ===== TAB: Delivery (Payment) ===== */}
-          {activeTab === "delivery" && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-top-5 duration-300">
-              <div className="relative overflow-hidden rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-gradient-to-r from-purple-500/5 to-purple-500/10 dark:from-purple-500/20 dark:to-purple-500/10 p-5">
-                <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-purple-500/5 blur-3xl" />
-                <div className="flex items-start gap-3 relative">
-                  <div className="p-2.5 rounded-xl bg-purple-500/10">
-                    <CreditCard className="h-5 w-5 text-purple-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-purple-600 dark:text-purple-400">
-                      {lang === "ar" ? "💳 طريقة الدفع" : "💳 Payment Method"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {lang === "ar" 
-                        ? "حدد طريقة الدفع المتوفرة للمنتج" 
-                        : "Specify available payment method for the product"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <CreditCard className="h-3.5 w-3.5 text-[#2a655f]" />
-                  {lang === "ar" ? "طريقة الدفع" : "Payment Method"}
-                  <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={form.payment_method}
-                  onValueChange={(v: any) => setForm({ ...form, payment_method: v })}
-                >
-                  <SelectTrigger className="mt-1.5 h-12 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-[#2a655f]/20">
-                    <SelectItem value="cash">💰 {lang === "ar" ? "نقداً عند الاستلام" : "Cash on delivery"}</SelectItem>
-                    <SelectItem value="transfer">🏦 {lang === "ar" ? "تحويل بنكي" : "Bank transfer"}</SelectItem>
-                    <SelectItem value="online">💳 {lang === "ar" ? "دفع إلكتروني" : "Online payment"}</SelectItem>
-                    <SelectItem value="all">🌐 {lang === "ar" ? "كل الطرق" : "All methods"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <Info className="h-3.5 w-3.5 text-[#2a655f]" />
-                  {lang === "ar" ? "ملاحظة الدفع" : "Payment Note"}
-                  <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-600 border-slate-200">
-                    {lang === "ar" ? "اختياري" : "Optional"}
-                  </Badge>
-                </Label>
-                <Input
-                  value={form.delivery_note}
-                  onChange={(e) => setForm({ ...form, delivery_note: e.target.value })}
-                  placeholder={lang === "ar" ? "📝 ملاحظات إضافية للدفع..." : "📝 Additional payment notes..."}
-                  className="mt-1.5 h-12 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
-                />
-              </div>
             </div>
           )}
         </div>

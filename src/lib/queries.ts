@@ -1,6 +1,7 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { StoreService, DeleteStoreResult } from "@/lib/services/StoreService";
 import { 
   useDeliveryOrders, 
   useDistributors, 
@@ -52,10 +53,10 @@ export type ListingRow = {
   // extended fields
   is_offer?: boolean;
   is_available?: boolean;
-  price_usd?: number | null;
+  // ❌ تم إزالة price_usd
   old_price?: number | null;
   discount_percent?: number | null;
-  delivery_method?: string | null;
+
   payment_method?: string | null;
   delivery_note?: string | null;
 };
@@ -189,7 +190,16 @@ export function useSimilarListings(categoryId: string | undefined, currentId: st
          profiles:owner_id(store_name, full_name, avatar_url, store_logo_url, store_cover_url),
           colors:product_colors (*),        // ✅ أضف هذا
           options:product_options (*),      // ✅ أضف هذا
-          variations:product_variations (*) // ✅ أضف هذا
+  variations:product_variations (
+  id,
+  sku,
+  combination,
+  price,
+  stock_quantity,
+  is_active,
+  image_url,
+  color_id
+)
         `)
         .eq("status", "published")
         .eq("category_id", categoryId!)
@@ -237,86 +247,26 @@ export function useListings(filter: ListingsFilter = {}) {
     queryFn: async () => {
       console.log("🔍 [useListings] START - Filter:", filter);
       
-      let q = supabase
-        .from("listings")
-        .select(`
-          *,
-          categories(slug, name_ar, name_en),
-          governorates(slug, name_ar, name_en),
-          listing_images(url, sort_order),
-          profiles:owner_id(store_name, full_name, avatar_url, store_logo_url, store_cover_url),
-          colors:product_colors (*),
-          options:product_options (*),
-          variations:product_variations (*)
-        `, { count: 'exact' })  // ✅ أضف count هنا
-        .eq("status", "published");
-
-      // ✅ تصفية حسب kind
-      if (filter.kind) q = q.eq("kind", filter.kind);
-      
-      // ✅ تصفية حسب ownerId
-      if (filter.ownerId) q = q.eq("owner_id", filter.ownerId);
-      
-      // ✅ تصفية حسب isOffer
-      if (filter.isOffer) q = q.eq("is_offer", true);
-      
-      // ✅ بحث
-      if (filter.search) {
-        const s = `%${filter.search}%`;
-        q = q.or(`title_ar.ilike.${s},title_en.ilike.${s},description_ar.ilike.${s}`);
-      }
-
-      // ✅ ترتيب
-      switch (filter.sort) {
-        case "rating": q = q.order("rating", { ascending: false }); break;
-        case "cheapest": q = q.order("price", { ascending: true }); break;
-        case "popular": q = q.order("views", { ascending: false }); break;
-        default: q = q.order("created_at", { ascending: false });
-      }
-      
-      // ✅ حد
-      if (filter.limit) q = q.limit(filter.limit);
-      
-      // ✅ Pagination (page)
-      if (filter.page && filter.limit) {
-        const from = (filter.page - 1) * filter.limit;
-        const to = from + filter.limit - 1;
-        q = q.range(from, to);
-      }
-
-      console.log("🔍 [useListings] About to execute query");
-      
-      const { data, error, count } = await q;  // ✅ استقبل count
+      // ✅ ✅ ✅ استخدم RPC
+      const { data, error } = await supabase
+        .rpc('get_public_listings_with_variations', {
+          p_limit: filter.limit || 12,
+          p_offset: filter.page ? (filter.page - 1) * (filter.limit || 12) : 0,
+          p_sort: filter.sort || 'recent'
+        });
       
       if (error) {
-        console.error("❌ [useListings] Error:", error);
+        console.error("❌ [useListings] RPC Error:", error);
         throw error;
       }
       
-      console.log("✅ [useListings] Raw data from Supabase:", data);
-      console.log("✅ [useListings] Data length:", data?.length || 0);
-      console.log("✅ [useListings] Total count:", count || 0);
+      const listings = Array.isArray(data) ? data : [];
+      console.log(`✅ [useListings] Found ${listings.length} listings`);
       
-      let rows = (data ?? []) as ListingWithRelations[];
-      
-      // ✅ تصفية حسب categorySlug (بعد الجلب لأنها علاقة)
-      if (filter.categorySlug) {
-        rows = rows.filter((r) => r.categories?.slug === filter.categorySlug);
-      }
-      
-      // ✅ تصفية حسب governorateSlug (بعد الجلب)
-      if (filter.governorateSlug) {
-        rows = rows.filter((r) => r.governorates?.slug === filter.governorateSlug);
-      }
-      
-      console.log("✅ [useListings] Final rows after filters:", rows.length);
-      console.log("✅ [useListings] First item:", rows[0]);
-      
-      // ✅ ✅ ✅ أعد البيانات بالشكل الصحيح
       return {
-        data: rows,
-        count: count || rows.length,
-        totalPages: filter.limit ? Math.ceil((count || rows.length) / filter.limit) : 1,
+        data: listings,
+        count: listings.length,
+        totalPages: filter.limit ? Math.ceil(listings.length / filter.limit) : 1,
       };
     },
   });
@@ -325,132 +275,45 @@ export function useListings(filter: ListingsFilter = {}) {
 // src/lib/queries.ts
 
 // ✅ 1. فصل الـ queryFn
+// src/lib/queries.ts
+
 const fetchMyListings = async (ownerId: string) => {
   console.log("🔄 [fetchMyListings] Fetching listings for user:", ownerId);
   
+  // ✅ استخدم الـ RPC Function
   const { data, error } = await supabase
-    .from("listings")
-    .select(`
-      *,
-      categories:category_id (
-        id,
-        name_ar,
-        name_en,
-        slug
-      ),
-      governorates:governorate_id (
-        id,
-        name_ar,
-        name_en,
-        slug
-      ),
-      colors:product_colors (
-        id,
-        color_name_ar,
-        color_name_en,
-        color_hex,
-        image_url,
-        sort_order
-      ),
-      options:product_options (
-        id,
-        option_type,
-        option_value,
-        option_label_ar,
-        option_label_en,
-        sort_order
-      ),
-      variations:product_variations (
-        id,
-        sku,
-        combination,
-        is_active,
-        stock_quantity,
-        image_url
-      ),
-      reviews:reviews (
-        id,
-        rating,
-        user_id,
-        created_at
-      ),
-      images:listing_images (
-        id,
-        url,
-        sort_order
-      )
-    `)
-    .eq("owner_id", ownerId)
-    .order("created_at", { ascending: false });
+    .rpc('get_listings_with_variations', { 
+      p_owner_id: ownerId 
+    });
   
   if (error) {
-    console.error("❌ [fetchMyListings] Error:", error);
+    console.error("❌ [fetchMyListings] RPC Error:", error);
     throw error;
   }
   
-  console.log(`✅ [fetchMyListings] Found ${data?.length || 0} listings`);
+  // ✅ تأكد من أن data هي مصفوفة
+  const listings = Array.isArray(data) ? data : [];
   
-  return (data ?? []).map((listing: any) => {
-    const reviews = listing.reviews || [];
-    const avgRating = reviews.length > 0 
-      ? reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / reviews.length 
-      : 0;
-    
-    const optionsFromDb: Record<string, string[]> = {};
-    listing.options?.forEach((opt: any) => {
-      if (!optionsFromDb[opt.option_type]) {
-        optionsFromDb[opt.option_type] = [];
-      }
-      optionsFromDb[opt.option_type].push(opt.option_value);
-    });
-    
-    const metaOptions = listing.metadata?.options || {};
-    const mergedOptions = { ...metaOptions, ...optionsFromDb };
-    
-    const defaultOptions = {
-      colors: [],
-      sizes: [],
-      models: [],
-      materials: [],
-      weight: [],
-      style: [],
-      brand: [],
-    };
-    const finalOptions = { ...defaultOptions, ...mergedOptions };
-    
-    return {
-      ...listing,
-      category_id: listing.category_id,
-      governorate_id: listing.governorate_id,
-      category_data: listing.categories,
-      governorate_data: listing.governorates,
-      options: finalOptions,
-      sizes: finalOptions.sizes || [],
-      colors: listing.colors || [],
-      listing_images: listing.images || [],
-      reviews: reviews,
-      avg_rating: avgRating,
-      reviews_count: reviews.length,
-      metadata: {
-        ...listing.metadata,
-        options: finalOptions,
-        variations: listing.variations || [],
-      },
-      is_available: listing.is_available ?? true,
-    };
-  });
+  console.log(`✅ [fetchMyListings] Found ${listings.length} listings`);
+  
+  if (listings.length > 0) {
+    console.log("🔍 [fetchMyListings] First listing:", listings[0]);
+    console.log("🔍 [fetchMyListings] Variations:", listings[0]?.variations);
+    console.log("🔍 [fetchMyListings] Variations count:", listings[0]?.variations?.length || 0);
+  }
+  
+  return listings;
 };
 
-// ✅ 2. إنشاء queryOptions منفصلة
+// ✅ باقي الكود كما هو
 export const myListingsQueryOptions = (ownerId: string | undefined) => 
   queryOptions({
-    queryKey: ["listings", "my", ownerId].filter(Boolean), // إزالة undefined
+    queryKey: ["listings", "my", ownerId].filter(Boolean),
     enabled: !!ownerId && ownerId.length > 0 && ownerId !== "undefined",
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    // refetchOnMount محذوف لأنه default = true
     retry: 1,
     retryDelay: 1000,
     queryFn: async () => {
@@ -459,7 +322,6 @@ export const myListingsQueryOptions = (ownerId: string | undefined) =>
     },
   });
 
-// ✅ 3. Hook بسيط ونظيف
 export function useMyListings(ownerId: string | undefined) {
   return useQuery(myListingsQueryOptions(ownerId));
 }
@@ -524,14 +386,15 @@ export function useListing(id: string | undefined) {
             sort_order
           ),
           variations:product_variations (
-            id,
-            sku,
-            combination,
-            price,
-            stock_quantity,
-            is_active,
-            image_url
-          )
+  id,
+  sku,
+  combination,
+  price,
+  stock_quantity,
+  is_active,
+  image_url,
+  color_id
+)
         `)
         .eq("id", id!)
         .maybeSingle();
@@ -1596,7 +1459,88 @@ export function useAllStores(limit = 24) {
     },
   });
 }
+// ✅ تعديل fetchAllPromoCodes - إزالة company_id
+export async function fetchAllPromoCodes(): Promise<PromoCode[]> {
+  const { data, error } = await supabase
+    .from("promo_codes")
+    .select(`
+      *,
+      creator:profiles!created_by (
+        id,
+        full_name,
+        phone,
+        email
+      )
+    `)
+    .order("created_at", { ascending: false });
 
+  if (error) {
+    console.error("❌ Error fetching all promo codes:", error);
+    throw error;
+  }
+  return data || [];
+}
+// ✅ تعديل createPromoCode - إضافة store_id, store_name, store_ids
+export async function createPromoCode(data: Partial<PromoCode>): Promise<PromoCode> {
+  const { data: result, error } = await supabase
+    .from("promo_codes")
+    .insert({
+      code: data.code?.toUpperCase().trim(),
+      label: data.label?.trim(),
+      description: data.description?.trim() || null,
+      type: data.type,
+      value: data.value,
+      min_order: data.min_order || 0,
+      max_discount: data.max_discount || null,
+      usage_limit: data.usage_limit || 1,
+      is_active: data.is_active ?? true,
+      is_public: data.is_public ?? false,
+      is_auto_applied: data.is_auto_applied ?? false,
+      starts_at: data.starts_at || new Date().toISOString(),
+      expires_at: data.expires_at || null,
+      created_by: data.created_by || null,
+      metadata: data.metadata || {},
+      store_id: data.store_id || null,      // ✅ جديد
+      store_name: data.store_name || null,  // ✅ جديد
+      store_ids: data.store_ids || [],      // ✅ جديد
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return result;
+}
+// ✅ تعديل updatePromoCode - إضافة store_id, store_name, store_ids
+export async function updatePromoCode(id: string, data: Partial<PromoCode>): Promise<PromoCode> {
+  const { data: result, error } = await supabase
+    .from("promo_codes")
+    .update({
+      code: data.code?.toUpperCase().trim(),
+      label: data.label?.trim(),
+      description: data.description?.trim() || null,
+      type: data.type,
+      value: data.value,
+      min_order: data.min_order || 0,
+      max_discount: data.max_discount || null,
+      usage_limit: data.usage_limit || 1,
+      is_active: data.is_active ?? true,
+      is_public: data.is_public ?? false,
+      is_auto_applied: data.is_auto_applied ?? false,
+      starts_at: data.starts_at || new Date().toISOString(),
+      expires_at: data.expires_at || null,
+      updated_at: new Date().toISOString(),
+      metadata: data.metadata || {},
+      store_id: data.store_id || null,      // ✅ جديد
+      store_name: data.store_name || null,  // ✅ جديد
+      store_ids: data.store_ids || [],      // ✅ جديد
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return result;
+}
 export function useStoresByCategory(categorySlug: string | undefined) {
   return useQuery({
     queryKey: ["stores", categorySlug],
@@ -4404,6 +4348,88 @@ export function useRejectDeliveryOrder() {
   });
 }
 
+
+export function useDeleteStore() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userId: string): Promise<DeleteStoreResult> => {
+      return StoreService.deleteStore(userId);
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        // ✅ تحديث الكاش بعد الحذف
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+        queryClient.invalidateQueries({ queryKey: ["myListings"] });
+        queryClient.invalidateQueries({ queryKey: ["mySellerApplication"] });
+        queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
+        queryClient.invalidateQueries({ queryKey: ["favorites"] });
+        queryClient.invalidateQueries({ queryKey: ["stores"] });
+        queryClient.invalidateQueries({ queryKey: ["admin", "stores"] });
+
+        toast.success(
+          "🗑️ تم حذف المتجر وجميع بياناته بنجاح",
+          { duration: 5000 }
+        );
+      } else {
+        toast.error(`❌ فشل حذف المتجر: ${result.error}`);
+      }
+    },
+    onError: (error: Error) => {
+      console.error("❌ useDeleteStore error:", error);
+      toast.error(`❌ فشل حذف المتجر: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * ✅ Hook: التحقق من وجود بيانات مرتبطة بالمتجر
+ */
+export function useStoreDependencies(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["store-dependencies", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return null;
+      return StoreService.checkStoreDependencies(userId);
+    },
+    staleTime: 1000 * 30, // 30 ثانية
+    gcTime: 1000 * 60 * 5, // 5 دقائق
+  });
+}
+
+/**
+ * ✅ Hook: التحقق من وجود طلبات نشطة
+ */
+export function useHasActiveOrders(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["has-active-orders", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return { hasActive: false, count: 0, orders: [] };
+      return StoreService.hasActiveOrders(userId);
+    },
+    staleTime: 1000 * 30,
+    gcTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * ✅ Hook: التحقق من وجود شكاوى نشطة
+ */
+export function useHasActiveComplaints(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["has-active-complaints", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return { hasActive: false, count: 0, complaints: [] };
+      return StoreService.hasActiveComplaints(userId);
+    },
+    staleTime: 1000 * 30,
+    gcTime: 1000 * 60 * 5,
+  });
+}
 // ✅ تحديث حالة طلب التوصيل (للاستخدامات الأخرى)
 // ✅ احتفظ بهذا التعريف (الأول)
 export function useUpdateDeliveryOrderStatus() {

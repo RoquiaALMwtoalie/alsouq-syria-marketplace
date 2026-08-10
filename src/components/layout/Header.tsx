@@ -400,24 +400,30 @@ export const Header = memo(function Header() {
   }
 
   // ===== ✅ دوال الإشعارات V2 =====
-  async function handleNotificationClick(notification: any) {
-    if (!notification.is_read) {
-      try {
-        await markRead.mutateAsync({
-          notificationId: notification.id,
-          userId: app.user!.id
-        });
-        await refetchNotifications();
-      } catch (error) {
-        console.error("Error marking notification as read:", error);
-      }
-    }
-    
-    if (notification.link_url) {
-      window.location.href = notification.link_url;
-      setNotificationsOpen(false);
+// ✅ فقط إزالة التنقل عند الضغط على الإشعار - مع بقاء "تحديد كمقروء" و "قراءة الكل"
+async function handleNotificationClick(notification: any) {
+  // ✅ تحديث الإشعار كمقروء (يبقى)
+  if (!notification.is_read) {
+    try {
+      await markRead.mutateAsync({
+        notificationId: notification.id,
+        userId: app.user!.id
+      });
+      await refetchNotifications();
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
     }
   }
+  
+  // ❌ ❌ ❌ تم إزالة التنقل إلى الرابط - هذا هو المطلوب
+  // if (notification.link_url) {
+  //   window.location.href = notification.link_url;
+  //   setNotificationsOpen(false);
+  // }
+  
+  // ✅ فقط نغلق النافذة بعد التحديث
+  setNotificationsOpen(false);
+}
 
   async function handleMarkAsRead(notificationId: string, e: React.MouseEvent) {
     e.stopPropagation();
@@ -977,18 +983,7 @@ export const Header = memo(function Header() {
                                 {app.lang === "ar" ? "تحديد كمقروء" : "Mark as read"}
                               </DropdownMenuItem>
                             )}
-                            {notification.link_url && (
-                              <DropdownMenuItem
-                                className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 hover:bg-[#2a655f]/15 text-slate-900 dark:text-slate-100"
-                                onClick={() => {
-                                  navigate({ to: notification.link_url as any });
-                                  setNotificationsOpen(false);
-                                }}
-                              >
-                                <Bell className="h-4 w-4 text-[#2a655f]" />
-                                {app.lang === "ar" ? "عرض التفاصيل" : "View details"}
-                              </DropdownMenuItem>
-                            )}
+                            
                             <DropdownMenuItem
                               className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-500/10"
                               onClick={async (e) => {
@@ -1241,23 +1236,7 @@ export const Header = memo(function Header() {
                   </Link>
                 </DropdownMenuItem>
 
-                {/* حجوزاتي */}
-                <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
-                  <Link to="/bookings" className="flex items-center gap-3.5 w-full">
-                    <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300 shadow-sm border border-[#2a655f]/20">
-                      <Calendar className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82] animate-icon-dance" style={{ animationDelay: '0.4s' }} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-emerald-300 transition-colors">
-                        {app.lang === "ar" ? "📅 حجوزاتي ومواعيدي" : "📅 My Bookings"}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        {app.lang === "ar" ? "إدارة مواعيدك المسبقة بكل سهولة" : "Manage your appointments"}
-                      </p>
-                    </div>
-                    <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                  </Link>
-                </DropdownMenuItem>
+           
 
                 {/* الإعدادات الشخصية */}
                 <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">

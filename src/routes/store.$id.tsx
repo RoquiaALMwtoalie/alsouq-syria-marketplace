@@ -4,7 +4,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useRef, lazy, Suspense } from "react";
 import { 
   Star, MessageCircle, Store as StoreIcon, Loader2, 
-  Clock, Calendar, MapPin, Globe, Building2, Truck,
+  Clock, MapPin, Globe, Building2, Truck,
   Sparkles, Package, Share2, Flame, BadgeCheck,
   Search, X, ArrowUpDown, Grid3X3, List, ChevronDown,
   RefreshCw, Eye, Heart, TrendingUp, Zap

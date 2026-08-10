@@ -99,7 +99,7 @@ export function AnnouncementBar() {
                   {a.link_url && (
                     <a
                       href={a.link_url}
-                      className="group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-400 text-[#0d2e2a] hover:bg-white hover:text-[#2a655f] transition-all duration-300 text-[11px] font-extrabold shadow-sm"
+                      className="group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-100 text-[#0d2e2a] hover:bg-pink-50 hover:text-[#2a655f] transition-all duration-300 text-[11px] font-extrabold shadow-sm"
                     >
                       <span>{isRtl ? "تفاصيل" : "Explore"}</span>
                       {isRtl ? (

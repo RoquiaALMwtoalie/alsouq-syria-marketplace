@@ -7,7 +7,8 @@ import {
   Loader2, DollarSign, Percent, Truck, Gift,
   Filter, MoreVertical, Copy, RefreshCw, Sparkles,
   Zap, Shield, Layers, Clock, Calendar, Users,
-  CheckCircle2, TrendingUp, TrendingDown,
+  CheckCircle2, TrendingUp, TrendingDown, Store, Globe,
+  Info, MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +58,7 @@ import {
   useTogglePromoCodeStatus,
   type PromoCode,
 } from "./AdminPromoCodesManager";
+import { useAllStores } from "@/lib/queries";
 
 // ============================================================
 // ✅ مكون إحصائيات سريعة
@@ -170,10 +172,16 @@ const PromoCodeRow = React.memo(({
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          {code.is_public && (
+          {code.is_public && !code.store_id && (
             <Badge className="bg-[#2d6b63]/10 text-[#2d6b63] border border-[#2d6b63]/20 text-[8px]">
-              <Eye className="h-2.5 w-2.5 inline mr-0.5" />
+              <Globe className="h-2.5 w-2.5 inline mr-0.5" />
               {isArabic ? "عام" : "Public"}
+            </Badge>
+          )}
+          {code.store_id && (
+            <Badge className="bg-[#1a4f4a]/10 text-[#1a4f4a] border border-[#1a4f4a]/20 text-[8px]">
+              <Store className="h-2.5 w-2.5 inline mr-0.5" />
+              {code.store_name || isArabic ? "مخصص" : "Specific"}
             </Badge>
           )}
           <span className="text-sm font-medium">{code.label || "-"}</span>
@@ -294,6 +302,18 @@ export function AdminPromoCodes() {
   const [selectedCode, setSelectedCode] = useState<PromoCode | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ✅ State للكود العام/مخصص
+  const [isStoreSpecific, setIsStoreSpecific] = useState(false);
+  const [selectedStoreId, setSelectedStoreId] = useState<string>("");
+
+  // ✅ جلب المتاجر النشطة
+  const { data: stores = [] } = useAllStores(100);
+
+  // ✅ تصفية المتاجر النشطة فقط
+  const activeStores = useMemo(() => {
+    return stores.filter((store: any) => store.store_active !== false);
+  }, [stores]);
+
   // ✅ ===== HOOKS الاحترافية =====
   
   const {
@@ -380,7 +400,7 @@ export function AdminPromoCodes() {
   const deleteMutation = useDeletePromoCode();
   const toggleMutation = useTogglePromoCodeStatus();
 
-  // ✅ Form state مع حقول buy_x_get_y
+  // ✅ Form state مع حقول buy_x_get_y و store_id
   const [formData, setFormData] = useState({
     code: "",
     label: "",
@@ -393,9 +413,10 @@ export function AdminPromoCodes() {
     is_active: true,
     is_public: false,
     expires_at: "",
-    // ✅ حقول buy_x_get_y
     buy_quantity: 2,
     get_quantity: 1,
+    store_id: "",
+    store_name: "",
   });
 
   const resetForm = useCallback(() => {
@@ -413,7 +434,11 @@ export function AdminPromoCodes() {
       expires_at: "",
       buy_quantity: 2,
       get_quantity: 1,
+      store_id: "",
+      store_name: "",
     });
+    setIsStoreSpecific(false);
+    setSelectedStoreId("");
   }, []);
 
   // ============================================================
@@ -425,6 +450,17 @@ export function AdminPromoCodes() {
     setIsSubmitting(true);
 
     try {
+      // ✅ إذا كان كود مخصص، تأكد من اختيار متجر
+      if (isStoreSpecific && !selectedStoreId) {
+        toast.error(isArabic ? "⚠️ يرجى اختيار متجر للكود المخصص" : "⚠️ Please select a store for specific code");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // ✅ جلب اسم المتجر المختار
+      const selectedStore = activeStores.find((s: any) => s.id === selectedStoreId);
+      const storeName = selectedStore?.store_name || null;
+
       // ✅ بناء metadata
       const metadata: any = {};
       if (formData.type === 'buy_x_get_y') {
@@ -446,6 +482,8 @@ export function AdminPromoCodes() {
         expires_at: formData.expires_at || null,
         created_by: app.user?.id,
         metadata: metadata,
+        store_id: isStoreSpecific ? selectedStoreId : null,
+        store_name: isStoreSpecific ? storeName : null,
       });
 
       toast.success(isArabic ? "✅ تم إضافة الكود بنجاح" : "✅ Code added successfully");
@@ -464,6 +502,17 @@ export function AdminPromoCodes() {
     setIsSubmitting(true);
 
     try {
+      // ✅ إذا كان كود مخصص، تأكد من اختيار متجر
+      if (isStoreSpecific && !selectedStoreId) {
+        toast.error(isArabic ? "⚠️ يرجى اختيار متجر للكود المخصص" : "⚠️ Please select a store for specific code");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // ✅ جلب اسم المتجر المختار
+      const selectedStore = activeStores.find((s: any) => s.id === selectedStoreId);
+      const storeName = selectedStore?.store_name || null;
+
       // ✅ بناء metadata
       const metadata: any = {};
       if (formData.type === 'buy_x_get_y') {
@@ -486,6 +535,8 @@ export function AdminPromoCodes() {
           is_public: formData.is_public,
           expires_at: formData.expires_at || null,
           metadata: metadata,
+          store_id: isStoreSpecific ? selectedStoreId : null,
+          store_name: isStoreSpecific ? storeName : null,
         },
       });
 
@@ -540,6 +591,11 @@ export function AdminPromoCodes() {
     setSelectedCode(code);
     const metadata = code.metadata || {};
     
+    // ✅ تحديد إذا كان الكود مخصصاً
+    const isSpecific = !!code.store_id;
+    setIsStoreSpecific(isSpecific);
+    setSelectedStoreId(code.store_id || "");
+
     setFormData({
       code: code.code,
       label: code.label || "",
@@ -554,6 +610,8 @@ export function AdminPromoCodes() {
       expires_at: code.expires_at || "",
       buy_quantity: metadata.buy_quantity || 2,
       get_quantity: metadata.get_quantity || 1,
+      store_id: code.store_id || "",
+      store_name: code.store_name || "",
     });
     setShowEditDialog(true);
   }, []);
@@ -717,7 +775,7 @@ export function AdminPromoCodes() {
                     <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95]">
                       <div className="flex items-center gap-2">
                         <Layers className="h-3.5 w-3.5" />
-                        {isArabic ? "الاسم" : "Label"}
+                        {isArabic ? "الاسم / النوع" : "Label / Type"}
                       </div>
                     </TableHead>
                     <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95]">
@@ -817,7 +875,7 @@ export function AdminPromoCodes() {
         </>
       )}
 
-      {/* ===== DIALOG: إضافة كود (مع حقول buy_x_get_y) ===== */}
+      {/* ===== DIALOG: إضافة كود ===== */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/10">
           <DialogHeader>
@@ -1018,6 +1076,113 @@ export function AdminPromoCodes() {
               </div>
             )}
 
+            {/* ✅ ✅ ✅ خيار الكود العام / المخصص */}
+            <div className="space-y-3 pt-2">
+              <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                {isArabic ? "نوع الكود" : "Code Type"}
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <label
+                  className={cn(
+                    "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300",
+                    !isStoreSpecific
+                      ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20"
+                      : "border-[#0d2e2a]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    checked={!isStoreSpecific}
+                    onChange={() => {
+                      setIsStoreSpecific(false);
+                      setSelectedStoreId("");
+                    }}
+                    className="mt-1 h-4 w-4 accent-[#2a655f]"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-[#2a655f]" />
+                      <span className="font-semibold text-sm">{isArabic ? "🌐 كود عام" : "🌐 Public Code"}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {isArabic ? "ينطبق على جميع المتاجر" : "Applies to all stores"}
+                    </p>
+                  </div>
+                </label>
+
+                <label
+                  className={cn(
+                    "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300",
+                    isStoreSpecific
+                      ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20"
+                      : "border-[#0d2e2a]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    checked={isStoreSpecific}
+                    onChange={() => setIsStoreSpecific(true)}
+                    className="mt-1 h-4 w-4 accent-[#2a655f]"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Store className="h-4 w-4 text-[#2a655f]" />
+                      <span className="font-semibold text-sm">{isArabic ? "🏪 كود مخصص" : "🏪 Specific Code"}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {isArabic ? "ينطبق على متجر معين" : "Applies to a specific store"}
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* ✅ اختيار المتجر (يظهر فقط عند اختيار مخصص) */}
+            {isStoreSpecific && (
+              <div className="space-y-2 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
+                <Label className="text-[#0d2e2a] dark:text-white font-semibold flex items-center gap-2">
+                  <Store className="h-4 w-4 text-[#2a655f]" />
+                  {isArabic ? "اختر المتجر المستهدف *" : "Select Target Store *"}
+                </Label>
+                
+                {activeStores.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {isArabic ? "⚠️ لا توجد متاجر نشطة" : "⚠️ No active stores"}
+                  </p>
+                ) : (
+                  <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
+                    <SelectTrigger className="rounded-xl border-[#0d2e2a]/20">
+                      <SelectValue placeholder={isArabic ? "🔍 اختر المتجر..." : "🔍 Select store..."} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {activeStores.map((store: any) => (
+                        <SelectItem key={store.id} value={store.id}>
+                          <span className="flex items-center gap-2">
+                            {store.store_logo_url ? (
+                              <img src={store.store_logo_url} alt="" className="h-5 w-5 rounded-full object-cover" />
+                            ) : (
+                              <Store className="h-4 w-4" />
+                            )}
+                            {store.store_name || store.full_name}
+                            <Badge className="text-[9px] bg-[#2d6b63]/10 text-[#2d6b63] border-0">
+                              {store.listing_count || 0} {isArabic ? "منتج" : "products"}
+                            </Badge>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  {isArabic 
+                    ? "💡 اختر المتجر الذي سينطبق عليه الكود"
+                    : "💡 Select the store where this code will apply"}
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               <div className="flex items-center gap-3 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-colors">
                 <Switch
@@ -1055,7 +1220,7 @@ export function AdminPromoCodes() {
               <Button
                 type="submit"
                 className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#0d2e2a]/30 rounded-xl px-6"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (isStoreSpecific && !selectedStoreId)}
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
@@ -1071,7 +1236,7 @@ export function AdminPromoCodes() {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: تعديل كود (مع حقول buy_x_get_y) ===== */}
+      {/* ===== DIALOG: تعديل كود ===== */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/10">
           <DialogHeader>
@@ -1087,6 +1252,7 @@ export function AdminPromoCodes() {
           </DialogHeader>
           
           <form onSubmit={handleEditCode} className="space-y-4">
+            {/* نفس حقول الإضافة */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-[#0d2e2a] dark:text-white font-semibold">
@@ -1258,6 +1424,106 @@ export function AdminPromoCodes() {
               </div>
             )}
 
+            {/* ✅ خيار الكود العام / المخصص */}
+            <div className="space-y-3 pt-2">
+              <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                {isArabic ? "نوع الكود" : "Code Type"}
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <label
+                  className={cn(
+                    "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300",
+                    !isStoreSpecific
+                      ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20"
+                      : "border-[#0d2e2a]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    checked={!isStoreSpecific}
+                    onChange={() => {
+                      setIsStoreSpecific(false);
+                      setSelectedStoreId("");
+                    }}
+                    className="mt-1 h-4 w-4 accent-[#2a655f]"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-[#2a655f]" />
+                      <span className="font-semibold text-sm">{isArabic ? "🌐 كود عام" : "🌐 Public Code"}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {isArabic ? "ينطبق على جميع المتاجر" : "Applies to all stores"}
+                    </p>
+                  </div>
+                </label>
+
+                <label
+                  className={cn(
+                    "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300",
+                    isStoreSpecific
+                      ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20"
+                      : "border-[#0d2e2a]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    checked={isStoreSpecific}
+                    onChange={() => setIsStoreSpecific(true)}
+                    className="mt-1 h-4 w-4 accent-[#2a655f]"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Store className="h-4 w-4 text-[#2a655f]" />
+                      <span className="font-semibold text-sm">{isArabic ? "🏪 كود مخصص" : "🏪 Specific Code"}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {isArabic ? "ينطبق على متجر معين" : "Applies to a specific store"}
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* ✅ اختيار المتجر */}
+            {isStoreSpecific && (
+              <div className="space-y-2 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
+                <Label className="text-[#0d2e2a] dark:text-white font-semibold flex items-center gap-2">
+                  <Store className="h-4 w-4 text-[#2a655f]" />
+                  {isArabic ? "اختر المتجر المستهدف *" : "Select Target Store *"}
+                </Label>
+                
+                {activeStores.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {isArabic ? "⚠️ لا توجد متاجر نشطة" : "⚠️ No active stores"}
+                  </p>
+                ) : (
+                  <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
+                    <SelectTrigger className="rounded-xl border-[#0d2e2a]/20">
+                      <SelectValue placeholder={isArabic ? "🔍 اختر المتجر..." : "🔍 Select store..."} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {activeStores.map((store: any) => (
+                        <SelectItem key={store.id} value={store.id}>
+                          <span className="flex items-center gap-2">
+                            {store.store_logo_url ? (
+                              <img src={store.store_logo_url} alt="" className="h-5 w-5 rounded-full object-cover" />
+                            ) : (
+                              <Store className="h-4 w-4" />
+                            )}
+                            {store.store_name || store.full_name}
+                            <Badge className="text-[9px] bg-[#2d6b63]/10 text-[#2d6b63] border-0">
+                              {store.listing_count || 0} {isArabic ? "منتج" : "products"}
+                            </Badge>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               <div className="flex items-center gap-3 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-colors">
                 <Switch
@@ -1295,7 +1561,7 @@ export function AdminPromoCodes() {
               <Button
                 type="submit"
                 className="bg-gradient-to-r from-[#1a4f4a] to-[#2d6b63] hover:from-[#2d6b63] hover:to-[#4a9f95] text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#1a4f4a]/30 rounded-xl px-6"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (isStoreSpecific && !selectedStoreId)}
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />

@@ -15,13 +15,24 @@ interface ProductCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onView: () => void;
+  onConvertToOffer?: (product: any) => void;
   lang: string;
   currency: string;
   formatPrice: (price: number, currency: string, lang: string) => string;
   viewMode?: "grid" | "list";
 }
 
-export function ProductCard({ product, onEdit, onDelete, onView, lang, currency, formatPrice, viewMode = "grid" }: ProductCardProps) {
+export function ProductCard({ 
+  product, 
+  onEdit, 
+  onDelete, 
+  onView, 
+  onConvertToOffer,
+  lang, 
+  currency, 
+  formatPrice, 
+  viewMode = "grid" 
+}: ProductCardProps) {
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [oldPrice, setOldPrice] = useState<number>(product.price || 0);
   const [isConverting, setIsConverting] = useState(false);
@@ -34,7 +45,7 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
 
   const fullStars = Math.round(avgRating);
 
-  // ✅ دالة تحويل المنتج لعرض
+  // ✅ دالة تحويل المنتج لعرض (Fallback)
   const handleConvertToOffer = async () => {
     if (!oldPrice || oldPrice <= product.price) {
       toast.error(
@@ -68,7 +79,13 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
       );
       
       setShowConvertDialog(false);
-      window.location.reload();
+      
+      if (onConvertToOffer) {
+        const updatedProduct = { ...product, is_offer: true, old_price: oldPrice, discount_percent: discountPercent };
+        onConvertToOffer(updatedProduct);
+      } else {
+        window.location.reload();
+      }
       
     } catch (error) {
       console.error("❌ Error converting to offer:", error);
@@ -79,6 +96,15 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
       );
     } finally {
       setIsConverting(false);
+    }
+  };
+
+  // ✅ دالة فتح مودال التحويل
+  const openConvertDialog = () => {
+    if (onConvertToOffer) {
+      onConvertToOffer(product);
+    } else {
+      setShowConvertDialog(true);
     }
   };
 
@@ -123,6 +149,7 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
                 </span>
               </div>
               
+              {/* ===== السعر - تم إزالة price_usd ===== */}
               <div className="flex items-center gap-4 mt-2">
                 <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{formatPrice(Number(product.price), currency, lang)}</span>
                 {product.old_price && product.old_price > product.price && (
@@ -158,14 +185,34 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
               )}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Button size="sm" variant="outline" className="rounded-xl text-xs h-9" onClick={onEdit}><Edit2 className="h-3.5 w-3.5 mr-1.5 text-indigo-500" />{lang === "ar" ? "تعديل" : "Edit"}</Button>
-              <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50/50 rounded-xl h-9 w-9 p-0" onClick={onDelete}><Trash2 className="h-4 w-4" /></Button>
-              <Button size="sm" variant="ghost" className="rounded-xl h-9 w-9 p-0" onClick={onView}><Eye className="h-4 w-4 text-indigo-500" /></Button>
+              <Button size="sm" variant="outline" className="rounded-xl text-xs h-9" onClick={onEdit}>
+                <Edit2 className="h-3.5 w-3.5 mr-1.5 text-indigo-500" />
+                {lang === "ar" ? "تعديل" : "Edit"}
+              </Button>
+              
+              {!isOffer && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="rounded-xl text-xs h-9 border-orange-300/50 text-orange-600 hover:bg-orange-500/10 hover:border-orange-500 transition-all duration-300"
+                  onClick={openConvertDialog}
+                >
+                  <Gift className="h-3.5 w-3.5 mr-1.5 text-orange-500" />
+                  {lang === "ar" ? "تحويل لعرض" : "To Offer"}
+                </Button>
+              )}
+              
+              <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50/50 rounded-xl h-9 w-9 p-0" onClick={onDelete}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+              <Button size="sm" variant="ghost" className="rounded-xl h-9 w-9 p-0" onClick={onView}>
+                <Eye className="h-4 w-4 text-indigo-500" />
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* ✅ مودال التحويل (لحالة القائمة) */}
+        {/* ✅ مودال التحويل (لحالة القائمة) - Fallback */}
         <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
           <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-2xl shadow-[#2a655f]/10">
             <DialogHeader>
@@ -220,12 +267,14 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
               <div>
                 <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <DollarSign className="h-4 w-4 text-orange-500" />
-                  {lang === "ar" ? "السعر القديم (ل.س)" : "Old Price (SYP)"}
+                  {lang === "ar" ? "السعر القديم" : "Old Price"}
                   <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative mt-1.5">
                   <div className="absolute inset-y-0 start-3 flex items-center">
-                    <span className="text-sm font-bold text-[#2a655f]/60">ل.س</span>
+                    <span className="text-sm font-bold text-[#2a655f]/60">
+                      {currency === "SYP" ? "ل.س" : "$"}
+                    </span>
                   </div>
                   <Input
                     type="number"
@@ -344,7 +393,7 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
             </div>
           </div>
 
-          {/* ===== ✅ زر تحويل المنتج لعرض (يظهر عند Hover) ===== */}
+          {/* ===== زر تحويل المنتج لعرض ===== */}
           {!isOffer && (
             <div className="absolute bottom-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
               <Button
@@ -352,7 +401,7 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
                 className="h-8 px-2.5 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all duration-300 hover:scale-105"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowConvertDialog(true);
+                  openConvertDialog();
                 }}
               >
                 <Gift className="h-3.5 w-3.5 mr-1" />
@@ -412,18 +461,13 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
             </div>
           )}
           
-          {/* ===== السعر ===== */}
+          {/* ===== السعر - تم إزالة price_usd ===== */}
           <div className="flex items-end justify-between">
             <div>
               <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
                 {formatPrice(Number(product.price), currency, lang)}
               </div>
-              {product.price_usd && (
-                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <DollarSign className="h-3 w-3" />
-                  ${Number(product.price_usd).toFixed(2)}
-                </div>
-              )}
+              {/* ✅ تم إزالة عرض price_usd */}
             </div>
             {product.old_price && product.old_price > product.price && (
               <div className="text-xs text-red-500 line-through font-medium">
@@ -448,6 +492,19 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
               <Edit2 className="h-3.5 w-3.5 mr-1.5 text-indigo-500 group-hover:rotate-12 transition-transform" />
               {lang === "ar" ? "تعديل" : "Edit"}
             </Button>
+            
+            {!isOffer && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="rounded-xl text-xs h-9 px-2.5 border-orange-300/50 text-orange-600 hover:bg-orange-500/10 hover:border-orange-500 transition-all duration-300"
+                onClick={openConvertDialog}
+              >
+                <Gift className="h-3.5 w-3.5 mr-1 text-orange-500" />
+                <span className="hidden sm:inline">{lang === "ar" ? "عرض" : "Offer"}</span>
+              </Button>
+            )}
+            
             <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50/50 rounded-xl h-9 w-9 p-0 group" onClick={onDelete}>
               <Trash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
             </Button>
@@ -462,6 +519,17 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
                   <Eye className="h-4 w-4 mr-2 text-indigo-500" />
                   {lang === "ar" ? "عرض التفاصيل" : "View Details"}
                 </DropdownMenuItem>
+                
+                {!isOffer && (
+                  <DropdownMenuItem 
+                    className="cursor-pointer rounded-lg text-sm group text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    onClick={openConvertDialog}
+                  >
+                    <Gift className="h-4 w-4 mr-2 text-orange-500" />
+                    {lang === "ar" ? "تحويل لعرض" : "Convert to Offer"}
+                  </DropdownMenuItem>
+                )}
+                
                 <DropdownMenuItem className="cursor-pointer rounded-lg text-sm group" onClick={onEdit}>
                   <Edit2 className="h-4 w-4 mr-2 text-indigo-500" />
                   {lang === "ar" ? "تعديل" : "Edit"}
@@ -476,7 +544,7 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
         </div>
       </div>
 
-      {/* ===== ✅ مودال تحويل المنتج لعرض (لحالة الشبكة) ===== */}
+      {/* ===== مودال تحويل المنتج لعرض (Fallback) ===== */}
       <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
         <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-2xl shadow-[#2a655f]/10">
           <DialogHeader>
@@ -531,12 +599,14 @@ export function ProductCard({ product, onEdit, onDelete, onView, lang, currency,
             <div>
               <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <DollarSign className="h-4 w-4 text-orange-500" />
-                {lang === "ar" ? "السعر القديم (ل.س)" : "Old Price (SYP)"}
+                {lang === "ar" ? "السعر القديم" : "Old Price"}
                 <span className="text-red-500">*</span>
               </Label>
               <div className="relative mt-1.5">
                 <div className="absolute inset-y-0 start-3 flex items-center">
-                  <span className="text-sm font-bold text-[#2a655f]/60">ل.س</span>
+                  <span className="text-sm font-bold text-[#2a655f]/60">
+                    {currency === "SYP" ? "ل.س" : "$"}
+                  </span>
                 </div>
                 <Input
                   type="number"

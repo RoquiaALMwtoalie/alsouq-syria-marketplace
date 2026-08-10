@@ -8,7 +8,7 @@ import {
   TrendingUp, Zap, Crown, Gem, Award, Clock, ThumbsUp, Eye, Truck, Coffee,
   Layers, Grid3X3, List, Percent, Tag, MapPin, Navigation, 
   ArrowLeft,
-  Globe, // ✅ أضف هذا
+  Globe,  Store as StoreIcon ,// ✅ أضف هذا
   Building2 // ✅ وأضف هذا إذا كنت تستخدمه
 } from "lucide-react";
 import { useEffect, useState, useRef, useMemo, useCallback, Suspense } from "react";
@@ -85,29 +85,31 @@ function Home() {
   const { data: dbCategories = [] } = useCategories();
 
   // ✅ المنتجات - مع Pagination
-  const { data: productsData = { data: [], count: 0, totalPages: 0 }, isLoading: pLoading } = useListings({
-    sort: "popular",
-    limit: LIMIT,
-    page: page,
-  });
-  const products = productsData.data || [];
-  const totalPages = productsData.totalPages || 1;
+// src/routes/index.tsx
 
-  // ✅ العروض - محدودة
-  const { data: allDealsData = { data: [], count: 0, totalPages: 0 } } = useListings({
-    isOffer: true,
-    sort: "discount_desc",
-    limit: 12,
-  });
-  const allDeals = allDealsData.data || [];
+// ✅ البيانات الحالية تستخدم useListings بشكل صحيح
+const { data: productsData = { data: [], count: 0, totalPages: 0 }, isLoading: pLoading } = useListings({
+  sort: "popular",
+  limit: LIMIT,
+  page: page,
+});
+const products = productsData.data || [];
 
-  // ✅ العروض الحصرية - محدودة
-  const { data: offersData = { data: [], count: 0, totalPages: 0 } } = useListings({
-    isOffer: true,
-    limit: 4,
-    sort: "recent",
-  });
-  const offers = offersData.data || [];
+// ✅ العروض
+const { data: allDealsData = { data: [], count: 0, totalPages: 0 } } = useListings({
+  isOffer: true,
+  sort: "discount_desc",
+  limit: 12,
+});
+const allDeals = allDealsData.data || [];
+
+// ✅ العروض الحصرية
+const { data: offersData = { data: [], count: 0, totalPages: 0 } } = useListings({
+  isOffer: true,
+  limit: 4,
+  sort: "recent",
+});
+const offers = offersData.data || [];
 
   const { data: stores = [], isLoading: sLoading } = useAllStores(8);
 
@@ -927,97 +929,136 @@ function NearbyStores() {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchInitialData = async () => {
-      setLoading(true);
-      try {
-        const addressesPromise = app.user 
-          ? supabase
-              .from("user_addresses")
-              .select("id, label, address_text, lat, lng, governorate_id, is_default")
-              .eq("user_id", app.user.id)
-              .order("is_default", { ascending: false })
-          : Promise.resolve({ data: null });
+  // ✅ استبدل هذا الجزء
+const fetchInitialData = async () => {
+  setLoading(true);
+  try {
+    const addressesPromise = app.user 
+      ? supabase
+          .from("user_addresses")
+          .select("id, label, address_text, lat, lng, governorate_id, is_default")
+          .eq("user_id", app.user.id)
+          .order("is_default", { ascending: false })
+      : Promise.resolve({ data: null });
 
-        const storesPromise = supabase
-          .from("profiles")
-          .select(`
-            id, full_name, store_name, store_description, store_logo_url,
-            store_cover_url, store_phone, store_active, store_online,
-            store_type, lat, lng, governorate_id, is_featured,
-            allows_messaging, store_opens_at, store_closes_at, store_address
-          `)
-          .eq("store_active", true)
-          .not("store_name", "is", null);
+    const storesPromise = supabase
+      .from("profiles")
+      .select(`
+        id, full_name, store_name, store_description, store_logo_url,
+        store_cover_url, store_phone, store_active, store_online,
+        store_type, lat, lng, governorate_id, is_featured,
+        allows_messaging, store_opens_at, store_closes_at, store_address
+      `)
+      .eq("store_active", true)
+      .not("store_name", "is", null);
 
-        const [{ data: addresses }, { data: stores }] = await Promise.all([
-          addressesPromise,
-          storesPromise
-        ]);
+    const [{ data: addresses }, { data: stores }] = await Promise.all([
+      addressesPromise,
+      storesPromise
+    ]);
 
-        if (!isMounted) return;
+    if (!isMounted) return;
 
-        let activeLocation = null;
-        if (addresses && addresses.length > 0) {
-          setUserLocations(addresses);
-          const defaultAddress = addresses.find((a: any) => a.is_default) || addresses[0];
-          setSelectedAddressId(defaultAddress.id);
-          
-          activeLocation = {
-            lat: defaultAddress.lat || 0,
-            lng: defaultAddress.lng || 0,
-            governorateId: defaultAddress.governorate_id,
-            addressId: defaultAddress.id,
-            label: defaultAddress.label,
-            addressText: defaultAddress.address_text
-          };
-          setUserLocation(activeLocation);
-        }
+    let activeLocation = null;
+    if (addresses && addresses.length > 0) {
+      setUserLocations(addresses);
+      const defaultAddress = addresses.find((a: any) => a.is_default) || addresses[0];
+      setSelectedAddressId(defaultAddress.id);
+      
+      activeLocation = {
+        lat: defaultAddress.lat || 0,
+        lng: defaultAddress.lng || 0,
+        governorateId: defaultAddress.governorate_id,
+        addressId: defaultAddress.id,
+        label: defaultAddress.label,
+        addressText: defaultAddress.address_text
+      };
+      setUserLocation(activeLocation);
+    }
 
-        if (!stores || stores.length === 0) {
-          setNearbyStores([]);
-          setLoading(false);
-          return;
-        }
+    if (!stores || stores.length === 0) {
+      setNearbyStores([]);
+      setLoading(false);
+      return;
+    }
 
-        let storesWithDistance = stores.map((store: any) => {
-          let distance = Infinity;
-          let distanceText = app.lang === "ar" ? "غير محدد" : "Unknown";
-          
-          if (activeLocation) {
-            if (activeLocation.lat && activeLocation.lng && store.lat && store.lng) {
-              distance = calculateDistance(activeLocation.lat, activeLocation.lng, store.lat, store.lng);
-              if (distance < 1) {
-                distanceText = `${Math.round(distance * 1000)} م`;
-              } else if (distance < 10) {
-                distanceText = `${distance.toFixed(1)} كم`;
-              } else {
-                distanceText = `${Math.round(distance)} كم`;
-              }
-            } else if (activeLocation.governorateId && store.governorate_id === activeLocation.governorateId) {
-              distance = store.store_type === 'physical' ? 4 : 6;
-              distanceText = `📍 ${app.lang === 'ar' ? 'نفس المحافظة' : 'Same gov'}`;
-            } else if (activeLocation.governorateId && store.governorate_id) {
-              distance = 30;
-              distanceText = `🚗 ${app.lang === 'ar' ? 'محافظة أخرى' : 'Other gov'}`;
-            }
+    // ✅ ✅ ✅ هذا هو الجزء الجديد
+    // جلب عدد المنتجات لكل متجر
+    const storeIds = stores.map((s: any) => s.id);
+    const { data: listings, error: listingsError } = await supabase
+      .from("listings")
+      .select("owner_id, count:owner_id", { count: "exact" })
+      .in("owner_id", storeIds)
+      .eq("status", "published")
+      .groupBy("owner_id");
+
+    if (listingsError) {
+      console.error("❌ Error fetching listings count:", listingsError);
+    }
+
+    const listingsCountMap = new Map();
+    (listings || []).forEach((item: any) => {
+      listingsCountMap.set(item.owner_id, item.count || 0);
+    });
+
+    // ✅ فلترة المتاجر التي لديها منتجات فقط
+    let storesWithProducts = stores.filter((store: any) => {
+      const count = listingsCountMap.get(store.id) || 0;
+      return count > 0;
+    });
+
+    // ✅ إضافة عدد المنتجات
+    storesWithProducts = storesWithProducts.map((store: any) => ({
+      ...store,
+      listing_count: listingsCountMap.get(store.id) || 0
+    }));
+
+    if (storesWithProducts.length === 0) {
+      setNearbyStores([]);
+      setLoading(false);
+      return;
+    }
+
+    // ✅ استخدم storesWithProducts بدلاً من stores
+    let storesWithDistance = storesWithProducts.map((store: any) => {
+      let distance = Infinity;
+      let distanceText = app.lang === "ar" ? "غير محدد" : "Unknown";
+      
+      if (activeLocation) {
+        if (activeLocation.lat && activeLocation.lng && store.lat && store.lng) {
+          distance = calculateDistance(activeLocation.lat, activeLocation.lng, store.lat, store.lng);
+          if (distance < 1) {
+            distanceText = `${Math.round(distance * 1000)} م`;
+          } else if (distance < 10) {
+            distanceText = `${distance.toFixed(1)} كم`;
+          } else {
+            distanceText = `${Math.round(distance)} كم`;
           }
-          
-          return { ...store, distance, distanceText };
-        });
-
-        storesWithDistance.sort((a: any, b: any) => {
-          if (a.distance === Infinity && b.distance !== Infinity) return 1;
-          if (a.distance !== Infinity && b.distance === Infinity) return -1;
-          return a.distance - b.distance;
-        });
-
-        setNearbyStores(storesWithDistance.slice(0, 8));
-      } catch (error) {
-        console.error("❌ Error fetching data:", error);
-      } finally {
-        if (isMounted) setLoading(false);
+        } else if (activeLocation.governorateId && store.governorate_id === activeLocation.governorateId) {
+          distance = store.store_type === 'physical' ? 4 : 6;
+          distanceText = `📍 ${app.lang === 'ar' ? 'نفس المحافظة' : 'Same gov'}`;
+        } else if (activeLocation.governorateId && store.governorate_id) {
+          distance = 30;
+          distanceText = `🚗 ${app.lang === 'ar' ? 'محافظة أخرى' : 'Other gov'}`;
+        }
       }
-    };
+      
+      return { ...store, distance, distanceText };
+    });
+
+    storesWithDistance.sort((a: any, b: any) => {
+      if (a.distance === Infinity && b.distance !== Infinity) return 1;
+      if (a.distance !== Infinity && b.distance === Infinity) return -1;
+      return a.distance - b.distance;
+    });
+
+    setNearbyStores(storesWithDistance.slice(0, 8));
+  } catch (error) {
+    console.error("❌ Error fetching data:", error);
+  } finally {
+    if (isMounted) setLoading(false);
+  }
+};
 
     fetchInitialData();
 

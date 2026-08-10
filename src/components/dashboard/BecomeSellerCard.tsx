@@ -32,6 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 const WEEK_DAYS = [
   { value: 'Monday', label: 'الإثنين' },
@@ -274,6 +275,7 @@ const HeroSlider = ({ app }: { app: any }) => {
 export function BecomeSellerCard() {
   const app = useApp();
   const t = useT();
+  const queryClient = useQueryClient();
   const become = useBecomeSeller();
   const sendNotification = useSendNotificationV2();
   const { data: application, isLoading: appLoading } = useMySellerApplication(app.user?.id);
@@ -289,7 +291,6 @@ export function BecomeSellerCard() {
   const [storeLogo, setStoreLogo] = useState("");
   const [storeCover, setStoreCover] = useState("");
   const [allowsMessaging, setAllowsMessaging] = useState(true);
-  const [allowsBookings, setAllowsBookings] = useState(false);
   const [storeType, setStoreType] = useState<'online' | 'physical'>('online');
   const [governorateId, setGovernorateId] = useState("");
   const [address, setAddress] = useState("");
@@ -458,7 +459,6 @@ export function BecomeSellerCard() {
         store_logo_url: storeLogo.trim(),
         store_cover_url: storeCover.trim(),
         allows_messaging: allowsMessaging,
-        allows_bookings: allowsBookings,
         store_type: storeType,
         governorate_id: governorateId,
         address: storeType === 'physical' ? address.trim() : null,
@@ -475,7 +475,12 @@ export function BecomeSellerCard() {
           ? "✅ تم إرسال طلبك بنجاح! سيتم مراجعته في أقرب وقت" 
           : "✅ Your application was sent successfully! It will be reviewed as soon as possible"
       );
-      window.location.reload();
+      
+      // ✅ ✅ ✅ تحديث الكاش بدلاً من إعادة تحميل الصفحة
+      queryClient.invalidateQueries({ queryKey: ["seller_application", app.user.id] });
+      queryClient.invalidateQueries({ queryKey: ["can_submit_application", app.user.id] });
+      queryClient.invalidateQueries({ queryKey: ["profile", app.user.id] });
+      
     } catch (e: any) {
       console.error("❌ Error submitting application:", e);
       const errorMessage = e.message || String(e);
@@ -1064,22 +1069,7 @@ export function BecomeSellerCard() {
                     </div>
                   </div>
                 </label>
-                <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-[#2a655f]/10 transition-all">
-                  <input
-                    type="checkbox"
-                    checked={allowsBookings}
-                    onChange={(e) => setAllowsBookings(e.target.checked)}
-                    className="mt-1 h-4 w-4 accent-[#2a655f] rounded"
-                  />
-                  <div>
-                    <div className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                      {app.lang === "ar" ? "السماح بالحجز" : "Allow bookings"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {app.lang === "ar" ? "يقدر الزبون يحجز خدمتك أو منتجك" : "Customers can request bookings for your listings"}
-                    </div>
-                  </div>
-                </label>
+                {/* ✅ تم حذف خيار "السماح بالحجز" نهائياً */}
               </div>
             </motion.div>
           )}
