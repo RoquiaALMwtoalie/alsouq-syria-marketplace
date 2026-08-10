@@ -94,7 +94,7 @@ const { data: productsData = { data: [], count: 0, totalPages: 0 }, isLoading: p
   page: page,
 });
 const products = productsData.data || [];
-
+const totalPages = productsData.totalPages || 1;
 // ✅ العروض
 const { data: allDealsData = { data: [], count: 0, totalPages: 0 } } = useListings({
   isOffer: true,
