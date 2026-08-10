@@ -10,7 +10,7 @@ import {
   Share2, Heart, Bookmark, Star, ZoomIn, ZoomOut,
   MessageCircle, ThumbsUp, ThumbsDown, ChevronDown,
   Sparkles, Zap, TrendingUp, Award, Target, Rocket,
-  Play, Pause
+  Play, Pause,ShoppingCart  
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
