@@ -158,11 +158,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
     return getFilteredData(sellerCustomers, ['name', 'email', 'phone', 'city', 'address'], searchQuery);
   }, [sellerCustomers, searchQuery]);
 
-  // ===== فلترة الحجوزات =====
-  const filteredBookings = useMemo(() => {
-    const bookings = sellerOrders.filter((o: any) => o.type === 'booking' || o.is_booking === true);
-    return getFilteredData(bookings, ['id', 'product_name', 'customer_name', 'status'], searchQuery);
-  }, [sellerOrders, searchQuery]);
 
   // ===== فلترة التقييمات =====
   const filteredReviews = useMemo(() => {
@@ -176,11 +171,11 @@ export function SellerDashboard({}: SellerDashboardProps) {
       products: filteredListings.length,
       orders: filteredOrders.length,
       customers: filteredCustomers.length,
-      bookings: filteredBookings.length,
+    
       reviews: filteredReviews.length,
-      total: filteredListings.length + filteredOrders.length + filteredCustomers.length + filteredBookings.length + filteredReviews.length
+      total: filteredListings.length + filteredOrders.length + filteredCustomers.length + filteredReviews.length
     };
-  }, [filteredListings, filteredOrders, filteredCustomers, filteredBookings, filteredReviews]);
+  }, [filteredListings, filteredOrders, filteredCustomers, filteredReviews]);
 
   // ===== دالة البحث =====
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -199,7 +194,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
       { tab: 'products', count: filteredListings.length, label: app.lang === 'ar' ? 'المنتجات' : 'Products' },
       { tab: 'orders', count: filteredOrders.length, label: app.lang === 'ar' ? 'الطلبات' : 'Orders' },
       { tab: 'customers', count: filteredCustomers.length, label: app.lang === 'ar' ? 'العملاء' : 'Customers' },
-      { tab: 'bookings', count: filteredBookings.length, label: app.lang === 'ar' ? 'الحجوزات' : 'Bookings' },
+     
       { tab: 'reviews', count: filteredReviews.length, label: app.lang === 'ar' ? 'التقييمات' : 'Reviews' },
     ];
     results.sort((a, b) => b.count - a.count);
@@ -399,7 +394,7 @@ const sliderData = useMemo(() => [
     { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", icon: LayoutDashboard, desc: app.lang === 'ar' ? 'لوحة التحكم الرئيسية' : 'Main Dashboard' },
     { id: "products" as const, label: app.lang === 'ar' ? "المنتجات" : "Products", icon: Package, desc: app.lang === 'ar' ? 'إدارة المنتجات' : 'Manage Products' },
     { id: "orders" as const, label: app.lang === 'ar' ? "الطلبات" : "Orders", icon: ShoppingCart, desc: app.lang === 'ar' ? 'متابعة الطلبات' : 'Track Orders' },
-    { id: "bookings" as const, label: app.lang === 'ar' ? "الحجوزات" : "Bookings", icon: CalendarIcon, desc: app.lang === 'ar' ? 'إدارة الحجوزات' : 'Manage Bookings' },
+   
     { id: "customers" as const, label: app.lang === 'ar' ? "العملاء" : "Customers", icon: Users, desc: app.lang === 'ar' ? 'قاعدة العملاء' : 'Customer Base' },
     { id: "stats" as const, label: app.lang === 'ar' ? "الإحصائيات" : "Analytics", icon: BarChart3, desc: app.lang === 'ar' ? 'تحليل الأداء' : 'Performance Analysis' },
     { id: "settings" as const, label: app.lang === 'ar' ? "الإعدادات" : "Settings", icon: Settings, desc: app.lang === 'ar' ? 'تخصيص المتجر' : 'Store Settings' },
@@ -1142,7 +1137,7 @@ const sliderData = useMemo(() => [
                 { key: 'products', label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package, color: 'text-[#0d2e2a]', bg: 'bg-[#0d2e2a]/10' },
                 { key: 'orders', label: app.lang === 'ar' ? 'الطلبات' : 'Orders', count: searchResults.orders, icon: ShoppingCart, color: 'text-[#1a4f4a]', bg: 'bg-[#1a4f4a]/10' },
                 { key: 'customers', label: app.lang === 'ar' ? 'العملاء' : 'Customers', count: searchResults.customers, icon: Users, color: 'text-[#2d6b63]', bg: 'bg-[#2d6b63]/10' },
-                { key: 'bookings', label: app.lang === 'ar' ? 'الحجوزات' : 'Bookings', count: searchResults.bookings, icon: CalendarIcon, color: 'text-[#4a9f95]', bg: 'bg-[#4a9f95]/10' },
+                
                 { key: 'reviews', label: app.lang === 'ar' ? 'التقييمات' : 'Reviews', count: searchResults.reviews, icon: Star, color: 'text-[#6bb5aa]', bg: 'bg-[#6bb5aa]/10' },
               ].map((item) => (
                 <button
@@ -1532,13 +1527,7 @@ const sliderData = useMemo(() => [
     <ChartsSection showOrders={true} />
   </div>
 )}
-            {/* ===== تبويب الحجوزات ===== */}
-            {tab === 'bookings' && (
-              <div className="space-y-6">
-                <BookingsPage />
-                <ChartsSection showSales={true} />
-              </div>
-            )}
+           
 
             {/* ===== تبويب العملاء ===== */}
             {tab === 'customers' && (

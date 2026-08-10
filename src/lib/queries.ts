@@ -657,6 +657,8 @@ export function useMyOrders(userId: string | undefined) {
 }
 // src/lib/queries.ts
 
+// src/lib/queries.ts
+
 export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({
@@ -675,11 +677,28 @@ export function useCreateOrder() {
       delivery_address?: string;
       delivery_lat?: number;
       delivery_lng?: number;
-      buyer_name?: string;
-      buyer_phone?: string;
+      buyer_name?: string;   // ✅ جديد
+      buyer_phone?: string;  // ✅ جديد
     }) => {
       
-      // ✅ 1. إنشاء الطلب الرئيسي
+      // ✅ 1. جلب اسم المستخدم من profiles إذا ما تم إرساله
+      let buyerName = input.buyer_name;
+      let buyerPhone = input.buyer_phone;
+      
+      if (!buyerName || !buyerPhone) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, phone")
+          .eq("id", input.buyer_id)
+          .maybeSingle();
+        
+        if (profile) {
+          buyerName = buyerName || profile.full_name || 'عميل';
+          buyerPhone = buyerPhone || profile.phone || '';
+        }
+      }
+      
+      // ✅ 2. إنشاء الطلب الرئيسي
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -691,8 +710,8 @@ export function useCreateOrder() {
           delivery_address: input.delivery_address || null,
           delivery_lat: input.delivery_lat || null,
           delivery_lng: input.delivery_lng || null,
-          buyer_name: input.buyer_name || null,
-          buyer_phone: input.buyer_phone || null,
+          buyer_name: buyerName,        // ✅ اسم المستخدم
+          buyer_phone: buyerPhone,      // ✅ رقم المستخدم
           status: 'pending',
           currency: input.items[0]?.currency || 'SYP',
           created_at: new Date().toISOString(),
@@ -702,7 +721,7 @@ export function useCreateOrder() {
       
       if (orderError) throw orderError;
 
-      // ✅ 2. إضافة المنتجات إلى order_items
+      // ✅ 3. إضافة المنتجات إلى order_items
       const orderItems = input.items.map((item) => ({
         order_id: order.id,
         listing_id: item.listing_id,
@@ -717,7 +736,6 @@ export function useCreateOrder() {
 
       if (itemsError) throw itemsError;
 
-      // ✅ 3. إرجاع الطلب مع العناصر
       return {
         ...order,
         order_items: orderItems,
@@ -728,7 +746,6 @@ export function useCreateOrder() {
     },
   });
 }
-
 /* ---------- Bookings ---------- */
 
 export function useMyBookings(userId: string | undefined) {

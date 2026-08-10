@@ -529,7 +529,21 @@ const checkout = useCallback(async () => {
   }
 
   try {
-    // ✅ ✅ ✅ تجميع المنتجات حسب البائع (seller_id)
+    // ✅ ✅ ✅ جلب اسم المستخدم ورقمه من profiles
+    const { data: userProfile, error: profileError } = await supabase
+      .from("profiles")
+      .select("full_name, phone")
+      .eq("id", app.user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("❌ Error fetching user profile:", profileError);
+    }
+
+    const buyerName = userProfile?.full_name || app.user.full_name || app.user.email || 'عميل';
+    const buyerPhone = userProfile?.phone || app.user.phone || '';
+
+    // ✅ تجميع المنتجات حسب البائع
     const groupedBySeller = items.reduce((acc: any, item: any) => {
       const listing = item.listing || item;
       const sellerId = listing.owner_id || item.listing_id;
@@ -538,34 +552,33 @@ const checkout = useCallback(async () => {
       return acc;
     }, {});
 
-    // ✅ ✅ ✅ لكل بائع، ننشئ طلب واحد مع order_items
+    // ✅ لكل بائع، ننشئ طلب واحد
     for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
       const itemsList = sellerItems as any[];
       
-      // حساب الإجمالي لهذه المجموعة
       const total = itemsList.reduce((sum, item) => {
         const price = Number(item.price);
         const quantity = Number(item.quantity);
         return sum + (price * quantity);
       }, 0);
 
-      // ✅ جلب governorate_id من أول منتج
       const firstItem = itemsList[0];
       const firstListing = firstItem.listing || firstItem;
       const governorateId = firstListing.governorate_id || null;
 
-      // ✅ 1. إنشاء الطلب الرئيسي
       const orderData: any = {
         buyer_id: app.user.id,
         seller_id: sellerId,
+        listing_id: firstItem.listing_id,
         total: total,
-        notes: `طلب من ${storeInfo.name}`,
+        quantity: itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0),
+        notes: `طلب من ${storeInfo.name} (${itemsList.length} منتجات)`,
         governorate_id: governorateId,
         delivery_address: selectedAddress.address_text,
         delivery_lat: selectedAddress.lat || 0,
         delivery_lng: selectedAddress.lng || 0,
-        buyer_name: app.user.full_name || app.user.email || 'عميل',
-        buyer_phone: app.user.phone || '',
+        buyer_name: buyerName,        // ✅ اسم المستخدم من profiles
+        buyer_phone: buyerPhone,      // ✅ رقم المستخدم من profiles
         status: 'pending',
         currency: itemsList[0]?.currency || 'SYP',
         created_at: new Date().toISOString(),
@@ -579,7 +592,7 @@ const checkout = useCallback(async () => {
 
       if (orderError) throw orderError;
 
-      // ✅ 2. إضافة المنتجات كـ order_items
+      // ✅ إضافة المنتجات كـ order_items
       const orderItems = itemsList.map((item: any) => ({
         order_id: order.id,
         listing_id: item.listing_id,
@@ -594,27 +607,29 @@ const checkout = useCallback(async () => {
 
       if (itemsError) throw itemsError;
 
-      // ✅ 3. إرسال إشعار للبائع (مرة واحدة فقط لكل طلب)
+      // ✅ إشعار للبائع
       await supabase
         .from("notifications")
         .insert({
           user_id: sellerId,
           type: "new_order",
           title_ar: "📦 طلب جديد",
-          body_ar: `لديك طلب جديد من ${app.user?.full_name || 'عميل'} (${itemsList.length} منتجات)`,
+          body_ar: `لديك طلب جديد من ${buyerName} (${itemsList.length} منتجات)`,
           title_en: "📦 New Order",
-          body_en: `You have a new order from ${app.user?.full_name || 'Customer'} (${itemsList.length} products)`,
+          body_en: `You have a new order from ${buyerName} (${itemsList.length} products)`,
           link_url: `/orders/${order.id}`,
           metadata: {
             order_id: order.id,
             buyer_id: app.user.id,
             total: total,
             items_count: itemsList.length,
+            buyer_name: buyerName,
+            buyer_phone: buyerPhone,
           }
         });
     }
 
-    // ✅ 4. تفريغ السلة
+    // ✅ تفريغ السلة
     await clearCart.mutateAsync({ userId: app.user.id });
     if (promoApplied) removePromoCode();
 
@@ -635,8 +650,9 @@ const checkout = useCallback(async () => {
         : `❌ An error occurred during checkout: ${error.message || 'Please try again'}`
     );
   }
-}, [app.user, items, createOrder, clearCart, promoApplied, removePromoCode, navigate, app.lang, selectedAddress, storeInfo.name]);
-  if (isLoading || isLoadingAddresses) {
+}, [app.user, items, clearCart, promoApplied, removePromoCode, navigate, app.lang, selectedAddress, storeInfo.name]);
+
+if (isLoading || isLoadingAddresses) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="text-center">
