@@ -19,7 +19,7 @@ import { AppProvider, useApp } from "@/lib/i18n";
 import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Footer } from "@/components/layout/Footer";
-import { SupportButton } from "@/components/SupportButton";
+
 
 // ===== إضافة Imports الإشعارات =====
 import { Bell, BellOff, Check, Clock, ShoppingBag, Calendar as CalendarIcon, Settings, Gift, Shield, MoreVertical, Trash2, X, BellRing } from "lucide-react";
@@ -912,7 +912,7 @@ function RootContent({
           {!hideChrome && <Header />}
           <main className="flex-1"><Outlet /></main>
           {!hideChrome && <Footer />}
-          {!hideChrome && <SupportButton />}
+      
         </div>
       </ClientOnly>
       

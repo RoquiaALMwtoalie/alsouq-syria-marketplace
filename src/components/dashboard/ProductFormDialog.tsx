@@ -3,12 +3,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { 
   X, Plus, Package, Gift, Sparkles, Truck, CreditCard, 
-  DollarSign, Tag, MapPin, Image as ImageIcon, CheckCircle2,
+  Tag, MapPin, Image as ImageIcon, CheckCircle2,
   Layers, Palette, Search, ChevronDown,
   Save, AlertCircle, Info, Star, Shield, Clock, User,
   Camera, Trash2, Edit2, Heart, BookOpen, Cake,
   ChevronRight, ChevronLeft, Zap, Award, TrendingUp, ShieldCheck,
-  ArrowRight, ArrowLeft
+  ArrowRight, ArrowLeft, Coins
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,6 @@ interface ProductFormDialogProps {
   lang: string;
 }
 
-// ✅ تم إزالة price_usd و old_price_usd و delivery_method و delivery_note
 const emptyForm = {
   title_ar: "",
   description_ar: "",
@@ -51,7 +50,6 @@ const emptyForm = {
   image_urls: [""],
 };
 
-// ✅ تم إزالة delivery من التبويبات
 const TAB_ORDER = ['basic', 'pricing', 'images', 'options'];
 
 export function ProductFormDialog({
@@ -122,7 +120,6 @@ export function ProductFormDialog({
     });
   }, [govs, governorateSearch]);
 
-  // ✅ ✅ ✅ الحصول على النصوص حسب نوع المنتج ✅ ✅ ✅
   const getProductLabels = () => {
     if (productType === "offer") {
       return {
@@ -150,16 +147,13 @@ export function ProductFormDialog({
 
   const labels = getProductLabels();
 
-  // ✅ ✅ ✅ التحقق من صحة التبويب ✅ ✅ ✅
   const isTabValid = (tab: string) => {
     if (tab === 'basic') {
       return !!form.title_ar.trim() && !!form.category_id && !!form.governorate_id;
     }
     if (tab === 'pricing') {
-      // ✅ السعر الأساسي مطلوب دائماً
       if (!form.price || form.price <= 0) return false;
       
-      // ✅ للعروض فقط: السعر القديم مطلوب وأكبر من السعر الجديد
       if (productType === "offer") {
         if (!form.old_price || form.old_price <= form.price) return false;
         if (form.old_price < 0) return false;
@@ -171,11 +165,10 @@ export function ProductFormDialog({
       return !!form.cover_url?.trim();
     }
     if (tab === 'options') {
-      // ✅ التحقق من سعر كل تركيبة
       if (variations.length > 0) {
         const variationsWithoutPrice = variations.filter(v => !v.price || v.price <= 0);
         if (variationsWithoutPrice.length > 0) {
-          return false; // ❌ يمنع الانتقال
+          return false;
         }
       }
       return true;
@@ -187,7 +180,6 @@ export function ProductFormDialog({
     const currentIndex = TAB_ORDER.indexOf(activeTab);
     if (currentIndex < TAB_ORDER.length - 1) {
       if (!isTabValid(activeTab)) {
-        // ✅ رسالة خاصة لتبويب الخيارات
         if (activeTab === 'options') {
           const variationsWithoutPrice = variations.filter(v => !v.price || v.price <= 0);
           if (variationsWithoutPrice.length > 0) {
@@ -226,7 +218,6 @@ export function ProductFormDialog({
     if (product) {
       const availableValue = product.is_available !== undefined ? product.is_available : true;
       
-      // ✅ تم إزالة price_usd و old_price_usd و delivery_method و delivery_note
       setForm({
         title_ar: product.title_ar || "",
         description_ar: product.description_ar || "",
@@ -325,13 +316,11 @@ export function ProductFormDialog({
     setForm({ ...form, [field]: num });
   };
 
-  // ✅ ✅ ✅ التحقق من صحة النموذج ✅ ✅ ✅
   const isFormValid = () => {
     if (!form.title_ar.trim()) return false;
     if (!form.price || form.price <= 0) return false;
     if (form.price < 0) return false;
     
-    // ✅ للعروض فقط: التحقق من السعر القديم
     if (productType === "offer") {
       if (!form.old_price || form.old_price <= form.price) return false;
       if (form.old_price < 0) return false;
@@ -346,7 +335,6 @@ export function ProductFormDialog({
       if (colorsWithoutImage.length > 0) return false;
     }
     
-    // ✅ تحقق من سعر التركيبات قبل النشر
     if (variations.length > 0) {
       const variationsWithoutPrice = variations.filter(v => !v.price || v.price <= 0);
       if (variationsWithoutPrice.length > 0) return false;
@@ -355,14 +343,11 @@ export function ProductFormDialog({
     return true;
   };
 
-
- // ✅ ✅ ✅ التحقق والإرسال ✅ ✅ ✅
-const validateAndSubmit = async () => {
+ const validateAndSubmit = async () => {
   console.log("🔍 [validateAndSubmit] ===== STARTING VALIDATION =====");
   console.log("🔍 [validateAndSubmit] Product type:", productType);
   console.log("🔍 [validateAndSubmit] Form data:", { ...form, image_urls: `${form.image_urls?.length || 0} images` });
 
-  // ✅ التحقق من اسم المنتج/العرض
   if (!form.title_ar.trim()) {
     console.log("❌ [validateAndSubmit] Missing title");
     toast.error(
@@ -375,7 +360,6 @@ const validateAndSubmit = async () => {
   }
   console.log("✅ [validateAndSubmit] Title OK:", form.title_ar);
   
-  // ✅ التحقق من السعر
   if (!form.price || form.price <= 0) {
     console.log("❌ [validateAndSubmit] Missing price");
     toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال السعر" : "⚠️ Please enter price");
@@ -390,7 +374,6 @@ const validateAndSubmit = async () => {
   }
   console.log("✅ [validateAndSubmit] Price OK:", form.price);
   
-  // ✅ للعروض فقط: التحقق من السعر القديم
   if (productType === "offer") {
     if (!form.old_price || form.old_price <= form.price) {
       console.log("❌ [validateAndSubmit] Old price invalid");
@@ -407,7 +390,6 @@ const validateAndSubmit = async () => {
     console.log("✅ [validateAndSubmit] Old price OK:", form.old_price);
   }
   
-  // ✅ التحقق من التصنيف
   if (!form.category_id) {
     console.log("❌ [validateAndSubmit] Missing category");
     toast.error(app.lang === "ar" ? "⚠️ الرجاء اختيار التصنيف" : "⚠️ Please select category");
@@ -416,7 +398,6 @@ const validateAndSubmit = async () => {
   }
   console.log("✅ [validateAndSubmit] Category OK:", form.category_id);
   
-  // ✅ التحقق من المحافظة
   if (!form.governorate_id) {
     console.log("❌ [validateAndSubmit] Missing governorate");
     toast.error(app.lang === "ar" ? "⚠️ الرجاء اختيار المحافظة" : "⚠️ Please select governorate");
@@ -425,7 +406,6 @@ const validateAndSubmit = async () => {
   }
   console.log("✅ [validateAndSubmit] Governorate OK:", form.governorate_id);
   
-  // ✅ التحقق من الصورة الرئيسية
   if (!form.cover_url?.trim()) {
     console.log("❌ [validateAndSubmit] Missing cover image");
     toast.error(app.lang === "ar" ? "⚠️ الرجاء رفع الصورة الرئيسية" : "⚠️ Please upload main image");
@@ -434,7 +414,6 @@ const validateAndSubmit = async () => {
   }
   console.log("✅ [validateAndSubmit] Cover image OK");
   
-  // ✅ التحقق من صور الألوان
   if (tempColors.length > 0) {
     const colorsWithoutImage = tempColors.filter((c: any) => !c.image_url?.trim());
     if (colorsWithoutImage.length > 0) {
@@ -451,18 +430,13 @@ const validateAndSubmit = async () => {
     console.log("✅ [validateAndSubmit] Colors OK:", tempColors.length, "colors with images");
   }
   
-  // ============================================================
-  // ✅✅✅ التحقق من الخيارات والتركيبات ✅✅✅
-  // ============================================================
   console.log("🔍 [validateAndSubmit] ===== CHECKING OPTIONS =====");
   console.log("🔍 [validateAndSubmit] Options object:", options);
   console.log("🔍 [validateAndSubmit] Options keys:", Object.keys(options));
   
-  // ✅ حساب عدد الخيارات النشطة
   const activeOptionsCount = Object.values(options).filter(arr => arr.length > 0).length;
   console.log("🔍 [validateAndSubmit] Active options count:", activeOptionsCount);
   
-  // ✅ طباعة كل خيار وكمية القيم فيه
   Object.entries(options).forEach(([key, values]) => {
     if (values.length > 0) {
       console.log(`🔍 [validateAndSubmit]   - ${key}: ${values.length} values (${values.join(', ')})`);
@@ -476,7 +450,6 @@ const validateAndSubmit = async () => {
     ));
   }
   
-  // ✅ التحقق: إذا كان عدد الخيارات >= 2
   if (activeOptionsCount >= 2) {
     console.log("🔍 [validateAndSubmit] ⚠️ Active options >= 2, checking variations...");
     const hasVariations = variations.length > 0;
@@ -486,16 +459,14 @@ const validateAndSubmit = async () => {
       console.log("❌ [validateAndSubmit] ERROR: Options found but NO variations!");
       console.log("❌ [validateAndSubmit] User must generate variations first!");
       
-      // ✅ انتقل إلى تبويب الخيارات
       setActiveTab("options");
       
-      // ✅ رسالة واضحة مع تعليمات
       toast.error(
         app.lang === "ar" 
           ? "⚠️ لديك خيارين أو أكثر (ألوان، مقاسات، إلخ) ولكن لم تقم بتوليد التركيبات!\n\n📌 الرجاء التوجه إلى تبويب 'خيارات' والضغط على زر 'توليد التركيبات' في الأسفل" 
           : "⚠️ You have 2 or more options (colors, sizes, etc.) but haven't generated variations!\n\n📌 Please go to the 'Options' tab and click the 'Generate Variations' button below"
       );
-      return; // ❌ منع حفظ المنتج
+      return;
     }
     
     console.log("✅ [validateAndSubmit] Variations exist, proceeding...");
@@ -503,7 +474,6 @@ const validateAndSubmit = async () => {
     console.log("ℹ️ [validateAndSubmit] Active options < 2, skipping variations check");
   }
   
-  // ✅ التحقق من سعر التركيبات قبل النشر
   if (variations.length > 0) {
     const variationsWithoutPrice = variations.filter(v => !v.price || v.price <= 0);
     if (variationsWithoutPrice.length > 0) {
@@ -518,15 +488,11 @@ const validateAndSubmit = async () => {
     }
   }
   
-  // ============================================================
-  // ✅ إرسال البيانات
-  // ============================================================
   console.log("✅ [validateAndSubmit] ===== ALL VALIDATIONS PASSED =====");
   console.log("✅ [validateAndSubmit] Submitting product...");
   
   setIsSubmitting(true);
   try {
-    // ✅ تم إزالة price_usd و delivery_method من البيانات
     const allData = { 
       ...form, 
       options: {
@@ -611,7 +577,6 @@ const validateAndSubmit = async () => {
     return app.lang === "ar" ? "املأ البيانات التالية لإضافة منتج جديد" : "Fill in the details below to add a new product";
   };
 
-  // ✅ تم إزالة delivery من getTabLabel
   const getTabLabel = (tab: string) => {
     const labels: Record<string, string> = {
       basic: lang === "ar" ? "أساسيات" : "Basic",
@@ -622,11 +587,10 @@ const validateAndSubmit = async () => {
     return labels[tab] || tab;
   };
 
-  // ✅ تم إزالة delivery من getTabIcon
   const getTabIcon = (tab: string) => {
     const icons: Record<string, any> = {
       basic: Info,
-      pricing: DollarSign,
+      pricing: Coins,
       images: Camera,
       options: Layers,
     };
@@ -1007,7 +971,7 @@ const validateAndSubmit = async () => {
                 <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-emerald-500/5 blur-3xl" />
                 <div className="flex items-start gap-3 relative">
                   <div className="p-2.5 rounded-xl bg-emerald-500/10">
-                    <DollarSign className="h-5 w-5 text-emerald-500" />
+                    <Coins className="h-5 w-5 text-emerald-500" />
                   </div>
                   <div>
                     <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
@@ -1026,7 +990,7 @@ const validateAndSubmit = async () => {
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <DollarSign className="h-3.5 w-3.5 text-[#2a655f]" />
+                    <Coins className="h-3.5 w-3.5 text-[#2a655f]" />
                     {lang === "ar" ? `السعر (ل.س)` : `Price (SYP)`}
                     <span className="text-red-500">*</span>
                   </Label>
@@ -1068,7 +1032,7 @@ const validateAndSubmit = async () => {
                   <div className="grid grid-cols-1 gap-4">
                     <div>
                       <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <Tag className="h-3.5 w-3.5 text-[#2a655f]" />
+                        <Coins className="h-3.5 w-3.5 text-[#2a655f]" />
                         {lang === "ar" ? "السعر القديم (ل.س)" : "Old Price (SYP)"}
                         <span className="text-red-500">*</span>
                       </Label>
