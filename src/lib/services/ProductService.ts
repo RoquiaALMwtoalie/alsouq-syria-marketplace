@@ -8,68 +8,95 @@ export class ProductService {
   /**
    * ✅ حفظ الخيارات مع التحويل التلقائي
    */
-  static async saveOptions(listingId: string, options: Record<string, string[]>) {
-    const entries: any[] = [];
-    const warnings: string[] = [];
-    const skipped: string[] = [];
+static async saveOptions(listingId: string, options: Record<string, string[]>) {
+  // ✅ ✅ ✅ أضف هذه الـ logs للتحقق
+  console.log("🔍🔍🔍 [ProductService] ===== SAVE OPTIONS START =====");
+  console.log("🔍🔍🔍 [ProductService] options received:", JSON.stringify(options, null, 2));
+  console.log("🔍🔍🔍 [ProductService] options keys:", Object.keys(options));
+  console.log("🔍🔍🔍 [ProductService] options.sizes:", options.sizes);
+  console.log("🔍🔍🔍 [ProductService] options.colors:", options.colors);
+  console.log("🔍🔍🔍 [ProductService] options.models:", options.models);
+  
+  const entries: any[] = [];
+  const warnings: string[] = [];
+  const skipped: string[] = [];
+  
+  Object.entries(options).forEach(([key, values]) => {
+    console.log(`🔍 [ProductService] Processing key: "${key}", values:`, values);
     
-    Object.entries(options).forEach(([key, values]) => {
-      // 🔥 التحويل الذكي: أي كلمة → مفرد
-      let type = toSingular(key);
-      
-      // ✅ التحقق من أن النوع مسموح
-      if (!ALLOWED_OPTION_TYPES.includes(type)) {
-        // حاول مرة ثانية: إذا كانت الكلمة تنتهي بـ 's' جرب بدونها
-        if (key.endsWith('s') && key.length > 1) {
-          const attempt = key.slice(0, -1);
-          if (ALLOWED_OPTION_TYPES.includes(attempt)) {
-            type = attempt;
-          } else {
-            skipped.push(`"${key}" → "${type}" (غير مسموح)`);
-            return;
-          }
+    // 🔥 التحويل الذكي: أي كلمة → مفرد
+    let type = toSingular(key);
+    console.log(`🔍 [ProductService] toSingular("${key}") → "${type}"`);
+    
+    // ✅ التحقق من أن النوع مسموح
+    if (!ALLOWED_OPTION_TYPES.includes(type)) {
+      // حاول مرة ثانية: إذا كانت الكلمة تنتهي بـ 's' جرب بدونها
+      if (key.endsWith('s') && key.length > 1) {
+        const attempt = key.slice(0, -1);
+        console.log(`🔍 [ProductService] Attempt 2: "${key}" → "${attempt}"`);
+        if (ALLOWED_OPTION_TYPES.includes(attempt)) {
+          type = attempt;
+          console.log(`✅ [ProductService] Type "${type}" is allowed (attempt 2)`);
         } else {
+          console.warn(`⚠️ [ProductService] Type "${type}" NOT allowed!`);
           skipped.push(`"${key}" → "${type}" (غير مسموح)`);
           return;
         }
+      } else {
+        console.warn(`⚠️ [ProductService] Type "${type}" NOT allowed!`);
+        skipped.push(`"${key}" → "${type}" (غير مسموح)`);
+        return;
       }
-      
-      // ✅ إضافة القيم
-      (values as string[]).forEach((value, index) => {
-        if (value && value.trim()) {
-          entries.push({
-            listing_id: listingId,
-            option_type: type,
-            option_value: value.trim(),
-            sort_order: index,
-          });
-        }
-      });
+    } else {
+      console.log(`✅ [ProductService] Type "${type}" is allowed`);
+    }
+    
+    // ✅ إضافة القيم
+    (values as string[]).forEach((value, index) => {
+      if (value && value.trim()) {
+        console.log(`✅ [ProductService] Adding: ${type} → ${value}`);
+        entries.push({
+          listing_id: listingId,
+          option_type: type,
+          option_value: value.trim(),
+          sort_order: index,
+        });
+      }
     });
-    
-    // ✅ تسجيل التقرير
-    if (entries.length > 0 || skipped.length > 0) {
-      console.log('📊 Product Options Report:', {
-        inserted: entries.length,
-        skipped: skipped.length,
-        warnings: warnings.length > 0 ? warnings : '✅ كل شيء ممتاز'
-      });
-    }
-    
-    // ✅ إدراج الخيارات
-    if (entries.length > 0) {
-      const { error } = await supabase
-        .from("product_options")
-        .insert(entries);
-      
-      if (error) {
-        console.error('❌ Error saving product options:', error);
-        throw new Error(`فشل حفظ الخيارات: ${error.message}`);
-      }
-    }
-    
-    return { inserted: entries.length, skipped: skipped.length };
+  });
+  
+  console.log("🔍🔍🔍 [ProductService] Final entries:", entries);
+  console.log("🔍🔍🔍 [ProductService] Entries count:", entries.length);
+  
+  // ✅ تسجيل التقرير
+  if (entries.length > 0 || skipped.length > 0) {
+    console.log('📊 Product Options Report:', {
+      inserted: entries.length,
+      skipped: skipped.length,
+      warnings: warnings.length > 0 ? warnings : '✅ كل شيء ممتاز'
+    });
   }
+  
+  // ✅ إدراج الخيارات
+  if (entries.length > 0) {
+    console.log(`✅ [ProductService] Inserting ${entries.length} options into database...`);
+    const { error } = await supabase
+      .from("product_options")
+      .insert(entries);
+    
+    if (error) {
+      console.error('❌ Error saving product options:', error);
+      throw new Error(`فشل حفظ الخيارات: ${error.message}`);
+    }
+    console.log(`✅ [ProductService] Successfully inserted ${entries.length} options`);
+  } else {
+    console.log("⚠️ [ProductService] No options to insert!");
+  }
+  
+  console.log("🔍🔍🔍 [ProductService] ===== SAVE OPTIONS END =====");
+  
+  return { inserted: entries.length, skipped: skipped.length };
+}
   
   /**
    * ✅ حفظ الألوان

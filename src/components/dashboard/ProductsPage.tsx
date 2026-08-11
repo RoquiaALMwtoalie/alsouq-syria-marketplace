@@ -387,13 +387,21 @@ const handleSaveProduct = useCallback(async (data: any) => {
 
       listingId = result.id;
     }
+ console.log("🔍🔍🔍 [ProductsPage] ===== BEFORE SAVE ALL DATA =====");
+    console.log("🔍🔍🔍 [ProductsPage] data.options:", data.options);
+    console.log("🔍🔍🔍 [ProductsPage] data.options.sizes:", data.options.sizes);
+    console.log("🔍🔍🔍 [ProductsPage] data.options keys:", Object.keys(data.options || {}));
+    console.log("🔍🔍🔍 [ProductsPage] ===== BEFORE SAVE ALL DATA END =====");
+    
+    console.log("🔍🔍🔍 [ProductsPage] data.options.sizes:", data.options.sizes);
+console.log("🔍🔍🔍 [ProductsPage] data.options:", data.options);
 
-    await ProductService.saveAllProductData(listingId, {
-      options: data.options || {},
-      colors: data.colors || [],
-      variations: data.variations || [],
-        image_urls: data.image_urls || [],
-    });
+await ProductService.saveAllProductData(listingId, {
+  options: data.options || {},
+  colors: data.colors || [],
+  variations: data.variations || [],
+  image_urls: data.image_urls || [],
+});
 
     const actionType = isEditing ? "تعديل" : "إضافة";
 
@@ -520,11 +528,20 @@ const handleConvertToOffer = useCallback(async (productId: string, newPrice: num
   }, []);
 
   // ===== فتح نافذة التعديل =====
-  const openEditDialog = useCallback((product: any) => {
-    setDialogProduct(product);
-    setDialogType(product.is_offer ? "offer" : "product");
-    setDialogOpen(true);
-  }, []);
+const openEditDialog = useCallback((product: any) => {
+  console.log("🔍🔍🔍 [ProductsPage] openEditDialog - product:", {
+    id: product.id,
+    title: product.title_ar,
+    optionsCount: product.options?.length || 0,
+    colorsCount: product.colors?.length || 0,
+    variationsCount: product.variations?.length || 0,
+    hasMetadata: !!product.metadata,
+  });
+  
+  setDialogProduct(product);
+  setDialogType(product.is_offer ? "offer" : "product");
+  setDialogOpen(true);
+}, []);
 
   // ===== فتح تفاصيل المنتج =====
   const openProductDetail = useCallback((product: any) => {

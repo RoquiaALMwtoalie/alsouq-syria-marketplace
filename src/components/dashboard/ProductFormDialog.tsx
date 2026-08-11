@@ -1,6 +1,6 @@
 // src/components/dashboard/ProductFormDialog.tsx
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { 
   X, Plus, Package, Gift, Sparkles, Truck, CreditCard, 
   Tag, MapPin, Image as ImageIcon, CheckCircle2,
@@ -87,6 +87,11 @@ export function ProductFormDialog({
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isGovernorateOpen, setIsGovernorateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
+
+  // ✅ ✅ ✅ إضافة useRef لمنع إعادة التحميل المتكررة
+  const isFirstLoadRef = useRef(true);
+  // ✅ ✅ ✅ إضافة useRef لمنع إعادة التوجيه أثناء كتابة السعر
+  const isPriceEditingRef = useRef(false);
 
   const getCategoryName = (categoryId: string) => {
     if (!categoryId) return "";
@@ -212,12 +217,40 @@ export function ProductFormDialog({
     }
   };
 
+  // ✅ ✅ ✅ استخدم useMemo لحساب variationsWithPrices مرة واحدة فقط
+  const variationsWithPrices = useMemo(() => {
+    if (!product || !product.variations || product.variations.length === 0) {
+      return [];
+    }
+    
+    console.log("🔍🔍🔍 [ProductFormDialog] Computing variationsWithPrices from:", product.variations.length);
+    
+    return product.variations.map((v: any) => {
+      const price = v.price !== undefined && v.price !== null && v.price > 0 
+        ? v.price 
+        : form.price || 0;
+      
+      return {
+        ...v,
+        price: price,
+        is_available: v.is_available !== undefined ? v.is_available : true,
+      };
+    });
+  }, [product?.variations, form.price]);
+
   useEffect(() => {
+    // ✅ ✅ ✅ منع إعادة التوجيه أثناء كتابة السعر
+    if (isPriceEditingRef.current) {
+      console.log("ℹ️ [ProductFormDialog] Skipping - price editing in progress");
+      return;
+    }
+    
     if (!open) return;
     
     if (product) {
       const availableValue = product.is_available !== undefined ? product.is_available : true;
       
+      // ✅ تحميل البيانات الأساسية
       setForm({
         title_ar: product.title_ar || "",
         description_ar: product.description_ar || "",
@@ -241,8 +274,29 @@ export function ProductFormDialog({
         setGovernorateSearch(getGovernorateName(product.governorate_id));
       }
       
-      const metaOptions = product.metadata?.options || {};
-      const defaultOptions = {
+      // ✅ ✅ ✅ تحميل الخيارات
+      const productOptions = product.options || [];
+      const productColors = product.colors || [];
+      
+      console.log("🔍 [ProductFormDialog] Loading product data:", {
+        optionsCount: productOptions.length,
+        colorsCount: productColors.length,
+        variationsCount: product.variations?.length || 0,
+      });
+      
+      // ✅ ✅ ✅ خريطة تحويل الأنواع (الجزء المهم!)
+      const typeMap: Record<string, string> = {
+        'color': 'colors',
+        'size': 'sizes',
+        'model': 'models',
+        'material': 'materials',
+        'style': 'style',
+        'brand': 'brand',
+      };
+      
+      // ✅ تحويل المصفوفة إلى كائن Grouped
+      // ✅ ✅ ✅ جميع المفاتيح من OPTION_TYPES
+      const optionsGrouped: Record<string, string[]> = {
         colors: [],
         sizes: [],
         models: [],
@@ -250,43 +304,75 @@ export function ProductFormDialog({
         weight: [],
         style: [],
         brand: [],
+        fabric: [],
+        season: [],
+        gender: [],
+        storage: [],
+        ram: [],
+        processor: [],
+        battery: [],
+        screen_size: [],
+        camera: [],
+        connectivity: [],
       };
-      const mergedOptions = { ...defaultOptions, ...metaOptions };
-      setOptions(mergedOptions);
       
-      if (metaOptions.sizes && metaOptions.sizes.length > 0) {
-        setSizes(metaOptions.sizes);
-      } else {
-        setSizes([]);
-      }
+      productOptions.forEach((opt: any) => {
+        const originalType = opt.option_type;
+        const mappedType = typeMap[originalType] || originalType;
+        
+        console.log(`🔍 [ProductFormDialog] Option: ${originalType} → ${mappedType}, value: ${opt.option_value}`);
+        
+        if (optionsGrouped[mappedType]) {
+          optionsGrouped[mappedType].push(opt.option_value);
+        } else {
+          console.warn(`⚠️ Unknown option type: ${originalType}`);
+        }
+      });
       
-      if (product.metadata?.variations && product.metadata.variations.length > 0) {
-        setVariations(product.metadata.variations);
-      } else {
-        setVariations([]);
-      }
+      console.log("🔍 [ProductFormDialog] Grouped options:", optionsGrouped);
+      setOptions(optionsGrouped);
       
-      if (product.colors && product.colors.length > 0) {
-        setTempColors(product.colors);
-        setColorWithImages(product.colors.map((c: any) => ({
+      // ✅ تعيين الألوان
+      if (productColors.length > 0) {
+        // ✅ تحويل البيانات إلى الشكل المطلوب
+        const mappedColors = productColors.map((c: any) => ({
+          id: c.id,
+          color_name_ar: c.color_name_ar || c.color_name_en || 'لون',
+          color_name_en: c.color_name_en || c.color_name_ar || 'Color',
+          color_hex: c.color_hex || null,
+          image_url: c.image_url || '',
+          sort_order: c.sort_order || 0,
+        }));
+        
+        console.log("🔍 [ProductFormDialog] Setting colors with images:", mappedColors);
+        
+        setTempColors(mappedColors);
+        setColorWithImages(mappedColors.map((c: any) => ({
           name: c.color_name_ar,
           image: c.image_url,
           hex: c.color_hex,
         })));
-      } else if (metaOptions.colors && metaOptions.colors.length > 0) {
-        const fallbackColors = metaOptions.colors.map((colorName: string, index: number) => ({
-          id: `fallback-${Date.now()}-${index}`,
-          color_name_ar: colorName,
-          image_url: '',
-          sort_order: index,
-        }));
-        setTempColors(fallbackColors);
       } else {
         setTempColors([]);
         setColorWithImages([]);
       }
       
+      // ✅ تعيين المقاسات من الخيارات المجمعة
+      if (optionsGrouped.sizes && optionsGrouped.sizes.length > 0) {
+        setSizes(optionsGrouped.sizes);
+      } else {
+        setSizes([]);
+      }
+      
+      // ✅ ✅ ✅ تعيين التركيبات - استخدم variationsWithPrices المحسوب
+      if (variationsWithPrices.length > 0) {
+        console.log("🔍 [ProductFormDialog] Loading variations:", variationsWithPrices.length);
+        setVariations(variationsWithPrices);
+      } else {
+        setVariations([]);
+      }
     } else {
+      // ✅ حالة الإضافة الجديدة
       setForm({
         ...emptyForm,
         is_offer: productType === "offer",
@@ -300,7 +386,19 @@ export function ProductFormDialog({
       setGovernorateSearch("");
     }
     setActiveTab("basic");
-  }, [product, productType, open, cats, govs]);
+    
+    // ✅ ✅ ✅ إعادة تعيين isFirstLoadRef عند فتح النافذة
+    isFirstLoadRef.current = true;
+  }, [product, productType, open, cats, govs, variationsWithPrices]);
+
+  // ✅ ✅ ✅ إضافة useMemo لحل مشكلة الصور
+  const externalColorImages = useMemo(() => {
+    const result = Object.fromEntries(
+      tempColors.map((c: any) => [c.color_name_ar, c.image_url])
+    );
+    console.log("🔍 [ProductFormDialog] externalColorImages memoized:", result);
+    return result;
+  }, [tempColors]);
 
   const handlePriceChange = (value: string, field: string) => {
     const num = Number(value);
@@ -313,7 +411,15 @@ export function ProductFormDialog({
       setForm({ ...form, [field]: 0 });
       return;
     }
+    
+    // ✅ ✅ ✅ منع إعادة التوجيه أثناء كتابة السعر
+    isPriceEditingRef.current = true;
     setForm({ ...form, [field]: num });
+    
+    // ✅ إعادة تعيين بعد 500ms
+    setTimeout(() => {
+      isPriceEditingRef.current = false;
+    }, 500);
   };
 
   const isFormValid = () => {
@@ -343,175 +449,200 @@ export function ProductFormDialog({
     return true;
   };
 
-const validateAndSubmit = async () => {
-  console.log("🔍 [validateAndSubmit] ===== STARTING VALIDATION =====");
-  console.log("🔍 [validateAndSubmit] Product type:", productType);
-  console.log("🔍 [validateAndSubmit] Form data:", { ...form, image_urls: `${form.image_urls?.length || 0} images` });
+  const validateAndSubmit = async () => {
+    console.log("🔍 [validateAndSubmit] ===== STARTING VALIDATION =====");
+    console.log("🔍 [validateAndSubmit] Product type:", productType);
+    console.log("🔍 [validateAndSubmit] Form data:", { ...form, image_urls: `${form.image_urls?.length || 0} images` });
 
-  if (!form.title_ar.trim()) {
-    console.log("❌ [validateAndSubmit] Missing title");
-    toast.error(
-      app.lang === "ar" 
-        ? `الرجاء إدخال ${productType === "offer" ? "اسم العرض" : "اسم المنتج"}` 
-        : `Please enter ${productType === "offer" ? "offer name" : "product name"}`
-    );
-    setActiveTab("basic");
-    return;
-  }
-  console.log("✅ [validateAndSubmit] Title OK:", form.title_ar);
-  
-  if (!form.price || form.price <= 0) {
-    console.log("❌ [validateAndSubmit] Missing price");
-    toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال السعر" : "⚠️ Please enter price");
-    setActiveTab("pricing");
-    return;
-  }
-  if (form.price < 0) {
-    console.log("❌ [validateAndSubmit] Negative price");
-    toast.error(app.lang === "ar" ? "⚠️ السعر لا يمكن أن يكون سالباً" : "⚠️ Price cannot be negative");
-    setActiveTab("pricing");
-    return;
-  }
-  console.log("✅ [validateAndSubmit] Price OK:", form.price);
-  
-  if (productType === "offer") {
-    if (!form.old_price || form.old_price <= form.price) {
-      console.log("❌ [validateAndSubmit] Old price invalid");
-      toast.error(app.lang === "ar" ? "⚠️ السعر القديم يجب أن يكون أكبر من السعر الحالي" : "⚠️ Old price must be greater than current price");
+    if (!form.title_ar.trim()) {
+      console.log("❌ [validateAndSubmit] Missing title");
+      toast.error(
+        app.lang === "ar" 
+          ? `الرجاء إدخال ${productType === "offer" ? "اسم العرض" : "اسم المنتج"}` 
+          : `Please enter ${productType === "offer" ? "offer name" : "product name"}`
+      );
+      setActiveTab("basic");
+      return;
+    }
+    console.log("✅ [validateAndSubmit] Title OK:", form.title_ar);
+    
+    if (!form.price || form.price <= 0) {
+      console.log("❌ [validateAndSubmit] Missing price");
+      toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال السعر" : "⚠️ Please enter price");
       setActiveTab("pricing");
       return;
     }
-    if (form.old_price < 0) {
-      console.log("❌ [validateAndSubmit] Negative old price");
-      toast.error(app.lang === "ar" ? "⚠️ السعر القديم لا يمكن أن يكون سالباً" : "⚠️ Old price cannot be negative");
+    if (form.price < 0) {
+      console.log("❌ [validateAndSubmit] Negative price");
+      toast.error(app.lang === "ar" ? "⚠️ السعر لا يمكن أن يكون سالباً" : "⚠️ Price cannot be negative");
       setActiveTab("pricing");
       return;
     }
-    console.log("✅ [validateAndSubmit] Old price OK:", form.old_price);
-  }
-  
-  if (!form.category_id) {
-    console.log("❌ [validateAndSubmit] Missing category");
-    toast.error(app.lang === "ar" ? "⚠️ الرجاء اختيار التصنيف" : "⚠️ Please select category");
-    setActiveTab("basic");
-    return;
-  }
-  console.log("✅ [validateAndSubmit] Category OK:", form.category_id);
-  
-  if (!form.governorate_id) {
-    console.log("❌ [validateAndSubmit] Missing governorate");
-    toast.error(app.lang === "ar" ? "⚠️ الرجاء اختيار المحافظة" : "⚠️ Please select governorate");
-    setActiveTab("basic");
-    return;
-  }
-  console.log("✅ [validateAndSubmit] Governorate OK:", form.governorate_id);
-  
-  if (!form.cover_url?.trim()) {
-    console.log("❌ [validateAndSubmit] Missing cover image");
-    toast.error(app.lang === "ar" ? "⚠️ الرجاء رفع الصورة الرئيسية" : "⚠️ Please upload main image");
-    setActiveTab("images");
-    return;
-  }
-  console.log("✅ [validateAndSubmit] Cover image OK");
-  
-  if (tempColors.length > 0) {
-    const colorsWithoutImage = tempColors.filter((c: any) => !c.image_url?.trim());
-    if (colorsWithoutImage.length > 0) {
-      const colorNames = colorsWithoutImage.map((c: any) => c.color_name_ar).join(', ');
-      console.log("❌ [validateAndSubmit] Colors without image:", colorNames);
-      toast.error(
-        app.lang === "ar" 
-          ? `⚠️ الألوان التالية بدون صورة: ${colorNames}` 
-          : `⚠️ The following colors have no image: ${colorNames}`
-      );
-      setActiveTab("options");
-      return;
-    }
-    console.log("✅ [validateAndSubmit] Colors OK:", tempColors.length, "colors with images");
-  }
-  
-  console.log("🔍 [validateAndSubmit] ===== CHECKING OPTIONS =====");
-  console.log("🔍 [validateAndSubmit] Options object:", options);
-  console.log("🔍 [validateAndSubmit] Options keys:", Object.keys(options));
-  
-  const activeOptionsCount = Object.values(options).filter(arr => arr.length > 0).length;
-  console.log("🔍 [validateAndSubmit] Active options count:", activeOptionsCount);
-  
-  Object.entries(options).forEach(([key, values]) => {
-    if (values.length > 0) {
-      console.log(`🔍 [validateAndSubmit]   - ${key}: ${values.length} values (${values.join(', ')})`);
-    }
-  });
-  
-  console.log("🔍 [validateAndSubmit] Variations count:", variations.length);
-  if (variations.length > 0) {
-    console.log("🔍 [validateAndSubmit] Variations:", variations.map(v => 
-      `${Object.values(v.combination).join(' • ')} (${v.is_available ? '✅' : '❌'})`
-    ));
-  }
-  
-  if (activeOptionsCount >= 2) {
-    console.log("🔍 [validateAndSubmit] ⚠️ Active options >= 2, checking variations...");
-    const hasVariations = variations.length > 0;
-    console.log("🔍 [validateAndSubmit] Has variations?", hasVariations);
+    console.log("✅ [validateAndSubmit] Price OK:", form.price);
     
-    if (!hasVariations) {
-      console.log("❌ [validateAndSubmit] ERROR: Options found but NO variations!");
-      console.log("❌ [validateAndSubmit] User must generate variations first!");
-      
-      setActiveTab("options");
-      
-      toast.error(
-        app.lang === "ar" 
-          ? "⚠️ لديك خيارين أو أكثر (ألوان، مقاسات، إلخ) ولكن لم تقم بتوليد التركيبات!\n\n📌 الرجاء التوجه إلى تبويب 'خيارات' والضغط على زر 'توليد التركيبات' في الأسفل" 
-          : "⚠️ You have 2 or more options (colors, sizes, etc.) but haven't generated variations!\n\n📌 Please go to the 'Options' tab and click the 'Generate Variations' button below"
-      );
-      return;
+    if (productType === "offer") {
+      if (!form.old_price || form.old_price <= form.price) {
+        console.log("❌ [validateAndSubmit] Old price invalid");
+        toast.error(app.lang === "ar" ? "⚠️ السعر القديم يجب أن يكون أكبر من السعر الحالي" : "⚠️ Old price must be greater than current price");
+        setActiveTab("pricing");
+        return;
+      }
+      if (form.old_price < 0) {
+        console.log("❌ [validateAndSubmit] Negative old price");
+        toast.error(app.lang === "ar" ? "⚠️ السعر القديم لا يمكن أن يكون سالباً" : "⚠️ Old price cannot be negative");
+        setActiveTab("pricing");
+        return;
+      }
+      console.log("✅ [validateAndSubmit] Old price OK:", form.old_price);
     }
     
-    console.log("✅ [validateAndSubmit] Variations exist, proceeding...");
-  } else {
-    console.log("ℹ️ [validateAndSubmit] Active options < 2, skipping variations check");
-  }
-  
-  if (variations.length > 0) {
-    const variationsWithoutPrice = variations.filter(v => !v.price || v.price <= 0);
-    if (variationsWithoutPrice.length > 0) {
-      console.log("❌ [validateAndSubmit] Variations without price:", variationsWithoutPrice.length);
-      toast.error(
-        app.lang === "ar" 
-          ? `⚠️ هناك ${variationsWithoutPrice.length} تركيبة بدون سعر، الرجاء تحديد السعر لكل تركيبة` 
-          : `⚠️ ${variationsWithoutPrice.length} variations have no price, please set price for each variation`
-      );
-      setActiveTab("options");
+    if (!form.category_id) {
+      console.log("❌ [validateAndSubmit] Missing category");
+      toast.error(app.lang === "ar" ? "⚠️ الرجاء اختيار التصنيف" : "⚠️ Please select category");
+      setActiveTab("basic");
       return;
     }
-  }
-  
-  console.log("✅ [validateAndSubmit] ===== ALL VALIDATIONS PASSED =====");
-  console.log("✅ [validateAndSubmit] Submitting product...");
-  
-  setIsSubmitting(true);
+    console.log("✅ [validateAndSubmit] Category OK:", form.category_id);
+    
+    if (!form.governorate_id) {
+      console.log("❌ [validateAndSubmit] Missing governorate");
+      toast.error(app.lang === "ar" ? "⚠️ الرجاء اختيار المحافظة" : "⚠️ Please select governorate");
+      setActiveTab("basic");
+      return;
+    }
+    console.log("✅ [validateAndSubmit] Governorate OK:", form.governorate_id);
+    
+    if (!form.cover_url?.trim()) {
+      console.log("❌ [validateAndSubmit] Missing cover image");
+      toast.error(app.lang === "ar" ? "⚠️ الرجاء رفع الصورة الرئيسية" : "⚠️ Please upload main image");
+      setActiveTab("images");
+      return;
+    }
+    console.log("✅ [validateAndSubmit] Cover image OK");
+    
+    // ✅ ✅ ✅ التحقق من صور الألوان - محسن احترافي
+    if (tempColors.length > 0) {
+      // ✅ التحقق الذكي: الألوان الموجودة في قاعدة البيانات لا تحتاج صورة جديدة
+      const colorsWithoutImage = tempColors.filter((c: any) => {
+        // ❌ حالة 1: لون جديد (id يبدأ بـ temp-) وليس له صورة → مطلوب
+        if (c.id?.startsWith('temp-') && !c.image_url?.trim()) {
+          return true;
+        }
+        // ✅ حالة 2: لون من قاعدة البيانات (id لا يبدأ بـ temp-) → لا نطلب صورة
+        if (c.id && !c.id.startsWith('temp-')) {
+          return false;
+        }
+        // ✅ حالة 3: أي حالة أخرى، تحقق من وجود الصورة
+        return !c.image_url?.trim();
+      });
+      
+      if (colorsWithoutImage.length > 0) {
+        const colorNames = colorsWithoutImage.map((c: any) => c.color_name_ar).join(', ');
+        console.log("❌ [validateAndSubmit] Colors without image:", colorNames);
+        toast.error(
+          app.lang === "ar" 
+            ? `⚠️ الألوان التالية بدون صورة: ${colorNames}` 
+            : `⚠️ The following colors have no image: ${colorNames}`
+        );
+        setActiveTab("options");
+        return;
+      }
+      console.log("✅ [validateAndSubmit] Colors OK:", tempColors.length, "colors with images");
+    }
+    
+    console.log("🔍 [validateAndSubmit] ===== CHECKING OPTIONS =====");
+    console.log("🔍 [validateAndSubmit] Options object:", options);
+    console.log("🔍 [validateAndSubmit] Options keys:", Object.keys(options));
+    
+    const activeOptionsCount = Object.values(options).filter(arr => arr.length > 0).length;
+    console.log("🔍 [validateAndSubmit] Active options count:", activeOptionsCount);
+    
+    Object.entries(options).forEach(([key, values]) => {
+      if (values.length > 0) {
+        console.log(`🔍 [validateAndSubmit]   - ${key}: ${values.length} values (${values.join(', ')})`);
+      }
+    });
+    
+    console.log("🔍 [validateAndSubmit] Variations count:", variations.length);
+    if (variations.length > 0) {
+      console.log("🔍 [validateAndSubmit] Variations:", variations.map(v => 
+        `${Object.values(v.combination).join(' • ')} (${v.is_available ? '✅' : '❌'})`
+      ));
+    }
+    
+    if (activeOptionsCount >= 2) {
+      console.log("🔍 [validateAndSubmit] ⚠️ Active options >= 2, checking variations...");
+      const hasVariations = variations.length > 0;
+      console.log("🔍 [validateAndSubmit] Has variations?", hasVariations);
+      
+      if (!hasVariations) {
+        console.log("❌ [validateAndSubmit] ERROR: Options found but NO variations!");
+        console.log("❌ [validateAndSubmit] User must generate variations first!");
+        
+        setActiveTab("options");
+        
+        toast.error(
+          app.lang === "ar" 
+            ? "⚠️ لديك خيارين أو أكثر (ألوان، مقاسات، إلخ) ولكن لم تقم بتوليد التركيبات!\n\n📌 الرجاء التوجه إلى تبويب 'خيارات' والضغط على زر 'توليد التركيبات' في الأسفل" 
+            : "⚠️ You have 2 or more options (colors, sizes, etc.) but haven't generated variations!\n\n📌 Please go to the 'Options' tab and click the 'Generate Variations' button below"
+        );
+        return;
+      }
+      
+      console.log("✅ [validateAndSubmit] Variations exist, proceeding...");
+    } else {
+      console.log("ℹ️ [validateAndSubmit] Active options < 2, skipping variations check");
+    }
+    
+    // ✅ ✅ ✅ التحقق من أسعار الفيرنتس - محسن احترافي
+    if (variations.length > 0) {
+      // ✅ التحقق من أن كل تركيبة لها سعر
+      const variationsWithoutPrice = variations.filter(v => {
+        // ❌ السعر غير موجود أو null أو undefined أو <= 0
+        return v.price === undefined || v.price === null || v.price <= 0;
+      });
+      
+      if (variationsWithoutPrice.length > 0) {
+        console.log("❌ [validateAndSubmit] Variations without price:", variationsWithoutPrice.length);
+        // ✅ عرض أسماء التركيبات بدون سعر للمساعدة
+        const variationNames = variationsWithoutPrice.map(v => {
+          return Object.values(v.combination || {}).join(' • ');
+        }).join(', ');
+        
+        toast.error(
+          app.lang === "ar" 
+            ? `⚠️ هناك ${variationsWithoutPrice.length} تركيبة بدون سعر:\n${variationNames}\n\n📌 الرجاء تحديد السعر لكل تركيبة` 
+            : `⚠️ ${variationsWithoutPrice.length} variations have no price:\n${variationNames}\n\n📌 Please set price for each variation`
+        );
+        setActiveTab("options");
+        return;
+      }
+    }
+    
+    console.log("✅ [validateAndSubmit] ===== ALL VALIDATIONS PASSED =====");
+    console.log("✅ [validateAndSubmit] Submitting product...");
+    
+   setIsSubmitting(true);
   try {
-
-    console.log("🔍 [validateAndSubmit] BEFORE allData:");
-console.log("🔍 form.image_urls:", form.image_urls);
-console.log("🔍 form.image_urls type:", typeof form.image_urls);
-console.log("🔍 form.image_urls isArray:", Array.isArray(form.image_urls));
-console.log("🔍 form.image_urls length:", form.image_urls?.length || 0);
+    // ✅ ✅ ✅ استخدم options.sizes بدلاً من sizes
+    const finalSizes = options.sizes || [];
+    
+    console.log("🔍🔍🔍 [ProductFormDialog] finalSizes:", finalSizes);
+    console.log("🔍🔍🔍 [ProductFormDialog] options.sizes:", options.sizes);
+    
     const allData = { 
       ...form, 
       options: {
         ...options,
         colors: tempColors.map((c: any) => c.color_name_ar),
-        sizes: sizes,
+        sizes: finalSizes,  // ✅ استخدم finalSizes
       },
       variations: variations.map(v => ({
         ...v,
         price: v.price || form.price,
       })),
       colors: tempColors,
-      image_urls: form.image_urls,  // ✅ ✅ ✅ أضف هذا السطر
+      image_urls: form.image_urls,
     };
     
     console.log("✅ [validateAndSubmit] Data to save:", {
@@ -521,9 +652,10 @@ console.log("🔍 form.image_urls length:", form.image_urls?.length || 0);
       options_count: Object.values(allData.options).filter(arr => arr.length > 0).length,
       variations_count: allData.variations.length,
       colors_count: allData.colors.length,
-      image_urls_count: allData.image_urls?.length || 0,  // ✅ أضف هذا
+      sizes_count: allData.options.sizes?.length || 0,  // ✅ أضف هذا
     });
-    
+    console.log("🔍🔍🔍 [ProductFormDialog] allData.options.sizes:", allData.options.sizes);
+console.log("🔍🔍🔍 [ProductFormDialog] allData.options:", allData.options);
     await onSave(allData);
     console.log("✅ [validateAndSubmit] Product saved successfully!");
   } catch (error) {
@@ -533,6 +665,7 @@ console.log("🔍 form.image_urls length:", form.image_urls?.length || 0);
     console.log("🔍 [validateAndSubmit] ===== VALIDATION END =====");
   }
 };
+
   const handleColorsWithImagesChange = (colors: ColorWithImage[]) => {
     setColorWithImages(colors);
     
@@ -552,13 +685,14 @@ console.log("🔍 form.image_urls length:", form.image_urls?.length || 0);
     }));
   };
 
-  const handleSizesUpdate = (newSizes: string[]) => {
-    setSizes(newSizes);
-    setOptions(prev => ({
-      ...prev,
-      sizes: newSizes,
-    }));
-  };
+const handleSizesUpdate = (newSizes: string[]) => {
+  console.log("🔍🔍🔍 [ProductFormDialog] handleSizesUpdate called with:", newSizes);
+  setSizes(newSizes);
+  setOptions(prev => ({
+    ...prev,
+    sizes: newSizes,
+  }));
+};
 
   const getProductIcon = () => {
     if (productType === "offer") return <Gift className="h-6 w-6 text-emerald-500" />;
@@ -707,7 +841,10 @@ console.log("🔍 form.image_urls length:", form.image_urls?.length || 0);
           {/* ===== Tabs ===== */}
           <div className="mt-3">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-4 gap-1.5 bg-[#2a655f]/5 dark:bg-[#2a655f]/20 p-1.5 rounded-2xl border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+              <TabsList 
+                className="grid grid-cols-4 gap-1.5 bg-[#2a655f]/5 dark:bg-[#2a655f]/20 p-1.5 rounded-2xl border border-[#2a655f]/10 dark:border-[#2a655f]/20"
+                dir={lang === "ar" ? "rtl" : "ltr"}
+              >
                 {TAB_ORDER.map((tab) => {
                   const Icon = getTabIcon(tab);
                   const isActive = activeTab === tab;
@@ -1203,9 +1340,7 @@ console.log("🔍 form.image_urls length:", form.image_urls?.length || 0);
                 onVariationsChange={setVariations}
                 userId={app.user?.id || ''}
                 onColorsWithImagesChange={handleColorsWithImagesChange}
-                externalColorImages={Object.fromEntries(
-                  tempColors.map((c: any) => [c.color_name_ar, c.image_url])
-                )}
+                externalColorImages={externalColorImages}
                 sizes={sizes}
                 onSizesChange={handleSizesUpdate}
               />

@@ -1,6 +1,6 @@
 // src/components/dashboard/ProductOptionsManager.tsx
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { 
   Plus, X, Layers, Palette, Ruler, Box, Droplet, 
   Weight, Sparkles, Tag, RefreshCw, Trash2,
@@ -52,8 +52,7 @@ export interface Variation {
   combination: Record<string, string>;
   is_available: boolean;
   sku?: string;
-  price?: number;        // ✅ السعر لكل تركيبة
- 
+  price?: number;
 }
 
 export interface ColorWithImage {
@@ -97,10 +96,30 @@ export function ProductOptionsManager({
   const [tempColorImage, setTempColorImage] = useState("");
   const [editingVariation, setEditingVariation] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(true);
+  
+  // ✅ ✅ ✅ متغيرات التحكم الاحترافية
+  const isGeneratingRef = useRef(false);
+  const isDeletingRef = useRef(false);
+  const lastManualActionRef = useRef<{ type: 'delete' | 'generate' | null; timestamp: number }>({
+    type: null,
+    timestamp: 0
+  });
+  const previousStateRef = useRef<string>('');
+  const [deletedVariationsBackup, setDeletedVariationsBackup] = useState<Variation[]>([]);
+  const [showRestoreButton, setShowRestoreButton] = useState(false);
+  // ✅ ✅ ✅ أضف هذا المتغير الجديد لمنع التوليد عند التحميل الأولي
+  const isInitialLoadRef = useRef(true);
 
-  // ✅ مزامنة الـ variations مع الـ props
+  // ✅ مزامنة الـ variations مع الـ props - مع إعطائها الأولوية
   useEffect(() => {
-    setLocalVariations(variations);
+    console.log("🔍 [ProductOptionsManager] Syncing variations from props:", variations.length);
+    if (variations.length > 0) {
+      setLocalVariations(variations);
+      // ✅ منع التوليد التلقائي بعد تحميل التركيبات
+      isInitialLoadRef.current = false;
+    } else {
+      setLocalVariations(variations);
+    }
   }, [variations]);
 
   // ✅ مزامنة الصور الخارجية
@@ -119,61 +138,138 @@ export function ProductOptionsManager({
     }
   };
 
-  // ✅ ✅ ✅ توليد التركيبات التلقائي (جديد) ✅ ✅ ✅
-  useEffect(() => {
-    // ✅ التحقق من وجود خيارين على الأقل
-    const activeTypes = Object.keys(value).filter(key => value[key] && value[key].length > 0);
+  // ✅ ✅ ✅ دالة تسجيل الإجراءات اليدوية
+  const recordManualAction = useCallback((type: 'delete' | 'generate') => {
+    lastManualActionRef.current = {
+      type,
+      timestamp: Date.now()
+    };
+  }, []);
+
+  // ✅ ✅ ✅ دالة التحقق من الإجراء اليدوي
+  const isManualAction = useCallback((currentState: Variation[]): boolean => {
+    const now = Date.now();
+    const timeSinceLastAction = now - lastManualActionRef.current.timestamp;
     
-    if (activeTypes.length < 2) {
+    if (lastManualActionRef.current.type && timeSinceLastAction < 500) {
+      return true;
+    }
+    
+    if (currentState.length === 0 && lastManualActionRef.current.type === 'delete') {
+      return true;
+    }
+    
+    return false;
+  }, []);
+
+  // ✅ ✅ ✅ توليد التركيبات التلقائي - نسخة محسنة مع منع التحميل الأولي
+// ✅ ✅ ✅ توليد التركيبات التلقائي - نسخة محسنة مع منع التحميل الأولي ومنع توليد التركيبات الحقيقية
+useEffect(() => {
+  // ✅ منع التوليد في حالات معينة
+  if (isGeneratingRef.current) {
+    return;
+  }
+  
+  if (isDeletingRef.current) {
+    return;
+  }
+  
+  // ✅ ✅ ✅ منع التوليد عند التحميل الأولي
+  if (isInitialLoadRef.current) {
+    isInitialLoadRef.current = false;
+    console.log('ℹ️ [ProductOptionsManager] Initial load - skipping auto-generation');
+    return;
+  }
+
+  // ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅
+  // 🔥🔥🔥 إذا كانت هناك تركيبات حقيقية من قاعدة البيانات (IDs لا تبدأ بـ var-)، لا تولد جديدة!
+  // ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅
+  if (localVariations.length > 0) {
+    const hasRealIds = localVariations.some(v => v.id && !v.id.startsWith('var-'));
+    if (hasRealIds) {
+      console.log('ℹ️ [ProductOptionsManager] Skipping auto-generation - real variations exist from database');
       return;
     }
+  }
 
-    // ✅ التحقق من أن الألوان لها صور (إذا كانت موجودة)
-    if (value.colors) {
-      const colorsWithoutImage = value.colors.filter(c => !colorImages[c]);
-      if (colorsWithoutImage.length > 0) {
-        return;
-      }
+  // ✅ التحقق من وجود خيارين على الأقل
+  const activeTypes = Object.keys(value).filter(key => value[key] && value[key].length > 0);
+  
+  if (activeTypes.length < 2) {
+    if (localVariations.length > 0) {
+      isGeneratingRef.current = true;
+      setLocalVariations([]);
+      if (onVariationsChange) onVariationsChange([]);
+      setTimeout(() => { isGeneratingRef.current = false; }, 0);
     }
+    return;
+  }
 
-    // ✅ توليد التركيبات تلقائياً
-    const generatedVariations = generateVariationsAuto(value, colorImages);
+  // ✅ التحقق من أن الألوان لها صور
+  if (value.colors) {
+    const colorsWithoutImage = value.colors.filter(c => !colorImages[c]);
+    if (colorsWithoutImage.length > 0) {
+      if (localVariations.length > 0) {
+        isGeneratingRef.current = true;
+        setLocalVariations([]);
+        if (onVariationsChange) onVariationsChange([]);
+        setTimeout(() => { isGeneratingRef.current = false; }, 0);
+      }
+      return;
+    }
+  }
+
+  // ✅ توليد التركيبات
+  const generatedVariations = generateVariationsAuto(value, colorImages);
+  
+  if (generatedVariations.length > 0) {
+    const variationsWithDefaults = generatedVariations.map(v => ({
+      ...v,
+      price: 0,
+      stock_quantity: 0,
+    }));
     
-    if (generatedVariations.length > 0) {
-      // ✅ تجنب التكرار
-      const existingKeys = new Set(
-        localVariations.map(v => JSON.stringify(v.combination))
-      );
-      
-      const newVariations = generatedVariations.filter(v => 
-        !existingKeys.has(JSON.stringify(v.combination))
-      );
-      
-      if (newVariations.length > 0) {
-        // ✅ أضف price و stock_quantity للتركيبات الجديدة
-        const variationsWithDefaults = newVariations.map(v => ({
-          ...v,
-          price: 0,
-          stock_quantity: 0,
-        }));
-        
-        const updated = [...localVariations, ...variationsWithDefaults];
-        setLocalVariations(updated);
-        if (onVariationsChange) {
-          onVariationsChange(updated);
-        }
-        
-        // ✅ إشعار للمستخدم
-        toast.success(
-          lang === "ar" 
-            ? `✅ تم توليد ${newVariations.length} تركيبة تلقائياً` 
-            : `✅ ${newVariations.length} variations generated automatically`
-        );
-      }
-    }
-  }, [value, colorImages]); // ✅ يتغير عند تغيير الخيارات أو الصور
+    // ✅ تحقق إذا كانت التركيبات مختلفة لتجنب التحديثات غير الضرورية
+    const currentKeys = new Set(
+      localVariations.map(v => JSON.stringify(v.combination))
+    );
+    const newKeys = new Set(
+      variationsWithDefaults.map(v => JSON.stringify(v.combination))
+    );
+    
+    const isDifferent = 
+      localVariations.length !== variationsWithDefaults.length ||
+      [...newKeys].some(key => !currentKeys.has(key));
 
-  // ✅ ✅ ✅ دالة توليد التركيبات التلقائية ✅ ✅ ✅
+    // ✅ التحقق من أن هذا ليس حذفاً يدوياً
+    const currentStateStr = JSON.stringify(localVariations);
+    const newStateStr = JSON.stringify(variationsWithDefaults);
+    
+    // ✅ إذا كانت الحالة الجديدة فارغة والحالية ليست فارغة - تحقق من الإجراء اليدوي
+    if (newStateStr === '[]' && currentStateStr !== '[]') {
+      // ✅ هذا حذف يدوي، لا تعيد التوليد
+      console.log('ℹ️ [ProductOptionsManager] Skipping auto-generation - manual deletion detected');
+      return;
+    }
+    
+    if (isDifferent) {
+      isGeneratingRef.current = true;
+      setLocalVariations(variationsWithDefaults);
+      if (onVariationsChange) {
+        onVariationsChange(variationsWithDefaults);
+      }
+      setTimeout(() => { isGeneratingRef.current = false; }, 0);
+    }
+  } else {
+    if (localVariations.length > 0) {
+      isGeneratingRef.current = true;
+      setLocalVariations([]);
+      if (onVariationsChange) onVariationsChange([]);
+      setTimeout(() => { isGeneratingRef.current = false; }, 0);
+    }
+  }
+}, [value, colorImages, localVariations, onVariationsChange]);
+  // ✅ ✅ ✅ دالة توليد التركيبات التلقائية
   const generateVariationsAuto = (
     currentValue: Record<string, string[]>, 
     currentColorImages: Record<string, string>
@@ -206,8 +302,8 @@ export function ProductOptionsManager({
             id: `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
             combination: { ...current },
             is_available: true,
-            price: 0,        // ✅ السعر الافتراضي
-            stock_quantity: 0, // ✅ المخزون الافتراضي
+            price: 0,
+            stock_quantity: 0,
           });
         }
         return;
@@ -220,14 +316,16 @@ export function ProductOptionsManager({
         current[type] = val;
         generateAllCombinations(types, index + 1, current);
       });
+      
+      delete current[type];
     };
 
     generateAllCombinations(typeKeys, 0, {});
     return allVariations;
   };
 
-  // ✅ توليد التركيبات يدوياً (يستخدم للزر)
-  const generateVariations = () => {
+  // ✅ ✅ ✅ توليد التركيبات يدوياً (يستخدم للزر) - محسن
+  const generateVariations = useCallback(() => {
     const activeTypes: Record<string, string[]> = {};
     Object.keys(value).forEach(key => {
       if (value[key] && value[key].length > 0) {
@@ -245,7 +343,6 @@ export function ProductOptionsManager({
       return;
     }
 
-    // ✅ التحقق من أن كل لون له صورة
     if (activeTypes.colors) {
       const colorsWithoutImage = activeTypes.colors.filter(c => !colorImages[c]);
       if (colorsWithoutImage.length > 0) {
@@ -258,22 +355,20 @@ export function ProductOptionsManager({
       }
     }
 
-    // ✅ توليد التركيبات
+    // ✅ تسجيل الإجراء اليدوي
+    recordManualAction('generate');
+
+    const allVariations: Variation[] = [];
+    
     const generateAllCombinations = (types: string[], index: number, current: Record<string, string>) => {
       if (index === types.length) {
-        const exists = localVariations.some(v => {
-          return Object.keys(current).every(key => v.combination[key] === current[key]);
+        allVariations.push({
+          id: `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          combination: { ...current },
+          is_available: true,
+          price: 0,
+          stock_quantity: 0,
         });
-        
-        if (!exists) {
-          allVariations.push({
-            id: `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            combination: { ...current },
-            is_available: true,
-            price: 0,        // ✅ السعر الافتراضي
-            stock_quantity: 0, // ✅ المخزون الافتراضي
-          });
-        }
         return;
       }
 
@@ -284,47 +379,95 @@ export function ProductOptionsManager({
         current[type] = val;
         generateAllCombinations(types, index + 1, current);
       });
+      
+      delete current[type];
     };
 
-    const allVariations: Variation[] = [];
     generateAllCombinations(typeKeys, 0, {});
 
     if (allVariations.length > 0) {
-      // ✅ تجنب التكرار مع الموجود
-      const existingKeys = new Set(
-        localVariations.map(v => JSON.stringify(v.combination))
-      );
+      const variationsWithDefaults = allVariations.map(v => ({
+        ...v,
+        price: 0,
+        stock_quantity: 0,
+      }));
       
-      const newVariations = allVariations.filter(v => 
-        !existingKeys.has(JSON.stringify(v.combination))
-      );
-      
-      if (newVariations.length > 0) {
-        // ✅ أضف price و stock_quantity للتركيبات الجديدة
-        const variationsWithDefaults = newVariations.map(v => ({
-          ...v,
-          price: 0,
-          stock_quantity: 0,
-        }));
-        
-        const updatedVariations = [...localVariations, ...variationsWithDefaults];
-        setLocalVariations(updatedVariations);
-        if (onVariationsChange) {
-          onVariationsChange(updatedVariations);
-        }
-        
-        toast.success(
-          lang === "ar" 
-            ? `✅ تم إضافة ${newVariations.length} تركيبة جديدة (من ${typeKeys.length} أنواع)` 
-            : `✅ Added ${newVariations.length} new variations (from ${typeKeys.length} types)`
-        );
-      } else {
-        toast.info(lang === "ar" ? "💡 جميع التركيبات موجودة بالفعل" : "💡 All variations already exist");
+      setLocalVariations(variationsWithDefaults);
+      if (onVariationsChange) {
+        onVariationsChange(variationsWithDefaults);
       }
+      
+      // ✅ إخفاء زر الاستعادة بعد التوليد اليدوي
+      setShowRestoreButton(false);
+      setDeletedVariationsBackup([]);
+      
+      toast.success(
+        lang === "ar" 
+          ? `✅ تم توليد ${allVariations.length} تركيبة جديدة (من ${typeKeys.length} أنواع)` 
+          : `✅ Generated ${allVariations.length} new variations (from ${typeKeys.length} types)`
+      );
     } else {
-      toast.info(lang === "ar" ? "💡 جميع التركيبات موجودة بالفعل" : "💡 All variations already exist");
+      toast.info(lang === "ar" ? "💡 لا توجد تركيبات جديدة" : "💡 No new variations");
     }
-  };
+  }, [value, colorImages, lang, onVariationsChange, recordManualAction]);
+
+  // ✅ ✅ ✅ حذف جميع التركيبات - محسن مع نسخ احتياطي
+  const removeAllVariations = useCallback(() => {
+    // ✅ حفظ نسخة احتياطية قبل الحذف
+    if (localVariations.length > 0) {
+      setDeletedVariationsBackup(localVariations);
+      setShowRestoreButton(true);
+    }
+    
+    // ✅ تسجيل الإجراء اليدوي
+    recordManualAction('delete');
+    isDeletingRef.current = true;
+    
+    setLocalVariations([]);
+    if (onVariationsChange) {
+      onVariationsChange([]);
+    }
+    
+    previousStateRef.current = JSON.stringify([]);
+    
+    toast.success(
+      lang === "ar" 
+        ? "✅ تم حذف جميع التركيبات (يمكنك استعادتها)" 
+        : "✅ All variations deleted (you can restore them)"
+    );
+    
+    // ✅ إلغاء قفل الحذف بعد فترة كافية
+    setTimeout(() => {
+      isDeletingRef.current = false;
+      setTimeout(() => {
+        if (lastManualActionRef.current.type === 'delete') {
+          lastManualActionRef.current.type = null;
+        }
+      }, 1000);
+    }, 600);
+  }, [localVariations, lang, onVariationsChange, recordManualAction]);
+
+  // ✅ ✅ ✅ استعادة التركيبات المحذوفة
+  const restoreVariations = useCallback(() => {
+    if (deletedVariationsBackup.length === 0) {
+      toast.info(lang === "ar" ? "💡 لا توجد تركيبات لاستعادتها" : "💡 No variations to restore");
+      return;
+    }
+    
+    setLocalVariations(deletedVariationsBackup);
+    if (onVariationsChange) {
+      onVariationsChange(deletedVariationsBackup);
+    }
+    
+    setShowRestoreButton(false);
+    setDeletedVariationsBackup([]);
+    
+    toast.success(
+      lang === "ar" 
+        ? `✅ تم استعادة ${deletedVariationsBackup.length} تركيبة` 
+        : `✅ Restored ${deletedVariationsBackup.length} variations`
+    );
+  }, [deletedVariationsBackup, lang, onVariationsChange]);
 
   // ✅ إضافة خيار
   const addOption = (type: string, imageUrl?: string) => {
@@ -418,15 +561,6 @@ export function ProductOptionsManager({
       onVariationsChange(updated);
     }
     toast.success(lang === "ar" ? "✅ تم حذف التركيبة" : "✅ Variation deleted");
-  };
-
-  // ✅ حذف جميع التركيبات
-  const removeAllVariations = () => {
-    setLocalVariations([]);
-    if (onVariationsChange) {
-      onVariationsChange([]);
-    }
-    toast.success(lang === "ar" ? "✅ تم حذف جميع التركيبات" : "✅ All variations deleted");
   };
 
   // ✅ حساب الإحصائيات
@@ -535,15 +669,28 @@ export function ProductOptionsManager({
           </div>
         </div>
         {!readOnly && localVariations.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200/50 dark:border-red-800/30 transition-all duration-300 hover:scale-105"
-            onClick={removeAllVariations}
-          >
-            <Trash2 className="h-4 w-4 mr-1.5" />
-            {lang === "ar" ? "حذف الكل" : "Delete All"}
-          </Button>
+          <div className="flex items-center gap-2">
+            {showRestoreButton && deletedVariationsBackup.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-800/30 transition-all duration-300 hover:scale-105"
+                onClick={restoreVariations}
+              >
+                <RefreshCw className="h-4 w-4 mr-1.5" />
+                {lang === "ar" ? "استعادة" : "Restore"}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200/50 dark:border-red-800/30 transition-all duration-300 hover:scale-105"
+              onClick={removeAllVariations}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              {lang === "ar" ? "حذف الكل" : "Delete All"}
+            </Button>
+          </div>
         )}
       </div>
 
@@ -815,23 +962,46 @@ export function ProductOptionsManager({
                     </Badge>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50/50 dark:hover:bg-red-950/20 h-7 px-2 rounded-lg transition-all duration-300 hover:scale-105"
-                  onClick={removeAllVariations}
-                >
-                  <Trash2 className="h-3 w-3 mr-1" />
-                  {lang === "ar" ? "حذف الكل" : "Delete All"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  {showRestoreButton && deletedVariationsBackup.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 h-7 px-2 rounded-lg transition-all duration-300 hover:scale-105"
+                      onClick={restoreVariations}
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      {lang === "ar" ? "استعادة" : "Restore"}
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50/50 dark:hover:bg-red-950/20 h-7 px-2 rounded-lg transition-all duration-300 hover:scale-105"
+                    onClick={removeAllVariations}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    {lang === "ar" ? "حذف الكل" : "Delete All"}
+                  </Button>
+                </div>
               </div>
 
-              {/* ===== ✅ عرض التركيبات مع السعر والمخزون (معدل) ===== */}
+              {/* ===== ✅ عرض التركيبات مع السعر والمخزون ===== */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
                 {localVariations.map((variation) => {
-                  const isAvailable = variation.is_available;
-                  const comboKeys = Object.keys(variation.combination);
-                  
+  const isAvailable = variation.is_available;
+  const comboKeys = Object.keys(variation.combination);
+  
+  // ✅ ✅ ✅ أضف هذا الـ log هنا
+  console.log("🔍🔍🔍 [ProductOptionsManager] Rendering variation:", {
+    id: variation.id,
+    combination: variation.combination,
+    price: variation.price,
+    priceType: typeof variation.price,
+    hasPrice: variation.price !== undefined && variation.price !== null,
+    isZero: variation.price === 0,
+    valueToShow: variation.price !== undefined && variation.price !== null ? variation.price : '',
+  });
                   return (
                     <div
                       key={variation.id}
@@ -875,39 +1045,40 @@ export function ProductOptionsManager({
                         </div>
                       </div>
                       
-                      {/* ✅ ✅ ✅ حقل السعر والمخزون لكل تركيبة (معدل) ✅ ✅ ✅ */}
-                      <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-slate-200/50 dark:border-slate-700/50">
-                        <div className="flex-1 flex items-center gap-1">
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                            {lang === "ar" ? "السعر:" : "Price:"}
-                            <span className="text-red-500">*</span>  {/* ✅ علامة مطلوب */}
-                          </span>
-                          <Input
-                            type="number"
-                            min="1"  // ✅ min = 1 بدلاً من 0
-                            value={variation.price || ''}
-                            onChange={(e) => {
-                              const newPrice = Number(e.target.value);
-                              const updated = localVariations.map(v => 
-                                v.id === variation.id ? { ...v, price: newPrice } : v
-                              );
-                              setLocalVariations(updated);
-                              if (onVariationsChange) {
-                                onVariationsChange(updated);
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className={cn(
-                              "h-6 text-xs rounded-lg border-2 w-20 px-1.5",
-                              !variation.price || variation.price <= 0
-                                ? "border-red-300 dark:border-red-800 focus:border-red-500"  // ✅ أحمر إذا بدون سعر
-                                : "border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
-                            )}
-                            placeholder={lang === "ar" ? "مطلوب" : "Required"}
-                          />
-                        </div>
-                     
-                      </div>
+                    {/* ✅ حقل السعر لكل تركيبة */}
+<div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-slate-200/50 dark:border-slate-700/50">
+  <div className="flex-1 flex items-center gap-1">
+    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+      {lang === "ar" ? "السعر:" : "Price:"}
+      <span className="text-red-500">*</span>
+    </span>
+    <Input
+      type="number"
+      min="1"
+      step="1"
+      value={variation.price !== undefined && variation.price !== null ? variation.price : ''}
+      onChange={(e) => {
+        const val = e.target.value;
+        const newPrice = val === '' ? 0 : Number(val);
+        const updated = localVariations.map(v => 
+          v.id === variation.id ? { ...v, price: newPrice } : v
+        );
+        setLocalVariations(updated);
+        if (onVariationsChange) {
+          onVariationsChange(updated);
+        }
+      }}
+      onClick={(e) => e.stopPropagation()}
+      className={cn(
+        "h-6 text-xs rounded-lg border-2 w-20 px-1.5",
+        !variation.price || variation.price <= 0
+          ? "border-red-300 dark:border-red-800 focus:border-red-500"
+          : "border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
+      )}
+      placeholder={lang === "ar" ? "مطلوب" : "Required"}
+    />
+  </div>
+</div>
                     </div>
                   );
                 })}
