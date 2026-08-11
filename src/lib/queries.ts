@@ -338,6 +338,43 @@ const fetchMyListings = async (ownerId: string) => {
   
   if (listings.length > 0) {
     console.log("🔍 [fetchMyListings] First listing variations:", listings[0]?.variations?.length || 0);
+    
+    // ✅ ✅ ✅ جلب الصور الإضافية لكل منتج
+    const listingIds = listings.map((l: any) => l.id);
+    
+    const { data: images, error: imagesError } = await supabase
+      .from("listing_images")
+      .select("listing_id, url, sort_order")
+      .in("listing_id", listingIds);
+    
+    if (imagesError) {
+      console.error("❌ [fetchMyListings] Error fetching images:", imagesError);
+    } else if (images && images.length > 0) {
+      // ✅ دمج الصور مع المنتجات
+      const imagesMap = new Map();
+      images.forEach((img: any) => {
+        if (!imagesMap.has(img.listing_id)) {
+          imagesMap.set(img.listing_id, []);
+        }
+        imagesMap.get(img.listing_id).push({
+          url: img.url,
+          sort_order: img.sort_order,
+        });
+      });
+      
+      // ✅ إضافة listing_images و image_urls لكل منتج
+      listings.forEach((listing: any) => {
+        const productImages = imagesMap.get(listing.id) || [];
+        // ترتيب حسب sort_order
+        productImages.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
+        
+        listing.listing_images = productImages;
+        // ✅ للتوافق مع ProductFormDialog
+        listing.image_urls = productImages.map((img: any) => img.url);
+      });
+      
+      console.log(`📸 [fetchMyListings] Loaded images for ${listings.length} listings`);
+    }
   }
   
   return listings;

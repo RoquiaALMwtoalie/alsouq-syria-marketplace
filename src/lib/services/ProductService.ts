@@ -229,41 +229,71 @@ export class ProductService {
   /**
    * ✅ حفظ كل بيانات المنتج دفعة واحدة (بدون تكرار)
    */
-  static async saveAllProductData(
-    listingId: string,
-    data: {
-      options?: Record<string, string[]>;
-      colors?: any[];
-      variations?: any[];
-    }
-  ) {
-    const results = {
-      options: { inserted: 0, skipped: 0 },
-      colors: { inserted: 0, errors: [] as string[] },
-      variations: { inserted: 0 },
-    };
-    
-    // ✅ 1. حفظ الخيارات في product_options
-    if (data.options) {
-      results.options = await ProductService.saveOptions(listingId, data.options);
-    }
-    
-    // ✅ 2. حفظ الألوان في product_colors
-    if (data.colors) {
-      results.colors = await ProductService.saveColors(listingId, data.colors);
-    }
-    
-    // ✅ 3. حفظ التركيبات في product_variations
-    if (data.variations) {
-      results.variations = await ProductService.saveVariations(listingId, data.variations);
-    }
-    
-    console.log('✅ Product data saved successfully');
-    console.log(`📊 Results: ${results.options.inserted} options, ${results.colors.inserted} colors, ${results.variations.inserted} variations`);
-    
-    return results;
+ static async saveAllProductData(
+  listingId: string,
+  data: {
+    options?: Record<string, string[]>;
+    colors?: any[];
+    variations?: any[];
+    image_urls?: string[];  // ✅ جديد
+  }
+) {
+  const results = {
+    options: { inserted: 0, skipped: 0 },
+    colors: { inserted: 0, errors: [] as string[] },
+    variations: { inserted: 0 },
+    images: { inserted: 0 },  // ✅ جديد
+  };
+  
+  // ✅ 1. حفظ الخيارات
+  if (data.options) {
+    results.options = await ProductService.saveOptions(listingId, data.options);
   }
   
+  // ✅ 2. حفظ الألوان
+  if (data.colors) {
+    results.colors = await ProductService.saveColors(listingId, data.colors);
+  }
+  
+  // ✅ 3. حفظ التركيبات
+  if (data.variations) {
+    results.variations = await ProductService.saveVariations(listingId, data.variations);
+  }
+  
+  // ✅ ✅ ✅ 4. حفظ الصور الإضافية
+  if (data.image_urls && data.image_urls.length > 0) {
+    const validImageUrls = data.image_urls
+      .filter((url: string) => url && url.trim() !== '')
+      .map((url: string, index: number) => ({
+        listing_id: listingId,
+        url: url.trim(),
+        sort_order: index,
+      }));
+
+    console.log("📸 [ProductService] Saving images:", validImageUrls);
+    console.log("📸 [ProductService] Number of images:", validImageUrls.length);
+
+    if (validImageUrls.length > 0) {
+      const { error } = await supabase
+        .from("listing_images")
+        .insert(validImageUrls);
+
+      if (error) {
+        console.error("❌ [ProductService] Error saving images:", error);
+        throw new Error(`فشل حفظ الصور: ${error.message}`);
+      }
+      results.images.inserted = validImageUrls.length;
+      console.log("✅ [ProductService] Images saved successfully!");
+    }
+  } else {
+    console.log("ℹ️ [ProductService] No images to save");
+  }
+  
+  console.log('✅ Product data saved successfully');
+  console.log(`📊 Results: ${results.options.inserted} options, ${results.colors.inserted} colors, ${results.variations.inserted} variations, ${results.images.inserted} images`);
+  
+  return results;
+}
   /**
    * ✅ ✅ ✅ دالة جديدة: تحديث metadata فقط للبيانات الإضافية (مشاهدات، SEO، إلخ)
    * هذه الدالة لا تُستخدم للفيرنتات، فقط للبيانات الإضافية

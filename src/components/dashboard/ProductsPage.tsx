@@ -392,6 +392,7 @@ const handleSaveProduct = useCallback(async (data: any) => {
       options: data.options || {},
       colors: data.colors || [],
       variations: data.variations || [],
+        image_urls: data.image_urls || [],
     });
 
     const actionType = isEditing ? "تعديل" : "إضافة";
@@ -444,6 +445,7 @@ const handleSaveProduct = useCallback(async (data: any) => {
 
   // ===== ✅ تحويل المنتج إلى عرض =====
 // ===== ✅ تحويل المنتج إلى عرض (مصحح) =====
+// ✅ التصحيح
 const handleConvertToOffer = useCallback(async (productId: string, newPrice: number) => {
   try {
     setIsConverting(true);
@@ -457,15 +459,14 @@ const handleConvertToOffer = useCallback(async (productId: string, newPrice: num
     const originalPrice = Number(product.price);
     const discountPercent = Math.round(((originalPrice - newPrice) / originalPrice) * 100);
     
-    // ✅ ✅ ✅ التصحيح: استخدم patch بدل data
     await update.mutateAsync({
       id: productId,
-      patch: {  // ✅ هذا هو التغيير المهم
+      patch: {
         is_offer: true,
         old_price: originalPrice,
         price: newPrice,
         discount_percent: discountPercent,
-        status: "pending",
+        status: "published",  // ✅ بدل pending
         updated_at: new Date().toISOString(),
       }
     });
@@ -480,6 +481,7 @@ const handleConvertToOffer = useCallback(async (productId: string, newPrice: num
     setProductToConvert(null);
     await refetchMyListings();
 
+    // ✅ إشعار للأدمن (لكن المنتج يضل منشور)
     await notifyAdmin(
       product.title_ar,
       "تحويل إلى عرض",
@@ -1474,29 +1476,7 @@ const handleConvertToOffer = useCallback(async (productId: string, newPrice: num
 
                 {/* ===== أزرار الإجراءات ===== */}
                 <div className="mt-6 flex flex-wrap items-center gap-3">
-                  {/* ✅ زر إضافة إلى السلة */}
-                  <Button
-                    className="flex-1 rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 h-12 group transition-all duration-300 hover:scale-105"
-                    onClick={handleAddToCartFromDetail}
-                    disabled={addToCart.isPending}
-                  >
-                    {addToCart.isPending ? (
-                      <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                        {app.lang === "ar" ? "جاري الإضافة..." : "Adding..."}
-                      </div>
-                    ) : (
-                      <>
-                        <ShoppingCart className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                        {app.lang === "ar" ? "إضافة للسلة" : "Add to Cart"}
-                        {selectedVariation?.price && (
-                          <Badge className="bg-white/20 text-white border-0 ml-2">
-                            {formatPrice(selectedVariation.price, app.currency, app.lang)}
-                          </Badge>
-                        )}
-                      </>
-                    )}
-                  </Button>
+               
 
                   {/* زر تعديل */}
                   <Button

@@ -343,7 +343,7 @@ export function ProductFormDialog({
     return true;
   };
 
- const validateAndSubmit = async () => {
+const validateAndSubmit = async () => {
   console.log("🔍 [validateAndSubmit] ===== STARTING VALIDATION =====");
   console.log("🔍 [validateAndSubmit] Product type:", productType);
   console.log("🔍 [validateAndSubmit] Form data:", { ...form, image_urls: `${form.image_urls?.length || 0} images` });
@@ -493,6 +493,12 @@ export function ProductFormDialog({
   
   setIsSubmitting(true);
   try {
+
+    console.log("🔍 [validateAndSubmit] BEFORE allData:");
+console.log("🔍 form.image_urls:", form.image_urls);
+console.log("🔍 form.image_urls type:", typeof form.image_urls);
+console.log("🔍 form.image_urls isArray:", Array.isArray(form.image_urls));
+console.log("🔍 form.image_urls length:", form.image_urls?.length || 0);
     const allData = { 
       ...form, 
       options: {
@@ -505,6 +511,7 @@ export function ProductFormDialog({
         price: v.price || form.price,
       })),
       colors: tempColors,
+      image_urls: form.image_urls,  // ✅ ✅ ✅ أضف هذا السطر
     };
     
     console.log("✅ [validateAndSubmit] Data to save:", {
@@ -514,6 +521,7 @@ export function ProductFormDialog({
       options_count: Object.values(allData.options).filter(arr => arr.length > 0).length,
       variations_count: allData.variations.length,
       colors_count: allData.colors.length,
+      image_urls_count: allData.image_urls?.length || 0,  // ✅ أضف هذا
     });
     
     await onSave(allData);
