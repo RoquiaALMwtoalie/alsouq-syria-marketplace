@@ -1079,13 +1079,14 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
 
               {/* ✅ ✅ ✅ قائمة المنتجات المطلوبة (من order_items) */}
               <div className="mb-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2 mb-3">
-                  <Package className="h-3.5 w-3.5 text-[#2a655f]" />
-                  {app.lang === "ar" ? "المنتجات المطلوبة" : "Ordered Products"}
-                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
-                    {selectedOrder.order_items?.length || 1}
-                  </Badge>
-                </p>
+             
+<div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+  <Package className="h-3.5 w-3.5" />
+  {app.lang === "ar" ? "المنتجات" : "Products"}
+  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+    {selectedOrder.order_items?.length || 1}  // ✅ صح
+  </Badge>
+</div>
                 
                 <div className="space-y-3">
                   {/* ✅ إذا كان عندنا order_items */}

@@ -311,60 +311,38 @@ export const ProductsPage = React.memo(function ProductsPage() {
   }, []);
 
   // ===== حفظ المنتج =====
-  const handleSaveProduct = useCallback(async (data: any) => {
-    setDialogOpen(false);
-    
-    const isEditing = !!dialogProduct;
-    toast.success(
-      isEditing
-        ? app.lang === "ar" ? "✅ تم تعديل المنتج بنجاح" : "✅ Product updated successfully"
-        : data.is_offer
-          ? app.lang === "ar" ? "✅ تم إرسال العرض للمراجعة" : "✅ Offer sent for review"
-          : app.lang === "ar" ? "✅ تم إرسال المنتج للمراجعة" : "✅ Product sent for review"
-    );
+// ===== حفظ المنتج (مصحح) =====
+const handleSaveProduct = useCallback(async (data: any) => {
+  setDialogOpen(false);
+  
+  const isEditing = !!dialogProduct;
+  toast.success(
+    isEditing
+      ? app.lang === "ar" ? "✅ تم تعديل المنتج بنجاح" : "✅ Product updated successfully"
+      : data.is_offer
+        ? app.lang === "ar" ? "✅ تم إرسال العرض للمراجعة" : "✅ Offer sent for review"
+        : app.lang === "ar" ? "✅ تم إرسال المنتج للمراجعة" : "✅ Product sent for review"
+  );
 
-    setTimeout(() => {
-      setDialogProduct(null);
-    }, 100);
+  setTimeout(() => {
+    setDialogProduct(null);
+  }, 100);
 
-    try {
-      setIsSaving(true);
-      const price = Number(data.price);
-      const oldPrice = Number(data.old_price) || 0;
-      const discount = data.is_offer && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : null;
+  try {
+    setIsSaving(true);
+    const price = Number(data.price);
+    const oldPrice = Number(data.old_price) || 0;
+    const discount = data.is_offer && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : null;
 
-      let listingId: string;
-      const productTitle = data.title_ar;
-      const currentDialogProduct = dialogProduct;
+    let listingId: string;
+    const productTitle = data.title_ar;
+    const currentDialogProduct = dialogProduct;
 
-      if (isEditing && currentDialogProduct) {
-        await update.mutateAsync({
-          id: currentDialogProduct.id,
-          data: {
-            title_ar: data.title_ar,
-            description_ar: data.description_ar || null,
-            price,
-            old_price: oldPrice || null,
-            discount_percent: discount,
-            is_offer: data.is_offer,
-            is_available: data.is_available,
-            delivery_method: data.delivery_method,
-            payment_method: data.payment_method,
-            delivery_note: data.delivery_note || null,
-            kind: data.kind || "product",
-            category_id: data.category_id,
-            governorate_id: data.governorate_id,
-            cover_url: data.cover_url,
-            updated_at: new Date().toISOString(),
-          }
-        });
-
-        listingId = currentDialogProduct.id;
-        await ProductService.deleteProductData(listingId);
-
-      } else {
-        const result = await create.mutateAsync({
-          owner_id: app.user!.id,
+    if (isEditing && currentDialogProduct) {
+      // ✅ ✅ ✅ التصحيح: استخدم patch بدل data
+      await update.mutateAsync({
+        id: currentDialogProduct.id,
+        patch: {  // ✅ هذا هو التغيير المهم
           title_ar: data.title_ar,
           description_ar: data.description_ar || null,
           price,
@@ -379,54 +357,77 @@ export const ProductsPage = React.memo(function ProductsPage() {
           category_id: data.category_id,
           governorate_id: data.governorate_id,
           cover_url: data.cover_url,
-          image_urls: [data.cover_url, ...(data.image_urls || [])].filter(Boolean),
-          status: "pending",
-        } as any);
-
-        listingId = result.id;
-      }
-
-      await ProductService.saveAllProductData(listingId, {
-        options: data.options || {},
-        colors: data.colors || [],
-        variations: data.variations || [],
+          updated_at: new Date().toISOString(),
+        }
       });
 
-      const actionType = isEditing ? "تعديل" : "إضافة";
+      listingId = currentDialogProduct.id;
+      await ProductService.deleteProductData(listingId);
 
-      notifyAdmin(productTitle, actionType, app.user!.id, listingId).catch(console.error);
-      refetchMyListings().catch(console.error);
+    } else {
+      const result = await create.mutateAsync({
+        owner_id: app.user!.id,
+        title_ar: data.title_ar,
+        description_ar: data.description_ar || null,
+        price,
+        old_price: oldPrice || null,
+        discount_percent: discount,
+        is_offer: data.is_offer,
+        is_available: data.is_available,
+        delivery_method: data.delivery_method,
+        payment_method: data.payment_method,
+        delivery_note: data.delivery_note || null,
+        kind: data.kind || "product",
+        category_id: data.category_id,
+        governorate_id: data.governorate_id,
+        cover_url: data.cover_url,
+        image_urls: [data.cover_url, ...(data.image_urls || [])].filter(Boolean),
+        status: "pending",
+      } as any);
 
-      if (!isEditing) {
-        getUserDisplayName(app.user!.id).then(async (userName) => {
-          const { data: existingApp } = await supabase
-            .from("seller_applications")
-            .select("id, status")
-            .eq("user_id", app.user!.id)
-            .eq("status", "pending")
-            .limit(1)
-            .maybeSingle();
-
-          if (!existingApp) {
-            await supabase.from("seller_applications").insert({
-              user_id: app.user!.id,
-              store_name: userName,
-              store_description: `طلب إضافة منتج: ${productTitle}`,
-              application_type: 'product',
-              status: 'pending',
-            });
-          }
-        }).catch(console.error);
-      }
-      
-    } catch (e) {
-      console.error("❌ Error in handleSaveProduct:", e);
-      toast.error(e instanceof Error ? e.message : String(e));
-    } finally {
-      setIsSaving(false);
+      listingId = result.id;
     }
-  }, [dialogProduct, update, create, app.user, notifyAdmin, refetchMyListings, app.lang]);
 
+    await ProductService.saveAllProductData(listingId, {
+      options: data.options || {},
+      colors: data.colors || [],
+      variations: data.variations || [],
+    });
+
+    const actionType = isEditing ? "تعديل" : "إضافة";
+
+    notifyAdmin(productTitle, actionType, app.user!.id, listingId).catch(console.error);
+    refetchMyListings().catch(console.error);
+
+    if (!isEditing) {
+      getUserDisplayName(app.user!.id).then(async (userName) => {
+        const { data: existingApp } = await supabase
+          .from("seller_applications")
+          .select("id, status")
+          .eq("user_id", app.user!.id)
+          .eq("status", "pending")
+          .limit(1)
+          .maybeSingle();
+
+        if (!existingApp) {
+          await supabase.from("seller_applications").insert({
+            user_id: app.user!.id,
+            store_name: userName,
+            store_description: `طلب إضافة منتج: ${productTitle}`,
+            application_type: 'product',
+            status: 'pending',
+          });
+        }
+      }).catch(console.error);
+    }
+    
+  } catch (e) {
+    console.error("❌ Error in handleSaveProduct:", e);
+    toast.error(e instanceof Error ? e.message : String(e));
+  } finally {
+    setIsSaving(false);
+  }
+}, [dialogProduct, update, create, app.user, notifyAdmin, refetchMyListings, app.lang]);
   // ===== حذف المنتج =====
   const handleDeleteProduct = useCallback(async () => {
     if (!productToDelete) return;
@@ -442,60 +443,61 @@ export const ProductsPage = React.memo(function ProductsPage() {
   }, [productToDelete, del, refetchMyListings, app.lang]);
 
   // ===== ✅ تحويل المنتج إلى عرض =====
-  const handleConvertToOffer = useCallback(async (productId: string, newPrice: number) => {
-    try {
-      setIsConverting(true);
-      
-      const product = myListings.find((p: any) => p.id === productId);
-      if (!product) {
-        toast.error(app.lang === "ar" ? "المنتج غير موجود" : "Product not found");
-        return;
-      }
-
-      const originalPrice = Number(product.price);
-      const discountPercent = Math.round(((originalPrice - newPrice) / originalPrice) * 100);
-      
-      await update.mutateAsync({
-        id: productId,
-        data: {
-          is_offer: true,
-          old_price: originalPrice,
-          price: newPrice,
-          discount_percent: discountPercent,
-          status: "pending",
-          updated_at: new Date().toISOString(),
-        }
-      });
-
-      toast.success(
-        app.lang === "ar"
-          ? `🎉 تم تحويل "${product.title_ar}" إلى عرض بخصم ${discountPercent}%`
-          : `🎉 Converted "${product.title_ar}" to offer with ${discountPercent}% discount`
-      );
-
-      setConvertDialogOpen(false);
-      setProductToConvert(null);
-      await refetchMyListings();
-
-      await notifyAdmin(
-        product.title_ar,
-        "تحويل إلى عرض",
-        app.user!.id,
-        productId
-      );
-
-    } catch (error) {
-      console.error("❌ Error converting to offer:", error);
-      toast.error(
-        app.lang === "ar"
-          ? "❌ حدث خطأ أثناء تحويل المنتج إلى عرض"
-          : "❌ Error converting product to offer"
-      );
-    } finally {
-      setIsConverting(false);
+// ===== ✅ تحويل المنتج إلى عرض (مصحح) =====
+const handleConvertToOffer = useCallback(async (productId: string, newPrice: number) => {
+  try {
+    setIsConverting(true);
+    
+    const product = myListings.find((p: any) => p.id === productId);
+    if (!product) {
+      toast.error(app.lang === "ar" ? "المنتج غير موجود" : "Product not found");
+      return;
     }
-  }, [myListings, update, refetchMyListings, notifyAdmin, app.user, app.lang]);
 
+    const originalPrice = Number(product.price);
+    const discountPercent = Math.round(((originalPrice - newPrice) / originalPrice) * 100);
+    
+    // ✅ ✅ ✅ التصحيح: استخدم patch بدل data
+    await update.mutateAsync({
+      id: productId,
+      patch: {  // ✅ هذا هو التغيير المهم
+        is_offer: true,
+        old_price: originalPrice,
+        price: newPrice,
+        discount_percent: discountPercent,
+        status: "pending",
+        updated_at: new Date().toISOString(),
+      }
+    });
+
+    toast.success(
+      app.lang === "ar"
+        ? `🎉 تم تحويل "${product.title_ar}" إلى عرض بخصم ${discountPercent}%`
+        : `🎉 Converted "${product.title_ar}" to offer with ${discountPercent}% discount`
+    );
+
+    setConvertDialogOpen(false);
+    setProductToConvert(null);
+    await refetchMyListings();
+
+    await notifyAdmin(
+      product.title_ar,
+      "تحويل إلى عرض",
+      app.user!.id,
+      productId
+    );
+
+  } catch (error) {
+    console.error("❌ Error converting to offer:", error);
+    toast.error(
+      app.lang === "ar"
+        ? "❌ حدث خطأ أثناء تحويل المنتج إلى عرض"
+        : "❌ Error converting product to offer"
+    );
+  } finally {
+    setIsConverting(false);
+  }
+}, [myListings, update, refetchMyListings, notifyAdmin, app.user, app.lang]);
   // ===== ✅ فتح نافذة التحويل =====
   const openConvertDialog = useCallback((product: any) => {
     setProductToConvert(product);
