@@ -1447,10 +1447,10 @@ async function handleNotificationClick(notification: any) {
 <div className="relative border-t border-[#2a655f]/30 bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#173d38] backdrop-blur-md overflow-hidden py-3 shadow-2xl">
   
   {/* خلفية ضوئية متحركة ونابضة */}
-  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-400/20 via-transparent to-transparent animate-pulse pointer-events-none" />
+  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-200/20 via-transparent to-transparent animate-pulse pointer-events-none" />
   
   {/* خط إشعاعي متحرك في الأعلى */}
-  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-300 to-transparent shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-pink-200 to-transparent shadow-[0_0_12px_rgba(244,114,182,0.6)]" />
 
   <style>{`
     @keyframes marquee-scroll {
@@ -1505,11 +1505,11 @@ async function handleNotificationClick(notification: any) {
       margin: 0 16px;
     }
     .category-scrollbar::-webkit-scrollbar-thumb {
-      background: #34d399;
+      background: #f9a8d4;
       border-radius: 10px;
     }
     .category-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #6ee7b7;
+      background: #fbcfe8;
     }
   `}</style>
 
@@ -1545,32 +1545,32 @@ async function handleNotificationClick(notification: any) {
               key={`${c.id}-${index}`}
               to="/category/$slug"
               params={{ slug: c.slug }}
-              className="group relative shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl font-bold text-xs transition-all duration-300 bg-gradient-to-r from-amber-500 via-orange-600 to-red-600 text-white shadow-[0_0_25px_rgba(245,158,11,0.7)] hover:scale-105 hover:-translate-y-1 cursor-pointer overflow-hidden border-2 border-amber-300 animate-pulse"
+              className="group relative shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl font-bold text-xs transition-all duration-300 bg-gradient-to-r from-pink-100 via-pink-200 to-pink-300 text-pink-800 shadow-[0_0_25px_rgba(244,114,182,0.3)] hover:scale-105 hover:-translate-y-1 cursor-pointer overflow-hidden border-2 border-pink-200 animate-pulse"
             >
               {/* ✨ لمعان متحرك لا يتوقف */}
-              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/70 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
               
               {/* أيقونة العروض بحركة مميزة جداً وخاصة */}
-              <div className="relative flex items-center justify-center h-8 w-8 rounded-full bg-black/50 border-2 border-amber-300 shadow-lg overflow-hidden offer-icon-special">
+              <div className="relative flex items-center justify-center h-8 w-8 rounded-full bg-pink-300/30 border-2 border-pink-300 shadow-lg overflow-hidden offer-icon-special">
                 {c.image_url ? (
                   <img src={c.image_url} alt="" className="h-full w-full object-cover rounded-full" />
                 ) : (
-                  <Icon className="h-4 w-4 text-amber-300" />
+                  <Icon className="h-4 w-4 text-pink-600" />
                 )}
               </div>
 
               {/* الاسم من قاعدة البيانات حصرياً */}
               <div className="flex flex-col relative z-10">
-                <span className="whitespace-nowrap font-black text-sm tracking-wide text-white drop-shadow-md" dir={isRtl ? "rtl" : "ltr"}>
+                <span className="whitespace-nowrap font-black text-sm tracking-wide text-pink-800 drop-shadow-md" dir={isRtl ? "rtl" : "ltr"}>
                   {isRtl ? c.name_ar : (c.name_en || c.name_ar)}
                 </span>
-                <span className="text-[9px] text-amber-200 font-extrabold uppercase tracking-widest animate-bounce">
-                  {isRtl ? "⚡ خصومات حصرية" : "⚡ SPECIAL OFFERS"}
+                <span className="text-[9px] text-pink-500 font-extrabold uppercase tracking-widest animate-bounce">
+                  {isRtl ? "🌸 عروض رائعة" : "🌸 SPECIAL OFFERS"}
                 </span>
               </div>
 
-              <span className="relative z-10 ml-2 text-[9px] uppercase bg-white text-orange-600 px-2.5 py-1 rounded-full font-black tracking-wider shadow-lg border border-amber-300 animate-bounce">
-                {isRtl ? "🔥 تخفيضات" : "🔥 SALE"}
+              <span className="relative z-10 ml-2 text-[9px] uppercase bg-white text-pink-500 px-2.5 py-1 rounded-full font-black tracking-wider shadow-lg border border-pink-200 animate-bounce">
+                {isRtl ? "💕 تخفيضات" : "💕 SALE"}
               </span>
             </Link>
           );

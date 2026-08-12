@@ -1,4 +1,4 @@
-// src/routes/store.$id.tsx - الأداء الخارق 🚀
+// src/routes/store.$id.tsx - الكود المُصحّح بالكامل (حساب التوصيل الاحترافي مثل نون)
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useRef, lazy, Suspense } from "react";
@@ -57,7 +57,7 @@ function StorePage() {
 
   // ====== State الفلتر والترتيب (محسّن للأداء) ======
   const [page, setPage] = useState(1);
-  const [limit] = useState(20); // ✅ 20 منتج فقط لكل صفحة
+  const [limit] = useState(20);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "popular" | "price_asc" | "price_desc" | "rating">("recent");
   const [viewFilter, setViewFilter] = useState<"all" | "offers">("all");
@@ -106,7 +106,48 @@ function StorePage() {
     setAllListings([]);
   }, [searchQuery, sortBy, viewFilter]);
 
-  // ====== حساب سعر التوصيل ======
+  // ====== حساب المسافة (هافرسين) ======
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+    if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) return 0;
+    
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }, []);
+
+  // ====== حساب سعر التوصيل (مثل نون) ======
+  const calculateDeliveryPrice = useCallback((company: any, distanceInKm: number, orderTotal: number): number => {
+    const freeThreshold = company.free_delivery_threshold || 0;
+    if (freeThreshold > 0 && orderTotal >= freeThreshold) {
+      return 0;
+    }
+
+    const basePrice = company.base_price || 0;
+    const pricePerKm = company.price_per_km || 0;
+    let price = basePrice + (distanceInKm * pricePerKm);
+
+    const minFee = company.min_delivery_fee || 0;
+    if (price < minFee) {
+      price = minFee;
+    }
+
+    const maxFee = company.max_delivery_fee || 999999;
+    if (price > maxFee) {
+      price = maxFee;
+    }
+
+    price = Math.round(price);
+    return price <= 0 ? 0 : price;
+  }, []);
+
+  // ====== حساب سعر التوصيل (محسّن مع الهيكلية الجديدة) ======
   useEffect(() => {
     let isMounted = true;
 
@@ -115,6 +156,7 @@ function StorePage() {
 
       setDeliveryLoading(true);
       try {
+        // ✅ 1. جلب عنوان المستخدم الافتراضي (مع الإحداثيات)
         const { data: userAddress, error: addressError } = await supabase
           .from("user_addresses")
           .select("governorate_id, lat, lng, address_text")
@@ -122,51 +164,137 @@ function StorePage() {
           .eq("is_default", true)
           .maybeSingle();
 
-        if (addressError || !userAddress || !isMounted) return;
-
-        const storeGovernorateId = store.governorate_id;
-        
-        let matchingCompanies = companies.filter((c: any) => c.is_active === true);
-        if (storeGovernorateId) {
-          const inGov = matchingCompanies.filter((c: any) => c.governorate_id === storeGovernorateId);
-          if (inGov.length > 0) matchingCompanies = inGov;
+        if (addressError || !userAddress || !isMounted) {
+          setDeliveryLoading(false);
+          return;
         }
 
-        const selectedCompany = matchingCompanies.sort((a: any, b: any) => 
-          (a.base_price || 0) - (b.base_price || 0)
-        )[0];
+        // ✅ 2. جلب شركة التوصيل التابعة للمتجر (من جدول profiles)
+        let deliveryCompanyId = store.delivery_company_id;
+        let selectedCompany = null;
 
-        if (!selectedCompany || !isMounted) return;
+        // ✅ 2a. إذا كان للمتجر شركة توصيل محددة، استخدمها
+        if (deliveryCompanyId) {
+          const { data: company, error: companyError } = await supabase
+            .from("delivery_companies")
+            .select("*")
+            .eq("id", deliveryCompanyId)
+            .eq("is_active", true)
+            .maybeSingle();
 
+          if (!companyError && company) {
+            selectedCompany = company;
+            console.log("✅ [Delivery] Using store's delivery company:", company.name_ar);
+          }
+        }
+
+        // ✅ 2b. إذا لم يكن للمتجر شركة توصيل، ابحث عن شركة تغطي نفس المحافظة
+        if (!selectedCompany) {
+          const storeGovernorateId = store.governorate_id;
+          
+          let query = supabase
+            .from("delivery_companies")
+            .select("*")
+            .eq("is_active", true);
+
+          if (storeGovernorateId) {
+            const { data: companies, error: companiesError } = await query;
+            
+            if (!companiesError && companies) {
+              const matchingCompanies = companies.filter((c: any) => {
+                const coverage = c.coverage_areas || [];
+                if (coverage.includes("all") || coverage.includes(storeGovernorateId)) {
+                  return true;
+                }
+                if (c.governorate_id === storeGovernorateId) {
+                  return true;
+                }
+                return false;
+              });
+
+              if (matchingCompanies.length > 0) {
+                selectedCompany = matchingCompanies.sort((a: any, b: any) => 
+                  (a.base_price || 0) - (b.base_price || 0)
+                )[0];
+                console.log("✅ [Delivery] Using best matching company:", selectedCompany.name_ar);
+              }
+            }
+          }
+
+          // ✅ 2c. إذا لم يتم العثور على شركة، استخدم أول شركة نشطة
+          if (!selectedCompany) {
+            const { data: fallbackCompany, error: fallbackError } = await supabase
+              .from("delivery_companies")
+              .select("*")
+              .eq("is_active", true)
+              .limit(1)
+              .maybeSingle();
+
+            if (!fallbackError && fallbackCompany) {
+              selectedCompany = fallbackCompany;
+              console.log("✅ [Delivery] Using fallback company:", selectedCompany.name_ar);
+            }
+          }
+        }
+
+        if (!selectedCompany || !isMounted) {
+          setDeliveryLoading(false);
+          return;
+        }
+
+        // ✅ 3. حساب المسافة بين المتجر والعنوان (باستخدام هافرسين)
         let distance = 0;
-        if (store.lat && store.lng && userAddress.lat && userAddress.lng) {
-          distance = calculateDistance(store.lat, store.lng, userAddress.lat, userAddress.lng);
+        const hasValidCoordinates = store.lat && store.lng && userAddress.lat && userAddress.lng;
+
+        if (hasValidCoordinates) {
+          distance = calculateDistance(
+            store.lat,
+            store.lng,
+            userAddress.lat,
+            userAddress.lng
+          );
+          console.log(`📍 [Delivery] Real distance: ${distance.toFixed(2)} km`);
         } else {
-          distance = storeGovernorateId === userAddress.governorate_id ? 5 : 15;
+          const storeGovId = store.governorate_id;
+          const userGovId = userAddress.governorate_id;
+          
+          if (storeGovId === userGovId) {
+            distance = 5;
+          } else {
+            distance = 25;
+          }
+          console.log(`📍 [Delivery] Estimated distance: ${distance} km (no coordinates)`);
         }
 
-        const price = calculateDeliveryPrice(selectedCompany, distance, 0);
+        // ✅ 4. حساب سعر التوصيل
+        let price = calculateDeliveryPrice(selectedCompany, distance, 0);
+        const isFree = price === 0;
 
+        // ✅ 5. تحديث الحالة
         if (isMounted) {
           setDeliveryPrice({
             distance: Math.round(distance * 100) / 100,
             price,
-            isFree: price === 0,
-            companyName: selectedCompany.name_ar,
-            governorateMatch: storeGovernorateId === userAddress.governorate_id,
+            isFree,
+            companyName: selectedCompany.name_ar || selectedCompany.name_en,
+            governorateMatch: store.governorate_id === userAddress.governorate_id,
             breakdown: {
-              basePrice: selectedCompany.base_price,
-              pricePerKm: selectedCompany.price_per_km,
+              basePrice: selectedCompany.base_price || 0,
+              pricePerKm: selectedCompany.price_per_km || 0,
               distanceCost: distance * (selectedCompany.price_per_km || 0),
-              minFee: selectedCompany.min_delivery_fee,
-              maxFee: selectedCompany.max_delivery_fee,
-              freeThreshold: selectedCompany.free_delivery_threshold,
-              sameGovernorate: storeGovernorateId === userAddress.governorate_id,
+              minFee: selectedCompany.min_delivery_fee || 0,
+              maxFee: selectedCompany.max_delivery_fee || 999999,
+              freeThreshold: selectedCompany.free_delivery_threshold || 0,
+              sameGovernorate: store.governorate_id === userAddress.governorate_id,
+              hasCoordinates: hasValidCoordinates,
             }
           });
+          
+          console.log(`💰 [Delivery] Final price: ${price} SYP (${isFree ? 'FREE' : 'paid'})`);
         }
+
       } catch (error) {
-        console.error("❌ Error calculating delivery:", error);
+        console.error("❌ [Delivery] Error calculating delivery:", error);
       } finally {
         if (isMounted) setDeliveryLoading(false);
       }
@@ -177,24 +305,7 @@ function StorePage() {
     return () => {
       isMounted = false;
     };
-  }, [store, companies, app.user]);
-
-  // ====== دوال مساعدة ======
-  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) ** 2;
-    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-  }, []);
-
-  const calculateDeliveryPrice = useCallback((company: any, distanceInKm: number, orderTotal: number): number => {
-    if (orderTotal >= (company.free_delivery_threshold || 999999)) return 0;
-    let price = (company.base_price || 0) + (distanceInKm * (company.price_per_km || 0));
-    price = Math.max(price, company.min_delivery_fee || 0);
-    price = Math.min(price, company.max_delivery_fee || 999999);
-    return Math.round(price);
-  }, []);
+  }, [store, app.user, calculateDistance, calculateDeliveryPrice]);
 
   // ====== تحميل المزيد ======
   const loadMore = useCallback(() => {
@@ -422,55 +533,127 @@ function StorePage() {
         </div>
       </div>
 
-      {/* ====== سعر التوصيل ====== */}
+      {/* ====== سعر التوصيل (محسّن مثل نون) ====== */}
       {app.user && deliveryPrice && !deliveryLoading && (
         <div className="mx-auto max-w-7xl px-4 mt-4">
           <Card className={cn(
-            "border-2 shadow-lg hover:shadow-xl transition-all duration-300",
-            deliveryPrice.governorateMatch 
-              ? 'border-[#2d6b63]/30 hover:border-[#2d6b63]/50' 
-              : 'border-amber-500/30 hover:border-amber-500/50'
+            "border-2 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden",
+            deliveryPrice.isFree 
+              ? 'border-emerald-500/40 hover:border-emerald-500/60 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-950/10' 
+              : deliveryPrice.governorateMatch 
+                ? 'border-[#2d6b63]/30 hover:border-[#2d6b63]/50' 
+                : 'border-amber-500/30 hover:border-amber-500/50'
           )}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center">
-                    <Truck className="h-5 w-5 text-[#0d2e2a] animate-float" />
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "h-12 w-12 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110",
+                    deliveryPrice.isFree 
+                      ? "bg-emerald-500/20" 
+                      : "bg-[#0d2e2a]/10"
+                  )}>
+                    <Truck className={cn(
+                      "h-6 w-6 transition-all duration-500",
+                      deliveryPrice.isFree 
+                        ? "text-emerald-500 animate-bounce" 
+                        : "text-[#0d2e2a] animate-float"
+                    )} />
                   </div>
+                  
                   <div>
                     <div className="font-semibold text-sm flex items-center gap-2">
-                      {isArabic ? "🚚 سعر التوصيل" : "🚚 Delivery Price"}
+                      {deliveryPrice.isFree ? (
+                        <>
+                          <span className="text-emerald-600 dark:text-emerald-400">🚚 توصيل مجاني</span>
+                          <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px] px-2 py-0.5 animate-pulse">
+                            {isArabic ? "🎉 عرض خاص" : "🎉 Special Offer"}
+                          </Badge>
+                        </>
+                      ) : (
+                        <span className="text-slate-700 dark:text-slate-200">{isArabic ? "🚚 سعر التوصيل" : "🚚 Delivery Price"}</span>
+                      )}
+                      
                       <Badge className={cn(
-                        "border-0 text-[9px] px-1.5 py-0 animate-pulse",
+                        "border-0 text-[9px] px-2 py-0.5 animate-pulse",
                         deliveryPrice.governorateMatch 
-                          ? 'bg-emerald-500/20 text-emerald-600' 
-                          : 'bg-amber-500/20 text-amber-600'
+                          ? 'bg-emerald-500/20 text-emerald-600 dark:bg-emerald-500/30 dark:text-emerald-400' 
+                          : 'bg-amber-500/20 text-amber-600 dark:bg-amber-500/30 dark:text-amber-400'
                       )}>
                         {deliveryPrice.governorateMatch 
-                          ? (isArabic ? "📍 نفس المحافظة" : "Same Governorate") 
-                          : (isArabic ? "📍 محافظة مختلفة" : "Diff Governorate")}
+                          ? (isArabic ? "📍 نفس المحافظة" : "📍 Same Governorate") 
+                          : (isArabic ? "📍 محافظة مختلفة" : "📍 Different Governorate")}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    
+                    <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                       <span>{isArabic ? `المسافة: ${deliveryPrice.distance} كم` : `Distance: ${deliveryPrice.distance} km`}</span>
                       <span className="text-muted-foreground/30">|</span>
                       <span className="text-[#2d6b63] font-medium">{deliveryPrice.companyName}</span>
+                      {deliveryPrice.breakdown?.hasCoordinates ? (
+                        <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[8px] px-1.5 py-0">
+                          📍 {isArabic ? "موقع دقيق" : "Precise"}
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[8px] px-1.5 py-0">
+                          📍 {isArabic ? "تقديري" : "Estimated"}
+                        </Badge>
+                      )}
                     </p>
+                    
+                    <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground/70">
+                      <span>الحد الأدنى: {deliveryPrice.breakdown?.minFee || 0} SYP</span>
+                      <span>|</span>
+                      <span>الحد الأقصى: {deliveryPrice.breakdown?.maxFee || 999999} SYP</span>
+                      {deliveryPrice.breakdown?.freeThreshold > 0 && (
+                        <>
+                          <span>|</span>
+                          <span>توصيل مجاني للطلبات فوق {deliveryPrice.breakdown?.freeThreshold} SYP</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
                 <div className="text-right">
                   {deliveryPrice.isFree ? (
-                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-sm px-3 py-1 animate-bounce">
-                      {isArabic ? "✅ مجاني" : "Free"}
+                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-sm px-4 py-1.5 animate-bounce rounded-xl">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {isArabic ? "🆓 مجاني" : "🆓 Free"}
+                      </span>
                     </Badge>
                   ) : (
-                    <span className="text-2xl font-bold text-[#0d2e2a]">
-                      {deliveryPrice.price} SYP
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#4a9f95]">
+                        {deliveryPrice.price} SYP
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {isArabic ? "شامل الضريبة" : "Tax included"}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
+              
+              {!deliveryPrice.isFree && deliveryPrice.breakdown?.freeThreshold > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                    <span>{isArabic ? "🔓 أضف منتجات للحصول على توصيل مجاني" : "🔓 Add items for free delivery"}</span>
+                    <span className="font-medium text-[#2d6b63]">
+                      {deliveryPrice.breakdown?.freeThreshold - 0} SYP
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-[#2d6b63] to-[#4a9f95] rounded-full transition-all duration-1000"
+                      style={{ 
+                        width: `${Math.min(100, (0 / deliveryPrice.breakdown?.freeThreshold) * 100)}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -756,37 +939,29 @@ function StorePage() {
 
 // ====== دوال مساعدة ======
 
-// src/routes/store.$id.tsx
-
 export function isStoreCurrentlyOpen(store: any): boolean {
-  // ✅ 1. إذا كان المتجر غير نشط → مغلق
   if (!store || store.store_online === false) return false;
 
-  // ✅ 2. إذا ما في وقت محدد → مفتوح (افتراضي)
   if (!store.store_opens_at || !store.store_closes_at) {
     console.log('ℹ️ [Store] No opening hours set, assuming open');
     return true;
   }
 
   try {
-    // ✅ 3. استخراج الوقت بشكل آمن (تدعم "09:00:00" و "09:00")
-    const opens = store.store_opens_at.slice(0, 5); // "09:00"
-    const closes = store.store_closes_at.slice(0, 5); // "22:00"
+    const opens = store.store_opens_at.slice(0, 5);
+    const closes = store.store_closes_at.slice(0, 5);
 
     if (!opens || !closes || opens.length < 5 || closes.length < 5) {
       console.log('ℹ️ [Store] Invalid time format, assuming open');
       return true;
     }
 
-    // ✅ 4. حساب الوقت الحالي
     const now = new Date();
     const cur = now.getHours() * 60 + now.getMinutes();
 
-    // ✅ 5. تحويل إلى دقائق
     const [oh, om] = opens.split(":").map(Number);
     const [ch, cm] = closes.split(":").map(Number);
 
-    // ✅ 6. التحقق من الأرقام
     if (isNaN(oh) || isNaN(om) || isNaN(ch) || isNaN(cm)) {
       console.log('ℹ️ [Store] Invalid time numbers, assuming open');
       return true;
@@ -795,17 +970,14 @@ export function isStoreCurrentlyOpen(store: any): boolean {
     const o = oh * 60 + om;
     const c = ch * 60 + cm;
 
-    // ✅ 7. إذا كان وقت الفتح قبل وقت الإغلاق (نفس اليوم)
     if (o <= c) {
       return cur >= o && cur <= c;
-    } 
-    // ✅ 8. إذا كان وقت الفتح بعد وقت الإغلاق (يمتد لليوم التالي)
-    else {
+    } else {
       return cur >= o || cur <= c;
     }
   } catch (error) {
     console.error('❌ [Store] Error checking store status:', error);
-    return true; // ✅ في حالة الخطأ، نعتبر المتجر مفتوح
+    return true;
   }
 }
 

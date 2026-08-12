@@ -15,7 +15,8 @@ import {
   FileSpreadsheet, FileText, ChevronLeft, ChevronRight,
   Zap, Sparkles, Shield, Crown, Star, Gem, Layers,
   DollarSign, Clock, Award, Rocket, Trash2, Loader2,
-  AlertTriangle, X, CheckCircle2 as CheckCircle2Icon
+  AlertTriangle, X, CheckCircle2 as CheckCircle2Icon,
+  Truck, Edit2,Info  
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,6 +41,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
 import * as XLSX from 'xlsx';
 import * as fileSaver from 'file-saver';
 import { cn } from "@/lib/utils";
@@ -110,6 +112,7 @@ function useAdminDeleteStore() {
           is_featured: false,
           featured_sort: 0,
           company_id: null,
+          delivery_company_id: null, // ✅ تنظيف شركة التوصيل
         })
         .eq("id", userId);
 
@@ -257,6 +260,13 @@ export function AdminStores() {
   const [selectedStore, setSelectedStore] = useState<any>(null);
   const [confirmStoreName, setConfirmStoreName] = useState("");
 
+  // ✅ ✅ ✅ State لنافذة تعديل شركة التوصيل
+  const [deliveryDialogOpen, setDeliveryDialogOpen] = useState(false);
+  const [selectedStoreForDelivery, setSelectedStoreForDelivery] = useState<any>(null);
+  const [selectedDeliveryCompanyId, setSelectedDeliveryCompanyId] = useState<string>("");
+  const [deliveryCompanies, setDeliveryCompanies] = useState<any[]>([]);
+  const [isLoadingDeliveryCompanies, setIsLoadingDeliveryCompanies] = useState(false);
+
   // ✅ جلب إحصائيات المتجر المحدد
   const { data: storeStats, isLoading: statsLoading } = useAdminStoreStats(
     selectedStore?.id
@@ -318,6 +328,66 @@ export function AdminStores() {
     setSelectedStore(store);
     setConfirmStoreName("");
     setDeleteDialogOpen(true);
+  };
+
+  // ✅ ✅ ✅ فتح نافذة تعديل شركة التوصيل
+  const openDeliveryDialog = async (store: any) => {
+    setSelectedStoreForDelivery(store);
+    setSelectedDeliveryCompanyId(store.delivery_company_id || "");
+    setIsLoadingDeliveryCompanies(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from("delivery_companies")
+        .select("id, name_ar, name_en, base_price")
+        .eq("is_active", true)
+        .order("name_ar");
+      
+      if (error) throw error;
+      setDeliveryCompanies(data || []);
+    } catch (error) {
+      console.error("❌ Error fetching delivery companies:", error);
+      toast.error(isRTL ? "❌ فشل جلب شركات التوصيل" : "❌ Failed to fetch delivery companies");
+    } finally {
+      setIsLoadingDeliveryCompanies(false);
+      setDeliveryDialogOpen(true);
+    }
+  };
+
+  // ✅ ✅ ✅ حفظ شركة التوصيل
+  const handleSaveDeliveryCompany = async () => {
+    if (!selectedStoreForDelivery) return;
+    
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          delivery_company_id: selectedDeliveryCompanyId || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", selectedStoreForDelivery.id);
+      
+      if (error) throw error;
+      
+      toast.success(
+        isRTL 
+          ? "✅ تم تحديث شركة التوصيل بنجاح" 
+          : "✅ Delivery company updated successfully"
+      );
+      
+      setDeliveryDialogOpen(false);
+      setSelectedStoreForDelivery(null);
+      setSelectedDeliveryCompanyId("");
+      refetch();
+      
+    } catch (error) {
+      console.error("❌ Error updating delivery company:", error);
+      toast.error(
+        isRTL 
+          ? "❌ فشل تحديث شركة التوصيل" 
+          : "❌ Failed to update delivery company"
+      );
+    }
   };
 
   // ✅ تنفيذ حذف المتجر
@@ -659,7 +729,7 @@ export function AdminStores() {
                     {app.lang === "ar" ? "الحالة" : "Status"}
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[380px]">
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[480px]">
                   <div className="flex items-center justify-center gap-2">
                     <Zap className="h-3.5 w-3.5 animate-pulse" />
                     {app.lang === "ar" ? "إجراءات" : "Actions"}
@@ -875,7 +945,19 @@ export function AdminStores() {
                         </Button>
                       )}
 
-                      {/* ✅ ✅ ✅ زر حذف المتجر (جديد) */}
+                      {/* ✅ ✅ ✅ زر تعديل شركة التوصيل (جديد) */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-xl h-8 px-3 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105"
+                        onClick={() => openDeliveryDialog(s)}
+                        title={isRTL ? "تعديل شركة التوصيل" : "Edit delivery company"}
+                      >
+                        <Truck className="h-3.5 w-3.5 mr-1" />
+                        {isRTL ? "تعديل التوصيل" : "Edit Delivery"}
+                      </Button>
+
+                      {/* ✅ زر حذف المتجر */}
                       <Button
                         size="sm"
                         variant="outline"
@@ -1195,6 +1277,141 @@ export function AdminStores() {
                   {isRTL ? "تأكيد الحذف النهائي" : "Confirm Permanent Deletion"}
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ✅ ✅ ✅ نافذة تعديل شركة التوصيل (جديدة) */}
+      <Dialog open={deliveryDialogOpen} onOpenChange={setDeliveryDialogOpen}>
+        <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-2xl shadow-[#2a655f]/10">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-[#2d6b63]/10 flex items-center justify-center">
+                <Truck className="h-5 w-5 text-[#2d6b63]" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-[#0d2e2a] dark:text-white">
+                  {isRTL ? "🚚 تعديل شركة التوصيل" : "🚚 Edit Delivery Company"}
+                </DialogTitle>
+                <DialogDescription>
+                  {isRTL 
+                    ? `تعديل شركة التوصيل لمتجر "${selectedStoreForDelivery?.store_name}"`
+                    : `Edit delivery company for store "${selectedStoreForDelivery?.store_name}"`}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* ✅ معلومات المتجر الحالية */}
+            {selectedStoreForDelivery && (
+              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                <div className="h-10 w-10 rounded-lg bg-[#0d2e2a]/10 flex items-center justify-center flex-shrink-0">
+                  <StoreIcon className="h-5 w-5 text-[#0d2e2a]/40" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                    {selectedStoreForDelivery.store_name || selectedStoreForDelivery.full_name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL ? `المالك: ${selectedStoreForDelivery.full_name || "—"}` : `Owner: ${selectedStoreForDelivery.full_name || "—"}`}
+                  </p>
+                </div>
+                <Badge className={selectedStoreForDelivery.store_active === false ? "bg-red-500/10 text-red-600" : "bg-emerald-500/10 text-emerald-600"}>
+                  {selectedStoreForDelivery.store_active === false ? (isRTL ? "محظور" : "Banned") : (isRTL ? "نشط" : "Active")}
+                </Badge>
+              </div>
+            )}
+
+            {/* ✅ اختيار شركة التوصيل */}
+            <div className="space-y-2">
+              <Label className="text-[#0d2e2a] dark:text-white font-semibold flex items-center gap-2">
+                <Truck className="h-4 w-4 text-[#2d6b63]" />
+                {isRTL ? "شركة التوصيل" : "Delivery Company"}
+              </Label>
+              
+              {isLoadingDeliveryCompanies ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#2d6b63]" />
+                </div>
+              ) : deliveryCompanies.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground border-2 border-dashed border-[#0d2e2a]/20 rounded-xl">
+                  <Truck className="h-8 w-8 mx-auto mb-2 text-[#0d2e2a]/30" />
+                  <p className="text-sm">{isRTL ? "⚠️ لا توجد شركات توصيل نشطة" : "⚠️ No active delivery companies"}</p>
+                </div>
+              ) : (
+                <Select 
+                  value={selectedDeliveryCompanyId} 
+                  onValueChange={setSelectedDeliveryCompanyId}
+                >
+                  <SelectTrigger className="rounded-xl border-[#0d2e2a]/20">
+                    <SelectValue placeholder={isRTL ? "🔍 اختر شركة التوصيل..." : "🔍 Select delivery company..."} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <XCircle className="h-4 w-4" />
+                        {isRTL ? "بدون شركة توصيل" : "No delivery company"}
+                      </span>
+                    </SelectItem>
+                    {deliveryCompanies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        <span className="flex items-center gap-2">
+                          <Truck className="h-4 w-4 text-[#2d6b63]" />
+                          <span>{company.name_ar || company.name_en}</span>
+                          <Badge className="text-[9px] bg-[#2d6b63]/10 text-[#2d6b63] border-0">
+                            {company.base_price || 0} SYP
+                          </Badge>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Info className="h-3 w-3 text-[#2d6b63]" />
+                {isRTL 
+                  ? "💡 هذه الشركة ستكون المسؤولة عن توصيل طلبات هذا المتجر"
+                  : "💡 This company will handle delivery for this store"}
+              </p>
+            </div>
+
+            {/* ✅ عرض الشركة الحالية */}
+            {selectedStoreForDelivery?.delivery_company_id && (
+              <div className="p-3 bg-[#2d6b63]/5 rounded-xl border border-[#2d6b63]/20">
+                <p className="text-xs text-muted-foreground">
+                  {isRTL ? "🔄 الشركة الحالية" : "🔄 Current company"}
+                </p>
+                <p className="text-sm font-medium text-[#2d6b63]">
+                  {deliveryCompanies.find(c => c.id === selectedStoreForDelivery.delivery_company_id)?.name_ar 
+                    || deliveryCompanies.find(c => c.id === selectedStoreForDelivery.delivery_company_id)?.name_en 
+                    || selectedStoreForDelivery.delivery_company_id}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="gap-3 pt-4 border-t border-[#0d2e2a]/10">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeliveryDialogOpen(false);
+                setSelectedStoreForDelivery(null);
+                setSelectedDeliveryCompanyId("");
+              }}
+              className="rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300"
+            >
+              {isRTL ? "إلغاء" : "Cancel"}
+            </Button>
+            <Button
+              onClick={handleSaveDeliveryCompany}
+              disabled={isLoadingDeliveryCompanies}
+              className="rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-[1.02]"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              {isRTL ? "حفظ التغييرات" : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -7,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, Store, Truck, Shield, Clock, Award,
   BadgePercent, Package, ArrowRight, Sparkles, CalendarDays,
   Minus, Plus, X, Check, CreditCard, Wallet, Send, Palette, Ruler, Layers,
-  ShoppingCart, Trash2, CheckCircle
+  ShoppingCart, Trash2, CheckCircle, AlertTriangle
 } from "lucide-react";
 import { useToggleFavorite } from "@/lib/queries";
 import { useApp, formatPrice, useT } from "@/lib/i18n";
@@ -17,7 +17,6 @@ import { useListing, useListingReviews, useSimilarListings } from "@/lib/queries
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-// ✅ ✅ ✅ أضف هذا السطر
 import { translateOptionType } from "@/lib/utils/constants";
 import { ClientOnly } from "@/components/ClientOnly";
 import { useCart, useAddToCart, useClearCart } from "@/lib/hooks/useCart";
@@ -30,6 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
 export const Route = createFileRoute("/listing/$id")({
   component: ListingDetailPage,
   head: () => ({ meta: [{ title: "تفاصيل المنتج — السوق لعندك" }] }),
@@ -64,7 +64,6 @@ function ListingDetailPage() {
   const [selectedVariation, setSelectedVariation] = useState<any | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
   const [mainImage, setMainImage] = useState<string>("");
-  // ❌ تم إزالة isBookingModalOpen, isBookingLoading
   const [showStoreConflict, setShowStoreConflict] = useState(false);
   const [currentStoreName, setCurrentStoreName] = useState("");
   const [newStoreName, setNewStoreName] = useState("");
@@ -92,8 +91,6 @@ function ListingDetailPage() {
   // ✅ Favorites
   const toggleFavoriteMutation = useToggleFavorite();
   const isFavorite = listing ? app.favorites.includes(listing.id) : false;
-  
-  // ❌ تم إزالة createBooking
   
   // ✅ استخراج البيانات
   const images = useMemo(() => {
@@ -136,8 +133,6 @@ function ListingDetailPage() {
     null,
   [listing]);
 
-  // ❌ تم إزالة allowsBookings
-
   const isInCart = useMemo(() => {
     return cart?.items?.some((item: any) => item.listing_id === listing?.id);
   }, [cart, listing]);
@@ -147,31 +142,139 @@ function ListingDetailPage() {
     return item?.quantity || 0;
   }, [cart, listing]);
 
-  const sortedVariations = useMemo(() => {
-    return [...variations].sort((a, b) => {
-      const colorA = a.combination?.color || '';
-      const colorB = b.combination?.color || '';
-      if (colorA !== colorB) return colorA.localeCompare(colorB);
-      const sizeA = a.combination?.size || '';
-      const sizeB = b.combination?.size || '';
-      return sizeA.localeCompare(sizeB);
-    });
-  }, [variations]);
-
-  const filteredVariations = useMemo(() => {
-    const isVariationAvailable = (variation: any) => variation.is_active !== false;
+const sortedVariations = useMemo(() => {
+  return [...variations].sort((a, b) => {
+    // استخراج جميع المفاتيح من التركيبة الأولى
+    const keysA = Object.keys(a.combination || {});
+    const keysB = Object.keys(b.combination || {});
     
-    if (!selectedColor && !selectedSize) {
-      return sortedVariations.filter((v: any) => isVariationAvailable(v));
+    // مقارنة حسب أول مفتاح موجود
+    for (const key of keysA) {
+      if (keysB.includes(key)) {
+        const valA = String(a.combination[key] || '');
+        const valB = String(b.combination[key] || '');
+        if (valA !== valB) {
+          return valA.localeCompare(valB);
+        }
+      }
     }
     
-    return sortedVariations.filter((v: any) => {
-      if (!isVariationAvailable(v)) return false;
-      if (selectedColor && v.combination?.color !== selectedColor) return false;
-      if (selectedSize && v.combination?.size !== selectedSize) return false;
+    // إذا كانت كل المفاتيح متساوية، قارن حسب الـ id
+    return (a.id || '').localeCompare(b.id || '');
+  });
+}, [variations]);
+
+const filteredVariations = useMemo(() => {
+  const isVariationAvailable = (variation: any) => variation.is_active !== false;
+  
+  if (!selectedColor && !selectedSize) {
+    return sortedVariations.filter((v: any) => isVariationAvailable(v));
+  }
+  
+  return sortedVariations.filter((v: any) => {
+    if (!isVariationAvailable(v)) return false;
+    
+    // ✅ التحقق من وجود اللون في الـ combination (بغض النظر عن المفتاح)
+    if (selectedColor) {
+      const hasColor = Object.values(v.combination || {}).some(
+        (val: any) => String(val) === selectedColor
+      );
+      if (!hasColor) return false;
+    }
+    
+    // ✅ التحقق من وجود المقاس في الـ combination (بغض النظر عن المفتاح)
+    if (selectedSize) {
+      const hasSize = Object.values(v.combination || {}).some(
+        (val: any) => String(val) === selectedSize
+      );
+      if (!hasSize) return false;
+    }
+    
+    return true;
+  });
+}, [sortedVariations, selectedColor, selectedSize]);
+  // ✅ ✅ ✅ تحديد ما إذا تم اختيار الفيرنتات بالكامل
+  const isVariationSelected = useMemo(() => {
+    // 1. إذا ما في فيرنتات أصلًا → عادي
+    if (colors.length === 0 && sizes.length === 0 && variations.length === 0) {
       return true;
-    });
-  }, [sortedVariations, selectedColor, selectedSize]);
+    }
+    
+    // 2. إذا في ألوان → لازم تختار لون
+    if (colors.length > 0 && !selectedColor) return false;
+    
+    // 3. إذا في مقاسات → لازم تختار مقاس
+    if (sizes.length > 0 && !selectedSize) return false;
+    
+    // 4. إذا في فيرنتات معقدة → لازم تختار فيرنت
+    if (variations.length > 0 && !selectedVariation) {
+      //但是如果选择了颜色和尺寸，并且有匹配的variation，则允许
+      if (selectedColor && selectedSize) {
+        const matching = variations.find((v: any) => 
+          v.combination?.color === selectedColor && 
+          v.combination?.size === selectedSize &&
+          v.is_active !== false
+        );
+        return !!matching;
+      }
+      return false;
+    }
+    
+    return true;
+  }, [colors, sizes, variations, selectedColor, selectedSize, selectedVariation]);
+
+  // ✅ ✅ ✅ رسالة الخطأ المناسبة (حسب نوع الخيارات)
+  const getVariationErrorMessage = useMemo(() => {
+    // ✅ 1. أولاً: إذا كان فيه تركيبات (Variations)
+    if (variations.length > 0) {
+      if (!selectedVariation) {
+        // إذا اختار لون ومقاس لكن ما في تركيبة مطابقة
+        if (selectedColor && selectedSize) {
+          const matching = variations.find((v: any) => 
+            v.combination?.color === selectedColor && 
+            v.combination?.size === selectedSize &&
+            v.is_active !== false
+          );
+          if (!matching) {
+            return app.lang === "ar" 
+              ? "⚠️ لا توجد تركيبة متوفرة لهذا اللون والمقاس" 
+              : "⚠️ No available variation for this color and size";
+          }
+        }
+        return app.lang === "ar" 
+          ? "⚠️ اختر التركيبة المناسبة" 
+          : "⚠️ Select the appropriate variation";
+      }
+      return "";
+    }
+
+    // ✅ 2. إذا كان فيه ألوان فقط (بدون تركيبات)
+    if (colors.length > 0 && !selectedColor && sizes.length === 0) {
+      return app.lang === "ar" ? "⚠️ اختر اللون أولاً" : "⚠️ Select color first";
+    }
+
+    // ✅ 3. إذا كان فيه مقاسات فقط (بدون تركيبات)
+    if (sizes.length > 0 && !selectedSize && colors.length === 0) {
+      return app.lang === "ar" ? "⚠️ اختر المقاس أولاً" : "⚠️ Select size first";
+    }
+
+    // ✅ 4. إذا كان فيه ألوان + مقاسات (بدون تركيبات)
+    if (colors.length > 0 && sizes.length > 0) {
+      if (!selectedColor && !selectedSize) {
+        return app.lang === "ar" 
+          ? "⚠️ اختر اللون والمقاس أولاً" 
+          : "⚠️ Select color and size first";
+      }
+      if (!selectedColor) {
+        return app.lang === "ar" ? "⚠️ اختر اللون أولاً" : "⚠️ Select color first";
+      }
+      if (!selectedSize) {
+        return app.lang === "ar" ? "⚠️ اختر المقاس أولاً" : "⚠️ Select size first";
+      }
+    }
+
+    return "";
+  }, [colors, sizes, variations, selectedColor, selectedSize, selectedVariation, app.lang]);
 
   useEffect(() => {
     if (colors.length === 1 && !selectedColor) {
@@ -268,13 +371,23 @@ function ListingDetailPage() {
       return;
     }
 
-    if (colors.length > 1 && !selectedColor) {
-      toast.warning(app.lang === "ar" ? "⚠️ يرجى اختيار اللون أولاً" : "⚠️ Please select a color first");
-      return;
-    }
-
-    if (sizes.length > 1 && !selectedSize) {
-      toast.warning(app.lang === "ar" ? "⚠️ يرجى اختيار المقاس أولاً" : "⚠️ Please select a size first");
+    // ✅ ✅ ✅ التحقق من اختيار الفيرنتات
+    if (!isVariationSelected) {
+      // سكرول لقسم الفيرنتات
+      const variationsSection = document.getElementById('variations-section');
+      if (variationsSection) {
+        variationsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        variationsSection.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2', 'rounded-xl', 'transition-all', 'duration-300');
+        setTimeout(() => {
+          variationsSection.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2', 'rounded-xl');
+        }, 3000);
+      }
+      
+      toast.warning(
+        app.lang === "ar" 
+          ? `👆 ${getVariationErrorMessage}` 
+          : `👆 ${getVariationErrorMessage}`
+      );
       return;
     }
 
@@ -340,8 +453,24 @@ function ListingDetailPage() {
         { 
           duration: 4000,
           action: {
-            label: app.lang === "ar" ? "📦 عرض السلة" : "📦 View Cart",
+            label: app.lang === "ar" ? "🛒 عرض السلة" : "🛒 View Cart",
             onClick: () => navigate({ to: "/cart" })
+          },
+          style: {
+            background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',
+            border: '1px solid #f9a8d4',
+            borderRadius: '16px',
+            boxShadow: '0 20px 60px rgba(236, 72, 153, 0.25)',
+          },
+          actionButtonStyle: {
+            background: 'linear-gradient(135deg, #f472b6, #ec4899, #db2777)',
+            color: 'white',
+            fontWeight: 'bold',
+            borderRadius: '12px',
+            padding: '8px 24px',
+            boxShadow: '0 8px 30px rgba(236, 72, 153, 0.4)',
+            border: 'none',
+            fontSize: '14px',
           }
         }
       );
@@ -356,7 +485,7 @@ function ListingDetailPage() {
           : `❌ Failed to add to cart: ${error.message || 'Unknown error'}`
       );
     }
-  }, [app.user, listing, colors, sizes, selectedColor, selectedSize, selectedVariation, quantity, addToCartMutation, navigate, app.lang]);
+  }, [app.user, listing, isVariationSelected, getVariationErrorMessage, selectedColor, selectedSize, selectedVariation, quantity, addToCartMutation, navigate, app.lang]);
 
   const handleConfirmClearCart = useCallback(async () => {
     if (!app.user || !pendingAddData) return;
@@ -390,8 +519,6 @@ function ListingDetailPage() {
       toast.error(app.lang === "ar" ? "❌ حدث خطأ" : "❌ An error occurred");
     }
   }, [app.user, pendingAddData, clearCartMutation, addToCartMutation, app.lang]);
-
-  // ❌ تم إزالة handleBookingConfirm
 
   const nextImage = useCallback(() => {
     if (selectedColor) {
@@ -701,20 +828,66 @@ function ListingDetailPage() {
                 </div>
               </div>
 
+              {/* ===== ✅ تنبيه اختيار الفيرنتات ===== */}
+              {(colors.length > 0 || sizes.length > 0 || variations.length > 0) && !isVariationSelected && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                      {app.lang === "ar" ? "⚠️ مطلوب اختيار الخيارات" : "⚠️ Options required"}
+                    </p>
+                    <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-0.5">
+                      {app.lang === "ar" 
+                        ? "يرجى اختيار اللون والمقاس المناسبين قبل إضافة المنتج للسلة"
+                        : "Please select the appropriate color and size before adding to cart"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* ===== ✅ تم اختيار كل الفيرنتات ===== */}
+              {(colors.length > 0 || sizes.length > 0 || variations.length > 0) && isVariationSelected && (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
+                  <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                      ✅ {app.lang === "ar" ? "تم اختيار الخيارات" : "Options selected"}
+                    </p>
+                    <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70 mt-0.5">
+                      {selectedColor && `🎨 ${selectedColor}`}
+                      {selectedColor && selectedSize && " • "}
+                      {selectedSize && `📏 ${selectedSize}`}
+                      {selectedVariation && (
+                        <>
+                          {(selectedColor || selectedSize) && " • "}
+                          🔧 {Object.values(selectedVariation.combination).join(' • ')}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* ===== الألوان ===== */}
               {colors.length > 0 && (
-                <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
+                <div id="variations-section" className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 scroll-mt-20">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-medium text-muted-foreground">
-                      {app.lang === "ar" ? "🎨 اللون" : "🎨 Color"}
+                      🎨 {app.lang === "ar" ? "اللون" : "Color"}
                       {colors.length > 1 && (
                         <span className="text-xs text-muted-foreground/60 ms-1">
                           ({colors.length} {app.lang === "ar" ? "خيارات" : "options"})
                         </span>
                       )}
+                      <span className="text-xs text-red-500 ms-1">*</span>
                     </p>
-                    <span className="text-xs text-muted-foreground/60">
-                      {selectedColor || (app.lang === "ar" ? "اختر لوناً" : "Select a color")}
+                    <span className={cn(
+                      "text-xs font-medium transition-all duration-300",
+                      selectedColor ? "text-emerald-600" : "text-amber-500"
+                    )}>
+                      {selectedColor 
+                        ? `✅ ${selectedColor}` 
+                        : (app.lang === "ar" ? "⚠️ مطلوب" : "⚠️ Required")}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-3">
@@ -775,15 +948,26 @@ function ListingDetailPage() {
 
               {/* ===== المقاسات ===== */}
               {sizes.length > 0 && (
-                <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
-                  <p className="text-sm font-medium text-muted-foreground mb-3">
-                    {app.lang === "ar" ? "📏 المقاس" : "📏 Size"}
-                    {sizes.length > 1 && (
-                      <span className="text-xs text-muted-foreground/60 ms-1">
-                        ({sizes.length} {app.lang === "ar" ? "خيارات" : "options"})
-                      </span>
-                    )}
-                  </p>
+                <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 scroll-mt-20">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      📏 {app.lang === "ar" ? "المقاس" : "Size"}
+                      {sizes.length > 1 && (
+                        <span className="text-xs text-muted-foreground/60 ms-1">
+                          ({sizes.length} {app.lang === "ar" ? "خيارات" : "options"})
+                        </span>
+                      )}
+                      <span className="text-xs text-red-500 ms-1">*</span>
+                    </p>
+                    <span className={cn(
+                      "text-xs font-medium transition-all duration-300",
+                      selectedSize ? "text-emerald-600" : "text-amber-500"
+                    )}>
+                      {selectedSize 
+                        ? `✅ ${selectedSize}` 
+                        : (app.lang === "ar" ? "⚠️ مطلوب" : "⚠️ Required")}
+                    </span>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {sizes.map((size: string) => (
                       <button
@@ -803,139 +987,205 @@ function ListingDetailPage() {
                 </div>
               )}
 
-              {/* ===== جدول التركيبات ===== */}
-              {variations.length > 0 && (
-                <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
-                  <div className="flex items-center justify-between mb-3">
-                  <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-  <Layers className="h-4 w-4 text-[#0d2e2a]" />
-  {app.lang === "ar" ? "التركيبات المتوفرة" : "Available Variations"}
-  {filteredVariations.length > 0 && (
-    <Badge className="bg-[#0d2e2a] text-white border-0 text-[10px]">
-      {filteredVariations.length} {app.lang === "ar" ? "متوفرة" : "available"}
-    </Badge>
-  )}
-</div>
-                    {selectedVariation && (
-                      <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px]">
-                        ✅ {app.lang === "ar" ? "مختار" : "Selected"}
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <div className="border rounded-xl overflow-hidden shadow-sm">
-                    <table className="w-full text-sm">
-                      <thead className="bg-[#0d2e2a]/5 dark:bg-slate-800/50">
-                        <tr>
-                          <th className="px-3 py-2 text-right font-medium text-muted-foreground text-[11px]">
-                            {app.lang === "ar" ? "اللون" : "Color"}
-                          </th>
-                          <th className="px-3 py-2 text-right font-medium text-muted-foreground text-[11px]">
-                            {app.lang === "ar" ? "المقاس" : "Size"}
-                          </th>
-                          <th className="px-3 py-2 text-right font-medium text-muted-foreground text-[11px]">
-                            {app.lang === "ar" ? "السعر" : "Price"}
-                          </th>
-                          <th className="px-3 py-2 text-center font-medium text-muted-foreground text-[11px]">
-                            {app.lang === "ar" ? "التوفر" : "Status"}
-                          </th>
-                          <th className="px-3 py-2 text-center font-medium text-muted-foreground text-[11px]">
-                            {app.lang === "ar" ? "اختيار" : "Select"}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sortedVariations.map((v: any) => {
-                          const isAvailable = v.is_active !== false;
-                          const isSelected = selectedVariation?.id === v.id;
-                          const colorObj = colors.find((c: any) => c.color_name_ar === v.combination?.color);
-                          
-                          return (
-                            <tr 
-                              key={v.id}
-                              className={cn(
-                                "border-t border-slate-100/50 dark:border-slate-800/30 transition-colors",
-                                isSelected ? "bg-[#0d2e2a]/5 dark:bg-[#0d2e2a]/10" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/30",
-                                !isAvailable && "opacity-50"
-                              )}
-                            >
-                              <td className="px-3 py-2.5">
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-4 h-4 rounded-full border border-slate-200 flex-shrink-0"
-                                    style={{ 
-                                      backgroundColor: colorObj?.color_hex || '#ccc' 
-                                    }}
-                                  />
-                                  <span className="text-xs">{v.combination?.color || '-'}</span>
-                                </div>
-                              </td>
-                              <td className="px-3 py-2.5 font-medium text-xs">{v.combination?.size || '-'}</td>
-                              <td className="px-3 py-2.5 text-xs font-semibold text-[#0d2e2a]">
-                                {v.price ? formatPrice(v.price, app.currency, app.lang) : formatPrice(Number(listing.price), app.currency, app.lang)}
-                              </td>
-                              <td className="px-3 py-2.5 text-center">
-                                {isAvailable ? (
-                                  <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[9px] px-2 py-0.5">
-                                    ✅ {app.lang === "ar" ? "متوفر" : "Available"}
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-red-100 text-red-700 border-0 text-[9px] px-2 py-0.5">
-                                    ❌ {app.lang === "ar" ? "غير متوفر" : "Unavailable"}
-                                  </Badge>
-                                )}
-                              </td>
-                              <td className="px-3 py-2.5 text-center">
-                                {isAvailable && (
-                                  <Button
-                                    size="sm"
-                                    variant={isSelected ? "default" : "outline"}
-                                    className={cn(
-                                      "rounded-lg h-7 px-2.5 text-[10px] transition-all",
-                                      isSelected 
-                                        ? "bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white" 
-                                        : "border-[#0d2e2a]/30 text-[#0d2e2a] hover:bg-[#0d2e2a]/5"
-                                    )}
-                                    onClick={() => handleVariationSelect(v)}
-                                  >
-                                    {isSelected ? (
-                                      <CheckCircle className="h-3 w-3 mr-1" />
-                                    ) : (
-                                      <ShoppingBag className="h-3 w-3 mr-1" />
-                                    )}
-                                    {isSelected 
-                                      ? (app.lang === "ar" ? "مختار" : "Selected")
-                                      : (app.lang === "ar" ? "اختر" : "Select")}
-                                  </Button>
-                                )}
-                              </td>
-                            </tr>
+{/* ===== جدول التركيبات (مع ترتيب ثابت للأعمدة) ===== */}
+{variations.length > 0 && (
+  <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 scroll-mt-20">
+    <div className="flex items-center justify-between mb-3">
+      <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+        <Layers className="h-4 w-4 text-[#0d2e2a]" />
+        {app.lang === "ar" ? "التركيبات المتوفرة" : "Available Variations"}
+        {filteredVariations.length > 0 && (
+          <Badge className="bg-[#0d2e2a] text-white border-0 text-[10px]">
+            {filteredVariations.length} {app.lang === "ar" ? "متوفرة" : "available"}
+          </Badge>
+        )}
+      </div>
+      <span className={cn(
+        "text-xs font-medium transition-all duration-300",
+        selectedVariation ? "text-emerald-600" : "text-amber-500"
+      )}>
+        {selectedVariation 
+          ? `✅ ${app.lang === "ar" ? "مختار" : "Selected"}` 
+          : (app.lang === "ar" ? "⚠️ مطلوب" : "⚠️ Required")}
+      </span>
+    </div>
+    
+    <div className="border rounded-xl overflow-hidden shadow-sm">
+      <table className="w-full text-sm">
+        <thead className="bg-[#0d2e2a]/5 dark:bg-slate-800/50">
+          <tr>
+            {(() => {
+              // استخراج المفاتيح الفريدة من جميع التركيبات
+              const keys = new Set<string>();
+              sortedVariations.forEach((v: any) => {
+                if (v.combination) {
+                  Object.keys(v.combination).forEach(key => keys.add(key));
+                }
+              });
+              
+              // 🔍🔍🔍 DEBUG: console.log للمفاتيح المستخرجة
+              console.log("🔍🔍🔍 [TABLE DEBUG] ===== START =====");
+              console.log("🔍🔍🔍 [TABLE DEBUG] variations.length:", variations.length);
+              console.log("🔍🔍🔍 [TABLE DEBUG] sortedVariations.length:", sortedVariations.length);
+              console.log("🔍🔍🔍 [TABLE DEBUG] All keys from combinations:", Array.from(keys));
+              console.log("🔍🔍🔍 [TABLE DEBUG] First variation combination:", sortedVariations[0]?.combination);
+              console.log("🔍🔍🔍 [TABLE DEBUG] First variation keys:", Object.keys(sortedVariations[0]?.combination || {}));
+              console.log("🔍🔍🔍 [TABLE DEBUG] ===== END =====");
+              
+              // ✅ ترتيب ثابت للأعمدة حسب الأولوية
+              const priorityOrder = ['color', 'colors', 'size', 'fabric', 'season', 'material', 'style', 'brand'];
+              const sortedKeys = Array.from(keys).sort((a, b) => {
+                const indexA = priorityOrder.indexOf(a);
+                const indexB = priorityOrder.indexOf(b);
+                if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+              });
+              
+              console.log("🔍🔍🔍 [TABLE DEBUG] Sorted keys after priority:", sortedKeys);
+              
+              return sortedKeys.map((key) => (
+                <th key={key} className="px-3 py-2 text-right font-medium text-muted-foreground text-[11px]">
+                  {key === 'color' || key === 'colors' ? (app.lang === "ar" ? "اللون" : "Color") :
+                   key === 'size' ? (app.lang === "ar" ? "المقاس" : "Size") :
+                   key === 'fabric' ? (app.lang === "ar" ? "الخامة" : "Fabric") :
+                   key === 'season' ? (app.lang === "ar" ? "الموسم" : "Season") :
+                   key === 'material' ? (app.lang === "ar" ? "المادة" : "Material") :
+                   key === 'style' ? (app.lang === "ar" ? "النمط" : "Style") :
+                   key === 'brand' ? (app.lang === "ar" ? "الماركة" : "Brand") :
+                   key}
+                </th>
+              ));
+            })()}
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground text-[11px]">
+              {app.lang === "ar" ? "السعر" : "Price"}
+            </th>
+            <th className="px-3 py-2 text-center font-medium text-muted-foreground text-[11px]">
+              {app.lang === "ar" ? "التوفر" : "Status"}
+            </th>
+            <th className="px-3 py-2 text-center font-medium text-muted-foreground text-[11px]">
+              {app.lang === "ar" ? "اختيار" : "Select"}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedVariations.map((v: any) => {
+            const isAvailable = v.is_active !== false;
+            const isSelected = selectedVariation?.id === v.id;
+            const keys = Object.keys(v.combination || {});
+            
+            // ✅ ترتيب المفاتيح بنفس الترتيب
+            const priorityOrder = ['color', 'colors', 'size', 'fabric', 'season', 'material', 'style', 'brand'];
+            const sortedKeys = [...keys].sort((a, b) => {
+              const indexA = priorityOrder.indexOf(a);
+              const indexB = priorityOrder.indexOf(b);
+              if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+              if (indexA === -1) return 1;
+              if (indexB === -1) return -1;
+              return indexA - indexB;
+            });
+            
+            return (
+              <tr 
+                key={v.id}
+                className={cn(
+                  "border-t border-slate-100/50 dark:border-slate-800/30 transition-colors",
+                  isSelected ? "bg-[#0d2e2a]/5 dark:bg-[#0d2e2a]/10" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/30",
+                  !isAvailable && "opacity-50"
+                )}
+              >
+                {sortedKeys.map((key) => (
+                  <td key={key} className="px-3 py-2.5 text-xs">
+                    {key === 'color' || key === 'colors' ? (
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const colorName = v.combination[key];
+                          const colorObj = colors.find((c: any) => 
+                            c.color_name_ar === colorName || c.color_name_en === colorName
                           );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {selectedVariation && (
-                    <div className="mt-3 p-3 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/10">
-                      <p className="text-xs text-muted-foreground">
-                        {app.lang === "ar" ? "✅ التركيبة المختارة:" : "✅ Selected variation:"}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {Object.entries(selectedVariation.combination || {}).map(([key, value]) => (
-                          <Badge key={key} className="bg-[#0d2e2a]/10 text-[#0d2e2a] border-0 text-[10px]">
-                            {translateOptionType(key, app.lang)}: {value as string}
-                          </Badge>
-                        ))}
-                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-0 text-[10px]">
-                          ✅ {app.lang === "ar" ? "متوفر" : "Available"}
-                        </Badge>
+                          return (
+                            <>
+                              <div 
+                                className="w-4 h-4 rounded-full border border-slate-200 flex-shrink-0"
+                                style={{ 
+                                  backgroundColor: colorObj?.color_hex || '#ccc' 
+                                }}
+                              />
+                              <span className="text-xs">{colorName || '-'}</span>
+                            </>
+                          );
+                        })()}
                       </div>
-                    </div>
+                    ) : (
+                      <span className="text-xs font-medium">{v.combination[key] || '-'}</span>
+                    )}
+                  </td>
+                ))}
+                <td className="px-3 py-2.5 text-xs font-semibold text-[#0d2e2a]">
+                  {v.price ? formatPrice(v.price, app.currency, app.lang) : formatPrice(Number(listing.price), app.currency, app.lang)}
+                </td>
+                <td className="px-3 py-2.5 text-center">
+                  {isAvailable ? (
+                    <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[9px] px-2 py-0.5">
+                      ✅ {app.lang === "ar" ? "متوفر" : "Available"}
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-red-100 text-red-700 border-0 text-[9px] px-2 py-0.5">
+                      ❌ {app.lang === "ar" ? "غير متوفر" : "Unavailable"}
+                    </Badge>
                   )}
-                </div>
-              )}
+                </td>
+                <td className="px-3 py-2.5 text-center">
+                  {isAvailable && (
+                    <Button
+                      size="sm"
+                      variant={isSelected ? "default" : "outline"}
+                      className={cn(
+                        "rounded-lg h-7 px-2.5 text-[10px] transition-all",
+                        isSelected 
+                          ? "bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white" 
+                          : "border-[#0d2e2a]/30 text-[#0d2e2a] hover:bg-[#0d2e2a]/5"
+                      )}
+                      onClick={() => handleVariationSelect(v)}
+                    >
+                      {isSelected ? (
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                      ) : (
+                        <ShoppingBag className="h-3 w-3 mr-1" />
+                      )}
+                      {isSelected 
+                        ? (app.lang === "ar" ? "مختار" : "Selected")
+                        : (app.lang === "ar" ? "اختر" : "Select")}
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
 
+    {selectedVariation && (
+      <div className="mt-3 p-3 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/10">
+        <p className="text-xs text-muted-foreground">
+          {app.lang === "ar" ? "✅ التركيبة المختارة:" : "✅ Selected variation:"}
+        </p>
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {Object.entries(selectedVariation.combination || {}).map(([key, value]) => (
+            <Badge key={key} className="bg-[#0d2e2a]/10 text-[#0d2e2a] border-0 text-[10px]">
+              {translateOptionType(key, app.lang)}: {value as string}
+            </Badge>
+          ))}
+          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-0 text-[10px]">
+            ✅ {app.lang === "ar" ? "متوفر" : "Available"}
+          </Badge>
+        </div>
+      </div>
+    )}
+  </div>
+)}
               {listing.description_ar && (
                 <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
                   <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
@@ -980,22 +1230,29 @@ function ListingDetailPage() {
               </div>
 
               <div className="space-y-3">
+                {/* ===== ✅ زر الإضافة المعدل ===== */}
                 <Button 
                   size="lg" 
                   className={cn(
                     "w-full h-14 rounded-2xl text-white shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] text-lg font-bold",
                     isInCart 
                       ? "bg-emerald-600 hover:bg-emerald-700" 
-                      : "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a]"
+                      : "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a]",
+                    !isVariationSelected && "opacity-60 cursor-not-allowed hover:scale-100 hover:shadow-xl"
                   )}
                   onClick={handleAddToCart}
-                  disabled={!listing.is_available || addToCartMutation.isPending}
+                  disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
                 >
                   {addToCartMutation.isPending ? (
                     <div className="flex items-center gap-3">
                       <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                       {app.lang === "ar" ? "جاري الإضافة..." : "Adding..."}
                     </div>
+                  ) : !isVariationSelected ? (
+                    <>
+                      <AlertTriangle className="h-5 w-5 me-3" />
+                      {getVariationErrorMessage || (app.lang === "ar" ? "⚠️ اختر الخيارات أولاً" : "⚠️ Select options first")}
+                    </>
                   ) : isInCart ? (
                     <>
                       <CheckCircle className="h-5 w-5 me-3" />
@@ -1232,8 +1489,6 @@ function ListingDetailPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        
-        {/* ❌ تم إزالة BookingModal */}
       </div>
     </ClientOnly>
   );

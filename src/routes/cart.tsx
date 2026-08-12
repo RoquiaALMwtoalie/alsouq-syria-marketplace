@@ -1,4 +1,4 @@
-// src/routes/cart.tsx
+// src/routes/cart.tsx - الكود المُصحّح بالكامل
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { 
@@ -197,7 +197,47 @@ function CartPage() {
     };
   }, [items, app.lang]);
 
-  // ✅✅✅ حساب التوصيل (محسن جداً - بدون حلقات لا نهائية)
+  // ✅ دالة حساب المسافة (هافرسين) - نفس الموجودة في store.$id.tsx
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+    if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) return 0;
+    
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }, []);
+
+  // ✅ دالة حساب سعر التوصيل - نفس الموجودة في store.$id.tsx
+  const calculateDeliveryPrice = useCallback((company: any, distanceInKm: number, orderTotal: number): number => {
+    const freeThreshold = company.free_delivery_threshold || 0;
+    if (freeThreshold > 0 && orderTotal >= freeThreshold) {
+      return 0;
+    }
+
+    const basePrice = company.base_price || 0;
+    const pricePerKm = company.price_per_km || 0;
+    let price = basePrice + (distanceInKm * pricePerKm);
+
+    const minFee = company.min_delivery_fee || 0;
+    if (price < minFee) {
+      price = minFee;
+    }
+
+    const maxFee = company.max_delivery_fee || 999999;
+    if (price > maxFee) {
+      price = maxFee;
+    }
+
+    return Math.round(price);
+  }, []);
+
+  // ✅ حساب التوصيل - مُحسّن (نفس طريقة store.$id.tsx)
   useEffect(() => {
     // ✅ منع التنفيذ في أول ريندر
     if (isFirstRender.current) {
@@ -213,49 +253,133 @@ function CartPage() {
     // ✅ تأخير الحساب لتجنب التحديثات المتكررة
     deliveryTimeoutRef.current = setTimeout(() => {
       const calculateDelivery = async () => {
+        // ✅ 1. التحقق من وجود عنوان ومتجر
         if (!selectedAddress || !cart?.store?.id) {
           setDeliveryFee(0);
+          setDeliveryCompany(null);
           return;
         }
         
         setIsCalculatingDelivery(true);
         try {
-          const { data: companies } = await supabase
-            .from("delivery_companies")
-            .select("*")
-            .eq("is_active", true)
-            .limit(1);
-          
-          const company = companies?.[0];
-          if (!company) {
+          // ✅ 2. جلب بيانات المتجر (مع delivery_company_id)
+          const { data: store, error: storeError } = await supabase
+            .from("profiles")
+            .select("delivery_company_id, lat, lng, governorate_id")
+            .eq("id", cart.store.id)
+            .maybeSingle();
+
+          if (storeError || !store) {
+            console.error("❌ [Cart] Store not found:", storeError);
             setDeliveryFee(0);
             setDeliveryCompany(null);
             return;
           }
-          
-          let distance = 5;
-          if (selectedAddress.lat && selectedAddress.lng) {
-            distance = 5 + Math.random() * 10;
+
+          // ✅ 3. تحديد شركة التوصيل
+          let selectedCompany = null;
+
+          // ✅ 3a. إذا كان للمتجر شركة توصيل محددة
+          if (store.delivery_company_id) {
+            const { data: company, error: companyError } = await supabase
+              .from("delivery_companies")
+              .select("*")
+              .eq("id", store.delivery_company_id)
+              .eq("is_active", true)
+              .maybeSingle();
+
+            if (!companyError && company) {
+              selectedCompany = company;
+              console.log("✅ [Cart] Using store's delivery company:", company.name_ar);
+            }
           }
-          
-          let fee = (company.base_price || 0) + (distance * (company.price_per_km || 0));
-          fee = Math.max(fee, company.min_delivery_fee || 0);
-          fee = Math.min(fee, company.max_delivery_fee || 999999);
-          fee = Math.round(fee);
-          
+
+          // ✅ 3b. إذا لم تكن هناك شركة محددة، ابحث عن شركة تغطي المحافظة
+          if (!selectedCompany) {
+            const { data: companies, error: companiesError } = await supabase
+              .from("delivery_companies")
+              .select("*")
+              .eq("is_active", true);
+
+            if (!companiesError && companies) {
+              const matchingCompanies = companies.filter((c: any) => {
+                const coverage = c.coverage_areas || [];
+                if (coverage.includes("all") || coverage.includes(store.governorate_id)) {
+                  return true;
+                }
+                if (c.governorate_id === store.governorate_id) {
+                  return true;
+                }
+                return false;
+              });
+
+              if (matchingCompanies.length > 0) {
+                selectedCompany = matchingCompanies.sort((a: any, b: any) => 
+                  (a.base_price || 0) - (b.base_price || 0)
+                )[0];
+                console.log("✅ [Cart] Using best matching company:", selectedCompany.name_ar);
+              }
+            }
+          }
+
+          // ✅ 3c. استخدام شركة افتراضية
+          if (!selectedCompany) {
+            const { data: fallbackCompany, error: fallbackError } = await supabase
+              .from("delivery_companies")
+              .select("*")
+              .eq("is_active", true)
+              .limit(1)
+              .maybeSingle();
+
+            if (!fallbackError && fallbackCompany) {
+              selectedCompany = fallbackCompany;
+              console.log("✅ [Cart] Using fallback company:", selectedCompany.name_ar);
+            }
+          }
+
+          if (!selectedCompany) {
+            setDeliveryFee(0);
+            setDeliveryCompany(null);
+            return;
+          }
+
+          // ✅ 4. حساب المسافة
+          let distance = 0;
+          const hasValidCoordinates = store.lat && store.lng && selectedAddress.lat && selectedAddress.lng;
+
+          if (hasValidCoordinates) {
+            distance = calculateDistance(
+              store.lat,
+              store.lng,
+              selectedAddress.lat,
+              selectedAddress.lng
+            );
+            console.log(`📍 [Cart] Real distance: ${distance.toFixed(2)} km`);
+          } else {
+            const storeGovId = store.governorate_id;
+            const userGovId = selectedAddress.governorate_id;
+            
+            if (storeGovId === userGovId) {
+              distance = 5;
+            } else {
+              distance = 25;
+            }
+            console.log(`📍 [Cart] Estimated distance: ${distance} km`);
+          }
+
+          // ✅ 5. حساب سعر التوصيل
           const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-          const freeThreshold = company.free_delivery_threshold || 0;
-          
-          if (freeThreshold > 0 && subtotal >= freeThreshold) {
-            fee = 0;
-          }
+          const fee = calculateDeliveryPrice(selectedCompany, distance, subtotal);
+
+          console.log(`💰 [Cart] Delivery fee: ${fee} SYP`);
           
           setDeliveryFee(fee);
-          setDeliveryCompany(company);
-          
+          setDeliveryCompany(selectedCompany);
+
         } catch (error) {
-          console.error("❌ Error calculating delivery:", error);
+          console.error("❌ [Cart] Error calculating delivery:", error);
           setDeliveryFee(0);
+          setDeliveryCompany(null);
         } finally {
           setIsCalculatingDelivery(false);
         }
@@ -264,15 +388,12 @@ function CartPage() {
       calculateDelivery();
     }, 300);
 
-    // ✅ تنظيف الـ timeout عند إلغاء الـ effect
     return () => {
       if (deliveryTimeoutRef.current) {
         clearTimeout(deliveryTimeoutRef.current);
       }
     };
-    
-    // ✅ ✅ ✅ إزالة items من dependencies
-  }, [selectedAddress, cart?.store?.id]);
+  }, [selectedAddress, cart?.store?.id, items, calculateDistance, calculateDeliveryPrice]);
 
   // ✅✅✅ حساب الإجماليات (محسن)
   const totals = useMemo(() => {
@@ -372,188 +493,254 @@ function CartPage() {
   }, [app.lang]);
 
   // ✅ تطبيق كود الخصم
-// src/routes/cart.tsx - استبدل دالة applyPromoCode بهذه
-
-const applyPromoCode = useCallback(async () => {
-  if (!promoCode.trim()) {
-    toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال كود الخصم" : "⚠️ Please enter a promo code");
-    return;
-  }
-
-  setIsApplyingPromo(true);
-  setPromoMessage("");
-
-  try {
-    const { data, error } = await supabase
-      .from("promo_codes")
-      .select("*")
-      .eq("code", promoCode.trim().toUpperCase())
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (!data) {
-      setPromoMessage(app.lang === "ar" ? "❌ كود غير صالح" : "❌ Invalid code");
-      toast.error(app.lang === "ar" ? "❌ كود الخصم غير صالح" : "❌ Invalid promo code");
+  const applyPromoCode = useCallback(async () => {
+    console.log("🔍 [PROMO] ===== START APPLYING PROMO CODE =====");
+    console.log("🔍 [PROMO] Code entered:", promoCode.trim().toUpperCase());
+    
+    if (!promoCode.trim()) {
+      toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال كود الخصم" : "⚠️ Please enter a promo code");
       return;
     }
 
-    // ✅ التحقق من الصلاحية
-    const now = new Date();
-    const expiresAt = data.expires_at ? new Date(data.expires_at) : null;
-    const startsAt = data.starts_at ? new Date(data.starts_at) : null;
+    setIsApplyingPromo(true);
+    setPromoMessage("");
 
-    if (startsAt && now < startsAt) {
-      setPromoMessage(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
-      toast.error(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
-      return;
-    }
+    try {
+      // ✅ 1. جلب الكود من قاعدة البيانات
+      console.log("🔍 [PROMO] Step 1: Fetching code from database...");
+      const { data, error } = await supabase
+        .from("promo_codes")
+        .select("*")
+        .eq("code", promoCode.trim().toUpperCase())
+        .eq("is_active", true)
+        .maybeSingle();
 
-    if (expiresAt && now > expiresAt) {
-      setPromoMessage(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
-      toast.error(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
-      return;
-    }
+      if (error) {
+        console.error("❌ [PROMO] Database error:", error);
+        throw error;
+      }
 
-    // ✅ ✅ ✅ التحقق من المتجر (إذا كان الكود مخصصاً)
-    if (data.store_id) {
-      // ✅ التحقق من أن جميع المنتجات في السلة تنتمي للمتجر المحدد
-      const hasDifferentStore = items.some((item: any) => {
-        const listing = item.listing || item;
-        return listing.owner_id !== data.store_id;
+      console.log("🔍 [PROMO] Step 2: Database result:", { data, error });
+
+      if (!data) {
+        console.log("❌ [PROMO] Code not found or inactive");
+        setPromoMessage(app.lang === "ar" ? "❌ كود غير صالح" : "❌ Invalid code");
+        toast.error(app.lang === "ar" ? "❌ كود الخصم غير صالح" : "❌ Invalid promo code");
+        return;
+      }
+
+      console.log("✅ [PROMO] Code found:", {
+        code: data.code,
+        type: data.type,
+        value: data.value,
+        is_active: data.is_active,
+        expires_at: data.expires_at,
+        store_id: data.store_id,
+        store_name: data.store_name,
       });
 
-      if (hasDifferentStore) {
+      // ✅ 2. التحقق من الصلاحية
+      console.log("🔍 [PROMO] Step 3: Checking validity...");
+      const now = new Date();
+      const expiresAt = data.expires_at ? new Date(data.expires_at) : null;
+      const startsAt = data.starts_at ? new Date(data.starts_at) : null;
+
+      console.log("📌 [PROMO] Current time:", now.toISOString());
+      console.log("📌 [PROMO] Starts at:", startsAt?.toISOString() || "N/A");
+      console.log("📌 [PROMO] Expires at:", expiresAt?.toISOString() || "N/A");
+
+      if (startsAt && now < startsAt) {
+        console.log("❌ [PROMO] Code not active yet");
+        setPromoMessage(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
+        toast.error(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
+        return;
+      }
+
+      if (expiresAt && now > expiresAt) {
+        console.log("❌ [PROMO] Code expired");
+        setPromoMessage(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
+        toast.error(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
+        return;
+      }
+
+      console.log("✅ [PROMO] Code is valid (active and within date range)");
+
+      // ✅ 3. التحقق من المتجر (إذا كان الكود مخصصاً)
+      if (data.store_id) {
+        console.log("🔍 [PROMO] Step 4: Checking store specificity...");
+        console.log("📌 [PROMO] Code is for store:", data.store_id, data.store_name);
+        
+        const hasDifferentStore = items.some((item: any) => {
+          const listing = item.listing || item;
+          const isDifferent = listing.owner_id !== data.store_id;
+          if (isDifferent) {
+            console.log("⚠️ [PROMO] Product", listing.title_ar, "belongs to different store:", listing.owner_id);
+          }
+          return isDifferent;
+        });
+
+        if (hasDifferentStore) {
+          console.log("❌ [PROMO] Cart contains products from different stores");
+          setPromoMessage(
+            app.lang === "ar" 
+              ? `❌ هذا الكود مخصص لمتجر "${data.store_name}" فقط` 
+              : `❌ This code is only for store "${data.store_name}"`
+          );
+          toast.error(
+            app.lang === "ar" 
+              ? `❌ هذا الكود مخصص لمتجر "${data.store_name}" فقط` 
+              : `❌ This code is only for store "${data.store_name}"`
+          );
+          return;
+        }
+        console.log("✅ [PROMO] All products belong to the correct store");
+      } else {
+        console.log("✅ [PROMO] Step 4: Code is public (no store restriction)");
+      }
+
+      // ✅ 4. حساب المجموع الفرعي
+      console.log("🔍 [PROMO] Step 5: Calculating subtotal...");
+      const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+      const minOrder = data.min_order || 0;
+
+      console.log("📌 [PROMO] Subtotal:", subtotal);
+      console.log("📌 [PROMO] Minimum order:", minOrder);
+
+      if (subtotal < minOrder) {
+        console.log("❌ [PROMO] Subtotal below minimum order");
         setPromoMessage(
           app.lang === "ar" 
-            ? `❌ هذا الكود مخصص لمتجر "${data.store_name}" فقط` 
-            : `❌ This code is only for store "${data.store_name}"`
+            ? `❌ الحد الأدنى للطلب هو ${formatPrice(minOrder, app.currency, app.lang)}` 
+            : `❌ Minimum order is ${formatPrice(minOrder, app.currency, app.lang)}`
         );
         toast.error(
           app.lang === "ar" 
-            ? `❌ هذا الكود مخصص لمتجر "${data.store_name}" فقط` 
-            : `❌ This code is only for store "${data.store_name}"`
+            ? `❌ الحد الأدنى للطلب هو ${formatPrice(minOrder, app.currency, app.lang)}` 
+            : `❌ Minimum order is ${formatPrice(minOrder, app.currency, app.lang)}`
         );
         return;
       }
-    }
+      console.log("✅ [PROMO] Subtotal meets minimum order requirement");
 
-    // ✅ حساب المجموع الفرعي
-    const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-    const minOrder = data.min_order || 0;
+      // ✅ 5. حساب الخصم حسب النوع
+      console.log("🔍 [PROMO] Step 6: Calculating discount...");
+      let discount = 0;
+      let discountMessage = "";
 
-    if (subtotal < minOrder) {
-      setPromoMessage(
-        app.lang === "ar" 
-          ? `❌ الحد الأدنى للطلب هو ${formatPrice(minOrder, app.currency, app.lang)}` 
-          : `❌ Minimum order is ${formatPrice(minOrder, app.currency, app.lang)}`
-      );
-      toast.error(
-        app.lang === "ar" 
-          ? `❌ الحد الأدنى للطلب هو ${formatPrice(minOrder, app.currency, app.lang)}` 
-          : `❌ Minimum order is ${formatPrice(minOrder, app.currency, app.lang)}`
-      );
-      return;
-    }
-
-    let discount = 0;
-    let discountMessage = "";
-
-    // ✅ ✅ ✅ معالجة أنواع الخصم المختلفة
-    if (data.type === "percentage") {
-      discount = (subtotal * (data.value / 100));
-      discountMessage = `${data.value}%`;
-    } 
-    else if (data.type === "fixed") {
-      discount = data.value;
-      discountMessage = `${formatPrice(data.value, app.currency, app.lang)}`;
-    }
-    else if (data.type === "free_shipping") {
-      // ✅ توصيل مجاني: الخصم = قيمة التوصيل
-      discount = deliveryFee;
-      discountMessage = app.lang === "ar" ? "توصيل مجاني" : "Free Shipping";
-      
-      if (deliveryFee === 0) {
-        setPromoMessage(app.lang === "ar" ? "✅ التوصيل مجاني بالفعل" : "✅ Shipping is already free");
-        toast.info(app.lang === "ar" ? "✅ التوصيل مجاني بالفعل" : "✅ Shipping is already free");
-        setIsApplyingPromo(false);
-        return;
+      if (data.type === "percentage") {
+        discount = (subtotal * (data.value / 100));
+        discountMessage = `${data.value}%`;
+        console.log("📌 [PROMO] Percentage discount:", data.value, "% →", discount);
+      } 
+      else if (data.type === "fixed") {
+        discount = data.value;
+        discountMessage = `${formatPrice(data.value, app.currency, app.lang)}`;
+        console.log("📌 [PROMO] Fixed discount:", data.value);
       }
-    }
-    else if (data.type === "buy_x_get_y") {
-      // ✅ ✅ ✅ اشترِ واحصل على منتج مجاني
-      const buyQty = data.metadata?.buy_quantity || 2;
-      const getQty = data.metadata?.get_quantity || 1;
-      
-      // ✅ حساب أرخص المنتجات المجانية
-      const sortedItems = [...items].sort((a, b) => a.price - b.price);
-      let freeItemsCount = 0;
-      let freeDiscount = 0;
-      
-      for (const item of sortedItems) {
-        const batches = Math.floor(item.quantity / buyQty);
-        const freePerBatch = Math.min(getQty, batches);
-        if (freePerBatch > 0) {
-          freeItemsCount += freePerBatch;
-          freeDiscount += freePerBatch * item.price;
+      else if (data.type === "free_shipping") {
+        discount = deliveryFee;
+        discountMessage = app.lang === "ar" ? "توصيل مجاني" : "Free Shipping";
+        console.log("📌 [PROMO] Free shipping discount:", deliveryFee);
+        
+        if (deliveryFee === 0) {
+          console.log("✅ [PROMO] Delivery is already free");
+          setPromoMessage(app.lang === "ar" ? "✅ التوصيل مجاني بالفعل" : "✅ Shipping is already free");
+          toast.info(app.lang === "ar" ? "✅ التوصيل مجاني بالفعل" : "✅ Shipping is already free");
+          setIsApplyingPromo(false);
+          return;
         }
       }
-      
-      discount = freeDiscount;
-      discountMessage = `${app.lang === "ar" ? `اشترِ ${buyQty} واحصل على ${getQty} مجاناً` : `Buy ${buyQty} Get ${getQty} Free`}`;
-      
-      if (discount === 0) {
-        setPromoMessage(
-          app.lang === "ar" 
-            ? `❌ اشترِ ${buyQty} منتج للحصول على ${getQty} مجاناً` 
-            : `❌ Buy ${buyQty} items to get ${getQty} free`
-        );
-        toast.error(
-          app.lang === "ar" 
-            ? `❌ اشترِ ${buyQty} منتج للحصول على ${getQty} مجاناً` 
-            : `❌ Buy ${buyQty} items to get ${getQty} free`
-        );
+      else if (data.type === "buy_x_get_y") {
+        const buyQty = data.metadata?.buy_quantity || 2;
+        const getQty = data.metadata?.get_quantity || 1;
+        console.log("📌 [PROMO] Buy X Get Y:", buyQty, "→ get", getQty, "free");
+        
+        const sortedItems = [...items].sort((a, b) => a.price - b.price);
+        let freeItemsCount = 0;
+        let freeDiscount = 0;
+        
+        for (const item of sortedItems) {
+          const batches = Math.floor(item.quantity / buyQty);
+          const freePerBatch = Math.min(getQty, batches);
+          if (freePerBatch > 0) {
+            freeItemsCount += freePerBatch;
+            freeDiscount += freePerBatch * item.price;
+          }
+        }
+        
+        discount = freeDiscount;
+        discountMessage = `${app.lang === "ar" ? `اشترِ ${buyQty} واحصل على ${getQty} مجاناً` : `Buy ${buyQty} Get ${getQty} Free`}`;
+        console.log("📌 [PROMO] Buy X Get Y discount:", freeDiscount);
+        
+        if (discount === 0) {
+          console.log("❌ [PROMO] No free items qualify");
+          setPromoMessage(
+            app.lang === "ar" 
+              ? `❌ اشترِ ${buyQty} منتج للحصول على ${getQty} مجاناً` 
+              : `❌ Buy ${buyQty} items to get ${getQty} free`
+          );
+          toast.error(
+            app.lang === "ar" 
+              ? `❌ اشترِ ${buyQty} منتج للحصول على ${getQty} مجاناً` 
+              : `❌ Buy ${buyQty} items to get ${getQty} free`
+          );
+          return;
+        }
+      }
+
+      // ✅ 6. تطبيق الحد الأقصى للخصم
+      if (data.max_discount && discount > data.max_discount) {
+        console.log("📌 [PROMO] Applying max discount limit:", data.max_discount);
+        discount = data.max_discount;
+      }
+
+      // ✅ 7. التحقق من أن الخصم لا يتجاوز المجموع
+      if (discount > subtotal) {
+        console.log("📌 [PROMO] Discount exceeds subtotal, adjusting...");
+        discount = subtotal;
+      }
+
+      console.log("💰 [PROMO] Final discount:", discount);
+      console.log("💰 [PROMO] Final discount message:", discountMessage);
+
+      // ✅ 8. إذا كان الخصم 0، لا نطبقه
+      if (discount <= 0) {
+        console.log("❌ [PROMO] Discount is 0, cannot apply");
+        setPromoMessage(app.lang === "ar" ? "❌ لا يمكن تطبيق الخصم" : "❌ Cannot apply discount");
+        toast.error(app.lang === "ar" ? "❌ لا يمكن تطبيق الخصم" : "❌ Cannot apply discount");
         return;
       }
+
+      // ✅ 9. تطبيق الخصم
+      console.log("✅ [PROMO] Step 7: Applying discount...");
+      setPromoApplied(true);
+      setPromoDiscount(discount);
+      setPromoData(data);
+      setPromoMessage(
+        app.lang === "ar" 
+          ? `✅ خصم ${discountMessage} (${formatPrice(discount, app.currency, app.lang)})` 
+          : `✅ ${discountMessage} discount (${formatPrice(discount, app.currency, app.lang)})`
+      );
+      
+      console.log("✅ [PROMO] ===== PROMO CODE APPLIED SUCCESSFULLY =====");
+      console.log("📌 [PROMO] New total:", subtotal - discount + deliveryFee);
+      
+      toast.success(
+        app.lang === "ar" 
+          ? `✅ تم تطبيق الخصم بنجاح! (${formatPrice(discount, app.currency, app.lang)})`
+          : `✅ Discount applied successfully! (${formatPrice(discount, app.currency, app.lang)})`
+      );
+
+    } catch (error) {
+      console.error("❌ [PROMO] Error:", error);
+      setPromoMessage(app.lang === "ar" ? "❌ حدث خطأ" : "❌ An error occurred");
+      toast.error(app.lang === "ar" ? "❌ حدث خطأ أثناء تطبيق الكود" : "❌ Error applying code");
+    } finally {
+      setIsApplyingPromo(false);
+      console.log("🔍 [PROMO] ===== END APPLYING PROMO CODE =====");
     }
+  }, [promoCode, items, deliveryFee, app.lang, app.currency]);
 
-    // ✅ تطبيق الحد الأقصى للخصم
-    if (data.max_discount && discount > data.max_discount) {
-      discount = data.max_discount;
-    }
-
-    // ✅ إذا كان الخصم 0، لا نطبقه
-    if (discount <= 0) {
-      setPromoMessage(app.lang === "ar" ? "❌ لا يمكن تطبيق الخصم" : "❌ Cannot apply discount");
-      toast.error(app.lang === "ar" ? "❌ لا يمكن تطبيق الخصم" : "❌ Cannot apply discount");
-      return;
-    }
-
-    // ✅ تطبيق الخصم
-    setPromoApplied(true);
-    setPromoDiscount(discount);
-    setPromoData(data);
-    setPromoMessage(
-      app.lang === "ar" 
-        ? `✅ خصم ${discountMessage} (${formatPrice(discount, app.currency, app.lang)})` 
-        : `✅ ${discountMessage} discount (${formatPrice(discount, app.currency, app.lang)})`
-    );
-    
-    toast.success(
-      app.lang === "ar" 
-        ? `✅ تم تطبيق الخصم بنجاح! (${formatPrice(discount, app.currency, app.lang)})`
-        : `✅ Discount applied successfully! (${formatPrice(discount, app.currency, app.lang)})`
-    );
-
-  } catch (error) {
-    console.error("❌ Error applying promo code:", error);
-    setPromoMessage(app.lang === "ar" ? "❌ حدث خطأ" : "❌ An error occurred");
-    toast.error(app.lang === "ar" ? "❌ حدث خطأ أثناء تطبيق الكود" : "❌ Error applying code");
-  } finally {
-    setIsApplyingPromo(false);
-  }
-}, [promoCode, items, deliveryFee, app.lang, app.currency]);
   // ✅ تحديث الكمية
   const handleUpdateQuantity = useCallback(async (itemId: string, newQuantity: number) => {
     if (!app.user) {
@@ -603,150 +790,148 @@ const applyPromoCode = useCallback(async () => {
   }, [app.user, clearCart, promoApplied, removePromoCode, app.lang]);
 
   // ✅ إتمام الشراء
-// src/routes/cart.tsx - استبدل دالة checkout بهذه
-
-const checkout = useCallback(async () => {
-  if (!app.user) {
-    toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
-    navigate({ to: "/auth/$mode", params: { mode: "login" } });
-    return;
-  }
-
-  if (items.length === 0) {
-    toast.error(app.lang === "ar" ? "السلة فارغة" : "Cart is empty");
-    return;
-  }
-
-  if (!selectedAddress) {
-    toast.error(app.lang === "ar" ? "يرجى اختيار عنوان التوصيل" : "Please select a delivery address");
-    return;
-  }
-
-  try {
-    // ✅ ✅ ✅ جلب اسم المستخدم ورقمه من profiles
-    const { data: userProfile, error: profileError } = await supabase
-      .from("profiles")
-      .select("full_name, phone")
-      .eq("id", app.user.id)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error("❌ Error fetching user profile:", profileError);
+  const checkout = useCallback(async () => {
+    if (!app.user) {
+      toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
+      navigate({ to: "/auth/$mode", params: { mode: "login" } });
+      return;
     }
 
-    const buyerName = userProfile?.full_name || app.user.full_name || app.user.email || 'عميل';
-    const buyerPhone = userProfile?.phone || app.user.phone || '';
-
-    // ✅ تجميع المنتجات حسب البائع
-    const groupedBySeller = items.reduce((acc: any, item: any) => {
-      const listing = item.listing || item;
-      const sellerId = listing.owner_id || item.listing_id;
-      if (!acc[sellerId]) acc[sellerId] = [];
-      acc[sellerId].push(item);
-      return acc;
-    }, {});
-
-    // ✅ لكل بائع، ننشئ طلب واحد
-    for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
-      const itemsList = sellerItems as any[];
-      
-      const total = itemsList.reduce((sum, item) => {
-        const price = Number(item.price);
-        const quantity = Number(item.quantity);
-        return sum + (price * quantity);
-      }, 0);
-
-      const firstItem = itemsList[0];
-      const firstListing = firstItem.listing || firstItem;
-      const governorateId = firstListing.governorate_id || null;
-
-      const orderData: any = {
-        buyer_id: app.user.id,
-        seller_id: sellerId,
-        listing_id: firstItem.listing_id,
-        total: total,
-        quantity: itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0),
-        notes: `طلب من ${storeInfo.name} (${itemsList.length} منتجات)`,
-        governorate_id: governorateId,
-        delivery_address: selectedAddress.address_text,
-        delivery_lat: selectedAddress.lat || 0,
-        delivery_lng: selectedAddress.lng || 0,
-        buyer_name: buyerName,        // ✅ اسم المستخدم من profiles
-        buyer_phone: buyerPhone,      // ✅ رقم المستخدم من profiles
-        status: 'pending',
-        currency: itemsList[0]?.currency || 'SYP',
-        created_at: new Date().toISOString(),
-      };
-
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert(orderData)
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // ✅ إضافة المنتجات كـ order_items
-      const orderItems = itemsList.map((item: any) => ({
-        order_id: order.id,
-        listing_id: item.listing_id,
-        quantity: item.quantity,
-        price: Number(item.price),
-        currency: item.currency || 'SYP',
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
-
-      // ✅ إشعار للبائع
-      await supabase
-        .from("notifications")
-        .insert({
-          user_id: sellerId,
-          type: "new_order",
-          title_ar: "📦 طلب جديد",
-          body_ar: `لديك طلب جديد من ${buyerName} (${itemsList.length} منتجات)`,
-          title_en: "📦 New Order",
-          body_en: `You have a new order from ${buyerName} (${itemsList.length} products)`,
-          link_url: `/orders/${order.id}`,
-          metadata: {
-            order_id: order.id,
-            buyer_id: app.user.id,
-            total: total,
-            items_count: itemsList.length,
-            buyer_name: buyerName,
-            buyer_phone: buyerPhone,
-          }
-        });
+    if (items.length === 0) {
+      toast.error(app.lang === "ar" ? "السلة فارغة" : "Cart is empty");
+      return;
     }
 
-    // ✅ تفريغ السلة
-    await clearCart.mutateAsync({ userId: app.user.id });
-    if (promoApplied) removePromoCode();
+    if (!selectedAddress) {
+      toast.error(app.lang === "ar" ? "يرجى اختيار عنوان التوصيل" : "Please select a delivery address");
+      return;
+    }
 
-    toast.success(
-      app.lang === "ar" 
-        ? `✅ تم إرسال طلبك بنجاح! (${Object.keys(groupedBySeller).length} طلب)`
-        : `✅ Orders placed successfully! (${Object.keys(groupedBySeller).length} orders)`,
-      { duration: 5000 }
-    );
+    try {
+      // ✅ ✅ ✅ جلب اسم المستخدم ورقمه من profiles
+      const { data: userProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("full_name, phone")
+        .eq("id", app.user.id)
+        .maybeSingle();
 
-    navigate({ to: "/orders" });
+      if (profileError) {
+        console.error("❌ Error fetching user profile:", profileError);
+      }
 
-  } catch (error: any) {
-    console.error("❌ Checkout error:", error);
-    toast.error(
-      app.lang === "ar" 
-        ? `❌ حدث خطأ أثناء إتمام الطلب: ${error.message || 'يرجى المحاولة مرة أخرى'}`
-        : `❌ An error occurred during checkout: ${error.message || 'Please try again'}`
-    );
-  }
-}, [app.user, items, clearCart, promoApplied, removePromoCode, navigate, app.lang, selectedAddress, storeInfo.name]);
+      const buyerName = userProfile?.full_name || app.user.full_name || app.user.email || 'عميل';
+      const buyerPhone = userProfile?.phone || app.user.phone || '';
 
-if (isLoading || isLoadingAddresses) {
+      // ✅ تجميع المنتجات حسب البائع
+      const groupedBySeller = items.reduce((acc: any, item: any) => {
+        const listing = item.listing || item;
+        const sellerId = listing.owner_id || item.listing_id;
+        if (!acc[sellerId]) acc[sellerId] = [];
+        acc[sellerId].push(item);
+        return acc;
+      }, {});
+
+      // ✅ لكل بائع، ننشئ طلب واحد
+      for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
+        const itemsList = sellerItems as any[];
+        
+        const total = itemsList.reduce((sum, item) => {
+          const price = Number(item.price);
+          const quantity = Number(item.quantity);
+          return sum + (price * quantity);
+        }, 0);
+
+        const firstItem = itemsList[0];
+        const firstListing = firstItem.listing || firstItem;
+        const governorateId = firstListing.governorate_id || null;
+
+        const orderData: any = {
+          buyer_id: app.user.id,
+          seller_id: sellerId,
+          listing_id: firstItem.listing_id,
+          total: total,
+          quantity: itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0),
+          notes: `طلب من ${storeInfo.name} (${itemsList.length} منتجات)`,
+          governorate_id: governorateId,
+          delivery_address: selectedAddress.address_text,
+          delivery_lat: selectedAddress.lat || 0,
+          delivery_lng: selectedAddress.lng || 0,
+          buyer_name: buyerName,
+          buyer_phone: buyerPhone,
+          status: 'pending',
+          currency: itemsList[0]?.currency || 'SYP',
+          created_at: new Date().toISOString(),
+        };
+
+        const { data: order, error: orderError } = await supabase
+          .from("orders")
+          .insert(orderData)
+          .select()
+          .single();
+
+        if (orderError) throw orderError;
+
+        // ✅ إضافة المنتجات كـ order_items
+        const orderItems = itemsList.map((item: any) => ({
+          order_id: order.id,
+          listing_id: item.listing_id,
+          quantity: item.quantity,
+          price: Number(item.price),
+          currency: item.currency || 'SYP',
+        }));
+
+        const { error: itemsError } = await supabase
+          .from("order_items")
+          .insert(orderItems);
+
+        if (itemsError) throw itemsError;
+
+        // ✅ إشعار للبائع
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: sellerId,
+            type: "new_order",
+            title_ar: "📦 طلب جديد",
+            body_ar: `لديك طلب جديد من ${buyerName} (${itemsList.length} منتجات)`,
+            title_en: "📦 New Order",
+            body_en: `You have a new order from ${buyerName} (${itemsList.length} products)`,
+            link_url: `/orders/${order.id}`,
+            metadata: {
+              order_id: order.id,
+              buyer_id: app.user.id,
+              total: total,
+              items_count: itemsList.length,
+              buyer_name: buyerName,
+              buyer_phone: buyerPhone,
+            }
+          });
+      }
+
+      // ✅ تفريغ السلة
+      await clearCart.mutateAsync({ userId: app.user.id });
+      if (promoApplied) removePromoCode();
+
+      toast.success(
+        app.lang === "ar" 
+          ? `✅ تم إرسال طلبك بنجاح! (${Object.keys(groupedBySeller).length} طلب)`
+          : `✅ Orders placed successfully! (${Object.keys(groupedBySeller).length} orders)`,
+        { duration: 5000 }
+      );
+
+      navigate({ to: "/orders" });
+
+    } catch (error: any) {
+      console.error("❌ Checkout error:", error);
+      toast.error(
+        app.lang === "ar" 
+          ? `❌ حدث خطأ أثناء إتمام الطلب: ${error.message || 'يرجى المحاولة مرة أخرى'}`
+          : `❌ An error occurred during checkout: ${error.message || 'Please try again'}`
+      );
+    }
+  }, [app.user, items, clearCart, promoApplied, removePromoCode, navigate, app.lang, selectedAddress, storeInfo.name]);
+
+  if (isLoading || isLoadingAddresses) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="text-center">
@@ -921,7 +1106,7 @@ if (isLoading || isLoadingAddresses) {
                 </Button>
               </div>
               
-              {/* ✅ عرض معلومات التوصيل */}
+              {/* ✅ عرض معلومات التوصيل - محسّن */}
               {selectedAddress && (
                 <div className="mt-3 pt-3 border-t border-[#2a655f]/10 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1265,7 +1450,6 @@ if (isLoading || isLoadingAddresses) {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        {/* ✅ ✅ ✅ تم تغيير <p> إلى <div> لحل مشكلة الـ Hydration */}
                         <div className="font-semibold text-sm flex items-center gap-2">
                           {addr.label || (app.lang === "ar" ? "عنوان" : "Address")}
                           {addr.is_default && (
@@ -1318,7 +1502,7 @@ if (isLoading || isLoadingAddresses) {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: إضافة عنوان جديد (مصحح مع إجبارية الاسم والتفاصيل) ===== */}
+      {/* ===== DIALOG: إضافة عنوان جديد ===== */}
       <Dialog open={showAddAddressDialog} onOpenChange={(open) => {
         setShowAddAddressDialog(open);
         if (!open) {
@@ -1346,7 +1530,6 @@ if (isLoading || isLoadingAddresses) {
             </div>
           </DialogHeader>
           
-          {/* ✅ ✅ ✅ جسم قابل للتمرير مع حقول إدخال إجبارية */}
           <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1">
             
             {/* ✅ حقل اسم العنوان (إجباري) */}
@@ -1414,7 +1597,6 @@ if (isLoading || isLoadingAddresses) {
             )}
           </div>
           
-          {/* ✅ ✅ ✅ الأزرار ثابتة في الأسفل */}
           <DialogFooter className="flex-shrink-0 gap-3 pt-4 border-t border-[#2a655f]/10">
             <Button
               variant="outline"

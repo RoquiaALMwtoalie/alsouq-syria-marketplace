@@ -438,6 +438,19 @@ export function useListing(id: string | undefined) {
       console.log("✅ [useListing] Product found:", data?.title_ar);
       console.log("✅ [useListing] Variations count:", data?.variations?.length || 0);
       
+      // 🔍🔍🔍 DEBUG: تحقق من الـ combination قبل أي تعديل
+      console.log("🔍🔍🔍 [useListing] ===== RAW DATA FROM RPC =====");
+      console.log("🔍🔍🔍 [useListing] Full data:", JSON.stringify(data, null, 2));
+      
+      if (data?.variations && data.variations.length > 0) {
+        console.log("🔍🔍🔍 [useListing] First variation (RAW):", data.variations[0]);
+        console.log("🔍🔍🔍 [useListing] First combination (RAW):", data.variations[0]?.combination);
+        console.log("🔍🔍🔍 [useListing] Keys from first combination:", Object.keys(data.variations[0]?.combination || {}));
+      }
+      
+      console.log("🔍🔍🔍 [useListing] ===== END RAW DATA =====");
+      
+      // ✅ ✅ ✅ تأكد من إرجاع البيانات كما هي دون أي تعديل
       return data;
     },
   });

@@ -154,6 +154,8 @@ static async saveOptions(listingId: string, options: Record<string, string[]>) {
  * ✅ حفظ التركيبات مع ربط الألوان وإجبار السعر
  * 🔥 محسّن: يحذف القديم أولاً ثم يحفظ الجديد
  */
+// src/lib/services/ProductService.ts
+
 static async saveVariations(listingId: string, variations: any[]) {
   console.log("🔍 [ProductService] ===== SAVE VARIATIONS START =====");
   console.log("🔍 [ProductService] Variations to save:", variations.length);
@@ -161,7 +163,6 @@ static async saveVariations(listingId: string, variations: any[]) {
   if (!variations || variations.length === 0) {
     console.log("ℹ️ [ProductService] No variations to save, deleting all");
     
-    // ✅ إذا لم توجد تركيبات، احذف الكل
     const { error } = await supabase
       .from("product_variations")
       .delete()
@@ -175,7 +176,29 @@ static async saveVariations(listingId: string, variations: any[]) {
     return { inserted: 0 };
   }
   
-  // ✅ 1. جلب ألوان المنتج للربط
+  // ✅ ✅ ✅ 1. جلب الخيارات الإضافية من product_options
+  const { data: extraOptions, error: optionsError } = await supabase
+    .from("product_options")
+    .select("option_type, option_value")
+    .eq("listing_id", listingId);
+  
+  if (optionsError) {
+    console.error('❌ Error fetching extra options:', optionsError);
+  }
+  
+  // ✅ ✅ ✅ 2. تجميع الخيارات الإضافية (باستثناء color و size)
+  const extraOptionsMap: Record<string, string> = {};
+  (extraOptions || []).forEach((opt: any) => {
+    const type = opt.option_type;
+    // ✅ استثني color و size لأنهما موجودان في التركيبات
+    if (type !== 'color' && type !== 'size' && type !== 'colors') {
+      extraOptionsMap[type] = opt.option_value;
+    }
+  });
+  
+  console.log("🔍 [ProductService] Extra options to add:", extraOptionsMap);
+  
+  // ✅ 3. جلب ألوان المنتج للربط
   const { data: colors, error: colorsError } = await supabase
     .from("product_colors")
     .select("id, color_name_ar")
@@ -185,48 +208,49 @@ static async saveVariations(listingId: string, variations: any[]) {
     console.error('❌ Error fetching colors:', colorsError);
   }
   
-  // ✅ 2. إنشاء خريطة للبحث عن اللون بالاسم
   const colorMap = new Map();
   (colors || []).forEach((c: any) => {
     colorMap.set(c.color_name_ar, c.id);
   });
   
   const entries: any[] = [];
-  let hasPriceError = false;
   
   variations.forEach((v, index) => {
     if (!v.combination || Object.keys(v.combination).length === 0) {
       return;
     }
     
-    // ✅ التحقق من وجود السعر
+    // ✅ ✅ ✅ 4. دمج الخيارات الإضافية مع التركيبة
+    const combinedCombination = { ...v.combination };
+    
+    // ✅ أضف الخيارات الإضافية للتركيبة (إذا لم تكن موجودة بالفعل)
+    Object.keys(extraOptionsMap).forEach(key => {
+      if (!combinedCombination[key]) {
+        combinedCombination[key] = extraOptionsMap[key];
+      }
+    });
+    
+    console.log(`🔍 [ProductService] Variation ${index} combination:`, combinedCombination);
+    
     const priceToSave = v.price !== undefined && v.price !== null && v.price > 0 
       ? v.price 
       : 0;
     
-    if (priceToSave === 0) {
-      console.warn(`⚠️ Variation ${index} has no price, using default 0`);
-      hasPriceError = true;
-    }
-    
-    // ✅ 3. البحث عن color_id من الـ combination
     let colorId = null;
-    if (v.combination.colors) {
-      const colorName = v.combination.colors;
+    if (v.combination.colors || v.combination.color) {
+      const colorName = v.combination.colors || v.combination.color;
       colorId = colorMap.get(colorName) || null;
     }
     
-    // ✅ 4. إذا كان v.color_id موجوداً، استخدمه
     if (v.color_id) {
       colorId = v.color_id;
     }
     
-    // ✅ 5. إنشاء SKU فريد
     const sku = v.sku || `VAR-${listingId.substring(0, 8)}-${Date.now()}-${index}`;
     
     entries.push({
       listing_id: listingId,
-      combination: v.combination,
+      combination: combinedCombination, // ✅ استخدام التركيبة المعدلة
       is_active: v.is_available !== false,
       sku: sku,
       price: priceToSave,
@@ -236,14 +260,10 @@ static async saveVariations(listingId: string, variations: any[]) {
   });
   
   console.log("🔍 [ProductService] Entries to insert:", entries.length);
-  console.log("🔍 [ProductService] Entries:", entries.map(e => ({
-    combination: e.combination,
-    price: e.price,
-    is_active: e.is_active
-  })));
+  console.log("🔍 [ProductService] First entry combination:", entries[0]?.combination);
   
   if (entries.length > 0) {
-    // ✅ ✅ ✅ 🔥🔥🔥 الخطوة الأهم: حذف التركيبات القديمة أولاً
+    // ✅ حذف التركيبات القديمة
     console.log('🗑️ [ProductService] Deleting old variations...');
     const { error: deleteError } = await supabase
       .from("product_variations")
@@ -252,17 +272,16 @@ static async saveVariations(listingId: string, variations: any[]) {
     
     if (deleteError) {
       console.error('❌ Error deleting old variations:', deleteError);
-      // نستمر رغم الخطأ
     } else {
       console.log('✅ [ProductService] Old variations deleted');
     }
     
-    // ✅ ✅ ✅ حفظ التركيبات الجديدة
+    // ✅ حفظ التركيبات الجديدة
     console.log(`💾 [ProductService] Inserting ${entries.length} new variations...`);
     const { error, data } = await supabase
       .from("product_variations")
       .insert(entries)
-      .select(); // ✅ أضف select() لترجع البيانات المحفوظة
+      .select();
     
     if (error) {
       console.error('❌ Error saving product variations:', error);
@@ -272,7 +291,6 @@ static async saveVariations(listingId: string, variations: any[]) {
     console.log(`✅ [ProductService] Saved ${entries.length} variations with prices`);
     console.log('✅ [ProductService] Saved data:', data);
   } else {
-    // ✅ إذا لم توجد تركيبات للحفظ، احذف الكل
     console.log('🗑️ [ProductService] No variations to save, deleting all');
     const { error } = await supabase
       .from("product_variations")
@@ -284,10 +302,6 @@ static async saveVariations(listingId: string, variations: any[]) {
     } else {
       console.log('✅ [ProductService] All variations deleted');
     }
-  }
-  
-  if (hasPriceError) {
-    console.warn('⚠️ Some variations have no price, they were saved with price 0');
   }
   
   console.log("🔍 [ProductService] ===== SAVE VARIATIONS END =====");

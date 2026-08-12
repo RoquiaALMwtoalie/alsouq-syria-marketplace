@@ -1,6 +1,6 @@
 // src/components/dashboard/admin/SellerApplicationsAdmin.tsx
 
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -21,7 +21,7 @@ import {
   ArrowUp, ArrowDown, CircleDot, Activity, TrendingUp,
   ShieldCheck, Tag, Truck, Image as ImageIcon, Megaphone,
   Zap, Package, Users, Settings, LayoutDashboard, 
-  Mail, Hash, Clock as ClockIcon
+  Mail, Hash, Clock as ClockIcon, Info
 } from "lucide-react";
 import {
   Select,
@@ -240,6 +240,29 @@ export function SellerApplicationsAdmin() {
   const [selectedApp, setSelectedApp] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
+  // ✅ ✅ ✅ جديد - State لشركة التوصيل
+  const [selectedDeliveryCompanyId, setSelectedDeliveryCompanyId] = useState<string>("");
+  const [deliveryCompanies, setDeliveryCompanies] = useState<any[]>([]);
+  const [showDeliveryCompanyDialog, setShowDeliveryCompanyDialog] = useState(false);
+  const [pendingAppId, setPendingAppId] = useState<string>("");
+
+  // ✅ ✅ ✅ جلب شركات التوصيل النشطة عند تحميل المكون
+  useEffect(() => {
+    const fetchDeliveryCompanies = async () => {
+      const { data, error } = await supabase
+        .from("delivery_companies")
+        .select("id, name_ar, name_en, base_price")
+        .eq("is_active", true)
+        .order("name_ar");
+      
+      if (!error && data) {
+        setDeliveryCompanies(data);
+      }
+    };
+    
+    fetchDeliveryCompanies();
+  }, []);
+
   // ============================================================
   // ✅ إحصائيات
   // ============================================================
@@ -409,25 +432,33 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
         if (appData.application_type === 'store') {
           const storeDescription = appData.store_description?.trim() || null;
           
+          // ✅ ✅ ✅ إضافة delivery_company_id إلى التحديث
+          const updateData: any = {
+            store_name: appData.store_name,
+            store_description: storeDescription,
+            store_logo_url: appData.store_logo_url,
+            store_cover_url: appData.store_cover_url,
+            store_phone: appData.store_phone,
+            allows_messaging: appData.allows_messaging,
+            allows_bookings: appData.allows_bookings,
+            store_type: appData.store_type || 'online',
+            governorate_id: appData.governorate_id,
+            store_address: appData.address,
+            store_opens_at: appData.opening_time,
+            store_closes_at: appData.closing_time,
+            weekly_off_days: appData.weekly_off_days || [],
+            store_active: true,
+            store_online: true,
+          };
+
+          // ✅ ✅ ✅ إذا تم اختيار شركة توصيل، أضفها
+          if (selectedDeliveryCompanyId) {
+            updateData.delivery_company_id = selectedDeliveryCompanyId;
+          }
+
           const { error: profileError } = await supabase
             .from("profiles")
-            .update({
-              store_name: appData.store_name,
-              store_description: storeDescription,
-              store_logo_url: appData.store_logo_url,
-              store_cover_url: appData.store_cover_url,
-              store_phone: appData.store_phone,
-              allows_messaging: appData.allows_messaging,
-              allows_bookings: appData.allows_bookings,
-              store_type: appData.store_type || 'online',
-              governorate_id: appData.governorate_id,
-              store_address: appData.address,
-              store_opens_at: appData.opening_time,
-              store_closes_at: appData.closing_time,
-              weekly_off_days: appData.weekly_off_days || [],
-              store_active: true,
-              store_online: true,
-            })
+            .update(updateData)
             .eq("id", appData.user_id);
 
           if (profileError) {
@@ -448,6 +479,7 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
               store_name: appData.store_name,
               application_type: 'store',
               admin_note: admin_note || null,
+              delivery_company_id: selectedDeliveryCompanyId || null,
             },
             actions: [
               { label_ar: 'عرض متجري', url: '/dashboard/store' },
@@ -481,7 +513,7 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             titleAr: "✅ تمت الموافقة على طلبك",
             bodyAr: `تمت الموافقة على إضافة المنتج، وهو الآن متاح للبيع 🛍️`,
             linkUrl: '/dashboard/products',
-            imageUrl: listing?.cover_url || null,  // ✅ استخدم cover_url من المنتج
+            imageUrl: listing?.cover_url || null,
             metadata: {
               application_id: appData.id,
               store_name: appData.store_name,
@@ -548,7 +580,7 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             titleAr: "❌ تم رفض طلبك",
             bodyAr: `تم رفض طلب إضافة المنتج${admin_note ? `\nالسبب: ${admin_note}` : ''}`,
             linkUrl: '/dashboard/products',
-            imageUrl: listing?.cover_url || null,  // ✅ استخدم cover_url من المنتج
+            imageUrl: listing?.cover_url || null,
             metadata: {
               application_id: appData.id,
               store_name: appData.store_name,
@@ -588,6 +620,19 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
       setIsProcessing(false);
     }
   }
+
+  // ✅ دالة للموافقة مع شركة توصيل
+  const handleApproveWithDelivery = async () => {
+    if (!selectedDeliveryCompanyId) {
+      toast.error(isRTL ? "⚠️ يرجى اختيار شركة توصيل" : "⚠️ Please select a delivery company");
+      return;
+    }
+    setShowDeliveryCompanyDialog(false);
+    await decide(pendingAppId, "approved");
+    setSelectedDeliveryCompanyId("");
+    setPendingAppId("");
+  };
+
   const goToPage = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setPage(newPage);
@@ -985,14 +1030,17 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
 
                           {a.status === "pending" && (
                             <>
-                              {/* ✅ زر الموافقة */}
+                              {/* ✅ زر الموافقة - يفتح Dialog اختيار شركة التوصيل */}
                               <Button
                                 size="sm"
                                 className={cn(
                                   "rounded-xl h-8 px-3 transition-all duration-300 hover:scale-105",
                                   "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30"
                                 )}
-                                onClick={() => decide(a.id, "approved")}
+                                onClick={() => {
+                                  setPendingAppId(a.id);
+                                  setShowDeliveryCompanyDialog(true);
+                                }}
                                 disabled={isProcessing}
                                 title={isRTL ? "موافقة على الطلب" : "Approve application"}
                               >
@@ -1388,6 +1436,103 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ============================================================
+      // ✅ DIALOG: اختيار شركة التوصيل عند الموافقة
+      // ============================================================ */}
+      <Dialog open={showDeliveryCompanyDialog} onOpenChange={setShowDeliveryCompanyDialog}>
+        <DialogContent className="rounded-2xl max-w-md border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/10">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-[#2d6b63]/10 flex items-center justify-center">
+                <Truck className="h-5 w-5 text-[#2d6b63]" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-[#0d2e2a] dark:text-white">
+                  {isRTL ? "🚚 اختيار شركة التوصيل" : "🚚 Select Delivery Company"}
+                </DialogTitle>
+                <DialogDescription>
+                  {isRTL 
+                    ? "اختر شركة التوصيل التي ستخدم هذا المتجر" 
+                    : "Select the delivery company for this store"}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+                {isRTL ? "شركة التوصيل *" : "Delivery Company *"}
+              </Label>
+              <Select 
+                value={selectedDeliveryCompanyId} 
+                onValueChange={setSelectedDeliveryCompanyId}
+              >
+                <SelectTrigger className="rounded-xl border-[#0d2e2a]/20">
+                  <SelectValue placeholder={isRTL ? "🔍 اختر شركة التوصيل..." : "🔍 Select delivery company..."} />
+                </SelectTrigger>
+                <SelectContent>
+                  {deliveryCompanies.length === 0 ? (
+                    <SelectItem value="no-company" disabled>
+                      {isRTL ? "⚠️ لا توجد شركات توصيل نشطة" : "⚠️ No active delivery companies"}
+                    </SelectItem>
+                  ) : (
+                    deliveryCompanies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        <span className="flex items-center gap-2">
+                          <Truck className="h-4 w-4 text-[#2d6b63]" />
+                          <span>{company.name_ar || company.name_en}</span>
+                          <Badge className="text-[9px] bg-[#2d6b63]/10 text-[#2d6b63] border-0">
+                            {company.base_price || 0} SYP
+                          </Badge>
+                        </span>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Info className="h-3 w-3" />
+                {isRTL 
+                  ? "💡 هذه الشركة ستكون المسؤولة عن توصيل طلبات هذا المتجر"
+                  : "💡 This company will handle delivery for this store"}
+              </p>
+            </div>
+            
+            {selectedDeliveryCompanyId && (
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {isRTL ? "✅ تم اختيار شركة التوصيل" : "✅ Delivery company selected"}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeliveryCompanyDialog(false);
+                setSelectedDeliveryCompanyId("");
+                setPendingAppId("");
+              }}
+              className="rounded-xl border-slate-200/50 dark:border-slate-700/50"
+            >
+              {isRTL ? "إلغاء" : "Cancel"}
+            </Button>
+            <Button
+              onClick={handleApproveWithDelivery}
+              disabled={!selectedDeliveryCompanyId}
+              className="rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              {isRTL ? "تأكيد الموافقة" : "Confirm Approve"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
