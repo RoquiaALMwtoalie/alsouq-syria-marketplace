@@ -13,8 +13,9 @@ import {
   TrendingUp as TrendingUpIcon, Users as UsersIcon, ShoppingBag as ShoppingBagIcon,
   DollarSign as DollarSignIcon, Package as PackageIcon, Zap as ZapIcon,
   Crown as CrownIcon, Gift, BadgePercent, Trophy, Clock as ClockIcon,
-  Coffee, Smile, ThumbsUp, ArrowRight as ArrowRightIcon,MessageCircle
+  Coffee, Smile, ThumbsUp, ArrowRight as ArrowRightIcon
 } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { useMyOrders, useMyListings, useSellerCustomers, useCategories, useProfile } from "@/lib/queries";
