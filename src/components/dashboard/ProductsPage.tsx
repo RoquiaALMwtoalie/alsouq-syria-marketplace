@@ -67,7 +67,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
   const isOpeningDetail = useRef(false);
   // State
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "published" | "archived">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "pending" | "published" | "archived">("all");
   const [filterType, setFilterType] = useState<"all" | "product" | "offer">("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(12);

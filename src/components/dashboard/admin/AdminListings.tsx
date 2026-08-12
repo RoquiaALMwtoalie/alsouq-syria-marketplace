@@ -179,7 +179,7 @@ export function AdminListings() {
       // ✅ 1. تحديث حالة المنتج مع سبب الرفض
       await setStatusMut.mutateAsync({ 
         id: productToReject.id, 
-        status: "archived",
+        status: "draft",
         rejection_reason: rejectReason 
       });
       await refetch();
