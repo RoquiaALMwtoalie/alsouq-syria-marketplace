@@ -372,7 +372,7 @@ export function SellerApplicationsAdmin() {
   // ============================================================
   // ✅ الموافقة أو الرفض
   // ============================================================
-  async function decide(id: string, status: "approved" | "rejected", admin_note?: string) {
+async function decide(id: string, status: "approved" | "rejected", admin_note?: string) {
     if (isProcessing) {
       toast.warning(isRTL ? "⏳ جاري المعالجة..." : "⏳ Processing...");
       return;
@@ -431,25 +431,25 @@ export function SellerApplicationsAdmin() {
           }
         }
 
-      // ✅ التعديل في SellerApplicationsAdmin.tsx
-if (appData.application_type === 'product') {
-  // ✅ البحث عن المنتج بغض النظر عن store_description
-  const { data: listing, error: listingError } = await supabase
-    .from("listings")
-    .select("id, title_ar")
-    .eq("owner_id", appData.user_id)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+        // ✅ التعديل في SellerApplicationsAdmin.tsx - قسم الموافقة
+        if (appData.application_type === 'product') {
+          // ✅ البحث عن المنتج بغض النظر عن store_description
+          const { data: listing, error: listingError } = await supabase
+            .from("listings")
+            .select("id, title_ar")
+            .eq("owner_id", appData.user_id)
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-  if (listing && !listingError) {
-    await supabase
-      .from("listings")
-      .update({ status: 'published' })
-      .eq("id", listing.id);
-  }
-}
+          if (listing && !listingError) {
+            await supabase
+              .from("listings")
+              .update({ status: 'published' })
+              .eq("id", listing.id);
+          }
+        }
 
         // إشعار موافقة
         const notificationType = appData.application_type === 'store' ? 'store_approved' : 'product_approved';
@@ -475,6 +475,30 @@ if (appData.application_type === 'product') {
         });
 
       } else {
+        // ❌ ❌ ❌ هذا هو الجزء الجديد - معالجة رفض المنتج
+        // ✅ ✅ ✅ أضف هذا الكود هنا (معالجة رفض المنتج)
+        if (appData.application_type === 'product') {
+          const { data: listing, error: listingError } = await supabase
+            .from("listings")
+            .select("id, title_ar")
+            .eq("owner_id", appData.user_id)
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (listing && !listingError) {
+            await supabase
+              .from("listings")
+              .update({ 
+                status: 'draft',
+                rejection_reason: admin_note || null,
+                rejected_at: new Date().toISOString(),
+              })
+              .eq("id", listing.id);
+          }
+        }
+
         // إشعار رفض
         const notificationType = appData.application_type === 'store' ? 'store_rejected' : 'product_rejected';
         
@@ -523,7 +547,6 @@ if (appData.application_type === 'product') {
       setIsProcessing(false);
     }
   }
-
   const goToPage = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setPage(newPage);

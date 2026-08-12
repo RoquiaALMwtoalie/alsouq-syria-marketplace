@@ -8,7 +8,8 @@ import {
   Layers, Grid3X3, List, Percent, Tag, ArrowUpDown,
   Heart, ShoppingBag, Gift, Flower2, BadgePercent,
   RefreshCw, ArrowLeft, ChevronLeft, ChevronRight,
-  CircleDot, Rocket, Sparkle, Compass, Wand2
+  CircleDot, Rocket, Sparkle, Compass, Wand2,
+  LayoutGrid
 } from "lucide-react";
 import { useApp, useT } from "@/lib/i18n";
 import { useGovernorates, useListings, useStoresByCategory, useCategories } from "@/lib/queries";
@@ -123,6 +124,67 @@ const AnimatedBadge = ({ count, label, icon: Icon, color }: any) => (
 );
 
 // ============================================================
+// ✅ Product Filter Tabs
+// ============================================================
+function ProductFilterTabs({ 
+  value, 
+  onChange, 
+  counts,
+  lang 
+}: { 
+  value: 'all' | 'products' | 'offers'; 
+  onChange: (val: 'all' | 'products' | 'offers') => void;
+  counts: { all: number; products: number; offers: number };
+  lang: string;
+}) {
+  const tabs = [
+    { id: 'all' as const, label: lang === 'ar' ? 'الكل' : 'All', icon: LayoutGrid, count: counts.all },
+    { id: 'products' as const, label: lang === 'ar' ? 'منتجات' : 'Products', icon: Package, count: counts.products },
+    { id: 'offers' as const, label: lang === 'ar' ? 'عروض' : 'Offers', icon: Flame, count: counts.offers },
+  ];
+
+  return (
+    <div className="relative flex items-center bg-[#0d2e2a]/5 dark:bg-[#0d2e2a]/20 rounded-xl p-1 border border-[#0d2e2a]/10">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = value === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onChange(tab.id)}
+            className={cn(
+              "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5",
+              isActive 
+                ? "text-white" 
+                : "text-[#0d2e2a] dark:text-white/60 hover:text-[#0d2e2a] dark:hover:text-white"
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {tab.label}
+            <Badge className={cn(
+              "text-[8px] px-1.5 py-0",
+              isActive 
+                ? "bg-white/20 text-white" 
+                : "bg-[#0d2e2a]/10 dark:bg-[#0d2e2a]/30 text-[#0d2e2a] dark:text-white/60"
+            )}>
+              {tab.count}
+            </Badge>
+          </button>
+        );
+      })}
+      
+      {/* الخلفية المتحركة (الكبسة) */}
+      <div 
+        className={cn(
+          "absolute top-1 h-[calc(100%-8px)] w-[calc(33.33%-4px)] rounded-lg bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 ease-out",
+          value === 'all' ? "left-1" : value === 'products' ? "left-[calc(33.33%+2px)]" : "left-[calc(66.66%+2px)]"
+        )}
+      />
+    </div>
+  );
+}
+
+// ============================================================
 // ✅ Category Page
 // ============================================================
 function CategoryPage() {
@@ -130,22 +192,27 @@ function CategoryPage() {
   const app = useApp();
   const t = useT();
   
-  // ✅ 1. isOffersPage في البداية (مهم جداً)
   const isOffersPage = slug === "offers";
   
   const { data: govs = [] } = useGovernorates();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const searchParams = Route.useSearch() as { q?: string; gov?: string } | undefined;
 
+  // ✅ State
   const [tab, setTab] = useState<"products" | "stores">("products");
+  const [productFilter, setProductFilter] = useState<'all' | 'products' | 'offers'>('all');
   const [gov, setGov] = useState<string>(searchParams?.gov ?? "all");
   const [sort, setSort] = useState<"popularity" | "newest" | "price_low" | "price_high" | "discount" | "rating">("popularity");
   const [rating, setRating] = useState(0);
   const [search, setSearch] = useState(searchParams?.q ?? "");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
-  const [showAvailableOnly, setShowAvailableOnly] = useState(false);
+ const [priceRange, setPriceRange] = useState<[number, number]>([0, Number.MAX_SAFE_INTEGER]);
 
-  // ✅ 2. category بعد isOffersPage
+  const [showAvailableOnly, setShowAvailableOnly] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(12);
+
+  // ✅ category
   const category = useMemo(() => {
     if (isOffersPage) return null;
     return categories.find((c: any) => c.slug === slug);
@@ -156,10 +223,14 @@ function CategoryPage() {
     setGov(searchParams?.gov ?? "all");
   }, [searchParams?.q, searchParams?.gov]);
 
-  // ✅ 3. useListings بعد isOffersPage
-  const { data: listingsData = { data: [], count: 0, totalPages: 0 }, isLoading } = useListings({
+  // ✅ useListings مع Pagination
+  const { 
+    data: listingsData = { data: [], count: 0, totalPages: 0 }, 
+    isLoading,
+    isFetching,
+  } = useListings({
     categorySlug: isOffersPage ? undefined : slug,
-    isOffer: isOffersPage ? true : undefined,
+    isOffer: productFilter === 'offers' ? true : productFilter === 'products' ? false : undefined,
     governorateSlug: gov === "all" ? undefined : gov,
     sort: sort === "popularity" ? "popular" : 
           sort === "newest" ? "recent" :
@@ -168,38 +239,101 @@ function CategoryPage() {
           sort === "discount" ? "discount" :
           "rating",
     search: search || undefined,
+    page: page,
+    limit: limit,
   });
   
+  // ✅ ✅ ✅ LOGS - بعد useListings مباشرة
+  console.log('🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍');
+  console.log('📦 [CategoryPage] listingsData:', listingsData);
+  console.log('📦 [CategoryPage] productFilter:', productFilter);
+  console.log('📦 [CategoryPage] page:', page);
+  console.log('📦 [CategoryPage] limit:', limit);
+  console.log('📦 [CategoryPage] isLoading:', isLoading);
+  console.log('📦 [CategoryPage] isFetching:', isFetching);
+  console.log('🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍');
+
   const rows = listingsData.data || [];
   const totalCount = listingsData.count || 0;
+  const totalPages = listingsData.totalPages || 1;
+  
+  console.log('📊 [CategoryPage] rows.length:', rows.length);
+  console.log('📊 [CategoryPage] totalCount:', totalCount);
+  console.log('📊 [CategoryPage] totalPages:', totalPages);
   
   const { data: stores = [], isLoading: storesLoading } = useStoresByCategory(isOffersPage ? undefined : slug);
 
   // ✅ فلترة متقدمة
   const items = useMemo(() => {
+    console.log('🔍 [items] Starting filter - rows.length:', rows.length);
     let filtered = rows;
     
     if (rating > 0) {
       filtered = filtered.filter((r: any) => Number(r.rating) >= rating);
+      console.log('🔍 [items] After rating filter (>=' + rating + '):', filtered.length);
     }
     
     filtered = filtered.filter((r: any) => 
       Number(r.price) >= priceRange[0] && Number(r.price) <= priceRange[1]
     );
+    console.log('🔍 [items] After price filter (' + priceRange[0] + '-' + priceRange[1] + '):', filtered.length);
     
     if (showAvailableOnly) {
       filtered = filtered.filter((r: any) => r.is_available !== false);
+      console.log('🔍 [items] After availability filter:', filtered.length);
     }
     
+    console.log('🔍 [items] Final filtered length:', filtered.length);
     return filtered;
   }, [rows, rating, priceRange, showAvailableOnly]);
 
+  // ✅ إحصائيات
+  const allProductsCount = rows.length;
+  const productsCount = rows.filter((r: any) => r.is_offer !== true).length;
+  const offersCount = rows.filter((r: any) => r.is_offer === true).length;
+
+  console.log('📊 [CategoryPage] Stats:', {
+    allProductsCount,
+    productsCount,
+    offersCount,
+    itemsLength: items.length,
+    totalCount,
+  });
+
   const stats = {
-    total: rows.length,
+    total: totalCount,
     filtered: items.length,
-    offers: rows.filter((r: any) => r.is_offer === true).length,
+    offers: offersCount,
+    products: productsCount,
     stores: stores.length,
   };
+
+  // ✅ إعادة تعيين الصفحة عند تغيير الفلاتر
+  useEffect(() => {
+    setPage(1);
+  }, [search, sort, gov, rating, priceRange, showAvailableOnly, productFilter]);
+
+  // ✅ دوال Pagination
+  const goToPage = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // ✅ عرض الكل (إعادة تعيين الفلاتر)
+  const showAll = () => {
+    setProductFilter('all');
+    setGov("all");
+    setRating(0);
+    setSearch("");
+    setPriceRange([0, 1000000]);
+    setShowAvailableOnly(false);
+    setPage(1);
+  };
+
+  const startIndex = (page - 1) * limit + 1;
+  const endIndex = Math.min(page * limit, totalCount);
 
   const Filters = (
     <div className="space-y-6">
@@ -290,7 +424,7 @@ function CategoryPage() {
 
       <Button 
         variant="outline" 
-        onClick={() => { setGov("all"); setRating(0); setSearch(""); setPriceRange([0, 1000000]); setShowAvailableOnly(false); }}
+        onClick={showAll}
         className="w-full rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/40 transition-all duration-300 group"
       >
         <RefreshCw className="h-4 w-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
@@ -316,7 +450,6 @@ function CategoryPage() {
     );
   }
 
-  // ✅ 4. التحقق من وجود التصنيف (تجاهل offers)
   if (!isOffersPage && !category) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -342,7 +475,6 @@ function CategoryPage() {
     );
   }
 
-  // ✅ 5. التعامل مع category إذا كان null (في حالة offers)
   const Icon = category ? getCategoryIcon(category.icon) : getCategoryIcon("default");
   const categoryName = category 
     ? (app.lang === "ar" ? category.name_ar : category.name_en)
@@ -350,7 +482,6 @@ function CategoryPage() {
   const categoryImage = category?.image_url || null;
   const isArabic = app.lang === "ar";
 
-  // ✅ وصف مخصص للعروض
   const categoryDescription = isOffersPage
     ? (app.lang === "ar" 
         ? "اكتشف أفضل العروض والخصومات الحصرية في السوق عندك. تخفيضات تصل إلى 70% على مجموعة واسعة من المنتجات."
@@ -364,10 +495,8 @@ function CategoryPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#2a655f]/5 via-transparent to-[#3a8a82]/5">
       
-      {/* ===== Header مع صورة الخلفية ===== */}
+      {/* ===== Header ===== */}
       <div className="relative h-[320px] md:h-[400px] overflow-hidden bg-[#1b433e]">
-        
-        {/* ✅ صورة الخلفية الخاصة بالتصنيف (واضحة جداً) */}
         {categoryImage ? (
           <div className="absolute inset-0 z-0 overflow-hidden">
             <img 
@@ -375,7 +504,6 @@ function CategoryPage() {
               alt={categoryName} 
               className="h-full w-full object-cover scale-100" 
             />
-            {/* تدرج خفيف من الأسفل والأطراف فقط لضمان قراءة النص مع إبقاء الصورة واضحة جداً */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/70" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/80 via-transparent to-transparent" />
           </div>
@@ -385,8 +513,6 @@ function CategoryPage() {
         
         <div className="absolute inset-0 flex items-end">
           <div className="mx-auto max-w-7xl px-4 w-full pb-8 text-white relative z-10">
-            
-            {/* ===== Breadcrumb ===== */}
             <div className="flex items-center gap-2 mb-2">
               <Link to="/" className="text-white/80 hover:text-white transition-colors text-xs font-medium flex items-center gap-1 group bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/20">
                 <ChevronLeft className="h-3 w-3 group-hover:-translate-x-1 transition-transform duration-300" />
@@ -402,15 +528,12 @@ function CategoryPage() {
               </span>
             </div>
             
-            {/* ===== المحتوى الرئيسي مع تحسين الخط والأيقونات المتحركة ===== */}
             <div className="flex items-end justify-between mt-3 flex-wrap gap-4">
               <div className="flex items-center gap-4">
-                {/* الأيقونة المتحركة */}
                 <div className="relative group">
                   <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400/30 to-teal-400/30 blur-lg animate-pulse" />
                   <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-2xl shadow-black/30 border border-white/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
                     <Icon className="h-8 w-8 md:h-10 md:w-10 text-white animate-float" />
-                    {/* جزيئات متحركة حول الأيقونة */}
                     <Sparkle className="absolute -top-2 -right-2 h-4 w-4 text-yellow-300 animate-spin-slow" />
                     <CircleDot className="absolute -bottom-1 -left-2 h-3 w-3 text-emerald-300 animate-pulse" />
                   </div>
@@ -502,7 +625,7 @@ function CategoryPage() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => { setGov("all"); setRating(0); setSearch(""); setPriceRange([0, 1000000]); setShowAvailableOnly(false); }}
+                onClick={showAll}
                 className="text-[#2a655f] hover:bg-[#2a655f]/10 rounded-xl"
               >
                 <RefreshCw className="h-3.5 w-3.5 transition-transform duration-500 hover:rotate-180" />
@@ -516,7 +639,7 @@ function CategoryPage() {
         <div>
           {/* ===== Toolbar ===== */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="outline" className="lg:hidden gap-2 rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5 transition-all duration-300">
@@ -533,6 +656,20 @@ function CategoryPage() {
                 </SheetContent>
               </Sheet>
               
+              {/* ✅ Product Filter Tabs */}
+              {tab === "products" && (
+                <ProductFilterTabs
+                  value={productFilter}
+                  onChange={setProductFilter}
+                  counts={{
+                    all: allProductsCount,
+                    products: productsCount,
+                    offers: offersCount,
+                  }}
+                  lang={app.lang}
+                />
+              )}
+              
               <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="font-medium text-[#2a655f]">{items.length}</span>
                 {isArabic ? "منتج" : "products"}
@@ -547,9 +684,32 @@ function CategoryPage() {
             
             {tab === "products" && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground hidden md:inline">
-                  {app.lang === "ar" ? "ترتيب حسب:" : "Sort by:"}
-                </span>
+                {/* ViewMode Toggle */}
+                <div className="flex items-center bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-1">
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-all duration-300",
+                      viewMode === "grid" 
+                        ? "bg-[#2a655f] text-white shadow-lg shadow-[#2a655f]/30" 
+                        : "text-muted-foreground hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
+                    )}
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-all duration-300",
+                      viewMode === "list" 
+                        ? "bg-[#2a655f] text-white shadow-lg shadow-[#2a655f]/30" 
+                        : "text-muted-foreground hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
+                    )}
+                  >
+                    <List className="h-4 w-4" />
+                  </button>
+                </div>
+                
                 <SortDropdown
                   value={sort}
                   onChange={(val) => setSort(val as any)}
@@ -563,20 +723,33 @@ function CategoryPage() {
           <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground border-b border-[#2a655f]/10 pb-3">
             <span>
               {isArabic 
-                ? `عرض ${items.length} من ${stats.total} منتج` 
-                : `Showing ${items.length} of ${stats.total} products`}
+                ? `عرض ${startIndex}-${endIndex} من ${totalCount} منتج` 
+                : `Showing ${startIndex}-${endIndex} of ${totalCount} products`}
             </span>
-            {items.length !== stats.total && (
-              <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20">
-                {isArabic ? "مفلتر" : "Filtered"}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {items.length !== totalCount && (
+                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20">
+                  {isArabic ? "مفلتر" : "Filtered"}
+                </Badge>
+              )}
+              {isFetching && (
+                <div className="flex items-center gap-1 text-[#2a655f]">
+                  <div className="h-3 w-3 border-2 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs">{isArabic ? "جاري التحميل..." : "Loading..."}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ===== Products Grid ===== */}
           {tab === "products" ? (
             isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className={cn(
+                "grid gap-4",
+                viewMode === "grid" 
+                  ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3" 
+                  : "grid-cols-1"
+              )}>
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 p-4 animate-pulse border border-[#2a655f]/10">
                     <div className="aspect-square rounded-xl bg-[#2a655f]/10" />
@@ -605,7 +778,7 @@ function CategoryPage() {
                 </p>
                 <Button 
                   variant="outline" 
-                  onClick={() => { setGov("all"); setRating(0); setSearch(""); setPriceRange([0, 1000000]); setShowAvailableOnly(false); }}
+                  onClick={showAll}
                   className="mt-4 rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/40 transition-all duration-300 group"
                 >
                   <RefreshCw className="h-4 w-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
@@ -613,17 +786,87 @@ function CategoryPage() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {items.map((i: any, index: number) => (
-                  <div 
-                    key={i.id} 
-                    className="animate-fade-up"
-                    style={{ animationDelay: `${(index % 9) * 60}ms` }}
-                  >
-                    <ListingCard item={i} />
+              <>
+                <div className={cn(
+                  "grid gap-4",
+                  viewMode === "grid" 
+                    ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3" 
+                    : "grid-cols-1"
+                )}>
+                  {items.map((i: any, index: number) => {
+                    console.log('🎯 [RENDER] Rendering product:', i.id, i.title_ar);
+                    return (
+                      <div 
+                        key={i.id} 
+                        className="animate-fade-up"
+                        style={{ animationDelay: `${(index % 9) * 60}ms` }}
+                      >
+                        <ListingCard item={i} viewMode={viewMode} />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ===== Pagination ===== */}
+                {totalPages > 1 && (
+                  <div className="mt-8 flex items-center justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(page - 1)}
+                      disabled={page === 1 || isFetching}
+                      className="rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5 transition-all duration-300"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum: number;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+                        
+                        if (pageNum > totalPages) return null;
+                        
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={pageNum === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => goToPage(pageNum)}
+                            disabled={isFetching}
+                            className={cn(
+                              "min-w-[36px] rounded-xl transition-all duration-300",
+                              pageNum === page 
+                                ? "bg-[#2a655f] text-white hover:bg-[#1a4f4a] shadow-lg shadow-[#2a655f]/30" 
+                                : "border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
+                            )}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(page + 1)}
+                      disabled={page === totalPages || isFetching}
+                      className="rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5 transition-all duration-300"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )
           ) : (
             // ===== Stores Tab =====
@@ -723,12 +966,6 @@ function CategoryPage() {
           50% { transform: scale(1.15); }
         }
         .animate-bounce { animation: bounce 0.5s ease-in-out infinite; }
-
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
-        }
-        .animate-pulse-slow { animation: pulse-slow 2s ease-in-out infinite; }
 
         @keyframes spin-slow {
           from { transform: rotate(0deg); }

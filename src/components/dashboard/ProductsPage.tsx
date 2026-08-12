@@ -1,6 +1,8 @@
 // src/components/dashboard/ProductsPage.tsx
+// src/components/dashboard/ProductsPage.tsx
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query"; // ✅ أضف هذا السطر
+import React, { useState, useMemo, useCallback, useEffect,useRef  } from "react";
 import { 
   Plus, Package, ShoppingBag, Gift, Layers, 
   Search, Filter, RefreshCw, FileSpreadsheet, FileText,
@@ -41,6 +43,7 @@ const { saveAs } = pkg;
 export const ProductsPage = React.memo(function ProductsPage() {
   const app = useApp();
   const t = useT();
+    const queryClient = useQueryClient();
   const { data: cats = [] } = useCategories();
   const { data: govs = [] } = useGovernorates();
   
@@ -58,7 +61,10 @@ export const ProductsPage = React.memo(function ProductsPage() {
   const del = useDeleteListing();
   const sendNotification = useSendNotificationV2();
   const addToCart = useAddToCart(); // ✅ Hook لإضافة المنتج للسلة
-
+  const isOpeningDialog = useRef(false);
+  
+  // ✅ منع فتح نافذة التفاصيل بشكل متكرر
+  const isOpeningDetail = useRef(false);
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "published" | "archived">("all");
@@ -267,21 +273,21 @@ export const ProductsPage = React.memo(function ProductsPage() {
 
       console.log("🔍 [STEP 11] Preparing notification data...");
       
-      const notificationData = {
-        user_id: adminRole.user_id,
-        type: "product_pending",
-        title_ar: `📦 طلب ${actionType === "إضافة" ? "إضافة" : "تعديل"} منتج`,
-        body_ar: `قام ${userName} بـ ${actionType} المنتج "${productTitle}"، بحاجة للمراجعة`,
-        link_url: `/admin/listings/${listingId}`,
-        metadata: {
-          product_id: listingId,
-          action: actionType,
-          user_name: userName,
-          user_id: userId,
-        },
-        created_at: new Date().toISOString(),
-        is_read: false,
-      };
+     const notificationData = {
+    user_id: adminRole.user_id,
+    type: "product_pending",
+    title_ar: `📦 طلب ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} منتج`,
+    body_ar: `قام ${userName} بـ ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} المنتج "${productTitle}"، بحاجة للمراجعة`,
+    link_url: `/admin/listings/${listingId}`,
+    metadata: {
+      product_id: listingId,
+      action: actionType,
+      user_name: userName,
+      user_id: userId,
+    },
+    created_at: new Date().toISOString(),
+    is_read: false,
+  };
 
       console.log("✅ [STEP 12] Notification data ready:", notificationData);
 
@@ -312,6 +318,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
 
   // ===== حفظ المنتج =====
 // ===== حفظ المنتج (مصحح) =====
+// ===== حفظ المنتج (مصحح مع تحديث الكاش) =====
 const handleSaveProduct = useCallback(async (data: any) => {
   setDialogOpen(false);
   
@@ -339,10 +346,9 @@ const handleSaveProduct = useCallback(async (data: any) => {
     const currentDialogProduct = dialogProduct;
 
     if (isEditing && currentDialogProduct) {
-      // ✅ ✅ ✅ التصحيح: استخدم patch بدل data
       await update.mutateAsync({
         id: currentDialogProduct.id,
-        patch: {  // ✅ هذا هو التغيير المهم
+        patch: {
           title_ar: data.title_ar,
           description_ar: data.description_ar || null,
           price,
@@ -387,26 +393,41 @@ const handleSaveProduct = useCallback(async (data: any) => {
 
       listingId = result.id;
     }
- console.log("🔍🔍🔍 [ProductsPage] ===== BEFORE SAVE ALL DATA =====");
+
+    console.log("🔍🔍🔍 [ProductsPage] ===== BEFORE SAVE ALL DATA =====");
     console.log("🔍🔍🔍 [ProductsPage] data.options:", data.options);
     console.log("🔍🔍🔍 [ProductsPage] data.options.sizes:", data.options.sizes);
     console.log("🔍🔍🔍 [ProductsPage] data.options keys:", Object.keys(data.options || {}));
     console.log("🔍🔍🔍 [ProductsPage] ===== BEFORE SAVE ALL DATA END =====");
     
     console.log("🔍🔍🔍 [ProductsPage] data.options.sizes:", data.options.sizes);
-console.log("🔍🔍🔍 [ProductsPage] data.options:", data.options);
+    console.log("🔍🔍🔍 [ProductsPage] data.options:", data.options);
 
-await ProductService.saveAllProductData(listingId, {
-  options: data.options || {},
-  colors: data.colors || [],
-  variations: data.variations || [],
-  image_urls: data.image_urls || [],
-});
+    await ProductService.saveAllProductData(listingId, {
+      options: data.options || {},
+      colors: data.colors || [],
+      variations: data.variations || [],
+      image_urls: data.image_urls || [],
+    });
 
     const actionType = isEditing ? "تعديل" : "إضافة";
 
     notifyAdmin(productTitle, actionType, app.user!.id, listingId).catch(console.error);
-    refetchMyListings().catch(console.error);
+    
+    // ✅ ✅ ✅ 🔥🔥🔥 التغيير الأهم: تحديث الكاش بشكل صحيح
+    // 1. إبطال الكاش أولاً
+    queryClient.invalidateQueries({ 
+      queryKey: ["listings", "my", app.user?.id] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: ["listings"] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: ["listing", listingId] 
+    });
+    
+    // 2. ثم إعادة الجلب
+    await refetchMyListings();
 
     if (!isEditing) {
       getUserDisplayName(app.user!.id).then(async (userName) => {
@@ -436,7 +457,7 @@ await ProductService.saveAllProductData(listingId, {
   } finally {
     setIsSaving(false);
   }
-}, [dialogProduct, update, create, app.user, notifyAdmin, refetchMyListings, app.lang]);
+}, [dialogProduct, update, create, app.user, notifyAdmin, refetchMyListings, app.lang, queryClient]);
   // ===== حذف المنتج =====
   const handleDeleteProduct = useCallback(async () => {
     if (!productToDelete) return;
@@ -508,6 +529,61 @@ const handleConvertToOffer = useCallback(async (productId: string, newPrice: num
     setIsConverting(false);
   }
 }, [myListings, update, refetchMyListings, notifyAdmin, app.user, app.lang]);
+
+// ===== ✅ إعادة نشر المنتج (للمسودات) =====
+const handleRepublish = useCallback(async (product: any) => {
+  try {
+    setIsSaving(true);
+    
+    // ✅ تحديث حالة المنتج إلى pending (قيد المراجعة)
+    await update.mutateAsync({
+      id: product.id,
+      patch: {
+        status: "pending",
+        updated_at: new Date().toISOString(),
+      }
+    });
+    
+    toast.success(
+      app.lang === "ar" 
+        ? "📤 تم إرسال طلب إعادة النشر للمراجعة" 
+        : "📤 Republish request sent for review"
+    );
+    
+    // ✅ إرسال إشعار للأدمن (مع دعم "إعادة نشر")
+    await notifyAdmin(
+      product.title_ar,
+      "إعادة نشر",
+      app.user!.id,
+      product.id
+    );
+    
+    // ✅ تحديث الكاش
+    queryClient.invalidateQueries({ 
+      queryKey: ["listings", "my", app.user?.id] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: ["listings"] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: ["listing", product.id] 
+    });
+    
+    // ✅ تحديث القائمة
+    await refetchMyListings();
+    
+  } catch (error) {
+    console.error("❌ Error republishing product:", error);
+    toast.error(
+      app.lang === "ar" 
+        ? "❌ فشل إرسال طلب إعادة النشر" 
+        : "❌ Failed to send republish request"
+    );
+  } finally {
+    setIsSaving(false);
+  }
+}, [update, app.user, app.lang, notifyAdmin, refetchMyListings, queryClient]);
+
   // ===== ✅ فتح نافذة التحويل =====
   const openConvertDialog = useCallback((product: any) => {
     setProductToConvert(product);
@@ -528,7 +604,20 @@ const handleConvertToOffer = useCallback(async (productId: string, newPrice: num
   }, []);
 
   // ===== فتح نافذة التعديل =====
+// src/components/dashboard/ProductsPage.tsx
+
+// ✅ في بداية المكون، بعد الـ useState
+
+
+// ✅ تعديل openEditDialog
 const openEditDialog = useCallback((product: any) => {
+  if (isOpeningDialog.current) {
+    console.log("⚠️ [openEditDialog] Already opening, skipping...");
+    return;
+  }
+  
+  isOpeningDialog.current = true;
+  
   console.log("🔍🔍🔍 [ProductsPage] openEditDialog - product:", {
     id: product.id,
     title: product.title_ar,
@@ -541,22 +630,29 @@ const openEditDialog = useCallback((product: any) => {
   setDialogProduct(product);
   setDialogType(product.is_offer ? "offer" : "product");
   setDialogOpen(true);
+  
+  // ✅ إعادة تعيين بعد فترة
+  setTimeout(() => {
+    isOpeningDialog.current = false;
+  }, 500);
 }, []);
 
-  // ===== فتح تفاصيل المنتج =====
-  const openProductDetail = useCallback((product: any) => {
-    console.log("🔍 [openProductDetail] ===== PRODUCT DATA =====");
-    console.log("🔍 [openProductDetail] Product:", product);
-    console.log("🔍 [openProductDetail] variations:", product.variations);
-    console.log("🔍 [openProductDetail] variations count:", product.variations?.length || 0);
-    
-    // ✅ إعادة تعيين التركيبة المختارة عند فتح منتج جديد
-    setSelectedVariation(null);
-    setSelectedProduct(product);
-    setCurrentImageIndex(0);
-    setIsZoomed(false);
-    setDetailDialogOpen(true);
-  }, []);
+// ✅ تعديل openProductDetail
+
+// ===== فتح تفاصيل المنتج =====
+const openProductDetail = useCallback((product: any) => {
+  console.log("🔍 [openProductDetail] ===== PRODUCT DATA =====");
+  console.log("🔍 [openProductDetail] Product:", product);
+  console.log("🔍 [openProductDetail] variations:", product.variations);
+  console.log("🔍 [openProductDetail] variations count:", product.variations?.length || 0);
+  
+  // ✅ إعادة تعيين التركيبة المختارة عند فتح منتج جديد
+  setSelectedVariation(null);
+  setSelectedProduct(product);
+  setCurrentImageIndex(0);
+  setIsZoomed(false);
+  setDetailDialogOpen(true);
+}, []);
 
   // ===== ✅ إضافة المنتج للسلة من صفحة التفاصيل =====
   const handleAddToCartFromDetail = useCallback(async () => {
@@ -964,6 +1060,7 @@ const openEditDialog = useCallback((product: any) => {
                           }}
                           onView={() => openProductDetail(product)}
                           onConvertToOffer={openConvertDialog}
+                           onRepublish={handleRepublish}
                           lang={app.lang}
                           currency={app.currency}
                           formatPrice={formatPrice}
@@ -1042,6 +1139,7 @@ const openEditDialog = useCallback((product: any) => {
                       }}
                       onView={() => openProductDetail(product)}
                       onConvertToOffer={openConvertDialog}
+                       onRepublish={handleRepublish}
                       lang={app.lang}
                       currency={app.currency}
                       formatPrice={formatPrice}
@@ -1476,21 +1574,7 @@ const openEditDialog = useCallback((product: any) => {
                   </span>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 gap-3">
-                  <div className="p-3 bg-slate-50/80 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                      <CreditCard className="h-3 w-3 text-[#2a655f] animate-pulse" />
-                      {app.lang === "ar" ? "الدفع" : "Payment"}
-                    </p>
-                    <p className="text-sm font-medium mt-0.5">
-                      {selectedProduct.payment_method === "cash" && "💰 " + (app.lang === "ar" ? "نقداً عند الاستلام" : "Cash on delivery")}
-                      {selectedProduct.payment_method === "transfer" && "🏦 " + (app.lang === "ar" ? "تحويل بنكي" : "Bank transfer")}
-                      {selectedProduct.payment_method === "online" && "💳 " + (app.lang === "ar" ? "دفع إلكتروني" : "Online payment")}
-                      {selectedProduct.payment_method === "all" && "🌐 " + (app.lang === "ar" ? "كل الطرق" : "All methods")}
-                    </p>
-                  </div>
-                </div>
-
+                
                 {/* ===== أزرار الإجراءات ===== */}
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                

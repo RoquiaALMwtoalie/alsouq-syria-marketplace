@@ -1,6 +1,6 @@
 // src/components/dashboard/ProductFormDialog.tsx
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { 
   X, Plus, Package, Gift, Sparkles, Truck, CreditCard, 
   Tag, MapPin, Image as ImageIcon, CheckCircle2,
@@ -65,7 +65,7 @@ export function ProductFormDialog({
   const t = useT();
   const { data: cats = [] } = useCategories();
   const { data: govs = [] } = useGovernorates();
-  
+    const isLoadingRef = useRef(false);
   const [form, setForm] = useState(emptyForm);
   const [options, setOptions] = useState<Record<string, string[]>>({
     colors: [],
@@ -238,159 +238,206 @@ export function ProductFormDialog({
     });
   }, [product?.variations, form.price]);
 
-  useEffect(() => {
-    // ✅ ✅ ✅ منع إعادة التوجيه أثناء كتابة السعر
-    if (isPriceEditingRef.current) {
-      console.log("ℹ️ [ProductFormDialog] Skipping - price editing in progress");
-      return;
-    }
-    
-    if (!open) return;
-    
-    if (product) {
-      const availableValue = product.is_available !== undefined ? product.is_available : true;
-      
-      // ✅ تحميل البيانات الأساسية
-      setForm({
-        title_ar: product.title_ar || "",
-        description_ar: product.description_ar || "",
-        price: product.price || 0,
-        old_price: product.old_price || 0,
-        is_offer: product.is_offer || false,
-        is_available: availableValue,
-        payment_method: product.payment_method || "cash",
-        kind: product.kind || "product",
-        category_id: product.category_id || "",
-        governorate_id: product.governorate_id || "",
-        cover_url: product.cover_url || "",
-        image_urls: product.image_urls || [""],
-      });
-      
-      if (product.category_id && cats.length > 0) {
-        setCategorySearch(getCategoryName(product.category_id));
-      }
-      
-      if (product.governorate_id && govs.length > 0) {
-        setGovernorateSearch(getGovernorateName(product.governorate_id));
-      }
-      
-      // ✅ ✅ ✅ تحميل الخيارات
-      const productOptions = product.options || [];
-      const productColors = product.colors || [];
-      
-      console.log("🔍 [ProductFormDialog] Loading product data:", {
-        optionsCount: productOptions.length,
-        colorsCount: productColors.length,
-        variationsCount: product.variations?.length || 0,
-      });
-      
-      // ✅ ✅ ✅ خريطة تحويل الأنواع (الجزء المهم!)
-      const typeMap: Record<string, string> = {
-        'color': 'colors',
-        'size': 'sizes',
-        'model': 'models',
-        'material': 'materials',
-        'style': 'style',
-        'brand': 'brand',
-      };
-      
-      // ✅ تحويل المصفوفة إلى كائن Grouped
-      // ✅ ✅ ✅ جميع المفاتيح من OPTION_TYPES
-      const optionsGrouped: Record<string, string[]> = {
-        colors: [],
-        sizes: [],
-        models: [],
-        materials: [],
-        weight: [],
-        style: [],
-        brand: [],
-        fabric: [],
-        season: [],
-        gender: [],
-        storage: [],
-        ram: [],
-        processor: [],
-        battery: [],
-        screen_size: [],
-        camera: [],
-        connectivity: [],
-      };
-      
-      productOptions.forEach((opt: any) => {
-        const originalType = opt.option_type;
-        const mappedType = typeMap[originalType] || originalType;
-        
-        console.log(`🔍 [ProductFormDialog] Option: ${originalType} → ${mappedType}, value: ${opt.option_value}`);
-        
-        if (optionsGrouped[mappedType]) {
-          optionsGrouped[mappedType].push(opt.option_value);
-        } else {
-          console.warn(`⚠️ Unknown option type: ${originalType}`);
-        }
-      });
-      
-      console.log("🔍 [ProductFormDialog] Grouped options:", optionsGrouped);
-      setOptions(optionsGrouped);
-      
-      // ✅ تعيين الألوان
-      if (productColors.length > 0) {
-        // ✅ تحويل البيانات إلى الشكل المطلوب
-        const mappedColors = productColors.map((c: any) => ({
-          id: c.id,
-          color_name_ar: c.color_name_ar || c.color_name_en || 'لون',
-          color_name_en: c.color_name_en || c.color_name_ar || 'Color',
-          color_hex: c.color_hex || null,
-          image_url: c.image_url || '',
-          sort_order: c.sort_order || 0,
-        }));
-        
-        console.log("🔍 [ProductFormDialog] Setting colors with images:", mappedColors);
-        
-        setTempColors(mappedColors);
-        setColorWithImages(mappedColors.map((c: any) => ({
-          name: c.color_name_ar,
-          image: c.image_url,
-          hex: c.color_hex,
-        })));
-      } else {
-        setTempColors([]);
-        setColorWithImages([]);
-      }
-      
-      // ✅ تعيين المقاسات من الخيارات المجمعة
-      if (optionsGrouped.sizes && optionsGrouped.sizes.length > 0) {
-        setSizes(optionsGrouped.sizes);
-      } else {
-        setSizes([]);
-      }
-      
-      // ✅ ✅ ✅ تعيين التركيبات - استخدم variationsWithPrices المحسوب
-      if (variationsWithPrices.length > 0) {
-        console.log("🔍 [ProductFormDialog] Loading variations:", variationsWithPrices.length);
-        setVariations(variationsWithPrices);
-      } else {
-        setVariations([]);
-      }
-    } else {
-      // ✅ حالة الإضافة الجديدة
-      setForm({
-        ...emptyForm,
-        is_offer: productType === "offer",
-      });
-      setOptions({ colors: [], sizes: [], models: [], materials: [], weight: [], style: [], brand: [] });
-      setVariations([]);
-      setTempColors([]);
-      setSizes([]);
-      setColorWithImages([]);
-      setCategorySearch("");
-      setGovernorateSearch("");
-    }
-    setActiveTab("basic");
-    
-    // ✅ ✅ ✅ إعادة تعيين isFirstLoadRef عند فتح النافذة
-    isFirstLoadRef.current = true;
-  }, [product, productType, open, cats, govs, variationsWithPrices]);
+// src/components/dashboard/ProductFormDialog.tsx
 
+useEffect(() => {
+  // ✅ ✅ ✅ منع إعادة التحميل المتكررة
+  if (isLoadingRef.current) {
+    console.log("ℹ️ [ProductFormDialog] Already loading, skipping...");
+    return;
+  }
+  
+  // ✅ ✅ ✅ منع إعادة التوجيه أثناء كتابة السعر
+  if (isPriceEditingRef.current) {
+    console.log("ℹ️ [ProductFormDialog] Skipping - price editing in progress");
+    return;
+  }
+  
+  if (!open) {
+    isLoadingRef.current = false;
+    return;
+  }
+  
+  // ✅ تعيين العلم لمنع التحميل المتكرر
+  isLoadingRef.current = true;
+  
+  if (product) {
+    const availableValue = product.is_available !== undefined ? product.is_available : true;
+    
+    // ✅ تحميل البيانات الأساسية
+    setForm({
+      title_ar: product.title_ar || "",
+      description_ar: product.description_ar || "",
+      price: product.price || 0,
+      old_price: product.old_price || 0,
+      is_offer: product.is_offer || false,
+      is_available: availableValue,
+      payment_method: product.payment_method || "cash",
+      kind: product.kind || "product",
+      category_id: product.category_id || "",
+      governorate_id: product.governorate_id || "",
+      cover_url: product.cover_url || "",
+      image_urls: product.image_urls || [""],
+    });
+    
+    if (product.category_id && cats.length > 0) {
+      setCategorySearch(getCategoryName(product.category_id));
+    }
+    
+    if (product.governorate_id && govs.length > 0) {
+      setGovernorateSearch(getGovernorateName(product.governorate_id));
+    }
+    
+    // ✅ ✅ ✅ تحميل الخيارات
+    const productOptions = product.options || [];
+    const productColors = product.colors || [];
+    
+    console.log("🔍 [ProductFormDialog] Loading product data:", {
+      optionsCount: productOptions.length,
+      colorsCount: productColors.length,
+      variationsCount: product.variations?.length || 0,
+    });
+    
+    // ✅ ✅ ✅ خريطة تحويل الأنواع
+    const typeMap: Record<string, string> = {
+      'color': 'colors',
+      'size': 'sizes',
+      'model': 'models',
+      'material': 'materials',
+      'style': 'style',
+      'brand': 'brand',
+    };
+    
+    // ✅ تحويل المصفوفة إلى كائن Grouped
+    const optionsGrouped: Record<string, string[]> = {
+      colors: [],
+      sizes: [],
+      models: [],
+      materials: [],
+      weight: [],
+      style: [],
+      brand: [],
+      fabric: [],
+      season: [],
+      gender: [],
+      storage: [],
+      ram: [],
+      processor: [],
+      battery: [],
+      screen_size: [],
+      camera: [],
+      connectivity: [],
+    };
+    
+    productOptions.forEach((opt: any) => {
+      const originalType = opt.option_type;
+      const mappedType = typeMap[originalType] || originalType;
+      
+      console.log(`🔍 [ProductFormDialog] Option: ${originalType} → ${mappedType}, value: ${opt.option_value}`);
+      
+      if (optionsGrouped[mappedType]) {
+        optionsGrouped[mappedType].push(opt.option_value);
+      } else {
+        console.warn(`⚠️ Unknown option type: ${originalType}`);
+      }
+    });
+    
+    console.log("🔍 [ProductFormDialog] Grouped options:", optionsGrouped);
+    setOptions(optionsGrouped);
+    
+    // ✅ تعيين الألوان
+    if (productColors.length > 0) {
+      const mappedColors = productColors.map((c: any) => ({
+        id: c.id,
+        color_name_ar: c.color_name_ar || c.color_name_en || 'لون',
+        color_name_en: c.color_name_en || c.color_name_ar || 'Color',
+        color_hex: c.color_hex || null,
+        image_url: c.image_url || '',
+        sort_order: c.sort_order || 0,
+      }));
+      
+      console.log("🔍 [ProductFormDialog] Setting colors with images:", mappedColors);
+      
+      setTempColors(mappedColors);
+      setColorWithImages(mappedColors.map((c: any) => ({
+        name: c.color_name_ar,
+        image: c.image_url,
+        hex: c.color_hex,
+      })));
+    } else {
+      setTempColors([]);
+      setColorWithImages([]);
+    }
+    
+    // ✅ تعيين المقاسات من الخيارات المجمعة
+    if (optionsGrouped.sizes && optionsGrouped.sizes.length > 0) {
+      setSizes(optionsGrouped.sizes);
+    } else {
+      setSizes([]);
+    }
+    
+    // ✅ ✅ ✅ 🔥🔥🔥 التعديل هنا 🔥🔥🔥
+    // ✅ تعيين التركيبات مباشرة من product.variations مع الأسعار
+    if (product.variations && product.variations.length > 0) {
+      console.log("🔍 [ProductFormDialog] Raw variations from product:", 
+        product.variations.map((v: any) => ({
+          id: v.id,
+          price: v.price,
+          combination: v.combination
+        }))
+      );
+      
+      // ✅ تحويل البيانات مع الحفاظ على السعر
+      const mappedVariations = product.variations.map((v: any) => ({
+        id: v.id,
+        combination: v.combination || {},
+        is_available: v.is_available !== undefined ? v.is_available : v.is_active !== false,
+        price: v.price || 0, // ✅ الحفاظ على السعر
+        sku: v.sku || '',
+        stock_quantity: v.stock_quantity || 0,
+        color_id: v.color_id || null,
+        image_url: v.image_url || null,
+      }));
+      
+      console.log("🔍 [ProductFormDialog] Mapped variations with prices:", 
+        mappedVariations.map((v: any) => ({
+          id: v.id,
+          price: v.price,
+          combination: v.combination
+        }))
+      );
+      
+      setVariations(mappedVariations);
+    } else {
+      console.log("ℹ️ [ProductFormDialog] No variations found");
+      setVariations([]);
+    }
+    
+  } else {
+    // ✅ حالة الإضافة الجديدة
+    setForm({
+      ...emptyForm,
+      is_offer: productType === "offer",
+    });
+    setOptions({ colors: [], sizes: [], models: [], materials: [], weight: [], style: [], brand: [] });
+    setVariations([]);
+    setTempColors([]);
+    setSizes([]);
+    setColorWithImages([]);
+    setCategorySearch("");
+    setGovernorateSearch("");
+  }
+  setActiveTab("basic");
+  
+  // ✅ ✅ ✅ إعادة تعيين isFirstLoadRef عند فتح النافذة
+  isFirstLoadRef.current = true;
+  
+  // ✅ ✅ ✅ إعادة تعيين العلم بعد الانتهاء
+  setTimeout(() => {
+    isLoadingRef.current = false;
+  }, 500);
+  
+}, [product, productType, open, cats, govs]);
   // ✅ ✅ ✅ إضافة useMemo لحل مشكلة الصور
   const externalColorImages = useMemo(() => {
     const result = Object.fromEntries(

@@ -269,7 +269,7 @@ export function useListings(filter: ListingsFilter = {}) {
           p_sort: filter.sort || 'recent',
           p_is_offer: filter.isOffer || null,
           p_category_id: categoryId,
-          p_is_featured: filter.isFeatured || null // 👈 إضافة المعامل السادس المفقود لتتطابق تماماً مع الدالة المحدثة
+          p_is_featured: filter.isFeatured || null
         });
       
       if (error) {
@@ -277,7 +277,13 @@ export function useListings(filter: ListingsFilter = {}) {
         throw error;
       }
       
-      const listings = Array.isArray(data) ? data : [];
+      let listings = Array.isArray(data) ? data : [];
+      
+      // ✅ ✅ ✅ فلترة حسب owner_id (بدون تغيير الدالة)
+      if (filter.ownerId) {
+        listings = listings.filter((item: any) => item.owner_id === filter.ownerId);
+        console.log(`🔍 [useListings] Filtered by ownerId: ${filter.ownerId}, found ${listings.length} listings`);
+      }
       
       console.log(`📊 [useListings] Total listings: ${listings.length}`);
       
@@ -318,10 +324,19 @@ export function useListings(filter: ListingsFilter = {}) {
 
 // src/lib/queries.ts
 
+// src/lib/queries.ts
+
 const fetchMyListings = async (ownerId: string) => {
+    console.log("🔄 [fetchMyListings] Called at:", new Date().toISOString());
+  console.trace(); // ✅ هذا يظهر أين تم الاستدعاء
   console.log("🔄 [fetchMyListings] Fetching listings for user:", ownerId);
   
-  // ✅ استخدم الدالة الخاصة للمستخدم (ليست public)
+  if (!ownerId) {
+    console.log("⚠️ [fetchMyListings] No ownerId provided");
+    return [];
+  }
+  
+  // ✅ ✅ ✅ استخدم RPC بدلاً من الاستعلام المباشر
   const { data, error } = await supabase
     .rpc('get_listings_with_variations', {
       p_owner_id: ownerId
@@ -337,49 +352,52 @@ const fetchMyListings = async (ownerId: string) => {
   console.log(`✅ [fetchMyListings] Found ${listings.length} listings`);
   
   if (listings.length > 0) {
-    console.log("🔍 [fetchMyListings] First listing variations:", listings[0]?.variations?.length || 0);
+    const firstListing = listings[0];
+    console.log("🔍 [fetchMyListings] First listing:", {
+      id: firstListing.id,
+      title: firstListing.title_ar,
+      price: firstListing.price,
+      variationsCount: firstListing.variations?.length || 0,
+      variationsWithPrices: firstListing.variations?.map((v: any) => ({
+        id: v.id,
+        price: v.price,
+        combination: v.combination
+      })),
+      colorsCount: firstListing.colors?.length || 0,
+      optionsCount: firstListing.options?.length || 0,
+    });
     
-    // ✅ ✅ ✅ جلب الصور الإضافية لكل منتج
-    const listingIds = listings.map((l: any) => l.id);
-    
-    const { data: images, error: imagesError } = await supabase
-      .from("listing_images")
-      .select("listing_id, url, sort_order")
-      .in("listing_id", listingIds);
-    
-    if (imagesError) {
-      console.error("❌ [fetchMyListings] Error fetching images:", imagesError);
-    } else if (images && images.length > 0) {
-      // ✅ دمج الصور مع المنتجات
-      const imagesMap = new Map();
-      images.forEach((img: any) => {
-        if (!imagesMap.has(img.listing_id)) {
-          imagesMap.set(img.listing_id, []);
-        }
-        imagesMap.get(img.listing_id).push({
-          url: img.url,
-          sort_order: img.sort_order,
-        });
-      });
+    // ✅ معالجة البيانات للتوافق
+    const processedListings = listings.map((listing: any) => {
+      // ✅ تحويل variations
+      const variationsWithAvailability = listing.variations?.map((v: any) => ({
+        ...v,
+        is_available: v.is_available !== undefined ? v.is_available : v.is_active !== false,
+        price: v.price || 0,
+      })) || [];
       
-      // ✅ إضافة listing_images و image_urls لكل منتج
-      listings.forEach((listing: any) => {
-        const productImages = imagesMap.get(listing.id) || [];
-        // ترتيب حسب sort_order
-        productImages.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
-        
-        listing.listing_images = productImages;
-        // ✅ للتوافق مع ProductFormDialog
-        listing.image_urls = productImages.map((img: any) => img.url);
-      });
+      // ✅ تحويل sizes من options
+      const sizesFromOptions = listing.options
+        ?.filter((opt: any) => opt.option_type === 'size')
+        .map((opt: any) => opt.option_value) || [];
       
-      console.log(`📸 [fetchMyListings] Loaded images for ${listings.length} listings`);
-    }
+      return {
+        ...listing,
+        variations: variationsWithAvailability,
+        sizes: sizesFromOptions,
+        image_urls: listing.images?.map((img: any) => img.url) || [],
+        listing_images: listing.images || [],
+      };
+    });
+    
+    return processedListings;
   }
   
-  return listings;
+  return [];
 };
 // ✅ باقي الكود كما هو
+// src/lib/queries.ts
+
 export const myListingsQueryOptions = (ownerId: string | undefined) => 
   queryOptions({
     queryKey: ["listings", "my", ownerId].filter(Boolean),

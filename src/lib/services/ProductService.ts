@@ -148,79 +148,152 @@ static async saveOptions(listingId: string, options: Record<string, string[]>) {
   /**
    * ✅ حفظ التركيبات مع ربط الألوان وإجبار السعر
    */
-  static async saveVariations(listingId: string, variations: any[]) {
-    if (!variations || variations.length === 0) return { inserted: 0 };
+  // src/lib/services/ProductService.ts
+
+/**
+ * ✅ حفظ التركيبات مع ربط الألوان وإجبار السعر
+ * 🔥 محسّن: يحذف القديم أولاً ثم يحفظ الجديد
+ */
+static async saveVariations(listingId: string, variations: any[]) {
+  console.log("🔍 [ProductService] ===== SAVE VARIATIONS START =====");
+  console.log("🔍 [ProductService] Variations to save:", variations.length);
+  
+  if (!variations || variations.length === 0) {
+    console.log("ℹ️ [ProductService] No variations to save, deleting all");
     
-    // ✅ 1. جلب ألوان المنتج للربط
-    const { data: colors, error: colorsError } = await supabase
-      .from("product_colors")
-      .select("id, color_name_ar")
+    // ✅ إذا لم توجد تركيبات، احذف الكل
+    const { error } = await supabase
+      .from("product_variations")
+      .delete()
       .eq("listing_id", listingId);
     
-    if (colorsError) {
-      console.error('❌ Error fetching colors:', colorsError);
+    if (error) {
+      console.error('❌ Error deleting variations:', error);
+    } else {
+      console.log('✅ [ProductService] All variations deleted');
     }
-    
-    // ✅ 2. إنشاء خريطة للبحث عن اللون بالاسم
-    const colorMap = new Map();
-    (colors || []).forEach((c: any) => {
-      colorMap.set(c.color_name_ar, c.id);
-    });
-    
-    const entries: any[] = [];
-    let hasPriceError = false;
-    
-    variations.forEach((v, index) => {
-      if (!v.combination || Object.keys(v.combination).length === 0) {
-        return;
-      }
-      
-      // ✅ التحقق من وجود السعر
-      if (!v.price || v.price <= 0) {
-        console.warn(`⚠️ Variation ${index} has no price, using default 0`);
-        hasPriceError = true;
-      }
-      
-      // ✅ 3. البحث عن color_id من الـ combination
-      let colorId = null;
-      if (v.combination.colors) {
-        const colorName = v.combination.colors;
-        colorId = colorMap.get(colorName) || null;
-      }
-      
-      // ✅ 4. إذا كان v.color_id موجوداً، استخدمه
-      if (v.color_id) {
-        colorId = v.color_id;
-      }
-      
-      entries.push({
-        listing_id: listingId,
-        combination: v.combination,
-        is_active: v.is_available !== false,
-        sku: v.sku || `VAR-${listingId.substring(0, 8)}-${Date.now()}-${index}`,
-        price: v.price || 0,  // ✅ السعر إجباري، إذا لم يوجد استخدم 0
-
-        color_id: colorId,  // ✅ ربط اللون
-      });
-    });
-    
-    if (hasPriceError) {
-      console.warn('⚠️ Some variations have no price, they will be saved with price 0');
-    }
-    
-    if (entries.length > 0) {
-      const { error } = await supabase
-        .from("product_variations")
-        .insert(entries);
-      
-      if (error) {
-        console.error('❌ Error saving product variations:', error);
-        throw new Error(`فشل حفظ التركيبات: ${error.message}`);
-      }
-    }
-    
-    return { inserted: entries.length };
+    return { inserted: 0 };
   }
+  
+  // ✅ 1. جلب ألوان المنتج للربط
+  const { data: colors, error: colorsError } = await supabase
+    .from("product_colors")
+    .select("id, color_name_ar")
+    .eq("listing_id", listingId);
+  
+  if (colorsError) {
+    console.error('❌ Error fetching colors:', colorsError);
+  }
+  
+  // ✅ 2. إنشاء خريطة للبحث عن اللون بالاسم
+  const colorMap = new Map();
+  (colors || []).forEach((c: any) => {
+    colorMap.set(c.color_name_ar, c.id);
+  });
+  
+  const entries: any[] = [];
+  let hasPriceError = false;
+  
+  variations.forEach((v, index) => {
+    if (!v.combination || Object.keys(v.combination).length === 0) {
+      return;
+    }
+    
+    // ✅ التحقق من وجود السعر
+    const priceToSave = v.price !== undefined && v.price !== null && v.price > 0 
+      ? v.price 
+      : 0;
+    
+    if (priceToSave === 0) {
+      console.warn(`⚠️ Variation ${index} has no price, using default 0`);
+      hasPriceError = true;
+    }
+    
+    // ✅ 3. البحث عن color_id من الـ combination
+    let colorId = null;
+    if (v.combination.colors) {
+      const colorName = v.combination.colors;
+      colorId = colorMap.get(colorName) || null;
+    }
+    
+    // ✅ 4. إذا كان v.color_id موجوداً، استخدمه
+    if (v.color_id) {
+      colorId = v.color_id;
+    }
+    
+    // ✅ 5. إنشاء SKU فريد
+    const sku = v.sku || `VAR-${listingId.substring(0, 8)}-${Date.now()}-${index}`;
+    
+    entries.push({
+      listing_id: listingId,
+      combination: v.combination,
+      is_active: v.is_available !== false,
+      sku: sku,
+      price: priceToSave,
+      color_id: colorId,
+      stock_quantity: v.stock_quantity || 0,
+    });
+  });
+  
+  console.log("🔍 [ProductService] Entries to insert:", entries.length);
+  console.log("🔍 [ProductService] Entries:", entries.map(e => ({
+    combination: e.combination,
+    price: e.price,
+    is_active: e.is_active
+  })));
+  
+  if (entries.length > 0) {
+    // ✅ ✅ ✅ 🔥🔥🔥 الخطوة الأهم: حذف التركيبات القديمة أولاً
+    console.log('🗑️ [ProductService] Deleting old variations...');
+    const { error: deleteError } = await supabase
+      .from("product_variations")
+      .delete()
+      .eq("listing_id", listingId);
+    
+    if (deleteError) {
+      console.error('❌ Error deleting old variations:', deleteError);
+      // نستمر رغم الخطأ
+    } else {
+      console.log('✅ [ProductService] Old variations deleted');
+    }
+    
+    // ✅ ✅ ✅ حفظ التركيبات الجديدة
+    console.log(`💾 [ProductService] Inserting ${entries.length} new variations...`);
+    const { error, data } = await supabase
+      .from("product_variations")
+      .insert(entries)
+      .select(); // ✅ أضف select() لترجع البيانات المحفوظة
+    
+    if (error) {
+      console.error('❌ Error saving product variations:', error);
+      throw new Error(`فشل حفظ التركيبات: ${error.message}`);
+    }
+    
+    console.log(`✅ [ProductService] Saved ${entries.length} variations with prices`);
+    console.log('✅ [ProductService] Saved data:', data);
+  } else {
+    // ✅ إذا لم توجد تركيبات للحفظ، احذف الكل
+    console.log('🗑️ [ProductService] No variations to save, deleting all');
+    const { error } = await supabase
+      .from("product_variations")
+      .delete()
+      .eq("listing_id", listingId);
+    
+    if (error) {
+      console.error('❌ Error deleting variations:', error);
+    } else {
+      console.log('✅ [ProductService] All variations deleted');
+    }
+  }
+  
+  if (hasPriceError) {
+    console.warn('⚠️ Some variations have no price, they were saved with price 0');
+  }
+  
+  console.log("🔍 [ProductService] ===== SAVE VARIATIONS END =====");
+  
+  return { inserted: entries.length };
+}
   
   /**
    * ✅ حذف جميع بيانات المنتج
