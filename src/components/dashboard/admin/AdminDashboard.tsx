@@ -7,7 +7,7 @@ import {
   Search, X, Bell, Truck, Sparkles, TrendingUp, Users, Settings,
   Activity, ArrowUp, ArrowDown, CircleDot, Zap, Clock,
   Rocket, Gem, Crown, Star, Flame, Award, Target, Compass,
-  Tag, AlertTriangle, ChevronRight, ChevronLeft,
+  Tag, AlertTriangle, ChevronRight, ChevronLeft,MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
