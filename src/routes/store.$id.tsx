@@ -756,18 +756,57 @@ function StorePage() {
 
 // ====== دوال مساعدة ======
 
+// src/routes/store.$id.tsx
+
 export function isStoreCurrentlyOpen(store: any): boolean {
+  // ✅ 1. إذا كان المتجر غير نشط → مغلق
   if (!store || store.store_online === false) return false;
-  const opens = (store.store_opens_at || "").slice(0, 5);
-  const closes = (store.store_closes_at || "").slice(0, 5);
-  if (!opens || !closes) return true;
-  const now = new Date();
-  const cur = now.getHours() * 60 + now.getMinutes();
-  const [oh, om] = opens.split(":").map(Number);
-  const [ch, cm] = closes.split(":").map(Number);
-  const o = oh * 60 + om;
-  const c = ch * 60 + cm;
-  return o <= c ? cur >= o && cur <= c : cur >= o || cur <= c;
+
+  // ✅ 2. إذا ما في وقت محدد → مفتوح (افتراضي)
+  if (!store.store_opens_at || !store.store_closes_at) {
+    console.log('ℹ️ [Store] No opening hours set, assuming open');
+    return true;
+  }
+
+  try {
+    // ✅ 3. استخراج الوقت بشكل آمن (تدعم "09:00:00" و "09:00")
+    const opens = store.store_opens_at.slice(0, 5); // "09:00"
+    const closes = store.store_closes_at.slice(0, 5); // "22:00"
+
+    if (!opens || !closes || opens.length < 5 || closes.length < 5) {
+      console.log('ℹ️ [Store] Invalid time format, assuming open');
+      return true;
+    }
+
+    // ✅ 4. حساب الوقت الحالي
+    const now = new Date();
+    const cur = now.getHours() * 60 + now.getMinutes();
+
+    // ✅ 5. تحويل إلى دقائق
+    const [oh, om] = opens.split(":").map(Number);
+    const [ch, cm] = closes.split(":").map(Number);
+
+    // ✅ 6. التحقق من الأرقام
+    if (isNaN(oh) || isNaN(om) || isNaN(ch) || isNaN(cm)) {
+      console.log('ℹ️ [Store] Invalid time numbers, assuming open');
+      return true;
+    }
+
+    const o = oh * 60 + om;
+    const c = ch * 60 + cm;
+
+    // ✅ 7. إذا كان وقت الفتح قبل وقت الإغلاق (نفس اليوم)
+    if (o <= c) {
+      return cur >= o && cur <= c;
+    } 
+    // ✅ 8. إذا كان وقت الفتح بعد وقت الإغلاق (يمتد لليوم التالي)
+    else {
+      return cur >= o || cur <= c;
+    }
+  } catch (error) {
+    console.error('❌ [Store] Error checking store status:', error);
+    return true; // ✅ في حالة الخطأ، نعتبر المتجر مفتوح
+  }
 }
 
 function StoreStatusBadge({ store, lang }: { store: any; lang: "ar" | "en" }) {

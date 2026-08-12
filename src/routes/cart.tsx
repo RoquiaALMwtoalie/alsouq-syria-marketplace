@@ -372,94 +372,188 @@ function CartPage() {
   }, [app.lang]);
 
   // ✅ تطبيق كود الخصم
-  const applyPromoCode = useCallback(async () => {
-    if (!promoCode.trim()) {
-      toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال كود الخصم" : "⚠️ Please enter a promo code");
+// src/routes/cart.tsx - استبدل دالة applyPromoCode بهذه
+
+const applyPromoCode = useCallback(async () => {
+  if (!promoCode.trim()) {
+    toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال كود الخصم" : "⚠️ Please enter a promo code");
+    return;
+  }
+
+  setIsApplyingPromo(true);
+  setPromoMessage("");
+
+  try {
+    const { data, error } = await supabase
+      .from("promo_codes")
+      .select("*")
+      .eq("code", promoCode.trim().toUpperCase())
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      setPromoMessage(app.lang === "ar" ? "❌ كود غير صالح" : "❌ Invalid code");
+      toast.error(app.lang === "ar" ? "❌ كود الخصم غير صالح" : "❌ Invalid promo code");
       return;
     }
 
-    setIsApplyingPromo(true);
-    setPromoMessage("");
+    // ✅ التحقق من الصلاحية
+    const now = new Date();
+    const expiresAt = data.expires_at ? new Date(data.expires_at) : null;
+    const startsAt = data.starts_at ? new Date(data.starts_at) : null;
 
-    try {
-      const { data, error } = await supabase
-        .from("promo_codes")
-        .select("*")
-        .eq("code", promoCode.trim().toUpperCase())
-        .eq("is_active", true)
-        .maybeSingle();
+    if (startsAt && now < startsAt) {
+      setPromoMessage(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
+      toast.error(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
+      return;
+    }
 
-      if (error) throw error;
+    if (expiresAt && now > expiresAt) {
+      setPromoMessage(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
+      toast.error(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
+      return;
+    }
 
-      if (!data) {
-        setPromoMessage(app.lang === "ar" ? "❌ كود غير صالح" : "❌ Invalid code");
-        toast.error(app.lang === "ar" ? "❌ كود الخصم غير صالح" : "❌ Invalid promo code");
-        return;
-      }
+    // ✅ ✅ ✅ التحقق من المتجر (إذا كان الكود مخصصاً)
+    if (data.store_id) {
+      // ✅ التحقق من أن جميع المنتجات في السلة تنتمي للمتجر المحدد
+      const hasDifferentStore = items.some((item: any) => {
+        const listing = item.listing || item;
+        return listing.owner_id !== data.store_id;
+      });
 
-      const now = new Date();
-      const expiresAt = data.expires_at ? new Date(data.expires_at) : null;
-      const startsAt = data.starts_at ? new Date(data.starts_at) : null;
-
-      if (startsAt && now < startsAt) {
-        setPromoMessage(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
-        toast.error(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
-        return;
-      }
-
-      if (expiresAt && now > expiresAt) {
-        setPromoMessage(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
-        toast.error(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
-        return;
-      }
-
-      const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-      const minOrder = data.min_order || 0;
-
-      if (subtotal < minOrder) {
+      if (hasDifferentStore) {
         setPromoMessage(
           app.lang === "ar" 
-            ? `❌ الحد الأدنى للطلب هو ${formatPrice(minOrder, app.currency, app.lang)}` 
-            : `❌ Minimum order is ${formatPrice(minOrder, app.currency, app.lang)}`
+            ? `❌ هذا الكود مخصص لمتجر "${data.store_name}" فقط` 
+            : `❌ This code is only for store "${data.store_name}"`
         );
-        toast.error(app.lang === "ar" ? `❌ الحد الأدنى للطلب هو ${formatPrice(minOrder, app.currency, app.lang)}` : `❌ Minimum order is ${formatPrice(minOrder, app.currency, app.lang)}`);
+        toast.error(
+          app.lang === "ar" 
+            ? `❌ هذا الكود مخصص لمتجر "${data.store_name}" فقط` 
+            : `❌ This code is only for store "${data.store_name}"`
+        );
         return;
       }
+    }
 
-      let discount = 0;
-      if (data.type === "percentage") {
-        discount = (subtotal * (data.value / 100));
-      } else if (data.type === "fixed") {
-        discount = data.value;
-      }
+    // ✅ حساب المجموع الفرعي
+    const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const minOrder = data.min_order || 0;
 
-      if (data.max_discount && discount > data.max_discount) {
-        discount = data.max_discount;
-      }
-
-      setPromoApplied(true);
-      setPromoDiscount(discount);
-      setPromoData(data);
+    if (subtotal < minOrder) {
       setPromoMessage(
         app.lang === "ar" 
-          ? `✅ خصم ${data.value}${data.type === "percentage" ? '%' : ` ${app.currency}`}`
-          : `✅ ${data.value}${data.type === "percentage" ? '%' : ` ${app.currency}`} discount`
+          ? `❌ الحد الأدنى للطلب هو ${formatPrice(minOrder, app.currency, app.lang)}` 
+          : `❌ Minimum order is ${formatPrice(minOrder, app.currency, app.lang)}`
       );
-      toast.success(
+      toast.error(
         app.lang === "ar" 
-          ? `✅ تم تطبيق الخصم بنجاح! (${formatPrice(discount, app.currency, app.lang)})`
-          : `✅ Discount applied successfully! (${formatPrice(discount, app.currency, app.lang)})`
+          ? `❌ الحد الأدنى للطلب هو ${formatPrice(minOrder, app.currency, app.lang)}` 
+          : `❌ Minimum order is ${formatPrice(minOrder, app.currency, app.lang)}`
       );
-
-    } catch (error) {
-      console.error("❌ Error applying promo code:", error);
-      setPromoMessage(app.lang === "ar" ? "❌ حدث خطأ" : "❌ An error occurred");
-      toast.error(app.lang === "ar" ? "❌ حدث خطأ أثناء تطبيق الكود" : "❌ Error applying code");
-    } finally {
-      setIsApplyingPromo(false);
+      return;
     }
-  }, [promoCode, items, app.lang, app.currency]);
 
+    let discount = 0;
+    let discountMessage = "";
+
+    // ✅ ✅ ✅ معالجة أنواع الخصم المختلفة
+    if (data.type === "percentage") {
+      discount = (subtotal * (data.value / 100));
+      discountMessage = `${data.value}%`;
+    } 
+    else if (data.type === "fixed") {
+      discount = data.value;
+      discountMessage = `${formatPrice(data.value, app.currency, app.lang)}`;
+    }
+    else if (data.type === "free_shipping") {
+      // ✅ توصيل مجاني: الخصم = قيمة التوصيل
+      discount = deliveryFee;
+      discountMessage = app.lang === "ar" ? "توصيل مجاني" : "Free Shipping";
+      
+      if (deliveryFee === 0) {
+        setPromoMessage(app.lang === "ar" ? "✅ التوصيل مجاني بالفعل" : "✅ Shipping is already free");
+        toast.info(app.lang === "ar" ? "✅ التوصيل مجاني بالفعل" : "✅ Shipping is already free");
+        setIsApplyingPromo(false);
+        return;
+      }
+    }
+    else if (data.type === "buy_x_get_y") {
+      // ✅ ✅ ✅ اشترِ واحصل على منتج مجاني
+      const buyQty = data.metadata?.buy_quantity || 2;
+      const getQty = data.metadata?.get_quantity || 1;
+      
+      // ✅ حساب أرخص المنتجات المجانية
+      const sortedItems = [...items].sort((a, b) => a.price - b.price);
+      let freeItemsCount = 0;
+      let freeDiscount = 0;
+      
+      for (const item of sortedItems) {
+        const batches = Math.floor(item.quantity / buyQty);
+        const freePerBatch = Math.min(getQty, batches);
+        if (freePerBatch > 0) {
+          freeItemsCount += freePerBatch;
+          freeDiscount += freePerBatch * item.price;
+        }
+      }
+      
+      discount = freeDiscount;
+      discountMessage = `${app.lang === "ar" ? `اشترِ ${buyQty} واحصل على ${getQty} مجاناً` : `Buy ${buyQty} Get ${getQty} Free`}`;
+      
+      if (discount === 0) {
+        setPromoMessage(
+          app.lang === "ar" 
+            ? `❌ اشترِ ${buyQty} منتج للحصول على ${getQty} مجاناً` 
+            : `❌ Buy ${buyQty} items to get ${getQty} free`
+        );
+        toast.error(
+          app.lang === "ar" 
+            ? `❌ اشترِ ${buyQty} منتج للحصول على ${getQty} مجاناً` 
+            : `❌ Buy ${buyQty} items to get ${getQty} free`
+        );
+        return;
+      }
+    }
+
+    // ✅ تطبيق الحد الأقصى للخصم
+    if (data.max_discount && discount > data.max_discount) {
+      discount = data.max_discount;
+    }
+
+    // ✅ إذا كان الخصم 0، لا نطبقه
+    if (discount <= 0) {
+      setPromoMessage(app.lang === "ar" ? "❌ لا يمكن تطبيق الخصم" : "❌ Cannot apply discount");
+      toast.error(app.lang === "ar" ? "❌ لا يمكن تطبيق الخصم" : "❌ Cannot apply discount");
+      return;
+    }
+
+    // ✅ تطبيق الخصم
+    setPromoApplied(true);
+    setPromoDiscount(discount);
+    setPromoData(data);
+    setPromoMessage(
+      app.lang === "ar" 
+        ? `✅ خصم ${discountMessage} (${formatPrice(discount, app.currency, app.lang)})` 
+        : `✅ ${discountMessage} discount (${formatPrice(discount, app.currency, app.lang)})`
+    );
+    
+    toast.success(
+      app.lang === "ar" 
+        ? `✅ تم تطبيق الخصم بنجاح! (${formatPrice(discount, app.currency, app.lang)})`
+        : `✅ Discount applied successfully! (${formatPrice(discount, app.currency, app.lang)})`
+    );
+
+  } catch (error) {
+    console.error("❌ Error applying promo code:", error);
+    setPromoMessage(app.lang === "ar" ? "❌ حدث خطأ" : "❌ An error occurred");
+    toast.error(app.lang === "ar" ? "❌ حدث خطأ أثناء تطبيق الكود" : "❌ Error applying code");
+  } finally {
+    setIsApplyingPromo(false);
+  }
+}, [promoCode, items, deliveryFee, app.lang, app.currency]);
   // ✅ تحديث الكمية
   const handleUpdateQuantity = useCallback(async (itemId: string, newQuantity: number) => {
     if (!app.user) {

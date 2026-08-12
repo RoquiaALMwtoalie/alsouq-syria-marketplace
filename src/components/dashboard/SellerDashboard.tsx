@@ -110,14 +110,41 @@ export function SellerDashboard({}: SellerDashboardProps) {
   const governorate = profile?.governorate?.name_ar || profile?.governorate?.name_en || "";
   const opensAt = profile?.store_opens_at ? profile.store_opens_at.slice(0, 5) : "";
   const closesAt = profile?.store_closes_at ? profile.store_closes_at.slice(0, 5) : "";
-  const isOpen = () => {
-    if (!opensAt || !closesAt) return true;
+// ✅ ✅ ✅ نسخة محسّنة من الدالة (مثل الموجودة في store.$id.tsx)
+const isStoreOpen = (store: any): boolean => {
+  if (!store || store.store_online === false) return false;
+  if (!store.store_opens_at || !store.store_closes_at) return true;
+  
+  try {
+    const opens = store.store_opens_at.slice(0, 5);
+    const closes = store.store_closes_at.slice(0, 5);
+    
+    if (!opens || !closes || opens.length < 5 || closes.length < 5) return true;
+    
     const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-    const openTime = parseInt(opensAt.split(':')[0]) * 60 + parseInt(opensAt.split(':')[1]);
-    const closeTime = parseInt(closesAt.split(':')[0]) * 60 + parseInt(closesAt.split(':')[1]);
-    return currentTime >= openTime && currentTime <= closeTime;
-  };
+    const cur = now.getHours() * 60 + now.getMinutes();
+    
+    const [oh, om] = opens.split(":").map(Number);
+    const [ch, cm] = closes.split(":").map(Number);
+    
+    if (isNaN(oh) || isNaN(om) || isNaN(ch) || isNaN(cm)) return true;
+    
+    const o = oh * 60 + om;
+    const c = ch * 60 + cm;
+    
+    if (o <= c) {
+      return cur >= o && cur <= c;
+    } else {
+      return cur >= o || cur <= c;
+    }
+  } catch (error) {
+    console.error('❌ [Store] Error checking store status:', error);
+    return true;
+  }
+};
+
+// ✅ استخدمها
+const currentlyOpen = isStoreOpen(profile);
   const storeStatus = isStoreActive && isStoreOnline;
   const currentlyOpen = isOpen();
 

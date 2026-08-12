@@ -1019,15 +1019,15 @@ export function AdminPromoCodes() {
                 <Label className="text-[#0d2e2a] dark:text-white font-semibold">
                   {isArabic ? "تاريخ الانتهاء" : "Expires At"}
                 </Label>
-                <Input
-                  type="datetime-local"
-                  value={formData.expires_at}
-                  onChange={(e) => setFormData({ ...formData, expires_at: e.target.value })}
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {isArabic ? "اتركه فارغاً للصلاحية الدائمة" : "Leave empty for unlimited"}
-                </p>
+              <Input
+  type="date"
+  value={formData.expires_at}
+  onChange={(e) => setFormData({ ...formData, expires_at: e.target.value })}
+  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
+/>
+<p className="text-xs text-muted-foreground">
+  {isArabic ? "📅 اختر تاريخ الانتهاء (اتركه فارغاً للصلاحية الدائمة)" : "📅 Select expiry date (leave empty for unlimited)"}
+</p>
               </div>
             </div>
 
@@ -1183,29 +1183,18 @@ export function AdminPromoCodes() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              <div className="flex items-center gap-3 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-colors">
-                <Switch
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                  className="data-[state=checked]:bg-[#2d6b63]"
-                />
-                <Label className="cursor-pointer text-sm text-[#0d2e2a] dark:text-white">
-                  {isArabic ? "🟢 الكود نشط" : "🟢 Code is active"}
-                </Label>
-              </div>
-
-              <div className="flex items-center gap-3 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-colors">
-                <Switch
-                  checked={formData.is_public}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_public: checked })}
-                  className="data-[state=checked]:bg-[#4a9f95]"
-                />
-                <Label className="cursor-pointer text-sm text-[#0d2e2a] dark:text-white">
-                  {isArabic ? "👁️ كود عام" : "👁️ Public code"}
-                </Label>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4 pt-2">
+  <div className="flex items-center gap-3 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-colors">
+    <Switch
+      checked={formData.is_active}
+      onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+      className="data-[state=checked]:bg-[#2d6b63]"
+    />
+    <Label className="cursor-pointer text-sm text-[#0d2e2a] dark:text-white">
+      {isArabic ? "🟢 الكود نشط" : "🟢 Code is active"}
+    </Label>
+  </div>
+</div>
 
             <DialogFooter className="gap-2 pt-4 border-t border-[#0d2e2a]/10">
               <Button 
