@@ -1,4 +1,4 @@
-// src/components/dashboard/admin/AdminDashboard.tsx
+// src/components/dashboard/admin/AdminDashboard.tsx - الكود المصحح بالكامل
 
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -290,6 +290,7 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
     </div>
   );
 };
+
 export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
   const app = useApp();
   const [tab, setTab] = useState<
@@ -298,6 +299,25 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResultsPage, setShowSearchResultsPage] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // ✅ ✅ ✅ قراءة التاب من الـ URL عند تحميل الصفحة
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabFromUrl = params.get('tab');
+    
+    if (tabFromUrl) {
+      const validTabs = [
+        "overview", "listings", "stores", "delivery", 
+        "promo", "complaints", "applications", "banners", 
+        "announcements", "categories", "notifications"
+      ];
+      
+      if (validTabs.includes(tabFromUrl)) {
+        console.log(`📌 [AdminDashboard] Setting tab from URL: ${tabFromUrl}`);
+        setTab(tabFromUrl as any);
+      }
+    }
+  }, []);
 
   // ✅ تحديث الوقت الحقيقي
   useEffect(() => {

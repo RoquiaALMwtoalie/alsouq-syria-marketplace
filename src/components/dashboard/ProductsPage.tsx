@@ -206,116 +206,127 @@ export const ProductsPage = React.memo(function ProductsPage() {
   }, [govs, app.lang]);
 
   // ===== دالة إرسال إشعار للأدمن =====
-  const notifyAdmin = useCallback(async (productTitle: string, actionType: string, userId: string, listingId: string) => {
-    console.log("🔍 [STEP 1] notifyAdmin called with:", { 
-      productTitle, 
-      actionType, 
-      userId, 
-      listingId 
+// src/components/dashboard/ProductsPage.tsx
+
+const notifyAdmin = useCallback(async (productTitle: string, actionType: string, userId: string, listingId: string) => {
+  console.log("🔍 [STEP 1] notifyAdmin called with:", { 
+    productTitle, 
+    actionType, 
+    userId, 
+    listingId 
+  });
+
+  try {
+    console.log("🔍 [STEP 2] Fetching admin from user_roles...");
+    
+    const { data: adminRole, error: roleError } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin")
+      .limit(1)
+      .maybeSingle();
+
+    console.log("🔍 [STEP 3] Admin fetch result:", { 
+      adminRole, 
+      roleError,
+      hasAdmin: !!adminRole,
+      hasUserId: !!adminRole?.user_id 
     });
 
-    try {
-      console.log("🔍 [STEP 2] Fetching admin from user_roles...");
-      
-      const { data: adminRole, error: roleError } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin")
-        .limit(1)
-        .maybeSingle();
-
-      console.log("🔍 [STEP 3] Admin fetch result:", { 
-        adminRole, 
-        roleError,
-        hasAdmin: !!adminRole,
-        hasUserId: !!adminRole?.user_id 
-      });
-
-      if (roleError) {
-        console.error("❌ [STEP 4] Error fetching admin:", roleError);
-        return;
-      }
-
-      if (!adminRole) {
-        console.error("❌ [STEP 5] No admin found in user_roles table!");
-        const { data: allRoles, error: rolesError } = await supabase
-          .from("user_roles")
-          .select("*");
-        
-        console.log("📊 [STEP 5] All user_roles:", allRoles);
-        console.log("📊 [STEP 5] Roles error:", rolesError);
-        return;
-      }
-
-      if (!adminRole.user_id) {
-        console.error("❌ [STEP 6] Admin user_id is null!", { adminRole });
-        return;
-      }
-
-      console.log("✅ [STEP 7] Admin found successfully:", adminRole.user_id);
-
-      console.log("🔍 [STEP 8] Fetching user profile...");
-      
-      const { data: userProfile, error: profileError } = await supabase
-        .from("profiles")
-        .select("full_name, store_name")
-        .eq("id", userId)
-        .maybeSingle();
-
-      console.log("🔍 [STEP 9] User profile result:", { 
-        userProfile, 
-        profileError,
-        hasProfile: !!userProfile 
-      });
-
-      const userName = userProfile?.full_name || userProfile?.store_name || userId || 'مستخدم';
-      console.log("✅ [STEP 10] User name:", userName);
-
-      console.log("🔍 [STEP 11] Preparing notification data...");
-      
-     const notificationData = {
-    user_id: adminRole.user_id,
-    type: "product_pending",
-    title_ar: `📦 طلب ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} منتج`,
-    body_ar: `قام ${userName} بـ ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} المنتج "${productTitle}"، بحاجة للمراجعة`,
-    link_url: `/admin/listings/${listingId}`,
-    metadata: {
-      product_id: listingId,
-      action: actionType,
-      user_name: userName,
-      user_id: userId,
-    },
-    created_at: new Date().toISOString(),
-    is_read: false,
-  };
-
-      console.log("✅ [STEP 12] Notification data ready:", notificationData);
-
-      console.log("🔍 [STEP 13] Sending notification to Supabase...");
-      
-      const { error: notifError } = await supabase
-        .from("notifications")
-        .insert(notificationData);
-
-      if (notifError) {
-        console.error("❌ [STEP 14] Error sending notification:", notifError);
-        console.error("❌ [STEP 14] Error details:", {
-          code: notifError.code,
-          message: notifError.message,
-          details: notifError.details,
-          hint: notifError.hint,
-        });
-      } else {
-        console.log(`✅ [STEP 15] Admin notified successfully!`);
-        console.log(`✅ [STEP 15] Product: ${productTitle}, Admin: ${adminRole.user_id}`);
-      }
-
-    } catch (error) {
-      console.error("❌ [STEP 16] Unexpected error in notifyAdmin:", error);
-      console.error("❌ [STEP 16] Error stack:", error instanceof Error ? error.stack : 'No stack');
+    if (roleError) {
+      console.error("❌ [STEP 4] Error fetching admin:", roleError);
+      return;
     }
-  }, []);
 
+    if (!adminRole) {
+      console.error("❌ [STEP 5] No admin found in user_roles table!");
+      const { data: allRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("*");
+      
+      console.log("📊 [STEP 5] All user_roles:", allRoles);
+      console.log("📊 [STEP 5] Roles error:", rolesError);
+      return;
+    }
+
+    if (!adminRole.user_id) {
+      console.error("❌ [STEP 6] Admin user_id is null!", { adminRole });
+      return;
+    }
+
+    console.log("✅ [STEP 7] Admin found successfully:", adminRole.user_id);
+
+    console.log("🔍 [STEP 8] Fetching user profile...");
+    
+    const { data: userProfile, error: profileError } = await supabase
+      .from("profiles")
+      .select("full_name, store_name")
+      .eq("id", userId)
+      .maybeSingle();
+
+    console.log("🔍 [STEP 9] User profile result:", { 
+      userProfile, 
+      profileError,
+      hasProfile: !!userProfile 
+    });
+
+    const userName = userProfile?.full_name || userProfile?.store_name || userId || 'مستخدم';
+    console.log("✅ [STEP 10] User name:", userName);
+
+    console.log("🔍 [STEP 11] Preparing notification data...");
+    
+    // ✅ ✅ ✅ تحديد التاب المناسب بناءً على نوع الطلب
+    let tabTarget = "";
+    if (actionType === "إضافة" || actionType === "تعديل" || actionType === "إعادة نشر") {
+      // ✅ طلب منتج → ياخذه إلى تاب المنتجات
+      tabTarget = "listings";
+    }
+
+    const notificationData = {
+      user_id: adminRole.user_id,
+      type: "product_pending",
+      title_ar: `📦 طلب ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} منتج`,
+      body_ar: `قام ${userName} بـ ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} المنتج "${productTitle}"، بحاجة للمراجعة`,
+      // ✅ ✅ ✅ الرابط مع التاب المناسب
+      link_url: `/admin?tab=${tabTarget}`,
+      metadata: {
+        product_id: listingId,
+        action: actionType,
+        user_name: userName,
+        user_id: userId,
+        tab: tabTarget, // ✅ نحفظ التاب في الميتاداتا
+      },
+      created_at: new Date().toISOString(),
+      is_read: false,
+    };
+
+    console.log("✅ [STEP 12] Notification data ready:", notificationData);
+
+    console.log("🔍 [STEP 13] Sending notification to Supabase...");
+    
+    const { error: notifError } = await supabase
+      .from("notifications")
+      .insert(notificationData);
+
+    if (notifError) {
+      console.error("❌ [STEP 14] Error sending notification:", notifError);
+      console.error("❌ [STEP 14] Error details:", {
+        code: notifError.code,
+        message: notifError.message,
+        details: notifError.details,
+        hint: notifError.hint,
+      });
+    } else {
+      console.log(`✅ [STEP 15] Admin notified successfully!`);
+      console.log(`✅ [STEP 15] Product: ${productTitle}, Admin: ${adminRole.user_id}`);
+      console.log(`✅ [STEP 15] Link: /admin?tab=${tabTarget}`);
+    }
+
+  } catch (error) {
+    console.error("❌ [STEP 16] Unexpected error in notifyAdmin:", error);
+    console.error("❌ [STEP 16] Error stack:", error instanceof Error ? error.stack : 'No stack');
+  }
+}, []);
   // ===== حفظ المنتج =====
 // ===== حفظ المنتج (مصحح) =====
 // ===== حفظ المنتج (مصحح مع تحديث الكاش) =====

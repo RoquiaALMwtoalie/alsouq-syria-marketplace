@@ -206,7 +206,7 @@ export function AdminNotifications() {
   });
 
   // ===== Queries (V2) =====
-  const { data: notifications = [], refetch: refetchNotifications } = useUserNotifications(app.user?.id, { limit: 100 });
+  const { data: notifications = [], refetch: refetchNotifications } = useUserNotifications(app.user?.id, { limit: 10 });
   const { data: stats, refetch: refetchStats } = useUserNotificationsStats(app.user?.id);
   const sendBulkNotification = useSendBulkNotificationsV2();
   const deleteNotification = useDeleteNotificationV2();
@@ -377,7 +377,7 @@ export function AdminNotifications() {
   // إرسال الإشعار (V2)
   // ============================================================
   
-  const handleSendNotification = async () => {
+const handleSendNotification = async () => {
     if (!formData.title_ar || !formData.body_ar) {
       toast.error(isRTL ? '⚠️ الرجاء ملء العنوان والمحتوى بالعربية' : '⚠️ Please fill title and body in Arabic');
       return;
@@ -428,7 +428,8 @@ export function AdminNotifications() {
         return;
       }
 
-      await sendBulkNotification.mutateAsync({
+      // ✅ ✅ ✅ إرسال الإشعار بدون انتظار (في الخلفية)
+      sendBulkNotification.mutateAsync({
         userIds: userIds,
         type: formData.type,
         titleAr: formData.title_ar,
@@ -442,22 +443,33 @@ export function AdminNotifications() {
           governorate_ids: formData.governorate_ids,
           scheduled_for: formData.scheduled_for || null,
         }
+      }).then(() => {
+        // ✅ بعد الانتهاء من الحفظ (في الخلفية)
+        toast.success(
+          isRTL 
+            ? `✅ تم إرسال الإشعار إلى ${userIds.length} مستخدم` 
+            : `✅ Notification sent to ${userIds.length} users`
+        );
+        refetchNotifications();
+        refetchStats();
+      }).catch((error) => {
+        console.error('Error sending notification:', error);
+        toast.error(isRTL ? '❌ فشل إرسال الإشعار' : '❌ Failed to send notification');
       });
 
-      toast.success(
-        isRTL 
-          ? `✅ تم إرسال الإشعار إلى ${userIds.length} مستخدم` 
-          : `✅ Notification sent to ${userIds.length} users`
-      );
-      
+      // ✅ ✅ ✅ نغلق الـ Dialog فوراً (بدون انتظار)
       setIsCreateDialogOpen(false);
       resetForm();
-      refetchNotifications();
-      refetchStats();
       
+      toast.success(
+        isRTL 
+          ? `✅ جاري إرسال الإشعار إلى ${userIds.length} مستخدم...` 
+          : `✅ Sending notification to ${userIds.length} users...`
+      );
+
     } catch (error: any) {
-      console.error('Error sending notification:', error);
-      toast.error(isRTL ? '❌ فشل إرسال الإشعار' : '❌ Failed to send notification');
+      console.error('Error preparing notification:', error);
+      toast.error(isRTL ? '❌ فشل تجهيز الإشعار' : '❌ Failed to prepare notification');
     } finally {
       setIsSending(false);
     }

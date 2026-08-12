@@ -1,6 +1,6 @@
-// src/__root.tsx
+// src/__root.tsx - الكود المصحح بالكامل
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
   Outlet,
   createRootRouteWithContext,
@@ -779,11 +779,6 @@ function SimpleRedirect() {
 }
 
 // ============================================================
-// ✅ RootComponent - مصحح مع LoginSplash
-// ============================================================
-// src/__root.tsx - الكود المصحح
-
-// ============================================================
 // ✅ RootComponent - لا يستخدم useApp
 // ============================================================
 function RootComponent() {
@@ -832,7 +827,6 @@ function RootComponent() {
     pathname.startsWith("/messages") ||
     pathname.startsWith("/messages_");
 
-  // ✅ ✅ ✅ تمرير location و hideChrome و scrollProgress إلى RootContent
   return (
     <QueryClientProvider client={queryClient}>
       <AppProvider>
@@ -847,17 +841,7 @@ function RootComponent() {
 }
 
 // ============================================================
-// ✅ RootContent - يستخدم useApp (داخل AppProvider)
-// ============================================================
-// src/__root.tsx - الجزء المعدل
-
-// ============================================================
-// ✅ RootContent - يستخدم useApp (داخل AppProvider)
-// ============================================================
-// src/__root.tsx - الكود المصحح النهائي
-
-// ============================================================
-// ✅ RootContent - يستخدم useApp (داخل AppProvider)
+// ✅ RootContent - يستخدم useApp (داخل AppProvider) مع Realtime للإشعارات
 // ============================================================
 function RootContent({ 
   hideChrome, 
@@ -869,25 +853,88 @@ function RootContent({
   location: any;
 }) {
   const app = useApp();
+  const queryClient = useQueryClient(); // ✅ ✅ ✅ مهم جداً
+  const navigate = useNavigate(); // ✅ ✅ ✅ مهم جداً
   const [showSplash, setShowSplash] = useState(false);
 
+  // ✅ ✅ ✅ إضافة Realtime للإشعارات (السبب الرئيسي لعدم وصول الإشعارات لحظياً)
   useEffect(() => {
-    // إذا لم يتم تسجيل الدخول بعد، أغلق السبلاش
+    if (!app.user) return;
+
+    console.log('📡 [Realtime] Setting up notifications channel for user:', app.user.id);
+
+    const channel = supabase
+      .channel('notifications-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${app.user.id}`,
+        },
+        (payload) => {
+          const notification = payload.new as any;
+          
+          console.log('📬 [Realtime] New notification received:', notification);
+          
+          // ✅ إبطال الكاش عشان يتحدث العدد
+          queryClient.invalidateQueries({ 
+            queryKey: ['notifications', 'v2', app.user.id] 
+          });
+          queryClient.invalidateQueries({ 
+            queryKey: ['notifications', 'unread', app.user.id] 
+          });
+          queryClient.invalidateQueries({ 
+            queryKey: ['notifications', app.user.id] 
+          });
+          
+          // ✅ عرض إشعار داخل التطبيق (Toast)
+          toast.info(notification.body_ar || '📬 لديك إشعار جديد', {
+            duration: 5000,
+            position: 'bottom-right',
+            icon: '🔔',
+            action: {
+              label: 'عرض',
+              onClick: () => {
+                if (notification.link_url) {
+                  navigate({ to: notification.link_url });
+                }
+              }
+            }
+          });
+
+          // ✅ تشغيل صوت الإشعار
+          try {
+            const audio = new Audio('/notification.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(() => {});
+          } catch (e) {}
+        }
+      )
+      .subscribe((status) => {
+        console.log(`📡 Realtime notifications status: ${status}`);
+      });
+
+    return () => {
+      console.log('🧹 [Realtime] Cleaning up notifications channel');
+      supabase.removeChannel(channel);
+    };
+  }, [app.user, queryClient, navigate]);
+
+  // ✅ إظهار السبلاش
+  useEffect(() => {
     if (!app?.user) {
       setShowSplash(false);
       return;
     }
-
-    // ✅ إظهار السبلاش فور توفر بيانات المستخدم ودون قيود sessionStorage معقدة
     setShowSplash(true);
-
-  }, [app?.user?.id]); // يتفعل بمجرد تعرف النظام على المستخدم
+  }, [app?.user?.id]);
 
   const handleSplashComplete = () => {
     setShowSplash(false);
   };
 
-  // عدم إظهار السبلاش داخل صفحات الـ Auth
   const isAuthPage = location?.pathname?.startsWith("/auth") || 
                      location?.pathname?.startsWith("/reset-password");
 
@@ -912,7 +959,6 @@ function RootContent({
           {!hideChrome && <Header />}
           <main className="flex-1"><Outlet /></main>
           {!hideChrome && <Footer />}
-      
         </div>
       </ClientOnly>
       
