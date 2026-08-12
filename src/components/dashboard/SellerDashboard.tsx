@@ -146,7 +146,7 @@ const isStoreOpen = (store: any): boolean => {
 // ✅ استخدمها
 const currentlyOpen = isStoreOpen(profile);
   const storeStatus = isStoreActive && isStoreOnline;
-  const currentlyOpen = isOpen();
+ 
 
   // ===== جلب البيانات من API =====
   const { data: sellerOrdersRaw = [] } = useMyOrders(app.user?.id);
