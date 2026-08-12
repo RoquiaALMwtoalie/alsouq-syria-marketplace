@@ -372,6 +372,9 @@ export function SellerApplicationsAdmin() {
   // ============================================================
   // ✅ الموافقة أو الرفض
   // ============================================================
+// ============================================================
+// ✅ الموافقة أو الرفض - مُصحح
+// ============================================================
 async function decide(id: string, status: "approved" | "rejected", admin_note?: string) {
     if (isProcessing) {
       toast.warning(isRTL ? "⏳ جاري المعالجة..." : "⏳ Processing...");
@@ -401,6 +404,8 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
       await review.mutateAsync({ id, status, admin_note: admin_note || null });
 
       if (status === "approved") {
+        
+        // ✅ ===== الموافقة على متجر =====
         if (appData.application_type === 'store') {
           const storeDescription = appData.store_description?.trim() || null;
           
@@ -429,14 +434,33 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             console.error("❌ Error updating profile:", profileError);
             toast.error(isRTL ? "⚠️ تمت الموافقة لكن فشل تحديث بيانات المتجر" : "⚠️ Approved but failed to update store data");
           }
+
+          // ✅ إشعار موافقة متجر
+          await sendNotification.mutateAsync({
+            userId: appData.user_id,
+            type: 'store_approved',
+            titleAr: "✅ تمت الموافقة على طلبك",
+            bodyAr: `تمت الموافقة على طلب فتح متجر "${appData.store_name}" 🎉`,
+            linkUrl: '/dashboard/store',
+            imageUrl: appData.store_logo_url,
+            metadata: {
+              application_id: appData.id,
+              store_name: appData.store_name,
+              application_type: 'store',
+              admin_note: admin_note || null,
+            },
+            actions: [
+              { label_ar: 'عرض متجري', url: '/dashboard/store' },
+            ]
+          });
         }
 
-        // ✅ التعديل في SellerApplicationsAdmin.tsx - قسم الموافقة
+        // ✅ ===== الموافقة على منتج =====
         if (appData.application_type === 'product') {
-          // ✅ البحث عن المنتج بغض النظر عن store_description
+          // ✅ البحث عن المنتج
           const { data: listing, error: listingError } = await supabase
             .from("listings")
-            .select("id, title_ar")
+            .select("id, title_ar, cover_url")
             .eq("owner_id", appData.user_id)
             .eq("status", "pending")
             .order("created_at", { ascending: false })
@@ -449,38 +473,57 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
               .update({ status: 'published' })
               .eq("id", listing.id);
           }
+
+          // ✅ إشعار موافقة منتج
+          await sendNotification.mutateAsync({
+            userId: appData.user_id,
+            type: 'product_approved',
+            titleAr: "✅ تمت الموافقة على طلبك",
+            bodyAr: `تمت الموافقة على إضافة المنتج، وهو الآن متاح للبيع 🛍️`,
+            linkUrl: '/dashboard/products',
+            imageUrl: listing?.cover_url || null,  // ✅ استخدم cover_url من المنتج
+            metadata: {
+              application_id: appData.id,
+              store_name: appData.store_name,
+              application_type: 'product',
+              admin_note: admin_note || null,
+              listing_id: listing?.id || null,
+            },
+            actions: [
+              { label_ar: 'عرض المنتج', url: '/dashboard/products' },
+            ]
+          });
         }
 
-        // إشعار موافقة
-        const notificationType = appData.application_type === 'store' ? 'store_approved' : 'product_approved';
-        const linkUrl = appData.application_type === 'store' ? '/dashboard/store' : '/dashboard/products';
-        
-        await sendNotification.mutateAsync({
-          userId: appData.user_id,
-          type: notificationType,
-          titleAr: "✅ تمت الموافقة على طلبك",
-          bodyAr: appData.application_type === 'store'
-            ? `تمت الموافقة على طلب فتح متجر "${appData.store_name}" 🎉`
-            : `تمت الموافقة على إضافة المنتج، وهو الآن متاح للبيع 🛍️`,
-          linkUrl: linkUrl,
-          metadata: {
-            application_id: appData.id,
-            store_name: appData.store_name,
-            application_type: appData.application_type,
-            admin_note: admin_note || null,
-          },
-          actions: [
-            { label_ar: appData.application_type === 'store' ? 'عرض متجري' : 'عرض المنتج', url: linkUrl },
-          ]
-        });
-
       } else {
-        // ❌ ❌ ❌ هذا هو الجزء الجديد - معالجة رفض المنتج
-        // ✅ ✅ ✅ أضف هذا الكود هنا (معالجة رفض المنتج)
+        
+        // ❌ ===== رفض متجر =====
+        if (appData.application_type === 'store') {
+          await sendNotification.mutateAsync({
+            userId: appData.user_id,
+            type: 'store_rejected',
+            titleAr: "❌ تم رفض طلبك",
+            bodyAr: `تم رفض طلب فتح متجر "${appData.store_name}"${admin_note ? `\nالسبب: ${admin_note}` : ''}`,
+            linkUrl: '/dashboard',
+            imageUrl: appData.store_logo_url,
+            metadata: {
+              application_id: appData.id,
+              store_name: appData.store_name,
+              reason: admin_note || null,
+              application_type: 'store',
+            },
+            actions: [
+              { label_ar: 'مراجعة الطلب', url: '/dashboard' },
+            ]
+          });
+        }
+
+        // ❌ ===== رفض منتج =====
         if (appData.application_type === 'product') {
+          // ✅ البحث عن المنتج
           const { data: listing, error: listingError } = await supabase
             .from("listings")
-            .select("id, title_ar")
+            .select("id, title_ar, cover_url")
             .eq("owner_id", appData.user_id)
             .eq("status", "pending")
             .order("created_at", { ascending: false })
@@ -497,29 +540,27 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
               })
               .eq("id", listing.id);
           }
-        }
 
-        // إشعار رفض
-        const notificationType = appData.application_type === 'store' ? 'store_rejected' : 'product_rejected';
-        
-        await sendNotification.mutateAsync({
-          userId: appData.user_id,
-          type: notificationType,
-          titleAr: "❌ تم رفض طلبك",
-          bodyAr: appData.application_type === 'store'
-            ? `تم رفض طلب فتح متجر "${appData.store_name}"${admin_note ? `: ${admin_note}` : ''}`
-            : `تم رفض طلب إضافة المنتج${admin_note ? `: ${admin_note}` : ''}`,
-          linkUrl: '/dashboard',
-          metadata: {
-            application_id: appData.id,
-            store_name: appData.store_name,
-            reason: admin_note || null,
-            application_type: appData.application_type,
-          },
-          actions: [
-            { label_ar: 'مراجعة الطلب', url: '/dashboard' },
-          ]
-        });
+          // ✅ إشعار رفض منتج
+          await sendNotification.mutateAsync({
+            userId: appData.user_id,
+            type: 'product_rejected',
+            titleAr: "❌ تم رفض طلبك",
+            bodyAr: `تم رفض طلب إضافة المنتج${admin_note ? `\nالسبب: ${admin_note}` : ''}`,
+            linkUrl: '/dashboard/products',
+            imageUrl: listing?.cover_url || null,  // ✅ استخدم cover_url من المنتج
+            metadata: {
+              application_id: appData.id,
+              store_name: appData.store_name,
+              reason: admin_note || null,
+              application_type: 'product',
+              listing_id: listing?.id || null,
+            },
+            actions: [
+              { label_ar: 'مراجعة المنتج', url: '/dashboard/products' },
+            ]
+          });
+        }
       }
 
       toast.success(

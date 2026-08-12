@@ -191,8 +191,8 @@ export function AdminListings() {
           type: "product_rejected",
           titleAr: "❌ تم رفض منتجك",
           bodyAr: `تم رفض منتج "${productToReject.title_ar}"\nالسبب: ${rejectReason}`,
-          linkUrl: "/dashboard/products",
-          imageUrl: productToReject.cover_url || undefined,
+           linkUrl: "/dashboard/products",           // ✅ موجود
+  imageUrl: productToReject.cover_url,      // ✅ موجود
           actions: [
             { label_ar: "مراجعة المنتج", url: "/dashboard/products" },
           ],

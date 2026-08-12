@@ -2277,6 +2277,8 @@ export function useMarkAllNotificationsRead() {
  * @throws {Error} - error thrown if supabase update fails
  */
 
+// src/lib/queries.ts
+
 export function useSendNotification() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -2287,6 +2289,8 @@ export function useSendNotification() {
       bodyAr,
       referenceId,
       metadata,
+      linkUrl,        // ✅ جديد
+      imageUrl,       // ✅ جديد
     }: {
       userId: string;
       type: string;
@@ -2294,8 +2298,10 @@ export function useSendNotification() {
       bodyAr: string;
       referenceId?: string;
       metadata?: Record<string, any>;
+      linkUrl?: string;   // ✅ جديد
+      imageUrl?: string;  // ✅ جديد
     }) => {
-      // ✅ استخدم insert بدلاً من RPC
+      // ✅ 1. حفظ الإشعار في قاعدة البيانات (In-App)
       const { data, error } = await supabase
         .from("notifications")
         .insert({
@@ -2305,6 +2311,8 @@ export function useSendNotification() {
           body_ar: bodyAr,
           reference_id: referenceId || null,
           metadata: metadata || {},
+          link_url: linkUrl || null,
+          image_url: imageUrl || null,
           is_read: false,
           created_at: new Date().toISOString(),
         })
@@ -2312,10 +2320,84 @@ export function useSendNotification() {
         .single();
       
       if (error) throw error;
+
+      // ✅ 2. ✅ ✅ ✅ إرسال Push Notification (من فوق الشاشة)
+      try {
+        // جلب الـ Push Subscriptions للمستخدم
+        const { data: subscriptions, error: subError } = await supabase
+          .from('push_subscriptions')
+          .select('subscription')
+          .eq('user_id', userId);
+
+        if (subError) {
+          console.error('❌ Error fetching push subscriptions:', subError);
+        }
+
+        if (subscriptions && subscriptions.length > 0) {
+          // ✅ إرسال Push لكل Subscription
+          for (const sub of subscriptions) {
+            try {
+              // ✅ محاولة إرسال عبر Service Worker (إذا كان نشط)
+              if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.ready;
+                
+                // ✅ طريقة 1: عبر showNotification مباشرة
+                registration.showNotification(titleAr, {
+                  body: bodyAr,
+                  icon: imageUrl || '/logo-192.png',
+                  badge: '/badge.png',
+                  data: {
+                    url: linkUrl || '/dashboard',
+                    notificationId: data.id,
+                  },
+                  actions: [
+                    { action: 'view', title: '👀 عرض' },
+                    { action: 'dismiss', title: '✖ إغلاق' }
+                  ],
+                  tag: `notification-${data.id}`,
+                  requireInteraction: true,
+                  vibrate: [200, 100, 200],
+                });
+              }
+
+              // ✅ طريقة 2: عبر API (إذا كان موجود)
+              try {
+                await fetch('/api/send-push', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    subscription: sub.subscription,
+                    payload: {
+                      title: titleAr,
+                      body: bodyAr,
+                      icon: imageUrl || '/logo-192.png',
+                      url: linkUrl || '/dashboard',
+                      notificationId: data.id,
+                    },
+                  }),
+                });
+              } catch (apiError) {
+                // API مش موجود، نتجاهل
+                console.log('ℹ️ Push API not available, using Service Worker directly');
+              }
+
+            } catch (pushError) {
+              console.error('❌ Error sending push:', pushError);
+            }
+          }
+          console.log(`✅ Push notifications sent to ${subscriptions.length} devices`);
+        }
+      } catch (pushError) {
+        console.error('❌ Error in push flow:', pushError);
+        // لا نرمي خطأ عشان الإشعار ينحفظ على الأقل
+      }
+
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, { userId }) => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", userId] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", "unread", userId] });
     },
   });
 }
@@ -3412,12 +3494,14 @@ export function useUserNotifications(userId: string | undefined, options?: {
 /**
  * إرسال إشعار جديد (V2)
  */
+// src/lib/queries.ts
+
 export function useSendNotificationV2() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (params: {
       userId: string;
-     type: NotificationTypeV2; 
+      type: NotificationTypeV2;
       titleAr: string;
       bodyAr: string;
       titleEn?: string;
@@ -3430,8 +3514,8 @@ export function useSendNotificationV2() {
       expiresAt?: string;
       priority?: NotificationPriority;
     }) => {
-        const config = NOTIFICATION_CONFIG_V2[params.type]; 
-      
+      const config = NOTIFICATION_CONFIG_V2[params.type];
+
       const notification = {
         user_id: params.userId,
         type: params.type,
@@ -3452,6 +3536,7 @@ export function useSendNotificationV2() {
         sent_at: params.scheduledFor ? null : new Date().toISOString(),
       };
 
+      // ✅ 1. حفظ الإشعار في قاعدة البيانات (In-App)
       const { data, error } = await supabase
         .from('notifications')
         .insert(notification)
@@ -3459,6 +3544,40 @@ export function useSendNotificationV2() {
         .single();
 
       if (error) throw error;
+
+      // ✅ 2. ✅ ✅ ✅ إرسال Push Notification (من فوق الشاشة)
+      try {
+        // ✅ تحقق من وجود Service Worker
+        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.ready;
+
+          // ✅ إرسال الإشعار عبر Service Worker
+          await registration.showNotification(params.titleAr, {
+            body: params.bodyAr,
+            icon: params.imageUrl || '/logo-192.png',
+            badge: '/badge.png',
+            data: {
+              url: params.linkUrl || '/dashboard',
+              notificationId: data.id,
+            },
+            actions: [
+              { action: 'view', title: '👀 عرض' },
+              { action: 'dismiss', title: '✖ إغلاق' }
+            ],
+            tag: `notification-${data.id}`,
+            requireInteraction: true,
+            vibrate: [200, 100, 200, 100, 200],
+          });
+
+          console.log('✅ Push notification sent via Service Worker');
+        } else {
+          console.log('ℹ️ Service Worker not available');
+        }
+      } catch (pushError) {
+        console.error('❌ Error sending push notification:', pushError);
+        // لا نرمي خطأ عشان الإشعار ينحفظ على الأقل
+      }
+
       return data as Notification;
     },
     onSuccess: (data) => {
@@ -3468,7 +3587,6 @@ export function useSendNotificationV2() {
     },
   });
 }
-
 /**
  * إرسال إشعار جماعي (V2)
  */

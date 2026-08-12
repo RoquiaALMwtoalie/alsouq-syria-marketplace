@@ -401,8 +401,10 @@ export const Header = memo(function Header() {
 
   // ===== ✅ دوال الإشعارات V2 =====
 // ✅ فقط إزالة التنقل عند الضغط على الإشعار - مع بقاء "تحديد كمقروء" و "قراءة الكل"
+// ✅ ✅ ✅ دالة التعامل مع ضغط الإشعار - مع التنقل إلى الرابط
+// ✅ ✅ ✅ دالة التعامل مع ضغط الإشعار - مع التنقل إلى الرابط
 async function handleNotificationClick(notification: any) {
-  // ✅ تحديث الإشعار كمقروء (يبقى)
+  // ✅ تحديث الإشعار كمقروء
   if (!notification.is_read) {
     try {
       await markRead.mutateAsync({
@@ -415,14 +417,20 @@ async function handleNotificationClick(notification: any) {
     }
   }
   
-  // ❌ ❌ ❌ تم إزالة التنقل إلى الرابط - هذا هو المطلوب
-  // if (notification.link_url) {
-  //   window.location.href = notification.link_url;
-  //   setNotificationsOpen(false);
-  // }
-  
-  // ✅ فقط نغلق النافذة بعد التحديث
-  setNotificationsOpen(false);
+  // ✅ ✅ ✅ التنقل إلى الرابط (تم إعادة تفعيله)
+  if (notification.link_url) {
+    // إذا كان الرابط داخلي (يبدأ بـ /) استخدم navigate
+    if (notification.link_url.startsWith('/')) {
+      navigate({ to: notification.link_url });
+    } else {
+      // رابط خارجي
+      window.open(notification.link_url, '_blank');
+    }
+    setNotificationsOpen(false);
+  } else {
+    // إذا ما في رابط، فقط نغلق النافذة
+    setNotificationsOpen(false);
+  }
 }
 
   async function handleMarkAsRead(notificationId: string, e: React.MouseEvent) {
