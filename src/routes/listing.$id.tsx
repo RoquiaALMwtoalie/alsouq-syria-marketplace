@@ -340,20 +340,48 @@ const filteredVariations = useMemo(() => {
     setSelectedVariation(null);
   }, [selectedSize]);
 
-  const handleVariationSelect = useCallback((variation: any) => {
-    setSelectedVariation(selectedVariation?.id === variation.id ? null : variation);
-    if (variation.combination?.color) {
-      setSelectedColor(variation.combination.color);
-      const color = colors.find((c: any) => c.color_name_ar === variation.combination.color);
+// ✅ دالة اختيار التركيبة - تعديل لاستخراج اللون من أي مفتاح
+const handleVariationSelect = useCallback((variation: any) => {
+  setSelectedVariation(selectedVariation?.id === variation.id ? null : variation);
+  
+  // ✅ ✅ ✅ البحث عن اللون في التركيبة بأي مفتاح
+  if (variation.combination) {
+    const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+    let colorValue = null;
+    
+    for (const key of colorKeys) {
+      if (variation.combination[key]) {
+        colorValue = variation.combination[key];
+        break;
+      }
+    }
+    
+    if (colorValue) {
+      setSelectedColor(colorValue);
+      const color = colors.find((c: any) => c.color_name_ar === colorValue);
       if (color?.image_url) {
         setMainImage(color.image_url);
       }
     }
-    if (variation.combination?.size) {
-      setSelectedSize(variation.combination.size);
+  }
+  
+  // ✅ البحث عن المقاس في التركيبة
+  if (variation.combination) {
+    const sizeKeys = ['size', 'sizes', 'المقاس', 'مقاس'];
+    let sizeValue = null;
+    
+    for (const key of sizeKeys) {
+      if (variation.combination[key]) {
+        sizeValue = variation.combination[key];
+        break;
+      }
     }
-  }, [selectedVariation, colors]);
-
+    
+    if (sizeValue) {
+      setSelectedSize(sizeValue);
+    }
+  }
+}, [selectedVariation, colors]);
   const handleAddToCart = useCallback(async () => {
     if (!app.user) {
       toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");

@@ -1,4 +1,4 @@
-// src/__root.tsx - الكود المصحح بالكامل
+// src/__root.tsx - الكود المصحح بالكامل مع AI Assistant
 
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
@@ -62,6 +62,9 @@ import {
   useCategoriesRealtime,
 } from "@/lib/hooks";
 
+// ===== ✅ ✅ ✅ استيراد AI Assistant =====
+import { AIAssistant } from "@/components/AIAssistant";
+
 // ===== ✅ ✅ ✅ ProgressBar Component - z-index معدل ✅ ✅ ✅
 const ProgressBar = ({ progress }: { progress: number }) => {
   return (
@@ -83,12 +86,8 @@ function NotFoundComponent() {
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-black bg-gradient-to-br from-primary to-primary-glow bg-clip-text text-transparent">404</h1>
         <h2 className="mt-4 text-xl font-semibold">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist.
-        </p>
-        <a href="/" className="mt-6 inline-flex rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium">
-          Go home
-        </a>
+        <p className="mt-2 text-sm text-muted-foreground">The page you're looking for doesn't exist.</p>
+        <a href="/" className="mt-6 inline-flex rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium">Go home</a>
       </div>
     </div>
   );
@@ -120,9 +119,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "السوق اليك — Syria's Super Marketplace" },
-      { name: "description", content: "السوق اليك: منصة سوريا الشاملة للتسوق والخدمات والعقارات والمطاعم والسياحة والسيارات — كل ما تحتاجه بمكان واحد." },
-      { property: "og:title", content: "السوق اليك — Syria's Super Marketplace" },
+      { title: "السوق لعندك — Syria's Super Marketplace" },
+      { name: "description", content: "السوق لعندك: منصة سوريا الشاملة للتسوق والخدمات والعقارات والمطاعم والسياحة والسيارات — كل ما تحتاجه بمكان واحد." },
+      { property: "og:title", content: "السوق لعندك — Syria's Super Marketplace" },
       { property: "og:description", content: "اكتشف كل ما تحتاجه في سوريا بمكان واحد: متاجر، خدمات، عقارات، أطباء وأكثر." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -169,7 +168,12 @@ function NotificationPermissionHandler() {
   const app = useApp();
   const [showBanner, setShowBanner] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
-  const [bannerShown, setBannerShown] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // ✅ ثوابت localStorage
+  const BANNER_SHOWN_KEY = 'notification_banner_shown_v2';
+  const BANNER_REMIND_KEY = 'notification_banner_remind_at';
+  const BANNER_DISMISSED_KEY = 'notification_banner_dismissed_forever';
 
   useEffect(() => {
     const checkAndRequestPermission = async () => {
@@ -192,24 +196,54 @@ function NotificationPermissionHandler() {
         return;
       }
       
-      if (!bannerShown) {
-        setBannerShown(true);
-        setTimeout(() => {
-          setShowBanner(true);
-        }, 2000);
+      const dismissedForever = localStorage.getItem(BANNER_DISMISSED_KEY) === 'true';
+      if (dismissedForever) {
+        console.log('🚫 Banner dismissed forever');
+        return;
       }
+      
+      const hasShown = localStorage.getItem(BANNER_SHOWN_KEY) === 'true';
+      if (hasShown) {
+        console.log('✅ Banner already shown before (once)');
+        return;
+      }
+      
+      const remindAt = localStorage.getItem(BANNER_REMIND_KEY);
+      if (remindAt) {
+        const remindTime = parseInt(remindAt);
+        const now = Date.now();
+        
+        if (now < remindTime) {
+          const daysLeft = Math.ceil((remindTime - now) / (1000 * 60 * 60 * 24));
+          console.log(`⏳ Reminder in ${daysLeft} days`);
+          return;
+        }
+        
+        console.log('🔔 Reminder time reached, showing banner');
+        localStorage.removeItem(BANNER_REMIND_KEY);
+      }
+      
+      setTimeout(() => {
+        setShowBanner(true);
+      }, 2000);
     };
     
     checkAndRequestPermission();
-  }, [app.user, bannerShown]);
+  }, [app.user]);
 
   const handleEnableNotifications = async () => {
+    setIsLoading(true);
     try {
+      console.log('🔔 Requesting notification permission...');
       const result = await Notification.requestPermission();
       setPermission(result);
+      console.log('🔔 Permission result:', result);
       
       if (result === 'granted') {
         setShowBanner(false);
+        localStorage.setItem(BANNER_SHOWN_KEY, 'true');
+        localStorage.removeItem(BANNER_REMIND_KEY);
+        
         toast.success(
           app.lang === "ar" 
             ? "🔔 شكراً لتفعيل الإشعارات! سنخبرك بكل جديد." 
@@ -224,14 +258,41 @@ function NotificationPermissionHandler() {
           { duration: 4000 }
         );
         setShowBanner(false);
+        
+        const oneMonthLater = Date.now() + (30 * 24 * 60 * 60 * 1000);
+        localStorage.setItem(BANNER_REMIND_KEY, oneMonthLater.toString());
       }
     } catch (error) {
       console.error('❌ Error requesting notification permission:', error);
+      toast.error(
+        app.lang === "ar" 
+          ? "حدث خطأ أثناء طلب الإشعارات" 
+          : "Error requesting notifications"
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleCloseBanner = () => {
     setShowBanner(false);
+    const oneMonthLater = Date.now() + (30 * 24 * 60 * 60 * 1000);
+    localStorage.setItem(BANNER_REMIND_KEY, oneMonthLater.toString());
+    console.log(`📅 Reminder set for ${new Date(oneMonthLater).toLocaleDateString()}`);
+  };
+
+  const handleDismissForever = () => {
+    setShowBanner(false);
+    localStorage.setItem(BANNER_DISMISSED_KEY, 'true');
+    localStorage.setItem(BANNER_SHOWN_KEY, 'true');
+    console.log('🚫 Banner dismissed forever');
+    
+    toast.info(
+      app.lang === "ar" 
+        ? "يمكنك تفعيل الإشعارات لاحقاً من الإعدادات 🔔" 
+        : "You can enable notifications later from settings 🔔",
+      { duration: 3000 }
+    );
   };
 
   if (!showBanner) return null;
@@ -241,7 +302,7 @@ function NotificationPermissionHandler() {
       <div className="mx-auto max-w-7xl px-4 pb-4">
         <div className="relative bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#3a8a82] rounded-2xl shadow-2xl shadow-[#2a655f]/30 p-4 md:p-5 border border-[#4a9f95]/30">
           <button
-            onClick={handleCloseBanner}
+            onClick={handleDismissForever}
             className="absolute top-2 right-2 md:top-3 md:right-3 text-white/60 hover:text-white transition-colors"
           >
             <X className="h-5 w-5" />
@@ -266,20 +327,28 @@ function NotificationPermissionHandler() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-center">
               <Button
                 onClick={handleEnableNotifications}
-                className="h-10 md:h-11 px-4 md:px-6 rounded-xl bg-white text-[#2a655f] hover:bg-emerald-50 font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm md:text-base border-2 border-white/30"
+                disabled={isLoading}
+                className="h-10 md:h-11 px-4 md:px-6 rounded-xl bg-white text-[#2a655f] hover:bg-emerald-50 font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm md:text-base border-2 border-white/30 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                <BellRing className="h-4 w-4 mr-2 text-[#2a655f]" />
-                {app.lang === "ar" ? "تفعيل الآن" : "Enable Now"}
+                {isLoading ? (
+                  <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-[#2a655f] border-t-transparent" />
+                ) : (
+                  <BellRing className="h-4 w-4 mr-2 text-[#2a655f]" />
+                )}
+                {isLoading 
+                  ? (app.lang === "ar" ? "جاري..." : "Loading...")
+                  : (app.lang === "ar" ? "تفعيل الآن" : "Enable Now")
+                }
               </Button>
               <Button
                 variant="ghost"
                 onClick={handleCloseBanner}
                 className="h-10 md:h-11 px-3 md:px-4 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors text-sm border border-white/20"
               >
-                {app.lang === "ar" ? "ليس الآن" : "Not now"}
+                {app.lang === "ar" ? "تذكير لاحقاً" : "Remind later"}
               </Button>
             </div>
           </div>
@@ -431,12 +500,12 @@ function NotificationsProvider() {
             <span className="absolute -inset-3 rounded-full border-2 border-[#3a8a82]/10 animate-ripple delay-700 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             <span className="absolute -inset-5 rounded-full border-2 border-[#4a9f95]/5 animate-ripple delay-1500 opacity-0 group-hover:opacity-100 transition-opacity duration-900" />
             
-            <Bell className={`
+            <Bell className="
               h-6 w-6 text-white 
               group-hover:scale-110 group-hover:rotate-12 
               transition-all duration-500
               animate-float-bell
-            `} />
+            " />
             
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 h-6 min-w-6 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center animate-pulse border-2 border-white shadow-lg shadow-red-500/50">
@@ -841,7 +910,7 @@ function RootComponent() {
 }
 
 // ============================================================
-// ✅ RootContent - يستخدم useApp (داخل AppProvider) مع Realtime للإشعارات
+// ✅ RootContent - يستخدم useApp (داخل AppProvider) مع Realtime للإشعارات و AI Assistant
 // ============================================================
 function RootContent({ 
   hideChrome, 
@@ -853,11 +922,11 @@ function RootContent({
   location: any;
 }) {
   const app = useApp();
-  const queryClient = useQueryClient(); // ✅ ✅ ✅ مهم جداً
-  const navigate = useNavigate(); // ✅ ✅ ✅ مهم جداً
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [showSplash, setShowSplash] = useState(false);
 
-  // ✅ ✅ ✅ إضافة Realtime للإشعارات (السبب الرئيسي لعدم وصول الإشعارات لحظياً)
+  // ✅ ✅ ✅ إضافة Realtime للإشعارات
   useEffect(() => {
     if (!app.user) return;
 
@@ -878,7 +947,6 @@ function RootContent({
           
           console.log('📬 [Realtime] New notification received:', notification);
           
-          // ✅ إبطال الكاش عشان يتحدث العدد
           queryClient.invalidateQueries({ 
             queryKey: ['notifications', 'v2', app.user.id] 
           });
@@ -889,7 +957,6 @@ function RootContent({
             queryKey: ['notifications', app.user.id] 
           });
           
-          // ✅ عرض إشعار داخل التطبيق (Toast)
           toast.info(notification.body_ar || '📬 لديك إشعار جديد', {
             duration: 5000,
             position: 'bottom-right',
@@ -904,7 +971,6 @@ function RootContent({
             }
           });
 
-          // ✅ تشغيل صوت الإشعار
           try {
             const audio = new Audio('/notification.mp3');
             audio.volume = 0.5;
@@ -963,6 +1029,9 @@ function RootContent({
       </ClientOnly>
       
       <Toaster position="top-center" richColors />
+      
+      {/* ✅ ✅ ✅ إضافة المساعد الذكي */}
+      {app.user && <AIAssistant />}
     </>
   );
 }

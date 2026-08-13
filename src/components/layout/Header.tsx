@@ -11,7 +11,7 @@ import {
   Twitter, Instagram, Facebook, Youtube, Send, Check, Bell, BellOff, MoreVertical, Trash2,
   Settings, Volume2, VolumeX, LayoutDashboard, LogOut, LogIn, UserPlus, House, Camera,
   CheckCircle, XCircle, Megaphone, Sparkles, Calendar, ChevronLeft, ChevronRight,
-  Compass,
+  Compass, Mic, MicOff,
   type LucideIcon,
 } from "lucide-react";
 import { NotificationStatus } from "@/components/NotificationStatus";
@@ -50,6 +50,11 @@ import { memo, useMemo, useCallback } from "react";
 import { useProfileWithUpdate } from "@/lib/hooks/useProfileWithUpdate";
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { useCart } from "@/lib/hooks/useCart";
+
+// ✅ ✅ ✅ استيراد البحث الصوتي
+import { VoiceSearch } from "@/components/VoiceSearch";
+import { detectVoiceCommand, parseVoiceQuery } from "@/lib/voiceSearch";
+
 const ICON_MAP: Record<string, any> = {
   'clock': Clock,
   'check-circle': CheckCircle,
@@ -376,6 +381,77 @@ export const Header = memo(function Header() {
     }
   }, [q, gov, navigate, app.lang]);
 
+  // ✅ ✅ ✅ دالة معالجة البحث الصوتي
+  const handleVoiceSearch = useCallback((text: string) => {
+    console.log("🎤 Voice search result:", text);
+    
+    // ✅ تحليل النص الصوتي
+    const parsed = parseVoiceQuery(text);
+    const command = detectVoiceCommand(text, app.lang);
+    
+    console.log("📊 Parsed query:", parsed);
+    console.log("🎯 Command detected:", command);
+    
+    // ✅ تنفيذ الإجراء المناسب
+    switch (command.command) {
+      case "cart":
+        navigate({ to: "/cart" });
+        toast.info(app.lang === "ar" ? "🛒 تم التوجيه إلى السلة" : "🛒 Navigating to cart");
+        return;
+        
+      case "orders":
+        navigate({ to: "/orders" });
+        toast.info(app.lang === "ar" ? "📦 تم التوجيه إلى الطلبات" : "📦 Navigating to orders");
+        return;
+        
+      case "store":
+        if (command.query && command.query !== "all") {
+          navigate({ 
+            to: "/search", 
+            search: { q: command.query, type: "stores" } 
+          });
+        } else {
+          navigate({ to: "/stores" });
+        }
+        return;
+        
+      case "category":
+        if (command.query && command.query !== "all") {
+          navigate({ 
+            to: "/search", 
+            search: { q: command.query, type: "categories" } 
+          });
+        }
+        return;
+        
+      case "offer":
+        navigate({ 
+          to: "/search", 
+          search: { q: command.query || "", isOffer: true } 
+        });
+        return;
+        
+      case "help":
+        toast.info(
+          app.lang === "ar" 
+            ? "💡 يمكنك قول: 'بحث عن جوالات'، 'عروض السلة'، 'طلباتي'، 'متجر العسل'"
+            : "💡 You can say: 'search phones', 'show offers', 'my orders', 'store honey'"
+        );
+        return;
+        
+      default:
+        // ✅ البحث العادي
+        if (text.trim()) {
+          setQ(text);
+          // ✅ تنفيذ البحث التلقائي
+          navigate({ 
+            to: "/search", 
+            search: { q: text.trim() } 
+          });
+        }
+    }
+  }, [app.lang, navigate]);
+
   // ===== ✅ دالة الذهاب للرئيسية =====
   const goHome = useCallback(() => {
     navigate({ to: "/" });
@@ -566,7 +642,7 @@ async function handleNotificationClick(notification: any) {
             <MegaMenu categories={categories} />
           </div>
 
-          {/* Desktop Search */}
+          {/* Desktop Search - ✅ مع زر الميكروفون */}
           <div className="flex-1 max-w-3xl mx-2 hidden lg:flex items-center gap-1.5">
             <div className="relative flex-1 min-w-[160px]">
               <Search className={`absolute inset-y-0 my-auto start-3 h-4 w-4 transition-colors duration-300 ${searchFocused ? 'text-[#2a655f] dark:text-[#3a8a82]' : 'text-muted-foreground'}`} />
@@ -586,6 +662,15 @@ async function handleNotificationClick(notification: any) {
               />
             </div>
             
+            {/* ✅ ✅ ✅ زر البحث الصوتي - حجم مناسب */}
+            <VoiceSearch
+              onResult={handleVoiceSearch}
+              lang={isRTL ? "ar-SA" : "en-US"}
+              buttonSize="md"
+              className="border-[#2a655f]/20 hover:border-[#2a655f]/40"
+            />
+            
+            {/* ✅ زر البحث العادي */}
             <button
               onClick={doSearch}
               className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center group"
@@ -630,7 +715,7 @@ async function handleNotificationClick(notification: any) {
             </DropdownMenu>
           </div>
 
-          {/* Tablet Search */}
+          {/* Tablet Search - ✅ مع زر الميكروفون */}
           <div className="flex-1 max-w-lg mx-1.5 hidden md:flex lg:hidden items-center gap-1.5">
             <div className="relative flex-1">
               <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
@@ -643,6 +728,14 @@ async function handleNotificationClick(notification: any) {
                 className="w-full h-10 ps-9 pe-3 bg-muted/50 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 rounded-xl focus:border-[#2a655f]/60 focus:bg-card focus:shadow-lg focus:outline-none transition-all text-sm"
               />
             </div>
+            
+            {/* ✅ ✅ ✅ زر البحث الصوتي - حجم مناسب */}
+            <VoiceSearch
+              onResult={handleVoiceSearch}
+              lang={isRTL ? "ar-SA" : "en-US"}
+              buttonSize="sm"
+              className="border-[#2a655f]/20 hover:border-[#2a655f]/40"
+            />
             
             <button
               onClick={doSearch}
@@ -1296,8 +1389,7 @@ async function handleNotificationClick(notification: any) {
                   </span>
                 </div>
               </div>
-            </>
-          ) : (
+            </> ) : (
             <>
               {/* حالة عدم تسجيل الدخول */}
               <div className="p-7 text-center border-b border-[#2a655f]/20 bg-gradient-to-b from-[#2a655f]/10 via-emerald-50/10 to-transparent">
@@ -1407,6 +1499,14 @@ async function handleNotificationClick(notification: any) {
               className="ps-9 h-10 w-full bg-muted/50 border-[#2a655f]/20 dark:border-[#2a655f]/30 rounded-xl focus-visible:border-[#2a655f]/60 transition text-sm"
             />
           </div>
+          
+          {/* ✅ ✅ ✅ زر البحث الصوتي للموبايل */}
+          <VoiceSearch
+            onResult={handleVoiceSearch}
+            lang={isRTL ? "ar-SA" : "en-US"}
+            buttonSize="sm"
+            className="border-[#2a655f]/20 hover:border-[#2a655f]/40"
+          />
           
           <Button 
             onClick={doSearch}

@@ -28,9 +28,9 @@ export interface PromoCode {
   updated_at: string;
   created_by: string | null;
   metadata: Record<string, any>;
-  store_id: string | null;        // ✅ أضف هذا
-  store_name: string | null;      // ✅ أضف هذا
-  store_ids: any;                 // ✅ أضف هذا (JSONB)
+  store_id: string | null;
+  store_name: string | null;
+  store_ids: any;
 }
 
 // ============================================================
@@ -56,18 +56,15 @@ export async function fetchPromoCodesPaginated({
     .from("promo_codes")
     .select("*", { count: 'exact' });
 
-  // ✅ بحث في السيرفر (مش في المتصفح)
   if (search.trim()) {
     const s = `%${search.trim()}%`;
     query = query.or(`code.ilike.${s},label.ilike.${s},description.ilike.${s}`);
   }
 
-  // ✅ فلترة حسب النوع في السيرفر
   if (filterType !== "all") {
     query = query.eq("type", filterType);
   }
 
-  // ✅ فلترة حسب الحالة في السيرفر
   if (filterStatus !== "all") {
     if (filterStatus === "active") {
       query = query.eq("is_active", true);
@@ -95,24 +92,20 @@ export async function getPromoCodesStatsOptimized(): Promise<{
   expired: number;
   used: number;
 }> {
-  // ✅ إجمالي
   const { count: total } = await supabase
     .from("promo_codes")
     .select("*", { count: 'exact', head: true });
 
-  // ✅ نشط (is_active = true)
   const { count: active } = await supabase
     .from("promo_codes")
     .select("*", { count: 'exact', head: true })
     .eq("is_active", true);
 
-  // ✅ منتهي الصلاحية
   const { count: expired } = await supabase
     .from("promo_codes")
     .select("*", { count: 'exact', head: true })
     .lt("expires_at", new Date().toISOString());
 
-  // ✅ مستخدم (used_count > 0)
   const { count: used } = await supabase
     .from("promo_codes")
     .select("*", { count: 'exact', head: true })
@@ -161,9 +154,9 @@ export async function createPromoCode(data: Partial<PromoCode>): Promise<PromoCo
       expires_at: data.expires_at || null,
       created_by: data.created_by || null,
       metadata: data.metadata || {},
-      store_id: data.store_id || null,      // ✅ جديد
-      store_name: data.store_name || null,  // ✅ جديد
-      store_ids: data.store_ids || [],      // ✅ جديد
+      store_id: data.store_id || null,
+      store_name: data.store_name || null,
+      store_ids: data.store_ids || [],
     })
     .select()
     .single();
@@ -191,9 +184,9 @@ export async function updatePromoCode(id: string, data: Partial<PromoCode>): Pro
       expires_at: data.expires_at || null,
       updated_at: new Date().toISOString(),
       metadata: data.metadata || {},
-      store_id: data.store_id || null,      // ✅ جديد
-      store_name: data.store_name || null,  // ✅ جديد
-      store_ids: data.store_ids || [],      // ✅ جديد
+      store_id: data.store_id || null,
+      store_name: data.store_name || null,
+      store_ids: data.store_ids || [],
     })
     .eq("id", id)
     .select()
@@ -228,7 +221,6 @@ export async function togglePromoCodeStatus(id: string, isActive: boolean): Prom
 // ✅ React Query Hooks
 // ============================================================
 
-// 🔥 Infinite Query مع بحث وفلترة (عالسيرفر)
 export function usePromoCodesInfinite({
   search = "",
   filterType = "all",
@@ -261,7 +253,6 @@ export function usePromoCodesInfinite({
   });
 }
 
-// 🔥 جلب كل الأكواد (للتصدير)
 export function useAllPromoCodes() {
   return useQuery({
     queryKey: ["promo-codes-all"],
@@ -274,7 +265,6 @@ export function useAllPromoCodes() {
   });
 }
 
-// 🔥 إحصائيات محسّنة
 export function usePromoCodesStatsOptimized() {
   return useQuery({
     queryKey: ["promo-codes-stats-optimized"],
@@ -287,7 +277,6 @@ export function usePromoCodesStatsOptimized() {
   });
 }
 
-// ✅ Realtime Subscription
 export function usePromoCodesRealtime() {
   const queryClient = useQueryClient();
   
@@ -311,7 +300,6 @@ export function usePromoCodesRealtime() {
   }, [queryClient]);
 }
 
-// ✅ Mutations
 export function useCreatePromoCode() {
   const queryClient = useQueryClient();
   return useMutation({

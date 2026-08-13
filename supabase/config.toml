@@ -1,1 +1,4 @@
 project_id = "oqshuxkwgsrlhilxdzvc"
+
+[functions.ai-assistant]
+verify_jwt = false  # ✅ للتجربة (نشغله أولاً)

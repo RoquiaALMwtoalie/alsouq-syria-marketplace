@@ -7,7 +7,7 @@ import {
   Clock, MapPin, Globe, Building2, Truck,
   Sparkles, Package, Share2, Flame, BadgeCheck,
   Search, X, ArrowUpDown, Grid3X3, List, ChevronDown,
-  RefreshCw, Eye, Heart, TrendingUp, Zap
+  RefreshCw, Eye, Heart, TrendingUp, Zap, Gift, Target, Award
 } from "lucide-react";
 import { useApp, useT } from "@/lib/i18n";
 import { useListings, useStoreProfile, useDeliveryCompanies } from "@/lib/queries";
@@ -52,6 +52,9 @@ function StorePage() {
     breakdown: any;
     companyName: string;
     governorateMatch: boolean;
+    orderTotal: number;
+    remainingForFree: number;
+    freeThreshold: number;
   } | null>(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
 
@@ -148,198 +151,213 @@ function StorePage() {
   }, []);
 
   // ====== حساب سعر التوصيل (محسّن مع الهيكلية الجديدة) ======
- // ====== حساب سعر التوصيل (محسّن مع الهيكلية الجديدة) ======
-useEffect(() => {
-  let isMounted = true;
+  useEffect(() => {
+    let isMounted = true;
 
-  const calculateDelivery = async () => {
-    if (!store || !app.user) return;
+    const calculateDelivery = async () => {
+      if (!store || !app.user) return;
 
-    setDeliveryLoading(true);
-    try {
-      // ✅ 1. جلب عنوان المستخدم الافتراضي
-      const { data: userAddress, error: addressError } = await supabase
-        .from("user_addresses")
-        .select("governorate_id, lat, lng, address_text")
-        .eq("user_id", app.user.id)
-        .eq("is_default", true)
-        .maybeSingle();
-
-      if (addressError || !userAddress || !isMounted) {
-        setDeliveryLoading(false);
-        return;
-      }
-
-      // ✅ 2. جلب شركة التوصيل
-      let deliveryCompanyId = store.delivery_company_id;
-      let selectedCompany = null;
-
-      if (deliveryCompanyId) {
-        const { data: company, error: companyError } = await supabase
-          .from("delivery_companies")
-          .select("*")
-          .eq("id", deliveryCompanyId)
-          .eq("is_active", true)
+      setDeliveryLoading(true);
+      try {
+        // ✅ 1. جلب عنوان المستخدم الافتراضي
+        const { data: userAddress, error: addressError } = await supabase
+          .from("user_addresses")
+          .select("governorate_id, lat, lng, address_text")
+          .eq("user_id", app.user.id)
+          .eq("is_default", true)
           .maybeSingle();
 
-        if (!companyError && company) {
-          selectedCompany = company;
-          console.log("✅ [Delivery] Using store's delivery company:", company.name_ar);
+        if (addressError || !userAddress || !isMounted) {
+          setDeliveryLoading(false);
+          return;
         }
-      }
 
-      if (!selectedCompany) {
-        const storeGovernorateId = store.governorate_id;
-        const { data: companies, error: companiesError } = await supabase
-          .from("delivery_companies")
-          .select("*")
-          .eq("is_active", true);
+        // ✅ 2. جلب شركة التوصيل
+        let deliveryCompanyId = store.delivery_company_id;
+        let selectedCompany = null;
 
-        if (!companiesError && companies) {
-          const matchingCompanies = companies.filter((c: any) => {
-            const coverage = c.coverage_areas || [];
-            if (coverage.includes("all") || coverage.includes(storeGovernorateId)) {
-              return true;
-            }
-            if (c.governorate_id === storeGovernorateId) {
-              return true;
-            }
-            return false;
-          });
-
-          if (matchingCompanies.length > 0) {
-            selectedCompany = matchingCompanies.sort((a: any, b: any) => 
-              (a.base_price || 0) - (b.base_price || 0)
-            )[0];
-            console.log("✅ [Delivery] Using best matching company:", selectedCompany.name_ar);
-          }
-        }
-      }
-
-      if (!selectedCompany) {
-        const { data: fallbackCompany, error: fallbackError } = await supabase
-          .from("delivery_companies")
-          .select("*")
-          .eq("is_active", true)
-          .limit(1)
-          .maybeSingle();
-
-        if (!fallbackError && fallbackCompany) {
-          selectedCompany = fallbackCompany;
-          console.log("✅ [Delivery] Using fallback company:", selectedCompany.name_ar);
-        }
-      }
-
-      if (!selectedCompany || !isMounted) {
-        setDeliveryLoading(false);
-        return;
-      }
-
-      // ✅ 3. حساب المسافة
-      let distance = 0;
-      const hasValidCoordinates = store.lat && store.lng && userAddress.lat && userAddress.lng;
-
-      if (hasValidCoordinates) {
-        distance = calculateDistance(
-          store.lat,
-          store.lng,
-          userAddress.lat,
-          userAddress.lng
-        );
-        console.log(`📍 [Delivery] Real distance: ${distance.toFixed(2)} km`);
-      } else {
-        const storeGovId = store.governorate_id;
-        const userGovId = userAddress.governorate_id;
-        
-        if (storeGovId === userGovId) {
-          distance = 5;
-        } else {
-          distance = 25;
-        }
-        console.log(`📍 [Delivery] Estimated distance: ${distance} km (no coordinates)`);
-      }
-
-      // ✅✅✅ 4. جلب قيمة السلة من عناصر السلة (مثل cart.tsx)
-      let orderTotal = 0;
-      if (app.user) {
-        try {
-          const { data: cartData, error: cartError } = await supabase
-            .from("carts")
-            .select(`
-              id,
-              cart_items (
-                quantity,
-                price
-              )
-            `)
-            .eq("user_id", app.user.id)
-            .eq("status", "active")
+        if (deliveryCompanyId) {
+          const { data: company, error: companyError } = await supabase
+            .from("delivery_companies")
+            .select("*")
+            .eq("id", deliveryCompanyId)
+            .eq("is_active", true)
             .maybeSingle();
 
-          if (cartError) {
-            console.error("❌ [Delivery] Error fetching cart:", cartError);
+          if (!companyError && company) {
+            selectedCompany = company;
+            console.log("✅ [Delivery] Using store's delivery company:", company.name_ar);
           }
-          
-          if (cartData && cartData.cart_items && cartData.cart_items.length > 0) {
-            orderTotal = cartData.cart_items.reduce((sum: number, item: any) => {
-              return sum + (Number(item.price) * Number(item.quantity));
-            }, 0);
-            console.log(`🛒 [Delivery] Cart subtotal from items: ${orderTotal} SYP`);
-          } else {
-            console.log(`🛒 [Delivery] Cart is empty or has no items`);
-          }
-        } catch (error) {
-          console.error("❌ [Delivery] Error calculating cart total:", error);
         }
-      }
 
-      // ✅ 5. حساب سعر التوصيل
-      let price = calculateDeliveryPrice(selectedCompany, distance, orderTotal);
-      const isFree = price === 0;
+        if (!selectedCompany) {
+          const storeGovernorateId = store.governorate_id;
+          const { data: companies, error: companiesError } = await supabase
+            .from("delivery_companies")
+            .select("*")
+            .eq("is_active", true);
 
-      console.log(`💰 [Delivery] Final price: ${price} SYP (${isFree ? 'FREE' : 'paid'})`);
-      console.log(`💰 [Delivery] Free threshold: ${selectedCompany.free_delivery_threshold || 0} SYP`);
-      console.log(`💰 [Delivery] Order total: ${orderTotal} SYP`);
-      console.log(`💰 [Delivery] Distance: ${distance} km`);
+          if (!companiesError && companies) {
+            const matchingCompanies = companies.filter((c: any) => {
+              const coverage = c.coverage_areas || [];
+              if (coverage.includes("all") || coverage.includes(storeGovernorateId)) {
+                return true;
+              }
+              if (c.governorate_id === storeGovernorateId) {
+                return true;
+              }
+              return false;
+            });
 
-      // ✅ 6. تحديث الحالة
-      if (isMounted) {
-        setDeliveryPrice({
-          distance: Math.round(distance * 100) / 100,
-          price,
-          isFree,
-          orderTotal,
-          companyName: selectedCompany.name_ar || selectedCompany.name_en,
-          governorateMatch: store.governorate_id === userAddress.governorate_id,
-          breakdown: {
-            basePrice: selectedCompany.base_price || 0,
-            pricePerKm: selectedCompany.price_per_km || 0,
-            distanceCost: distance * (selectedCompany.price_per_km || 0),
-            minFee: selectedCompany.min_delivery_fee || 0,
-            maxFee: selectedCompany.max_delivery_fee || 999999,
-            freeThreshold: selectedCompany.free_delivery_threshold || 0,
-            sameGovernorate: store.governorate_id === userAddress.governorate_id,
-            hasCoordinates: hasValidCoordinates,
-            remainingForFree: selectedCompany.free_delivery_threshold 
-              ? Math.max(0, selectedCompany.free_delivery_threshold - orderTotal) 
-              : 0,
+            if (matchingCompanies.length > 0) {
+              selectedCompany = matchingCompanies.sort((a: any, b: any) => 
+                (a.base_price || 0) - (b.base_price || 0)
+              )[0];
+              console.log("✅ [Delivery] Using best matching company:", selectedCompany.name_ar);
+            }
           }
-        });
-      }
+        }
 
-    } catch (error) {
-      console.error("❌ [Delivery] Error calculating delivery:", error);
-    } finally {
-      if (isMounted) setDeliveryLoading(false);
+        if (!selectedCompany) {
+          const { data: fallbackCompany, error: fallbackError } = await supabase
+            .from("delivery_companies")
+            .select("*")
+            .eq("is_active", true)
+            .limit(1)
+            .maybeSingle();
+
+          if (!fallbackError && fallbackCompany) {
+            selectedCompany = fallbackCompany;
+            console.log("✅ [Delivery] Using fallback company:", selectedCompany.name_ar);
+          }
+        }
+
+        if (!selectedCompany || !isMounted) {
+          setDeliveryLoading(false);
+          return;
+        }
+
+        // ✅ 3. حساب المسافة
+        let distance = 0;
+        const hasValidCoordinates = store.lat && store.lng && userAddress.lat && userAddress.lng;
+
+        if (hasValidCoordinates) {
+          distance = calculateDistance(
+            store.lat,
+            store.lng,
+            userAddress.lat,
+            userAddress.lng
+          );
+          console.log(`📍 [Delivery] Real distance: ${distance.toFixed(2)} km`);
+        } else {
+          const storeGovId = store.governorate_id;
+          const userGovId = userAddress.governorate_id;
+          
+          if (storeGovId === userGovId) {
+            distance = 5;
+          } else {
+            distance = 25;
+          }
+          console.log(`📍 [Delivery] Estimated distance: ${distance} km (no coordinates)`);
+        }
+
+        // ✅✅✅ 4. جلب قيمة السلة من عناصر السلة
+     // ✅✅✅ 4. جلب قيمة السلة لمنتجات هذا المتجر فقط
+let orderTotal = 0;
+if (app.user) {
+  try {
+    const { data: cartData, error: cartError } = await supabase
+      .from("carts")
+      .select(`
+        id,
+        cart_items (
+          quantity,
+          price,
+          listing_id,
+          listing:listings!inner (
+            owner_id
+          )
+        )
+      `)
+      .eq("user_id", app.user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (cartError) {
+      console.error("❌ [Delivery] Error fetching cart:", cartError);
     }
-  };
+    
+    if (cartData && cartData.cart_items && cartData.cart_items.length > 0) {
+      // ✅ فلترة المنتجات التي تنتمي لهذا المتجر فقط
+      const storeItems = cartData.cart_items.filter((item: any) => {
+        const ownerId = item.listing?.owner_id || item.listing_id;
+        return ownerId === id;
+      });
+      
+      orderTotal = storeItems.reduce((sum: number, item: any) => {
+        return sum + (Number(item.price) * Number(item.quantity));
+      }, 0);
+      
+      console.log(`🛒 [Delivery] Cart subtotal for this store: ${orderTotal} SYP`);
+      console.log(`🛒 [Delivery] Total items in cart: ${cartData.cart_items.length}, Store items: ${storeItems.length}`);
+    } else {
+      console.log(`🛒 [Delivery] Cart is empty or has no items`);
+    }
+  } catch (error) {
+    console.error("❌ [Delivery] Error calculating cart total:", error);
+  }
+}
 
-  calculateDelivery();
+        // ✅ 5. حساب سعر التوصيل
+        const freeThreshold = selectedCompany.free_delivery_threshold || 0;
+        let price = calculateDeliveryPrice(selectedCompany, distance, orderTotal);
+        const isFree = price === 0;
+        const remainingForFree = freeThreshold > 0 ? Math.max(0, freeThreshold - orderTotal) : 0;
 
-  return () => {
-    isMounted = false;
-  };
-}, [store, app.user, calculateDistance, calculateDeliveryPrice]);
+        console.log(`💰 [Delivery] Final price: ${price} SYP (${isFree ? 'FREE' : 'paid'})`);
+        console.log(`💰 [Delivery] Free threshold: ${freeThreshold} SYP`);
+        console.log(`💰 [Delivery] Order total: ${orderTotal} SYP`);
+        console.log(`💰 [Delivery] Remaining for free: ${remainingForFree} SYP`);
+        console.log(`💰 [Delivery] Distance: ${distance} km`);
+
+        // ✅ 6. تحديث الحالة
+        if (isMounted) {
+          setDeliveryPrice({
+            distance: Math.round(distance * 100) / 100,
+            price,
+            isFree,
+            orderTotal,
+            companyName: selectedCompany.name_ar || selectedCompany.name_en,
+            governorateMatch: store.governorate_id === userAddress.governorate_id,
+            freeThreshold: freeThreshold,
+            remainingForFree: remainingForFree,
+            breakdown: {
+              basePrice: selectedCompany.base_price || 0,
+              pricePerKm: selectedCompany.price_per_km || 0,
+              distanceCost: distance * (selectedCompany.price_per_km || 0),
+              minFee: selectedCompany.min_delivery_fee || 0,
+              maxFee: selectedCompany.max_delivery_fee || 999999,
+              freeThreshold: freeThreshold,
+              sameGovernorate: store.governorate_id === userAddress.governorate_id,
+              hasCoordinates: hasValidCoordinates,
+            }
+          });
+        }
+
+      } catch (error) {
+        console.error("❌ [Delivery] Error calculating delivery:", error);
+      } finally {
+        if (isMounted) setDeliveryLoading(false);
+      }
+    };
+
+    calculateDelivery();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [store, app.user, calculateDistance, calculateDeliveryPrice]);
+
   // ====== تحميل المزيد ======
   const loadMore = useCallback(() => {
     if (page < totalPages && !isFetching) {
@@ -566,131 +584,185 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* ====== سعر التوصيل (محسّن مثل نون) ====== */}
-      {app.user && deliveryPrice && !deliveryLoading && (
-        <div className="mx-auto max-w-7xl px-4 mt-4">
-          <Card className={cn(
-            "border-2 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden",
-            deliveryPrice.isFree 
-              ? 'border-emerald-500/40 hover:border-emerald-500/60 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-950/10' 
-              : deliveryPrice.governorateMatch 
-                ? 'border-[#2d6b63]/30 hover:border-[#2d6b63]/50' 
-                : 'border-amber-500/30 hover:border-amber-500/50'
-          )}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                  <div className={cn(
-                    "h-12 w-12 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110",
-                    deliveryPrice.isFree 
-                      ? "bg-emerald-500/20" 
-                      : "bg-[#0d2e2a]/10"
-                  )}>
-                    <Truck className={cn(
-                      "h-6 w-6 transition-all duration-500",
-                      deliveryPrice.isFree 
-                        ? "text-emerald-500 animate-bounce" 
-                        : "text-[#0d2e2a] animate-float"
-                    )} />
-                  </div>
-                  
-                  <div>
-                    <div className="font-semibold text-sm flex items-center gap-2">
-                      {deliveryPrice.isFree ? (
-                        <>
-                          <span className="text-emerald-600 dark:text-emerald-400">🚚 توصيل مجاني</span>
-                          <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px] px-2 py-0.5 animate-pulse">
-                            {isArabic ? "🎉 عرض خاص" : "🎉 Special Offer"}
-                          </Badge>
-                        </>
-                      ) : (
-                        <span className="text-slate-700 dark:text-slate-200">{isArabic ? "🚚 سعر التوصيل" : "🚚 Delivery Price"}</span>
-                      )}
-                      
-                      <Badge className={cn(
-                        "border-0 text-[9px] px-2 py-0.5 animate-pulse",
-                        deliveryPrice.governorateMatch 
-                          ? 'bg-emerald-500/20 text-emerald-600 dark:bg-emerald-500/30 dark:text-emerald-400' 
-                          : 'bg-amber-500/20 text-amber-600 dark:bg-amber-500/30 dark:text-amber-400'
-                      )}>
-                        {deliveryPrice.governorateMatch 
-                          ? (isArabic ? "📍 نفس المحافظة" : "📍 Same Governorate") 
-                          : (isArabic ? "📍 محافظة مختلفة" : "📍 Different Governorate")}
-                      </Badge>
-                    </div>
-                    
-                    <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                      <span>{isArabic ? `المسافة: ${deliveryPrice.distance} كم` : `Distance: ${deliveryPrice.distance} km`}</span>
-                      <span className="text-muted-foreground/30">|</span>
-                      <span className="text-[#2d6b63] font-medium">{deliveryPrice.companyName}</span>
-                      {deliveryPrice.breakdown?.hasCoordinates ? (
-                        <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[8px] px-1.5 py-0">
-                          📍 {isArabic ? "موقع دقيق" : "Precise"}
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[8px] px-1.5 py-0">
-                          📍 {isArabic ? "تقديري" : "Estimated"}
-                        </Badge>
-                      )}
-                    </p>
-                    
-                    <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground/70">
-                      <span>الحد الأدنى: {deliveryPrice.breakdown?.minFee || 0} SYP</span>
-                      <span>|</span>
-                      <span>الحد الأقصى: {deliveryPrice.breakdown?.maxFee || 999999} SYP</span>
-                      {deliveryPrice.breakdown?.freeThreshold > 0 && (
-                        <>
-                          <span>|</span>
-                          <span>توصيل مجاني للطلبات فوق {deliveryPrice.breakdown?.freeThreshold} SYP</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-right">
-                  {deliveryPrice.isFree ? (
-                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-sm px-4 py-1.5 animate-bounce rounded-xl">
-                      <span className="flex items-center gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        {isArabic ? "🆓 مجاني" : "🆓 Free"}
-                      </span>
+   {/* ====== سعر التوصيل (محسّن مثل نون مع عرض الحد الأدنى) ====== */}
+{app.user && deliveryPrice && !deliveryLoading && (
+  <div className="mx-auto max-w-7xl px-4 mt-4">
+    <Card className={cn(
+      "border-2 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden",
+      deliveryPrice.isFree 
+        ? 'border-emerald-500/40 hover:border-emerald-500/60 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-950/10' 
+        : deliveryPrice.governorateMatch 
+          ? 'border-[#2d6b63]/30 hover:border-[#2d6b63]/50' 
+          : 'border-amber-500/30 hover:border-amber-500/50'
+    )}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <div className={cn(
+              "h-12 w-12 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110",
+              deliveryPrice.isFree 
+                ? "bg-emerald-500/20" 
+                : "bg-[#0d2e2a]/10"
+            )}>
+              <Truck className={cn(
+                "h-6 w-6 transition-all duration-500",
+                deliveryPrice.isFree 
+                  ? "text-emerald-500 animate-bounce" 
+                  : "text-[#0d2e2a] animate-float"
+              )} />
+            </div>
+            
+            <div>
+              <div className="font-semibold text-sm flex items-center gap-2">
+                {deliveryPrice.isFree ? (
+                  <>
+                    <span className="text-emerald-600 dark:text-emerald-400">🚚 توصيل مجاني</span>
+                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px] px-2 py-0.5 animate-pulse">
+                      {isArabic ? "🎉 عرض خاص" : "🎉 Special Offer"}
                     </Badge>
-                  ) : (
-                    <div className="flex flex-col items-end">
-                      <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#4a9f95]">
-                        {deliveryPrice.price} SYP
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {isArabic ? "شامل الضريبة" : "Tax included"}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                  </>
+                ) : (
+                  <span className="text-slate-700 dark:text-slate-200">{isArabic ? "🚚 سعر التوصيل" : "🚚 Delivery Price"}</span>
+                )}
+                
+                <Badge className={cn(
+                  "border-0 text-[9px] px-2 py-0.5 animate-pulse",
+                  deliveryPrice.governorateMatch 
+                    ? 'bg-emerald-500/20 text-emerald-600 dark:bg-emerald-500/30 dark:text-emerald-400' 
+                    : 'bg-amber-500/20 text-amber-600 dark:bg-amber-500/30 dark:text-amber-400'
+                )}>
+                  {deliveryPrice.governorateMatch 
+                    ? (isArabic ? "📍 نفس المحافظة" : "📍 Same Governorate") 
+                    : (isArabic ? "📍 محافظة مختلفة" : "📍 Different Governorate")}
+                </Badge>
               </div>
               
-              {!deliveryPrice.isFree && deliveryPrice.breakdown?.freeThreshold > 0 && (
-                <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
-                    <span>{isArabic ? "🔓 أضف منتجات للحصول على توصيل مجاني" : "🔓 Add items for free delivery"}</span>
-                    <span className="font-medium text-[#2d6b63]">
-                      {deliveryPrice.breakdown?.freeThreshold - 0} SYP
+              <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                <span>{isArabic ? `المسافة: ${deliveryPrice.distance} كم` : `Distance: ${deliveryPrice.distance} km`}</span>
+                <span className="text-muted-foreground/30">|</span>
+                <span className="text-[#2d6b63] font-medium">{deliveryPrice.companyName}</span>
+                {deliveryPrice.breakdown?.hasCoordinates ? (
+                  <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[8px] px-1.5 py-0">
+                    📍 {isArabic ? "موقع دقيق" : "Precise"}
+                  </Badge>
+                ) : (
+                  <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[8px] px-1.5 py-0">
+                    📍 {isArabic ? "تقديري" : "Estimated"}
+                  </Badge>
+                )}
+              </p>
+              
+              {/* ✅ ✅ ✅ عرض الحد الأدنى للتوصيل المجاني فقط (بدون حد أدنى/أقصى) */}
+              {deliveryPrice.freeThreshold > 0 && (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <Gift className="h-3 w-3 text-emerald-500" />
+                    <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                      {isArabic 
+                        ? `🎯 توصيل مجاني للطلبات التي تتجاوز ${deliveryPrice.freeThreshold} SYP`
+                        : `🎯 Free delivery on orders over ${deliveryPrice.freeThreshold} SYP`}
                     </span>
-                  </div>
-                  <div className="h-1.5 w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-[#2d6b63] to-[#4a9f95] rounded-full transition-all duration-1000"
-                      style={{ 
-                        width: `${Math.min(100, (0 / deliveryPrice.breakdown?.freeThreshold) * 100)}%` 
-                      }}
-                    />
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+          
+          <div className="text-right">
+            {deliveryPrice.isFree ? (
+              <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-sm px-4 py-1.5 animate-bounce rounded-xl">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {isArabic ? "🆓 مجاني" : "🆓 Free"}
+                </span>
+              </Badge>
+            ) : (
+              <div className="flex flex-col items-end">
+                <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#4a9f95]">
+                  {deliveryPrice.price} SYP
+                </span>
+               
+              </div>
+            )}
+          </div>
         </div>
-      )}
+        
+        {/* ✅ شريط التقدم للتوصيل المجاني */}
+        {!deliveryPrice.isFree && deliveryPrice.freeThreshold > 0 && deliveryPrice.remainingForFree > 0 && (
+          <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+              <div className="flex items-center gap-2">
+                <Target className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
+                <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                  {isArabic ? "🎯 أضف منتجات بقيمة" : "🎯 Add items worth"}
+                </span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                  {deliveryPrice.remainingForFree} SYP
+                </span>
+                <span className="text-emerald-600/70 dark:text-emerald-400/70">
+                  {isArabic ? "للحصول على توصيل مجاني" : "to get free delivery"}
+                </span>
+              </div>
+              <Badge className="bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 text-emerald-600 dark:text-emerald-300 border-0 text-[9px] px-2 py-0.5 animate-pulse">
+                <Gift className="h-2.5 w-2.5 inline mr-0.5" />
+                {isArabic ? "🎁 عرض" : "🎁 Offer"}
+              </Badge>
+            </div>
+            <div className="relative h-2 w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-[#2d6b63] rounded-full transition-all duration-1000 shadow-lg shadow-emerald-500/20"
+                style={{ 
+                  width: `${Math.min(100, ((deliveryPrice.orderTotal || 0) / deliveryPrice.freeThreshold) * 100)}%` 
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+            </div>
+            <div className="flex items-center justify-between mt-1 text-[10px]">
+              <span className="text-muted-foreground/70">
+                {isArabic ? "📦 قيمة الطلب الحالية" : "📦 Current order value"}
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 mr-1">
+                  {deliveryPrice.orderTotal || 0} SYP
+                </span>
+              </span>
+              <span className="text-muted-foreground/50">
+                {isArabic ? "الهدف" : "Target"} 
+                <span className="font-bold text-[#0d2e2a] dark:text-white mr-1">
+                  {deliveryPrice.freeThreshold} SYP
+                </span>
+              </span>
+            </div>
+            
+            {/* ✅ نصائح تشجيعية لإضافة منتجات */}
+            {deliveryPrice.remainingForFree > 0 && (
+              <div className="mt-2 p-2 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-950/20 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30 flex items-center gap-2">
+                <Award className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium">
+                  {isArabic 
+                    ? `💡 أضف منتجات بقيمة ${deliveryPrice.remainingForFree} SYP إضافية وستحصل على توصيل مجاني! 🎉`
+                    : `💡 Add ${deliveryPrice.remainingForFree} SYP more worth of products and get free delivery! 🎉`}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* ✅ رسالة عندما يكون التوصيل مجاني بالفعل */}
+        {deliveryPrice.isFree && deliveryPrice.freeThreshold > 0 && (
+          <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+            <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-950/20 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30">
+              <Sparkles className="h-4 w-4 text-emerald-500 flex-shrink-0 animate-pulse" />
+              <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium">
+                {isArabic 
+                  ? `🎉 قيمة طلبك (${deliveryPrice.orderTotal || 0} SYP) تجاوزت الحد الأدنى (${deliveryPrice.freeThreshold} SYP) → توصيل مجاني!`
+                  : `🎉 Your order value (${deliveryPrice.orderTotal || 0} SYP) exceeded the minimum (${deliveryPrice.freeThreshold} SYP) → Free delivery!`}
+              </p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  </div>
+)}
 
       {/* ====== الفلتر والترتيب ====== */}
       <section className="mx-auto max-w-7xl px-4 py-6">
@@ -965,6 +1037,14 @@ useEffect(() => {
           50% { transform: translateY(-8px); }
         }
         .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .animate-shimmer {
+          background-size: 200% auto;
+          animation: shimmer 2s linear infinite;
+        }
       `}</style>
     </div>
   );

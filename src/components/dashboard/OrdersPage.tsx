@@ -170,6 +170,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
 // src/components/dashboard/OrdersPage.tsx
 
 // ===== ACCEPT ORDER (معدل - يرسل اسم المتجر) =====
+// ===== ACCEPT ORDER (معدل - يرسل اسم المتجر + تحديث الكود) =====
 const handleAcceptOrder = useCallback(async (orderId: string) => {
   try {
     // ✅ جلب الطلب مع order_items وبيانات المتجر
@@ -324,6 +325,62 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
         }
       });
     }
+
+    // ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅
+    // 🔥🔥🔥 التعديل الجديد: تحديث used_count للكود 🔥🔥🔥
+    // ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅
+    if (order.promo_code_id) {
+      try {
+        // 1. التحقق من أن الكود لم يستخدم بعد
+        const { data: promo, error: promoError } = await supabase
+          .from("promo_codes")
+          .select("used_count, usage_limit")
+          .eq("id", order.promo_code_id)
+          .single();
+        
+        if (!promoError && promo) {
+          if (promo.used_count < (promo.usage_limit || 999999)) {
+            // 2. ✅ زيادة used_count
+            const { error: updatePromoError } = await supabase
+              .from("promo_codes")
+              .update({
+                used_count: promo.used_count + 1,
+                updated_at: new Date().toISOString()
+              })
+              .eq("id", order.promo_code_id);
+            
+            if (updatePromoError) {
+              console.error("❌ Error updating promo code used_count:", updatePromoError);
+            } else {
+              console.log(`✅ Promo code used_count updated to ${promo.used_count + 1}`);
+            }
+            
+            // 3. ✅ تحديث حالة الاستخدام من pending إلى confirmed
+            const { error: usageError } = await supabase
+              .from("promo_code_usage")
+              .update({
+                status: 'confirmed',
+                confirmed_at: new Date().toISOString()
+              })
+              .eq("order_id", orderId)
+              .eq("status", 'pending');
+            
+            if (usageError) {
+              console.error("❌ Error updating promo_code_usage status:", usageError);
+            } else {
+              console.log(`✅ Promo usage confirmed for order ${orderId}`);
+            }
+            
+          } else {
+            console.warn(`⚠️ Promo code ${order.promo_code_id} has reached usage limit`);
+          }
+        }
+      } catch (error) {
+        console.error("❌ Error processing promo code acceptance:", error);
+      }
+    }
+    // 🔥🔥🔥 نهاية التعديل الجديد 🔥🔥🔥
+    // ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅
 
     toast.success(app.lang === "ar" ? "✅ تم قبول الطلب" : "✅ Order accepted");
     refetchOrders();

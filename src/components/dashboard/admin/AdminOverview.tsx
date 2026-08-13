@@ -56,7 +56,8 @@ export function AdminOverview({ onGoto, searchQuery = "" }: AdminOverviewProps) 
   const app = useApp();
   const { data: pending = [] } = useAllListingsAdmin("pending");
   const { data: all = [] } = useAllListingsAdmin();
-  const { data: stores = [] } = useAdminAllStores();
+const { data: storesData } = useAdminAllStores();
+const stores = storesData?.data || [];
   const { data: appsData } = useAllSellerApplications();
   const apps = appsData?.data || [];
   const { data: sellerOrdersRaw = [] } = useMyOrders();

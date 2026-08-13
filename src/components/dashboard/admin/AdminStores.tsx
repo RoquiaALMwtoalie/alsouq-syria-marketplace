@@ -1,7 +1,7 @@
 // src/components/dashboard/admin/AdminStores.tsx
 
 import { Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,7 +16,7 @@ import {
   Zap, Sparkles, Shield, Crown, Star, Gem, Layers,
   DollarSign, Clock, Award, Rocket, Trash2, Loader2,
   AlertTriangle, X, CheckCircle2 as CheckCircle2Icon,
-  Truck, Edit2,Info  
+  Truck, Edit2, Info  
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -240,9 +240,68 @@ function useAdminStoreStats(userId: string | undefined) {
   });
 }
 
+// ✅ دالة جلب اسم شركة التوصيل
+async function getDeliveryCompanyName(companyId: string | null): Promise<string | null> {
+  if (!companyId) return null;
+  try {
+    const { data, error } = await supabase
+      .from("delivery_companies")
+      .select("name_ar, name_en")
+      .eq("id", companyId)
+      .maybeSingle();
+    
+    if (error || !data) return null;
+    return data.name_ar || data.name_en || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+// ✅ دالة التحقق من حالة المتجر (مفتوح/مغلق)
+function isStoreCurrentlyOpen(store: any): boolean {
+  if (!store || store.store_online === false) return false;
+
+  if (!store.store_opens_at || !store.store_closes_at) {
+    return true;
+  }
+
+  try {
+    const opens = store.store_opens_at.slice(0, 5);
+    const closes = store.store_closes_at.slice(0, 5);
+
+    if (!opens || !closes || opens.length < 5 || closes.length < 5) {
+      return true;
+    }
+
+    const now = new Date();
+    const cur = now.getHours() * 60 + now.getMinutes();
+
+    const [oh, om] = opens.split(":").map(Number);
+    const [ch, cm] = closes.split(":").map(Number);
+
+    if (isNaN(oh) || isNaN(om) || isNaN(ch) || isNaN(cm)) {
+      return true;
+    }
+
+    const o = oh * 60 + om;
+    const c = ch * 60 + cm;
+
+    if (o <= c) {
+      return cur >= o && cur <= c;
+    } else {
+      return cur >= o || cur <= c;
+    }
+  } catch (error) {
+    console.error('❌ Error checking store status:', error);
+    return true;
+  }
+}
+
 export function AdminStores() {
   const app = useApp();
-  const { data: stores = [], isLoading, refetch } = useAdminAllStores();
+// ✅ بعد
+const { data: storesData, isLoading, refetch } = useAdminAllStores();
+const stores = storesData?.data || [];
   const setActive = useSetStoreActive();
   const setFeatured = useSetStoreFeatured();
   const deleteStore = useAdminDeleteStore();
@@ -267,10 +326,34 @@ export function AdminStores() {
   const [deliveryCompanies, setDeliveryCompanies] = useState<any[]>([]);
   const [isLoadingDeliveryCompanies, setIsLoadingDeliveryCompanies] = useState(false);
 
+  // ✅ ✅ ✅ State لتخزين أسماء شركات التوصيل
+  const [deliveryCompanyNames, setDeliveryCompanyNames] = useState<Record<string, string>>({});
+
   // ✅ جلب إحصائيات المتجر المحدد
   const { data: storeStats, isLoading: statsLoading } = useAdminStoreStats(
     selectedStore?.id
   );
+
+  // ✅ ✅ ✅ جلب أسماء شركات التوصيل لكل متجر
+  useEffect(() => {
+    const fetchDeliveryCompanyNames = async () => {
+      const storesWithDelivery = stores.filter((s: any) => s.delivery_company_id);
+      const names: Record<string, string> = {};
+      
+      for (const store of storesWithDelivery) {
+        if (store.delivery_company_id && !names[store.id]) {
+          const name = await getDeliveryCompanyName(store.delivery_company_id);
+          if (name) names[store.id] = name;
+        }
+      }
+      
+      setDeliveryCompanyNames(names);
+    };
+    
+    if (stores.length > 0) {
+      fetchDeliveryCompanyNames();
+    }
+  }, [stores]);
 
   // ✅ فلترة المتاجر
   const filteredStores = useMemo(() => {
@@ -729,6 +812,20 @@ export function AdminStores() {
                     {app.lang === "ar" ? "الحالة" : "Status"}
                   </div>
                 </TableHead>
+                {/* ✅ ✅ ✅ عمود جديد: الدوام (مفتوح/مغلق) */}
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[120px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Clock className="h-3.5 w-3.5" />
+                    {app.lang === "ar" ? "الدوام" : "Hours"}
+                  </div>
+                </TableHead>
+                {/* ✅ ✅ ✅ عمود جديد: شركة التوصيل */}
+                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[160px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Truck className="h-3.5 w-3.5" />
+                    {app.lang === "ar" ? "شركة التوصيل" : "Delivery Co."}
+                  </div>
+                </TableHead>
                 <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[480px]">
                   <div className="flex items-center justify-center gap-2">
                     <Zap className="h-3.5 w-3.5 animate-pulse" />
@@ -740,7 +837,7 @@ export function AdminStores() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
                     <div className="flex items-center justify-center gap-3">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#0d2e2a] border-t-transparent" />
                       {app.lang === "ar" ? "جار التحميل..." : "Loading..."}
@@ -750,7 +847,7 @@ export function AdminStores() {
               )}
               {!isLoading && paginatedStores.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12">
+                  <TableCell colSpan={7} className="text-center py-12">
                     <div className="flex flex-col items-center gap-3">
                       <div className="h-16 w-16 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center animate-bounce-slow">
                         <StoreIcon className="h-8 w-8 text-[#0d2e2a]/40" />
@@ -858,6 +955,50 @@ export function AdminStores() {
                       </Badge>
                     )}
                   </TableCell>
+                  {/* ✅ ✅ ✅ عمود الدوام (مفتوح/مغلق) */}
+                  <TableCell className="text-center">
+                    {(() => {
+                      const isOpen = isStoreCurrentlyOpen(s);
+                      return (
+                        <Badge className={cn(
+                          "border-0 text-xs font-medium px-3 py-1",
+                          isOpen
+                            ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20"
+                            : "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400 border border-red-500/20"
+                        )}>
+                          <span className={cn(
+                            "h-1.5 w-1.5 rounded-full inline-block mr-1.5",
+                            isOpen ? "bg-emerald-500 animate-pulse" : "bg-red-500"
+                          )} />
+                          {isOpen 
+                            ? (app.lang === "ar" ? "🟢 مفتوح" : "🟢 Open")
+                            : (app.lang === "ar" ? "🔴 مغلق" : "🔴 Closed")}
+                          {s.store_opens_at && s.store_closes_at && (
+                            <span className="text-[9px] text-muted-foreground block mt-0.5">
+                              {s.store_opens_at.slice(0,5)} - {s.store_closes_at.slice(0,5)}
+                            </span>
+                          )}
+                        </Badge>
+                      );
+                    })()}
+                  </TableCell>
+                  {/* ✅ ✅ ✅ عمود شركة التوصيل - التعديل المهم */}
+                  <TableCell className="text-center">
+                    {s.delivery_company_id ? (
+                      <Badge className="bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-500/20 px-3 py-1 text-xs font-medium">
+                        <Truck className="h-3 w-3 mr-1" />
+                        {deliveryCompanyNames[s.id] || (
+                          <span className="animate-pulse text-muted-foreground text-[10px]">
+                            {app.lang === "ar" ? "جاري التحميل..." : "Loading..."}
+                          </span>
+                        )}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/50">
+                        {app.lang === "ar" ? "— غير مرتبط" : "— Not linked"}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1.5 flex-wrap">
                       
@@ -945,7 +1086,7 @@ export function AdminStores() {
                         </Button>
                       )}
 
-                      {/* ✅ ✅ ✅ زر تعديل شركة التوصيل (جديد) */}
+                      {/* ✅ ✅ ✅ زر تعديل شركة التوصيل */}
                       <Button
                         size="sm"
                         variant="outline"
@@ -1282,7 +1423,7 @@ export function AdminStores() {
         </DialogContent>
       </Dialog>
 
-      {/* ✅ ✅ ✅ نافذة تعديل شركة التوصيل (جديدة) */}
+      {/* ✅ ✅ ✅ نافذة تعديل شركة التوصيل */}
       <Dialog open={deliveryDialogOpen} onOpenChange={setDeliveryDialogOpen}>
         <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-2xl shadow-[#2a655f]/10">
           <DialogHeader>

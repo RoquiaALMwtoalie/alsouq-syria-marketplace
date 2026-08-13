@@ -1931,25 +1931,74 @@ export function useAdminDeleteListing() {
   });
 }
 
-export function useAdminAllStores() {
+export function useAdminAllStores(page: number = 1, limit: number = 10) {
   return useQuery({
-    queryKey: ["admin", "stores"],
+    queryKey: ["admin", "stores", page, limit],
     queryFn: async () => {
-      const { data: sellers } = await supabase.from("user_roles").select("user_id").eq("role", "seller");
+      // 1️⃣ جلب الـ Sellers مع Pagination
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      
+      const { data: sellers, count: totalCount } = await supabase
+        .from("user_roles")
+        .select("user_id", { count: "exact" })
+        .eq("role", "seller")
+        .range(from, to);
+      
       const ids = Array.from(new Set((sellers ?? []).map((r: any) => r.user_id as string)));
-      if (!ids.length) return [] as any[];
+      if (!ids.length) return { data: [], total: 0, page, limit };
+      
+      // 2️⃣ جلب الـ Profiles
       const { data: profs, error } = await supabase
         .from("profiles")
-        .select("id, full_name, phone, store_name, store_description, store_logo_url, store_cover_url, store_active, is_featured, featured_sort" as any)
+        .select(`
+          id, 
+          full_name, 
+          phone, 
+          store_name, 
+          store_description, 
+          store_logo_url, 
+          store_cover_url, 
+          store_active, 
+          is_featured, 
+          featured_sort,
+          store_online,
+          store_opens_at,
+          store_closes_at,
+          delivery_company_id,
+          delivery_companies!profiles_delivery_company_id_fkey (
+            id,
+            name_ar,
+            name_en,
+            logo_url
+          )
+        `)
         .in("id", ids);
+      
       if (error) throw error;
-      const { data: rows } = await supabase.from("listings").select("owner_id").in("owner_id", ids);
+      
+      // 3️⃣ جلب عدد المنتجات لكل متجر
+      const { data: rows } = await supabase
+        .from("listings")
+        .select("owner_id")
+        .in("owner_id", ids);
+      
       const counts = new Map<string, number>();
       for (const r of rows ?? []) {
         const k = (r as any).owner_id as string;
         counts.set(k, (counts.get(k) ?? 0) + 1);
       }
-      return (profs ?? []).map((p: any) => ({ ...p, listing_count: counts.get(p.id) ?? 0 }));
+      
+      return {
+        data: (profs ?? []).map((p: any) => ({ 
+          ...p, 
+          listing_count: counts.get(p.id) ?? 0,
+          delivery_company: p.delivery_companies || null
+        })),
+        total: totalCount || 0,
+        page,
+        limit
+      };
     },
   });
 }
