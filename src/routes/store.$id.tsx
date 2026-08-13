@@ -148,165 +148,198 @@ function StorePage() {
   }, []);
 
   // ====== حساب سعر التوصيل (محسّن مع الهيكلية الجديدة) ======
-  useEffect(() => {
-    let isMounted = true;
+ // ====== حساب سعر التوصيل (محسّن مع الهيكلية الجديدة) ======
+useEffect(() => {
+  let isMounted = true;
 
-    const calculateDelivery = async () => {
-      if (!store || !app.user) return;
+  const calculateDelivery = async () => {
+    if (!store || !app.user) return;
 
-      setDeliveryLoading(true);
-      try {
-        // ✅ 1. جلب عنوان المستخدم الافتراضي (مع الإحداثيات)
-        const { data: userAddress, error: addressError } = await supabase
-          .from("user_addresses")
-          .select("governorate_id, lat, lng, address_text")
-          .eq("user_id", app.user.id)
-          .eq("is_default", true)
+    setDeliveryLoading(true);
+    try {
+      // ✅ 1. جلب عنوان المستخدم الافتراضي
+      const { data: userAddress, error: addressError } = await supabase
+        .from("user_addresses")
+        .select("governorate_id, lat, lng, address_text")
+        .eq("user_id", app.user.id)
+        .eq("is_default", true)
+        .maybeSingle();
+
+      if (addressError || !userAddress || !isMounted) {
+        setDeliveryLoading(false);
+        return;
+      }
+
+      // ✅ 2. جلب شركة التوصيل
+      let deliveryCompanyId = store.delivery_company_id;
+      let selectedCompany = null;
+
+      if (deliveryCompanyId) {
+        const { data: company, error: companyError } = await supabase
+          .from("delivery_companies")
+          .select("*")
+          .eq("id", deliveryCompanyId)
+          .eq("is_active", true)
           .maybeSingle();
 
-        if (addressError || !userAddress || !isMounted) {
-          setDeliveryLoading(false);
-          return;
+        if (!companyError && company) {
+          selectedCompany = company;
+          console.log("✅ [Delivery] Using store's delivery company:", company.name_ar);
         }
+      }
 
-        // ✅ 2. جلب شركة التوصيل التابعة للمتجر (من جدول profiles)
-        let deliveryCompanyId = store.delivery_company_id;
-        let selectedCompany = null;
+      if (!selectedCompany) {
+        const storeGovernorateId = store.governorate_id;
+        const { data: companies, error: companiesError } = await supabase
+          .from("delivery_companies")
+          .select("*")
+          .eq("is_active", true);
 
-        // ✅ 2a. إذا كان للمتجر شركة توصيل محددة، استخدمها
-        if (deliveryCompanyId) {
-          const { data: company, error: companyError } = await supabase
-            .from("delivery_companies")
-            .select("*")
-            .eq("id", deliveryCompanyId)
-            .eq("is_active", true)
+        if (!companiesError && companies) {
+          const matchingCompanies = companies.filter((c: any) => {
+            const coverage = c.coverage_areas || [];
+            if (coverage.includes("all") || coverage.includes(storeGovernorateId)) {
+              return true;
+            }
+            if (c.governorate_id === storeGovernorateId) {
+              return true;
+            }
+            return false;
+          });
+
+          if (matchingCompanies.length > 0) {
+            selectedCompany = matchingCompanies.sort((a: any, b: any) => 
+              (a.base_price || 0) - (b.base_price || 0)
+            )[0];
+            console.log("✅ [Delivery] Using best matching company:", selectedCompany.name_ar);
+          }
+        }
+      }
+
+      if (!selectedCompany) {
+        const { data: fallbackCompany, error: fallbackError } = await supabase
+          .from("delivery_companies")
+          .select("*")
+          .eq("is_active", true)
+          .limit(1)
+          .maybeSingle();
+
+        if (!fallbackError && fallbackCompany) {
+          selectedCompany = fallbackCompany;
+          console.log("✅ [Delivery] Using fallback company:", selectedCompany.name_ar);
+        }
+      }
+
+      if (!selectedCompany || !isMounted) {
+        setDeliveryLoading(false);
+        return;
+      }
+
+      // ✅ 3. حساب المسافة
+      let distance = 0;
+      const hasValidCoordinates = store.lat && store.lng && userAddress.lat && userAddress.lng;
+
+      if (hasValidCoordinates) {
+        distance = calculateDistance(
+          store.lat,
+          store.lng,
+          userAddress.lat,
+          userAddress.lng
+        );
+        console.log(`📍 [Delivery] Real distance: ${distance.toFixed(2)} km`);
+      } else {
+        const storeGovId = store.governorate_id;
+        const userGovId = userAddress.governorate_id;
+        
+        if (storeGovId === userGovId) {
+          distance = 5;
+        } else {
+          distance = 25;
+        }
+        console.log(`📍 [Delivery] Estimated distance: ${distance} km (no coordinates)`);
+      }
+
+      // ✅✅✅ 4. جلب قيمة السلة من عناصر السلة (مثل cart.tsx)
+      let orderTotal = 0;
+      if (app.user) {
+        try {
+          const { data: cartData, error: cartError } = await supabase
+            .from("carts")
+            .select(`
+              id,
+              cart_items (
+                quantity,
+                price
+              )
+            `)
+            .eq("user_id", app.user.id)
+            .eq("status", "active")
             .maybeSingle();
 
-          if (!companyError && company) {
-            selectedCompany = company;
-            console.log("✅ [Delivery] Using store's delivery company:", company.name_ar);
+          if (cartError) {
+            console.error("❌ [Delivery] Error fetching cart:", cartError);
           }
-        }
-
-        // ✅ 2b. إذا لم يكن للمتجر شركة توصيل، ابحث عن شركة تغطي نفس المحافظة
-        if (!selectedCompany) {
-          const storeGovernorateId = store.governorate_id;
           
-          let query = supabase
-            .from("delivery_companies")
-            .select("*")
-            .eq("is_active", true);
-
-          if (storeGovernorateId) {
-            const { data: companies, error: companiesError } = await query;
-            
-            if (!companiesError && companies) {
-              const matchingCompanies = companies.filter((c: any) => {
-                const coverage = c.coverage_areas || [];
-                if (coverage.includes("all") || coverage.includes(storeGovernorateId)) {
-                  return true;
-                }
-                if (c.governorate_id === storeGovernorateId) {
-                  return true;
-                }
-                return false;
-              });
-
-              if (matchingCompanies.length > 0) {
-                selectedCompany = matchingCompanies.sort((a: any, b: any) => 
-                  (a.base_price || 0) - (b.base_price || 0)
-                )[0];
-                console.log("✅ [Delivery] Using best matching company:", selectedCompany.name_ar);
-              }
-            }
-          }
-
-          // ✅ 2c. إذا لم يتم العثور على شركة، استخدم أول شركة نشطة
-          if (!selectedCompany) {
-            const { data: fallbackCompany, error: fallbackError } = await supabase
-              .from("delivery_companies")
-              .select("*")
-              .eq("is_active", true)
-              .limit(1)
-              .maybeSingle();
-
-            if (!fallbackError && fallbackCompany) {
-              selectedCompany = fallbackCompany;
-              console.log("✅ [Delivery] Using fallback company:", selectedCompany.name_ar);
-            }
-          }
-        }
-
-        if (!selectedCompany || !isMounted) {
-          setDeliveryLoading(false);
-          return;
-        }
-
-        // ✅ 3. حساب المسافة بين المتجر والعنوان (باستخدام هافرسين)
-        let distance = 0;
-        const hasValidCoordinates = store.lat && store.lng && userAddress.lat && userAddress.lng;
-
-        if (hasValidCoordinates) {
-          distance = calculateDistance(
-            store.lat,
-            store.lng,
-            userAddress.lat,
-            userAddress.lng
-          );
-          console.log(`📍 [Delivery] Real distance: ${distance.toFixed(2)} km`);
-        } else {
-          const storeGovId = store.governorate_id;
-          const userGovId = userAddress.governorate_id;
-          
-          if (storeGovId === userGovId) {
-            distance = 5;
+          if (cartData && cartData.cart_items && cartData.cart_items.length > 0) {
+            orderTotal = cartData.cart_items.reduce((sum: number, item: any) => {
+              return sum + (Number(item.price) * Number(item.quantity));
+            }, 0);
+            console.log(`🛒 [Delivery] Cart subtotal from items: ${orderTotal} SYP`);
           } else {
-            distance = 25;
+            console.log(`🛒 [Delivery] Cart is empty or has no items`);
           }
-          console.log(`📍 [Delivery] Estimated distance: ${distance} km (no coordinates)`);
+        } catch (error) {
+          console.error("❌ [Delivery] Error calculating cart total:", error);
         }
-
-        // ✅ 4. حساب سعر التوصيل
-        let price = calculateDeliveryPrice(selectedCompany, distance, 0);
-        const isFree = price === 0;
-
-        // ✅ 5. تحديث الحالة
-        if (isMounted) {
-          setDeliveryPrice({
-            distance: Math.round(distance * 100) / 100,
-            price,
-            isFree,
-            companyName: selectedCompany.name_ar || selectedCompany.name_en,
-            governorateMatch: store.governorate_id === userAddress.governorate_id,
-            breakdown: {
-              basePrice: selectedCompany.base_price || 0,
-              pricePerKm: selectedCompany.price_per_km || 0,
-              distanceCost: distance * (selectedCompany.price_per_km || 0),
-              minFee: selectedCompany.min_delivery_fee || 0,
-              maxFee: selectedCompany.max_delivery_fee || 999999,
-              freeThreshold: selectedCompany.free_delivery_threshold || 0,
-              sameGovernorate: store.governorate_id === userAddress.governorate_id,
-              hasCoordinates: hasValidCoordinates,
-            }
-          });
-          
-          console.log(`💰 [Delivery] Final price: ${price} SYP (${isFree ? 'FREE' : 'paid'})`);
-        }
-
-      } catch (error) {
-        console.error("❌ [Delivery] Error calculating delivery:", error);
-      } finally {
-        if (isMounted) setDeliveryLoading(false);
       }
-    };
 
-    calculateDelivery();
+      // ✅ 5. حساب سعر التوصيل
+      let price = calculateDeliveryPrice(selectedCompany, distance, orderTotal);
+      const isFree = price === 0;
 
-    return () => {
-      isMounted = false;
-    };
-  }, [store, app.user, calculateDistance, calculateDeliveryPrice]);
+      console.log(`💰 [Delivery] Final price: ${price} SYP (${isFree ? 'FREE' : 'paid'})`);
+      console.log(`💰 [Delivery] Free threshold: ${selectedCompany.free_delivery_threshold || 0} SYP`);
+      console.log(`💰 [Delivery] Order total: ${orderTotal} SYP`);
+      console.log(`💰 [Delivery] Distance: ${distance} km`);
 
+      // ✅ 6. تحديث الحالة
+      if (isMounted) {
+        setDeliveryPrice({
+          distance: Math.round(distance * 100) / 100,
+          price,
+          isFree,
+          orderTotal,
+          companyName: selectedCompany.name_ar || selectedCompany.name_en,
+          governorateMatch: store.governorate_id === userAddress.governorate_id,
+          breakdown: {
+            basePrice: selectedCompany.base_price || 0,
+            pricePerKm: selectedCompany.price_per_km || 0,
+            distanceCost: distance * (selectedCompany.price_per_km || 0),
+            minFee: selectedCompany.min_delivery_fee || 0,
+            maxFee: selectedCompany.max_delivery_fee || 999999,
+            freeThreshold: selectedCompany.free_delivery_threshold || 0,
+            sameGovernorate: store.governorate_id === userAddress.governorate_id,
+            hasCoordinates: hasValidCoordinates,
+            remainingForFree: selectedCompany.free_delivery_threshold 
+              ? Math.max(0, selectedCompany.free_delivery_threshold - orderTotal) 
+              : 0,
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error("❌ [Delivery] Error calculating delivery:", error);
+    } finally {
+      if (isMounted) setDeliveryLoading(false);
+    }
+  };
+
+  calculateDelivery();
+
+  return () => {
+    isMounted = false;
+  };
+}, [store, app.user, calculateDistance, calculateDeliveryPrice]);
   // ====== تحميل المزيد ======
   const loadMore = useCallback(() => {
     if (page < totalPages && !isFetching) {
