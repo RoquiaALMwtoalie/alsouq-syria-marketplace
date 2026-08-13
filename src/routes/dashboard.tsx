@@ -1,5 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Bell, BellOff, Check, CheckCheck, Clock, ShoppingCart, Calendar as CalendarIcon, Settings, Package, Gift, Shield, MoreVertical, Trash2, X, BellRing, Sparkles } from "lucide-react";
+import { 
+  Bell, BellOff, Check, CheckCheck, Clock, ShoppingCart, 
+  Calendar as CalendarIcon, Settings, Package, Gift, Shield, 
+  MoreVertical, Trash2, X, BellRing, Sparkles,
+  MessageCircle  // ✅ أضف هذا السطر
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
