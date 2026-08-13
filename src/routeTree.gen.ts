@@ -9,139 +9,54 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as StoresRouteImport } from './routes/stores'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as SearchRouteImport } from './routes/search'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as ReportsRouteImport } from './routes/reports'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as ProductsRouteImport } from './routes/products'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as OrdersRouteImport } from './routes/orders'
-import { Route as MessagesRouteImport } from './routes/messages'
-import { Route as FavoritesRouteImport } from './routes/favorites'
-import { Route as FaqRouteImport } from './routes/faq'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as CategoriesRouteImport } from './routes/categories'
-import { Route as CartRouteImport } from './routes/cart'
-import { Route as BookingsRouteImport } from './routes/bookings'
-import { Route as AiRouteImport } from './routes/ai'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DistributorsIndexRouteImport } from './routes/distributors/index'
-import { Route as DeliveryIndexRouteImport } from './routes/delivery/index'
-import { Route as TrackingTrackingNumberRouteImport } from './routes/tracking/$trackingNumber'
-import { Route as StoreIdRouteImport } from './routes/store.$id'
-import { Route as MessagesUserIdRouteImport } from './routes/messages_.$userId'
-import { Route as ListingIdRouteImport } from './routes/listing.$id'
-import { Route as DistributorSettingsRouteImport } from './routes/distributor/settings'
-import { Route as DistributorMessagesRouteImport } from './routes/distributor/messages'
-import { Route as DistributorDashboardRouteImport } from './routes/distributor/dashboard'
-import { Route as DistributorIdRouteImport } from './routes/distributor/$id'
-import { Route as DeliveryReportsRouteImport } from './routes/delivery/reports'
-import { Route as DeliveryMessagesRouteImport } from './routes/delivery/messages'
-import { Route as DeliveryDistributorsRouteImport } from './routes/delivery/distributors'
-import { Route as DeliveryDashboardRouteImport } from './routes/delivery/dashboard'
-import { Route as DeliveryCompleteRouteImport } from './routes/delivery/complete'
-import { Route as DeliverySlugRouteImport } from './routes/delivery/$slug'
-import { Route as CategorySlugRouteImport } from './routes/category.$slug'
-import { Route as AuthCompleteRouteImport } from './routes/auth.complete'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AiRouteImport } from './routes/ai'
+import { Route as BookingsRouteImport } from './routes/bookings'
+import { Route as CartRouteImport } from './routes/cart'
+import { Route as CategoriesRouteImport } from './routes/categories'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ProductsRouteImport } from './routes/products'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as StoresRouteImport } from './routes/stores'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthModeRouteImport } from './routes/auth.$mode'
-import { Route as DistributorReviewOrderIdRouteImport } from './routes/distributor/review/$orderId'
-import { Route as DistributorConversationUserIdRouteImport } from './routes/distributor/conversation.$userId'
-import { Route as DeliveryOrdersNewRouteImport } from './routes/delivery/orders/new'
+import { Route as AuthCompleteRouteImport } from './routes/auth.complete'
+import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as DeliveryIndexRouteImport } from './routes/delivery/index'
+import { Route as DeliverySlugRouteImport } from './routes/delivery/$slug'
+import { Route as DeliveryCompleteRouteImport } from './routes/delivery/complete'
+import { Route as DeliveryDashboardRouteImport } from './routes/delivery/dashboard'
+import { Route as DeliveryDistributorsRouteImport } from './routes/delivery/distributors'
+import { Route as DeliveryMessagesRouteImport } from './routes/delivery/messages'
+import { Route as DeliveryReportsRouteImport } from './routes/delivery/reports'
+import { Route as DistributorIdRouteImport } from './routes/distributor/$id'
+import { Route as DistributorDashboardRouteImport } from './routes/distributor/dashboard'
+import { Route as DistributorMessagesRouteImport } from './routes/distributor/messages'
+import { Route as DistributorSettingsRouteImport } from './routes/distributor/settings'
+import { Route as DistributorsIndexRouteImport } from './routes/distributors/index'
+import { Route as ListingIdRouteImport } from './routes/listing.$id'
+import { Route as MessagesUserIdRouteImport } from './routes/messages_.$userId'
+import { Route as StoreIdRouteImport } from './routes/store.$id'
+import { Route as TrackingTrackingNumberRouteImport } from './routes/tracking/$trackingNumber'
 import { Route as DeliveryConversationUserIdRouteImport } from './routes/delivery/conversation.$userId'
+import { Route as DeliveryOrdersNewRouteImport } from './routes/delivery/orders/new'
+import { Route as DistributorConversationUserIdRouteImport } from './routes/distributor/conversation.$userId'
+import { Route as DistributorReviewOrderIdRouteImport } from './routes/distributor/review/$orderId'
 import { Route as ApiPublicUploadsSplatRouteImport } from './routes/api.public.uploads.$'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StoresRoute = StoresRouteImport.update({
-  id: '/stores',
-  path: '/stores',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SearchRoute = SearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProductsRoute = ProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrdersRoute = OrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MessagesRoute = MessagesRouteImport.update({
-  id: '/messages',
-  path: '/messages',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FavoritesRoute = FavoritesRouteImport.update({
-  id: '/favorites',
-  path: '/favorites',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FaqRoute = FaqRouteImport.update({
-  id: '/faq',
-  path: '/faq',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CategoriesRoute = CategoriesRouteImport.update({
-  id: '/categories',
-  path: '/categories',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CartRoute = CartRouteImport.update({
-  id: '/cart',
-  path: '/cart',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BookingsRoute = BookingsRouteImport.update({
-  id: '/bookings',
-  path: '/bookings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AiRoute = AiRouteImport.update({
-  id: '/ai',
-  path: '/ai',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -149,99 +64,94 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AiRoute = AiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DistributorsIndexRoute = DistributorsIndexRouteImport.update({
-  id: '/distributors/',
-  path: '/distributors/',
+const BookingsRoute = BookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeliveryIndexRoute = DeliveryIndexRouteImport.update({
-  id: '/delivery/',
-  path: '/delivery/',
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TrackingTrackingNumberRoute = TrackingTrackingNumberRouteImport.update({
-  id: '/tracking/$trackingNumber',
-  path: '/tracking/$trackingNumber',
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StoreIdRoute = StoreIdRouteImport.update({
-  id: '/store/$id',
-  path: '/store/$id',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MessagesUserIdRoute = MessagesUserIdRouteImport.update({
-  id: '/messages_/$userId',
-  path: '/messages/$userId',
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ListingIdRoute = ListingIdRouteImport.update({
-  id: '/listing/$id',
-  path: '/listing/$id',
+const FavoritesRoute = FavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DistributorSettingsRoute = DistributorSettingsRouteImport.update({
-  id: '/distributor/settings',
-  path: '/distributor/settings',
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DistributorMessagesRoute = DistributorMessagesRouteImport.update({
-  id: '/distributor/messages',
-  path: '/distributor/messages',
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DistributorDashboardRoute = DistributorDashboardRouteImport.update({
-  id: '/distributor/dashboard',
-  path: '/distributor/dashboard',
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DistributorIdRoute = DistributorIdRouteImport.update({
-  id: '/distributor/$id',
-  path: '/distributor/$id',
+const ProductsRoute = ProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeliveryReportsRoute = DeliveryReportsRouteImport.update({
-  id: '/delivery/reports',
-  path: '/delivery/reports',
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeliveryMessagesRoute = DeliveryMessagesRouteImport.update({
-  id: '/delivery/messages',
-  path: '/delivery/messages',
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeliveryDistributorsRoute = DeliveryDistributorsRouteImport.update({
-  id: '/delivery/distributors',
-  path: '/delivery/distributors',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeliveryDashboardRoute = DeliveryDashboardRouteImport.update({
-  id: '/delivery/dashboard',
-  path: '/delivery/dashboard',
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeliveryCompleteRoute = DeliveryCompleteRouteImport.update({
-  id: '/delivery/complete',
-  path: '/delivery/complete',
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeliverySlugRoute = DeliverySlugRouteImport.update({
-  id: '/delivery/$slug',
-  path: '/delivery/$slug',
+const StoresRoute = StoresRouteImport.update({
+  id: '/stores',
+  path: '/stores',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CategorySlugRoute = CategorySlugRouteImport.update({
-  id: '/category/$slug',
-  path: '/category/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthCompleteRoute = AuthCompleteRouteImport.update({
-  id: '/auth/complete',
-  path: '/auth/complete',
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthModeRoute = AuthModeRouteImport.update({
@@ -249,16 +159,100 @@ const AuthModeRoute = AuthModeRouteImport.update({
   path: '/auth/$mode',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DistributorReviewOrderIdRoute =
-  DistributorReviewOrderIdRouteImport.update({
-    id: '/distributor/review/$orderId',
-    path: '/distributor/review/$orderId',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const DistributorConversationUserIdRoute =
-  DistributorConversationUserIdRouteImport.update({
-    id: '/distributor/conversation/$userId',
-    path: '/distributor/conversation/$userId',
+const AuthCompleteRoute = AuthCompleteRouteImport.update({
+  id: '/auth/complete',
+  path: '/auth/complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategorySlugRoute = CategorySlugRouteImport.update({
+  id: '/category/$slug',
+  path: '/category/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryIndexRoute = DeliveryIndexRouteImport.update({
+  id: '/delivery/',
+  path: '/delivery/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliverySlugRoute = DeliverySlugRouteImport.update({
+  id: '/delivery/$slug',
+  path: '/delivery/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryCompleteRoute = DeliveryCompleteRouteImport.update({
+  id: '/delivery/complete',
+  path: '/delivery/complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryDashboardRoute = DeliveryDashboardRouteImport.update({
+  id: '/delivery/dashboard',
+  path: '/delivery/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryDistributorsRoute = DeliveryDistributorsRouteImport.update({
+  id: '/delivery/distributors',
+  path: '/delivery/distributors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryMessagesRoute = DeliveryMessagesRouteImport.update({
+  id: '/delivery/messages',
+  path: '/delivery/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryReportsRoute = DeliveryReportsRouteImport.update({
+  id: '/delivery/reports',
+  path: '/delivery/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributorIdRoute = DistributorIdRouteImport.update({
+  id: '/distributor/$id',
+  path: '/distributor/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributorDashboardRoute = DistributorDashboardRouteImport.update({
+  id: '/distributor/dashboard',
+  path: '/distributor/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributorMessagesRoute = DistributorMessagesRouteImport.update({
+  id: '/distributor/messages',
+  path: '/distributor/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributorSettingsRoute = DistributorSettingsRouteImport.update({
+  id: '/distributor/settings',
+  path: '/distributor/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributorsIndexRoute = DistributorsIndexRouteImport.update({
+  id: '/distributors/',
+  path: '/distributors/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ListingIdRoute = ListingIdRouteImport.update({
+  id: '/listing/$id',
+  path: '/listing/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesUserIdRoute = MessagesUserIdRouteImport.update({
+  id: '/messages_/$userId',
+  path: '/messages/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoreIdRoute = StoreIdRouteImport.update({
+  id: '/store/$id',
+  path: '/store/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrackingTrackingNumberRoute = TrackingTrackingNumberRouteImport.update({
+  id: '/tracking/$trackingNumber',
+  path: '/tracking/$trackingNumber',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryConversationUserIdRoute =
+  DeliveryConversationUserIdRouteImport.update({
+    id: '/delivery/conversation/$userId',
+    path: '/delivery/conversation/$userId',
     getParentRoute: () => rootRouteImport,
   } as any)
 const DeliveryOrdersNewRoute = DeliveryOrdersNewRouteImport.update({
@@ -266,10 +260,16 @@ const DeliveryOrdersNewRoute = DeliveryOrdersNewRouteImport.update({
   path: '/delivery/orders/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeliveryConversationUserIdRoute =
-  DeliveryConversationUserIdRouteImport.update({
-    id: '/delivery/conversation/$userId',
-    path: '/delivery/conversation/$userId',
+const DistributorConversationUserIdRoute =
+  DistributorConversationUserIdRouteImport.update({
+    id: '/distributor/conversation/$userId',
+    path: '/distributor/conversation/$userId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DistributorReviewOrderIdRoute =
+  DistributorReviewOrderIdRouteImport.update({
+    id: '/distributor/review/$orderId',
+    path: '/distributor/review/$orderId',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicUploadsSplatRoute = ApiPublicUploadsSplatRouteImport.update({
@@ -607,130 +607,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stores': {
-      id: '/stores'
-      path: '/stores'
-      fullPath: '/stores'
-      preLoaderRoute: typeof StoresRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/search': {
-      id: '/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/products': {
-      id: '/products'
-      path: '/products'
-      fullPath: '/products'
-      preLoaderRoute: typeof ProductsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/orders': {
-      id: '/orders'
-      path: '/orders'
-      fullPath: '/orders'
-      preLoaderRoute: typeof OrdersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/messages': {
-      id: '/messages'
-      path: '/messages'
-      fullPath: '/messages'
-      preLoaderRoute: typeof MessagesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/favorites': {
-      id: '/favorites'
-      path: '/favorites'
-      fullPath: '/favorites'
-      preLoaderRoute: typeof FavoritesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/faq': {
-      id: '/faq'
-      path: '/faq'
-      fullPath: '/faq'
-      preLoaderRoute: typeof FaqRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/categories': {
-      id: '/categories'
-      path: '/categories'
-      fullPath: '/categories'
-      preLoaderRoute: typeof CategoriesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cart': {
-      id: '/cart'
-      path: '/cart'
-      fullPath: '/cart'
-      preLoaderRoute: typeof CartRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bookings': {
-      id: '/bookings'
-      path: '/bookings'
-      fullPath: '/bookings'
-      preLoaderRoute: typeof BookingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ai': {
-      id: '/ai'
-      path: '/ai'
-      fullPath: '/ai'
-      preLoaderRoute: typeof AiRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -740,137 +621,130 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/ai': {
+      id: '/ai'
+      path: '/ai'
+      fullPath: '/ai'
+      preLoaderRoute: typeof AiRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/distributors/': {
-      id: '/distributors/'
-      path: '/distributors'
-      fullPath: '/distributors/'
-      preLoaderRoute: typeof DistributorsIndexRouteImport
+    '/bookings': {
+      id: '/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof BookingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/delivery/': {
-      id: '/delivery/'
-      path: '/delivery'
-      fullPath: '/delivery/'
-      preLoaderRoute: typeof DeliveryIndexRouteImport
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tracking/$trackingNumber': {
-      id: '/tracking/$trackingNumber'
-      path: '/tracking/$trackingNumber'
-      fullPath: '/tracking/$trackingNumber'
-      preLoaderRoute: typeof TrackingTrackingNumberRouteImport
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/store/$id': {
-      id: '/store/$id'
-      path: '/store/$id'
-      fullPath: '/store/$id'
-      preLoaderRoute: typeof StoreIdRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/messages_/$userId': {
-      id: '/messages_/$userId'
-      path: '/messages/$userId'
-      fullPath: '/messages/$userId'
-      preLoaderRoute: typeof MessagesUserIdRouteImport
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/listing/$id': {
-      id: '/listing/$id'
-      path: '/listing/$id'
-      fullPath: '/listing/$id'
-      preLoaderRoute: typeof ListingIdRouteImport
+    '/favorites': {
+      id: '/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof FavoritesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/distributor/settings': {
-      id: '/distributor/settings'
-      path: '/distributor/settings'
-      fullPath: '/distributor/settings'
-      preLoaderRoute: typeof DistributorSettingsRouteImport
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/distributor/messages': {
-      id: '/distributor/messages'
-      path: '/distributor/messages'
-      fullPath: '/distributor/messages'
-      preLoaderRoute: typeof DistributorMessagesRouteImport
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/distributor/dashboard': {
-      id: '/distributor/dashboard'
-      path: '/distributor/dashboard'
-      fullPath: '/distributor/dashboard'
-      preLoaderRoute: typeof DistributorDashboardRouteImport
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/distributor/$id': {
-      id: '/distributor/$id'
-      path: '/distributor/$id'
-      fullPath: '/distributor/$id'
-      preLoaderRoute: typeof DistributorIdRouteImport
+    '/products': {
+      id: '/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof ProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/delivery/reports': {
-      id: '/delivery/reports'
-      path: '/delivery/reports'
-      fullPath: '/delivery/reports'
-      preLoaderRoute: typeof DeliveryReportsRouteImport
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/delivery/messages': {
-      id: '/delivery/messages'
-      path: '/delivery/messages'
-      fullPath: '/delivery/messages'
-      preLoaderRoute: typeof DeliveryMessagesRouteImport
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/delivery/distributors': {
-      id: '/delivery/distributors'
-      path: '/delivery/distributors'
-      fullPath: '/delivery/distributors'
-      preLoaderRoute: typeof DeliveryDistributorsRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/delivery/dashboard': {
-      id: '/delivery/dashboard'
-      path: '/delivery/dashboard'
-      fullPath: '/delivery/dashboard'
-      preLoaderRoute: typeof DeliveryDashboardRouteImport
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/delivery/complete': {
-      id: '/delivery/complete'
-      path: '/delivery/complete'
-      fullPath: '/delivery/complete'
-      preLoaderRoute: typeof DeliveryCompleteRouteImport
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/delivery/$slug': {
-      id: '/delivery/$slug'
-      path: '/delivery/$slug'
-      fullPath: '/delivery/$slug'
-      preLoaderRoute: typeof DeliverySlugRouteImport
+    '/stores': {
+      id: '/stores'
+      path: '/stores'
+      fullPath: '/stores'
+      preLoaderRoute: typeof StoresRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/category/$slug': {
-      id: '/category/$slug'
-      path: '/category/$slug'
-      fullPath: '/category/$slug'
-      preLoaderRoute: typeof CategorySlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/complete': {
-      id: '/auth/complete'
-      path: '/auth/complete'
-      fullPath: '/auth/complete'
-      preLoaderRoute: typeof AuthCompleteRouteImport
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/$mode': {
@@ -880,18 +754,137 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthModeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/distributor/review/$orderId': {
-      id: '/distributor/review/$orderId'
-      path: '/distributor/review/$orderId'
-      fullPath: '/distributor/review/$orderId'
-      preLoaderRoute: typeof DistributorReviewOrderIdRouteImport
+    '/auth/complete': {
+      id: '/auth/complete'
+      path: '/auth/complete'
+      fullPath: '/auth/complete'
+      preLoaderRoute: typeof AuthCompleteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/distributor/conversation/$userId': {
-      id: '/distributor/conversation/$userId'
-      path: '/distributor/conversation/$userId'
-      fullPath: '/distributor/conversation/$userId'
-      preLoaderRoute: typeof DistributorConversationUserIdRouteImport
+    '/category/$slug': {
+      id: '/category/$slug'
+      path: '/category/$slug'
+      fullPath: '/category/$slug'
+      preLoaderRoute: typeof CategorySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/': {
+      id: '/delivery/'
+      path: '/delivery'
+      fullPath: '/delivery/'
+      preLoaderRoute: typeof DeliveryIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/$slug': {
+      id: '/delivery/$slug'
+      path: '/delivery/$slug'
+      fullPath: '/delivery/$slug'
+      preLoaderRoute: typeof DeliverySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/complete': {
+      id: '/delivery/complete'
+      path: '/delivery/complete'
+      fullPath: '/delivery/complete'
+      preLoaderRoute: typeof DeliveryCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/dashboard': {
+      id: '/delivery/dashboard'
+      path: '/delivery/dashboard'
+      fullPath: '/delivery/dashboard'
+      preLoaderRoute: typeof DeliveryDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/distributors': {
+      id: '/delivery/distributors'
+      path: '/delivery/distributors'
+      fullPath: '/delivery/distributors'
+      preLoaderRoute: typeof DeliveryDistributorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/messages': {
+      id: '/delivery/messages'
+      path: '/delivery/messages'
+      fullPath: '/delivery/messages'
+      preLoaderRoute: typeof DeliveryMessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/reports': {
+      id: '/delivery/reports'
+      path: '/delivery/reports'
+      fullPath: '/delivery/reports'
+      preLoaderRoute: typeof DeliveryReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor/$id': {
+      id: '/distributor/$id'
+      path: '/distributor/$id'
+      fullPath: '/distributor/$id'
+      preLoaderRoute: typeof DistributorIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor/dashboard': {
+      id: '/distributor/dashboard'
+      path: '/distributor/dashboard'
+      fullPath: '/distributor/dashboard'
+      preLoaderRoute: typeof DistributorDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor/messages': {
+      id: '/distributor/messages'
+      path: '/distributor/messages'
+      fullPath: '/distributor/messages'
+      preLoaderRoute: typeof DistributorMessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor/settings': {
+      id: '/distributor/settings'
+      path: '/distributor/settings'
+      fullPath: '/distributor/settings'
+      preLoaderRoute: typeof DistributorSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributors/': {
+      id: '/distributors/'
+      path: '/distributors'
+      fullPath: '/distributors/'
+      preLoaderRoute: typeof DistributorsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/listing/$id': {
+      id: '/listing/$id'
+      path: '/listing/$id'
+      fullPath: '/listing/$id'
+      preLoaderRoute: typeof ListingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages_/$userId': {
+      id: '/messages_/$userId'
+      path: '/messages/$userId'
+      fullPath: '/messages/$userId'
+      preLoaderRoute: typeof MessagesUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/store/$id': {
+      id: '/store/$id'
+      path: '/store/$id'
+      fullPath: '/store/$id'
+      preLoaderRoute: typeof StoreIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tracking/$trackingNumber': {
+      id: '/tracking/$trackingNumber'
+      path: '/tracking/$trackingNumber'
+      fullPath: '/tracking/$trackingNumber'
+      preLoaderRoute: typeof TrackingTrackingNumberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/conversation/$userId': {
+      id: '/delivery/conversation/$userId'
+      path: '/delivery/conversation/$userId'
+      fullPath: '/delivery/conversation/$userId'
+      preLoaderRoute: typeof DeliveryConversationUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/delivery/orders/new': {
@@ -901,11 +894,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeliveryOrdersNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/delivery/conversation/$userId': {
-      id: '/delivery/conversation/$userId'
-      path: '/delivery/conversation/$userId'
-      fullPath: '/delivery/conversation/$userId'
-      preLoaderRoute: typeof DeliveryConversationUserIdRouteImport
+    '/distributor/conversation/$userId': {
+      id: '/distributor/conversation/$userId'
+      path: '/distributor/conversation/$userId'
+      fullPath: '/distributor/conversation/$userId'
+      preLoaderRoute: typeof DistributorConversationUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor/review/$orderId': {
+      id: '/distributor/review/$orderId'
+      path: '/distributor/review/$orderId'
+      fullPath: '/distributor/review/$orderId'
+      preLoaderRoute: typeof DistributorReviewOrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/uploads/$': {
