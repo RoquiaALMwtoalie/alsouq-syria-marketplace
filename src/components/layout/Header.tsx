@@ -50,7 +50,8 @@ import { memo, useMemo, useCallback } from "react";
 import { useProfileWithUpdate } from "@/lib/hooks/useProfileWithUpdate";
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { useCart } from "@/lib/hooks/useCart";
-
+// ✅ تأكد من وجود هذا الاستيراد مع باقي الاستيرادات
+import { processVoiceSearch } from "@/lib/voiceSearchEngine";
 // ✅ ✅ ✅ استيراد البحث الصوتي
 import { VoiceSearch } from "@/components/VoiceSearch";
 import { detectVoiceCommand, parseVoiceQuery } from "@/lib/voiceSearch";
@@ -382,76 +383,102 @@ export const Header = memo(function Header() {
   }, [q, gov, navigate, app.lang]);
 
   // ✅ ✅ ✅ دالة معالجة البحث الصوتي
-  const handleVoiceSearch = useCallback((text: string) => {
-    console.log("🎤 Voice search result:", text);
-    
-    // ✅ تحليل النص الصوتي
-    const parsed = parseVoiceQuery(text);
-    const command = detectVoiceCommand(text, app.lang);
-    
-    console.log("📊 Parsed query:", parsed);
-    console.log("🎯 Command detected:", command);
-    
-    // ✅ تنفيذ الإجراء المناسب
-    switch (command.command) {
-      case "cart":
+// ===== ✅ ✅ ✅ دالة معالجة البحث الصوتي (الجديدة - المحسنة)
+const handleVoiceSearch = useCallback(async (text: string, entities?: any) => {
+  console.log("🎤 Voice search result:", text);
+  console.log("📊 Entities:", entities);
+  
+  // ✅ استخدام المحرك الذكي
+  const response = await processVoiceSearch(text, app.lang === 'ar' ? 'ar' : 'en');
+  
+  console.log("🎯 Intent:", response.intent);
+  console.log("📊 Entities:", response.entities);
+  console.log("📊 Results:", response.results.length);
+  
+  // ✅ تنفيذ الإجراء المناسب حسب النية
+  switch (response.intent) {
+    case 'action':
+      // إجراءات خاصة (سلة، طلبات)
+      if (text.includes('سلة') || text.includes('cart') || text.includes('عربة')) {
         navigate({ to: "/cart" });
         toast.info(app.lang === "ar" ? "🛒 تم التوجيه إلى السلة" : "🛒 Navigating to cart");
         return;
-        
-      case "orders":
+      }
+      if (text.includes('طلبات') || text.includes('orders') || text.includes('شحن')) {
         navigate({ to: "/orders" });
         toast.info(app.lang === "ar" ? "📦 تم التوجيه إلى الطلبات" : "📦 Navigating to orders");
         return;
-        
-      case "store":
-        if (command.query && command.query !== "all") {
-          navigate({ 
-            to: "/search", 
-            search: { q: command.query, type: "stores" } 
-          });
-        } else {
-          navigate({ to: "/stores" });
-        }
-        return;
-        
-      case "category":
-        if (command.query && command.query !== "all") {
-          navigate({ 
-            to: "/search", 
-            search: { q: command.query, type: "categories" } 
-          });
-        }
-        return;
-        
-      case "offer":
+      }
+      break;
+      
+    case 'store':
+      if (response.results.length > 0) {
+        const store = response.results[0];
         navigate({ 
-          to: "/search", 
-          search: { q: command.query || "", isOffer: true } 
+          to: "/store/$id", 
+          params: { id: store.id } 
         });
-        return;
-        
-      case "help":
         toast.info(
           app.lang === "ar" 
-            ? "💡 يمكنك قول: 'بحث عن جوالات'، 'عروض السلة'، 'طلباتي'، 'متجر العسل'"
-            : "💡 You can say: 'search phones', 'show offers', 'my orders', 'store honey'"
+            ? `🏪 تم التوجيه إلى متجر ${store.title}` 
+            : `🏪 Navigating to store: ${store.title}`
         );
-        return;
-        
-      default:
-        // ✅ البحث العادي
-        if (text.trim()) {
-          setQ(text);
-          // ✅ تنفيذ البحث التلقائي
-          navigate({ 
-            to: "/search", 
-            search: { q: text.trim() } 
-          });
-        }
-    }
-  }, [app.lang, navigate]);
-
+      } else {
+        navigate({ to: "/stores" });
+        toast.info(app.lang === "ar" ? "🏪 تم التوجيه إلى صفحة المتاجر" : "🏪 Navigating to stores");
+      }
+      return;
+      
+    case 'category':
+      if (response.results.length > 0) {
+        const category = response.results[0];
+        navigate({ 
+          to: "/category/$slug", 
+          params: { slug: category.id } 
+        });
+        toast.info(
+          app.lang === "ar" 
+            ? `📂 تم التوجيه إلى تصنيف ${category.title}` 
+            : `📂 Navigating to category: ${category.title}`
+        );
+      } else {
+        navigate({ to: "/categories" });
+        toast.info(app.lang === "ar" ? "📂 تم التوجيه إلى صفحة التصنيفات" : "📂 Navigating to categories");
+      }
+      return;
+      
+    case 'help':
+      toast.info(
+        app.lang === "ar" 
+          ? "💡 يمكنك قول: 'ابحث عن جوال سامسونج'، 'عروض السلة'، 'متاجر في دمشق'" 
+          : "💡 You can say: 'search Samsung phones', 'show offers', 'stores in Damascus'"
+      );
+      return;
+      
+    default:
+      // ✅ البحث العادي - استخدم النتائج من المحرك
+      if (response.results.length > 0) {
+        // نتائج متعددة - اذهب إلى صفحة البحث
+        const searchQuery = entities?.searchTerms?.join(' ') || text;
+        navigate({ 
+          to: "/search", 
+          search: { q: searchQuery } 
+        });
+        toast.success(
+          app.lang === "ar" 
+            ? `🔍 تم العثور على ${response.totalCount} نتيجة` 
+            : `🔍 Found ${response.totalCount} results`
+        );
+      } else if (text.trim()) {
+        // بحث عادي
+        navigate({ 
+          to: "/search", 
+          search: { q: text.trim() } 
+        });
+        toast.info(app.lang === "ar" ? "🔍 جاري البحث..." : "🔍 Searching...");
+      }
+  }
+}, [app.lang, navigate]);
   // ===== ✅ دالة الذهاب للرئيسية =====
   const goHome = useCallback(() => {
     navigate({ to: "/" });

@@ -29,6 +29,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StoresRouteImport } from './routes/stores'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as VoiceSearchRouteImport } from './routes/voice-search'
 import { Route as AuthModeRouteImport } from './routes/auth.$mode'
 import { Route as AuthCompleteRouteImport } from './routes/auth.complete'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
@@ -152,6 +153,11 @@ const StoresRoute = StoresRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VoiceSearchRoute = VoiceSearchRouteImport.update({
+  id: '/voice-search',
+  path: '/voice-search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthModeRoute = AuthModeRouteImport.update({
@@ -299,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/stores': typeof StoresRoute
   '/terms': typeof TermsRoute
+  '/voice-search': typeof VoiceSearchRoute
   '/auth/$mode': typeof AuthModeRoute
   '/auth/complete': typeof AuthCompleteRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -345,6 +352,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/stores': typeof StoresRoute
   '/terms': typeof TermsRoute
+  '/voice-search': typeof VoiceSearchRoute
   '/auth/$mode': typeof AuthModeRoute
   '/auth/complete': typeof AuthCompleteRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -392,6 +400,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/stores': typeof StoresRoute
   '/terms': typeof TermsRoute
+  '/voice-search': typeof VoiceSearchRoute
   '/auth/$mode': typeof AuthModeRoute
   '/auth/complete': typeof AuthCompleteRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -440,6 +449,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stores'
     | '/terms'
+    | '/voice-search'
     | '/auth/$mode'
     | '/auth/complete'
     | '/category/$slug'
@@ -486,6 +496,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stores'
     | '/terms'
+    | '/voice-search'
     | '/auth/$mode'
     | '/auth/complete'
     | '/category/$slug'
@@ -532,6 +543,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stores'
     | '/terms'
+    | '/voice-search'
     | '/auth/$mode'
     | '/auth/complete'
     | '/category/$slug'
@@ -579,6 +591,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   StoresRoute: typeof StoresRoute
   TermsRoute: typeof TermsRoute
+  VoiceSearchRoute: typeof VoiceSearchRoute
   AuthModeRoute: typeof AuthModeRoute
   AuthCompleteRoute: typeof AuthCompleteRoute
   CategorySlugRoute: typeof CategorySlugRoute
@@ -745,6 +758,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/voice-search': {
+      id: '/voice-search'
+      path: '/voice-search'
+      fullPath: '/voice-search'
+      preLoaderRoute: typeof VoiceSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/$mode': {
@@ -939,6 +959,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   StoresRoute: StoresRoute,
   TermsRoute: TermsRoute,
+  VoiceSearchRoute: VoiceSearchRoute,
   AuthModeRoute: AuthModeRoute,
   AuthCompleteRoute: AuthCompleteRoute,
   CategorySlugRoute: CategorySlugRoute,
