@@ -14,8 +14,8 @@ export const Route = createFileRoute("/categories")({
   component: CategoriesPage,
   head: () => ({
     meta: [
-      { title: "جميع التصنيفات - السوق عندك" },
-      { name: "description", content: "استكشف جميع التصنيفات والمنتجات بكل سهولة في السوق عندك" },
+      { title: "جميع التصنيفات - السوق لعندك" },
+      { name: "description", content: "استكشف جميع التصنيفات والمنتجات بكل سهولة في السوق لعندك" },
     ],
   }),
 });
@@ -109,9 +109,9 @@ function CategoriesPage() {
           {/* ✅ المساحة المطلوبة max-w-3xl */}
           <div className="max-w-3xl bg-black/60 dark:bg-slate-950/75 backdrop-blur-md p-5 md:p-6 rounded-2xl border border-white/35 shadow-2xl relative overflow-hidden">
             
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/30 text-[10px] font-bold mb-2 text-emerald-300">
-              <Sparkles className="h-3 w-3 animate-spin" style={{ animationDuration: '6s' }} />
-              {app.lang === "ar" ? "دليل الأقسام الشامل" : "Comprehensive Directory"}
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/30 text-[10px] font-bold mb-2 text-pink-300">
+              <Sparkles className="h-3 w-3 animate-spin text-pink-300" style={{ animationDuration: '6s' }} />
+              {app.lang === "ar" ? "🌸 دليل الأقسام الشامل" : "🌸 Comprehensive Directory"}
             </div>
 
             <h1 className="text-xl md:text-2xl font-extrabold mb-1.5 tracking-tight drop-shadow-md">
@@ -127,15 +127,15 @@ function CategoriesPage() {
             {/* تفاصيل القسم الحالي وزر الدخول */}
             {currentBannerCat && (
               <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
-                <span className="text-[11px] font-bold text-emerald-200 bg-black/70 px-2.5 py-1 rounded-lg border border-emerald-500/50 flex items-center gap-1.5 shadow-md">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[11px] font-bold text-pink-200 bg-black/70 px-2.5 py-1 rounded-lg border border-pink-400/50 flex items-center gap-1.5 shadow-md">
+                  <span className="h-1.5 w-1.5 rounded-full bg-pink-400 animate-pulse" />
                   {app.lang === "ar" ? `قسم معروض حالياً: ${currentBannerCat.name_ar}` : `Featured: ${currentBannerCat.name_en}`}
                 </span>
 
                 <Link
                   to={`/category/$slug`}
                   params={{ slug: currentBannerCat.slug }}
-                  className="text-[11px] font-bold bg-white text-[#2a655f] hover:bg-emerald-50 px-3.5 py-1.5 rounded-xl transition-all duration-300 flex items-center gap-1 shadow-lg"
+                  className="text-[11px] font-bold bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white px-3.5 py-1.5 rounded-xl transition-all duration-300 flex items-center gap-1 shadow-lg"
                 >
                   <span>{app.lang === "ar" ? "دخول القسم" : "Enter Section"}</span>
                   {app.lang === "ar" ? <ArrowLeft className="h-3 w-3" /> : <ArrowRight className="h-3 w-3" />}
@@ -146,15 +146,15 @@ function CategoriesPage() {
             {/* ===== شريط البحث السريع المدمج ===== */}
             <div className="max-w-md">
               <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-xl blur opacity-30 group-hover:opacity-60 transition duration-500" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-pink-400 to-rose-400 rounded-xl blur opacity-30 group-hover:opacity-60 transition duration-500" />
                 <div className="relative flex items-center">
-                  <Search className="absolute left-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors" />
+                  <Search className="absolute left-3 h-4 w-4 text-slate-400 group-hover:text-pink-400 transition-colors" />
                   <Input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={app.lang === "ar" ? "ابحث عن أي تصنيف تريده..." : "Search any category..."}
-                    className="pl-10 h-10 bg-white dark:bg-slate-900 border-0 text-slate-900 dark:text-white placeholder:text-slate-400 rounded-xl shadow-md focus-visible:ring-2 focus-visible:ring-emerald-400 text-xs font-medium"
+                    className="pl-10 h-10 bg-white dark:bg-slate-900 border-0 text-slate-900 dark:text-white placeholder:text-slate-400 rounded-xl shadow-md focus-visible:ring-2 focus-visible:ring-pink-400 text-xs font-medium"
                   />
                   {searchQuery && (
                     <button 
@@ -174,7 +174,7 @@ function CategoriesPage() {
                 <button
                   key={idx}
                   onClick={() => setCurrentBannerIndex(idx)}
-                  className={`h-1 rounded-full transition-all duration-300 ${idx === currentBannerIndex ? 'w-5 bg-emerald-400' : 'w-1 bg-white/60'}`}
+                  className={`h-1 rounded-full transition-all duration-300 ${idx === currentBannerIndex ? 'w-5 bg-pink-400' : 'w-1 bg-white/60'}`}
                 />
               ))}
             </div>
@@ -203,15 +203,15 @@ function CategoriesPage() {
               <div className="mb-10">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-[#2a655f] to-[#3a8a82] grid place-items-center text-white shadow-sm">
+                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-pink-400 to-rose-400 grid place-items-center text-white shadow-sm">
                       <Sparkles className="h-3.5 w-3.5" />
                     </div>
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                      {app.lang === "ar" ? "التصنيفات الأكثر طلباً" : "Most Demanded Categories"}
+                      {app.lang === "ar" ? "🌸 التصنيفات الأكثر طلباً" : "🌸 Most Demanded Categories"}
                     </h2>
                   </div>
                   
-                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] dark:text-[#3a8a82] border border-[#2a655f]/20 font-bold px-2.5 py-0.5 rounded-full text-[11px]">
+                  <Badge className="bg-pink-400/20 text-pink-600 dark:text-pink-300 border border-pink-400/30 font-bold px-2.5 py-0.5 rounded-full text-[11px]">
                     ⭐ {app.lang === "ar" ? "مميزة" : "Featured"}
                   </Badge>
                 </div>
@@ -227,26 +227,26 @@ function CategoriesPage() {
                         key={cat.id}
                         to={`/category/$slug`}
                         params={{ slug: cat.slug }}
-                        className="group relative bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-500 border-2 border-[#2a655f] hover:border-[#3a8a82] text-center overflow-hidden flex flex-col items-center justify-between h-[155px] category-wave-card"
+                        className="group relative bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-500 border-2 border-pink-300/80 hover:border-pink-400 text-center overflow-hidden flex flex-col items-center justify-between h-[155px] category-wave-card"
                         style={{ animationDelay: `${index * 0.2}s` }}
                       >
-                        <div className="absolute inset-0 bg-gradient-to-b from-[#2a655f]/5 via-transparent to-[#2a655f]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-pink-400/5 via-transparent to-pink-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         
                         <div className="relative z-10 mt-1">
-                          <div className="h-12 w-12 rounded-xl overflow-hidden bg-gradient-to-br from-[#2a655f]/10 to-[#3a8a82]/20 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-500 shadow-inner border border-[#2a655f]/30">
+                          <div className="h-12 w-12 rounded-xl overflow-hidden bg-gradient-to-br from-pink-400/20 to-rose-400/30 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-500 shadow-inner border-2 border-pink-300/50">
                             {hasImage ? (
                               <img src={cat.image_url} alt="" className="h-full w-full object-cover" />
                             ) : (
-                              <Icon className="h-6 w-6 text-[#2a655f] dark:text-[#3a8a82]" />
+                              <Icon className="h-6 w-6 text-pink-500 dark:text-pink-400" />
                             )}
                           </div>
                         </div>
                         
                         <div className="relative z-10 w-full mt-1.5">
-                          <h3 className="font-bold text-xs text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors line-clamp-1">
+                          <h3 className="font-bold text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition-colors line-clamp-1">
                             {app.lang === "ar" ? cat.name_ar : cat.name_en}
                           </h3>
-                          <span className="mt-1 text-[10px] font-semibold text-[#2a655f] dark:text-[#3a8a82] bg-[#2a655f]/10 py-0.5 px-2 rounded-full inline-block">
+                          <span className="mt-1 text-[10px] font-semibold text-pink-600 dark:text-pink-300 bg-pink-400/20 py-0.5 px-2 rounded-full inline-block">
                             {count} {app.lang === "ar" ? "منتج" : "items"}
                           </span>
                         </div>
@@ -261,7 +261,7 @@ function CategoriesPage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-[#2a655f] to-[#3a8a82] grid place-items-center text-white shadow-sm">
+                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-pink-400 to-rose-400 grid place-items-center text-white shadow-sm">
                     <Layers className="h-3.5 w-3.5" />
                   </div>
                   <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
@@ -274,14 +274,14 @@ function CategoriesPage() {
               </div>
 
               {filteredCategories.length === 0 ? (
-                <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-[#2a655f]/30 shadow-md max-w-sm mx-auto">
-                  <Search className="h-8 w-8 text-[#2a655f] mx-auto mb-2 animate-pulse" />
+                <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-pink-300/30 shadow-md max-w-sm mx-auto">
+                  <Search className="h-8 w-8 text-pink-500 mx-auto mb-2 animate-pulse" />
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                     {app.lang === "ar" ? "لم نجد أي تصنيف مطابق" : "No categories found"}
                   </h3>
                   <Button
                     onClick={() => setSearchQuery("")}
-                    className="mt-3 bg-[#2a655f] hover:bg-[#3a8a82] text-white rounded-xl px-4 h-8 text-xs font-bold"
+                    className="mt-3 bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white rounded-xl px-4 h-8 text-xs font-bold"
                   >
                     {app.lang === "ar" ? "عرض الكل" : "View All"}
                   </Button>
@@ -299,29 +299,29 @@ function CategoriesPage() {
                         key={cat.id}
                         to={`/category/$slug`}
                         params={{ slug: cat.slug }}
-                        className="group relative bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-500 border-2 border-[#2a655f]/80 hover:border-[#2a655f] text-center overflow-hidden flex flex-col items-center justify-between h-[150px] category-wave-card"
+                        className="group relative bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-500 border-2 border-pink-300/60 hover:border-pink-400 text-center overflow-hidden flex flex-col items-center justify-between h-[150px] category-wave-card"
                         style={{ animationDelay: `${(index % 5) * 0.25}s` }}
                       >
                         {isFeatured && (
                           <div className="absolute top-2 right-2 z-10">
-                            <span className="bg-[#2a655f] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">
+                            <span className="bg-gradient-to-r from-pink-400 to-rose-400 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">
                               ⭐
                             </span>
                           </div>
                         )}
                         
                         <div className="relative z-10 mt-1">
-                          <div className="h-10 w-10 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-500 border border-[#2a655f]/30">
+                          <div className="h-10 w-10 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-500 border-2 border-pink-300/40">
                             {hasImage ? (
                               <img src={cat.image_url} alt="" className="h-full w-full object-cover" />
                             ) : (
-                              <Icon className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                              <Icon className="h-5 w-5 text-pink-500 dark:text-pink-400" />
                             )}
                           </div>
                         </div>
                         
                         <div className="relative z-10 w-full mt-1.5">
-                          <h3 className="font-bold text-xs text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors line-clamp-1">
+                          <h3 className="font-bold text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition-colors line-clamp-1">
                             {app.lang === "ar" ? cat.name_ar : cat.name_en}
                           </h3>
                           <p className="text-[10px] font-semibold text-slate-400 mt-0.5">

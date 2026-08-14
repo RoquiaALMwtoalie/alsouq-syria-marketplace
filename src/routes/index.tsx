@@ -1,4 +1,4 @@
-// src/routes/index.tsx - الأداء الخارق 🚀
+// src/routes/index.tsx - الأداء الخارق 🚀 مع لمسات وردية ناعمة وأيقونات احترافية
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -8,8 +8,9 @@ import {
   TrendingUp, Zap, Crown, Gem, Award, Clock, ThumbsUp, Eye, Truck, Coffee,
   Layers, Grid3X3, List, Percent, Tag, MapPin, Navigation, 
   ArrowLeft,
-  Globe,  Store as StoreIcon ,// ✅ أضف هذا
-  Building2 // ✅ وأضف هذا إذا كنت تستخدمه
+  Globe,  Store as StoreIcon,
+  Building2,
+  Compass
 } from "lucide-react";
 import { useEffect, useState, useRef, useMemo, useCallback, Suspense } from "react";
 import { useApp, useT } from "@/lib/i18n";
@@ -28,13 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// ✅ صحيح
 
 export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
     meta: [
-      { title: "السوق عندك — سوقك السوري بين يديك" },
+      { title: "السوق لعندك — سوقك السوري بين يديك" },
       { name: "description", content: "منصة سورية شاملة: تسوّق واحجز واكتشف من المتاجر والخدمات والعروض والهدايا في كل المحافظات." },
     ],
   }),
@@ -85,31 +85,29 @@ function Home() {
   const { data: dbCategories = [] } = useCategories();
 
   // ✅ المنتجات - مع Pagination
-// src/routes/index.tsx
+  const { data: productsData = { data: [], count: 0, totalPages: 0 }, isLoading: pLoading } = useListings({
+    sort: "popular",
+    limit: LIMIT,
+    page: page,
+  });
+  const products = productsData.data || [];
+  const totalPages = productsData.totalPages || 1;
+  
+  // ✅ العروض
+  const { data: allDealsData = { data: [], count: 0, totalPages: 0 } } = useListings({
+    isOffer: true,
+    sort: "discount_desc",
+    limit: 12,
+  });
+  const allDeals = allDealsData.data || [];
 
-// ✅ البيانات الحالية تستخدم useListings بشكل صحيح
-const { data: productsData = { data: [], count: 0, totalPages: 0 }, isLoading: pLoading } = useListings({
-  sort: "popular",
-  limit: LIMIT,
-  page: page,
-});
-const products = productsData.data || [];
-const totalPages = productsData.totalPages || 1;
-// ✅ العروض
-const { data: allDealsData = { data: [], count: 0, totalPages: 0 } } = useListings({
-  isOffer: true,
-  sort: "discount_desc",
-  limit: 12,
-});
-const allDeals = allDealsData.data || [];
-
-// ✅ العروض الحصرية
-const { data: offersData = { data: [], count: 0, totalPages: 0 } } = useListings({
-  isOffer: true,
-  limit: 4,
-  sort: "recent",
-});
-const offers = offersData.data || [];
+  // ✅ العروض الحصرية
+  const { data: offersData = { data: [], count: 0, totalPages: 0 } } = useListings({
+    isOffer: true,
+    limit: 4,
+    sort: "recent",
+  });
+  const offers = offersData.data || [];
 
   const { data: stores = [], isLoading: sLoading } = useAllStores(8);
 
@@ -159,9 +157,9 @@ const offers = offersData.data || [];
                 <div className="absolute inset-0 flex flex-col items-start justify-center p-6 sm:p-10 md:p-14 text-white">
                   {bannerIdx === i && (
                     <div className="animate-banner-reveal space-y-3 sm:space-y-4 max-w-2xl">
-                      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#2a655f]/90 border border-emerald-400/40 shadow-lg">
+                      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#2a655f]/90 border border-pink-300/40 shadow-lg">
                         <span className="text-sm animate-icon-dance">✨</span>
-                        <span className="text-xs sm:text-sm font-black text-emerald-100 tracking-wide">
+                        <span className="text-xs sm:text-sm font-black text-pink-100 tracking-wide">
                           {app.lang === "ar" ? "عروض حصرية ولفترة محدودة" : "Exclusive Limited Offer"}
                         </span>
                       </div>
@@ -173,9 +171,9 @@ const offers = offersData.data || [];
                       </p>
                       {b.cta_label_ar && (
                         <div className="pt-2">
-                          <Button className="rounded-2xl bg-white text-[#2a655f] hover:bg-slate-100 font-black px-6 py-5 text-sm sm:text-base hover:scale-105 transition-all duration-300 shadow-[0_10px_25px_rgba(0,0,0,0.4)] border border-white/40 group/btn cursor-pointer">
+                          <Button className="rounded-2xl bg-pink-400 text-white hover:bg-pink-500 font-black px-6 py-5 text-sm sm:text-base hover:scale-105 transition-all duration-300 shadow-[0_10px_25px_rgba(236,72,153,0.4)] border border-pink-300/40 group/btn cursor-pointer">
                             <span>{app.lang === "ar" ? b.cta_label_ar : (b.cta_label_en || b.cta_label_ar)}</span>
-                            <ArrowRight className="h-5 w-5 ms-2.5 text-[#2a655f] group-hover/btn:translate-x-1 transition-transform animate-icon-dance" />
+                            <ArrowRight className="h-5 w-5 ms-2.5 text-white group-hover/btn:translate-x-1 transition-transform animate-icon-dance" />
                           </Button>
                         </div>
                       )}
@@ -210,7 +208,7 @@ const offers = offersData.data || [];
                     key={i} 
                     onClick={() => setBannerIdx(i)}
                     className={`h-2 rounded-full transition-all duration-500 cursor-pointer ${
-                      bannerIdx === i ? "w-8 sm:w-10 bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" : "w-2 bg-white/50 hover:bg-white/80"
+                      bannerIdx === i ? "w-8 sm:w-10 bg-pink-400 shadow-[0_0_10px_rgba(236,72,153,0.9)]" : "w-2 bg-white/50 hover:bg-white/80"
                     }`}
                     aria-label={`Go to slide ${i + 1}`}
                   />
@@ -224,99 +222,99 @@ const offers = offersData.data || [];
       </section>
 
       {/* ===== FEATURED CATEGORIES ===== */}
-     <CategorySlider 
-  categories={featuredCategories} 
-  getCategoryIcon={getCategoryIcon} 
-/>
+      <CategorySlider 
+        categories={featuredCategories} 
+        getCategoryIcon={getCategoryIcon} 
+      />
 
- {/* ✅ العرض الاحترافي مثل نون - مع إمكانية التبديل بين العرض الكل والعروض */}
-{allDeals.length > 0 && (
-  <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
-    {/* Header مع إحصائيات */}
-    <div className="flex items-center justify-between mb-6">
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🔥</span>
-          <h2 className="text-2xl font-bold">
-            {app.lang === "ar" ? "عروض اليوم" : "Today's Deals"}
-          </h2>
-          <Badge className="bg-red-500 text-white">
-            {allDeals.length}
-          </Badge>
-        </div>
-        <p className="text-sm text-muted-foreground mt-1">
-          {app.lang === "ar" 
-            ? `خصومات تصل إلى ${Math.max(...allDeals.map(d => d.discount_percent || 0))}%` 
-            : `Up to ${Math.max(...allDeals.map(d => d.discount_percent || 0))}% off`
-          }
-        </p>
-      </div>
-      <div className="flex items-center gap-2">
-        <Link to="/category/$slug" params={{ slug: "offers" }}>
-          <Button variant="outline" size="sm" className="rounded-full">
-            {app.lang === "ar" ? "عرض الكل" : "View All"}
-            <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
-        </Link>
-      </div>
-    </div>
-
-    {/* العروض كـ Grid مع إمكانية التمرير */}
-    <div className="relative">
-      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-        {allDeals.map((item, index) => (
-          <div key={item.id} className="min-w-[200px] md:min-w-[250px] flex-shrink-0">
-            <ListingCard item={item} />
+      {/* ✅ العرض الاحترافي مثل نون - مع إمكانية التبديل بين العرض الكل والعروض */}
+      {allDeals.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
+          {/* Header مع إحصائيات */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🔥</span>
+                <h2 className="text-2xl font-bold">
+                  {app.lang === "ar" ? "عروض اليوم" : "Today's Deals"}
+                </h2>
+                <Badge className="bg-pink-400 text-white">
+                  {allDeals.length}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                {app.lang === "ar" 
+                  ? `خصومات تصل إلى ${Math.max(...allDeals.map(d => d.discount_percent || 0))}%` 
+                  : `Up to ${Math.max(...allDeals.map(d => d.discount_percent || 0))}% off`
+                }
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link to="/category/$slug" params={{ slug: "offers" }}>
+                <Button variant="outline" size="sm" className="rounded-full border-pink-300/50 text-pink-600 hover:bg-pink-500/10 hover:text-pink-600 hover:scale-105 transition-all duration-300">
+                  {app.lang === "ar" ? "عرض الكل" : "View All"}
+                  <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </div>
           </div>
-        ))}
-      </div>
+
+          {/* العروض كـ Grid مع إمكانية التمرير */}
+          <div className="relative group">
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {allDeals.map((item, index) => (
+                <div key={item.id} className="min-w-[200px] md:min-w-[250px] flex-shrink-0">
+                  <ListingCard item={item} />
+                </div>
+              ))}
+            </div>
+            
+            <button 
+              className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 backdrop-blur shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+              onClick={() => {
+                const container = document.querySelector('.scrollbar-hide');
+                if (container) container.scrollLeft -= 300;
+              }}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <button 
+              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 backdrop-blur shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+              onClick={() => {
+                const container = document.querySelector('.scrollbar-hide');
+                if (container) container.scrollLeft += 300;
+              }}
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </div>
+        </section>
+      )}
       
-      {/* أزرار التمرير (مثل نون) */}
-      <button 
-        className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 backdrop-blur shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100"
-        onClick={() => {
-          const container = document.querySelector('.scrollbar-hide');
-          if (container) container.scrollLeft -= 300;
-        }}
-      >
-        <ChevronLeft className="h-6 w-6" />
-      </button>
-      <button 
-        className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 backdrop-blur shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100"
-        onClick={() => {
-          const container = document.querySelector('.scrollbar-hide');
-          if (container) container.scrollLeft += 300;
-        }}
-      >
-        <ChevronRight className="h-6 w-6" />
-      </button>
-    </div>
-  </section>
-)}
-      {/* ===== FEATURED PRODUCTS ===== */}
+      {/* ===== FEATURED PRODUCTS - أيقونة Gem ===== */}
       <FeaturedSection />
 
-      {/* ===== TRENDING NOW ===== */}
+      {/* ===== TRENDING NOW - أيقونة Flame ===== */}
       <TrendingSection />
 
-      {/* ===== POPULAR STORES ===== */}
+      {/* ===== POPULAR STORES - أيقونة Crown ===== */}
       <section className="mx-auto max-w-7xl px-4 pb-8 md:pb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] grid place-items-center text-white shadow-md">
-              <Store className="h-5 w-5" />
+              <Crown className="h-5 w-5" />
             </div>
             <div>
               <h2 className="text-xl md:text-2xl font-black text-foreground">
-                {app.lang === "ar" ? "🏪 متاجر مميزة" : "🏪 Popular Stores"}
+                {app.lang === "ar" ? "👑 متاجر مميزة" : "👑 Popular Stores"}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {app.lang === "ar" ? "أفضل المتاجر على السوق عندك" : "Top stores on Souqi"}
+                {app.lang === "ar" ? "أفضل المتاجر على السوق لعندك" : "Top stores on Souqi"}
               </p>
             </div>
           </div>
           <Link to="/stores">
-            <Button variant="ghost" size="sm" className="gap-1 text-[#2a655f] font-semibold group">
+            <Button variant="ghost" size="sm" className="gap-1 text-pink-600 font-semibold hover:bg-pink-500/10 hover:text-pink-600 hover:scale-105 transition-all duration-300 group">
               {app.lang === "ar" ? "عرض الكل" : "View All"}
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Button>
@@ -331,7 +329,7 @@ const offers = offersData.data || [];
         </div>
       </section>
 
-      {/* ===== ✅ NEARBY STORES - المتاجر الأقرب إليك (نسخة واحدة فقط) ===== */}
+      {/* ===== ✅ NEARBY STORES - أيقونة Compass ===== */}
       <NearbyStores />
 
       {/* ===== CATEGORY BANNERS ===== */}
@@ -340,28 +338,28 @@ const offers = offersData.data || [];
       {/* ===== RECENTLY VIEWED ===== */}
       <RecentlyViewed />
 
-      {/* ===== OFFERS STRIP ===== */}
+      {/* ===== OFFERS STRIP - أيقونة Gift ===== */}
       {offers.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-14">
-          <div className="rounded-3xl bg-gradient-to-br from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] p-6 md:p-10 relative overflow-hidden shadow-2xl shadow-[#2a655f]/30 group border border-[#3a8a82]/30">
-            <div className="absolute -end-8 -top-8 h-56 w-56 rounded-full bg-white/15 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
-            <div className="absolute -start-8 -bottom-8 h-56 w-56 rounded-full bg-white/10 blur-2xl group-hover:scale-150 transition-transform duration-1000 delay-300" />
+          <div className="rounded-3xl bg-gradient-to-br from-[#fce4ec] via-[#f9a8d4] to-[#fbcfe8] p-6 md:p-10 relative overflow-hidden shadow-2xl shadow-pink-500/20 group border border-pink-300/30">
+            <div className="absolute -end-8 -top-8 h-56 w-56 rounded-full bg-white/30 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
+            <div className="absolute -start-8 -bottom-8 h-56 w-56 rounded-full bg-white/20 blur-2xl group-hover:scale-150 transition-transform duration-1000 delay-300" />
             
             <div className="grid md:grid-cols-[1fr_auto] items-center gap-6 relative">
               <div>
-                <Badge className="bg-white/25 text-white border-white/20 hover:bg-white/30 backdrop-blur-sm">
-                  <BadgePercent className="h-3 w-3 me-1" />
+                <Badge className="bg-[#2a655f]/20 text-[#2a655f] dark:text-[#3a8a82] border-[#2a655f]/30 hover:bg-[#2a655f]/30 backdrop-blur-sm">
+                  <Gift className="h-3 w-3 me-1" />
                   {app.lang === "ar" ? "🔥 عروض حصرية" : "🔥 Exclusive Offers"}
                 </Badge>
-                <h3 className="mt-3 text-2xl md:text-3xl font-black text-white">
-                  {app.lang === "ar" ? "أفضل العروض على السوق عندك" : "Best Offers on Souqi"}
+                <h3 className="mt-3 text-2xl md:text-3xl font-black text-[#2a655f] dark:text-white">
+                  {app.lang === "ar" ? "أفضل العروض على السوق لعندك" : "Best Offers on Souqi"}
                 </h3>
-                <p className="text-white/70 text-sm mt-1">
+                <p className="text-[#1a4f4a]/80 dark:text-white/70 text-sm mt-1">
                   {app.lang === "ar" ? "خصومات تصل إلى 70% لفترة محدودة" : "Up to 70% off for a limited time"}
                 </p>
               </div>
               <Link to="/category/$slug" params={{ slug: "offers" }}>
-                <Button size="lg" variant="secondary" className="bg-white text-[#2a655f] hover:bg-white/90 font-bold hover:scale-105 transition-all duration-300 shadow-lg group">
+                <Button size="lg" variant="secondary" className="bg-[#2a655f] text-white hover:bg-[#1a4f4a] hover:scale-105 transition-all duration-300 shadow-lg shadow-[#2a655f]/30 group">
                   {t("view_all")} 
                   <ArrowRight className="h-4 w-4 ms-1 group-hover:translate-x-1 transition-transform" />
                 </Button>
@@ -398,7 +396,6 @@ const offers = offersData.data || [];
           </div>
         </div>
 
-        {/* ✅ Grid مع Skeleton Loading */}
         {pLoading && products.length === 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -415,7 +412,6 @@ const offers = offersData.data || [];
           </div>
         )}
 
-        {/* ✅ Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-8">
             <Button
@@ -474,9 +470,8 @@ const offers = offersData.data || [];
 }
 
 // ============================================================
-// CATEGORY SLIDER
+// CATEGORY SLIDER - أيقونة Sparkles
 // ============================================================
-
 
 export function CategorySlider({ categories }: { categories: any[] }) {
   const app = useApp();
@@ -503,15 +498,15 @@ export function CategorySlider({ categories }: { categories: any[] }) {
     <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] grid place-items-center text-white shadow-md hover:scale-110 hover:rotate-12 transition-all duration-500 cursor-pointer">
-            <Grid3X3 className="h-5 w-5" />
+          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-400 grid place-items-center text-white shadow-md hover:scale-110 hover:rotate-12 transition-all duration-500 cursor-pointer">
+            <Sparkles className="h-5 w-5" />
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-black text-foreground">
-              {isRtl ? "الأقسام المميزة" : "Featured Categories"}
+              {isRtl ? "✨ الأقسام المميزة" : "✨ Featured Categories"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {isRtl ? "اختيارات مميزة من السوق عندك" : "Handpicked by Souqi"}
+              {isRtl ? "اختيارات مميزة من السوق لعندك" : "Handpicked by Souqi"}
             </p>
           </div>
         </div>
@@ -520,7 +515,7 @@ export function CategorySlider({ categories }: { categories: any[] }) {
             <Button 
               variant="outline" 
               size="icon" 
-              className="h-8 w-8 rounded-full border-emerald-500/30 text-[#2a655f] hover:bg-emerald-50"
+              className="h-8 w-8 rounded-full border-pink-300/50 text-pink-600 hover:bg-pink-50"
               onClick={() => scroll('left')}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -528,14 +523,14 @@ export function CategorySlider({ categories }: { categories: any[] }) {
             <Button 
               variant="outline" 
               size="icon" 
-              className="h-8 w-8 rounded-full border-emerald-500/30 text-[#2a655f] hover:bg-emerald-50"
+              className="h-8 w-8 rounded-full border-pink-300/50 text-pink-600 hover:bg-pink-50"
               onClick={() => scroll('right')}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
           <Link to="/categories">
-            <Button variant="ghost" size="sm" className="gap-1 text-[#2a655f] font-semibold group">
+            <Button variant="ghost" size="sm" className="gap-1 text-pink-600 font-semibold hover:bg-pink-500/10 hover:text-pink-600 hover:scale-105 transition-all duration-300 group">
               {isRtl ? "عرض الكل" : "View All"}
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Button>
@@ -577,7 +572,6 @@ export function CategorySlider({ categories }: { categories: any[] }) {
               const Icon = getCategoryIcon(c.icon);
               const imageUrl = c.image_url;
               
-              // التحقق مما إذا كان التصنيف يحتوي على كلمة عرض، عروض، خصم، خصومات، أو slug offers
               const nameAr = c.name_ar || "";
               const nameEn = c.name_en || "";
               const slug = c.slug || "";
@@ -602,13 +596,13 @@ export function CategorySlider({ categories }: { categories: any[] }) {
                     className={cn(
                       "group relative block w-[160px] md:w-[200px] rounded-2xl overflow-hidden transition-all duration-500 hover:scale-105 hover:shadow-2xl",
                       isOffer 
-                        ? "p-[3px] glowing-border shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-pulse" 
+                        ? "p-[3px] glowing-border-pink shadow-[0_0_25px_rgba(236,72,153,0.6)] animate-pulse" 
                         : "hover:shadow-[#2a655f]/30"
                     )}
                   >
                     <div className={cn(
                       "relative h-[120px] md:h-[150px] w-full overflow-hidden rounded-[14px]",
-                      isOffer && "bg-gradient-to-r from-red-500 via-amber-400 to-red-500 bg-[length:200%_200%] animate-gradient-flow"
+                      isOffer && "bg-gradient-to-r from-pink-400 via-rose-300 to-pink-400 bg-[length:200%_200%] animate-gradient-flow"
                     )}>
                       {imageUrl ? (
                         <img 
@@ -625,7 +619,7 @@ export function CategorySlider({ categories }: { categories: any[] }) {
                       <div className={cn(
                         "absolute inset-0",
                         isOffer 
-                          ? "bg-gradient-to-t from-red-950/90 via-red-900/40 to-transparent" 
+                          ? "bg-gradient-to-t from-pink-950/90 via-pink-900/40 to-transparent" 
                           : "bg-gradient-to-t from-[#0d2e2a]/80 via-[#0d2e2a]/30 to-transparent"
                       )} />
                       
@@ -645,7 +639,7 @@ export function CategorySlider({ categories }: { categories: any[] }) {
                       
                       <div className="absolute top-3 left-3">
                         {isOffer ? (
-                          <Badge className="bg-gradient-to-r from-red-600 to-amber-500 text-white border-0 text-[9px] px-2 py-0.5 shadow-xl animate-bounce font-black">
+                          <Badge className="bg-gradient-to-r from-pink-500 to-rose-400 text-white border-0 text-[9px] px-2 py-0.5 shadow-xl animate-bounce font-black">
                             ⚡ {isRtl ? "عرض خاص" : "Hot Deal"}
                           </Badge>
                         ) : (
@@ -668,18 +662,18 @@ export function CategorySlider({ categories }: { categories: any[] }) {
           0% { transform: translateX(0); }
           100% { transform: translateX(calc(-25%)); }
         }
-        @keyframes border-glow {
-          0% { box-shadow: 0 0 5px #ef4444, 0 0 10px #f59e0b, inset 0 0 5px #ef4444; }
-          50% { box-shadow: 0 0 20px #ef4444, 0 0 35px #f59e0b, inset 0 0 12px #f59e0b; }
-          100% { box-shadow: 0 0 5px #ef4444, 0 0 10px #f59e0b, inset 0 0 5px #ef4444; }
+        @keyframes border-glow-pink {
+          0% { box-shadow: 0 0 5px #f9a8d4, 0 0 10px #fbcfe8, inset 0 0 5px #f9a8d4; }
+          50% { box-shadow: 0 0 20px #f9a8d4, 0 0 35px #fbcfe8, inset 0 0 12px #fbcfe8; }
+          100% { box-shadow: 0 0 5px #f9a8d4, 0 0 10px #fbcfe8, inset 0 0 5px #f9a8d4; }
         }
         @keyframes gradient-flow {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
-        .glowing-border {
-          animation: border-glow 2s infinite ease-in-out;
+        .glowing-border-pink {
+          animation: border-glow-pink 2s infinite ease-in-out;
         }
         .animate-gradient-flow {
           animation: gradient-flow 4s ease infinite;
@@ -712,8 +706,9 @@ export function CategorySlider({ categories }: { categories: any[] }) {
     </section>
   );
 }
+
 // ============================================================
-// FEATURED SECTION
+// FEATURED SECTION - أيقونة Gem
 // ============================================================
 function FeaturedSection() {
   const app = useApp();
@@ -728,15 +723,15 @@ function FeaturedSection() {
     <section className="mx-auto max-w-7xl px-4 py-8 md:py-12">
       <div className="flex items-end justify-between mb-6 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 grid place-items-center text-white shadow-md hover:scale-110 hover:-rotate-6 transition-all duration-500 cursor-pointer">
-            <Heart className="h-5 w-5 fill-current" />
+          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-400 grid place-items-center text-white shadow-md hover:scale-110 hover:-rotate-6 transition-all duration-500 cursor-pointer">
+            <Gem className="h-5 w-5" />
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-black text-foreground">
-              {app.lang === "ar" ? "❤️ المنتجات المميزة" : "❤️ Featured Products"}
+              {app.lang === "ar" ? "💎 منتجات مميزة" : "💎 Featured Products"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {app.lang === "ar" ? "الأكثر إعجاباً من زوار السوق عندك" : "Most loved by Souqi visitors"}
+              {app.lang === "ar" ? "الأكثر إعجاباً من زوار السوق لعندك" : "Most loved by Souqi visitors"}
             </p>
           </div>
         </div>
@@ -793,7 +788,7 @@ function FeaturedSection() {
 }
 
 // ============================================================
-// TRENDING SECTION
+// TRENDING SECTION - أيقونة Flame
 // ============================================================
 function TrendingSection() {
   const app = useApp();
@@ -805,18 +800,18 @@ function TrendingSection() {
   if (trProducts.length === 0 && trStores.length === 0) return null;
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-8 md:py-12 bg-gradient-to-r from-[#2a655f]/5 via-[#3a8a82]/5 to-[#2a655f]/5 rounded-3xl">
+    <section className="mx-auto max-w-7xl px-4 py-8 md:py-12 bg-gradient-to-r from-pink-400/5 via-rose-400/5 to-pink-400/5 rounded-3xl">
       <div className="flex items-end justify-between mb-6 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] grid place-items-center text-white shadow-md hover:scale-110 hover:rotate-12 transition-all duration-500 cursor-pointer">
-            <TrendingUp className="h-5 w-5" />
+            <Flame className="h-5 w-5" />
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-black text-foreground">
               {app.lang === "ar" ? "🔥 الأكثر رواجاً" : "🔥 Trending Now"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {app.lang === "ar" ? "اختيارات فريق السوق عندك" : "Handpicked by Souqi team"}
+              {app.lang === "ar" ? "اختيارات فريق السوق لعندك" : "Handpicked by Souqi team"}
             </p>
           </div>
         </div>
@@ -865,10 +860,7 @@ function TrendingSection() {
 }
 
 // ============================================================
-// ✅ NEARBY STORES - المتاجر الأقرب إليك (نسخة واحدة مع Logs)
-// ============================================================
-// ============================================================
-// ✅ NEARBY STORES - المتاجر الأقرب إليك (نسخة احترافية)
+// ✅ NEARBY STORES - أيقونة Compass
 // ============================================================
 function NearbyStores() {
   const app = useApp();
@@ -886,7 +878,6 @@ function NearbyStores() {
     addressText?: string;
   } | null>(null);
 
-  // ✅ حساب المسافة بين نقطتين باستخدام معادلة هافرسين
   const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -899,164 +890,154 @@ function NearbyStores() {
     return R * c;
   }, []);
 
-  // ✅ جلب البيانات بالتوازي لسرعة فائقة
   useEffect(() => {
     let isMounted = true;
 
-  // ✅ استبدل هذا الجزء
-const fetchInitialData = async () => {
-  setLoading(true);
-  try {
-    const addressesPromise = app.user 
-      ? supabase
-          .from("user_addresses")
-          .select("id, label, address_text, lat, lng, governorate_id, is_default")
-          .eq("user_id", app.user.id)
-          .order("is_default", { ascending: false })
-      : Promise.resolve({ data: null });
+    const fetchInitialData = async () => {
+      setLoading(true);
+      try {
+        const addressesPromise = app.user 
+          ? supabase
+              .from("user_addresses")
+              .select("id, label, address_text, lat, lng, governorate_id, is_default")
+              .eq("user_id", app.user.id)
+              .order("is_default", { ascending: false })
+          : Promise.resolve({ data: null });
 
-    // ✅✅✅ التعديل 1: جلب الـ sellers فقط من user_roles
-    const { data: sellers, error: sellersError } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "seller");
+        const { data: sellers, error: sellersError } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "seller");
 
-    if (sellersError) {
-      console.error("❌ Error fetching sellers:", sellersError);
-      setNearbyStores([]);
-      setLoading(false);
-      return;
-    }
-
-    const sellerIds = sellers?.map((s: any) => s.user_id) || [];
-    
-    if (sellerIds.length === 0) {
-      setNearbyStores([]);
-      setLoading(false);
-      return;
-    }
-
-    // ✅✅✅ التعديل 2: جلب البروفايلات للـ sellers فقط
-    const storesPromise = supabase
-      .from("profiles")
-      .select(`
-        id, full_name, store_name, store_description, store_logo_url,
-        store_cover_url, store_phone, store_active, store_online,
-        store_type, lat, lng, governorate_id, is_featured,
-        allows_messaging, store_opens_at, store_closes_at, store_address
-      `)
-      .in("id", sellerIds)  // ✅ فقط الـ sellers
-      .eq("store_active", true)
-      .not("store_name", "is", null);
-
-    const [{ data: addresses }, { data: stores }] = await Promise.all([
-      addressesPromise,
-      storesPromise
-    ]);
-
-    if (!isMounted) return;
-
-    let activeLocation = null;
-    if (addresses && addresses.length > 0) {
-      setUserLocations(addresses);
-      const defaultAddress = addresses.find((a: any) => a.is_default) || addresses[0];
-      setSelectedAddressId(defaultAddress.id);
-      
-      activeLocation = {
-        lat: defaultAddress.lat || 0,
-        lng: defaultAddress.lng || 0,
-        governorateId: defaultAddress.governorate_id,
-        addressId: defaultAddress.id,
-        label: defaultAddress.label,
-        addressText: defaultAddress.address_text
-      };
-      setUserLocation(activeLocation);
-    }
-
-    if (!stores || stores.length === 0) {
-      setNearbyStores([]);
-      setLoading(false);
-      return;
-    }
-
-    // جلب عدد المنتجات لكل متجر
-    const storeIds = stores.map((s: any) => s.id);
- // ✅ الكود الصحيح (بدون groupBy)
-const { data: listings, error: listingsError } = await supabase
-  .from("listings")
-  .select("owner_id")
-  .in("owner_id", storeIds)
-  .eq("status", "published");
-
-if (listingsError) {
-  console.error("❌ Error fetching listings count:", listingsError);
-}
-
-// ✅ حساب العدد يدوياً
-const listingsCountMap = new Map();
-(listings || []).forEach((item: any) => {
-  const ownerId = item.owner_id;
-  listingsCountMap.set(ownerId, (listingsCountMap.get(ownerId) || 0) + 1);
-});
-
-    // فلترة المتاجر التي لديها منتجات فقط
-    let storesWithProducts = stores.filter((store: any) => {
-      const count = listingsCountMap.get(store.id) || 0;
-      return count > 0;
-    });
-
-    // إضافة عدد المنتجات
-    storesWithProducts = storesWithProducts.map((store: any) => ({
-      ...store,
-      listing_count: listingsCountMap.get(store.id) || 0
-    }));
-
-    if (storesWithProducts.length === 0) {
-      setNearbyStores([]);
-      setLoading(false);
-      return;
-    }
-
-    // حساب المسافات
-    let storesWithDistance = storesWithProducts.map((store: any) => {
-      let distance = Infinity;
-      let distanceText = app.lang === "ar" ? "غير محدد" : "Unknown";
-      
-      if (activeLocation) {
-        if (activeLocation.lat && activeLocation.lng && store.lat && store.lng) {
-          distance = calculateDistance(activeLocation.lat, activeLocation.lng, store.lat, store.lng);
-          if (distance < 1) {
-            distanceText = `${Math.round(distance * 1000)} م`;
-          } else if (distance < 10) {
-            distanceText = `${distance.toFixed(1)} كم`;
-          } else {
-            distanceText = `${Math.round(distance)} كم`;
-          }
-        } else if (activeLocation.governorateId && store.governorate_id === activeLocation.governorateId) {
-          distance = store.store_type === 'physical' ? 4 : 6;
-          distanceText = `📍 ${app.lang === 'ar' ? 'نفس المحافظة' : 'Same gov'}`;
-        } else if (activeLocation.governorateId && store.governorate_id) {
-          distance = 30;
-          distanceText = `🚗 ${app.lang === 'ar' ? 'محافظة أخرى' : 'Other gov'}`;
+        if (sellersError) {
+          console.error("❌ Error fetching sellers:", sellersError);
+          setNearbyStores([]);
+          setLoading(false);
+          return;
         }
+
+        const sellerIds = sellers?.map((s: any) => s.user_id) || [];
+        
+        if (sellerIds.length === 0) {
+          setNearbyStores([]);
+          setLoading(false);
+          return;
+        }
+
+        const storesPromise = supabase
+          .from("profiles")
+          .select(`
+            id, full_name, store_name, store_description, store_logo_url,
+            store_cover_url, store_phone, store_active, store_online,
+            store_type, lat, lng, governorate_id, is_featured,
+            allows_messaging, store_opens_at, store_closes_at, store_address
+          `)
+          .in("id", sellerIds)
+          .eq("store_active", true)
+          .not("store_name", "is", null);
+
+        const [{ data: addresses }, { data: stores }] = await Promise.all([
+          addressesPromise,
+          storesPromise
+        ]);
+
+        if (!isMounted) return;
+
+        let activeLocation = null;
+        if (addresses && addresses.length > 0) {
+          setUserLocations(addresses);
+          const defaultAddress = addresses.find((a: any) => a.is_default) || addresses[0];
+          setSelectedAddressId(defaultAddress.id);
+          
+          activeLocation = {
+            lat: defaultAddress.lat || 0,
+            lng: defaultAddress.lng || 0,
+            governorateId: defaultAddress.governorate_id,
+            addressId: defaultAddress.id,
+            label: defaultAddress.label,
+            addressText: defaultAddress.address_text
+          };
+          setUserLocation(activeLocation);
+        }
+
+        if (!stores || stores.length === 0) {
+          setNearbyStores([]);
+          setLoading(false);
+          return;
+        }
+
+        const storeIds = stores.map((s: any) => s.id);
+        const { data: listings, error: listingsError } = await supabase
+          .from("listings")
+          .select("owner_id")
+          .in("owner_id", storeIds)
+          .eq("status", "published");
+
+        if (listingsError) {
+          console.error("❌ Error fetching listings count:", listingsError);
+        }
+
+        const listingsCountMap = new Map();
+        (listings || []).forEach((item: any) => {
+          const ownerId = item.owner_id;
+          listingsCountMap.set(ownerId, (listingsCountMap.get(ownerId) || 0) + 1);
+        });
+
+        let storesWithProducts = stores.filter((store: any) => {
+          const count = listingsCountMap.get(store.id) || 0;
+          return count > 0;
+        });
+
+        storesWithProducts = storesWithProducts.map((store: any) => ({
+          ...store,
+          listing_count: listingsCountMap.get(store.id) || 0
+        }));
+
+        if (storesWithProducts.length === 0) {
+          setNearbyStores([]);
+          setLoading(false);
+          return;
+        }
+
+        let storesWithDistance = storesWithProducts.map((store: any) => {
+          let distance = Infinity;
+          let distanceText = app.lang === "ar" ? "غير محدد" : "Unknown";
+          
+          if (activeLocation) {
+            if (activeLocation.lat && activeLocation.lng && store.lat && store.lng) {
+              distance = calculateDistance(activeLocation.lat, activeLocation.lng, store.lat, store.lng);
+              if (distance < 1) {
+                distanceText = `${Math.round(distance * 1000)} م`;
+              } else if (distance < 10) {
+                distanceText = `${distance.toFixed(1)} كم`;
+              } else {
+                distanceText = `${Math.round(distance)} كم`;
+              }
+            } else if (activeLocation.governorateId && store.governorate_id === activeLocation.governorateId) {
+              distance = store.store_type === 'physical' ? 4 : 6;
+              distanceText = `📍 ${app.lang === 'ar' ? 'نفس المحافظة' : 'Same gov'}`;
+            } else if (activeLocation.governorateId && store.governorate_id) {
+              distance = 30;
+              distanceText = `🚗 ${app.lang === 'ar' ? 'محافظة أخرى' : 'Other gov'}`;
+            }
+          }
+          
+          return { ...store, distance, distanceText };
+        });
+
+        storesWithDistance.sort((a: any, b: any) => {
+          if (a.distance === Infinity && b.distance !== Infinity) return 1;
+          if (a.distance !== Infinity && b.distance === Infinity) return -1;
+          return a.distance - b.distance;
+        });
+
+        setNearbyStores(storesWithDistance.slice(0, 8));
+      } catch (error) {
+        console.error("❌ Error fetching data:", error);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-      
-      return { ...store, distance, distanceText };
-    });
-
-    storesWithDistance.sort((a: any, b: any) => {
-      if (a.distance === Infinity && b.distance !== Infinity) return 1;
-      if (a.distance !== Infinity && b.distance === Infinity) return -1;
-      return a.distance - b.distance;
-    });
-
-    setNearbyStores(storesWithDistance.slice(0, 8));
-  } catch (error) {
-    console.error("❌ Error fetching data:", error);
-  } finally {
-    if (isMounted) setLoading(false);
-  }
-};
+    };
 
     fetchInitialData();
 
@@ -1105,7 +1086,7 @@ const listingsCountMap = new Map();
       <section className="mx-auto max-w-7xl px-4 py-8 md:py-12">
         <div className="flex items-center gap-3 mb-6">
           <div className="h-12 w-12 rounded-2xl bg-[#2a655f] grid place-items-center text-white shadow-lg animate-pulse">
-            <MapPin className="h-6 w-6 animate-bounce" />
+            <Compass className="h-6 w-6 animate-bounce" />
           </div>
           <div className="space-y-2">
             <div className="h-6 w-48 bg-[#2a655f]/10 rounded-lg animate-pulse" />
@@ -1126,19 +1107,17 @@ const listingsCountMap = new Map();
   return (
     <section className="mx-auto max-w-7xl px-4 py-8 md:py-12">
       
-      {/* ====== العنوان والتحكم بالعنوان والمميزات ====== */}
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div className="flex items-center gap-3.5">
-          {/* أيقونة متحركة متوهجة بلون النظام */}
           <div className="relative">
             <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] opacity-75 blur-md animate-pulse"></div>
             <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] grid place-items-center text-white shadow-xl">
-              <MapPin className="h-6 w-6 animate-bounce" />
+              <Compass className="h-6 w-6 animate-bounce" />
             </div>
           </div>
           <div>
             <h2 className="text-2xl md:text-3xl font-black text-foreground flex items-center gap-2.5 tracking-tight">
-              {isArabic ? "📍 المتاجر الأقرب إليك" : "📍 Nearby Stores"}
+              {isArabic ? "🧭 المتاجر الأقرب إليك" : "🧭 Nearby Stores"}
               <Badge className="bg-[#2a655f]/15 text-[#2a655f] dark:text-emerald-400 border border-[#2a655f]/30 font-extrabold text-[11px] px-2.5 py-0.5 rounded-full shadow-sm">
                 {nearbyStores.length} {isArabic ? "متجر نشط" : "Active stores"}
               </Badge>
@@ -1150,7 +1129,6 @@ const listingsCountMap = new Map();
           </div>
         </div>
 
-        {/* أزرار وعناصر تفاعلية احترافية */}
         <div className="flex items-center gap-3 flex-wrap">
           {userLocations.length > 1 && (
             <Select value={selectedAddressId || undefined} onValueChange={changeAddress}>
@@ -1178,7 +1156,7 @@ const listingsCountMap = new Map();
           )}
 
           <Link to="/stores">
-            <Button variant="outline" size="sm" className="gap-2 h-11 px-5 rounded-2xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f] hover:text-white transition-all duration-300 font-bold group shadow-sm">
+            <Button variant="ghost" size="sm" className="gap-1 text-pink-600 font-semibold hover:bg-pink-500/10 hover:text-pink-600 hover:scale-105 transition-all duration-300 group">
               {isArabic ? "عرض كل المتاجر" : "View All Stores"}
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Button>
@@ -1186,7 +1164,6 @@ const listingsCountMap = new Map();
         </div>
       </div>
 
-      {/* عرض تفاصيل العنوان الحالي المستخدم */}
       {userLocation?.addressText && app.user && (
         <div className="flex items-center gap-2 mb-6 text-xs text-muted-foreground bg-gradient-to-r from-[#2a655f]/10 via-transparent to-transparent rounded-2xl px-4 py-2.5 border border-[#2a655f]/20 shadow-sm animate-fade-in">
           <MapPin className="h-4 w-4 text-[#2a655f] animate-bounce flex-shrink-0" />
@@ -1200,36 +1177,40 @@ const listingsCountMap = new Map();
         </div>
       )}
 
-      {/* ====== قائمة المتاجر ببطاقات فاخرة وأيقونات متوهجة ====== */}
       {nearbyStores.length === 0 ? (
         <div className="rounded-3xl bg-card p-12 text-center text-muted-foreground text-sm border-2 border-dashed border-[#2a655f]/30 shadow-lg">
           <StoreIcon className="h-16 w-16 mx-auto mb-3 text-[#2a655f]/50 animate-pulse" />
           <p className="font-bold text-base text-foreground">{isArabic ? "🚫 لا توجد متاجر قريبة متاحة حالياً." : "🚫 No nearby stores available."}</p>
         </div>
       ) : (
-      // ✅ التعديل المطلوب في NearbyStores
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-  {nearbyStores.map((store: any, index: number) => (
-    <div key={store.id} className="animate-fade-up" style={{ animationDelay: `${index * 100}ms` }}>
-      <StoreCard 
-        store={store} 
-        badge={
-          <Badge className="bg-black/80 backdrop-blur-md text-white border border-white/20 text-[10px] px-2 py-0.5 flex items-center gap-1">
-            <Navigation className="h-3 w-3" />
-            {store.distanceText}
-          </Badge>
-        }
-      />
-    </div>
-  ))}
-</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {nearbyStores.map((store: any, index: number) => (
+            <div key={store.id} className="animate-fade-up" style={{ animationDelay: `${index * 100}ms` }}>
+              <StoreCard 
+                store={store} 
+                badge={
+                  <Badge className="bg-black/80 backdrop-blur-md text-white border border-white/20 text-[10px] px-2 py-0.5 flex items-center gap-1">
+                    <Navigation className="h-3 w-3" />
+                    {store.distanceText}
+                  </Badge>
+                }
+              />
+            </div>
+          ))}
+        </div>
       )}
     </section>
   );
 }
+
 // ============================================================
 // STORE CARD
 // ============================================================
+
+interface StoreCardProps {
+  store: any;
+  badge?: React.ReactNode;
+}
 
 export function StoreCard({ store, badge }: StoreCardProps) {
   const app = useApp();
@@ -1237,7 +1218,7 @@ export function StoreCard({ store, badge }: StoreCardProps) {
   const isRtl = app.lang === "ar";
 
   const storeName = store.store_name || store.full_name || (isRtl ? "متجر مميز" : "Featured Store");
-  const storeDesc = store.store_description || (isRtl ? "متجر موثوق على السوق عندك لبيع أفضل المنتجات" : "A trusted store on Souqi for the best products");
+  const storeDesc = store.store_description || (isRtl ? "متجر موثوق على السوق لعندك لبيع أفضل المنتجات" : "A trusted store on Souqi for the best products");
   const coverUrl = store.store_cover_url;
   const logoUrl = store.store_logo_url || store.avatar_url;
   const rating = Number(store.avg_rating ?? 0).toFixed(1);
@@ -1248,9 +1229,8 @@ export function StoreCard({ store, badge }: StoreCardProps) {
     <Link 
       to="/store/$id" 
       params={{ id: store.id }} 
-      className="group relative rounded-3xl bg-white dark:bg-slate-900 overflow-hidden border border-slate-200/80 dark:border-slate-800 hover:border-[#2a655f]/60 shadow-lg hover:shadow-2xl hover:shadow-[#2a655f]/25 transition-all duration-500 hover:-translate-y-2 flex flex-col h-[330px] select-none"
+      className="group relative rounded-3xl bg-white dark:bg-slate-900 overflow-hidden border border-slate-200/80 dark:border-slate-800 hover:border-pink-300/60 shadow-lg hover:shadow-2xl hover:shadow-pink-500/20 transition-all duration-500 hover:-translate-y-2 flex flex-col h-[330px] select-none"
     >
-      {/* 🖼️ غلاف المتجر العلوي بتصميم فاخر */}
       <div className="relative h-[130px] w-full bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#3a8a82] overflow-hidden shrink-0">
         {coverUrl ? (
           <img 
@@ -1261,17 +1241,15 @@ export function StoreCard({ store, badge }: StoreCardProps) {
             decoding="async"
           />
         ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-400/20 via-transparent to-transparent opacity-60" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-300/20 via-transparent to-transparent opacity-60" />
         )}
         
-        {/* طبقة تظليل تدرجية لتحسين وضوح العناصر */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
 
-        {/* شارة التوثيق أو الـ Badge المخصصة */}
         <div className="absolute top-3 end-3 flex items-center gap-1.5 z-10">
           {badge}
           {isVerified && (
-            <Badge className="bg-emerald-500/90 backdrop-blur-md text-white border-0 shadow-lg text-[10px] font-bold px-2 py-0.5 flex items-center gap-1 rounded-full">
+            <Badge className="bg-pink-400/90 backdrop-blur-md text-white border-0 shadow-lg text-[10px] font-bold px-2 py-0.5 flex items-center gap-1 rounded-full">
               <Sparkles className="h-3 w-3" />
               {isRtl ? "موثوق" : "Verified"}
             </Badge>
@@ -1279,12 +1257,10 @@ export function StoreCard({ store, badge }: StoreCardProps) {
         </div>
       </div>
 
-      {/* 🏢 محتوى المتجر وتفاصيله */}
       <div className="px-5 pt-0 pb-4 flex-1 flex flex-col justify-between relative">
         
-        {/* الشعار الدائري البارز (Logo) */}
         <div className="flex items-end justify-between -mt-9 mb-2 relative z-10">
-          <div className="h-16 w-16 rounded-2xl bg-white dark:bg-slate-900 p-1 shadow-xl border-2 border-white dark:border-slate-800 group-hover:border-[#2a655f] transition-all duration-300 group-hover:scale-105 shrink-0 overflow-hidden grid place-items-center">
+          <div className="h-16 w-16 rounded-2xl bg-white dark:bg-slate-900 p-1 shadow-xl border-2 border-white dark:border-slate-800 group-hover:border-pink-300 transition-all duration-300 group-hover:scale-105 shrink-0 overflow-hidden grid place-items-center">
             {logoUrl ? (
               <img 
                 src={logoUrl} 
@@ -1300,21 +1276,18 @@ export function StoreCard({ store, badge }: StoreCardProps) {
             )}
           </div>
 
-          {/* تقييم المتجر النجمي */}
           <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/50 px-2.5 py-1 rounded-full shadow-sm">
             <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
             <span className="text-xs font-black text-amber-800 dark:text-amber-300">{rating}</span>
           </div>
         </div>
 
-        {/* اسم المتجر، شارة "متجر إلكتروني"، والوصف */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100 line-clamp-1 group-hover:text-[#2a655f] transition-colors duration-300">
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100 line-clamp-1 group-hover:text-pink-600 transition-colors duration-300">
               {storeName}
             </h3>
             
-            {/* 🌟 شارة متجر إلكتروني / أونلاين بدرجات السستم المخصصة */}
             <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#2a655f]/10 dark:bg-[#2a655f]/20 text-[#2a655f] dark:text-[#3a8a82] border border-[#2a655f]/20 shadow-sm">
               <Globe className="h-2.5 w-2.5" />
               {isRtl ? "متجر إلكتروني" : "Online Store"}
@@ -1326,14 +1299,13 @@ export function StoreCard({ store, badge }: StoreCardProps) {
           </p>
         </div>
 
-        {/* إحصائيات سفلية وزر الاستكشاف */}
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs mt-2">
           <div className="flex items-center gap-1.5 font-semibold text-[#2a655f] dark:text-[#3a8a82]">
             <Package className="h-4 w-4" />
             <span>{productsCount} {t("products_tab") || (isRtl ? "منتج" : "Products")}</span>
           </div>
 
-          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 group-hover:text-[#2a655f] transition-colors">
+          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 group-hover:text-pink-600 transition-colors">
             <span>{isRtl ? "زيارة المتجر" : "Visit Store"}</span>
             {isRtl ? (
               <ChevronLeft className="h-3.5 w-3.5 group-hover:-translate-x-1 transition-transform" />
@@ -1365,7 +1337,7 @@ function CategoryBanners() {
       id: 2,
       title: app.lang === "ar" ? "🎁 أزياء وهدايا" : "🎁 Fashion & Gifts",
       subtitle: app.lang === "ar" ? "تشكيلة مميزة للمناسبات" : "Special collection for occasions",
-      color: "from-[#1a4f4a] to-[#2a655f]",
+      color: "from-pink-400 to-rose-400",
       icon: Gift,
     },
   ];

@@ -1,3 +1,5 @@
+// src/components/Footer.tsx
+
 import { Link, useLocation } from "@tanstack/react-router";
 import { 
   House, Twitter, Instagram, Facebook, Youtube, Globe, 
@@ -20,6 +22,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
 // ✅ أيقونة مع تموجات مستمرة
 const FloatingIcon = ({ 
   Icon, 
@@ -44,14 +47,14 @@ const FloatingIcon = ({
           className
         )} />
       </div>
-      <span className="absolute -inset-2 rounded-full border border-[#2a655f]/20 animate-ripple" />
-      <span className="absolute -inset-4 rounded-full border border-[#2a655f]/10 animate-ripple delay-700" />
-      <span className="absolute -inset-6 rounded-full border border-[#2a655f]/5 animate-ripple delay-1500" />
+      <span className="absolute -inset-2 rounded-full border border-pink-400/20 animate-ripple" />
+      <span className="absolute -inset-4 rounded-full border border-pink-400/10 animate-ripple delay-700" />
+      <span className="absolute -inset-6 rounded-full border border-pink-400/5 animate-ripple delay-1500" />
     </div>
   );
 };
 
-// ✅ شريط رموز متحركة (يستخدم فقط في الأعلى)
+// ✅ شريط رموز متحركة (يستخدم فقط في الأعلى) - مع لون وردي
 const FloatingIconsBar = () => {
   const icons = [
     { Icon: Star, delay: 0 },
@@ -69,19 +72,19 @@ const FloatingIconsBar = () => {
   ];
 
   return (
-    <div className="relative w-full overflow-hidden py-3 border-y border-[#2a655f]/10 dark:border-[#2a655f]/20">
-      <div className="absolute inset-0 bg-gradient-to-r from-[#2a655f]/5 via-[#3a8a82]/5 to-[#2a655f]/5" />
+    <div className="relative w-full overflow-hidden py-3 border-y border-pink-400/20 dark:border-pink-400/30">
+      <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-[#3a8a82]/5 to-pink-500/5" />
       <div className="flex items-center gap-8 animate-marquee whitespace-nowrap">
         {[...icons, ...icons].map((item, index) => (
           <div key={index} className="flex items-center gap-8">
             <FloatingIcon 
               Icon={item.Icon} 
-              className="text-[#2a655f]/60 dark:text-[#3a8a82]/60 hover:text-[#2a655f] dark:hover:text-[#3a8a82] transition-colors"
+              className="text-pink-400/60 dark:text-pink-400/60 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
               delay={item.delay + (index % icons.length) * 50}
               size="h-5 w-5"
             />
             {index < icons.length * 2 - 1 && (
-              <span className="text-[#2a655f]/10 dark:text-[#3a8a82]/10">✦</span>
+              <span className="text-pink-400/20 dark:text-pink-400/20">✦</span>
             )}
           </div>
         ))}
@@ -145,7 +148,7 @@ export function Footer() {
     { icon: Instagram, label: "Instagram", color: "text-pink-500", bg: "hover:bg-pink-500/10", delay: 100 },
     { icon: Facebook, label: "Facebook", color: "text-[#1877f2]", bg: "hover:bg-[#1877f2]/10", delay: 200 },
     { icon: Youtube, label: "YouTube", color: "text-red-500", bg: "hover:bg-red-500/10", delay: 300 },
-    { icon: Globe, label: "Website", color: "text-[#2a655f]", bg: "hover:bg-[#2a655f]/10", delay: 400 },
+    { icon: Globe, label: "Website", color: "text-pink-400", bg: "hover:bg-pink-500/10", delay: 400 },
   ];
 
   const scrollToTop = () => {
@@ -262,27 +265,27 @@ export function Footer() {
       />
       
       {/* ✅ تأثيرات زجاجية وتموجات بصرية */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-[#10b981]/15 backdrop-blur-2xl" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-pink-500/15 backdrop-blur-2xl" />
       
-      {/* ✅ Border علوي ناعم ومضيء بلون نعناعي */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_20px_rgba(16,185,129,0.8)]" />
+      {/* ✅ Border علوي ناعم ومضيء بلون وردي */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pink-400 to-transparent shadow-[0_0_20px_rgba(244,114,182,0.8)]" />
       
       {/* ✅ دوائر وأشكال متحركة (أمواج بصرية) */}
-      <div className="absolute -top-32 -right-32 h-80 w-80 rounded-full bg-emerald-500/15 blur-3xl animate-float-wave" />
-      <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-teal-400/15 blur-3xl animate-float-wave-delayed" />
+      <div className="absolute -top-32 -right-32 h-80 w-80 rounded-full bg-pink-500/15 blur-3xl animate-float-wave" />
+      <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-pink-400/15 blur-3xl animate-float-wave-delayed" />
 
       {/* ✅ شريط الأيقونات المتحركة في الأعلى */}
-      <FloatingIconsBar />
+     
 
       <div className="relative mx-auto max-w-7xl px-6 py-12">
         
         {/* ===== شريط الميزات السريعة المتحرك داخل الفوتر ===== */}
-        <div className="mb-12 overflow-hidden py-3 rounded-2xl bg-black/25 border border-emerald-400/30 backdrop-blur-md shadow-lg">
-          <div className="flex items-center gap-10 animate-marquee whitespace-nowrap text-xs font-bold text-emerald-300">
-            <span className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-emerald-400 animate-spin" /> {app.lang === "ar" ? "✨ توصيل سريع وآمن لكافة المحافظات" : "✨ Fast & Secure Delivery"}</span>
-            <span className="flex items-center gap-2"><Shield className="h-4 w-4 text-emerald-400" /> {app.lang === "ar" ? "🛡️ ضمان استرجاع الأموال بنسبة 100%" : "🛡️ 100% Money Back Guarantee"}</span>
-            <span className="flex items-center gap-2"><Clock className="h-4 w-4 text-emerald-400 animate-pulse" /> {app.lang === "ar" ? "💬 دعم فني متواصل على مدار الساعة" : "💬 24/7 Customer Support"}</span>
-            <span className="flex items-center gap-2"><Award className="h-4 w-4 text-emerald-400" /> {app.lang === "ar" ? "⭐ منتجات أصلية ومضمونة من السوق" : "⭐ Verified Original Products"}</span>
+        <div className="mb-12 overflow-hidden py-3 rounded-2xl bg-black/25 border border-pink-400/30 backdrop-blur-md shadow-lg">
+          <div className="flex items-center gap-10 animate-marquee whitespace-nowrap text-xs font-bold text-pink-300">
+            <span className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-pink-400 animate-spin" /> {app.lang === "ar" ? "✨ توصيل سريع وآمن لكافة المحافظات" : "✨ Fast & Secure Delivery"}</span>
+            <span className="flex items-center gap-2"><Shield className="h-4 w-4 text-pink-400" /> {app.lang === "ar" ? "🛡️ ضمان استرجاع الأموال بنسبة 100%" : "🛡️ 100% Money Back Guarantee"}</span>
+            <span className="flex items-center gap-2"><Clock className="h-4 w-4 text-pink-400 animate-pulse" /> {app.lang === "ar" ? "💬 دعم فني متواصل على مدار الساعة" : "💬 24/7 Customer Support"}</span>
+            <span className="flex items-center gap-2"><Award className="h-4 w-4 text-pink-400" /> {app.lang === "ar" ? "⭐ منتجات أصلية ومضمونة من السوق" : "⭐ Verified Original Products"}</span>
           </div>
         </div>
 
@@ -293,20 +296,20 @@ export function Footer() {
           <div className="md:col-span-4 space-y-4">
             <div className="flex items-center gap-3.5 group">
               <div className="relative">
-                <div className="h-14 w-14 rounded-2xl bg-white/15 border border-emerald-400/40 flex items-center justify-center shadow-xl shadow-emerald-500/20 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
-                  <House className="h-7 w-7 text-emerald-300 animate-bounce-short" />
+                <div className="h-14 w-14 rounded-2xl bg-white/15 border border-pink-400/40 flex items-center justify-center shadow-xl shadow-pink-500/20 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+                  <House className="h-7 w-7 text-pink-300 animate-bounce-short" />
                 </div>
-                <span className="absolute -inset-1 rounded-2xl bg-emerald-400/30 blur-lg animate-pulse" />
+                <span className="absolute -inset-1 rounded-2xl bg-pink-400/30 blur-lg animate-pulse" />
               </div>
               <div>
                 <div className="font-black text-2xl tracking-tight text-white flex items-center gap-2">
                   {t("brand")}
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-pink-400 animate-ping" />
                 </div>
-                <div className="text-[11px] text-emerald-300 tracking-widest uppercase font-bold mt-0.5 flex items-center gap-1.5">
-                  <span className="h-0.5 w-4 bg-emerald-400" />
+                <div className="text-[11px] text-pink-300 tracking-widest uppercase font-bold mt-0.5 flex items-center gap-1.5">
+                  <span className="h-0.5 w-4 bg-pink-400" />
                   {t("tagline")}
-                  <span className="h-0.5 w-4 bg-emerald-400" />
+                  <span className="h-0.5 w-4 bg-pink-400" />
                 </div>
               </div>
             </div>
@@ -327,10 +330,10 @@ export function Footer() {
                 return (
                   <span 
                     key={i}
-                    className="px-3 py-1 rounded-full border border-emerald-400/30 bg-black/30 flex items-center gap-1.5 text-[11px] text-white font-medium hover:scale-105 hover:bg-emerald-400/20 transition-all shadow-sm"
+                    className="px-3 py-1 rounded-full border border-pink-400/30 bg-black/30 flex items-center gap-1.5 text-[11px] text-white font-medium hover:scale-105 hover:bg-pink-400/20 transition-all shadow-sm"
                   >
-                    <span className="h-5 w-5 rounded-full bg-[#0d2e2a] border border-emerald-400/60 flex items-center justify-center">
-                      <Icon className="h-3 w-3 text-emerald-400" />
+                    <span className="h-5 w-5 rounded-full bg-[#0d2e2a] border border-pink-400/60 flex items-center justify-center">
+                      <Icon className="h-3 w-3 text-pink-400" />
                     </span>
                     {badge.label}
                   </span>
@@ -341,8 +344,8 @@ export function Footer() {
 
           {/* العمود الثاني: روابط المنصة */}
           <div className="md:col-span-2 md:col-start-6 space-y-3">
-            <h4 className="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-2">
-              <span className="h-1.5 w-4 rounded-full bg-emerald-400 animate-pulse" />
+            <h4 className="text-xs font-bold text-pink-300 uppercase tracking-wider flex items-center gap-2">
+              <span className="h-1.5 w-4 rounded-full bg-pink-400 animate-pulse" />
               {app.lang === "ar" ? "المنصة والأقسام" : "Platform"}
             </h4>
             <ul className="space-y-2.5 text-xs">
@@ -352,11 +355,11 @@ export function Footer() {
                   <li key={i}>
                     <Link
                       to={link.href}
-                      className="group flex items-center gap-2.5 text-white/80 hover:text-emerald-300 transition-all font-medium"
+                      className="group flex items-center gap-2.5 text-white/80 hover:text-pink-300 transition-all font-medium"
                     >
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/60 group-hover:w-2.5 group-hover:bg-emerald-400 transition-all" />
-                      <span className="h-6 w-6 rounded-lg bg-[#0d2e2a] border border-emerald-400/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                        <Icon className="h-3.5 w-3.5 text-emerald-300" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-pink-400/60 group-hover:w-2.5 group-hover:bg-pink-400 transition-all" />
+                      <span className="h-6 w-6 rounded-lg bg-[#0d2e2a] border border-pink-400/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Icon className="h-3.5 w-3.5 text-pink-300" />
                       </span>
                       <span className="group-hover:translate-x-1 transition-transform">{link.label}</span>
                     </Link>
@@ -368,8 +371,8 @@ export function Footer() {
 
           {/* العمود الثالث: الدعم والسياسات */}
           <div className="md:col-span-2 space-y-3">
-            <h4 className="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-2">
-              <span className="h-1.5 w-4 rounded-full bg-emerald-400 animate-pulse" />
+            <h4 className="text-xs font-bold text-pink-300 uppercase tracking-wider flex items-center gap-2">
+              <span className="h-1.5 w-4 rounded-full bg-pink-400 animate-pulse" />
               {app.lang === "ar" ? "الدعم والسياسات" : "Support"}
             </h4>
             <ul className="space-y-2.5 text-xs">
@@ -379,11 +382,11 @@ export function Footer() {
                   <li key={i}>
                     <Link
                       to={link.href as any}
-                      className="group flex items-center gap-2.5 text-white/80 hover:text-emerald-300 transition-all font-medium"
+                      className="group flex items-center gap-2.5 text-white/80 hover:text-pink-300 transition-all font-medium"
                     >
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/60 group-hover:w-2.5 group-hover:bg-emerald-400 transition-all" />
-                      <span className="h-6 w-6 rounded-lg bg-[#0d2e2a] border border-emerald-400/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                        <Icon className="h-3.5 w-3.5 text-emerald-300" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-pink-400/60 group-hover:w-2.5 group-hover:bg-pink-400 transition-all" />
+                      <span className="h-6 w-6 rounded-lg bg-[#0d2e2a] border border-pink-400/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Icon className="h-3.5 w-3.5 text-pink-300" />
                       </span>
                       <span className="group-hover:translate-x-1 transition-transform">{link.label}</span>
                     </Link>
@@ -395,11 +398,11 @@ export function Footer() {
               <li>
                 <button
                   onClick={() => setSupportOpen(true)}
-                  className="group flex items-center gap-2.5 text-white/80 hover:text-emerald-300 transition-all w-full text-start cursor-pointer font-medium"
+                  className="group flex items-center gap-2.5 text-white/80 hover:text-pink-300 transition-all w-full text-start cursor-pointer font-medium"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/60 group-hover:w-2.5 group-hover:bg-emerald-400 transition-all" />
-                  <span className="h-6 w-6 rounded-lg bg-[#0d2e2a] border border-emerald-400/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <Headphones className="h-3.5 w-3.5 text-emerald-300" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-pink-400/60 group-hover:w-2.5 group-hover:bg-pink-400 transition-all" />
+                  <span className="h-6 w-6 rounded-lg bg-[#0d2e2a] border border-pink-400/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Headphones className="h-3.5 w-3.5 text-pink-300" />
                   </span>
                   <span className="group-hover:translate-x-1 transition-transform">
                     {app.lang === "ar" ? "المساعدة والدعم" : "Support & Help"}
@@ -411,32 +414,32 @@ export function Footer() {
 
           {/* العمود الرابع: معلومات التواصل المباشر */}
           <div className="md:col-span-3 space-y-3">
-            <h4 className="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-2">
-              <span className="h-1.5 w-4 rounded-full bg-emerald-400 animate-pulse" />
+            <h4 className="text-xs font-bold text-pink-300 uppercase tracking-wider flex items-center gap-2">
+              <span className="h-1.5 w-4 rounded-full bg-pink-400 animate-pulse" />
               {app.lang === "ar" ? "معلومات التواصل" : "Contact Us"}
             </h4>
             <ul className="space-y-2.5 text-xs">
               <li className="flex items-center gap-2.5 text-white/90 group font-medium">
-                <div className="h-7 w-7 rounded-lg bg-[#0d2e2a] border border-emerald-400/50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all shadow-sm">
-                  <MapPin className="h-3.5 w-3.5 text-emerald-300" />
+                <div className="h-7 w-7 rounded-lg bg-[#0d2e2a] border border-pink-400/50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all shadow-sm">
+                  <MapPin className="h-3.5 w-3.5 text-pink-300" />
                 </div>
                 <span>{app.lang === "ar" ? "دمشق، سوريا" : "Damascus, Syria"}</span>
               </li>
               <li className="flex items-center gap-2.5 text-white/90 group font-medium">
-                <div className="h-7 w-7 rounded-lg bg-[#0d2e2a] border border-emerald-400/50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all shadow-sm">
-                  <Phone className="h-3.5 w-3.5 text-emerald-300" />
+                <div className="h-7 w-7 rounded-lg bg-[#0d2e2a] border border-pink-400/50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all shadow-sm">
+                  <Phone className="h-3.5 w-3.5 text-pink-300" />
                 </div>
-                <a href="tel:+963110000000" dir="ltr" className="hover:underline text-emerald-200">+963 11 000 0000</a>
+                <a href="tel:+963110000000" dir="ltr" className="hover:underline text-pink-200">+963 11 000 0000</a>
               </li>
               <li className="flex items-center gap-2.5 text-white/90 group font-medium">
-                <div className="h-7 w-7 rounded-lg bg-[#0d2e2a] border border-emerald-400/50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all shadow-sm">
-                  <Mail className="h-3.5 w-3.5 text-emerald-300" />
+                <div className="h-7 w-7 rounded-lg bg-[#0d2e2a] border border-pink-400/50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all shadow-sm">
+                  <Mail className="h-3.5 w-3.5 text-pink-300" />
                 </div>
-                <a href="mailto:hello@alsouq.sy" className="hover:underline text-emerald-200">hello@alsouq.sy</a>
+                <a href="mailto:hello@alsouq.sy" className="hover:underline text-pink-200">hello@alsouq.sy</a>
               </li>
               <li className="flex items-center gap-2.5 text-white/90 group font-medium">
-                <div className="h-7 w-7 rounded-lg bg-[#0d2e2a] border border-emerald-400/50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all shadow-sm">
-                  <Clock className="h-3.5 w-3.5 text-emerald-300" />
+                <div className="h-7 w-7 rounded-lg bg-[#0d2e2a] border border-pink-400/50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all shadow-sm">
+                  <Clock className="h-3.5 w-3.5 text-pink-300" />
                 </div>
                 <span>{app.lang === "ar" ? "خدمة العملاء: 24/7" : "Support: 24/7"}</span>
               </li>
@@ -448,7 +451,7 @@ export function Footer() {
         <div className="py-6 border-t border-b border-white/15 flex flex-col md:flex-row items-center justify-between gap-4 mb-6 bg-black/20 px-6 rounded-2xl backdrop-blur-sm shadow-inner">
           <div className="text-center md:text-start">
             <h5 className="font-bold text-white text-xs mb-0.5 flex items-center gap-2 justify-center md:justify-start">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+              <span className="h-2 w-2 rounded-full bg-pink-400 animate-ping" />
               {app.lang === "ar" ? "ابق على تواصل معنا عبر منصاتنا" : "Connect with our social channels"}
             </h5>
             <p className="text-[11px] text-white/70">
@@ -464,10 +467,10 @@ export function Footer() {
                   key={i}
                   href="#"
                   aria-label={social.label}
-                  className="group relative h-11 w-11 rounded-xl bg-[#0d2e2a] border border-emerald-400/50 hover:bg-emerald-400 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:-translate-y-1 shadow-lg"
+                  className="group relative h-11 w-11 rounded-xl bg-[#0d2e2a] border border-pink-400/50 hover:bg-pink-400 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:-translate-y-1 shadow-lg"
                 >
-                  <Icon className="h-5 w-5 text-emerald-300 group-hover:text-[#0d2e2a] group-hover:scale-125 group-hover:rotate-12 transition-all duration-300" />
-                  <span className="absolute -inset-1 rounded-xl bg-emerald-400/30 blur opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Icon className="h-5 w-5 text-pink-300 group-hover:text-[#0d2e2a] group-hover:scale-125 group-hover:rotate-12 transition-all duration-300" />
+                  <span className="absolute -inset-1 rounded-xl bg-pink-400/30 blur opacity-0 group-hover:opacity-100 transition-opacity" />
                 </a>
               );
             })}
@@ -477,17 +480,17 @@ export function Footer() {
         {/* ===== الفوتر السفلي (الحقوق وشارة الأمان المشفرة) ===== */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/80">
           <div className="flex items-center gap-2 font-medium">
-            <span className="text-emerald-400 font-bold text-xs">© {year}</span>
+            <span className="text-pink-400 font-bold text-xs">© {year}</span>
             <span className="font-bold text-white">{t("brand")}</span>
             <span>• {app.lang === "ar" ? "جميع الحقوق محفوظة" : "All rights reserved"}</span>
           </div>
 
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0d2e2a] border border-emerald-400/50 shadow-inner backdrop-blur-md">
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0d2e2a] border border-pink-400/50 shadow-inner backdrop-blur-md">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-pink-400" />
             </span>
-            <span className="text-emerald-300 font-bold text-[11px] tracking-wide">
+            <span className="text-pink-300 font-bold text-[11px] tracking-wide">
               {app.lang === "ar" ? "نظام تجاري مشفر وآمن 100%" : "100% Secure Encrypted System"}
             </span>
           </div>
@@ -499,10 +502,10 @@ export function Footer() {
       {/* ===== زر العودة للأعلى ===== */}
       <button
         onClick={scrollToTop}
-        className="fixed bottom-6 right-6 z-50 group h-14 w-14 rounded-2xl bg-[#0d2e2a] text-emerald-300 border-2 border-emerald-400/60 shadow-2xl shadow-emerald-500/40 hover:scale-110 hover:-translate-y-2 transition-all duration-500 flex items-center justify-center cursor-pointer font-extrabold"
+        className="fixed bottom-6 right-6 z-50 group h-14 w-14 rounded-2xl bg-[#0d2e2a] text-pink-300 border-2 border-pink-400/60 shadow-2xl shadow-pink-500/40 hover:scale-110 hover:-translate-y-2 transition-all duration-500 flex items-center justify-center cursor-pointer font-extrabold"
         aria-label="Back to top"
       >
-        <span className="absolute -inset-1 rounded-2xl bg-emerald-400/40 blur-xl animate-pulse" />
+        <span className="absolute -inset-1 rounded-2xl bg-pink-400/40 blur-xl animate-pulse" />
         <ArrowUp className="h-6 w-6 group-hover:-translate-y-1 transition-transform duration-300" />
       </button>
 
@@ -514,18 +517,18 @@ export function Footer() {
             onClick={() => setSupportOpen(false)}
           />
           <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
-            <div className="bg-[#0d2e2a] rounded-3xl max-w-md w-full shadow-2xl border border-emerald-400/30 animate-in zoom-in-95 duration-300 overflow-hidden">
-              <div className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] p-6 border-b border-emerald-400/20">
+            <div className="bg-[#0d2e2a] rounded-3xl max-w-md w-full shadow-2xl border border-pink-400/30 animate-in zoom-in-95 duration-300 overflow-hidden">
+              <div className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] p-6 border-b border-pink-400/20">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
-                      <Headphones className="h-6 w-6 text-emerald-300" />
+                    <div className="h-12 w-12 rounded-2xl bg-pink-500/20 border border-pink-400/30 flex items-center justify-center">
+                      <Headphones className="h-6 w-6 text-pink-300" />
                     </div>
                     <div>
                       <h3 className="text-white font-bold text-lg">
                         {app.lang === "ar" ? "الدعم والمساعدة" : "Support & Help"}
                       </h3>
-                      <p className="text-emerald-300/80 text-sm">
+                      <p className="text-pink-300/80 text-sm">
                         {app.lang === "ar" ? "نحن هنا لمساعدتك 💙" : "We're here to help 💙"}
                       </p>
                     </div>
@@ -542,13 +545,13 @@ export function Footer() {
               <div className="p-6 space-y-4">
                 {isSuccess ? (
                   <div className="text-center py-8">
-                    <div className="h-16 w-16 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mx-auto mb-4">
-                      <CheckCircle className="h-8 w-8 text-emerald-400" />
+                    <div className="h-16 w-16 rounded-full bg-pink-500/20 border border-pink-400/30 flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle className="h-8 w-8 text-pink-400" />
                     </div>
                     <h4 className="text-lg font-bold text-white">
                       {app.lang === "ar" ? "تم الإرسال ✅" : "Sent ✅"}
                     </h4>
-                    <p className="text-sm text-emerald-300/80 mt-1">
+                    <p className="text-sm text-pink-300/80 mt-1">
                       {app.lang === "ar" 
                         ? "سنرد عليك خلال ثواني ⚡" 
                         : "We'll reply within seconds ⚡"}
@@ -565,7 +568,7 @@ export function Footer() {
                           type="tel"
                           value={app.user?.phone || "غير متاح"}
                           disabled
-                          className="mt-1.5 h-11 rounded-xl bg-white/10 border-emerald-400/20 text-white cursor-not-allowed"
+                          className="mt-1.5 h-11 rounded-xl bg-white/10 border-pink-400/20 text-white cursor-not-allowed"
                         />
                       </div>
                     ) : (
@@ -578,7 +581,7 @@ export function Footer() {
                           value={visitorPhone}
                           onChange={(e) => setVisitorPhone(e.target.value)}
                           placeholder="+963 9xx xxx xxx"
-                          className="mt-1.5 h-11 rounded-xl bg-white/5 border-emerald-400/20 text-white placeholder:text-white/40 focus:border-emerald-400/50 transition-all"
+                          className="mt-1.5 h-11 rounded-xl bg-white/5 border-pink-400/20 text-white placeholder:text-white/40 focus:border-pink-400/50 transition-all"
                           required
                         />
                         <p className="text-[10px] text-white/40 mt-1">
@@ -597,7 +600,7 @@ export function Footer() {
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
                         placeholder={app.lang === "ar" ? "مشكلة في إنشاء الحساب" : "Registration issue"}
-                        className="mt-1.5 h-11 rounded-xl bg-white/5 border-emerald-400/20 text-white placeholder:text-white/40 focus:border-emerald-400/50 transition-all"
+                        className="mt-1.5 h-11 rounded-xl bg-white/5 border-pink-400/20 text-white placeholder:text-white/40 focus:border-pink-400/50 transition-all"
                       />
                     </div>
 
@@ -612,14 +615,14 @@ export function Footer() {
                           ? "اكتب رسالتك هنا..." 
                           : "Write your message here..."}
                         rows={4}
-                        className="mt-1.5 w-full px-4 py-3 rounded-xl bg-white/5 border border-emerald-400/20 text-white placeholder:text-white/40 focus:border-emerald-400/50 focus:bg-white/10 focus:outline-none transition-all resize-none"
+                        className="mt-1.5 w-full px-4 py-3 rounded-xl bg-white/5 border border-pink-400/20 text-white placeholder:text-white/40 focus:border-pink-400/50 focus:bg-white/10 focus:outline-none transition-all resize-none"
                       />
                     </div>
 
                     <Button
                       onClick={handleSubmitSupport}
                       disabled={isLoading || !message.trim() || (!app.user && !visitorPhone.trim())}
-                      className="w-full h-12 rounded-xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white font-semibold border border-emerald-400/30 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all"
+                      className="w-full h-12 rounded-xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white font-semibold border border-pink-400/30 shadow-lg shadow-pink-500/20 hover:shadow-pink-500/30 transition-all"
                     >
                       {isLoading ? (
                         <span className="flex items-center gap-2">
@@ -628,14 +631,14 @@ export function Footer() {
                         </span>
                       ) : (
                         <span className="flex items-center gap-2">
-                          <Send className="h-4 w-4 text-emerald-300" />
+                          <Send className="h-4 w-4 text-pink-300" />
                           {app.lang === "ar" ? "إرسال" : "Send"}
                         </span>
                       )}
                     </Button>
 
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-400/20">
-                      <Shield className="h-4 w-4 text-emerald-300 shrink-0" />
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-pink-500/10 border border-pink-400/20">
+                      <Shield className="h-4 w-4 text-pink-300 shrink-0" />
                       <p className="text-xs text-white/60">
                         {app.lang === "ar" 
                           ? "⚡ سيتم الرد عليك خلال ثواني عبر نظام المراسلة" 

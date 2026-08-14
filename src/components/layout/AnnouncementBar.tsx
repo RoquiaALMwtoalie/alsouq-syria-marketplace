@@ -1,3 +1,5 @@
+// src/components/AnnouncementBar.tsx
+
 import { Megaphone, Sparkles, ArrowRight, ArrowLeft } from "lucide-react";
 import { useAnnouncements } from "@/lib/queries";
 import { useApp } from "@/lib/i18n";
@@ -12,13 +14,13 @@ export function AnnouncementBar() {
   const isRtl = app.lang === "ar";
 
   return (
-    <div className="relative w-full overflow-hidden bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#173d38] text-white shadow-xl border-b border-emerald-400/30">
+    <div className="relative w-full overflow-hidden bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#173d38] text-white shadow-xl border-b border-pink-300/30">
       
-      {/* خلفية ضوئية متحركة ونابضة */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-400/20 via-transparent to-transparent animate-pulse pointer-events-none" />
+      {/* خلفية ضوئية متحركة ونابضة باللون الزهري */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-300/20 via-transparent to-transparent animate-pulse pointer-events-none" />
       
-      {/* خط إشعاعي متحرك في الأعلى */}
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-300 to-transparent shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+      {/* خط إشعاعي متحرك في الأعلى باللون الزهري */}
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-pink-300 to-transparent shadow-[0_0_12px_rgba(244,114,182,0.8)]" />
 
       <style>{`
         @keyframes announcement-scroll {
@@ -35,7 +37,7 @@ export function AnnouncementBar() {
           animation-play-state: paused !important;
         }
 
-        /* تصميم شريط التمرير السفلي للتحكم اليدوي */
+        /* ✅ شريط التمرير باللون الزهري (مثل تصنيف العروض) */
         .announcement-scrollbar::-webkit-scrollbar {
           height: 4px;
         }
@@ -45,33 +47,42 @@ export function AnnouncementBar() {
           margin: 0 16px;
         }
         .announcement-scrollbar::-webkit-scrollbar-thumb {
-          background: #34d399;
+          background: #f9a8d4;
           border-radius: 10px;
         }
         .announcement-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #6ee7b7;
+          background: #fbcfe8;
+        }
+
+        /* ✅ أنيميشن خاصة للزر */
+        @keyframes button-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.03); }
+        }
+        .animate-button-pulse {
+          animation: button-pulse 2s ease-in-out infinite;
         }
       `}</style>
 
-      {/* الحاوية الرئيسية مع عكس اتجاهها حسب اللغة لضمان مكان الشارة الصحيح */}
+      {/* الحاوية الرئيسية */}
       <div 
         className={`mx-auto max-w-7xl flex ${isRtl ? 'flex-row' : 'flex-row-reverse'} items-center gap-3 px-3 sm:px-6 py-2 select-none`}
         dir={isRtl ? "rtl" : "ltr"}
       >
         
-        {/* شارة العنوان (تم التحديث إلى إعلانات / Announcements) */}
-        <div className="shrink-0 flex items-center gap-2 bg-black/30 px-3.5 py-1 rounded-full border border-emerald-400/40 shadow-inner z-10">
+        {/* شارة العنوان باللون الزهري */}
+        <div className="shrink-0 flex items-center gap-2 bg-black/30 px-3.5 py-1 rounded-full border border-pink-300/40 shadow-inner z-10">
           <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-pink-400" />
           </span>
-          <Megaphone className="h-3.5 w-3.5 text-emerald-300 animate-bounce" />
-          <span className="text-xs font-black tracking-wider text-emerald-200">
+          <Megaphone className="h-3.5 w-3.5 text-pink-300 animate-bounce" />
+          <span className="text-xs font-black tracking-wider text-pink-200">
             {isRtl ? "إعلانات" : "Announcements"}
           </span>
         </div>
 
-        {/* منطقة السلايدر المتحرك مع إضافة شريط التمرير (Scrollbar) والتحكم اليدوي الكامل */}
+        {/* منطقة السلايدر المتحرك */}
         <div 
           className="relative flex-1 overflow-x-auto announcement-scrollbar pb-2 pt-0.5"
           dir="ltr"
@@ -91,21 +102,34 @@ export function AnnouncementBar() {
               return (
                 <div 
                   key={`${a.id}-${i}`}
-                  className="inline-flex items-center gap-2.5 px-3 py-1 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm shadow-sm transition-all duration-300 hover:bg-emerald-500/20 hover:border-emerald-400 hover:scale-[1.02]"
+                  className="inline-flex items-center gap-2.5 px-3 py-1 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm shadow-sm transition-all duration-300 hover:bg-pink-500/20 hover:border-pink-400 hover:scale-[1.02]"
                 >
-                  <Sparkles className="h-3 w-3 text-amber-300 animate-spin" style={{ animationDuration: '4s' }} />
+                  <Sparkles className="h-3 w-3 text-pink-300 animate-spin" style={{ animationDuration: '4s' }} />
                   <span className="text-xs sm:text-sm font-semibold text-white/95" dir={isRtl ? "rtl" : "ltr"}>{text}</span>
                   
                   {a.link_url && (
                     <a
                       href={a.link_url}
-                      className="group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-100 text-[#0d2e2a] hover:bg-pink-50 hover:text-[#2a655f] transition-all duration-300 text-[11px] font-extrabold shadow-sm"
+                      className="group inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold shadow-sm transition-all duration-300 animate-button-pulse"
+                      style={{
+                        background: "linear-gradient(135deg, #f9a8d4, #fbcfe8)", // ✅ نفس لون تصنيف العروض
+                        color: "#831843", // ✅ نفس لون النص في تصنيف العروض (pink-800)
+                        border: "1px solid rgba(244, 114, 182, 0.4)"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "linear-gradient(135deg, #fbcfe8, #f9a8d4)";
+                        e.currentTarget.style.transform = "scale(1.05)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "linear-gradient(135deg, #f9a8d4, #fbcfe8)";
+                        e.currentTarget.style.transform = "scale(1)";
+                      }}
                     >
                       <span>{isRtl ? "تفاصيل" : "Explore"}</span>
                       {isRtl ? (
-                        <ArrowLeft className="h-3 w-3 group-hover:-translate-x-1 transition-transform" />
+                        <ArrowLeft className="h-3 w-3 group-hover:-translate-x-1 transition-transform" style={{ color: "#831843" }} />
                       ) : (
-                        <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" style={{ color: "#831843" }} />
                       )}
                     </a>
                   )}

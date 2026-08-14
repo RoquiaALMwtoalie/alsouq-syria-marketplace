@@ -10,8 +10,8 @@ import {
   Footprints, TrendingUp, Star, Clock, Shield, Award, Zap, Mail, Phone,
   Twitter, Instagram, Facebook, Youtube, Send, Check, Bell, BellOff, MoreVertical, Trash2,
   Settings, Volume2, VolumeX, LayoutDashboard, LogOut, LogIn, UserPlus, House, Camera,
-  CheckCircle, XCircle, Megaphone, Sparkles, Calendar, ChevronLeft, ChevronRight,
-  Compass, Mic, MicOff,
+  CheckCircle, XCircle, Megaphone, Sparkles, Calendar, ChevronLeft, ChevronRight, ShoppingCart,
+  Compass, Mic, MicOff, 
   type LucideIcon,
 } from "lucide-react";
 import { NotificationStatus } from "@/components/NotificationStatus";
@@ -50,9 +50,7 @@ import { memo, useMemo, useCallback } from "react";
 import { useProfileWithUpdate } from "@/lib/hooks/useProfileWithUpdate";
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { useCart } from "@/lib/hooks/useCart";
-// ✅ تأكد من وجود هذا الاستيراد مع باقي الاستيرادات
 import { processVoiceSearch } from "@/lib/voiceSearchEngine";
-// ✅ ✅ ✅ استيراد البحث الصوتي
 import { VoiceSearch } from "@/components/VoiceSearch";
 import { detectVoiceCommand, parseVoiceQuery } from "@/lib/voiceSearch";
 
@@ -102,7 +100,6 @@ const AnimatedIcon = ({
           className
         )} />
       </div>
-      {/* ✅ تموجات ملونة حول الأيقونة */}
       <span className="absolute -inset-2 rounded-full border-2 border-[#2a655f]/20 animate-ripple opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       <span className="absolute -inset-4 rounded-full border-2 border-[#3a8a82]/10 animate-ripple delay-700 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
       <span className="absolute -inset-6 rounded-full border-2 border-[#4a9f95]/5 animate-ripple delay-1500 opacity-0 group-hover:opacity-100 transition-opacity duration-900" />
@@ -126,7 +123,6 @@ function MegaMenu({ categories }: { categories: any[] }) {
     timeoutRef.current = setTimeout(() => setIsOpen(false), 200);
   };
 
-  // التحقق الذكي من العروض والهدايا من قاعدة البيانات حصرياً
   const isPromoCategory = (c: any) => {
     const slug = c.slug?.toLowerCase() || "";
     const nameAr = c.name_ar || "";
@@ -141,7 +137,6 @@ function MegaMenu({ categories }: { categories: any[] }) {
   const mainCategories = categories.filter(c => !isPromoCategory(c));
   const promoCategories = categories.filter(c => isPromoCategory(c));
 
-  // ✅ ألوان منسجمة مع هوية النظام لأيقونات القائمة الرئيسية
   const iconColors = [
     "text-[#2a655f]", "text-[#3a8a82]", "text-[#1a4f4a]", "text-emerald-600",
     "text-[#2a655f]", "text-[#3a8a82]", "text-[#1a4f4a]", "text-emerald-700",
@@ -164,6 +159,21 @@ function MegaMenu({ categories }: { categories: any[] }) {
         .animate-special-dance {
           animation: special-dance 1.5s ease-in-out infinite;
         }
+        @keyframes glow-pulse {
+          0%, 100% { box-shadow: 0 0 20px rgba(244,114,182,0.2); }
+          50% { box-shadow: 0 0 40px rgba(244,114,182,0.5); }
+        }
+        .animate-glow-pulse {
+          animation: glow-pulse 2s ease-in-out infinite;
+        }
+        @keyframes shimmer-slow {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .animate-shimmer-slow {
+          background-size: 200% auto;
+          animation: shimmer-slow 4s linear infinite;
+        }
       `}</style>
 
       <button
@@ -178,7 +188,6 @@ function MegaMenu({ categories }: { categories: any[] }) {
       {isOpen && (
         <div className="absolute top-full start-0 mt-2 w-[900px] max-w-[95vw] bg-card rounded-2xl shadow-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 p-6 grid grid-cols-4 gap-6 animate-in slide-in-from-top-5 duration-200 z-50 bg-gradient-to-br from-white via-emerald-50/20 to-[#2a655f]/10 dark:from-gray-950 dark:via-[#173d38]/20 dark:to-[#2a655f]/20 max-h-[80vh] overflow-y-auto">
           
-          {/* التصنيفات الأساسية تقرأ بالكامل من قاعدة البيانات */}
           <div className="col-span-3 grid grid-cols-3 gap-x-4 gap-y-1.5">
             {mainCategories.map((c, index) => {
               const Icon = getCategoryIcon(c.icon);
@@ -222,11 +231,11 @@ function MegaMenu({ categories }: { categories: any[] }) {
             })}
           </div>
 
-          {/* قسم العروض والهدايا المميز (يرقص بألوان السستم المتناسقة) */}
+          {/* ✅ قسم العروض - تحسين الديزاين مع تأثير توهج نابض */}
           <div className="col-span-1 space-y-3 border-s border-[#2a655f]/15 dark:border-[#2a655f]/30 ps-4">
             <div className="text-[10px] uppercase tracking-wider text-[#2a655f] dark:text-[#3a8a82] font-extrabold flex items-center gap-2">
-              <span className="h-1.5 w-5 rounded-full bg-gradient-to-r from-[#2a655f] to-[#3a8a82]" />
-              {app.lang === "ar" ? "عروض خاصة" : "Special Offers"}
+              <span className="h-1.5 w-5 rounded-full bg-gradient-to-r from-pink-400 to-pink-600 animate-pulse" />
+              {app.lang === "ar" ? "🎀 عروض خاصة" : "🎀 Special Offers"}
             </div>
 
             {promoCategories.map((c) => {
@@ -236,9 +245,9 @@ function MegaMenu({ categories }: { categories: any[] }) {
                   key={c.id}
                   to="/category/$slug"
                   params={{ slug: c.slug }}
-                  className="group flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#2a655f]/15 via-[#3a8a82]/10 to-[#2a655f]/15 hover:from-[#2a655f]/25 hover:to-[#3a8a82]/20 transition-all duration-300 border border-[#2a655f]/30 shadow-sm"
+                  className="group flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-pink-100/80 via-pink-200/60 to-pink-300/40 hover:from-pink-200/90 hover:to-pink-400/60 transition-all duration-300 border border-pink-300/50 shadow-md hover:shadow-pink-200/50 animate-glow-pulse"
                 >
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white shadow-md animate-special-dance shrink-0 overflow-hidden">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white shadow-md animate-special-dance shrink-0 overflow-hidden">
                     {c.image_url ? (
                       <img src={c.image_url} alt="" className="h-full w-full object-cover rounded-xl" />
                     ) : (
@@ -246,11 +255,11 @@ function MegaMenu({ categories }: { categories: any[] }) {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82] truncate" dir={app.lang === "ar" ? "rtl" : "ltr"}>
+                    <div className="text-sm font-bold text-pink-800 dark:text-pink-300 truncate" dir={app.lang === "ar" ? "rtl" : "ltr"}>
                       {app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
                     </div>
-                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold animate-pulse">
-                      {app.lang === "ar" ? "خصومات تصل إلى 70%" : "Up to 70% off"}
+                    <div className="text-[10px] text-pink-600 dark:text-pink-400 font-semibold animate-pulse">
+                      {app.lang === "ar" ? "🔥 خصومات تصل إلى 70%" : "🔥 Up to 70% off"}
                     </div>
                   </div>
                 </Link>
@@ -259,10 +268,10 @@ function MegaMenu({ categories }: { categories: any[] }) {
             
             <Link
               to="/categories"
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-[#2a655f]/10 hover:bg-[#2a655f]/20 transition-all duration-300 font-medium text-sm text-[#2a655f] dark:text-[#3a8a82] mt-2 border border-[#2a655f]/20 dark:border-[#2a655f]/30 group cursor-pointer"
+              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500/20 to-pink-600/20 hover:from-pink-500/40 hover:to-pink-600/40 transition-all duration-300 font-medium text-sm text-pink-700 dark:text-pink-300 mt-2 border border-pink-300/40 dark:border-pink-500/40 group cursor-pointer"
             >
               {t("view_all")}
-              <ChevronDown className="h-3.5 w-3.5 -rotate-90 group-hover:translate-x-1 transition-transform" />
+              <ChevronDown className="h-3.5 w-3.5 -rotate-90 group-hover:translate-x-1 transition-transform text-pink-600" />
             </Link>
           </div>
 
@@ -311,16 +320,14 @@ export const Header = memo(function Header() {
   const { data: announcements = [] } = useAnnouncements();
   const categories = (dbCategories || []).filter((c: any) => c.active !== false);
   
-  // ✅ ✅ ✅ استخدام Hook واحد موحد ✅ ✅ ✅
   const { profile } = useProfileWithUpdate();
   
-  // ✅ جلب عدد المفضلة
   const { data: favorites = [] } = useFavorites(app.user?.id);
   const favoritesCount = favorites.length;
   const { data: cart } = useCart(app.user?.id);
   const cartItemsCount = cart?.items?.length || 0;
 
-  // ===== ✅ ✅ ✅ البحث التلقائي عند تغيير المحافظة =====
+  // ===== ✅ البحث التلقائي عند تغيير المحافظة =====
   useEffect(() => {
     if (gov !== "all") {
       const query = q.trim();
@@ -383,102 +390,96 @@ export const Header = memo(function Header() {
   }, [q, gov, navigate, app.lang]);
 
   // ✅ ✅ ✅ دالة معالجة البحث الصوتي
-// ===== ✅ ✅ ✅ دالة معالجة البحث الصوتي (الجديدة - المحسنة)
-const handleVoiceSearch = useCallback(async (text: string, entities?: any) => {
-  console.log("🎤 Voice search result:", text);
-  console.log("📊 Entities:", entities);
-  
-  // ✅ استخدام المحرك الذكي
-  const response = await processVoiceSearch(text, app.lang === 'ar' ? 'ar' : 'en');
-  
-  console.log("🎯 Intent:", response.intent);
-  console.log("📊 Entities:", response.entities);
-  console.log("📊 Results:", response.results.length);
-  
-  // ✅ تنفيذ الإجراء المناسب حسب النية
-  switch (response.intent) {
-    case 'action':
-      // إجراءات خاصة (سلة، طلبات)
-      if (text.includes('سلة') || text.includes('cart') || text.includes('عربة')) {
-        navigate({ to: "/cart" });
-        toast.info(app.lang === "ar" ? "🛒 تم التوجيه إلى السلة" : "🛒 Navigating to cart");
+  const handleVoiceSearch = useCallback(async (text: string, entities?: any) => {
+    console.log("🎤 Voice search result:", text);
+    console.log("📊 Entities:", entities);
+    
+    const response = await processVoiceSearch(text, app.lang === 'ar' ? 'ar' : 'en');
+    
+    console.log("🎯 Intent:", response.intent);
+    console.log("📊 Entities:", response.entities);
+    console.log("📊 Results:", response.results.length);
+    
+    switch (response.intent) {
+      case 'action':
+        if (text.includes('سلة') || text.includes('cart') || text.includes('عربة')) {
+          navigate({ to: "/cart" });
+          toast.info(app.lang === "ar" ? "🛒 تم التوجيه إلى السلة" : "🛒 Navigating to cart");
+          return;
+        }
+        if (text.includes('طلبات') || text.includes('orders') || text.includes('شحن')) {
+          navigate({ to: "/orders" });
+          toast.info(app.lang === "ar" ? "📦 تم التوجيه إلى الطلبات" : "📦 Navigating to orders");
+          return;
+        }
+        break;
+        
+      case 'store':
+        if (response.results.length > 0) {
+          const store = response.results[0];
+          navigate({ 
+            to: "/store/$id", 
+            params: { id: store.id } 
+          });
+          toast.info(
+            app.lang === "ar" 
+              ? `🏪 تم التوجيه إلى متجر ${store.title}` 
+              : `🏪 Navigating to store: ${store.title}`
+          );
+        } else {
+          navigate({ to: "/stores" });
+          toast.info(app.lang === "ar" ? "🏪 تم التوجيه إلى صفحة المتاجر" : "🏪 Navigating to stores");
+        }
         return;
-      }
-      if (text.includes('طلبات') || text.includes('orders') || text.includes('شحن')) {
-        navigate({ to: "/orders" });
-        toast.info(app.lang === "ar" ? "📦 تم التوجيه إلى الطلبات" : "📦 Navigating to orders");
+        
+      case 'category':
+        if (response.results.length > 0) {
+          const category = response.results[0];
+          navigate({ 
+            to: "/category/$slug", 
+            params: { slug: category.id } 
+          });
+          toast.info(
+            app.lang === "ar" 
+              ? `📂 تم التوجيه إلى تصنيف ${category.title}` 
+              : `📂 Navigating to category: ${category.title}`
+          );
+        } else {
+          navigate({ to: "/categories" });
+          toast.info(app.lang === "ar" ? "📂 تم التوجيه إلى صفحة التصنيفات" : "📂 Navigating to categories");
+        }
         return;
-      }
-      break;
-      
-    case 'store':
-      if (response.results.length > 0) {
-        const store = response.results[0];
-        navigate({ 
-          to: "/store/$id", 
-          params: { id: store.id } 
-        });
+        
+      case 'help':
         toast.info(
           app.lang === "ar" 
-            ? `🏪 تم التوجيه إلى متجر ${store.title}` 
-            : `🏪 Navigating to store: ${store.title}`
+            ? "💡 يمكنك قول: 'ابحث عن جوال سامسونج'، 'عروض السلة'، 'متاجر في دمشق'" 
+            : "💡 You can say: 'search Samsung phones', 'show offers', 'stores in Damascus'"
         );
-      } else {
-        navigate({ to: "/stores" });
-        toast.info(app.lang === "ar" ? "🏪 تم التوجيه إلى صفحة المتاجر" : "🏪 Navigating to stores");
-      }
-      return;
-      
-    case 'category':
-      if (response.results.length > 0) {
-        const category = response.results[0];
-        navigate({ 
-          to: "/category/$slug", 
-          params: { slug: category.id } 
-        });
-        toast.info(
-          app.lang === "ar" 
-            ? `📂 تم التوجيه إلى تصنيف ${category.title}` 
-            : `📂 Navigating to category: ${category.title}`
-        );
-      } else {
-        navigate({ to: "/categories" });
-        toast.info(app.lang === "ar" ? "📂 تم التوجيه إلى صفحة التصنيفات" : "📂 Navigating to categories");
-      }
-      return;
-      
-    case 'help':
-      toast.info(
-        app.lang === "ar" 
-          ? "💡 يمكنك قول: 'ابحث عن جوال سامسونج'، 'عروض السلة'، 'متاجر في دمشق'" 
-          : "💡 You can say: 'search Samsung phones', 'show offers', 'stores in Damascus'"
-      );
-      return;
-      
-    default:
-      // ✅ البحث العادي - استخدم النتائج من المحرك
-      if (response.results.length > 0) {
-        // نتائج متعددة - اذهب إلى صفحة البحث
-        const searchQuery = entities?.searchTerms?.join(' ') || text;
-        navigate({ 
-          to: "/search", 
-          search: { q: searchQuery } 
-        });
-        toast.success(
-          app.lang === "ar" 
-            ? `🔍 تم العثور على ${response.totalCount} نتيجة` 
-            : `🔍 Found ${response.totalCount} results`
-        );
-      } else if (text.trim()) {
-        // بحث عادي
-        navigate({ 
-          to: "/search", 
-          search: { q: text.trim() } 
-        });
-        toast.info(app.lang === "ar" ? "🔍 جاري البحث..." : "🔍 Searching...");
-      }
-  }
-}, [app.lang, navigate]);
+        return;
+        
+      default:
+        if (response.results.length > 0) {
+          const searchQuery = entities?.searchTerms?.join(' ') || text;
+          navigate({ 
+            to: "/search", 
+            search: { q: searchQuery } 
+          });
+          toast.success(
+            app.lang === "ar" 
+              ? `🔍 تم العثور على ${response.totalCount} نتيجة` 
+              : `🔍 Found ${response.totalCount} results`
+          );
+        } else if (text.trim()) {
+          navigate({ 
+            to: "/search", 
+            search: { q: text.trim() } 
+          });
+          toast.info(app.lang === "ar" ? "🔍 جاري البحث..." : "🔍 Searching...");
+        }
+    }
+  }, [app.lang, navigate]);
+
   // ===== ✅ دالة الذهاب للرئيسية =====
   const goHome = useCallback(() => {
     navigate({ to: "/" });
@@ -503,38 +504,30 @@ const handleVoiceSearch = useCallback(async (text: string, entities?: any) => {
   }
 
   // ===== ✅ دوال الإشعارات V2 =====
-// ✅ فقط إزالة التنقل عند الضغط على الإشعار - مع بقاء "تحديد كمقروء" و "قراءة الكل"
-// ✅ ✅ ✅ دالة التعامل مع ضغط الإشعار - مع التنقل إلى الرابط
-// ✅ ✅ ✅ دالة التعامل مع ضغط الإشعار - مع التنقل إلى الرابط
-async function handleNotificationClick(notification: any) {
-  // ✅ تحديث الإشعار كمقروء
-  if (!notification.is_read) {
-    try {
-      await markRead.mutateAsync({
-        notificationId: notification.id,
-        userId: app.user!.id
-      });
-      await refetchNotifications();
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
+  async function handleNotificationClick(notification: any) {
+    if (!notification.is_read) {
+      try {
+        await markRead.mutateAsync({
+          notificationId: notification.id,
+          userId: app.user!.id
+        });
+        await refetchNotifications();
+      } catch (error) {
+        console.error("Error marking notification as read:", error);
+      }
     }
-  }
-  
-  // ✅ ✅ ✅ التنقل إلى الرابط (تم إعادة تفعيله)
-  if (notification.link_url) {
-    // إذا كان الرابط داخلي (يبدأ بـ /) استخدم navigate
-    if (notification.link_url.startsWith('/')) {
-      navigate({ to: notification.link_url });
+    
+    if (notification.link_url) {
+      if (notification.link_url.startsWith('/')) {
+        navigate({ to: notification.link_url });
+      } else {
+        window.open(notification.link_url, '_blank');
+      }
+      setNotificationsOpen(false);
     } else {
-      // رابط خارجي
-      window.open(notification.link_url, '_blank');
+      setNotificationsOpen(false);
     }
-    setNotificationsOpen(false);
-  } else {
-    // إذا ما في رابط، فقط نغلق النافذة
-    setNotificationsOpen(false);
   }
-}
 
   async function handleMarkAsRead(notificationId: string, e: React.MouseEvent) {
     e.stopPropagation();
@@ -594,6 +587,42 @@ async function handleNotificationClick(notification: any) {
           : 'bg-gradient-to-b from-[#2a655f]/5 via-background/50 to-transparent border-b border-transparent'
         }`}>
 
+        {/* ✅ CSS Animations */}
+        <style>{`
+          @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            14% { transform: scale(1.3); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.3); }
+            70% { transform: scale(1); }
+          }
+          .animate-heartbeat {
+            animation: heartbeat 1.5s ease-in-out infinite;
+          }
+          @keyframes cart-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+          }
+          .animate-cart-bounce {
+            animation: cart-bounce 0.6s ease-in-out;
+          }
+          @keyframes ripple-pink {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(2.5); opacity: 0; }
+          }
+          .animate-ripple-pink {
+            animation: ripple-pink 1.5s ease-out infinite;
+          }
+          @keyframes shimmer-gold {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+          .animate-shimmer-gold {
+            background: linear-gradient(90deg, #2a655f, #f9a8d4, #2a655f);
+            background-size: 200% 100%;
+            animation: shimmer-gold 3s linear infinite;
+          }
+        `}</style>
 
         <div className="mx-auto max-w-7xl px-3 py-2.5 flex items-center gap-2 overflow-visible">
           {/* Mobile Menu */}
@@ -639,15 +668,16 @@ async function handleNotificationClick(notification: any) {
             </SheetContent>
           </Sheet>
 
-          {/* Home Button */}
+          {/* Home Button - ✅ مع لمعة متحركة (Shimmer) */}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={goHome}
-                className="flex items-center gap-2 shrink-0 group cursor-pointer"
+                className="flex items-center gap-2 shrink-0 group cursor-pointer relative"
               >
-                <div className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-md group-hover:shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-                  <House className="h-4.5 w-4.5" />
+                <div className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-md group-hover:shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 relative overflow-hidden">
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <House className="h-4.5 w-4.5 relative z-10" />
                 </div>
                 <div className="hidden sm:flex flex-col leading-none">
                   <span className="font-black text-lg tracking-tight bg-gradient-to-r from-[#2a655f] to-[#3a8a82] bg-clip-text text-transparent group-hover:from-[#1a4f4a] group-hover:to-[#2a655f] transition">
@@ -669,10 +699,10 @@ async function handleNotificationClick(notification: any) {
             <MegaMenu categories={categories} />
           </div>
 
-          {/* Desktop Search - ✅ مع زر الميكروفون */}
+          {/* Desktop Search - ✅ مع تحسين الديزاين */}
           <div className="flex-1 max-w-3xl mx-2 hidden lg:flex items-center gap-1.5">
-            <div className="relative flex-1 min-w-[160px]">
-              <Search className={`absolute inset-y-0 my-auto start-3 h-4 w-4 transition-colors duration-300 ${searchFocused ? 'text-[#2a655f] dark:text-[#3a8a82]' : 'text-muted-foreground'}`} />
+            <div className="relative flex-1 min-w-[160px] group">
+              <Search className={`absolute inset-y-0 my-auto start-3 h-4 w-4 transition-colors duration-300 ${searchFocused ? 'text-pink-500 dark:text-pink-400' : 'text-muted-foreground'}`} />
               <input
                 type="text"
                 value={q}
@@ -683,21 +713,19 @@ async function handleNotificationClick(notification: any) {
                 placeholder={t("search_placeholder")}
                 className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
                   searchFocused
-                    ? 'border-[#2a655f]/60 bg-card shadow-lg shadow-[#2a655f]/20 dark:shadow-[#2a655f]/30'
-                    : 'border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#2a655f]/40'
+                    ? 'border-pink-400 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
+                    : 'border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-pink-300/50'
                 }`}
               />
             </div>
             
-            {/* ✅ ✅ ✅ زر البحث الصوتي - حجم مناسب */}
             <VoiceSearch
               onResult={handleVoiceSearch}
               lang={isRTL ? "ar-SA" : "en-US"}
               buttonSize="md"
-              className="border-[#2a655f]/20 hover:border-[#2a655f]/40"
+              className="border-[#2a655f]/20 hover:border-pink-400 transition-colors duration-300"
             />
             
-            {/* ✅ زر البحث العادي */}
             <button
               onClick={doSearch}
               className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center group"
@@ -709,7 +737,7 @@ async function handleNotificationClick(notification: any) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="h-10 gap-1 shrink-0 min-w-[100px] rounded-xl border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:border-[#2a655f]/40 transition group text-sm px-3">
+                    <Button variant="outline" className="h-10 gap-1 shrink-0 min-w-[100px] rounded-xl border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:border-pink-400/50 transition group text-sm px-3">
                       <MapPin className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
                       <span className="text-xs max-w-[70px] truncate">
                         {gov === "all"
@@ -742,7 +770,7 @@ async function handleNotificationClick(notification: any) {
             </DropdownMenu>
           </div>
 
-          {/* Tablet Search - ✅ مع زر الميكروفون */}
+          {/* Tablet Search */}
           <div className="flex-1 max-w-lg mx-1.5 hidden md:flex lg:hidden items-center gap-1.5">
             <div className="relative flex-1">
               <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
@@ -752,16 +780,15 @@ async function handleNotificationClick(notification: any) {
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && doSearch()}
                 placeholder={t("search_placeholder")}
-                className="w-full h-10 ps-9 pe-3 bg-muted/50 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 rounded-xl focus:border-[#2a655f]/60 focus:bg-card focus:shadow-lg focus:outline-none transition-all text-sm"
+                className="w-full h-10 ps-9 pe-3 bg-muted/50 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 rounded-xl focus:border-pink-400 focus:bg-card focus:shadow-lg focus:outline-none transition-all text-sm"
               />
             </div>
             
-            {/* ✅ ✅ ✅ زر البحث الصوتي - حجم مناسب */}
             <VoiceSearch
               onResult={handleVoiceSearch}
               lang={isRTL ? "ar-SA" : "en-US"}
               buttonSize="sm"
-              className="border-[#2a655f]/20 hover:border-[#2a655f]/40"
+              className="border-[#2a655f]/20 hover:border-pink-400 transition-colors duration-300"
             />
             
             <button
@@ -773,10 +800,10 @@ async function handleNotificationClick(notification: any) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 flex items-center justify-center group relative">
+                <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-pink-400/50 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 flex items-center justify-center group relative">
                   <MapPin className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
                   {gov !== "all" && (
-                    <span className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full bg-[#2a655f] ring-2 ring-background animate-pulse" />
+                    <span className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full bg-pink-500 ring-2 ring-background animate-pulse" />
                   )}
                 </button>
               </DropdownMenuTrigger>
@@ -798,7 +825,7 @@ async function handleNotificationClick(notification: any) {
             </DropdownMenu>
           </div>
 
-          {/* Actions - ❌ تم إزالة زر الحجوزات من هنا */}
+          {/* Actions */}
           <div className="ms-auto flex items-center gap-0.5 shrink-0">
             {/* Language */}
             <Tooltip>
@@ -863,349 +890,361 @@ async function handleNotificationClick(notification: any) {
               </TooltipContent>
             </Tooltip>
 
-          {/* Messages */}
-<Tooltip>
-  <TooltipTrigger asChild>
-    <Link 
-      to="/messages" 
-      className="hidden sm:block relative group shrink-0"
-      onClick={() => {
-        if (unreadCount > 0) {
-          markMessagesAsRead();
-        }
-      }}
-    >
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition relative"
-      >
-        <MessageCircle className="h-4 w-4 group-hover:scale-110 transition-transform text-[#2a655f] dark:text-[#3a8a82]" />
-        {unreadCount > 0 && (
-          <Badge 
-            className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white border-2 border-background animate-pulse"
-            style={{
-              background: 'linear-gradient(135deg, #2a655f, #3a8a82)',
-              boxShadow: '0 0 20px rgba(42, 101, 95, 0.5)'
-            }}
-          >
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </Badge>
-        )}
-      </Button>
-    </Link>
-  </TooltipTrigger>
-  <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
-    <p>
-      {app.lang === "ar" ? "الرسائل" : "Messages"}
-      {unreadCount > 0 && ` (${unreadCount} ${app.lang === "ar" ? "جديدة" : "new"})`}
-    </p>
-  </TooltipContent>
-</Tooltip>
-
-{/* Notifications Dialog - High Contrast & Luxury Version */}
-{app.user && (
-  <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <DialogTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 group relative shrink-0 cursor-pointer"
-          >
-            <Bell className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform duration-300" />
-            
-            {unreadNotificationsCount > 0 && (
-              <Badge 
-                className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white border-2 border-background animate-pulse"
-                style={{
-                  background: 'linear-gradient(135deg, #2a655f, #3a8a82)',
-                  boxShadow: '0 0 20px rgba(42, 101, 95, 0.5)'
-                }}
-              >
-                {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
-              </Badge>
-            )}
-          </Button>
-        </DialogTrigger>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
-        <p>{app.lang === "ar" ? "الإشعارات" : "Notifications"}</p>
-      </TooltipContent>
-    </Tooltip>
-
-    <DialogContent className="max-w-md w-[95vw] rounded-[32px] p-0 overflow-hidden border border-[#2a655f]/50 dark:border-emerald-500/40 shadow-[0_25px_60px_rgba(0,0,0,0.4)] bg-white dark:bg-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300 [&>button]:hidden">
-      
-      <style>{`
-        @keyframes icon-dance-glow {
-          0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(52,211,153,0.5)); }
-          50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(52,211,153,0.9)); }
-        }
-        .animate-icon-dance {
-          animation: icon-dance-glow 2s ease-in-out infinite;
-        }
-      `}</style>
-
-      {/* HEADER - بدون زر X الافتراضي تماماً */}
-      <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f]/15 via-[#3a8a82]/15 to-[#2a655f]/15 dark:from-[#173d38]/80 dark:to-slate-900 border-b border-[#2a655f]/30 dark:border-[#2a655f]/50 p-4.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 animate-icon-dance">
-                <Bell className="h-5 w-5 text-white" />
-              </div>
-              {unreadNotificationsCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full bg-emerald-500 px-1.5 text-[10px] font-black text-white flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-md">
-                  {unreadNotificationsCount}
-                </span>
-              )}
-            </div>
-            <div>
-              <DialogTitle className="text-lg font-black text-slate-900 dark:text-white tracking-wide">
-                {app.lang === "ar" ? "الإشعارات" : "Notifications"}
-              </DialogTitle>
-              <p className="text-xs text-slate-600 dark:text-emerald-300/90 font-bold mt-0.5">
-                {unreadNotificationsCount > 0
-                  ? app.lang === "ar"
-                    ? `${unreadNotificationsCount} إشعار غير مقروء`
-                    : `${unreadNotificationsCount} unread`
-                  : app.lang === "ar"
-                  ? "كل الإشعارات مقروءة"
-                  : "All caught up"}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {unreadNotificationsCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs font-black gap-1.5 rounded-xl bg-[#2a655f]/10 hover:bg-[#2a655f]/20 dark:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/40 text-[#2a655f] dark:text-emerald-300 transition-all cursor-pointer border border-[#2a655f]/30"
-                onClick={handleMarkAllAsRead}
-                disabled={markAllRead.isPending}
-              >
-                {markAllRead.isPending ? (
-                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#2a655f] border-t-transparent" />
-                ) : (
-                  <Check className="h-3.5 w-3.5 animate-icon-dance" />
-                )}
-                {app.lang === "ar" ? "تحديد الكل" : "Mark all read"}
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* LIST */}
-      <div className="max-h-[60vh] overflow-y-auto p-3 space-y-2.5 custom-scrollbar bg-slate-50/50 dark:bg-slate-950/50">
-        {notifications.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="h-20 w-20 rounded-3xl bg-[#2a655f]/10 border border-[#2a655f]/30 flex items-center justify-center mx-auto mb-4 animate-icon-dance">
-              <BellOff className="h-10 w-10 text-[#2a655f] dark:text-emerald-400" />
-            </div>
-            <p className="text-base font-black text-slate-900 dark:text-white">
-              {app.lang === "ar" ? "لا توجد إشعارات حالياً" : "No notifications"}
-            </p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-semibold">
-              {app.lang === "ar"
-                ? "ستظهر إشعاراتك وتحديثاتك هنا فور وصولها"
-                : "Notifications will appear here when received"}
-            </p>
-          </div>
-        ) : (
-          notifications.map((notification: any) => {
-            const isUnread = !notification.is_read;
-            const config = getNotificationConfig(notification.type);
-            const Icon = ICON_MAP[config.icon] || Bell;
-
-            return (
-              <div
-                key={notification.id}
-                className={`group relative rounded-2xl transition-all duration-300 border ${
-                  isUnread
-                    ? "bg-[#2a655f]/10 dark:bg-[#2a655f]/25 border-[#2a655f]/40 dark:border-emerald-500/50 shadow-md"
-                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-[#2a655f]/40"
-                }`}
-              >
-                <div 
-                  className="flex items-start gap-3.5 p-3.5 cursor-pointer" 
-                  onClick={() => handleNotificationClick(notification)}
+            {/* Messages - ✅ مع تموج وردي */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link 
+                  to="/messages" 
+                  className="hidden sm:block relative group shrink-0"
+                  onClick={() => {
+                    if (unreadCount > 0) {
+                      markMessagesAsRead();
+                    }
+                  }}
                 >
-                  <div className="flex-shrink-0">
-                    {notification.image_url ? (
-                      <div className="relative">
-                        <img
-                          src={notification.image_url}
-                          alt=""
-                          className="h-12 w-12 rounded-2xl object-cover border-2 border-[#2a655f]/40 shadow-sm"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition relative"
+                  >
+                    <MessageCircle className="h-4 w-4 group-hover:scale-110 transition-transform text-[#2a655f] dark:text-[#3a8a82]" />
+                    {unreadCount > 0 && (
+                      <>
+                        <Badge 
+                          className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white border-2 border-background animate-pulse"
+                          style={{
+                            background: 'linear-gradient(135deg, #f9a8d4, #fbcfe8)',
+                            boxShadow: '0 0 20px rgba(244,114,182,0.5)'
                           }}
-                        />
-                        {isUnread && (
-                          <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
-                        )}
-                      </div>
-                    ) : (
-                      <div className={`h-12 w-12 rounded-2xl flex items-center justify-center border border-[#2a655f]/30 shadow-sm bg-[#2a655f]/15 dark:bg-[#2a655f]/30 text-[#2a655f] dark:text-emerald-300`}>
-                        <Icon className="h-5 w-5 animate-icon-dance" />
-                      </div>
+                        >
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </Badge>
+                        <span className="absolute -inset-1 rounded-full border-2 border-pink-400/30 animate-ripple-pink" />
+                      </>
                     )}
-                  </div>
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
+                <p>
+                  {app.lang === "ar" ? "الرسائل" : "Messages"}
+                  {unreadCount > 0 && ` (${unreadCount} ${app.lang === "ar" ? "جديدة" : "new"})`}
+                </p>
+              </TooltipContent>
+            </Tooltip>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm ${isUnread ? "font-black text-slate-950 dark:text-white" : "font-bold text-slate-900 dark:text-slate-200"}`}>
-                          {notification.title_ar || notification.title_en || "إشعار"}
-                        </p>
-                        <p className={`text-xs mt-1 line-clamp-2 ${isUnread ? "text-slate-800 dark:text-slate-200 font-semibold" : "text-slate-600 dark:text-slate-400 font-medium"}`}>
-                          {notification.body_ar || notification.body_en || notification.message}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-1 font-bold">
-                            <Clock className="h-3 w-3 text-[#2a655f] dark:text-emerald-400" />
-                            {formatTime(notification.created_at)}
-                          </span>
-                          {notification.type && (
-                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#2a655f]/15 text-[#2a655f] dark:text-emerald-300 font-extrabold border border-[#2a655f]/30">
-                              {isRTL ? config.ar : config.en}
+            {/* Notifications Dialog */}
+            {app.user && (
+              <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 group relative shrink-0 cursor-pointer"
+                      >
+                        <Bell className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform duration-300" />
+                        
+                        {unreadNotificationsCount > 0 && (
+                          <Badge 
+                            className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white border-2 border-background animate-pulse"
+                            style={{
+                              background: 'linear-gradient(135deg, #f9a8d4, #fbcfe8)',
+                              boxShadow: '0 0 20px rgba(244,114,182,0.5)'
+                            }}
+                          >
+                            {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                          </Badge>
+                        )}
+                      </Button>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
+                    <p>{app.lang === "ar" ? "الإشعارات" : "Notifications"}</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <DialogContent className="max-w-md w-[95vw] rounded-[32px] p-0 overflow-hidden border border-[#2a655f]/50 dark:border-emerald-500/40 shadow-[0_25px_60px_rgba(0,0,0,0.4)] bg-white dark:bg-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300 [&>button]:hidden">
+                  
+                  <style>{`
+                    @keyframes icon-dance-glow {
+                      0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(52,211,153,0.5)); }
+                      50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(52,211,153,0.9)); }
+                    }
+                    .animate-icon-dance {
+                      animation: icon-dance-glow 2s ease-in-out infinite;
+                    }
+                  `}</style>
+
+                  <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f]/15 via-[#3a8a82]/15 to-[#2a655f]/15 dark:from-[#173d38]/80 dark:to-slate-900 border-b border-[#2a655f]/30 dark:border-[#2a655f]/50 p-4.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 animate-icon-dance">
+                            <Bell className="h-5 w-5 text-white" />
+                          </div>
+                          {unreadNotificationsCount > 0 && (
+                            <span className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full bg-pink-400 px-1.5 text-[10px] font-black text-white flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-md">
+                              {unreadNotificationsCount}
                             </span>
                           )}
                         </div>
+                        <div>
+                          <DialogTitle className="text-lg font-black text-slate-900 dark:text-white tracking-wide">
+                            {app.lang === "ar" ? "الإشعارات" : "Notifications"}
+                          </DialogTitle>
+                          <p className="text-xs text-slate-600 dark:text-emerald-300/90 font-bold mt-0.5">
+                            {unreadNotificationsCount > 0
+                              ? app.lang === "ar"
+                                ? `${unreadNotificationsCount} إشعار غير مقروء`
+                                : `${unreadNotificationsCount} unread`
+                              : app.lang === "ar"
+                              ? "كل الإشعارات مقروءة"
+                              : "All caught up"}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="flex-shrink-0 flex items-center gap-1">
-                        {isUnread && (
+                      <div className="flex items-center gap-2">
+                        {unreadNotificationsCount > 0 && (
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-xl bg-[#2a655f]/10 hover:bg-[#2a655f]/20 text-[#2a655f] dark:text-emerald-300 transition-all opacity-0 group-hover:opacity-100 cursor-pointer border border-[#2a655f]/30"
-                            onClick={(e) => handleMarkAsRead(notification.id, e)}
+                            size="sm"
+                            className="text-xs font-black gap-1.5 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 dark:bg-pink-500/30 dark:hover:bg-pink-500/40 text-pink-600 dark:text-pink-300 transition-all cursor-pointer border border-pink-300/30"
+                            onClick={handleMarkAllAsRead}
+                            disabled={markAllRead.isPending}
                           >
-                            <Check className="h-4 w-4" />
+                            {markAllRead.isPending ? (
+                              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
+                            ) : (
+                              <Check className="h-3.5 w-3.5" />
+                            )}
+                            {app.lang === "ar" ? "تحديد الكل" : "Mark all read"}
                           </Button>
                         )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="rounded-2xl p-1.5 min-w-[170px] border border-[#2a655f]/40 shadow-xl bg-white dark:bg-slate-900">
-                            {isUnread && (
-                              <DropdownMenuItem
-                                className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 hover:bg-[#2a655f]/15 text-slate-900 dark:text-slate-100"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMarkAsRead(notification.id, e);
-                                }}
-                              >
-                                <Check className="h-4 w-4 text-[#2a655f]" />
-                                {app.lang === "ar" ? "تحديد كمقروء" : "Mark as read"}
-                              </DropdownMenuItem>
-                            )}
-                            
-                            <DropdownMenuItem
-                              className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-500/10"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                try {
-                                  await supabase
-                                    .from('notifications')
-                                    .delete()
-                                    .eq('id', notification.id);
-                                  await refetchNotifications();
-                                  toast.success(app.lang === "ar" ? "تم حذف الإشعار" : "Notification deleted");
-                                } catch (error) {
-                                  console.error('Error deleting notification:', error);
-                                  toast.error(app.lang === "ar" ? "حدث خطأ أثناء الحذف" : "Error deleting notification");
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              {app.lang === "ar" ? "حذف" : "Delete"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
 
-      {/* FOOTER */}
-      {notifications.length > 0 && (
-        <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t border-[#2a655f]/30 dark:border-[#2a655f]/50 p-3.5 flex items-center justify-between">
-          <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">
-            {notifications.length} {app.lang === "ar" ? "إشعار" : "notifications"}
-            {unreadNotificationsCount > 0 && ` · ${unreadNotificationsCount} ${app.lang === "ar" ? "غير مقروء" : "unread"}`}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs font-bold rounded-xl text-[#2a655f] dark:text-emerald-300 hover:bg-[#2a655f]/15 transition-all cursor-pointer border border-[#2a655f]/30"
-            onClick={() => setNotificationsOpen(false)}
-          >
-            {app.lang === "ar" ? "إغلاق" : "Close"}
-          </Button>
-        </div>
-      )}
-    </DialogContent>
-  </Dialog>
-)}
+                  <div className="max-h-[60vh] overflow-y-auto p-3 space-y-2.5 custom-scrollbar bg-slate-50/50 dark:bg-slate-950/50">
+                    {notifications.length === 0 ? (
+                      <div className="py-16 text-center">
+                        <div className="h-20 w-20 rounded-3xl bg-[#2a655f]/10 border border-[#2a655f]/30 flex items-center justify-center mx-auto mb-4 animate-icon-dance">
+                          <BellOff className="h-10 w-10 text-[#2a655f] dark:text-emerald-400" />
+                        </div>
+                        <p className="text-base font-black text-slate-900 dark:text-white">
+                          {app.lang === "ar" ? "لا توجد إشعارات حالياً" : "No notifications"}
+                        </p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-semibold">
+                          {app.lang === "ar"
+                            ? "ستظهر إشعاراتك وتحديثاتك هنا فور وصولها"
+                            : "Notifications will appear here when received"}
+                        </p>
+                      </div>
+                    ) : (
+                      notifications.map((notification: any) => {
+                        const isUnread = !notification.is_read;
+                        const config = getNotificationConfig(notification.type);
+                        const Icon = ICON_MAP[config.icon] || Bell;
 
-            {/* ❌ تم إزالة زر الحجوزات من هنا - موجود فقط في منيو الحساب */}
+                        return (
+                          <div
+                            key={notification.id}
+                            className={`group relative rounded-2xl transition-all duration-300 border ${
+                              isUnread
+                                ? "bg-pink-500/5 dark:bg-pink-500/15 border-pink-400/40 dark:border-pink-500/50 shadow-md"
+                                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-pink-400/40"
+                            }`}
+                          >
+                            <div 
+                              className="flex items-start gap-3.5 p-3.5 cursor-pointer" 
+                              onClick={() => handleNotificationClick(notification)}
+                            >
+                              <div className="flex-shrink-0">
+                                {notification.image_url ? (
+                                  <div className="relative">
+                                    <img
+                                      src={notification.image_url}
+                                      alt=""
+                                      className="h-12 w-12 rounded-2xl object-cover border-2 border-pink-400/40 shadow-sm"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                    {isUnread && (
+                                      <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-pink-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center border border-pink-400/30 shadow-sm bg-pink-500/15 dark:bg-pink-500/30 text-pink-600 dark:text-pink-300`}>
+                                    <Icon className="h-5 w-5" />
+                                  </div>
+                                )}
+                              </div>
 
-{/* Favorites */}
-<Tooltip>
-  <TooltipTrigger asChild>
-    <Link to="/favorites" className="relative group shrink-0">
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group"
-      >
-        <Heart className="h-4 w-4 group-hover:scale-110 transition-transform text-[#2a655f] dark:text-[#3a8a82] group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82]" />
-        {favoritesCount > 0 && (
-          <Badge 
-            className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white border-2 border-background animate-pulse"
-            style={{
-              background: 'linear-gradient(135deg, #2a655f, #3a8a82)',
-              boxShadow: '0 0 20px rgba(42, 101, 95, 0.5)'
-            }}
-          >
-            {favoritesCount > 99 ? '99+' : favoritesCount}
-          </Badge>
-        )}
-      </Button>
-    </Link>
-  </TooltipTrigger>
-  <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
-    <p>
-      {app.lang === "ar" ? "المفضلة" : "Favorites"}
-      {favoritesCount > 0 && ` (${favoritesCount})`}
-    </p>
-  </TooltipContent>
-</Tooltip>
-            {/* Cart */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-sm ${isUnread ? "font-black text-slate-950 dark:text-white" : "font-bold text-slate-900 dark:text-slate-200"}`}>
+                                      {notification.title_ar || notification.title_en || "إشعار"}
+                                    </p>
+                                    <p className={`text-xs mt-1 line-clamp-2 ${isUnread ? "text-slate-800 dark:text-slate-200 font-semibold" : "text-slate-600 dark:text-slate-400 font-medium"}`}>
+                                      {notification.body_ar || notification.body_en || notification.message}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <span className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-1 font-bold">
+                                        <Clock className="h-3 w-3 text-pink-500" />
+                                        {formatTime(notification.created_at)}
+                                      </span>
+                                      {notification.type && (
+                                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-600 dark:text-pink-300 font-extrabold border border-pink-400/30">
+                                          {isRTL ? config.ar : config.en}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex-shrink-0 flex items-center gap-1">
+                                    {isUnread && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 text-pink-600 dark:text-pink-300 transition-all opacity-0 group-hover:opacity-100 cursor-pointer border border-pink-400/30"
+                                        onClick={(e) => handleMarkAsRead(notification.id, e)}
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                                        >
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="rounded-2xl p-1.5 min-w-[170px] border border-pink-400/40 shadow-xl bg-white dark:bg-slate-900">
+                                        {isUnread && (
+                                          <DropdownMenuItem
+                                            className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 hover:bg-pink-500/15 text-slate-900 dark:text-slate-100"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleMarkAsRead(notification.id, e);
+                                            }}
+                                          >
+                                            <Check className="h-4 w-4 text-pink-500" />
+                                            {app.lang === "ar" ? "تحديد كمقروء" : "Mark as read"}
+                                          </DropdownMenuItem>
+                                        )}
+                                        
+                                        <DropdownMenuItem
+                                          className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            try {
+                                              await supabase
+                                                .from('notifications')
+                                                .delete()
+                                                .eq('id', notification.id);
+                                              await refetchNotifications();
+                                              toast.success(app.lang === "ar" ? "تم حذف الإشعار" : "Notification deleted");
+                                            } catch (error) {
+                                              console.error('Error deleting notification:', error);
+                                              toast.error(app.lang === "ar" ? "حدث خطأ أثناء الحذف" : "Error deleting notification");
+                                            }
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                          {app.lang === "ar" ? "حذف" : "Delete"}
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {notifications.length > 0 && (
+                    <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t border-pink-400/30 dark:border-pink-500/50 p-3.5 flex items-center justify-between">
+                      <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">
+                        {notifications.length} {app.lang === "ar" ? "إشعار" : "notifications"}
+                        {unreadNotificationsCount > 0 && ` · ${unreadNotificationsCount} ${app.lang === "ar" ? "غير مقروء" : "unread"}`}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs font-bold rounded-xl text-pink-600 dark:text-pink-300 hover:bg-pink-500/15 transition-all cursor-pointer border border-pink-400/30"
+                        onClick={() => setNotificationsOpen(false)}
+                      >
+                        {app.lang === "ar" ? "إغلاق" : "Close"}
+                      </Button>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {/* Favorites - ✅ مع لون وردي وحركة نبض */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link to="/favorites" className="relative group shrink-0">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-9 w-9 rounded-xl hover:bg-pink-500/10 dark:hover:bg-pink-500/20 transition group"
+                  >
+                    <Heart className={cn(
+                      "h-4 w-4 group-hover:scale-110 transition-transform",
+                      favoritesCount > 0 
+                        ? "text-pink-500 fill-pink-500 animate-heartbeat" 
+                        : "text-[#2a655f] dark:text-[#3a8a82] group-hover:text-pink-500"
+                    )} />
+                    {favoritesCount > 0 && (
+                      <Badge 
+                        className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white border-2 border-background animate-pulse"
+                        style={{
+                          background: 'linear-gradient(135deg, #ec4899, #f472b6)',
+                          boxShadow: '0 0 20px rgba(244,114,182,0.5)'
+                        }}
+                      >
+                        {favoritesCount > 99 ? '99+' : favoritesCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
+                <p>
+                  {app.lang === "ar" ? "❤️ المفضلة" : "❤️ Favorites"}
+                  {favoritesCount > 0 && ` (${favoritesCount})`}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Cart - ✅ مع حركة ارتداد عند وجود منتجات */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link to="/cart" className="relative group shrink-0">
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition">
-                    <ShoppingBag className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                  <Button variant="ghost" size="icon" className={cn(
+                    "h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition",
+                    cartItemsCount > 0 && "animate-cart-bounce"
+                  )}>
+                    <ShoppingCart className="h-4 w-4 group-hover:scale-110 transition-transform" />
                     {cartItemsCount > 0 && (
-                      <Badge className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] bg-[#2a655f] text-white border-2 border-background">
+                      <Badge className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] text-white border-2 border-background"
+                        style={{
+                          background: 'linear-gradient(135deg, #2a655f, #3a8a82)',
+                          boxShadow: '0 0 20px rgba(42,101,95,0.5)'
+                        }}
+                      >
                         {cartItemsCount > 99 ? '99+' : cartItemsCount}
                       </Badge>
                     )}
@@ -1217,248 +1256,233 @@ async function handleNotificationClick(notification: any) {
               </TooltipContent>
             </Tooltip>
 
-          {/* User Menu - Ultimate Luxury Version */}
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-[#2a655f]/20 dark:hover:bg-[#2a655f]/30 transition-all duration-300 group relative shrink-0 border border-[#2a655f]/30 shadow-[0_0_15px_rgba(42,101,95,0.15)] hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] cursor-pointer overflow-hidden p-0">
-            
-            {/* لمعان خفيف عند مرور الماوس */}
-            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none z-10" />
-            
-            {/* إذا كان المستخدم مسجل دخول وله صورة شخصية، تظهر صورته بالدائرة الخارجية مباشرة */}
-            {app.user && profile?.avatar_url ? (
-              <div className="h-full w-full rounded-2xl overflow-hidden relative">
-                <img 
-                  src={profile.avatar_url} 
-                  alt={app.user.name} 
-                  className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            ) : (
-              <User className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300 relative z-10 animate-icon-dance" />
-            )}
-            
-            {app.user && (
-              <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-background animate-ping z-20" />
-            )}
-            {app.user && (
-              <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background z-20 shadow-[0_0_8px_rgba(16,185,129,1)]" />
-            )}
-          </Button>
-        </DropdownMenuTrigger>
+            {/* User Menu */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-[#2a655f]/20 dark:hover:bg-[#2a655f]/30 transition-all duration-300 group relative shrink-0 border border-[#2a655f]/30 shadow-[0_0_15px_rgba(42,101,95,0.15)] hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] cursor-pointer overflow-hidden p-0">
+                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none z-10" />
+                      
+                      {app.user && profile?.avatar_url ? (
+                        <div className="h-full w-full rounded-2xl overflow-hidden relative">
+                          <img 
+                            src={profile.avatar_url} 
+                            alt={app.user.name} 
+                            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <User className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300 relative z-10 animate-icon-dance" />
+                      )}
+                      
+                      {app.user && (
+                        <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-background animate-ping z-20" />
+                      )}
+                      {app.user && (
+                        <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background z-20 shadow-[0_0_8px_rgba(16,185,129,1)]" />
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-80 rounded-[28px] p-0 border border-[#2a655f]/30 dark:border-[#2a655f]/40 shadow-[0_20px_50px_rgba(23,61,56,0.3)] overflow-hidden bg-gradient-to-b from-white via-emerald-50/20 to-white dark:from-slate-950 dark:via-[#173d38]/30 dark:to-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300">
-          
-          <style>{`
-            @keyframes icon-dance-glow {
-              0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(52,211,153,0.5)); }
-              50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(52,211,153,0.9)); }
-            }
-            .animate-icon-dance {
-              animation: icon-dance-glow 2s ease-in-out infinite;
-            }
+                  <DropdownMenuContent align="end" className="w-80 rounded-[28px] p-0 border border-[#2a655f]/30 dark:border-[#2a655f]/40 shadow-[0_20px_50px_rgba(23,61,56,0.3)] overflow-hidden bg-gradient-to-b from-white via-emerald-50/20 to-white dark:from-slate-950 dark:via-[#173d38]/30 dark:to-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300">
+                    
+                    <style>{`
+                      @keyframes icon-dance-glow {
+                        0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(52,211,153,0.5)); }
+                        50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(52,211,153,0.9)); }
+                      }
+                      .animate-icon-dance {
+                        animation: icon-dance-glow 2s ease-in-out infinite;
+                      }
+                      @keyframes pulse-slow {
+                        0%, 100% { opacity: 0.4; transform: scale(1); }
+                        50% { opacity: 0.8; transform: scale(1.05); }
+                      }
+                      .animate-pulse-slow {
+                        animation: pulse-slow 4s ease-in-out infinite;
+                      }
+                    `}</style>
 
-            @keyframes pulse-slow {
-              0%, 100% { opacity: 0.4; transform: scale(1); }
-              50% { opacity: 0.8; transform: scale(1.05); }
-            }
-            .animate-pulse-slow {
-              animation: pulse-slow 4s ease-in-out infinite;
-            }
-          `}</style>
+                    {app.user ? (
+                      <>
+                        <div className="bg-gradient-to-br from-[#173d38]/30 via-[#2a655f]/20 to-[#3a8a82]/20 dark:from-[#173d38]/60 dark:via-[#2a655f]/40 dark:to-slate-900 p-5 border-b border-[#2a655f]/30 relative overflow-hidden">
+                          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-400/20 blur-2xl animate-pulse-slow pointer-events-none" />
+                          <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-[#3a8a82]/20 blur-2xl animate-pulse-slow pointer-events-none" style={{ animationDelay: '2s' }} />
 
-          {app.user ? (
-            <>
-              {/* رأس المنيو - كارد فاخر مع توهج متحرك */}
-              <div className="bg-gradient-to-br from-[#173d38]/30 via-[#2a655f]/20 to-[#3a8a82]/20 dark:from-[#173d38]/60 dark:via-[#2a655f]/40 dark:to-slate-900 p-5 border-b border-[#2a655f]/30 relative overflow-hidden">
-                
-                {/* دوائر ضوئية خلفية نابضة */}
-                <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-400/20 blur-2xl animate-pulse-slow pointer-events-none" />
-                <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-[#3a8a82]/20 blur-2xl animate-pulse-slow pointer-events-none" style={{ animationDelay: '2s' }} />
+                          <div className="flex items-center gap-4 relative z-10">
+                            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-[#2a655f]/40 overflow-hidden flex-shrink-0 ring-4 ring-white/60 dark:ring-slate-800/80 transform hover:scale-105 transition-transform duration-300">
+                              {profile?.avatar_url ? (
+                                <img 
+                                  src={profile.avatar_url} 
+                                  alt={app.user.name} 
+                                  className="h-full w-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-white font-black drop-shadow-md">
+                                  {app.user.name?.charAt(0).toUpperCase() || 'U'}
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-black text-base text-slate-900 dark:text-white truncate drop-shadow-sm">
+                                  {app.user.name}
+                                </p>
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate font-semibold mt-0.5 tracking-wide" dir="ltr">
+                                {profile?.phone || app.user.phone || (app.lang === 'ar' ? "رقم غير متاح" : "No phone")}
+                              </p>
+                            </div>
+                            
+                            <Badge variant="outline" className="text-[10px] border-emerald-400/60 text-emerald-600 dark:text-emerald-300 bg-emerald-500/15 flex-shrink-0 font-black px-2.5 py-1 rounded-full shadow-sm animate-pulse">
+                              {isAdmin ? (app.lang === 'ar' ? '⭐ أدمن' : '⭐ Admin') : 
+                               isSeller ? (app.lang === 'ar' ? '🛍️ بائع' : '🛍️ Seller') : 
+                               (app.lang === 'ar' ? '👤 عميل' : '👤 Customer')}
+                            </Badge>
+                          </div>
+                          
+                          <div className="mt-4 pt-3 border-t border-[#2a655f]/25 flex items-center justify-between relative z-10">
+                            <Link 
+                              to="/settings" 
+                              className="text-xs text-[#2a655f] dark:text-[#3a8a82] hover:text-pink-500 flex items-center gap-1.5 font-bold transition-colors group/link"
+                            >
+                              <div className="h-6 w-6 rounded-xl bg-[#2a655f]/15 flex items-center justify-center group-hover/link:bg-pink-500/20 group-hover/link:scale-110 transition-all shadow-inner">
+                                <Camera className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] group-hover/link:text-pink-500" />
+                              </div>
+                              {profile?.avatar_url 
+                                ? (app.lang === "ar" ? "تغيير الصورة الشخصية" : "Change photo")
+                                : (app.lang === "ar" ? "إضافة صورة شخصية" : "Add photo")
+                              }
+                            </Link>
+                            <span className="text-[10px] text-muted-foreground font-bold bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full">
+                              {app.lang === "ar" ? "عضو منذ" : "Since"} {new Date(app.user.created_at || Date.now()).getFullYear()}
+                            </span>
+                          </div>
+                          
+                          {app.user.address && (
+                            <div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground font-medium relative z-10">
+                              <MapPin className="h-3.5 w-3.5 text-[#2a655f] flex-shrink-0 animate-bounce" />
+                              <span className="truncate">{app.user.address}</span>
+                            </div>
+                          )}
+                        </div>
 
-                <div className="flex items-center gap-4 relative z-10">
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-[#2a655f]/40 overflow-hidden flex-shrink-0 ring-4 ring-white/60 dark:ring-slate-800/80 transform hover:scale-105 transition-transform duration-300">
-                    {profile?.avatar_url ? (
-                      <img 
-                        src={profile.avatar_url} 
-                        alt={app.user.name} 
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
+                        <div className="p-2.5 space-y-1.5">
+                          <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+                            <Link to="/orders" className="flex items-center gap-3.5 w-full">
+                              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm border border-[#2a655f]/20">
+                                <Package className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-emerald-300 transition-colors">
+                                  {app.lang === "ar" ? "📦 طلباتي" : "📦 My Orders"}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground font-medium">
+                                  {app.lang === "ar" ? "تتبع حالة الطلبات" : "Track orders"}
+                                </p>
+                              </div>
+                              <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                            </Link>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+                            <Link to="/settings" className="flex items-center gap-3.5 w-full">
+                              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 shadow-sm border border-[#2a655f]/20">
+                                <Settings className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-emerald-300 transition-colors">
+                                  {app.lang === "ar" ? "⚙️ الإعدادات" : "⚙️ Settings"}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground font-medium">
+                                  {app.lang === "ar" ? "تعديل الملف الشخصي" : "Edit profile"}
+                                </p>
+                              </div>
+                              <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                            </Link>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuSeparator className="my-2 bg-[#2a655f]/20" />
+
+                          <DropdownMenuItem onClick={app.logout} className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/20 dark:focus:bg-[#173d38]/50 dark:hover:bg-[#173d38]/50 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+                            <div className="flex items-center gap-3.5 w-full">
+                              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f]/30 to-[#173d38]/40 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300 shadow-sm border border-[#2a655f]/40">
+                                <LogOut className="h-5 w-5 text-[#2a655f] dark:text-emerald-300" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-black text-[#2a655f] dark:text-emerald-300 group-hover:text-emerald-600 transition-colors">
+                                  {t("logout")}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground font-medium">
+                                  {app.lang === "ar" ? "تسجيل الخروج الآمن" : "Sign out securely"}
+                                </p>
+                              </div>
+                            </div>
+                          </DropdownMenuItem>
+                        </div>
+
+                        <div className="px-5 py-3 bg-slate-50/90 dark:bg-slate-900/60 border-t border-[#2a655f]/25">
+                          <div className="flex items-center justify-between text-xs font-bold text-muted-foreground">
+                            <span>
+                              {app.lang === "ar" ? "الحالة" : "Status"}: <strong className="text-emerald-600 dark:text-emerald-400">آمن ومحمي</strong>
+                            </span>
+                            <span className="flex items-center gap-1.5 bg-pink-500/10 px-2.5 py-1 rounded-full border border-pink-400/30">
+                              <span className="h-2 w-2 rounded-full bg-pink-500 animate-ping" />
+                              <span className="text-pink-600 dark:text-pink-300 font-black">{app.lang === "ar" ? "متصل الآن" : "Online"}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </>
                     ) : (
-                      <span className="text-white font-black drop-shadow-md">
-                        {app.user.name?.charAt(0).toUpperCase() || 'U'}
-                      </span>
+                      <>
+                        <div className="p-7 text-center border-b border-[#2a655f]/20 bg-gradient-to-b from-[#2a655f]/10 via-emerald-50/10 to-transparent">
+                          <div className="h-18 w-18 rounded-3xl bg-[#2a655f]/15 border-2 border-[#2a655f]/30 flex items-center justify-center mx-auto mb-3.5 shadow-xl animate-icon-dance">
+                            <User className="h-9 w-9 text-[#2a655f]" />
+                          </div>
+                          <p className="font-black text-lg text-slate-900 dark:text-white">
+                            {app.lang === "ar" ? "أهلاً بك" : "Welcome"}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1 font-medium">
+                            {app.lang === "ar" ? "سجل الدخول للميزات الفاخرة" : "Sign in to access luxury features"}
+                          </p>
+                        </div>
+                        
+                        <div className="p-3 space-y-2">
+                          <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3.5 px-4 transition-all group">
+                            <Link to="/auth/$mode" params={{ mode: "login" }} className="flex items-center gap-3.5 w-full">
+                              <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <LogIn className="h-5 w-5 text-[#2a655f]" />
+                              </div>
+                              <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("login")}</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3.5 px-4 transition-all group">
+                            <Link to="/auth/$mode" params={{ mode: "register" }} className="flex items-center gap-3.5 w-full">
+                              <div className="h-10 w-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <UserPlus className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                              </div>
+                              <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("register")}</span>
+                            </Link>
+                          </DropdownMenuItem>
+                        </div>
+                      </>
                     )}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-black text-base text-slate-900 dark:text-white truncate drop-shadow-sm">
-                        {app.user.name}
-                      </p>
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate font-semibold mt-0.5 tracking-wide" dir="ltr">
-                      {profile?.phone || app.user.phone || (app.lang === 'ar' ? "رقم غير متاح" : "No phone")}
-                    </p>
-                  </div>
-                  
-                  <Badge variant="outline" className="text-[10px] border-emerald-400/60 text-emerald-600 dark:text-emerald-300 bg-emerald-500/15 flex-shrink-0 font-black px-2.5 py-1 rounded-full shadow-sm animate-pulse">
-                    {isAdmin ? (app.lang === 'ar' ? '⭐ أدمن' : '⭐ Admin') : 
-                     isSeller ? (app.lang === 'ar' ? '🛍️ بائع' : '🛍️ Seller') : 
-                     (app.lang === 'ar' ? '👤 عميل' : '👤 Customer')}
-                  </Badge>
-                </div>
-                
-                <div className="mt-4 pt-3 border-t border-[#2a655f]/25 flex items-center justify-between relative z-10">
-                  <Link 
-                    to="/settings" 
-                    className="text-xs text-[#2a655f] dark:text-[#3a8a82] hover:text-emerald-500 flex items-center gap-1.5 font-bold transition-colors group/link"
-                  >
-                    <div className="h-6 w-6 rounded-xl bg-[#2a655f]/15 flex items-center justify-center group-hover/link:bg-[#2a655f]/30 group-hover/link:scale-110 transition-all shadow-inner">
-                      <Camera className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] animate-icon-dance" />
-                    </div>
-                    {profile?.avatar_url 
-                      ? (app.lang === "ar" ? "تغيير الصورة الشخصية" : "Change photo")
-                      : (app.lang === "ar" ? "إضافة صورة شخصية" : "Add photo")
-                    }
-                  </Link>
-                  <span className="text-[10px] text-muted-foreground font-bold bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full">
-                    {app.lang === "ar" ? "عضو منذ" : "Since"} {new Date(app.user.created_at || Date.now()).getFullYear()}
-                  </span>
-                </div>
-                
-                {app.user.address && (
-                  <div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground font-medium relative z-10">
-                    <MapPin className="h-3.5 w-3.5 text-[#2a655f] flex-shrink-0 animate-bounce" />
-                    <span className="truncate">{app.user.address}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* القوائم والأزرار الداخلية مع ألوان السستم حصرياً وبدون برتقالي */}
-              <div className="p-2.5 space-y-1.5">
-                
-                {/* طلباتي */}
-                <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
-                  <Link to="/orders" className="flex items-center gap-3.5 w-full">
-                    <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm border border-[#2a655f]/20">
-                      <Package className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82] animate-icon-dance" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-emerald-300 transition-colors">
-                        {app.lang === "ar" ? "📦 طلباتي الحالية والسابقة" : "📦 My Orders"}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        {app.lang === "ar" ? "تتبع حالة الطلبات والشحنات" : "Track orders & shipments"}
-                      </p>
-                    </div>
-                    <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                  </Link>
-                </DropdownMenuItem>
-
-           
-
-                {/* الإعدادات الشخصية */}
-                <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
-                  <Link to="/settings" className="flex items-center gap-3.5 w-full">
-                    <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 shadow-sm border border-[#2a655f]/20">
-                      <Settings className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82] animate-icon-dance" style={{ animationDelay: '0.8s' }} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-emerald-300 transition-colors">
-                        {app.lang === "ar" ? "⚙️ الإعدادات الشخصية" : "⚙️ Personal Settings"}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        {app.lang === "ar" ? "تعديل الملف الشخصي وكلمة المرور" : "Edit profile & security"}
-                      </p>
-                    </div>
-                    <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                  </Link>
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator className="my-2 bg-[#2a655f]/20" />
-
-                {/* زر تسجيل الخروج متناسق مع تدرجات السستم */}
-                <DropdownMenuItem onClick={app.logout} className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/20 dark:focus:bg-[#173d38]/50 dark:hover:bg-[#173d38]/50 cursor-pointer py-3 px-3.5 group transition-all duration-300">
-                  <div className="flex items-center gap-3.5 w-full">
-                    <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f]/30 to-[#173d38]/40 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300 shadow-sm border border-[#2a655f]/40">
-                      <LogOut className="h-5 w-5 text-[#2a655f] dark:text-emerald-300 animate-icon-dance" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-black text-[#2a655f] dark:text-emerald-300 group-hover:text-emerald-600 transition-colors">
-                        {t("logout")}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        {app.lang === "ar" ? "تسجيل الخروج الآمن من الحساب" : "Sign out securely"}
-                      </p>
-                    </div>
-                  </div>
-                </DropdownMenuItem>
-              </div>
-
-              {/* تذييل المنيو */}
-              <div className="px-5 py-3 bg-slate-50/90 dark:bg-slate-900/60 border-t border-[#2a655f]/25">
-                <div className="flex items-center justify-between text-xs font-bold text-muted-foreground">
-                  <span>
-                    {app.lang === "ar" ? "الحالة" : "Status"}: <strong className="text-emerald-600 dark:text-emerald-400">آمن ومحمي</strong>
-                  </span>
-                  <span className="flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                    <span className="text-emerald-600 dark:text-emerald-400 font-black">{app.lang === "ar" ? "متصل الآن" : "Online"}</span>
-                  </span>
-                </div>
-              </div>
-            </> ) : (
-            <>
-              {/* حالة عدم تسجيل الدخول */}
-              <div className="p-7 text-center border-b border-[#2a655f]/20 bg-gradient-to-b from-[#2a655f]/10 via-emerald-50/10 to-transparent">
-                <div className="h-18 w-18 rounded-3xl bg-[#2a655f]/15 border-2 border-[#2a655f]/30 flex items-center justify-center mx-auto mb-3.5 shadow-xl animate-icon-dance">
-                  <User className="h-9 w-9 text-[#2a655f]" />
-                </div>
-                <p className="font-black text-lg text-slate-900 dark:text-white">
-                  {app.lang === "ar" ? "أهلاً بك في عالم التسوق" : "Welcome to Market"}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 font-medium">
-                  {app.lang === "ar" ? "سجل الدخول لاستعراض الميزات الفاخرة" : "Sign in to access luxury features"}
-                </p>
-              </div>
-              
-              <div className="p-3 space-y-2">
-                <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3.5 px-4 transition-all group">
-                  <Link to="/auth/$mode" params={{ mode: "login" }} className="flex items-center gap-3.5 w-full">
-                    <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <LogIn className="h-5 w-5 text-[#2a655f] animate-icon-dance" />
-                    </div>
-                    <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("login")}</span>
-                  </Link>
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3.5 px-4 transition-all group">
-                  <Link to="/auth/$mode" params={{ mode: "register" }} className="flex items-center gap-3.5 w-full">
-                    <div className="h-10 w-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <UserPlus className="h-5 w-5 text-emerald-600 dark:text-emerald-400 animate-icon-dance" style={{ animationDelay: '0.5s' }} />
-                    </div>
-                    <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("register")}</span>
-                  </Link>
-                </DropdownMenuItem>
-              </div>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </TooltipTrigger>
-    <TooltipContent side="bottom" className="rounded-2xl bg-[#173d38] text-white border border-[#2a655f]/50 px-4 py-2 shadow-xl font-bold">
-      <p>{app.user ? (app.lang === "ar" ? "حسابي الفاخر" : "My Account") : (app.lang === "ar" ? "تسجيل الدخول" : "Login")}</p>
-    </TooltipContent>
-  </Tooltip>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="rounded-2xl bg-[#173d38] text-white border border-[#2a655f]/50 px-4 py-2 shadow-xl font-bold">
+                <p>{app.user ? (app.lang === "ar" ? "حسابي" : "My Account") : (app.lang === "ar" ? "تسجيل الدخول" : "Login")}</p>
+              </TooltipContent>
+            </Tooltip>
 
             {/* Role Button */}
             {(() => {
@@ -1523,16 +1547,15 @@ async function handleNotificationClick(notification: any) {
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && doSearch()}
               placeholder={t("search_placeholder")}
-              className="ps-9 h-10 w-full bg-muted/50 border-[#2a655f]/20 dark:border-[#2a655f]/30 rounded-xl focus-visible:border-[#2a655f]/60 transition text-sm"
+              className="ps-9 h-10 w-full bg-muted/50 border-[#2a655f]/20 dark:border-[#2a655f]/30 rounded-xl focus-visible:border-pink-400 transition text-sm"
             />
           </div>
           
-          {/* ✅ ✅ ✅ زر البحث الصوتي للموبايل */}
           <VoiceSearch
             onResult={handleVoiceSearch}
             lang={isRTL ? "ar-SA" : "en-US"}
             buttonSize="sm"
-            className="border-[#2a655f]/20 hover:border-[#2a655f]/40"
+            className="border-[#2a655f]/20 hover:border-pink-400 transition-colors duration-300"
           />
           
           <Button 
@@ -1545,10 +1568,10 @@ async function handleNotificationClick(notification: any) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 flex items-center justify-center group relative">
+              <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-pink-400/50 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 flex items-center justify-center group relative">
                 <MapPin className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
                 {gov !== "all" && (
-                  <span className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full bg-[#2a655f] ring-2 ring-background animate-pulse" />
+                  <span className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full bg-pink-500 ring-2 ring-background animate-pulse" />
                 )}
               </button>
             </DropdownMenuTrigger>
@@ -1570,171 +1593,157 @@ async function handleNotificationClick(notification: any) {
           </DropdownMenu>
         </div>
 
-{/* ✅ Category Strip - عرض جميع التصنيفات بالكامل من قاعدة البيانات مع تحكم يدوي وحركة مستمرة */}
-<div className="relative border-t border-[#2a655f]/30 bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#173d38] backdrop-blur-md overflow-hidden py-3 shadow-2xl">
-  
-  {/* خلفية ضوئية متحركة ونابضة */}
-  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-200/20 via-transparent to-transparent animate-pulse pointer-events-none" />
-  
-  {/* خط إشعاعي متحرك في الأعلى */}
-  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-pink-200 to-transparent shadow-[0_0_12px_rgba(244,114,182,0.6)]" />
+        {/* ✅ Category Strip */}
+        <div className="relative border-t border-[#2a655f]/30 bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#173d38] backdrop-blur-md overflow-hidden py-3 shadow-2xl">
+          
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-200/20 via-transparent to-transparent animate-pulse pointer-events-none" />
+          
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-pink-200 to-transparent shadow-[0_0_12px_rgba(244,114,182,0.6)]" />
 
-  <style>{`
-    @keyframes marquee-scroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    .marquee-track {
-      display: flex;
-      width: max-content;
-      animation: marquee-scroll 35s linear infinite;
-      will-change: transform;
-    }
-    .marquee-track.paused {
-      animation-play-state: paused !important;
-    }
-    
-    /* لمعان متحرك (Shimmer) للعروض */
-    @keyframes shimmerAnimation {
-      100% { transform: translateX(200%); }
-    }
-    .animate-shimmer {
-      animation: shimmerAnimation 2s infinite;
-    }
+          <style>{`
+            @keyframes marquee-scroll {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .marquee-track {
+              display: flex;
+              width: max-content;
+              animation: marquee-scroll 35s linear infinite;
+              will-change: transform;
+            }
+            .marquee-track.paused {
+              animation-play-state: paused !important;
+            }
+            
+            @keyframes shimmerAnimation {
+              100% { transform: translateX(200%); }
+            }
+            .animate-shimmer {
+              animation: shimmerAnimation 2s infinite;
+            }
 
-    /* حركة مميزة جداً لأيقونة العروض لتلفت انتباه اليوزر بقوة */
-    @keyframes offer-icon-dance {
-      0%, 100% { transform: scale(1) rotate(0deg); }
-      25% { transform: scale(1.25) rotate(-10deg); }
-      50% { transform: scale(1.1) rotate(10deg); }
-      75% { transform: scale(1.25) rotate(-5deg); }
-    }
-    .offer-icon-special {
-      animation: offer-icon-dance 1.2s ease-in-out infinite;
-    }
+            @keyframes offer-icon-dance {
+              0%, 100% { transform: scale(1) rotate(0deg); }
+              25% { transform: scale(1.25) rotate(-10deg); }
+              50% { transform: scale(1.1) rotate(10deg); }
+              75% { transform: scale(1.25) rotate(-5deg); }
+            }
+            .offer-icon-special {
+              animation: offer-icon-dance 1.2s ease-in-out infinite;
+            }
 
-    /* حركة عادية لباقي الأيقونات */
-    @keyframes float-icon {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-4px) rotate(2deg); }
-    }
-    .float-icon {
-      animation: float-icon 3s ease-in-out infinite;
-    }
+            @keyframes float-icon {
+              0%, 100% { transform: translateY(0px) rotate(0deg); }
+              50% { transform: translateY(-4px) rotate(2deg); }
+            }
+            .float-icon {
+              animation: float-icon 3s ease-in-out infinite;
+            }
 
-    /* تصميم شريط التمرير السفلي للتحكم اليدوي */
-    .category-scrollbar::-webkit-scrollbar {
-      height: 4px;
-    }
-    .category-scrollbar::-webkit-scrollbar-track {
-      background: rgba(42, 101, 95, 0.2);
-      border-radius: 10px;
-      margin: 0 16px;
-    }
-    .category-scrollbar::-webkit-scrollbar-thumb {
-      background: #f9a8d4;
-      border-radius: 10px;
-    }
-    .category-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #fbcfe8;
-    }
-  `}</style>
+            .category-scrollbar::-webkit-scrollbar {
+              height: 4px;
+            }
+            .category-scrollbar::-webkit-scrollbar-track {
+              background: rgba(42, 101, 95, 0.2);
+              border-radius: 10px;
+              margin: 0 16px;
+            }
+            .category-scrollbar::-webkit-scrollbar-thumb {
+              background: #f9a8d4;
+              border-radius: 10px;
+            }
+            .category-scrollbar::-webkit-scrollbar-thumb:hover {
+              background: #fbcfe8;
+            }
+          `}</style>
 
-  {/* حاوية التحكم اليدوي والتمرير الأفقي مع إيقاف الحركة عند المرور بالماوس */}
-  <div 
-    className="mx-auto max-w-7xl px-4 overflow-x-auto category-scrollbar select-none pb-2" 
-    dir="ltr"
-    onMouseEnter={(e) => {
-      const trackElem = e.currentTarget.querySelector(".marquee-track");
-      if (trackElem) trackElem.classList.add("paused");
-    }}
-    onMouseLeave={(e) => {
-      const trackElem = e.currentTarget.querySelector(".marquee-track");
-      if (trackElem) trackElem.classList.remove("paused");
-    }}
-  >
-    
-    <div className="marquee-track gap-3 py-1.5">
-      
-      {/* عرض جميع التصنيفات بالكامل من قاعدة البيانات وتكرارها مرتين لضمان استمرار السكرول */}
-      {[...categories, ...categories].map((c: any, index: number) => {
-        const Icon = getCategoryIcon(c.icon);
-        const totalCategories = categories.length;
-        const originalIndex = index % totalCategories;
-        const isRtl = app.lang === "ar";
-        
-        // التحقق الذكي من العروض بناءً على الـ slug أو الأسماء القادمة من قاعدة البيانات حصرياً
-        const isOffer = c.slug === "offers" || c.slug === "deals" || c.name_ar?.includes("عروض") || c.name_en?.toLowerCase().includes("offers") || c.name_en?.toLowerCase().includes("deals");
-        
-        if (isOffer) {
-          return (
-            <Link
-              key={`${c.id}-${index}`}
-              to="/category/$slug"
-              params={{ slug: c.slug }}
-              className="group relative shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl font-bold text-xs transition-all duration-300 bg-gradient-to-r from-pink-100 via-pink-200 to-pink-300 text-pink-800 shadow-[0_0_25px_rgba(244,114,182,0.3)] hover:scale-105 hover:-translate-y-1 cursor-pointer overflow-hidden border-2 border-pink-200 animate-pulse"
-            >
-              {/* ✨ لمعان متحرك لا يتوقف */}
-              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/70 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
-              
-              {/* أيقونة العروض بحركة مميزة جداً وخاصة */}
-              <div className="relative flex items-center justify-center h-8 w-8 rounded-full bg-pink-300/30 border-2 border-pink-300 shadow-lg overflow-hidden offer-icon-special">
-                {c.image_url ? (
-                  <img src={c.image_url} alt="" className="h-full w-full object-cover rounded-full" />
-                ) : (
-                  <Icon className="h-4 w-4 text-pink-600" />
-                )}
-              </div>
-
-              {/* الاسم من قاعدة البيانات حصرياً */}
-              <div className="flex flex-col relative z-10">
-                <span className="whitespace-nowrap font-black text-sm tracking-wide text-pink-800 drop-shadow-md" dir={isRtl ? "rtl" : "ltr"}>
-                  {isRtl ? c.name_ar : (c.name_en || c.name_ar)}
-                </span>
-                <span className="text-[9px] text-pink-500 font-extrabold uppercase tracking-widest animate-bounce">
-                  {isRtl ? "🌸 عروض رائعة" : "🌸 SPECIAL OFFERS"}
-                </span>
-              </div>
-
-              <span className="relative z-10 ml-2 text-[9px] uppercase bg-white text-pink-500 px-2.5 py-1 rounded-full font-black tracking-wider shadow-lg border border-pink-200 animate-bounce">
-                {isRtl ? "💕 تخفيضات" : "💕 SALE"}
-              </span>
-            </Link>
-          );
-        }
-        
-        // الأقسام العادية (جميعها بدون استثناء)
-        return (
-          <Link
-            key={`${c.id}-${index}`}
-            to="/category/$slug"
-            params={{ slug: c.slug }}
-            className="group relative shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl font-medium text-xs transition-all duration-300 bg-white/10 hover:bg-emerald-500/20 text-white shadow-lg border border-white/15 hover:border-emerald-400 hover:scale-105 hover:-translate-y-0.5 cursor-pointer backdrop-blur-sm"
+          <div 
+            className="mx-auto max-w-7xl px-4 overflow-x-auto category-scrollbar select-none pb-2" 
+            dir="ltr"
+            onMouseEnter={(e) => {
+              const trackElem = e.currentTarget.querySelector(".marquee-track");
+              if (trackElem) trackElem.classList.add("paused");
+            }}
+            onMouseLeave={(e) => {
+              const trackElem = e.currentTarget.querySelector(".marquee-track");
+              if (trackElem) trackElem.classList.remove("paused");
+            }}
           >
-            <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
             
-            <div className="relative flex items-center justify-center h-7 w-7 rounded-full bg-black/30 border border-white/25 shadow-inner overflow-hidden group-hover:scale-110 transition-transform float-icon">
-              {c.image_url ? (
-                <img src={c.image_url} alt="" className="h-full w-full object-cover rounded-full" />
-              ) : (
-                <Icon className="h-3.5 w-3.5 text-emerald-300 group-hover:text-white transition-colors" />
-              )}
+            <div className="marquee-track gap-3 py-1.5">
+              
+              {[...categories, ...categories].map((c: any, index: number) => {
+                const Icon = getCategoryIcon(c.icon);
+                const totalCategories = categories.length;
+                const originalIndex = index % totalCategories;
+                const isRtl = app.lang === "ar";
+                
+                const isOffer = c.slug === "offers" || c.slug === "deals" || c.name_ar?.includes("عروض") || c.name_en?.toLowerCase().includes("offers") || c.name_en?.toLowerCase().includes("deals");
+                
+                if (isOffer) {
+                  return (
+                    <Link
+                      key={`${c.id}-${index}`}
+                      to="/category/$slug"
+                      params={{ slug: c.slug }}
+                      className="group relative shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl font-bold text-xs transition-all duration-300 bg-gradient-to-r from-pink-100 via-pink-200 to-pink-300 text-pink-800 shadow-[0_0_25px_rgba(244,114,182,0.3)] hover:scale-105 hover:-translate-y-1 cursor-pointer overflow-hidden border-2 border-pink-200 animate-pulse"
+                    >
+                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/70 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
+                      
+                      <div className="relative flex items-center justify-center h-8 w-8 rounded-full bg-pink-300/30 border-2 border-pink-300 shadow-lg overflow-hidden offer-icon-special">
+                        {c.image_url ? (
+                          <img src={c.image_url} alt="" className="h-full w-full object-cover rounded-full" />
+                        ) : (
+                          <Icon className="h-4 w-4 text-pink-600" />
+                        )}
+                      </div>
+
+                      <div className="flex flex-col relative z-10">
+                        <span className="whitespace-nowrap font-black text-sm tracking-wide text-pink-800 drop-shadow-md" dir={isRtl ? "rtl" : "ltr"}>
+                          {isRtl ? c.name_ar : (c.name_en || c.name_ar)}
+                        </span>
+                        <span className="text-[9px] text-pink-500 font-extrabold uppercase tracking-widest animate-bounce">
+                          {isRtl ? "🌸 عروض رائعة" : "🌸 SPECIAL OFFERS"}
+                        </span>
+                      </div>
+
+                      <span className="relative z-10 ml-2 text-[9px] uppercase bg-white text-pink-500 px-2.5 py-1 rounded-full font-black tracking-wider shadow-lg border border-pink-200 animate-bounce">
+                        {isRtl ? "💕 تخفيضات" : "💕 SALE"}
+                      </span>
+                    </Link>
+                  );
+                }
+                
+                return (
+                  <Link
+                    key={`${c.id}-${index}`}
+                    to="/category/$slug"
+                    params={{ slug: c.slug }}
+                    className="group relative shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl font-medium text-xs transition-all duration-300 bg-white/10 hover:bg-pink-500/20 text-white shadow-lg border border-white/15 hover:border-pink-400 hover:scale-105 hover:-translate-y-0.5 cursor-pointer backdrop-blur-sm"
+                  >
+                    <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
+                    
+                    <div className="relative flex items-center justify-center h-7 w-7 rounded-full bg-black/30 border border-white/25 shadow-inner overflow-hidden group-hover:scale-110 transition-transform float-icon">
+                      {c.image_url ? (
+                        <img src={c.image_url} alt="" className="h-full w-full object-cover rounded-full" />
+                      ) : (
+                        <Icon className="h-3.5 w-3.5 text-emerald-300 group-hover:text-white transition-colors" />
+                      )}
+                    </div>
+                    
+                    <span className="whitespace-nowrap font-semibold tracking-wide text-white/95 group-hover:text-white" dir={isRtl ? "rtl" : "ltr"}>
+                      {isRtl ? c.name_ar : (c.name_en || c.name_ar)}
+                    </span>
+                    
+                    <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-pink-400 shadow-[0_0_6px_rgba(244,114,182,1)]" />
+                  </Link>
+                );
+              })}
+              
             </div>
-            
-            <span className="whitespace-nowrap font-semibold tracking-wide text-white/95 group-hover:text-white" dir={isRtl ? "rtl" : "ltr"}>
-              {isRtl ? c.name_ar : (c.name_en || c.name_ar)}
-            </span>
-            
-            <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,1)]" />
-          </Link>
-        );
-      })}
-      
-    </div>
-  </div>
-</div>
+          </div>
+        </div>
       </header>
-      {/* ❌❌❌ تم إزالة <Footer /> من هنا ❌❌❌ */}
     </TooltipProvider>
   );
 });

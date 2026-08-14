@@ -30,15 +30,15 @@ export const Route = createFileRoute("/category/$slug")({
 });
 
 // ============================================================
-// ✅ SortDropdown
+// ✅ SortDropdown - مع لمسات وردية
 // ============================================================
 function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val: string) => void; lang: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const options = [
-    { value: 'popularity', label: lang === 'ar' ? 'الأكثر رواجاً' : 'Most Popular', icon: TrendingUp, color: 'text-[#2a655f]' },
-    { value: 'newest', label: lang === 'ar' ? 'الواصل حديثاً' : 'New Arrivals', icon: Sparkles, color: 'text-blue-500' },
+    { value: 'popularity', label: lang === 'ar' ? 'الأكثر رواجاً' : 'Most Popular', icon: TrendingUp, color: 'text-pink-500' },
+    { value: 'newest', label: lang === 'ar' ? 'الواصل حديثاً' : 'New Arrivals', icon: Sparkles, color: 'text-pink-400' },
     { value: 'price_low', label: lang === 'ar' ? 'السعر: من الأقل' : 'Price: Low to High', icon: ArrowUpDown, color: 'text-emerald-500' },
     { value: 'price_high', label: lang === 'ar' ? 'السعر: من الأعلى' : 'Price: High to Low', icon: ArrowUpDown, color: 'text-rose-500' },
     { value: 'discount', label: lang === 'ar' ? 'أكبر خصم' : 'Biggest Discount', icon: BadgePercent, color: 'text-orange-500' },
@@ -65,20 +65,20 @@ function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val
         className={cn(
           "flex items-center gap-2 h-10 px-4 rounded-xl border text-sm font-medium transition-all duration-300 min-w-[170px] group",
           isOpen 
-            ? "border-[#2a655f]/50 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 shadow-lg shadow-[#2a655f]/20" 
-            : "border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] hover:border-[#2a655f]/50 hover:shadow-lg hover:shadow-[#2a655f]/10"
+            ? "border-pink-400/50 bg-pink-500/5 dark:bg-pink-500/10 shadow-lg shadow-pink-500/20" 
+            : "border-pink-300/30 dark:border-pink-400/30 bg-white dark:bg-[#1e293b] hover:border-pink-400/50 hover:shadow-lg hover:shadow-pink-500/10"
         )}
       >
         <IconComponent className={cn("h-4 w-4 transition-transform duration-300 group-hover:scale-110", selectedOption.color)} />
         <span className="flex-1 text-start truncate text-slate-700 dark:text-slate-300">{selectedOption.label}</span>
         <ChevronDown className={cn(
           "h-4 w-4 text-muted-foreground transition-all duration-300 flex-shrink-0",
-          isOpen ? 'rotate-180 text-[#2a655f]' : 'group-hover:text-[#2a655f]'
+          isOpen ? 'rotate-180 text-pink-500' : 'group-hover:text-pink-500'
         )} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-2xl shadow-[#2a655f]/20 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1e293b] rounded-xl border border-pink-300/30 dark:border-pink-400/30 shadow-2xl shadow-pink-500/20 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="py-2">
             {options.map((option) => {
               const isSelected = value === option.value;
@@ -93,14 +93,14 @@ function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val
                   className={cn(
                     "w-full px-4 py-2.5 text-sm text-start flex items-center gap-3 transition-all duration-200",
                     isSelected 
-                      ? "bg-[#2a655f]/10 dark:bg-[#2a655f]/20 text-[#2a655f] dark:text-[#4a9f95]" 
-                      : "text-slate-700 dark:text-slate-300 hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
+                      ? "bg-pink-500/10 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400" 
+                      : "text-slate-700 dark:text-slate-300 hover:bg-pink-500/5 dark:hover:bg-pink-500/10 hover:text-pink-600"
                   )}
                 >
                   <OptIcon className={cn("h-4 w-4", option.color)} />
                   <span className="flex-1 font-medium">{option.label}</span>
                   {isSelected && (
-                    <Check className="h-4 w-4 text-[#2a655f] animate-bounce" />
+                    <Check className="h-4 w-4 text-pink-500 animate-bounce" />
                   )}
                 </button>
               );
@@ -113,18 +113,18 @@ function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val
 }
 
 // ============================================================
-// ✅ Stats Badge
+// ✅ Stats Badge - مع لمسات وردية
 // ============================================================
 const AnimatedBadge = ({ count, label, icon: Icon, color }: any) => (
-  <div className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#2a655f]/10 border border-[#2a655f]/20 hover:bg-[#2a655f]/20 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#2a655f]/20">
-    <Icon className={cn("h-4 w-4 animate-pulse", color || "text-[#2a655f]")} />
-    <span className="text-sm font-bold text-[#2a655f] dark:text-[#4a9f95]">{count}</span>
+  <div className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-pink-500/10 border border-pink-300/30 hover:bg-pink-500/20 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-pink-500/20">
+    <Icon className={cn("h-4 w-4 animate-pulse", color || "text-pink-500")} />
+    <span className="text-sm font-bold text-pink-600 dark:text-pink-400">{count}</span>
     <span className="text-xs text-muted-foreground">{label}</span>
   </div>
 );
 
 // ============================================================
-// ✅ Product Filter Tabs
+// ✅ Product Filter Tabs - مع لمسات وردية
 // ============================================================
 function ProductFilterTabs({ 
   value, 
@@ -144,7 +144,7 @@ function ProductFilterTabs({
   ];
 
   return (
-    <div className="relative flex items-center bg-[#0d2e2a]/5 dark:bg-[#0d2e2a]/20 rounded-xl p-1 border border-[#0d2e2a]/10">
+    <div className="relative flex items-center bg-pink-500/5 dark:bg-pink-500/10 rounded-xl p-1 border border-pink-300/20">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = value === tab.id;
@@ -156,7 +156,7 @@ function ProductFilterTabs({
               "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5",
               isActive 
                 ? "text-white" 
-                : "text-[#0d2e2a] dark:text-white/60 hover:text-[#0d2e2a] dark:hover:text-white"
+                : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
             )}
           >
             <Icon className="h-3.5 w-3.5" />
@@ -165,7 +165,7 @@ function ProductFilterTabs({
               "text-[8px] px-1.5 py-0",
               isActive 
                 ? "bg-white/20 text-white" 
-                : "bg-[#0d2e2a]/10 dark:bg-[#0d2e2a]/30 text-[#0d2e2a] dark:text-white/60"
+                : "bg-pink-500/10 dark:bg-pink-500/30 text-pink-600 dark:text-pink-400"
             )}>
               {tab.count}
             </Badge>
@@ -173,10 +173,9 @@ function ProductFilterTabs({
         );
       })}
       
-      {/* الخلفية المتحركة (الكبسة) */}
       <div 
         className={cn(
-          "absolute top-1 h-[calc(100%-8px)] w-[calc(33.33%-4px)] rounded-lg bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 ease-out",
+          "absolute top-1 h-[calc(100%-8px)] w-[calc(33.33%-4px)] rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 shadow-lg shadow-pink-500/30 transition-all duration-300 ease-out",
           value === 'all' ? "left-1" : value === 'products' ? "left-[calc(33.33%+2px)]" : "left-[calc(66.66%+2px)]"
         )}
       />
@@ -205,8 +204,7 @@ function CategoryPage() {
   const [sort, setSort] = useState<"popularity" | "newest" | "price_low" | "price_high" | "discount" | "rating">("popularity");
   const [rating, setRating] = useState(0);
   const [search, setSearch] = useState(searchParams?.q ?? "");
- const [priceRange, setPriceRange] = useState<[number, number]>([0, Number.MAX_SAFE_INTEGER]);
-
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, Number.MAX_SAFE_INTEGER]);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(1);
@@ -243,7 +241,6 @@ function CategoryPage() {
     limit: limit,
   });
   
-  // ✅ ✅ ✅ LOGS - بعد useListings مباشرة
   console.log('🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍');
   console.log('📦 [CategoryPage] listingsData:', listingsData);
   console.log('📦 [CategoryPage] productFilter:', productFilter);
@@ -338,28 +335,28 @@ function CategoryPage() {
   const Filters = (
     <div className="space-y-6">
       <div>
-        <div className="font-semibold mb-2 text-sm text-[#2a655f] dark:text-[#4a9f95] flex items-center gap-2">
+        <div className="font-semibold mb-2 text-sm text-pink-600 dark:text-pink-400 flex items-center gap-2">
           <Search className="h-4 w-4" />
           {app.lang === "ar" ? "بحث" : "Search"}
         </div>
         <div className="relative group">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#2a655f] transition-colors" />
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-pink-500 transition-colors" />
           <Input 
             value={search} 
             onChange={(e) => setSearch(e.target.value)} 
             placeholder={t("search_placeholder")} 
-            className="ps-9 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300"
+            className="ps-9 rounded-xl border-pink-300/30 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
           />
         </div>
       </div>
 
       <div>
-        <div className="font-semibold mb-2 text-sm text-[#2a655f] dark:text-[#4a9f95] flex items-center gap-2">
+        <div className="font-semibold mb-2 text-sm text-pink-600 dark:text-pink-400 flex items-center gap-2">
           <MapPin className="h-4 w-4" />
           {app.lang === "ar" ? "المحافظة" : "Governorate"}
         </div>
         <Select value={gov} onValueChange={setGov}>
-          <SelectTrigger className="rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20">
+          <SelectTrigger className="rounded-xl border-pink-300/30 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="max-h-80">
@@ -370,7 +367,7 @@ function CategoryPage() {
       </div>
 
       <div>
-        <div className="font-semibold mb-2 text-sm text-[#2a655f] dark:text-[#4a9f95] flex items-center gap-2">
+        <div className="font-semibold mb-2 text-sm text-pink-600 dark:text-pink-400 flex items-center gap-2">
           <Tag className="h-4 w-4" />
           {app.lang === "ar" ? "نطاق السعر" : "Price Range"}
         </div>
@@ -381,7 +378,7 @@ function CategoryPage() {
             step={1000}
             value={priceRange}
             onValueChange={(v) => setPriceRange(v as [number, number])}
-            className="[&>span:first-child]:bg-[#2a655f]"
+            className="[&>span:first-child]:bg-pink-500"
           />
         </div>
         <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
@@ -391,7 +388,7 @@ function CategoryPage() {
       </div>
 
       <div>
-        <div className="font-semibold mb-2 text-sm text-[#2a655f] dark:text-[#4a9f95] flex items-center gap-2">
+        <div className="font-semibold mb-2 text-sm text-pink-600 dark:text-pink-400 flex items-center gap-2">
           <Star className="h-4 w-4" />
           {t("rating")}
         </div>
@@ -401,9 +398,9 @@ function CategoryPage() {
               <Checkbox 
                 checked={rating === r} 
                 onCheckedChange={() => setRating(r)}
-                className="border-[#2a655f]/30 data-[state=checked]:bg-[#2a655f] data-[state=checked]:border-[#2a655f]"
+                className="border-pink-300/30 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
               />
-              <span className="group-hover:text-[#2a655f] transition-colors">
+              <span className="group-hover:text-pink-600 transition-colors">
                 {r === 0 ? (app.lang === "ar" ? "الكل" : "All") : `${r}+ ★`}
               </span>
             </label>
@@ -411,13 +408,13 @@ function CategoryPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 p-3 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
+      <div className="flex items-center gap-3 p-3 bg-pink-500/5 rounded-xl border border-pink-300/20">
         <Checkbox 
           checked={showAvailableOnly} 
           onCheckedChange={(v) => setShowAvailableOnly(v as boolean)}
-          className="border-[#2a655f]/30 data-[state=checked]:bg-[#2a655f] data-[state=checked]:border-[#2a655f]"
+          className="border-pink-300/30 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
         />
-        <span className="text-sm text-[#2a655f] dark:text-[#4a9f95] font-medium">
+        <span className="text-sm text-pink-600 dark:text-pink-400 font-medium">
           {app.lang === "ar" ? "المنتجات المتاحة فقط" : "Available only"}
         </span>
       </div>
@@ -425,7 +422,7 @@ function CategoryPage() {
       <Button 
         variant="outline" 
         onClick={showAll}
-        className="w-full rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/40 transition-all duration-300 group"
+        className="w-full rounded-xl border-pink-300/30 text-pink-600 hover:bg-pink-500/10 hover:border-pink-400/50 transition-all duration-300 group"
       >
         <RefreshCw className="h-4 w-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
         {app.lang === "ar" ? "إعادة تعيين" : "Reset"}
@@ -436,13 +433,13 @@ function CategoryPage() {
   if (categoriesLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Skeleton className="h-56 w-full rounded-2xl animate-pulse bg-[#2a655f]/10" />
+        <Skeleton className="h-56 w-full rounded-2xl animate-pulse bg-pink-500/10" />
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="rounded-2xl bg-[#2a655f]/5 p-4 animate-pulse">
-              <div className="aspect-square rounded-xl bg-[#2a655f]/10" />
-              <div className="h-4 bg-[#2a655f]/10 rounded mt-3 w-3/4" />
-              <div className="h-3 bg-[#2a655f]/10 rounded mt-2 w-1/2" />
+            <div key={i} className="rounded-2xl bg-pink-500/5 p-4 animate-pulse">
+              <div className="aspect-square rounded-xl bg-pink-500/10" />
+              <div className="h-4 bg-pink-500/10 rounded mt-3 w-3/4" />
+              <div className="h-3 bg-pink-500/10 rounded mt-2 w-1/2" />
             </div>
           ))}
         </div>
@@ -454,10 +451,10 @@ function CategoryPage() {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <div className="relative inline-block">
-          <div className="h-24 w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto animate-bounce">
-            <Package className="h-12 w-12 text-[#2a655f]/40" />
+          <div className="h-24 w-24 rounded-full bg-pink-500/10 flex items-center justify-center mx-auto animate-bounce">
+            <Package className="h-12 w-12 text-pink-500/40" />
           </div>
-          <div className="absolute -inset-4 rounded-full bg-[#2a655f]/5 animate-ping" />
+          <div className="absolute -inset-4 rounded-full bg-pink-500/5 animate-ping" />
         </div>
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white mt-6">
           {app.lang === "ar" ? "التصنيف غير موجود" : "Category not found"}
@@ -466,7 +463,7 @@ function CategoryPage() {
           {app.lang === "ar" ? "عذراً، التصنيف الذي تبحث عنه غير موجود" : "Sorry, the category you're looking for doesn't exist"}
         </p>
         <Link to="/">
-          <Button className="mt-6 rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30 hover:shadow-xl transition-all duration-300 hover:scale-105 group">
+          <Button className="mt-6 rounded-xl bg-pink-500 hover:bg-pink-600 text-white shadow-lg shadow-pink-500/30 hover:shadow-xl transition-all duration-300 hover:scale-105 group">
             <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             {app.lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
           </Button>
@@ -484,18 +481,18 @@ function CategoryPage() {
 
   const categoryDescription = isOffersPage
     ? (app.lang === "ar" 
-        ? "اكتشف أفضل العروض والخصومات الحصرية في السوق عندك. تخفيضات تصل إلى 70% على مجموعة واسعة من المنتجات."
+        ? "اكتشف أفضل العروض والخصومات الحصرية في السوق لعندك. تخفيضات تصل إلى 70% على مجموعة واسعة من المنتجات."
         : "Discover the best exclusive offers and discounts at Souqi. Up to 70% off on a wide range of products.")
     : (category 
         ? (app.lang === "ar" 
-            ? (category.description_ar || `استكشف مجموعة مميزة من ${categoryName} في السوق عندك. تشكيلة واسعة من المنتجات والخدمات بجودة عالية وأسعار تنافسية.`)
+            ? (category.description_ar || `استكشف مجموعة مميزة من ${categoryName} في السوق لعندك. تشكيلة واسعة من المنتجات والخدمات بجودة عالية وأسعار تنافسية.`)
             : (category.description_en || `Explore a unique collection of ${categoryName} at Souqi. A wide range of products and services with high quality and competitive prices.`))
         : "");
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#2a655f]/5 via-transparent to-[#3a8a82]/5">
+    <div className="min-h-screen bg-gradient-to-b from-pink-500/5 via-transparent to-rose-500/5">
       
-      {/* ===== Header ===== */}
+      {/* ===== Header - مع لمسات وردية ===== */}
       <div className="relative h-[320px] md:h-[400px] overflow-hidden bg-[#1b433e]">
         {categoryImage ? (
           <div className="absolute inset-0 z-0 overflow-hidden">
@@ -523,7 +520,7 @@ function CategoryPage() {
                 {app.lang === "ar" ? "التصنيفات" : "Categories"}
               </Link>
               <span className="text-white/40 text-xs">/</span>
-              <span className="text-white font-bold text-xs bg-white/20 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-white/30">
+              <span className="text-white font-bold text-xs bg-pink-500/30 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-pink-400/40">
                 {categoryName}
               </span>
             </div>
@@ -531,11 +528,11 @@ function CategoryPage() {
             <div className="flex items-end justify-between mt-3 flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <div className="relative group">
-                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400/30 to-teal-400/30 blur-lg animate-pulse" />
+                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-pink-400/30 to-rose-400/30 blur-lg animate-pulse" />
                   <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-2xl shadow-black/30 border border-white/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
                     <Icon className="h-8 w-8 md:h-10 md:w-10 text-white animate-float" />
-                    <Sparkle className="absolute -top-2 -right-2 h-4 w-4 text-yellow-300 animate-spin-slow" />
-                    <CircleDot className="absolute -bottom-1 -left-2 h-3 w-3 text-emerald-300 animate-pulse" />
+                    <Sparkle className="absolute -top-2 -right-2 h-4 w-4 text-pink-300 animate-spin-slow" />
+                    <CircleDot className="absolute -bottom-1 -left-2 h-3 w-3 text-pink-300 animate-pulse" />
                   </div>
                 </div>
                 
@@ -543,7 +540,7 @@ function CategoryPage() {
                   <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white drop-shadow-2xl tracking-tight flex items-center gap-3">
                     {categoryName}
                     {!isOffersPage && (
-                      <Badge className="bg-gradient-to-r from-emerald-400/30 to-teal-400/30 text-white border border-white/30 backdrop-blur-sm text-[10px] px-2.5 py-1 rounded-full font-bold animate-pulse">
+                      <Badge className="bg-gradient-to-r from-pink-400/30 to-rose-400/30 text-white border border-white/30 backdrop-blur-sm text-[10px] px-2.5 py-1 rounded-full font-bold animate-pulse">
                         <Rocket className="h-3 w-3 mr-1 inline animate-bounce" />
                         {app.lang === "ar" ? "رئيسي" : "Main"}
                       </Badge>
@@ -555,15 +552,15 @@ function CategoryPage() {
                   </p>
                   
                   <div className="flex items-center gap-3 mt-2 flex-wrap">
-                    <AnimatedBadge count={stats.total} label={isArabic ? "منتج" : "products"} icon={Package} />
-                    <AnimatedBadge count={stats.offers} label={isArabic ? "عرض" : "offers"} icon={Flame} color="text-orange-500" />
-                    <AnimatedBadge count={stats.stores} label={isArabic ? "متجر" : "stores"} icon={Store} color="text-[#4a9f95]" />
+                    <AnimatedBadge count={stats.total} label={isArabic ? "منتج" : "products"} icon={Package} color="text-pink-300" />
+                    <AnimatedBadge count={stats.offers} label={isArabic ? "عرض" : "offers"} icon={Flame} color="text-orange-300" />
+                    <AnimatedBadge count={stats.stores} label={isArabic ? "متجر" : "stores"} icon={Store} color="text-pink-300" />
                   </div>
                 </div>
               </div>
               
               {isOffersPage && (
-                <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-sm px-4 py-2 shadow-lg shadow-red-500/30 animate-pulse rounded-full font-bold flex items-center gap-2">
+                <Badge className="bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 text-sm px-4 py-2 shadow-lg shadow-pink-500/30 animate-pulse rounded-full font-bold flex items-center gap-2">
                   <Flame className="h-4 w-4 animate-bounce" />
                   {isArabic ? "🔥 عروض حصرية" : "🔥 Exclusive Offers"}
                 </Badge>
@@ -573,8 +570,8 @@ function CategoryPage() {
         </div>
       </div>
 
-      {/* ===== Tabs ===== */}
-      <div className="border-b border-[#2a655f]/10 dark:border-[#2a655f]/20 bg-white/80 dark:bg-[#1e293b]/80 backdrop-blur-sm sticky top-0 z-30">
+      {/* ===== Tabs - مع لمسات وردية ===== */}
+      <div className="border-b border-pink-300/20 dark:border-pink-400/20 bg-white/80 dark:bg-[#1e293b]/80 backdrop-blur-sm sticky top-0 z-30">
         <div className="mx-auto max-w-7xl px-4 flex gap-1">
           {([
             { id: "products" as const, icon: Package, label: t("products_tab"), count: stats.total },
@@ -586,8 +583,8 @@ function CategoryPage() {
               className={cn(
                 "flex items-center gap-2 px-4 py-3 -mb-px border-b-2 font-semibold text-sm transition-all duration-300 relative group",
                 tab === tItem.id 
-                  ? "border-[#2a655f] text-[#2a655f] dark:text-[#4a9f95]" 
-                  : "border-transparent text-muted-foreground hover:text-[#2a655f] hover:border-[#2a655f]/30"
+                  ? "border-pink-500 text-pink-600 dark:text-pink-400" 
+                  : "border-transparent text-muted-foreground hover:text-pink-600 hover:border-pink-400/30"
               )}
             >
               <tItem.icon className={cn(
@@ -598,13 +595,13 @@ function CategoryPage() {
               <Badge className={cn(
                 "text-[10px] px-1.5 py-0 transition-all duration-300",
                 tab === tItem.id 
-                  ? "bg-[#2a655f] text-white" 
-                  : "bg-[#2a655f]/10 text-[#2a655f] group-hover:bg-[#2a655f]/20"
+                  ? "bg-pink-500 text-white" 
+                  : "bg-pink-500/10 text-pink-600 group-hover:bg-pink-500/20"
               )}>
                 {tItem.count}
               </Badge>
               {tab === tItem.id && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#2a655f] to-[#4a9f95] animate-pulse" />
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-pink-500 to-rose-500 animate-pulse" />
               )}
             </button>
           ))}
@@ -614,11 +611,11 @@ function CategoryPage() {
       {/* ===== Content ===== */}
       <div className="mx-auto max-w-7xl px-4 py-6 grid lg:grid-cols-[300px_1fr] gap-6">
         
-        {/* ===== Sidebar Filters ===== */}
+        {/* ===== Sidebar Filters - مع لمسات وردية ===== */}
         <aside className="hidden lg:block">
-          <div className="sticky top-32 rounded-2xl bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-sm border border-[#2a655f]/10 p-5 shadow-xl shadow-[#2a655f]/5">
+          <div className="sticky top-32 rounded-2xl bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-sm border border-pink-300/20 p-5 shadow-xl shadow-pink-500/5">
             <div className="flex items-center justify-between mb-4">
-              <div className="font-bold text-[#2a655f] dark:text-[#4a9f95] flex items-center gap-2">
+              <div className="font-bold text-pink-600 dark:text-pink-400 flex items-center gap-2">
                 <Filter className="h-4 w-4 animate-pulse" />
                 {t("filters")}
               </div>
@@ -626,7 +623,7 @@ function CategoryPage() {
                 variant="ghost" 
                 size="sm" 
                 onClick={showAll}
-                className="text-[#2a655f] hover:bg-[#2a655f]/10 rounded-xl"
+                className="text-pink-600 hover:bg-pink-500/10 rounded-xl"
               >
                 <RefreshCw className="h-3.5 w-3.5 transition-transform duration-500 hover:rotate-180" />
               </Button>
@@ -642,13 +639,13 @@ function CategoryPage() {
             <div className="flex items-center gap-2 flex-wrap">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" className="lg:hidden gap-2 rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5 transition-all duration-300">
-                    <SlidersHorizontal className="h-4 w-4 text-[#2a655f]" /> 
+                  <Button variant="outline" className="lg:hidden gap-2 rounded-xl border-pink-300/30 hover:border-pink-400/50 hover:bg-pink-500/5 transition-all duration-300">
+                    <SlidersHorizontal className="h-4 w-4 text-pink-500" /> 
                     {t("filters")}
                   </Button>
                 </SheetTrigger>
-                <SheetContent side={app.lang === "ar" ? "right" : "left"} className="w-80 overflow-auto border-l-[#2a655f]/20">
-                  <SheetTitle className="text-[#2a655f] flex items-center gap-2">
+                <SheetContent side={app.lang === "ar" ? "right" : "left"} className="w-80 overflow-auto border-l-pink-300/20">
+                  <SheetTitle className="text-pink-600 flex items-center gap-2">
                     <Filter className="h-5 w-5" />
                     {t("filters")}
                   </SheetTitle>
@@ -671,10 +668,10 @@ function CategoryPage() {
               )}
               
               <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="font-medium text-[#2a655f]">{items.length}</span>
+                <span className="font-medium text-pink-600">{items.length}</span>
                 {isArabic ? "منتج" : "products"}
                 {search && (
-                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20">
+                  <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
                     <Search className="h-3 w-3 mr-1" />
                     {search}
                   </Badge>
@@ -685,14 +682,14 @@ function CategoryPage() {
             {tab === "products" && (
               <div className="flex items-center gap-2">
                 {/* ViewMode Toggle */}
-                <div className="flex items-center bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-1">
+                <div className="flex items-center bg-white dark:bg-[#1e293b] rounded-xl border border-pink-300/30 p-1">
                   <button
                     onClick={() => setViewMode("grid")}
                     className={cn(
                       "p-1.5 rounded-lg transition-all duration-300",
                       viewMode === "grid" 
-                        ? "bg-[#2a655f] text-white shadow-lg shadow-[#2a655f]/30" 
-                        : "text-muted-foreground hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
+                        ? "bg-pink-500 text-white shadow-lg shadow-pink-500/30" 
+                        : "text-muted-foreground hover:bg-pink-500/10 hover:text-pink-600"
                     )}
                   >
                     <Grid3X3 className="h-4 w-4" />
@@ -702,8 +699,8 @@ function CategoryPage() {
                     className={cn(
                       "p-1.5 rounded-lg transition-all duration-300",
                       viewMode === "list" 
-                        ? "bg-[#2a655f] text-white shadow-lg shadow-[#2a655f]/30" 
-                        : "text-muted-foreground hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
+                        ? "bg-pink-500 text-white shadow-lg shadow-pink-500/30" 
+                        : "text-muted-foreground hover:bg-pink-500/10 hover:text-pink-600"
                     )}
                   >
                     <List className="h-4 w-4" />
@@ -720,7 +717,7 @@ function CategoryPage() {
           </div>
 
           {/* ===== Results Count ===== */}
-          <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground border-b border-[#2a655f]/10 pb-3">
+          <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground border-b border-pink-300/20 pb-3">
             <span>
               {isArabic 
                 ? `عرض ${startIndex}-${endIndex} من ${totalCount} منتج` 
@@ -728,13 +725,13 @@ function CategoryPage() {
             </span>
             <div className="flex items-center gap-2">
               {items.length !== totalCount && (
-                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20">
+                <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
                   {isArabic ? "مفلتر" : "Filtered"}
                 </Badge>
               )}
               {isFetching && (
-                <div className="flex items-center gap-1 text-[#2a655f]">
-                  <div className="h-3 w-3 border-2 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
+                <div className="flex items-center gap-1 text-pink-500">
+                  <div className="h-3 w-3 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
                   <span className="text-xs">{isArabic ? "جاري التحميل..." : "Loading..."}</span>
                 </div>
               )}
@@ -751,24 +748,24 @@ function CategoryPage() {
                   : "grid-cols-1"
               )}>
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 p-4 animate-pulse border border-[#2a655f]/10">
-                    <div className="aspect-square rounded-xl bg-[#2a655f]/10" />
-                    <div className="h-4 bg-[#2a655f]/10 rounded mt-3 w-3/4" />
-                    <div className="h-3 bg-[#2a655f]/10 rounded mt-2 w-1/2" />
+                  <div key={i} className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 p-4 animate-pulse border border-pink-300/20">
+                    <div className="aspect-square rounded-xl bg-pink-500/10" />
+                    <div className="h-4 bg-pink-500/10 rounded mt-3 w-3/4" />
+                    <div className="h-3 bg-pink-500/10 rounded mt-2 w-1/2" />
                     <div className="flex items-center gap-2 mt-3">
-                      <div className="h-4 bg-[#2a655f]/10 rounded w-1/3" />
-                      <div className="h-4 bg-[#2a655f]/10 rounded w-1/4" />
+                      <div className="h-4 bg-pink-500/10 rounded w-1/3" />
+                      <div className="h-4 bg-pink-500/10 rounded w-1/4" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : items.length === 0 ? (
-              <div className="rounded-3xl bg-white/80 dark:bg-[#1e293b]/80 border-2 border-dashed border-[#2a655f]/20 p-16 text-center">
+              <div className="rounded-3xl bg-white/80 dark:bg-[#1e293b]/80 border-2 border-dashed border-pink-300/30 p-16 text-center">
                 <div className="relative inline-block">
-                  <div className="h-20 w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto animate-bounce">
-                    <Package className="h-10 w-10 text-[#2a655f]/40" />
+                  <div className="h-20 w-20 rounded-full bg-pink-500/10 flex items-center justify-center mx-auto animate-bounce">
+                    <Package className="h-10 w-10 text-pink-500/40" />
                   </div>
-                  <div className="absolute -inset-4 rounded-full bg-[#2a655f]/5 animate-ping" />
+                  <div className="absolute -inset-4 rounded-full bg-pink-500/5 animate-ping" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-4">
                   {app.lang === "ar" ? "لا توجد نتائج" : "No results"}
@@ -779,7 +776,7 @@ function CategoryPage() {
                 <Button 
                   variant="outline" 
                   onClick={showAll}
-                  className="mt-4 rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/40 transition-all duration-300 group"
+                  className="mt-4 rounded-xl border-pink-300/30 text-pink-600 hover:bg-pink-500/10 hover:border-pink-400/50 transition-all duration-300 group"
                 >
                   <RefreshCw className="h-4 w-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
                   {app.lang === "ar" ? "إعادة تعيين الفلاتر" : "Reset filters"}
@@ -807,7 +804,7 @@ function CategoryPage() {
                   })}
                 </div>
 
-                {/* ===== Pagination ===== */}
+                {/* ===== Pagination - مع لمسات وردية ===== */}
                 {totalPages > 1 && (
                   <div className="mt-8 flex items-center justify-center gap-2">
                     <Button
@@ -815,7 +812,7 @@ function CategoryPage() {
                       size="sm"
                       onClick={() => goToPage(page - 1)}
                       disabled={page === 1 || isFetching}
-                      className="rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5 transition-all duration-300"
+                      className="rounded-xl border-pink-300/30 hover:border-pink-400/50 hover:bg-pink-500/5 transition-all duration-300"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
@@ -845,8 +842,8 @@ function CategoryPage() {
                             className={cn(
                               "min-w-[36px] rounded-xl transition-all duration-300",
                               pageNum === page 
-                                ? "bg-[#2a655f] text-white hover:bg-[#1a4f4a] shadow-lg shadow-[#2a655f]/30" 
-                                : "border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
+                                ? "bg-pink-500 text-white hover:bg-pink-600 shadow-lg shadow-pink-500/30" 
+                                : "border-pink-300/30 hover:border-pink-400/50 hover:bg-pink-500/5"
                             )}
                           >
                             {pageNum}
@@ -860,7 +857,7 @@ function CategoryPage() {
                       size="sm"
                       onClick={() => goToPage(page + 1)}
                       disabled={page === totalPages || isFetching}
-                      className="rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5 transition-all duration-300"
+                      className="rounded-xl border-pink-300/30 hover:border-pink-400/50 hover:bg-pink-500/5 transition-all duration-300"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
@@ -869,29 +866,29 @@ function CategoryPage() {
               </>
             )
           ) : (
-            // ===== Stores Tab =====
+            // ===== Stores Tab - مع لمسات وردية =====
             storesLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 p-4 animate-pulse border border-[#2a655f]/10">
-                    <div className="h-32 bg-[#2a655f]/10 rounded-xl" />
+                  <div key={i} className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 p-4 animate-pulse border border-pink-300/20">
+                    <div className="h-32 bg-pink-500/10 rounded-xl" />
                     <div className="flex items-center gap-3 mt-3">
-                      <div className="h-14 w-14 rounded-full bg-[#2a655f]/10" />
+                      <div className="h-14 w-14 rounded-full bg-pink-500/10" />
                       <div className="flex-1">
-                        <div className="h-4 bg-[#2a655f]/10 rounded w-3/4" />
-                        <div className="h-3 bg-[#2a655f]/10 rounded w-1/2 mt-2" />
+                        <div className="h-4 bg-pink-500/10 rounded w-3/4" />
+                        <div className="h-3 bg-pink-500/10 rounded w-1/2 mt-2" />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : stores.length === 0 ? (
-              <div className="rounded-3xl bg-white/80 dark:bg-[#1e293b]/80 border-2 border-dashed border-[#2a655f]/20 p-16 text-center">
+              <div className="rounded-3xl bg-white/80 dark:bg-[#1e293b]/80 border-2 border-dashed border-pink-300/30 p-16 text-center">
                 <div className="relative inline-block">
-                  <div className="h-20 w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto animate-bounce">
-                    <Store className="h-10 w-10 text-[#2a655f]/40" />
+                  <div className="h-20 w-20 rounded-full bg-pink-500/10 flex items-center justify-center mx-auto animate-bounce">
+                    <Store className="h-10 w-10 text-pink-500/40" />
                   </div>
-                  <div className="absolute -inset-4 rounded-full bg-[#2a655f]/5 animate-ping" />
+                  <div className="absolute -inset-4 rounded-full bg-pink-500/5 animate-ping" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-4">
                   {app.lang === "ar" ? "لا يوجد متاجر بعد" : "No stores yet"}
@@ -908,27 +905,27 @@ function CategoryPage() {
                     className="animate-fade-up"
                     style={{ animationDelay: `${(index % 9) * 60}ms` }}
                   >
-                    <Link to="/store/$id" params={{ id: s.id }} className="group block rounded-2xl bg-white dark:bg-[#1e293b] border border-[#2a655f]/10 hover:border-[#2a655f]/30 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#2a655f]/20 overflow-hidden">
-                      <div className="relative h-32 bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] overflow-hidden">
+                    <Link to="/store/$id" params={{ id: s.id }} className="group block rounded-2xl bg-white dark:bg-[#1e293b] border border-pink-300/20 hover:border-pink-400/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-pink-500/20 overflow-hidden">
+                      <div className="relative h-32 bg-gradient-to-br from-pink-500 to-rose-500 overflow-hidden">
                         {s.store_cover_url && (
                           <img src={s.store_cover_url} className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                       </div>
                       <div className="p-4 -mt-8 relative">
-                        <div className="h-14 w-14 rounded-xl bg-white dark:bg-[#1e293b] border-4 border-white dark:border-[#1e293b] shadow-md overflow-hidden grid place-items-center text-[#2a655f] font-black text-xl group-hover:scale-110 transition-transform duration-300">
+                        <div className="h-14 w-14 rounded-xl bg-white dark:bg-[#1e293b] border-4 border-white dark:border-[#1e293b] shadow-md overflow-hidden grid place-items-center text-pink-600 font-black text-xl group-hover:scale-110 transition-transform duration-300">
                           {s.store_logo_url || s.avatar_url ? (
                             <img src={s.store_logo_url || s.avatar_url!} className="h-full w-full object-cover" alt="" />
                           ) : ((s.store_name || s.full_name || "?")[0])}
                         </div>
-                        <div className="mt-2 font-bold line-clamp-1 group-hover:text-[#2a655f] transition-colors">
+                        <div className="mt-2 font-bold line-clamp-1 group-hover:text-pink-600 transition-colors">
                           {s.store_name || s.full_name || (app.lang === "ar" ? "متجر" : "Store")}
                         </div>
                         <div className="text-xs text-muted-foreground line-clamp-2 min-h-8">
                           {s.store_description || (app.lang === "ar" ? "متجر على سوقي" : "A store on Souqi")}
                         </div>
                         <div className="flex items-center gap-3 mt-3 text-xs">
-                          <span className="flex items-center gap-1 text-[#2a655f]">
+                          <span className="flex items-center gap-1 text-pink-600">
                             <Star className="h-3.5 w-3.5 fill-current" />
                             {Number(s.avg_rating || 0).toFixed(1)}
                           </span>

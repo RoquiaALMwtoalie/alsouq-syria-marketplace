@@ -74,30 +74,23 @@ function StoresPage() {
       const prices: Record<string, any> = {};
       
       for (const store of allStores) {
-        // ✅ تخطي إذا لم يكن هناك عنوان للمستخدم
         if (!userAddress) {
           prices[store.id] = { price: null, isFree: false, distance: 0, companyName: '', sameGovernorate: false };
           continue;
         }
         
-        // ✅ إحداثيات المتجر
         const storeLat = store.lat;
         const storeLng = store.lng;
-        
-        // ✅ محافظة المتجر
         const storeGovernorate = store.governorate_name || store.governorate?.name_ar;
         
-        // ✅ البحث عن شركة توصيل
         let matchingCompany = null;
         
-        // ✅ 1. حاول البحث عن شركة في نفس المحافظة
         if (storeGovernorate) {
           matchingCompany = companies.find(
             (c: any) => c.governorate?.name_ar === storeGovernorate && c.is_active === true
           );
         }
         
-        // ✅ 2. إذا لم توجد شركة، استخدم أي شركة نشطة
         if (!matchingCompany) {
           matchingCompany = companies.find((c: any) => c.is_active === true);
         }
@@ -107,7 +100,6 @@ function StoresPage() {
           continue;
         }
         
-        // ✅ حساب المسافة
         let distance = 0;
         const sameGovernorate = userGovernorate === storeGovernorate;
         
@@ -117,13 +109,11 @@ function StoresPage() {
           distance = sameGovernorate ? 5 : 15;
         }
         
-        // ✅ حساب السعر
         let price = (matchingCompany.base_price || 0) + (distance * (matchingCompany.price_per_km || 0));
         price = Math.max(price, matchingCompany.min_delivery_fee || 0);
         price = Math.min(price, matchingCompany.max_delivery_fee || 999999);
         price = Math.round(price);
         
-        // ✅ توصيل مجاني (إذا كان هناك حد أدنى)
         const isFree = price === 0;
         
         prices[store.id] = {
@@ -216,7 +206,7 @@ function StoresPage() {
     });
   };
 
-  // ✅ عرض سعر التوصيل
+  // ✅ عرض سعر التوصيل - مع لمسات وردية
   const renderDeliveryPrice = (storeId: string) => {
     const delivery = deliveryPrices[storeId];
     if (!delivery) return null;
@@ -232,11 +222,11 @@ function StoresPage() {
     return (
       <div className="flex items-center gap-1.5">
         {delivery.isFree ? (
-          <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px] px-1.5 py-0">
+          <Badge className="bg-pink-500/20 text-pink-600 border-0 text-[9px] px-1.5 py-0">
             {app.lang === "ar" ? "✅ مجاني" : "✅ Free"}
           </Badge>
         ) : (
-          <span className="text-xs font-bold text-primary">
+          <span className="text-xs font-bold text-pink-600 dark:text-pink-400">
             {delivery.price} SYP
           </span>
         )}
@@ -248,7 +238,7 @@ function StoresPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <div className="min-h-screen bg-gradient-to-b from-pink-500/5 via-transparent to-rose-500/5">
       <div className="mx-auto max-w-7xl px-4 py-8">
         
         {/* ===== HEADER ===== */}
@@ -256,14 +246,14 @@ function StoresPage() {
           <div>
             <Link 
               to="/" 
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-2"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-pink-600 transition-colors mb-2"
             >
               <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
               {app.lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
             </Link>
             <h1 className="text-3xl font-bold flex items-center gap-3">
               <span>{app.lang === "ar" ? "🏪 جميع المتاجر" : "🏪 All Stores"}</span>
-              <Badge className="bg-primary/10 text-primary border-0 text-sm px-3 py-1">
+              <Badge className="bg-pink-500/20 text-pink-600 border-0 text-sm px-3 py-1">
                 {searchStats.filtered}
               </Badge>
             </h1>
@@ -289,13 +279,13 @@ function StoresPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={app.lang === "ar" ? "🔍 ابحث عن متجر..." : "🔍 Search for store..."}
-              className="ps-12 h-14 rounded-2xl border-2 border-slate-200/50 bg-white/50 dark:border-slate-800/50 dark:bg-slate-900/50 focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all text-lg"
+              className="ps-12 h-14 rounded-2xl border-2 border-pink-300/30 bg-white/50 dark:border-pink-400/30 dark:bg-slate-900/50 focus:border-pink-400/50 focus:ring-4 focus:ring-pink-500/10 transition-all text-lg"
               autoFocus
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute inset-y-0 end-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute inset-y-0 end-3 flex items-center text-muted-foreground hover:text-pink-600 transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -304,7 +294,7 @@ function StoresPage() {
           
           {searchQuery.trim() && (
             <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <Sparkles className="h-3.5 w-3.5 text-pink-500" />
               <span>
                 {app.lang === "ar" 
                   ? `⚡ بحث فوري: ${searchStats.filtered} نتيجة` 
@@ -322,7 +312,7 @@ function StoresPage() {
         {/* ===== FILTERS ===== */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Filter className="h-4 w-4 text-pink-500" />
             <span className="text-sm font-medium text-muted-foreground">
               {app.lang === "ar" ? "تصفية:" : "Filter:"}
             </span>
@@ -340,8 +330,8 @@ function StoresPage() {
                 className={cn(
                   "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
                   filterType === f.value
-                    ? "bg-primary text-white shadow-md shadow-primary/25"
-                    : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"
+                    ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md shadow-pink-500/25"
+                    : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-pink-600"
                 )}
               >
                 {f.label}
@@ -352,7 +342,7 @@ function StoresPage() {
 
         {/* ===== SUGGESTIONS ===== */}
         {suggestions.length > 0 && (
-          <div className="mb-6 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+          <div className="mb-6 p-4 bg-pink-500/5 rounded-2xl border border-pink-300/20">
             <p className="text-xs text-muted-foreground mb-2">
               {app.lang === "ar" ? "💡 اقتراحات:" : "💡 Suggestions:"}
             </p>
@@ -362,9 +352,9 @@ function StoresPage() {
                   key={s.id}
                   to="/store/$id"
                   params={{ id: s.id }}
-                  className="px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg text-sm hover:bg-primary/10 transition-all border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-1.5"
+                  className="px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg text-sm hover:bg-pink-500/10 transition-all border border-pink-300/30 flex items-center gap-1.5"
                 >
-                  <Store className="h-3.5 w-3.5" />
+                  <Store className="h-3.5 w-3.5 text-pink-500" />
                   {s.store_name || s.full_name}
                 </Link>
               ))}
@@ -376,11 +366,11 @@ function StoresPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-72 rounded-2xl" />
+              <Skeleton key={i} className="h-72 rounded-2xl bg-pink-500/10" />
             ))}
           </div>
         ) : filteredStores.length === 0 ? (
-          <div className="text-center py-20 bg-card rounded-3xl border-2 border-dashed border-slate-200/50 dark:border-slate-800/50">
+          <div className="text-center py-20 bg-card rounded-3xl border-2 border-dashed border-pink-300/30">
             <div className="text-7xl mb-4">🔍</div>
             <h3 className="text-2xl font-semibold">
               {app.lang === "ar" ? "لا توجد نتائج" : "No results found"}
@@ -393,7 +383,7 @@ function StoresPage() {
             {searchQuery.trim() && (
               <Button 
                 variant="outline" 
-                className="mt-4 rounded-xl"
+                className="mt-4 rounded-xl border-pink-300/30 text-pink-600 hover:bg-pink-500/10"
                 onClick={() => setSearchQuery("")}
               >
                 <X className="h-4 w-4 mr-2" />
@@ -417,34 +407,32 @@ function StoresPage() {
                   key={s.id}
                   to="/store/$id"
                   params={{ id: s.id }}
-                  className="group rounded-2xl bg-card shadow-card overflow-hidden card-hover border hover:shadow-xl transition-all hover:-translate-y-1"
+                  className="group rounded-2xl bg-card shadow-card overflow-hidden card-hover border border-pink-300/20 hover:border-pink-400/40 hover:shadow-xl transition-all hover:-translate-y-1"
                 >
-                  <div className="relative h-28 bg-gradient-to-br from-primary to-primary-glow">
+                  <div className="relative h-28 bg-gradient-to-br from-pink-500 to-rose-500">
                     {s.store_cover_url && (
                       <img src={s.store_cover_url} className="absolute inset-0 h-full w-full object-cover" alt="" />
                     )}
                     
-                    {/* ✅ نوع المتجر */}
                     <div className="absolute top-2 end-2 flex gap-1">
                       <Badge className="bg-black/50 backdrop-blur text-white border-0 text-[10px]">
                         {storeType === "physical" ? "🏪" : "🌐"}
                       </Badge>
                     </div>
 
-                    {/* ✅ زر المراسلة */}
                     {allowsMessaging && (
                       <button
                         onClick={(e) => goToChat(e, s.id)}
                         className="absolute bottom-2 end-2 p-2.5 rounded-full bg-white/95 hover:bg-white shadow-lg hover:shadow-xl transition-all hover:scale-110 group/chat"
                         title={app.lang === "ar" ? "مراسلة المتجر" : "Message store"}
                       >
-                        <MessageCircle className="h-4 w-4 text-blue-500 group-hover/chat:text-blue-600" />
+                        <MessageCircle className="h-4 w-4 text-pink-500 group-hover/chat:text-pink-600" />
                       </button>
                     )}
                   </div>
                   
                   <div className="p-4 -mt-8 relative">
-                    <div className="h-14 w-14 rounded-xl bg-card border-4 border-card shadow-md overflow-hidden grid place-items-center text-primary font-black text-xl">
+                    <div className="h-14 w-14 rounded-xl bg-card border-4 border-card shadow-md overflow-hidden grid place-items-center text-pink-600 font-black text-xl">
                       {s.store_logo_url || s.avatar_url ? (
                         <img src={s.store_logo_url || s.avatar_url} className="h-full w-full object-cover" alt="" />
                       ) : (
@@ -452,33 +440,29 @@ function StoresPage() {
                       )}
                     </div>
                     
-                    <div className="mt-2 font-bold line-clamp-1 text-lg group-hover:text-primary transition">
+                    <div className="mt-2 font-bold line-clamp-1 text-lg group-hover:text-pink-600 transition">
                       {s.store_name || s.full_name || (app.lang === "ar" ? "متجر" : "Store")}
                     </div>
                     
                     <div className="text-xs text-muted-foreground line-clamp-2 min-h-8">
-                      {s.store_description || (app.lang === "ar" ? "متجر على السوق اليك" : "A store on AlSooq Elak")}
+                      {s.store_description || (app.lang === "ar" ? "متجر على السوق لعندك" : "A store on Souqi")}
                     </div>
                     
-                    {/* ✅ معلومات إضافية في البطاقة */}
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
-                      {/* العنوان - يظهر فقط للمتاجر الفعلية */}
                       {storeType === "physical" && address && (
                         <span className="flex items-center gap-0.5 bg-muted/30 px-1.5 py-0.5 rounded">
-                          <MapPin className="h-2.5 w-2.5" />
+                          <MapPin className="h-2.5 w-2.5 text-pink-500" />
                           <span className="truncate max-w-[80px]">{address}</span>
                         </span>
                       )}
                       
-                      {/* أوقات العمل */}
                       {(opensAt || closesAt) && (
                         <span className="flex items-center gap-0.5 bg-muted/30 px-1.5 py-0.5 rounded">
-                          <Clock className="h-2.5 w-2.5" />
+                          <Clock className="h-2.5 w-2.5 text-pink-500" />
                           {opensAt.slice(0,5)}-{closesAt.slice(0,5)}
                         </span>
                       )}
                       
-                      {/* أيام العطل (مختصرة) */}
                       {offDays.length > 0 && (
                         <span className="flex items-center gap-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">
                           <span>📅</span>
@@ -491,7 +475,7 @@ function StoresPage() {
                     
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center gap-3 text-xs">
-                        <span className="flex items-center gap-1 text-accent">
+                        <span className="flex items-center gap-1 text-pink-600">
                           <Star className="h-3.5 w-3.5 fill-current" />
                           {Number(s.avg_rating ?? 0).toFixed(1)}
                         </span>
@@ -501,10 +485,9 @@ function StoresPage() {
                         </span>
                       </div>
                       
-                      {/* ✅ ✅ ✅ عرض سعر التوصيل من برا ✅ ✅ ✅ */}
                       {delivery && (
-                        <div className="flex items-center gap-1 bg-primary/5 px-2 py-0.5 rounded-full">
-                          <Truck className="h-3 w-3 text-primary" />
+                        <div className="flex items-center gap-1 bg-pink-500/10 px-2 py-0.5 rounded-full">
+                          <Truck className="h-3 w-3 text-pink-500" />
                           {renderDeliveryPrice(s.id)}
                         </div>
                       )}

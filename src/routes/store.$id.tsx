@@ -1,4 +1,4 @@
-// src/routes/store.$id.tsx - الكود المُصحّح بالكامل (حساب التوصيل الاحترافي مثل نون)
+// src/routes/store.$id.tsx - الكود المُصحّح بالكامل مع لمسات وردية
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useRef, lazy, Suspense } from "react";
@@ -262,51 +262,50 @@ function StorePage() {
         }
 
         // ✅✅✅ 4. جلب قيمة السلة من عناصر السلة
-     // ✅✅✅ 4. جلب قيمة السلة لمنتجات هذا المتجر فقط
-let orderTotal = 0;
-if (app.user) {
-  try {
-    const { data: cartData, error: cartError } = await supabase
-      .from("carts")
-      .select(`
-        id,
-        cart_items (
-          quantity,
-          price,
-          listing_id,
-          listing:listings!inner (
-            owner_id
-          )
-        )
-      `)
-      .eq("user_id", app.user.id)
-      .eq("status", "active")
-      .maybeSingle();
+        let orderTotal = 0;
+        if (app.user) {
+          try {
+            const { data: cartData, error: cartError } = await supabase
+              .from("carts")
+              .select(`
+                id,
+                cart_items (
+                  quantity,
+                  price,
+                  listing_id,
+                  listing:listings!inner (
+                    owner_id
+                  )
+                )
+              `)
+              .eq("user_id", app.user.id)
+              .eq("status", "active")
+              .maybeSingle();
 
-    if (cartError) {
-      console.error("❌ [Delivery] Error fetching cart:", cartError);
-    }
-    
-    if (cartData && cartData.cart_items && cartData.cart_items.length > 0) {
-      // ✅ فلترة المنتجات التي تنتمي لهذا المتجر فقط
-      const storeItems = cartData.cart_items.filter((item: any) => {
-        const ownerId = item.listing?.owner_id || item.listing_id;
-        return ownerId === id;
-      });
-      
-      orderTotal = storeItems.reduce((sum: number, item: any) => {
-        return sum + (Number(item.price) * Number(item.quantity));
-      }, 0);
-      
-      console.log(`🛒 [Delivery] Cart subtotal for this store: ${orderTotal} SYP`);
-      console.log(`🛒 [Delivery] Total items in cart: ${cartData.cart_items.length}, Store items: ${storeItems.length}`);
-    } else {
-      console.log(`🛒 [Delivery] Cart is empty or has no items`);
-    }
-  } catch (error) {
-    console.error("❌ [Delivery] Error calculating cart total:", error);
-  }
-}
+            if (cartError) {
+              console.error("❌ [Delivery] Error fetching cart:", cartError);
+            }
+            
+            if (cartData && cartData.cart_items && cartData.cart_items.length > 0) {
+              // ✅ فلترة المنتجات التي تنتمي لهذا المتجر فقط
+              const storeItems = cartData.cart_items.filter((item: any) => {
+                const ownerId = item.listing?.owner_id || item.listing_id;
+                return ownerId === id;
+              });
+              
+              orderTotal = storeItems.reduce((sum: number, item: any) => {
+                return sum + (Number(item.price) * Number(item.quantity));
+              }, 0);
+              
+              console.log(`🛒 [Delivery] Cart subtotal for this store: ${orderTotal} SYP`);
+              console.log(`🛒 [Delivery] Total items in cart: ${cartData.cart_items.length}, Store items: ${storeItems.length}`);
+            } else {
+              console.log(`🛒 [Delivery] Cart is empty or has no items`);
+            }
+          } catch (error) {
+            console.error("❌ [Delivery] Error calculating cart total:", error);
+          }
+        }
 
         // ✅ 5. حساب سعر التوصيل
         const freeThreshold = selectedCompany.free_delivery_threshold || 0;
@@ -430,7 +429,7 @@ if (app.user) {
       <div className="mx-auto max-w-7xl px-4 py-20 text-center">
         <StoreIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
         <h2 className="text-2xl font-bold">{app.lang === "ar" ? "المتجر غير موجود" : "Store not found"}</h2>
-        <Button className="mt-4 bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white" onClick={() => navigate({ to: "/" })}>
+        <Button className="mt-4 bg-pink-500 hover:bg-pink-600 text-white" onClick={() => navigate({ to: "/" })}>
           {app.lang === "ar" ? "العودة للرئيسية" : "Back to home"}
         </Button>
       </div>
@@ -444,10 +443,10 @@ if (app.user) {
   const displayListings = page === 1 ? listings : allListings;
 
   return (
-    <div className="bg-gradient-to-b from-[#0d2e2a]/5 via-transparent to-[#2d6b63]/5 dark:from-[#0d2e2a]/20 dark:to-[#2d6b63]/10 min-h-screen">
+    <div className="bg-gradient-to-b from-pink-500/5 via-transparent to-rose-500/5 dark:from-pink-500/20 dark:to-rose-500/10 min-h-screen">
       
       {/* ====== غلاف المتجر ====== */}
-      <div className="relative h-48 md:h-72 bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] overflow-hidden">
+      <div className="relative h-48 md:h-72 bg-gradient-to-br from-pink-500 to-rose-500 overflow-hidden">
         {store.store_cover_url && (
           <img 
             src={store.store_cover_url} 
@@ -470,11 +469,11 @@ if (app.user) {
 
       {/* ====== معلومات المتجر ====== */}
       <div className="mx-auto max-w-7xl px-4 -mt-16 relative z-10">
-        <div className="rounded-2xl bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-xl shadow-2xl shadow-[#0d2e2a]/20 p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4 border border-[#0d2e2a]/10">
+        <div className="rounded-2xl bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-xl shadow-2xl shadow-pink-500/20 p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4 border border-pink-300/20">
           
           {/* شعار المتجر */}
           <div className="relative group">
-            <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] overflow-hidden border-4 border-white dark:border-[#1e293b] shadow-xl grid place-items-center text-white font-black text-3xl flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+            <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 overflow-hidden border-4 border-white dark:border-[#1e293b] shadow-xl grid place-items-center text-white font-black text-3xl flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
               {store.store_logo_url || store.avatar_url ? (
                 <img 
                   src={store.store_logo_url || store.avatar_url} 
@@ -501,10 +500,10 @@ if (app.user) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl md:text-3xl font-black text-[#0d2e2a] dark:text-white">{name}</h1>
-              <StoreIcon className="h-5 w-5 text-[#2d6b63] animate-pulse" />
+              <StoreIcon className="h-5 w-5 text-pink-500 animate-pulse" />
               <StoreStatusBadge store={store} lang={app.lang} />
               {store.is_verified && (
-                <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                <Badge className="bg-pink-500/10 text-pink-600 border-pink-500/20">
                   <BadgeCheck className="h-3 w-3 mr-1" />
                   {isArabic ? "موثق" : "Verified"}
                 </Badge>
@@ -516,7 +515,7 @@ if (app.user) {
             )}
             
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1 text-[#4a9f95]">
+              <span className="flex items-center gap-1 text-pink-500">
                 <Star className="h-4 w-4 fill-current animate-pulse" />
                 {Number(store.rating || 0).toFixed(1)}
               </span>
@@ -525,7 +524,7 @@ if (app.user) {
                 {totalCount} {t("products_tab")}
               </span>
               
-              <span className="flex items-center gap-1 bg-[#0d2e2a]/10 px-2.5 py-0.5 rounded-full text-[#0d2e2a] text-xs font-medium">
+              <span className="flex items-center gap-1 bg-pink-500/10 px-2.5 py-0.5 rounded-full text-pink-600 text-xs font-medium">
                 {storeType === "online" ? (
                   <>
                     <Globe className="h-3.5 w-3.5 animate-spin-slow" />
@@ -561,7 +560,7 @@ if (app.user) {
               <Button
                 onClick={handleMessage}
                 disabled={isOpeningConversation}
-                className="gap-2 bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] hover:from-[#1a4f4a] hover:to-[#4a9f95] text-white shadow-lg shadow-[#0d2e2a]/30 hover:shadow-xl transition-all hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 group"
+                className="gap-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg shadow-pink-500/30 hover:shadow-xl transition-all hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 group"
               >
                 {isOpeningConversation ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -575,7 +574,7 @@ if (app.user) {
               variant="outline"
               size="sm"
               onClick={() => window.open(`/store/${id}`, '_blank')}
-              className="border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10"
+              className="border-pink-300/30 text-pink-600 hover:bg-pink-500/10"
             >
               <Share2 className="h-3.5 w-3.5 mr-1" />
               {isArabic ? "مشاركة" : "Share"}
@@ -590,9 +589,9 @@ if (app.user) {
     <Card className={cn(
       "border-2 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden",
       deliveryPrice.isFree 
-        ? 'border-emerald-500/40 hover:border-emerald-500/60 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-950/10' 
+        ? 'border-pink-400/40 hover:border-pink-500/60 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/20 dark:to-pink-950/10' 
         : deliveryPrice.governorateMatch 
-          ? 'border-[#2d6b63]/30 hover:border-[#2d6b63]/50' 
+          ? 'border-pink-400/30 hover:border-pink-500/50' 
           : 'border-amber-500/30 hover:border-amber-500/50'
     )}>
       <CardContent className="p-4">
@@ -601,14 +600,14 @@ if (app.user) {
             <div className={cn(
               "h-12 w-12 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110",
               deliveryPrice.isFree 
-                ? "bg-emerald-500/20" 
-                : "bg-[#0d2e2a]/10"
+                ? "bg-pink-500/20" 
+                : "bg-pink-500/10"
             )}>
               <Truck className={cn(
                 "h-6 w-6 transition-all duration-500",
                 deliveryPrice.isFree 
-                  ? "text-emerald-500 animate-bounce" 
-                  : "text-[#0d2e2a] animate-float"
+                  ? "text-pink-500 animate-bounce" 
+                  : "text-pink-600 animate-float"
               )} />
             </div>
             
@@ -616,8 +615,8 @@ if (app.user) {
               <div className="font-semibold text-sm flex items-center gap-2">
                 {deliveryPrice.isFree ? (
                   <>
-                    <span className="text-emerald-600 dark:text-emerald-400">🚚 توصيل مجاني</span>
-                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px] px-2 py-0.5 animate-pulse">
+                    <span className="text-pink-600 dark:text-pink-400">🚚 توصيل مجاني</span>
+                    <Badge className="bg-pink-500/20 text-pink-600 border-0 text-[9px] px-2 py-0.5 animate-pulse">
                       {isArabic ? "🎉 عرض خاص" : "🎉 Special Offer"}
                     </Badge>
                   </>
@@ -628,7 +627,7 @@ if (app.user) {
                 <Badge className={cn(
                   "border-0 text-[9px] px-2 py-0.5 animate-pulse",
                   deliveryPrice.governorateMatch 
-                    ? 'bg-emerald-500/20 text-emerald-600 dark:bg-emerald-500/30 dark:text-emerald-400' 
+                    ? 'bg-pink-500/20 text-pink-600 dark:bg-pink-500/30 dark:text-pink-400' 
                     : 'bg-amber-500/20 text-amber-600 dark:bg-amber-500/30 dark:text-amber-400'
                 )}>
                   {deliveryPrice.governorateMatch 
@@ -640,7 +639,7 @@ if (app.user) {
               <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                 <span>{isArabic ? `المسافة: ${deliveryPrice.distance} كم` : `Distance: ${deliveryPrice.distance} km`}</span>
                 <span className="text-muted-foreground/30">|</span>
-                <span className="text-[#2d6b63] font-medium">{deliveryPrice.companyName}</span>
+                <span className="text-pink-600 font-medium">{deliveryPrice.companyName}</span>
                 {deliveryPrice.breakdown?.hasCoordinates ? (
                   <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[8px] px-1.5 py-0">
                     📍 {isArabic ? "موقع دقيق" : "Precise"}
@@ -652,12 +651,11 @@ if (app.user) {
                 )}
               </p>
               
-              {/* ✅ ✅ ✅ عرض الحد الأدنى للتوصيل المجاني فقط (بدون حد أدنى/أقصى) */}
               {deliveryPrice.freeThreshold > 0 && (
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                    <Gift className="h-3 w-3 text-emerald-500" />
-                    <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                  <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20">
+                    <Gift className="h-3 w-3 text-pink-500" />
+                    <span className="text-[10px] font-medium text-pink-600 dark:text-pink-400">
                       {isArabic 
                         ? `🎯 توصيل مجاني للطلبات التي تتجاوز ${deliveryPrice.freeThreshold} SYP`
                         : `🎯 Free delivery on orders over ${deliveryPrice.freeThreshold} SYP`}
@@ -670,7 +668,7 @@ if (app.user) {
           
           <div className="text-right">
             {deliveryPrice.isFree ? (
-              <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-sm px-4 py-1.5 animate-bounce rounded-xl">
+              <Badge className="bg-pink-500/20 text-pink-600 border-0 text-sm px-4 py-1.5 animate-bounce rounded-xl">
                 <span className="flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5" />
                   {isArabic ? "🆓 مجاني" : "🆓 Free"}
@@ -678,39 +676,37 @@ if (app.user) {
               </Badge>
             ) : (
               <div className="flex flex-col items-end">
-                <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#4a9f95]">
+                <span className="text-2xl font-bold text-pink-600 dark:text-pink-400">
                   {deliveryPrice.price} SYP
                 </span>
-               
               </div>
             )}
           </div>
         </div>
         
-        {/* ✅ شريط التقدم للتوصيل المجاني */}
         {!deliveryPrice.isFree && deliveryPrice.freeThreshold > 0 && deliveryPrice.remainingForFree > 0 && (
           <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
               <div className="flex items-center gap-2">
-                <Target className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
-                <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                <Target className="h-3.5 w-3.5 text-pink-500 animate-pulse" />
+                <span className="font-medium text-pink-600 dark:text-pink-400">
                   {isArabic ? "🎯 أضف منتجات بقيمة" : "🎯 Add items worth"}
                 </span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                <span className="font-bold text-pink-600 dark:text-pink-400 text-xs">
                   {deliveryPrice.remainingForFree} SYP
                 </span>
-                <span className="text-emerald-600/70 dark:text-emerald-400/70">
+                <span className="text-pink-600/70 dark:text-pink-400/70">
                   {isArabic ? "للحصول على توصيل مجاني" : "to get free delivery"}
                 </span>
               </div>
-              <Badge className="bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 text-emerald-600 dark:text-emerald-300 border-0 text-[9px] px-2 py-0.5 animate-pulse">
+              <Badge className="bg-gradient-to-r from-pink-500/20 to-pink-400/20 text-pink-600 dark:text-pink-300 border-0 text-[9px] px-2 py-0.5 animate-pulse">
                 <Gift className="h-2.5 w-2.5 inline mr-0.5" />
                 {isArabic ? "🎁 عرض" : "🎁 Offer"}
               </Badge>
             </div>
             <div className="relative h-2 w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-[#2d6b63] rounded-full transition-all duration-1000 shadow-lg shadow-emerald-500/20"
+                className="h-full bg-gradient-to-r from-pink-500 via-pink-400 to-rose-500 rounded-full transition-all duration-1000 shadow-lg shadow-pink-500/20"
                 style={{ 
                   width: `${Math.min(100, ((deliveryPrice.orderTotal || 0) / deliveryPrice.freeThreshold) * 100)}%` 
                 }}
@@ -720,7 +716,7 @@ if (app.user) {
             <div className="flex items-center justify-between mt-1 text-[10px]">
               <span className="text-muted-foreground/70">
                 {isArabic ? "📦 قيمة الطلب الحالية" : "📦 Current order value"}
-                <span className="font-bold text-emerald-600 dark:text-emerald-400 mr-1">
+                <span className="font-bold text-pink-600 dark:text-pink-400 mr-1">
                   {deliveryPrice.orderTotal || 0} SYP
                 </span>
               </span>
@@ -732,11 +728,10 @@ if (app.user) {
               </span>
             </div>
             
-            {/* ✅ نصائح تشجيعية لإضافة منتجات */}
             {deliveryPrice.remainingForFree > 0 && (
-              <div className="mt-2 p-2 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-950/20 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30 flex items-center gap-2">
-                <Award className="h-4 w-4 text-emerald-500 flex-shrink-0" />
-                <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium">
+              <div className="mt-2 p-2 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/30 dark:to-pink-950/20 rounded-lg border border-pink-200/50 dark:border-pink-800/30 flex items-center gap-2">
+                <Award className="h-4 w-4 text-pink-500 flex-shrink-0" />
+                <p className="text-[10px] text-pink-700 dark:text-pink-300 font-medium">
                   {isArabic 
                     ? `💡 أضف منتجات بقيمة ${deliveryPrice.remainingForFree} SYP إضافية وستحصل على توصيل مجاني! 🎉`
                     : `💡 Add ${deliveryPrice.remainingForFree} SYP more worth of products and get free delivery! 🎉`}
@@ -746,12 +741,11 @@ if (app.user) {
           </div>
         )}
         
-        {/* ✅ رسالة عندما يكون التوصيل مجاني بالفعل */}
         {deliveryPrice.isFree && deliveryPrice.freeThreshold > 0 && (
           <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
-            <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-950/20 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30">
-              <Sparkles className="h-4 w-4 text-emerald-500 flex-shrink-0 animate-pulse" />
-              <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium">
+            <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/30 dark:to-pink-950/20 rounded-lg border border-pink-200/50 dark:border-pink-800/30">
+              <Sparkles className="h-4 w-4 text-pink-500 flex-shrink-0 animate-pulse" />
+              <p className="text-[10px] text-pink-700 dark:text-pink-300 font-medium">
                 {isArabic 
                   ? `🎉 قيمة طلبك (${deliveryPrice.orderTotal || 0} SYP) تجاوزت الحد الأدنى (${deliveryPrice.freeThreshold} SYP) → توصيل مجاني!`
                   : `🎉 Your order value (${deliveryPrice.orderTotal || 0} SYP) exceeded the minimum (${deliveryPrice.freeThreshold} SYP) → Free delivery!`}
@@ -772,7 +766,7 @@ if (app.user) {
           
           {/* البحث */}
           <div className="relative w-full sm:w-64 group">
-            <Search className="absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted-foreground group-focus-within:text-[#0d2e2a] transition-colors" />
+            <Search className="absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted-foreground group-focus-within:text-pink-600 transition-colors" />
             <Input
               value={searchQuery}
               onChange={(e) => {
@@ -780,14 +774,14 @@ if (app.user) {
                 setPage(1);
               }}
               placeholder={isArabic ? "🔍 بحث في المتجر..." : "🔍 Search in store..."}
-              className="pl-9 pr-3 h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300"
+              className="pl-9 pr-3 h-10 rounded-xl border-pink-300/30 dark:border-pink-400/30 bg-white dark:bg-[#1e293b] focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
                 className="absolute inset-y-0 right-3 my-auto"
               >
-                <X className="h-4 w-4 text-muted-foreground hover:text-[#0d2e2a] transition-colors" />
+                <X className="h-4 w-4 text-muted-foreground hover:text-pink-600 transition-colors" />
               </button>
             )}
           </div>
@@ -796,7 +790,7 @@ if (app.user) {
           <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
             
             {/* ✅ فلتر المنتجات / العروض (مثل الكبسة) */}
-            <div className="relative flex items-center bg-[#0d2e2a]/5 dark:bg-[#0d2e2a]/20 rounded-xl p-1 border border-[#0d2e2a]/10">
+            <div className="relative flex items-center bg-pink-500/5 dark:bg-pink-500/20 rounded-xl p-1 border border-pink-300/20">
               <button
                 onClick={() => {
                   setViewFilter("all");
@@ -807,7 +801,7 @@ if (app.user) {
                   "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
                   viewFilter === "all" 
                     ? "text-white" 
-                    : "text-[#0d2e2a] dark:text-white/60 hover:text-[#0d2e2a] dark:hover:text-white"
+                    : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
                 )}
               >
                 <span className="flex items-center gap-1.5">
@@ -829,7 +823,7 @@ if (app.user) {
                   "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
                   viewFilter === "offers" 
                     ? "text-white" 
-                    : "text-[#0d2e2a] dark:text-white/60 hover:text-[#0d2e2a] dark:hover:text-white"
+                    : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
                 )}
               >
                 <span className="flex items-center gap-1.5">
@@ -841,10 +835,9 @@ if (app.user) {
                 </span>
               </button>
               
-              {/* الخلفية المتحركة (الكبسة) */}
               <div 
                 className={cn(
-                  "absolute top-1 h-[calc(100%-8px)] w-[calc(50%-4px)] rounded-lg bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 ease-out",
+                  "absolute top-1 h-[calc(100%-8px)] w-[calc(50%-4px)] rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 shadow-lg shadow-pink-500/30 transition-all duration-300 ease-out",
                   viewFilter === "all" ? "left-1" : "left-[calc(50%-2px)]"
                 )}
               />
@@ -855,9 +848,9 @@ if (app.user) {
               setSortBy(v);
               setPage(1);
             }}>
-              <SelectTrigger className="w-[140px] h-10 rounded-xl border-[#0d2e2a]/20 bg-white dark:bg-[#1e293b]">
+              <SelectTrigger className="w-[140px] h-10 rounded-xl border-pink-300/30 bg-white dark:bg-[#1e293b]">
                 <div className="flex items-center gap-2">
-                  <ArrowUpDown className="h-4 w-4 text-[#0d2e2a]" />
+                  <ArrowUpDown className="h-4 w-4 text-pink-500" />
                   <SelectValue placeholder={isArabic ? "ترتيب" : "Sort"} />
                 </div>
               </SelectTrigger>
@@ -871,12 +864,12 @@ if (app.user) {
             </Select>
 
             {/* تبديل العرض */}
-            <div className="flex items-center bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 p-1">
+            <div className="flex items-center bg-white dark:bg-[#1e293b] rounded-xl border border-pink-300/30 p-1">
               <button
                 onClick={() => setViewMode("grid")}
                 className={cn(
                   "p-1.5 rounded-lg transition-all duration-300",
-                  viewMode === "grid" ? "bg-[#0d2e2a] text-white" : "text-muted-foreground hover:bg-[#0d2e2a]/10"
+                  viewMode === "grid" ? "bg-pink-500 text-white" : "text-muted-foreground hover:bg-pink-500/10"
                 )}
               >
                 <Grid3X3 className="h-4 w-4" />
@@ -885,7 +878,7 @@ if (app.user) {
                 onClick={() => setViewMode("list")}
                 className={cn(
                   "p-1.5 rounded-lg transition-all duration-300",
-                  viewMode === "list" ? "bg-[#0d2e2a] text-white" : "text-muted-foreground hover:bg-[#0d2e2a]/10"
+                  viewMode === "list" ? "bg-pink-500 text-white" : "text-muted-foreground hover:bg-pink-500/10"
                 )}
               >
                 <List className="h-4 w-4" />
@@ -897,12 +890,12 @@ if (app.user) {
         {/* إحصائيات النتائج */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="font-medium text-[#0d2e2a]">
+            <span className="font-medium text-pink-600">
               {viewFilter === "offers" ? offersCount : totalCount}
             </span>
             {viewFilter === "offers" ? (isArabic ? "عرض" : "offers") : (isArabic ? "منتج" : "products")}
             {searchQuery && (
-              <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border-[#0d2e2a]/20">
+              <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
                 <Search className="h-3 w-3 mr-1" />
                 {searchQuery}
               </Badge>
@@ -916,7 +909,7 @@ if (app.user) {
           </div>
           {isLoading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin text-[#2d6b63]" />
+              <Loader2 className="h-4 w-4 animate-spin text-pink-500" />
               {isArabic ? "جاري التحميل..." : "Loading..."}
             </div>
           )}
@@ -924,7 +917,7 @@ if (app.user) {
 
         {/* ====== قائمة المنتجات ====== */}
         {displayListings.length === 0 && !isLoading ? (
-          <div className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 backdrop-blur-sm p-12 text-center border border-[#0d2e2a]/10">
+          <div className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 backdrop-blur-sm p-12 text-center border border-pink-300/20">
             <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40 animate-float" />
             <p className="text-lg font-medium text-[#0d2e2a] dark:text-white">
               {searchQuery
@@ -937,7 +930,7 @@ if (app.user) {
               <Button 
                 variant="outline" 
                 onClick={resetFilters}
-                className="mt-4 border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10"
+                className="mt-4 border-pink-300/30 text-pink-600 hover:bg-pink-500/10"
               >
                 <RefreshCw className="h-4 w-4 mr-1" />
                 {isArabic ? "إعادة تعيين الفلتر" : "Reset filter"}
@@ -965,14 +958,13 @@ if (app.user) {
               ))}
             </div>
 
-            {/* ✅ زر تحميل المزيد */}
             {page < totalPages && (
               <div ref={loadMoreRef} className="flex justify-center mt-6">
                 <Button
                   variant="outline"
                   onClick={loadMore}
                   disabled={isFetching}
-                  className="rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10"
+                  className="rounded-xl border-pink-300/30 hover:bg-pink-500/10 text-pink-600"
                 >
                   {isFetching ? (
                     <>
@@ -989,7 +981,6 @@ if (app.user) {
               </div>
             )}
 
-            {/* ✅ عند انتهاء المنتجات */}
             {page >= totalPages && totalCount > limit && (
               <div className="flex justify-center mt-6 text-sm text-muted-foreground">
                 {isArabic ? "🎉 تم تحميل جميع المنتجات" : "🎉 All products loaded"}
@@ -998,16 +989,15 @@ if (app.user) {
           </>
         )}
 
-        {/* إحصاءات إضافية */}
         {totalCount > 0 && (
-          <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground border-t border-[#0d2e2a]/10 pt-4">
+          <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground border-t border-pink-300/20 pt-4">
             <span>
               {isArabic 
                 ? `عرض ${displayListings.length} من ${viewFilter === "offers" ? offersCount : totalCount} ${viewFilter === "offers" ? "عرض" : "منتج"}` 
                 : `Showing ${displayListings.length} of ${viewFilter === "offers" ? offersCount : totalCount} ${viewFilter === "offers" ? "offers" : "products"}`}
             </span>
             <span className="flex items-center gap-2">
-              <Badge className="bg-[#0d2e2a]/5 text-[#0d2e2a] border-[#0d2e2a]/20">
+              <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
                 {isArabic ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
               </Badge>
             </span>
@@ -1099,11 +1089,11 @@ function StoreStatusBadge({ store, lang }: { store: any; lang: "ar" | "en" }) {
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-300 ${
       open 
-        ? "bg-[#2d6b63]/15 text-[#2d6b63] animate-pulse" 
+        ? "bg-pink-500/15 text-pink-600 animate-pulse" 
         : "bg-muted text-muted-foreground"
     }`}>
       <span className={`h-2 w-2 rounded-full ${
-        open ? "bg-[#2d6b63] animate-pulse" : "bg-muted-foreground"
+        open ? "bg-pink-500 animate-pulse" : "bg-muted-foreground"
       }`} />
       {open 
         ? (lang === "ar" ? "🟢 مفتوح الآن" : "🟢 Open now") 
@@ -1117,13 +1107,13 @@ function StoreStatusBadge({ store, lang }: { store: any; lang: "ar" | "en" }) {
 // ============================================================
 function ProductSkeleton() {
   return (
-    <div className="rounded-xl bg-white dark:bg-[#1e293b] border border-[#0d2e2a]/10 p-3 animate-pulse">
-      <div className="aspect-square rounded-lg bg-[#0d2e2a]/10" />
-      <div className="h-4 bg-[#0d2e2a]/10 rounded mt-3 w-3/4" />
-      <div className="h-3 bg-[#0d2e2a]/10 rounded mt-2 w-1/2" />
+    <div className="rounded-xl bg-white dark:bg-[#1e293b] border border-pink-300/20 p-3 animate-pulse">
+      <div className="aspect-square rounded-lg bg-pink-500/10" />
+      <div className="h-4 bg-pink-500/10 rounded mt-3 w-3/4" />
+      <div className="h-3 bg-pink-500/10 rounded mt-2 w-1/2" />
       <div className="flex items-center gap-2 mt-3">
-        <div className="h-4 bg-[#0d2e2a]/10 rounded w-1/3" />
-        <div className="h-4 bg-[#0d2e2a]/10 rounded w-1/4" />
+        <div className="h-4 bg-pink-500/10 rounded w-1/3" />
+        <div className="h-4 bg-pink-500/10 rounded w-1/4" />
       </div>
     </div>
   );
