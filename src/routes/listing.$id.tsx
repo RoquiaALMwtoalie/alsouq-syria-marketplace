@@ -1159,9 +1159,26 @@ const handleAddToCart = useCallback(async () => {
                     )}
                   </td>
                 ))}
-                <td className="px-3 py-2.5 text-xs font-semibold text-[#0d2e2a]">
-                  {v.price ? formatPrice(v.price, app.currency, app.lang) : formatPrice(Number(listing.price), app.currency, app.lang)}
-                </td>
+              <td className="px-3 py-2.5 text-xs">
+  {/* ✅ السعر الجديد (أو السعر العادي للمنتجات) */}
+  <span className="font-semibold text-[#0d2e2a]">
+    {v.price ? formatPrice(v.price, app.currency, app.lang) : formatPrice(Number(listing.price), app.currency, app.lang)}
+  </span>
+  
+  {/* ✅ السعر القديم (يظهر فقط للعروض) */}
+  {listing.is_offer && v.old_price && v.old_price > 0 && (
+    <span className="ml-2 text-xs text-red-400 line-through">
+      {formatPrice(v.old_price, app.currency, app.lang)}
+    </span>
+  )}
+  
+  {/* ✅ إذا كان العرض وما في old_price للفيرنتة، استخدم old_price من listing */}
+  {listing.is_offer && (!v.old_price || v.old_price <= 0) && listing.old_price && listing.old_price > 0 && (
+    <span className="ml-2 text-xs text-red-400 line-through">
+      {formatPrice(Number(listing.old_price), app.currency, app.lang)}
+    </span>
+  )}
+</td>
                 <td className="px-3 py-2.5 text-center">
                   {isAvailable ? (
                     <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[9px] px-2 py-0.5">
