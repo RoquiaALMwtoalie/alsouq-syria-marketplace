@@ -47,7 +47,6 @@ const OPTION_TYPES = [
 // ============================================================
 // 📦 واجهات
 // ============================================================
-// 🟢 بعد التعديل (أضف old_price)
 export interface Variation {
   id: string;
   combination: Record<string, string>;
@@ -272,9 +271,10 @@ export function ProductOptionsManager({
       return {
         ...v,
         price: existingVariation?.price ?? 0,
+        old_price: existingVariation?.old_price ?? 0,  // ✅ ✅ ✅ الحفاظ على old_price
         stock_quantity: existingVariation?.stock_quantity ?? 0,
         is_available: existingVariation?.is_available ?? true,
-        is_new: isNew, // ✅ ✅ ✅ علامة للتركيبات الجديدة
+        is_new: isNew,
       };
     });
 
@@ -368,6 +368,7 @@ export function ProductOptionsManager({
             combination: { ...current },
             is_available: true,
             price: 0,
+            old_price: 0,  // ✅ ✅ ✅
             stock_quantity: 0,
           });
         }
@@ -431,6 +432,7 @@ export function ProductOptionsManager({
           combination: { ...current },
           is_available: true,
           price: 0,
+          old_price: 0,  // ✅ ✅ ✅
           stock_quantity: 0,
         });
         return;
@@ -453,8 +455,9 @@ export function ProductOptionsManager({
       const variationsWithDefaults = allVariations.map(v => ({
         ...v,
         price: 0,
+        old_price: 0,  // ✅ ✅ ✅
         stock_quantity: 0,
-        is_new: true, // ✅ كل التركيبات المولدة يدوياً تعتبر جديدة
+        is_new: true,
       }));
       
       setLocalVariations(variationsWithDefaults);
@@ -1075,7 +1078,7 @@ export function ProductOptionsManager({
                 {localVariations.map((variation) => {
                   const isAvailable = variation.is_available;
                   const comboKeys = Object.keys(variation.combination);
-                  const isNew = variation.is_new; // ✅ التركيبة الجديدة
+                  const isNew = variation.is_new;
                   
                   return (
                     <div
@@ -1085,7 +1088,6 @@ export function ProductOptionsManager({
                         isAvailable 
                           ? 'border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:border-emerald-500' 
                           : 'border-red-500/30 bg-red-50/30 dark:bg-red-950/10 opacity-60 hover:border-red-500',
-                        // ✅ ✅ ✅ تمييز التركيبات الجديدة بلون أصفر
                         isNew && "border-yellow-400/70 bg-yellow-50/50 dark:bg-yellow-950/20 animate-pulse"
                       )}
                       onClick={() => toggleVariationAvailability(variation.id)}
@@ -1127,52 +1129,96 @@ export function ProductOptionsManager({
                         </div>
                       </div>
                       
-                      {/* ✅ حقل السعر لكل تركيبة مع تمييز الجديدة */}
-                      <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-slate-200/50 dark:border-slate-700/50">
-                        <div className="flex-1 flex items-center gap-1">
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                            {lang === "ar" ? "السعر:" : "Price:"}
-                            <span className="text-red-500">*</span>
-                          </span>
-                          <Input
-                            type="number"
-                            min="1"
-                            step="1"
-                            value={variation.price !== undefined && variation.price !== null && variation.price > 0 ? variation.price : ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              const newPrice = val === '' ? 0 : Number(val);
-                              const updated = localVariations.map(v => 
-                                v.id === variation.id ? { ...v, price: newPrice, is_new: false } : v
-                              );
-                              setLocalVariations(updated);
-                              if (onVariationsChange) {
-                                onVariationsChange(updated);
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className={cn(
-                              "h-6 text-xs rounded-lg border-2 w-20 px-1.5 transition-all duration-300",
-                              // ✅ ✅ ✅ تمييز حقل السعر إذا كان مطلوباً (سعر = 0 وتركيبة جديدة)
-                              (!variation.price || variation.price <= 0) && isNew
-                                ? "border-red-500 dark:border-red-500 bg-red-50/50 dark:bg-red-950/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
-                                : (!variation.price || variation.price <= 0)
-                                ? "border-red-300 dark:border-red-800 focus:border-red-500"
-                                : "border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
-                            )}
-                            placeholder={lang === "ar" ? "مطلوب" : "Required"}
-                          />
+                      {/* ✅ حقول الأسعار لكل تركيبة */}
+                      <div className="flex flex-col gap-1.5 mt-1.5 pt-1.5 border-t border-slate-200/50 dark:border-slate-700/50">
+                        
+                        {/* ✅ السعر الجديد */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                              {lang === "ar" ? "💰 السعر الجديد:" : "💰 New Price:"}
+                              <span className="text-red-500">*</span>
+                            </span>
+                            <Input
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={variation.price !== undefined && variation.price !== null && variation.price > 0 ? variation.price : ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const newPrice = val === '' ? 0 : Number(val);
+                                const updated = localVariations.map(v => 
+                                  v.id === variation.id ? { ...v, price: newPrice, is_new: false } : v
+                                );
+                                setLocalVariations(updated);
+                                if (onVariationsChange) {
+                                  onVariationsChange(updated);
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className={cn(
+                                "h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300",
+                                (!variation.price || variation.price <= 0) && isNew
+                                  ? "border-red-500 dark:border-red-500 bg-red-50/50 dark:bg-red-950/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                  : (!variation.price || variation.price <= 0)
+                                  ? "border-red-300 dark:border-red-800 focus:border-red-500"
+                                  : "border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
+                              )}
+                              placeholder={lang === "ar" ? "مطلوب" : "Required"}
+                            />
+                          </div>
+                          
+                          {/* ✅ عرض السعر الجديد */}
+                          {variation.price && variation.price > 0 ? (
+                            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                              {variation.price} ل.س
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium text-red-500 animate-pulse whitespace-nowrap">
+                              {lang === "ar" ? "⛔ مطلوب" : "⛔ Required"}
+                            </span>
+                          )}
                         </div>
-                        {/* ✅ عرض السعر مع تمييز التركيبات الجديدة */}
-                        {variation.price && variation.price > 0 ? (
-                          <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                            {variation.price} ل.س
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-medium text-red-500 animate-pulse">
-                            {lang === "ar" ? "⛔ مطلوب" : "⛔ Required"}
-                          </span>
-                        )}
+
+                        {/* ✅ السعر القديم (للعروض) */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap line-through">
+                              {lang === "ar" ? "📌 السعر القديم:" : "📌 Old Price:"}
+                            </span>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={variation.old_price !== undefined && variation.old_price !== null && variation.old_price > 0 ? variation.old_price : ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const oldPrice = val === '' ? 0 : Number(val);
+                                const updated = localVariations.map(v => 
+                                  v.id === variation.id ? { ...v, old_price: oldPrice } : v
+                                );
+                                setLocalVariations(updated);
+                                if (onVariationsChange) {
+                                  onVariationsChange(updated);
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
+                              placeholder={lang === "ar" ? "اختياري" : "Optional"}
+                            />
+                          </div>
+                          
+                          {/* ✅ عرض السعر القديم */}
+                          {variation.old_price && variation.old_price > 0 ? (
+                            <span className="text-[10px] font-medium text-red-400 line-through whitespace-nowrap">
+                              {variation.old_price} ل.س
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium text-muted-foreground/50 whitespace-nowrap">
+                              {lang === "ar" ? "—" : "—"}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
