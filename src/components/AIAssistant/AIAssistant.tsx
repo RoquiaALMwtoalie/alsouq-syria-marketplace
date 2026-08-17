@@ -1,4 +1,3 @@
-// src/components/AIAssistant/AIAssistant.tsx
 // 🤖 المساعد الذكي المتقدم - نسخة احترافية مع ميزات متطورة
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -7,8 +6,7 @@ import {
   Bot, User, Minimize2, Maximize2, RefreshCw,
   Mic, MicOff, Volume2, VolumeX, History, Trash2,
   ChevronUp, ChevronDown, Search, Filter, Star, 
-  ShoppingBag, Store, Tag, MapPin, Clock, Zap,
-  Sparkle
+  ShoppingBag, Store, Tag, MapPin, Clock, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +27,7 @@ interface Message {
   products?: any[];
   stores?: any[];
   categories?: any[];
+  governorates?: any[];
   timestamp: Date;
   isTyping?: boolean;
 }
@@ -79,12 +78,10 @@ export function AIAssistant({
   // ============================================================
   
   useEffect(() => {
-    // Speech Synthesis
     if ('speechSynthesis' in window) {
       synthRef.current = window.speechSynthesis;
     }
     
-    // Speech Recognition
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
@@ -110,7 +107,6 @@ export function AIAssistant({
         if (transcript) {
           setInput(transcript);
           setIsListening(false);
-          // ✅ إرسال تلقائي بعد التعرف
           setTimeout(() => sendMessage(transcript), 300);
         }
       };
@@ -151,7 +147,6 @@ export function AIAssistant({
   const speakText = useCallback((text: string) => {
     if (!isSoundEnabled || !synthRef.current) return;
     
-    // إلغاء أي كلام سابق
     synthRef.current.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
@@ -164,7 +159,6 @@ export function AIAssistant({
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
     
-    // اختيار صوت مناسب
     const voices = synthRef.current.getVoices();
     const preferredVoice = voices.find(v => 
       v.lang.startsWith(app.lang === 'ar' ? 'ar' : 'en')
@@ -193,6 +187,8 @@ export function AIAssistant({
           "👔 ملابس شتوية",
           "📱 اكسسوارات جوالات",
           "🏠 أثاث منزلي",
+          "🚚 شركات توصيل في حلب",
+          "📋 طلباتي",
         ]
       : [
           "🔍 Search for Samsung phones",
@@ -205,6 +201,8 @@ export function AIAssistant({
           "👔 Winter clothes",
           "📱 Phone accessories",
           "🏠 Home furniture",
+          "🚚 Delivery companies in Aleppo",
+          "📋 My orders",
         ];
     
     setSuggestedQuestions(suggestions);
@@ -217,8 +215,28 @@ export function AIAssistant({
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const welcomeMessage = isArabic
-        ? "👋 أهلاً بك في السوق لعندك!\n\nأنا مساعدك الذكي، يمكنني مساعدتك في:\n• 🔍 البحث عن المنتجات\n• 🏪 اكتشاف المتاجر\n• 📂 استعراض التصنيفات\n• 💰 معرفة الأسعار والعروض\n\nاسألني أي شيء! 🚀"
-        : "👋 Welcome to Souq Le3ndak!\n\nI'm your smart assistant, I can help you with:\n• 🔍 Search for products\n• 🏪 Discover stores\n• 📂 Browse categories\n• 💰 Check prices and offers\n\nAsk me anything! 🚀";
+        ? `👋 أهلاً بك في السوق لعندك!
+
+🤖 أنا مساعدك الذكي، يمكنني مساعدتك في:
+• 🔍 البحث عن المنتجات
+• 🏪 اكتشاف المتاجر
+• 📂 استعراض التصنيفات
+• 💰 معرفة الأسعار والعروض
+• 🚚 شركات التوصيل
+• 📋 تتبع الطلبات
+
+💡 اسألني أي شيء! 🚀`
+        : `👋 Welcome to Souq Le3ndak!
+
+🤖 I'm your smart assistant, I can help you with:
+• 🔍 Search for products
+• 🏪 Discover stores
+• 📂 Browse categories
+• 💰 Check prices and offers
+• 🚚 Delivery companies
+• 📋 Track orders
+
+💡 Ask me anything! 🚀`;
       
       setMessages([
         {
@@ -234,17 +252,6 @@ export function AIAssistant({
   }, [isOpen, isArabic, messages.length, updateSuggestions]);
 
   // ============================================================
-  // 📜 جلب تاريخ المحادثة
-  // ============================================================
-  
-  useEffect(() => {
-    if (showHistory && app.user) {
-      // يمكن جلب تاريخ المحادثة من قاعدة البيانات
-      // يتم تنفيذها في ملف منفصل
-    }
-  }, [showHistory, app.user]);
-
-  // ============================================================
   // 📜 تمرير للأسفل تلقائي
   // ============================================================
   
@@ -258,13 +265,11 @@ export function AIAssistant({
   
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+K أو Cmd+K لفتح/إغلاق
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
         setIsOpen(!isOpen);
       }
       
-      // Escape للإغلاق
       if (e.key === "Escape" && isOpen) {
         setIsOpen(false);
       }
@@ -282,7 +287,6 @@ export function AIAssistant({
     const messageText = text || input.trim();
     if (!messageText || isLoading) return;
 
-    // ✅ رسالة المستخدم
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: "user",
@@ -296,7 +300,6 @@ export function AIAssistant({
     setIsTyping(true);
 
     try {
-      // ✅ إرسال إلى الخادم
       const response = await fetch(
         "https://jjqgfjpxaxjpyohvcbfi.supabase.co/functions/v1/ai-assistant",
         {
@@ -322,17 +325,18 @@ export function AIAssistant({
 
       const data = await response.json();
 
-      // ✅ رسالة المساعد
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: data.reply || (isArabic ? "عذراً، لم أستطع معالجة طلبك" : "Sorry, I couldn't process your request"),
-        timestamp: new Date(),
-      };
-
+    const assistantMessage: Message = {
+  id: `assistant-${Date.now()}`,
+  role: "assistant",
+  content: data.reply || (isArabic ? "عذراً، لم أستطع معالجة طلبك" : "Sorry, I couldn't process your request"),
+  products: data.results?.filter((r: any) => r.type === 'product').slice(0, 3),
+  stores: data.results?.filter((r: any) => r.type === 'store').slice(0, 3),
+  categories: data.results?.filter((r: any) => r.type === 'category') || [],  // ✅ هذا مهم
+  governorates: data.results?.filter((r: any) => r.type === 'governorate') || [],  // ✅ هذا مهم
+  timestamp: new Date(),
+};
       setMessages((prev) => [...prev, assistantMessage]);
       
-      // 🗣️ نطق الرد
       speakText(assistantMessage.content);
 
     } catch (error) {
@@ -384,7 +388,7 @@ export function AIAssistant({
   
   const status = getConnectionStatus();
 
-  // ✅ الزر المغلق - تصميم أنيق واحترافي بحجم مناسب
+  // ✅ الزر المغلق
   if (!isOpen) {
     return (
       <div className={cn(
@@ -394,33 +398,27 @@ export function AIAssistant({
         position === "bottom-center" && "bottom-6 left-1/2 -translate-x-1/2",
         className
       )}>
-        {/* ✅ زر أنيق بحجم مناسب */}
         <button
           onClick={() => setIsOpen(true)}
           className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg hover:shadow-2xl shadow-[#2a655f]/30 hover:shadow-[#2a655f]/50 transition-all duration-300 hover:scale-105 active:scale-95 border border-white/20"
         >
-          {/* ✅ أيقونة متحركة */}
           <div className="relative">
             <Bot className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
             <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse ring-2 ring-white/50" />
           </div>
           
-          {/* ✅ النص */}
           <span className="text-sm font-bold tracking-wide">
             {isArabic ? "المساعد الذكي" : "AI Assistant"}
           </span>
           
-          {/* ✅ اختصار لوحة المفاتيح */}
           {showShortcut && (
             <Badge className="bg-white/20 text-white border-0 text-[9px] px-1.5 py-0.5 font-mono">
               ⌘K
             </Badge>
           )}
           
-          {/* ✅ تأثير التموج عند التمرير */}
           <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
           
-          {/* ✅ نقطة حية صغيرة */}
           <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-300 animate-ping" />
           <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400" />
         </button>
@@ -472,7 +470,6 @@ export function AIAssistant({
         </div>
 
         <div className="flex items-center gap-0.5 flex-shrink-0">
-          {/* زر الصوت */}
           <Button
             variant="ghost"
             size="icon"
@@ -487,7 +484,6 @@ export function AIAssistant({
             )}
           </Button>
           
-          {/* زر الميكروفون */}
           <Button
             variant="ghost"
             size="icon"
@@ -506,7 +502,6 @@ export function AIAssistant({
             )}
           </Button>
           
-          {/* زر التصغير/التكبير */}
           <Button
             variant="ghost"
             size="icon"
@@ -520,7 +515,6 @@ export function AIAssistant({
             )}
           </Button>
           
-          {/* زر ملء الشاشة */}
           <Button
             variant="ghost"
             size="icon"
@@ -534,7 +528,6 @@ export function AIAssistant({
             )}
           </Button>
           
-          {/* زر الإغلاق */}
           <Button
             variant="ghost"
             size="icon"
@@ -637,7 +630,7 @@ export function AIAssistant({
             </Button>
           </div>
 
-          {/* ===== تذييل مع إحصائيات ===== */}
+          {/* ===== تذييل ===== */}
           <div className="px-3 py-1.5 border-t border-[#2a655f]/10 dark:border-[#2a655f]/20 flex items-center justify-between text-[9px] text-muted-foreground bg-slate-50/30 dark:bg-slate-950/20 rounded-b-2xl">
             <div className="flex items-center gap-3">
               <span>

@@ -1,27 +1,27 @@
 // src/routes/tracking/$trackingNumber.tsx
 
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useApp, useT } from "@/lib/i18n";
-import { useDeliveryOrders } from "@/lib/queries";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 import {
   Package, MapPin, Phone, Clock, CheckCircle, 
   XCircle, Truck, Navigation, User, 
   Calendar, ArrowRight, ChevronLeft, 
-  Circle, CircleCheck, CircleDot, 
-  Loader2, Home, Store, AlertCircle,
+  Circle, Loader2, Home, Store, AlertCircle,
   Mail, Award, Star, MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/tracking/$trackingNumber")({
   component: TrackingPage,
   head: ({ params }) => ({
     meta: [
-      { title: `تتبع الشحنة #${params.trackingNumber} - Souqi` },
+      { title: `تتبع الشحنة #${params.trackingNumber} - السوق اليك` },
       { name: "description", content: "تتبع حالة شحنتك في السوق اليك" },
     ],
   }),
@@ -30,52 +30,109 @@ export const Route = createFileRoute("/tracking/$trackingNumber")({
 function TrackingPage() {
   const { trackingNumber } = Route.useParams();
   const app = useApp();
-  const t = useT();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [order, setOrder] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"tracking" | "details" | "distributor">("tracking");
 
-  // ✅ جلب بيانات الطلب
-  const { data: orders = [], isLoading } = useDeliveryOrders(app.user?.id);
-  
-  // ✅ البحث عن الطلب بالرقم
-  const order = useMemo(() => {
-    return orders.find((o: any) => o.tracking_number === trackingNumber);
-  }, [orders, trackingNumber]);
+  const isArabic = app.lang === "ar";
+
+  // ✅ جلب بيانات الطلب مباشرة
+  useEffect(() => {
+    const fetchOrder = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const { data, error } = await supabase
+          .from("delivery_orders")
+          .select(`
+            *,
+            distributor:distributor_id (
+              id,
+              user_id,
+              full_name_ar,
+              full_name_en,
+              phone,
+              avatar_url,
+              rating,
+              completed_orders,
+              is_available
+            ),
+            orders:order_id (
+              id,
+              buyer_id,
+              seller_id,
+              listings:listing_id (
+                id,
+                title_ar,
+                title_en,
+                owner_id
+              )
+            )
+          `)
+          .or(`tracking_number.eq.${trackingNumber},id.eq.${trackingNumber}`)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (!data) {
+          setError(isArabic ? "❌ لم يتم العثور على الطلب" : "❌ Order not found");
+          setLoading(false);
+          return;
+        }
+
+        setOrder(data);
+        console.log("✅ Order found:", data);
+      } catch (error) {
+        console.error("❌ Error fetching order:", error);
+        setError(isArabic ? "❌ حدث خطأ في جلب بيانات الطلب" : "❌ Error fetching order");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (trackingNumber) {
+      fetchOrder();
+    }
+  }, [trackingNumber, isArabic]);
 
   // ✅ حالة الطلب
   const getStatusInfo = (status: string) => {
     const statusMap: Record<string, { label: string; color: string; icon: any; step: number }> = {
       pending: { 
-        label: app.lang === "ar" ? "قيد المراجعة" : "Pending", 
+        label: isArabic ? "قيد المراجعة" : "Pending", 
         color: "text-yellow-500", 
         icon: Clock,
         step: 0 
       },
       assigned: { 
-        label: app.lang === "ar" ? "تم التعيين" : "Assigned", 
+        label: isArabic ? "تم التعيين" : "Assigned", 
         color: "text-purple-500", 
         icon: User,
         step: 1 
       },
       picked_up: { 
-        label: app.lang === "ar" ? "تم الاستلام" : "Picked Up", 
+        label: isArabic ? "تم الاستلام" : "Picked Up", 
         color: "text-blue-500", 
         icon: Package,
         step: 2 
       },
       in_transit: { 
-        label: app.lang === "ar" ? "قيد التوصيل" : "In Transit", 
+        label: isArabic ? "قيد التوصيل" : "In Transit", 
         color: "text-orange-500", 
         icon: Truck,
         step: 3 
       },
       delivered: { 
-        label: app.lang === "ar" ? "تم التوصيل" : "Delivered", 
+        label: isArabic ? "تم التوصيل" : "Delivered", 
         color: "text-green-500", 
         icon: CheckCircle,
         step: 4 
       },
       cancelled: { 
-        label: app.lang === "ar" ? "ملغي" : "Cancelled", 
+        label: isArabic ? "ملغي" : "Cancelled", 
         color: "text-red-500", 
         icon: XCircle,
         step: -1 
@@ -83,8 +140,6 @@ function TrackingPage() {
     };
     return statusMap[status] || statusMap.pending;
   };
-
-  const isArabic = app.lang === "ar";
 
   // ✅ Steps للتتبع
   const steps = [
@@ -117,7 +172,8 @@ function TrackingPage() {
 
   const currentStep = order ? getStatusInfo(order.status).step : 0;
 
-  if (isLoading) {
+  // ✅ حالة التحميل
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
         <div className="mx-auto max-w-3xl px-4 py-12">
@@ -129,9 +185,10 @@ function TrackingPage() {
     );
   }
 
-  if (!order) {
+  // ✅ حالة الخطأ
+  if (error || !order) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 p-4">
         <div className="text-center max-w-md">
           <div className="h-20 w-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
             <XCircle className="h-10 w-10 text-red-500" />
@@ -144,10 +201,10 @@ function TrackingPage() {
               ? `لا توجد شحنة برقم التتبع "${trackingNumber}"` 
               : `No order found with tracking number "${trackingNumber}"`}
           </p>
-          <Link to="/">
-            <Button className="mt-6 bg-[#2a655f] hover:bg-[#3a8a82] text-white">
+          <Link to="/distributor/dashboard">
+            <Button className="mt-6 bg-[#2a655f] hover:bg-[#3a8a82] text-white rounded-xl">
               <Home className="h-4 w-4 mr-2" />
-              {isArabic ? "العودة للرئيسية" : "Back to Home"}
+              {isArabic ? "العودة للوحة التحكم" : "Back to Dashboard"}
             </Button>
           </Link>
         </div>
@@ -169,10 +226,13 @@ function TrackingPage() {
         </div>
         
         <div className="relative mx-auto max-w-3xl px-4 py-8 md:py-12">
-          <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white transition mb-4 group">
-            <ChevronLeft className="h-4 w-4 rtl:rotate-180 group-hover:-translate-x-1 transition-transform" />
-            {isArabic ? "الرئيسية" : "Home"}
-          </Link>
+          <button 
+            onClick={() => navigate({ to: "/distributor/dashboard" })}
+            className="inline-flex items-center gap-2 text-white/80 hover:text-white transition mb-4 group"
+          >
+            <ChevronLeft className={cn("h-4 w-4", isArabic && "rotate-180")} />
+            {isArabic ? "العودة" : "Back"}
+          </button>
           
           <div className="flex items-center gap-4">
             <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur grid place-items-center">
@@ -268,19 +328,15 @@ function TrackingPage() {
             </h3>
             
             <div className="relative">
-              {/* خط التتبع */}
               <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700" />
               
-              {/* Steps */}
               <div className="space-y-6">
                 {steps.map((step, index) => {
                   const isCompleted = index < currentStep;
                   const isCurrent = index === currentStep;
-                  const isUpcoming = index > currentStep;
                   
                   return (
                     <div key={step.key} className="flex items-start gap-4 relative">
-                      {/* النقطة */}
                       <div className={cn(
                         "h-10 w-10 rounded-full flex items-center justify-center shrink-0 z-10",
                         isCompleted ? "bg-[#2a655f] text-white" :
@@ -296,7 +352,6 @@ function TrackingPage() {
                         )}
                       </div>
                       
-                      {/* المحتوى */}
                       <div className="flex-1 pt-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className={cn(
@@ -318,29 +373,10 @@ function TrackingPage() {
                             </Badge>
                           )}
                         </div>
-                        
-                        {/* تاريخ الخطوة */}
-                        {isCompleted && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(order.created_at).toLocaleString(isArabic ? "ar-SA" : "en-US")}
-                          </p>
-                        )}
                       </div>
                     </div>
                   );
                 })}
-              </div>
-            </div>
-
-            {/* معلومات إضافية */}
-            <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">
-                  {isArabic 
-                    ? "سيتم تحديث التتبع تلقائياً عند تغيير الحالة" 
-                    : "Tracking will update automatically when status changes"}
-                </span>
               </div>
             </div>
           </div>
@@ -354,50 +390,23 @@ function TrackingPage() {
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* معلومات التسليم */}
               <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
                 <h4 className="font-semibold mb-3 flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-[#2a655f]" />
                   {isArabic ? "عنوان التسليم" : "Delivery Address"}
                 </h4>
-                <p className="text-sm">{order.delivery_address || isArabic ? "غير محدد" : "Not specified"}</p>
-                {order.delivery_phone && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                    <Phone className="h-3.5 w-3.5" />
-                    <span dir="ltr">{order.delivery_phone}</span>
-                  </div>
-                )}
-                {order.delivery_name && (
-                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                    <User className="h-3.5 w-3.5" />
-                    <span>{order.delivery_name}</span>
-                  </div>
-                )}
+                <p className="text-sm">{order.delivery_address || (isArabic ? "غير محدد" : "Not specified")}</p>
               </div>
 
-              {/* معلومات الشحن */}
               <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
                 <h4 className="font-semibold mb-3 flex items-center gap-2">
                   <Store className="h-4 w-4 text-[#2a655f]" />
                   {isArabic ? "عنوان الاستلام" : "Pickup Address"}
                 </h4>
-                <p className="text-sm">{order.pickup_address || isArabic ? "غير محدد" : "Not specified"}</p>
-                {order.pickup_phone && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                    <Phone className="h-3.5 w-3.5" />
-                    <span dir="ltr">{order.pickup_phone}</span>
-                  </div>
-                )}
-                {order.pickup_name && (
-                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                    <User className="h-3.5 w-3.5" />
-                    <span>{order.pickup_name}</span>
-                  </div>
-                )}
+                <p className="text-sm">{order.pickup_address || (isArabic ? "غير محدد" : "Not specified")}</p>
               </div>
             </div>
 
-            {/* معلومات إضافية */}
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center">
                 <p className="text-xs text-muted-foreground">{isArabic ? "رقم التتبع" : "Tracking"}</p>
@@ -416,9 +425,9 @@ function TrackingPage() {
                 </p>
               </div>
               <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center">
-                <p className="text-xs text-muted-foreground">{isArabic ? "طريقة الدفع" : "Payment"}</p>
-                <p className="font-bold text-sm mt-1">
-                  {order.cod_amount > 0 ? (isArabic ? "دفع عند الاستلام" : "Cash on Delivery") : (isArabic ? "مدفوع" : "Paid")}
+                <p className="text-xs text-muted-foreground">{isArabic ? "الحالة" : "Status"}</p>
+                <p className="font-bold text-sm mt-1 text-[#2a655f]">
+                  {statusInfo.label}
                 </p>
               </div>
             </div>
@@ -465,22 +474,6 @@ function TrackingPage() {
                       <span dir="ltr">{order.distributor.phone}</span>
                     </span>
                   </div>
-                  
-                  <div className="mt-4 flex items-center gap-2">
-                    <Button 
-                      size="sm" 
-                      className="bg-[#2a655f] hover:bg-[#3a8a82] text-white"
-                      onClick={() => window.location.href = `/messages/new?user=${order.distributor.user_id}`}
-                    >
-                      <MessageCircle className="h-4 w-4 mr-1" />
-                      {isArabic ? "مراسلة" : "Message"}
-                    </Button>
-                    {order.distributor.is_available && (
-                      <Badge className="bg-emerald-500/10 text-emerald-600 border-0">
-                        ● {isArabic ? "متاح" : "Available"}
-                      </Badge>
-                    )}
-                  </div>
                 </div>
               </div>
             ) : (
@@ -493,30 +486,6 @@ function TrackingPage() {
             )}
           </div>
         )}
-
-        {/* ===== SHARE BUTTON ===== */}
-        <div className="mt-6 flex justify-center">
-          <Button 
-            variant="outline" 
-            className="border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
-            onClick={() => {
-              const url = window.location.href;
-              if (navigator.share) {
-                navigator.share({
-                  title: isArabic ? `تتبع الشحنة ${trackingNumber}` : `Track Order ${trackingNumber}`,
-                  text: isArabic ? `يمكنك تتبع شحنتك برقم: ${trackingNumber}` : `Track your order with: ${trackingNumber}`,
-                  url: url,
-                });
-              } else {
-                navigator.clipboard.writeText(url);
-                toast.success(isArabic ? "✅ تم نسخ الرابط" : "✅ Link copied");
-              }
-            }}
-          >
-            <MessageCircle className="h-4 w-4 mr-2" />
-            {isArabic ? "مشاركة رابط التتبع" : "Share Tracking Link"}
-          </Button>
-        </div>
       </div>
     </div>
   );

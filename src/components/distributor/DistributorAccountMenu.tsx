@@ -150,17 +150,20 @@ export function DistributorAccountMenu({
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      toast.success(isArabic ? "✅ تم تسجيل الخروج بنجاح" : "✅ Logged out successfully");
-      navigate({ to: "/" });
-    } catch (error) {
-      toast.error(isArabic ? "❌ فشل تسجيل الخروج" : "❌ Logout failed");
-      console.error(error);
-    }
-  };
+const handleLogout = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    toast.success(isArabic ? "✅ تم تسجيل الخروج بنجاح" : "✅ Logged out successfully");
+    
+    // ✅ ✅ ✅ خذني لصفحة تسجيل الدخول
+    window.location.href = "/auth/login";
+    
+  } catch (error) {
+    toast.error(isArabic ? "❌ فشل تسجيل الخروج" : "❌ Logout failed");
+    console.error(error);
+  }
+};
 
   // ✅ جلب بيانات الموزع مع الرابط العام للصورة
   useEffect(() => {

@@ -3973,11 +3973,15 @@ export function useDeliveryCompany(slug: string) {
 // ============================================================
 // 📦 GET: الموزعين
 // ============================================================
+// ============================================================
+// 📦 GET: الموزعين (معدلة لدعم companyId)
+// ============================================================
 export function useDistributors(options?: {
   companyId?: string;
   governorateId?: string;
   isAvailable?: boolean;
   active?: boolean;
+  search?: string;
 }) {
   return useQuery({
     queryKey: ["distributors", options],
@@ -3988,24 +3992,42 @@ export function useDistributors(options?: {
         .from("distributors")
         .select(`
           *,
-          governorates:governorate_id (name_ar, name_en)
+          governorates:governorate_id (
+            id,
+            name_ar,
+            name_en
+          ),
+          delivery_companies:delivery_company_id (
+            id,
+            name_ar,
+            name_en,
+            logo_url
+          )
         `);
-        // ❌ شيل profiles:user_id لأنه ما في علاقة
 
-      // ✅ فلتر is_active فقط إذا مررته
+      // ✅ فلتر حسب الشركة (الأهم)
+      if (options?.companyId) {
+        query = query.eq("delivery_company_id", options.companyId);
+      }
+
+      // ✅ فلتر حسب المحافظة
+      if (options?.governorateId) {
+        query = query.eq("governorate_id", options.governorateId);
+      }
+
+      // ✅ فلتر حسب التوفر
+      if (options?.isAvailable !== undefined) {
+        query = query.eq("is_available", options.isAvailable);
+      }
+
+      // ✅ فلتر حسب النشاط
       if (options?.active !== undefined) {
         query = query.eq("is_active", options.active);
       }
 
-      if (options?.companyId) {
-        query = query.eq("delivery_company_id", options.companyId);
-      }
-      if (options?.governorateId) {
-        query = query.eq("governorate_id", options.governorateId);
-      }
-      if (options?.isAvailable !== undefined) {
-        query = query.eq("is_available", options.isAvailable);
-      }
+      // ✅ ترتيب حسب التوفر أولاً ثم حسب الاسم
+      query = query.order("is_available", { ascending: false });
+      query = query.order("full_name_ar", { ascending: true });
 
       const { data, error } = await query;
       
@@ -4014,68 +4036,130 @@ export function useDistributors(options?: {
         throw error;
       }
       
-      console.log("✅ [useDistributors] Found:", data);
-      console.log("📦 [useDistributors] Count:", data?.length || 0);
+      console.log("✅ [useDistributors] Found:", data?.length || 0, "distributors");
+      console.log("📦 [useDistributors] Data:", data);
       
-      return data;
+      return data || [];
     },
+    enabled: true,
+    staleTime: 30 * 1000, // 30 ثانية
   });
 }
-
 // ============================================================
 // 📦 GET: طلبات التوصيل
 // ============================================================
 // src/lib/queries.ts - ابحث عن هذا الكود واستبدله
 
+// ✅ useDeliveryOrders - نسخة معدلة بالكامل
 export function useDeliveryOrders(userId?: string) {
   return useQuery({
     queryKey: ["delivery-orders", userId],
-     enabled: !!userId,
+    enabled: !!userId,
     staleTime: 30 * 1000,
-    retry: 0,  // ✅ لا تحاول مرة أخرى
+    retry: 0,
     queryFn: async () => {
       if (!userId) return [];
       
-      console.log("📡 [useDeliveryOrders] Fetching orders for userId:", userId);
-      
       try {
-        // ✅ استخدم maybeSingle()
-        const { data: companyData, error: companyError } = await supabase
-          .from("delivery_companies")
-          .select("id")
-          .eq("created_by", userId)
-          .maybeSingle();  // ✅ هذا التغيير المهم
-
-        if (companyError) {
-          console.error("❌ [useDeliveryOrders] Company error:", companyError);
+        // ✅ 1️⃣ جلب دور المستخدم
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId);
+        
+        const isDeliveryCompany = roles?.some(r => r.role === 'delivery_company');
+        const isDistributor = roles?.some(r => r.role === 'distributor');
+        
+        console.log("🔍 [useDeliveryOrders] Roles:", { isDeliveryCompany, isDistributor });
+        
+        let companyId: string | null = null;
+        let distributorId: string | null = null;
+        
+        // ✅ 2️⃣ إذا كان شركة توصيل → جلب company_id
+        if (isDeliveryCompany) {
+          // ✅ مالك شركة
+          const { data: company } = await supabase
+            .from("delivery_companies")
+            .select("id")
+            .eq("created_by", userId)
+            .maybeSingle();
+          
+          if (company) {
+            companyId = company.id;
+            console.log("✅ [useDeliveryOrders] Found company (owner):", companyId);
+          } else {
+            // ✅ مدير شركة (من delivery_company_admins)
+            const { data: adminCompany } = await supabase
+              .from("delivery_company_admins")
+              .select("company_id")
+              .eq("user_id", userId)
+              .maybeSingle();
+            
+            if (adminCompany) {
+              companyId = adminCompany.company_id;
+              console.log("✅ [useDeliveryOrders] Found company (admin):", companyId);
+            }
+          }
+        }
+        
+        // ✅ 3️⃣ إذا كان موزع → جلب distributor_id
+        if (isDistributor) {
+          const { data: distributor } = await supabase
+            .from("distributors")
+            .select("id")
+            .eq("user_id", userId)
+            .maybeSingle();
+          
+          if (distributor) {
+            distributorId = distributor.id;
+            console.log("✅ [useDeliveryOrders] Found distributor:", distributorId);
+          }
+        }
+        
+        // ✅ 4️⃣ بناء الاستعلام
+        let query = supabase.from("delivery_orders").select(`
+          *,
+          delivery_company:delivery_company_id (
+            id,
+            name_ar,
+            name_en,
+            logo_url
+          ),
+          distributor:distributor_id (
+            id,
+            full_name_ar,
+            full_name_en,
+            phone,
+            avatar_url
+          )
+        `);
+        
+        // ✅ إذا كان شركة توصيل → طلبات الشركة
+        if (companyId) {
+          query = query.eq("delivery_company_id", companyId);
+          console.log("📡 [useDeliveryOrders] Filtering by company:", companyId);
+        } 
+        // ✅ إذا كان موزع → طلباته
+        else if (distributorId) {
+          query = query.eq("distributor_id", distributorId);
+          console.log("📡 [useDeliveryOrders] Filtering by distributor:", distributorId);
+        } 
+        // ❌ إذا لا شركة ولا موزع
+        else {
+          console.log("ℹ️ [useDeliveryOrders] No company or distributor found");
           return [];
         }
-
-        if (!companyData) {
-          console.log("ℹ️ [useDeliveryOrders] No company found for user");
-          return [];
-        }
-
-        const { data, error } = await supabase
-          .from("delivery_orders")
-          .select(`
-            *,
-            delivery_company:delivery_company_id (*),
-            distributor:distributor_id (*)
-          `)
-          .eq("delivery_company_id", companyData.id)
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          console.error("❌ [useDeliveryOrders] Error:", error);
-          return [];
-        }
-
+        
+        // ✅ ترتيب حسب الأحدث
+        const { data, error } = await query.order("created_at", { ascending: false });
+        
+        if (error) throw error;
+        
         console.log("✅ [useDeliveryOrders] Found orders:", data?.length || 0);
         return data || [];
         
       } catch (error) {
-        console.error("❌ [useDeliveryOrders] Catch error:", error);
+        console.error("❌ [useDeliveryOrders] Error:", error);
         return [];
       }
     },
@@ -4234,67 +4318,175 @@ export function useDeleteDeliveryCompany() {
 
 // src/lib/queries.ts - ابحث عن هذا الكود واستبدله
 
+// src/lib/queries.ts
+
 export function useMyDeliveryCompany(userId: string | undefined) {
   return useQuery({
     queryKey: ["my-delivery-company", userId],
-    enabled: !!userId,  // ✅ تأكد من وجود userId
+    enabled: !!userId,
     staleTime: 5 * 60 * 1000,
-    retry: 1,  // ✅ حاول مرة واحدة فقط
+    retry: 1,
     queryFn: async () => {
       if (!userId) return null;
       
       console.log("🔍 [useMyDeliveryCompany] Searching for userId:", userId);
       
       try {
-        // ✅ استخدم maybeSingle() بدل single()
+        // ✅ 1️⃣ أولاً: جلب الموزع من جدول distributors
+        const { data: distributor, error: distError } = await supabase
+          .from("distributors")
+          .select(`
+            id,
+            delivery_company_id,
+            delivery_companies:delivery_company_id (
+              id,
+              name_ar,
+              name_en,
+              logo_url,
+              slug,
+              phone,
+              email,
+              address_ar,
+              address_en,
+              is_active,
+              is_featured,
+              rating,
+              reviews_count,
+              base_price,
+              price_per_km,
+              min_delivery_fee,
+              max_delivery_fee,
+              free_delivery_threshold,
+              avg_delivery_time,
+              has_tracking,
+              has_insurance,
+              has_cod,
+              has_express,
+              coverage_areas
+            )
+          `)
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (distError) {
+          console.error("❌ [useMyDeliveryCompany] Distributor error:", distError);
+          return null;
+        }
+
+        // ✅ 2️⃣ إذا وجدنا موزع ولديه شركة
+        if (distributor?.delivery_companies) {
+          console.log("✅ [useMyDeliveryCompany] Company found via distributor:", distributor.delivery_companies.name_ar);
+          return distributor.delivery_companies;
+        }
+
+        // ✅ 3️⃣ إذا كان المستخدم أدمن شركة (جلب من delivery_company_admins)
+        const { data: adminRecord, error: adminError } = await supabase
+          .from("delivery_company_admins")
+          .select(`
+            company_id,
+            delivery_companies:company_id (
+              id,
+              name_ar,
+              name_en,
+              logo_url,
+              slug,
+              phone,
+              email,
+              address_ar,
+              address_en,
+              is_active,
+              is_featured,
+              rating,
+              reviews_count,
+              base_price,
+              price_per_km,
+              min_delivery_fee,
+              max_delivery_fee,
+              free_delivery_threshold,
+              avg_delivery_time,
+              has_tracking,
+              has_insurance,
+              has_cod,
+              has_express,
+              coverage_areas
+            )
+          `)
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (adminError) {
+          console.error("❌ [useMyDeliveryCompany] Admin error:", adminError);
+        }
+
+        if (adminRecord?.delivery_companies) {
+          console.log("✅ [useMyDeliveryCompany] Company found via delivery_company_admins:", adminRecord.delivery_companies.name_ar);
+          return adminRecord.delivery_companies;
+        }
+
+        // ✅ 4️⃣ أخيراً: البحث في profiles
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("company_id")
+          .select(`
+            company_id,
+            delivery_company_id,
+            delivery_companies:delivery_company_id (
+              id,
+              name_ar,
+              name_en,
+              logo_url,
+              slug,
+              phone,
+              email,
+              address_ar,
+              address_en,
+              is_active,
+              is_featured,
+              rating,
+              reviews_count,
+              base_price,
+              price_per_km,
+              min_delivery_fee,
+              max_delivery_fee,
+              free_delivery_threshold,
+              avg_delivery_time,
+              has_tracking,
+              has_insurance,
+              has_cod,
+              has_express,
+              coverage_areas
+            )
+          `)
           .eq("id", userId)
-          .maybeSingle();  // ✅ هذا هو التغيير المهم
+          .maybeSingle();
 
         if (profileError) {
           console.error("❌ [useMyDeliveryCompany] Profile error:", profileError);
           return null;
         }
 
+        // ✅ التحقق من delivery_companies في profile
+        if (profile?.delivery_companies) {
+          console.log("✅ [useMyDeliveryCompany] Company found via profile.delivery_companies:", profile.delivery_companies.name_ar);
+          return profile.delivery_companies;
+        }
+
+        // ✅ التحقق من company_id في profile
         if (profile?.company_id) {
           const { data: company, error: companyError } = await supabase
             .from("delivery_companies")
             .select("*")
             .eq("id", profile.company_id)
-            .maybeSingle();  // ✅ هذا التغيير
+            .maybeSingle();
 
           if (companyError) {
-            console.error("❌ [useMyDeliveryCompany] Company error:", companyError);
+            console.error("❌ [useMyDeliveryCompany] Company fetch error:", companyError);
             return null;
           }
 
           if (company) {
-            console.log("✅ [useMyDeliveryCompany] Company found via profile:", company);
+            console.log("✅ [useMyDeliveryCompany] Company found via profile.company_id:", company.name_ar);
             return company;
           }
-        }
-
-        // ✅ البحث عن شركة أنشأها المستخدم
-        const { data: createdCompany, error: createdError } = await supabase
-          .from("delivery_companies")
-          .select("*")
-          .eq("created_by", userId)
-          .maybeSingle();  // ✅ هذا التغيير
-
-        if (createdError) {
-          console.error("❌ [useMyDeliveryCompany] Created company error:", createdError);
-          return null;
-        }
-
-        if (createdCompany) {
-          console.log("✅ [useMyDeliveryCompany] Company found via created_by:", createdCompany);
-          await supabase
-            .from("profiles")
-            .update({ company_id: createdCompany.id })
-            .eq("id", userId);
-          return createdCompany;
         }
 
         console.log("ℹ️ [useMyDeliveryCompany] No company found for user");
@@ -4549,10 +4741,18 @@ export function useAcceptDeliveryOrder() {
       deliveryOrderId: string; 
       distributorId: string;
       orderId: string;
-      estimatedDeliveryAt: string;  // ISO string
-      estimatedPickupAt?: string;    // ISO string (اختياري)
+      estimatedDeliveryAt: string;
+      estimatedPickupAt?: string;
     }) => {
+      console.log("🚀 [useAcceptDeliveryOrder] START");
+      console.log("📦 deliveryOrderId:", deliveryOrderId);
+      console.log("👤 distributorId:", distributorId);
+      console.log("🆔 orderId:", orderId);
+      console.log("⏰ estimatedDeliveryAt:", estimatedDeliveryAt);
+      console.log("⏰ estimatedPickupAt:", estimatedPickupAt);
+
       // 1. جلب بيانات الطلب للإشعارات
+      console.log("📡 [1] Fetching order data...");
       const { data: order, error: orderFetchError } = await supabase
         .from("orders")
         .select(`
@@ -4567,9 +4767,16 @@ export function useAcceptDeliveryOrder() {
         .eq("id", orderId)
         .single();
 
-      if (orderFetchError) throw orderFetchError;
+      if (orderFetchError) {
+        console.error("❌ [1] Order fetch error:", orderFetchError);
+        throw orderFetchError;
+      }
+      console.log("✅ [1] Order fetched:", order);
+      console.log("📦 [1] Order listings:", order?.listings);
+      console.log("👤 [1] Order buyer_id:", order?.buyer_id);
 
       // 2. تحديث delivery_order
+      console.log("📡 [2] Updating delivery_order...");
       const updateData: any = {
         status: 'assigned',
         distributor_id: distributorId,
@@ -4580,6 +4787,7 @@ export function useAcceptDeliveryOrder() {
       if (estimatedPickupAt) {
         updateData.estimated_pickup_at = estimatedPickupAt;
       }
+      console.log("📝 [2] Update data:", updateData);
 
       const { data: deliveryOrder, error: deliveryError } = await supabase
         .from("delivery_orders")
@@ -4588,13 +4796,18 @@ export function useAcceptDeliveryOrder() {
         .select()
         .single();
 
-      if (deliveryError) throw deliveryError;
+      if (deliveryError) {
+        console.error("❌ [2] Delivery order update error:", deliveryError);
+        throw deliveryError;
+      }
+      console.log("✅ [2] Delivery order updated:", deliveryOrder);
 
       // 3. تحديث order الرئيسي
+      console.log("📡 [3] Updating main order...");
       const { error: orderError } = await supabase
         .from("orders")
         .update({
-          status: 'shipped',  // ✅ تغيير الحالة إلى shipped
+          status: 'shipped',
           accepted_at: new Date().toISOString(),
           distributor_id: distributorId,
           delivery_status: 'assigned',
@@ -4602,26 +4815,39 @@ export function useAcceptDeliveryOrder() {
         })
         .eq("id", orderId);
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error("❌ [3] Order update error:", orderError);
+        throw orderError;
+      }
+      console.log("✅ [3] Main order updated");
 
       // 4. جلب بيانات الموزع للإشعار
+      console.log("📡 [4] Fetching distributor data...");
       const { data: distributor, error: distError } = await supabase
         .from("distributors")
         .select("full_name_ar, full_name_en, user_id, phone")
         .eq("id", distributorId)
         .single();
 
-      if (distError) console.error("❌ Error fetching distributor:", distError);
+      if (distError) {
+        console.error("❌ [4] Distributor fetch error:", distError);
+      } else {
+        console.log("✅ [4] Distributor fetched:", distributor);
+        console.log("👤 [4] Distributor user_id:", distributor?.user_id);
+      }
 
       // ✅ 5. إشعار للموزع (تم تعيينه)
+      console.log("📡 [5] Sending notification to distributor...");
       if (distributor?.user_id) {
+        console.log("✅ [5] Distributor has user_id:", distributor.user_id);
         const deliveryDate = new Date(estimatedDeliveryAt);
         const formattedDate = deliveryDate.toLocaleDateString(
           'ar-SA',
           { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
         );
+        console.log("📅 [5] Formatted date:", formattedDate);
 
-        await supabase
+        const { error: notifyDistError } = await supabase
           .from("notifications")
           .insert({
             user_id: distributor.user_id,
@@ -4640,17 +4866,27 @@ export function useAcceptDeliveryOrder() {
               customer_address: order.delivery_address,
             }
           });
+
+        if (notifyDistError) {
+          console.error("❌ [5] Error sending notification to distributor:", notifyDistError);
+        } else {
+          console.log("✅ [5] Notification sent to distributor:", distributor.user_id);
+        }
+      } else {
+        console.warn("⚠️ [5] No distributor user_id found, skipping notification");
       }
 
       // ✅ 6. إشعار للمشتري (العميل) مع الوقت المتوقع
+      console.log("📡 [6] Sending notification to buyer...");
       if (order?.buyer_id) {
+        console.log("✅ [6] Buyer has id:", order.buyer_id);
         const deliveryDate = new Date(estimatedDeliveryAt);
         const formattedDate = deliveryDate.toLocaleDateString(
           'ar-SA',
           { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
         );
 
-        await supabase
+        const { error: notifyBuyerError } = await supabase
           .from("notifications")
           .insert({
             user_id: order.buyer_id,
@@ -4667,11 +4903,21 @@ export function useAcceptDeliveryOrder() {
               distributor_phone: distributor?.phone,
             }
           });
+
+        if (notifyBuyerError) {
+          console.error("❌ [6] Error sending notification to buyer:", notifyBuyerError);
+        } else {
+          console.log("✅ [6] Notification sent to buyer:", order.buyer_id);
+        }
+      } else {
+        console.warn("⚠️ [6] No buyer_id found, skipping notification");
       }
 
       // ✅ 7. إشعار للبائع (صاحب المتجر)
+      console.log("📡 [7] Sending notification to seller...");
       if (order?.listings?.owner_id) {
-        await supabase
+        console.log("✅ [7] Seller has id:", order.listings.owner_id);
+        const { error: notifySellerError } = await supabase
           .from("notifications")
           .insert({
             user_id: order.listings.owner_id,
@@ -4685,8 +4931,17 @@ export function useAcceptDeliveryOrder() {
               estimated_delivery_at: estimatedDeliveryAt,
             }
           });
+
+        if (notifySellerError) {
+          console.error("❌ [7] Error sending notification to seller:", notifySellerError);
+        } else {
+          console.log("✅ [7] Notification sent to seller:", order.listings.owner_id);
+        }
+      } else {
+        console.warn("⚠️ [7] No seller owner_id found, skipping notification");
       }
 
+      console.log("🎉 [useAcceptDeliveryOrder] COMPLETED SUCCESSFULLY");
       return deliveryOrder;
     },
     onSuccess: () => {

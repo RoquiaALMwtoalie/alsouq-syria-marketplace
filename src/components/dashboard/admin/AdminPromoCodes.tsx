@@ -574,27 +574,92 @@ export function AdminPromoCodes() {
   // ✅ معالجة النماذج
   // ============================================================
 
-  const handleAddCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+const handleAddCode = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    try {
-      if (isStoreSpecific && !selectedStoreId) {
-        toast.error(isArabic ? "⚠️ يرجى اختيار متجر للكود المخصص" : "⚠️ Please select a store for specific code");
-        setIsSubmitting(false);
-        return;
-      }
+  try {
+    if (isStoreSpecific && !selectedStoreId) {
+      toast.error(isArabic ? "⚠️ يرجى اختيار متجر للكود المخصص" : "⚠️ Please select a store for specific code");
+      setIsSubmitting(false);
+      return;
+    }
 
-      const selectedStore = activeStores.find((s: any) => s.id === selectedStoreId);
-      const storeName = selectedStore?.store_name || null;
+    const selectedStore = activeStores.find((s: any) => s.id === selectedStoreId);
+    const storeName = selectedStore?.store_name || null;
 
-      const metadata: any = {};
-      if (formData.type === 'buy_x_get_y') {
-        metadata.buy_quantity = formData.buy_quantity || 2;
-        metadata.get_quantity = formData.get_quantity || 1;
-      }
+    const metadata: any = {};
+    if (formData.type === 'buy_x_get_y') {
+      metadata.buy_quantity = formData.buy_quantity || 2;
+      metadata.get_quantity = formData.get_quantity || 1;
+    }
 
-      await createMutation.mutateAsync({
+    // ✅ تحويل expires_at للصيغة الصحيحة
+    let expiresAt = formData.expires_at || null;
+    if (expiresAt) {
+      const date = new Date(expiresAt);
+      expiresAt = date.toISOString();
+    }
+
+    await createMutation.mutateAsync({
+      code: formData.code,
+      label: formData.label,
+      description: formData.description,
+      type: formData.type,
+      value: parseFloat(formData.value),
+      min_order: parseFloat(formData.min_order) || 0,
+      max_discount: formData.max_discount ? parseFloat(formData.max_discount) : null,
+      usage_limit: parseInt(formData.usage_limit) || 1,
+      is_active: formData.is_active,
+      is_public: formData.is_public,
+      expires_at: expiresAt, // ✅ استخدم المتغير الجديد
+      created_by: app.user?.id,
+      metadata: metadata,
+      store_id: isStoreSpecific ? selectedStoreId : null,
+      store_name: isStoreSpecific ? storeName : null,
+    });
+
+    toast.success(isArabic ? "✅ تم إضافة الكود بنجاح" : "✅ Code added successfully");
+    setShowAddDialog(false);
+    resetForm();
+  } catch (error: any) {
+    toast.error(isArabic ? `❌ ${error.message}` : `❌ ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+const handleEditCode = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!selectedCode) return;
+  setIsSubmitting(true);
+
+  try {
+    if (isStoreSpecific && !selectedStoreId) {
+      toast.error(isArabic ? "⚠️ يرجى اختيار متجر للكود المخصص" : "⚠️ Please select a store for specific code");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const selectedStore = activeStores.find((s: any) => s.id === selectedStoreId);
+    const storeName = selectedStore?.store_name || null;
+
+    const metadata: any = {};
+    if (formData.type === 'buy_x_get_y') {
+      metadata.buy_quantity = formData.buy_quantity || 2;
+      metadata.get_quantity = formData.get_quantity || 1;
+    }
+
+    // ✅ تحويل expires_at للصيغة الصحيحة
+    let expiresAt = formData.expires_at || null;
+    if (expiresAt) {
+      const date = new Date(expiresAt);
+      expiresAt = date.toISOString();
+    }
+
+    await updateMutation.mutateAsync({
+      id: selectedCode.id,
+      data: {
         code: formData.code,
         label: formData.label,
         description: formData.description,
@@ -605,74 +670,23 @@ export function AdminPromoCodes() {
         usage_limit: parseInt(formData.usage_limit) || 1,
         is_active: formData.is_active,
         is_public: formData.is_public,
-        expires_at: formData.expires_at || null,
-        created_by: app.user?.id,
+        expires_at: expiresAt, // ✅ استخدم المتغير الجديد
         metadata: metadata,
         store_id: isStoreSpecific ? selectedStoreId : null,
         store_name: isStoreSpecific ? storeName : null,
-      });
+      },
+    });
 
-      toast.success(isArabic ? "✅ تم إضافة الكود بنجاح" : "✅ Code added successfully");
-      setShowAddDialog(false);
-      resetForm();
-    } catch (error: any) {
-      toast.error(isArabic ? `❌ ${error.message}` : `❌ ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleEditCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedCode) return;
-    setIsSubmitting(true);
-
-    try {
-      if (isStoreSpecific && !selectedStoreId) {
-        toast.error(isArabic ? "⚠️ يرجى اختيار متجر للكود المخصص" : "⚠️ Please select a store for specific code");
-        setIsSubmitting(false);
-        return;
-      }
-
-      const selectedStore = activeStores.find((s: any) => s.id === selectedStoreId);
-      const storeName = selectedStore?.store_name || null;
-
-      const metadata: any = {};
-      if (formData.type === 'buy_x_get_y') {
-        metadata.buy_quantity = formData.buy_quantity || 2;
-        metadata.get_quantity = formData.get_quantity || 1;
-      }
-
-      await updateMutation.mutateAsync({
-        id: selectedCode.id,
-        data: {
-          code: formData.code,
-          label: formData.label,
-          description: formData.description,
-          type: formData.type,
-          value: parseFloat(formData.value),
-          min_order: parseFloat(formData.min_order) || 0,
-          max_discount: formData.max_discount ? parseFloat(formData.max_discount) : null,
-          usage_limit: parseInt(formData.usage_limit) || 1,
-          is_active: formData.is_active,
-          is_public: formData.is_public,
-          expires_at: formData.expires_at || null,
-          metadata: metadata,
-          store_id: isStoreSpecific ? selectedStoreId : null,
-          store_name: isStoreSpecific ? storeName : null,
-        },
-      });
-
-      toast.success(isArabic ? "✅ تم تحديث الكود بنجاح" : "✅ Code updated successfully");
-      setShowEditDialog(false);
-      setSelectedCode(null);
-      resetForm();
-    } catch (error: any) {
-      toast.error(isArabic ? `❌ ${error.message}` : `❌ ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    toast.success(isArabic ? "✅ تم تحديث الكود بنجاح" : "✅ Code updated successfully");
+    setShowEditDialog(false);
+    setSelectedCode(null);
+    resetForm();
+  } catch (error: any) {
+    toast.error(isArabic ? `❌ ${error.message}` : `❌ ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleDeleteCode = async () => {
     if (!selectedCode) return;
@@ -710,34 +724,41 @@ export function AdminPromoCodes() {
   // ✅ فتح نافذة التعديل مع تعبئة الحقول
   // ============================================================
 
-  const openEditDialog = useCallback((code: PromoCode) => {
-    setSelectedCode(code);
-    const metadata = code.metadata || {};
-    
-    const isSpecific = !!code.store_id;
-    setIsStoreSpecific(isSpecific);
-    setSelectedStoreId(code.store_id || "");
+const openEditDialog = useCallback((code: PromoCode) => {
+  setSelectedCode(code);
+  const metadata = code.metadata || {};
+  
+  const isSpecific = !!code.store_id;
+  setIsStoreSpecific(isSpecific);
+  setSelectedStoreId(code.store_id || "");
 
-    setFormData({
-      code: code.code,
-      label: code.label || "",
-      description: code.description || "",
-      type: code.type,
-      value: String(code.value),
-      min_order: String(code.min_order || 0),
-      max_discount: code.max_discount ? String(code.max_discount) : "",
-      usage_limit: String(code.usage_limit || 1),
-      is_active: code.is_active,
-      is_public: code.is_public || false,
-      expires_at: code.expires_at || "",
-      buy_quantity: metadata.buy_quantity || 2,
-      get_quantity: metadata.get_quantity || 1,
-      store_id: code.store_id || "",
-      store_name: code.store_name || "",
-    });
-    setShowEditDialog(true);
-  }, []);
+  // ✅ تحويل التاريخ للصيغة الصحيحة للعرض
+  let formattedExpiresAt = "";
+  if (code.expires_at) {
+    const date = new Date(code.expires_at);
+    formattedExpiresAt = date.toISOString().slice(0, 16);
+  }
 
+  setFormData({
+    code: code.code,
+    label: code.label || "",
+    description: code.description || "",
+    type: code.type,
+    value: String(code.value),
+    min_order: String(code.min_order || 0),
+    max_discount: code.max_discount ? String(code.max_discount) : "",
+    usage_limit: String(code.usage_limit || 1),
+    is_active: code.is_active,
+    is_public: code.is_public || false,
+    expires_at: formattedExpiresAt, // ✅ استخدم الصيغة الصحيحة للعرض
+    buy_quantity: metadata.buy_quantity || 2,
+    get_quantity: metadata.get_quantity || 1,
+    store_id: code.store_id || "",
+    store_name: code.store_name || "",
+  });
+  
+  setShowEditDialog(true);
+}, []);
   // ============================================================
   // ✅ التصميم - الواجهة الرئيسية
   // ============================================================
@@ -1513,414 +1534,521 @@ export function AdminPromoCodes() {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: تعديل كود ===== */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/10">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-3">
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#1a4f4a] to-[#2d6b63] flex items-center justify-center">
-                <Edit className="h-4 w-4 text-white" />
-              </div>
-              {isArabic ? "تعديل كود الخصم" : "Edit Promo Code"}
-            </DialogTitle>
-            <DialogDescription>
-              {isArabic ? `تعديل كود "${selectedCode?.code}"` : `Editing code "${selectedCode?.code}"`}
-            </DialogDescription>
-          </DialogHeader>
+    {/* ===== DIALOG: تعديل كود (مطابق لفورم الإضافة) ===== */}
+<Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+  <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/10">
+    <DialogHeader>
+      <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-3">
+        <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#1a4f4a] to-[#2d6b63] flex items-center justify-center">
+          <Edit className="h-4 w-4 text-white" />
+        </div>
+        {isArabic ? "تعديل كود الخصم" : "Edit Promo Code"}
+      </DialogTitle>
+      <DialogDescription>
+        {isArabic ? `تعديل كود "${selectedCode?.code}"` : `Editing code "${selectedCode?.code}"`}
+      </DialogDescription>
+    </DialogHeader>
+    
+    <form onSubmit={handleEditCode} className="space-y-4">
+      {/* الكود والاسم */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+            {isArabic ? "الكود *" : "Code *"}
+          </Label>
+          <Input
+            value={formData.code}
+            onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+            placeholder={isArabic ? "مثال: SUMMER25" : "Example: SUMMER25"}
+            required
+            className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 font-mono text-lg"
+          />
+          <p className="text-xs text-muted-foreground">
+            {isArabic ? "أحرف كبيرة وأرقام فقط" : "Uppercase letters and numbers only"}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+            {isArabic ? "الاسم *" : "Label *"}
+          </Label>
+          <Input
+            value={formData.label}
+            onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+            placeholder={isArabic ? "مثال: خصم الصيف" : "Example: Summer Sale"}
+            required
+            className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
+          />
+        </div>
+      </div>
+
+      {/* الوصف */}
+      <div className="space-y-2">
+        <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+          {isArabic ? "الوصف" : "Description"}
+        </Label>
+        <Textarea
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder={isArabic ? "وصف الكود" : "Code description"}
+          className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 min-h-[60px]"
+        />
+      </div>
+
+      {/* النوع والقيمة والحد الأدنى */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+            {isArabic ? "النوع *" : "Type *"}
+          </Label>
+          <Select
+            value={formData.type}
+            onValueChange={(value) => setFormData({ ...formData, type: value })}
+          >
+            <SelectTrigger className="rounded-xl border-[#0d2e2a]/20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="percentage">{isArabic ? "📊 نسبة مئوية" : "📊 Percentage"}</SelectItem>
+              <SelectItem value="fixed">{isArabic ? "💰 قيمة ثابتة" : "💰 Fixed"}</SelectItem>
+              <SelectItem value="free_shipping">{isArabic ? "🚚 توصيل مجاني" : "🚚 Free Shipping"}</SelectItem>
+              <SelectItem value="buy_x_get_y">{isArabic ? "🎁 اشترِ واحصل" : "🎁 Buy X Get Y"}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+            {isArabic ? "القيمة *" : "Value *"}
+          </Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={formData.value}
+            onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+            placeholder={formData.type === "percentage" ? "10" : "10.00"}
+            required
+            className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+            {isArabic ? "الحد الأدنى للطلب" : "Min Order"}
+          </Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={formData.min_order}
+            onChange={(e) => setFormData({ ...formData, min_order: e.target.value })}
+            placeholder="0"
+            className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
+          />
+        </div>
+      </div>
+
+      {/* الحد الأقصى وحد الاستخدامات */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+            {isArabic ? "الحد الأقصى للخصم" : "Max Discount"}
+          </Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={formData.max_discount}
+            onChange={(e) => setFormData({ ...formData, max_discount: e.target.value })}
+            placeholder={isArabic ? "غير محدود" : "Unlimited"}
+            className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+            {isArabic ? "حد الاستخدامات" : "Usage Limit"}
+          </Label>
+          <Input
+            type="number"
+            value={formData.usage_limit}
+            onChange={(e) => setFormData({ ...formData, usage_limit: e.target.value })}
+            placeholder="1"
+            className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
+          />
+          <p className="text-xs text-muted-foreground">
+            {isArabic ? "عدد مرات استخدام الكود" : "Number of times code can be used"}
+          </p>
+        </div>
+      </div>
+
+      {/* ✅ حقل تاريخ الانتهاء الاحترافي مع الوقت */}
+      <div className="space-y-2">
+        <Label className="text-[#0d2e2a] dark:text-white font-semibold flex items-center gap-2">
+          <CalendarClock className="h-4 w-4 text-[#2a655f]" />
+          {isArabic ? "تاريخ ووقت الانتهاء" : "Expiry Date & Time"}
+        </Label>
+        
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal rounded-xl border-[#0d2e2a]/20 hover:border-[#2a655f]/40 transition-all duration-300 h-12",
+                    !formData.expires_at && "text-muted-foreground"
+                  )}
+                >
+                  <Calendar className="mr-2 h-4 w-4 text-[#2a655f]" />
+                  {formData.expires_at ? (
+                    formatDate(formData.expires_at)
+                  ) : (
+                    <span>{isArabic ? "اختر التاريخ" : "Select date"}</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 rounded-2xl border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/10" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={formData.expires_at ? new Date(formData.expires_at) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      const currentTime = formData.expires_at ? new Date(formData.expires_at) : new Date();
+                      const newDate = new Date(date);
+                      newDate.setHours(currentTime.getHours());
+                      newDate.setMinutes(currentTime.getMinutes());
+                      setFormData({ ...formData, expires_at: newDate.toISOString() });
+                    } else {
+                      setFormData({ ...formData, expires_at: "" });
+                    }
+                  }}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                  className="rounded-2xl"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="flex-shrink-0">
+            <CustomTimePicker
+              value={formData.expires_at ? new Date(formData.expires_at).toTimeString().slice(0, 5) : ""}
+              onChange={(time) => {
+                if (formData.expires_at) {
+                  const date = new Date(formData.expires_at);
+                  const [hours, minutes] = time.split(":").map(Number);
+                  date.setHours(hours || 0);
+                  date.setMinutes(minutes || 0);
+                  setFormData({ ...formData, expires_at: date.toISOString() });
+                } else {
+                  const date = new Date();
+                  const [hours, minutes] = time.split(":").map(Number);
+                  date.setHours(hours || 0);
+                  date.setMinutes(minutes || 0);
+                  setFormData({ ...formData, expires_at: date.toISOString() });
+                }
+              }}
+              isArabic={isArabic}
+            />
+          </div>
+        </div>
+
+        {formData.expires_at && (
+          <div className="flex items-center gap-2 p-3 bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20">
+            <Timer className="h-4 w-4 text-[#2a655f] animate-pulse" />
+            <span className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+              {isArabic ? "ينتهي في: " : "Expires at: "}
+            </span>
+            <span className="text-sm font-bold text-[#2a655f]">
+              {new Date(formData.expires_at).toLocaleString(
+                isArabic ? "ar-SA" : "en-US",
+                { 
+                  weekday: "short",
+                  year: "numeric", 
+                  month: "short", 
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true
+                }
+              )}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded-full hover:bg-red-100 transition-colors ml-auto"
+              onClick={() => setFormData({ ...formData, expires_at: "" })}
+            >
+              <X className="h-3.5 w-3.5 text-muted-foreground hover:text-red-500" />
+            </Button>
+          </div>
+        )}
+
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <Info className="h-3 w-3" />
+          {isArabic 
+            ? "📅 اختر تاريخ ووقت الانتهاء (اتركه فارغاً للصلاحية الدائمة)" 
+            : "📅 Select expiry date & time (leave empty for unlimited)"}
+        </p>
+      </div>
+
+      {/* ✅ حقول buy_x_get_y */}
+      {formData.type === 'buy_x_get_y' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
+          <div className="space-y-2">
+            <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+              {isArabic ? "عدد المنتجات للشراء" : "Buy Quantity"}
+            </Label>
+            <Input
+              type="number"
+              min="1"
+              value={formData.buy_quantity}
+              onChange={(e) => setFormData({ 
+                ...formData, 
+                buy_quantity: parseInt(e.target.value) || 2 
+              })}
+              placeholder="2"
+              className="rounded-xl border-[#0d2e2a]/20"
+            />
+            <p className="text-xs text-muted-foreground">
+              {isArabic ? "مثال: 2 (اشترِ 2)" : "Example: 2 (Buy 2)"}
+            </p>
+          </div>
           
-          <form onSubmit={handleEditCode} className="space-y-4">
-            {/* الكود والاسم */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "الكود *" : "Code *"}
-                </Label>
-                <Input
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                  placeholder={isArabic ? "مثال: SUMMER25" : "Example: SUMMER25"}
-                  required
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 font-mono text-lg"
-                />
-              </div>
+          <div className="space-y-2">
+            <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+              {isArabic ? "عدد المنتجات المجانية" : "Free Quantity"}
+            </Label>
+            <Input
+              type="number"
+              min="1"
+              value={formData.get_quantity}
+              onChange={(e) => setFormData({ 
+                ...formData, 
+                get_quantity: parseInt(e.target.value) || 1 
+              })}
+              placeholder="1"
+              className="rounded-xl border-[#0d2e2a]/20"
+            />
+            <p className="text-xs text-muted-foreground">
+              {isArabic ? "مثال: 1 (احصل على 1 مجاني)" : "Example: 1 (Get 1 free)"}
+            </p>
+          </div>
+        </div>
+      )}
 
-              <div className="space-y-2">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "الاسم *" : "Label *"}
-                </Label>
-                <Input
-                  value={formData.label}
-                  onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                  placeholder={isArabic ? "مثال: خصم الصيف" : "Example: Summer Sale"}
-                  required
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
-                />
-              </div>
-            </div>
-
-            {/* الوصف */}
-            <div className="space-y-2">
-              <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                {isArabic ? "الوصف" : "Description"}
-              </Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder={isArabic ? "وصف الكود" : "Code description"}
-                className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 min-h-[60px]"
-              />
-            </div>
-
-            {/* النوع والقيمة والحد الأدنى */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "النوع *" : "Type *"}
-                </Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) => setFormData({ ...formData, type: value })}
-                >
-                  <SelectTrigger className="rounded-xl border-[#0d2e2a]/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="percentage">{isArabic ? "نسبة مئوية" : "Percentage"}</SelectItem>
-                    <SelectItem value="fixed">{isArabic ? "قيمة ثابتة" : "Fixed"}</SelectItem>
-                    <SelectItem value="free_shipping">{isArabic ? "توصيل مجاني" : "Free Shipping"}</SelectItem>
-                    <SelectItem value="buy_x_get_y">{isArabic ? "اشترِ واحصل" : "Buy X Get Y"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "القيمة *" : "Value *"}
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.value}
-                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                  placeholder={formData.type === "percentage" ? "10" : "10.00"}
-                  required
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "الحد الأدنى للطلب" : "Min Order"}
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.min_order}
-                  onChange={(e) => setFormData({ ...formData, min_order: e.target.value })}
-                  placeholder="0"
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
-                />
-              </div>
-            </div>
-
-            {/* الحد الأقصى وحد الاستخدامات وتاريخ الانتهاء */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "الحد الأقصى للخصم" : "Max Discount"}
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.max_discount}
-                  onChange={(e) => setFormData({ ...formData, max_discount: e.target.value })}
-                  placeholder={isArabic ? "غير محدود" : "Unlimited"}
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "حد الاستخدامات" : "Usage Limit"}
-                </Label>
-                <Input
-                  type="number"
-                  value={formData.usage_limit}
-                  onChange={(e) => setFormData({ ...formData, usage_limit: e.target.value })}
-                  placeholder="1"
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "تاريخ الانتهاء" : "Expires At"}
-                </Label>
-                <Input
-                  type="datetime-local"
-                  value={formData.expires_at}
-                  onChange={(e) => setFormData({ ...formData, expires_at: e.target.value })}
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
-                />
-              </div>
-            </div>
-
-            {/* ✅ حقول buy_x_get_y */}
-            {formData.type === 'buy_x_get_y' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
-                <div className="space-y-2">
-                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                    {isArabic ? "عدد المنتجات للشراء" : "Buy Quantity"}
-                  </Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={formData.buy_quantity}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      buy_quantity: parseInt(e.target.value) || 2 
-                    })}
-                    placeholder="2"
-                    className="rounded-xl border-[#0d2e2a]/20"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                    {isArabic ? "عدد المنتجات المجانية" : "Free Quantity"}
-                  </Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={formData.get_quantity}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      get_quantity: parseInt(e.target.value) || 1 
-                    })}
-                    placeholder="1"
-                    className="rounded-xl border-[#0d2e2a]/20"
-                  />
-                </div>
-              </div>
+      {/* ✅ خيار الكود العام / المخصص */}
+      <div className="space-y-3 pt-2">
+        <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+          {isArabic ? "نوع الكود" : "Code Type"}
+        </Label>
+        <div className="grid grid-cols-2 gap-3">
+          <label
+            className={cn(
+              "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300",
+              !isStoreSpecific
+                ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20"
+                : "border-[#0d2e2a]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
             )}
+          >
+            <input
+              type="radio"
+              checked={!isStoreSpecific}
+              onChange={() => {
+                setIsStoreSpecific(false);
+                setSelectedStoreId("");
+              }}
+              className="mt-1 h-4 w-4 accent-[#2a655f]"
+            />
+            <div>
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-[#2a655f]" />
+                <span className="font-semibold text-sm">{isArabic ? "🌐 كود عام" : "🌐 Public Code"}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isArabic ? "ينطبق على جميع المتاجر" : "Applies to all stores"}
+              </p>
+            </div>
+          </label>
 
-            {/* ✅ خيار الكود العام / المخصص */}
-            <div className="space-y-3 pt-2">
-              <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                {isArabic ? "نوع الكود" : "Code Type"}
-              </Label>
-              <div className="grid grid-cols-2 gap-3">
+          <label
+            className={cn(
+              "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300",
+              isStoreSpecific
+                ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20"
+                : "border-[#0d2e2a]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
+            )}
+          >
+            <input
+              type="radio"
+              checked={isStoreSpecific}
+              onChange={() => setIsStoreSpecific(true)}
+              className="mt-1 h-4 w-4 accent-[#2a655f]"
+            />
+            <div>
+              <div className="flex items-center gap-2">
+                <Store className="h-4 w-4 text-[#2a655f]" />
+                <span className="font-semibold text-sm">{isArabic ? "🏪 كود مخصص" : "🏪 Specific Code"}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isArabic ? "ينطبق على متجر معين" : "Applies to a specific store"}
+              </p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      {/* ✅ اختيار المتجر */}
+      {isStoreSpecific && (
+        <div className="space-y-2 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
+          <Label className="text-[#0d2e2a] dark:text-white font-semibold flex items-center gap-2">
+            <Store className="h-4 w-4 text-[#2a655f]" />
+            {isArabic ? "اختر المتجر المستهدف *" : "Select Target Store *"}
+          </Label>
+          
+          <div className="relative">
+            <Search className="absolute inset-y-0 my-auto left-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={isArabic ? "🔍 بحث بالاسم أو رقم الجوال..." : "🔍 Search by name or phone..."}
+              value={searchStore}
+              onChange={(e) => setSearchStore(e.target.value)}
+              className="pl-9 rounded-xl border-[#0d2e2a]/20"
+            />
+          </div>
+          
+          {storesLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-[#2a655f]" />
+            </div>
+          ) : filteredStores.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {searchStore 
+                ? (isArabic ? "❌ لا توجد متاجر تطابق البحث" : "❌ No stores match search")
+                : (isArabic ? "❌ لا توجد متاجر نشطة" : "❌ No active stores")}
+            </div>
+          ) : (
+            <div className="max-h-60 overflow-y-auto space-y-2 border rounded-xl p-2 bg-white dark:bg-slate-950">
+              {filteredStores.map((store: any) => (
                 <label
+                  key={store.id}
                   className={cn(
-                    "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300",
-                    !isStoreSpecific
+                    "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-300",
+                    selectedStoreId === store.id
                       ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20"
                       : "border-[#0d2e2a]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
                   )}
                 >
                   <input
                     type="radio"
-                    checked={!isStoreSpecific}
-                    onChange={() => {
-                      setIsStoreSpecific(false);
-                      setSelectedStoreId("");
-                    }}
-                    className="mt-1 h-4 w-4 accent-[#2a655f]"
+                    name="store-edit"
+                    value={store.id}
+                    checked={selectedStoreId === store.id}
+                    onChange={() => setSelectedStoreId(store.id)}
+                    className="h-4 w-4 accent-[#2a655f]"
                   />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-[#2a655f]" />
-                      <span className="font-semibold text-sm">{isArabic ? "🌐 كود عام" : "🌐 Public Code"}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {isArabic ? "ينطبق على جميع المتاجر" : "Applies to all stores"}
-                    </p>
+                  
+                  <div className="flex-shrink-0">
+                    {store.store_logo_url ? (
+                      <img 
+                        src={store.store_logo_url} 
+                        alt="" 
+                        className="h-10 w-10 rounded-xl object-cover border border-[#0d2e2a]/20"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 flex items-center justify-center">
+                        <Store className="h-5 w-5 text-[#2a655f]" />
+                      </div>
+                    )}
                   </div>
-                </label>
-
-                <label
-                  className={cn(
-                    "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300",
-                    isStoreSpecific
-                      ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20"
-                      : "border-[#0d2e2a]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">
+                      {store.store_name || store.full_name}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {store.store_phone || store.phone ? (
+                        <span className="flex items-center gap-1">
+                          <span className="text-[#2a655f]">📞</span>
+                          {store.store_phone || store.phone}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/50">
+                          {isArabic ? "رقم غير متاح" : "No phone"}
+                        </span>
+                      )}
+                      <Badge className="text-[9px] bg-[#2d6b63]/10 text-[#2d6b63] border-0">
+                        {store.listing_count || 0} {isArabic ? "منتج" : "products"}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  {selectedStoreId === store.id && (
+                    <Check className="h-5 w-5 text-[#2a655f] flex-shrink-0" />
                   )}
-                >
-                  <input
-                    type="radio"
-                    checked={isStoreSpecific}
-                    onChange={() => setIsStoreSpecific(true)}
-                    className="mt-1 h-4 w-4 accent-[#2a655f]"
-                  />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Store className="h-4 w-4 text-[#2a655f]" />
-                      <span className="font-semibold text-sm">{isArabic ? "🏪 كود مخصص" : "🏪 Specific Code"}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {isArabic ? "ينطبق على متجر معين" : "Applies to a specific store"}
-                    </p>
-                  </div>
                 </label>
+              ))}
+              
+              <div className="text-xs text-muted-foreground text-center pt-2 border-t border-[#0d2e2a]/10">
+                {isArabic 
+                  ? `عرض ${filteredStores.length} من ${activeStores.length} متجر`
+                  : `Showing ${filteredStores.length} of ${activeStores.length} stores`}
               </div>
             </div>
+          )}
+          
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Info className="h-3 w-3" />
+            {isArabic 
+              ? "💡 اختر المتجر الذي سينطبق عليه الكود (يمكنك البحث بالاسم أو رقم الجوال)"
+              : "💡 Select the store where this code will apply (search by name or phone)"}
+          </p>
+        </div>
+      )}
 
-            {/* ✅ اختيار المتجر */}
-            {isStoreSpecific && (
-              <div className="space-y-2 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold flex items-center gap-2">
-                  <Store className="h-4 w-4 text-[#2a655f]" />
-                  {isArabic ? "اختر المتجر المستهدف *" : "Select Target Store *"}
-                </Label>
-                
-                {/* ✅ حقل البحث عن المتجر */}
-                <div className="relative">
-                  <Search className="absolute inset-y-0 my-auto left-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={isArabic ? "🔍 بحث بالاسم أو رقم الجوال..." : "🔍 Search by name or phone..."}
-                    value={searchStore}
-                    onChange={(e) => setSearchStore(e.target.value)}
-                    className="pl-9 rounded-xl border-[#0d2e2a]/20"
-                  />
-                </div>
-                
-                {storesLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-[#2a655f]" />
-                  </div>
-                ) : filteredStores.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    {searchStore 
-                      ? (isArabic ? "❌ لا توجد متاجر تطابق البحث" : "❌ No stores match search")
-                      : (isArabic ? "❌ لا توجد متاجر نشطة" : "❌ No active stores")}
-                  </div>
-                ) : (
-                  <div className="max-h-60 overflow-y-auto space-y-2 border rounded-xl p-2 bg-white dark:bg-slate-950">
-                    {filteredStores.map((store: any) => (
-                      <label
-                        key={store.id}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-300",
-                          selectedStoreId === store.id
-                            ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20"
-                            : "border-[#0d2e2a]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          name="store"
-                          value={store.id}
-                          checked={selectedStoreId === store.id}
-                          onChange={() => setSelectedStoreId(store.id)}
-                          className="h-4 w-4 accent-[#2a655f]"
-                        />
-                        
-                        <div className="flex-shrink-0">
-                          {store.store_logo_url ? (
-                            <img 
-                              src={store.store_logo_url} 
-                              alt="" 
-                              className="h-10 w-10 rounded-xl object-cover border border-[#0d2e2a]/20"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 flex items-center justify-center">
-                              <Store className="h-5 w-5 text-[#2a655f]" />
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">
-                            {store.store_name || store.full_name}
-                          </p>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            {store.store_phone || store.phone ? (
-                              <span className="flex items-center gap-1">
-                                <span className="text-[#2a655f]">📞</span>
-                                {store.store_phone || store.phone}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground/50">
-                                {isArabic ? "رقم غير متاح" : "No phone"}
-                              </span>
-                            )}
-                            <Badge className="text-[9px] bg-[#2d6b63]/10 text-[#2d6b63] border-0">
-                              {store.listing_count || 0} {isArabic ? "منتج" : "products"}
-                            </Badge>
-                          </div>
-                        </div>
-                        
-                        {selectedStoreId === store.id && (
-                          <Check className="h-5 w-5 text-[#2a655f] flex-shrink-0" />
-                        )}
-                      </label>
-                    ))}
-                    
-                    <div className="text-xs text-muted-foreground text-center pt-2 border-t border-[#0d2e2a]/10">
-                      {isArabic 
-                        ? `عرض ${filteredStores.length} من ${activeStores.length} متجر`
-                        : `Showing ${filteredStores.length} of ${activeStores.length} stores`}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+      {/* ✅ أزرار التفعيل */}
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-4 pt-2">
+        <div className="flex items-center gap-3 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-colors">
+          <Switch
+            checked={formData.is_active}
+            onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+            className="data-[state=checked]:bg-[#2d6b63]"
+          />
+          <Label className="cursor-pointer text-sm text-[#0d2e2a] dark:text-white">
+            {isArabic ? "🟢 الكود نشط" : "🟢 Code is active"}
+          </Label>
+        </div>
+      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              <div className="flex items-center gap-3 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-colors">
-                <Switch
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                  className="data-[state=checked]:bg-[#2d6b63]"
-                />
-                <Label className="cursor-pointer text-sm text-[#0d2e2a] dark:text-white">
-                  {isArabic ? "🟢 الكود نشط" : "🟢 Code is active"}
-                </Label>
-              </div>
-
-              <div className="flex items-center gap-3 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-colors">
-                <Switch
-                  checked={formData.is_public}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_public: checked })}
-                  className="data-[state=checked]:bg-[#4a9f95]"
-                />
-                <Label className="cursor-pointer text-sm text-[#0d2e2a] dark:text-white">
-                  {isArabic ? "👁️ كود عام" : "👁️ Public code"}
-                </Label>
-              </div>
-            </div>
-
-            <DialogFooter className="gap-2 pt-4 border-t border-[#0d2e2a]/10">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setShowEditDialog(false)}
-                className="rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300"
-              >
-                <X className="h-4 w-4 mr-1" />
-                {isArabic ? "إلغاء" : "Cancel"}
-              </Button>
-              <Button
-                type="submit"
-                className="bg-gradient-to-r from-[#1a4f4a] to-[#2d6b63] hover:from-[#2d6b63] hover:to-[#4a9f95] text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#1a4f4a]/30 rounded-xl px-6"
-                disabled={isSubmitting || (isStoreSpecific && !selectedStoreId)}
-              >
-                {isSubmitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                    {isArabic ? "حفظ التغييرات" : "Save Changes"}
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <DialogFooter className="gap-2 pt-4 border-t border-[#0d2e2a]/10">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => setShowEditDialog(false)}
+          className="rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300"
+        >
+          <X className="h-4 w-4 mr-1" />
+          {isArabic ? "إلغاء" : "Cancel"}
+        </Button>
+        <Button
+          type="submit"
+          className="bg-gradient-to-r from-[#1a4f4a] to-[#2d6b63] hover:from-[#2d6b63] hover:to-[#4a9f95] text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#1a4f4a]/30 rounded-xl px-6"
+          disabled={isSubmitting || (isStoreSpecific && !selectedStoreId)}
+        >
+          {isSubmitting ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+          ) : (
+            <>
+              <CheckCircle2 className="h-4 w-4 mr-1.5" />
+              {isArabic ? "حفظ التغييرات" : "Save Changes"}
+            </>
+          )}
+        </Button>
+      </DialogFooter>
+    </form>
+  </DialogContent>
+</Dialog>
 
       {/* ===== DIALOG: حذف كود ===== */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

@@ -5,6 +5,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
+  ArrowRight,
   MoreVertical,
   Phone,
   Video,
@@ -103,6 +104,12 @@ interface ChatHeaderProps {
 // ====== مكون حالة المستخدم ======
 function UserStatus({ user, className }: { user: User; className?: string }) {
   const app = useApp();
+
+  console.log("🔍 ChatHeader - UserStatus received:", {
+    is_online: user.is_online,
+    last_seen_at: user.last_seen_at,
+    user: user
+  });
 
   if (user.is_online) {
     return (
@@ -217,6 +224,7 @@ export function ChatHeader({
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const isRtl = app.lang === "ar";
 
   const name = user.store_name || user.full_name || (app.lang === "ar" ? "مستخدم" : "User");
 
@@ -257,6 +265,7 @@ export function ChatHeader({
       >
         {/* ✅ الجانب الأيسر - زر الرجوع + معلومات المستخدم */}
         <div className="flex items-center gap-2 min-w-0">
+          {/* ✅ زر الرجوع المطور */}
           {showBackButton && (
             <TooltipProvider>
               <Tooltip>
@@ -264,14 +273,45 @@ export function ChatHeader({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all shrink-0 text-[#2a655f] dark:text-[#3a8a82] hover:scale-105 active:scale-95 border border-transparent hover:border-[#2a655f]/20"
+                    className={cn(
+                      "h-11 w-11 rounded-2xl transition-all duration-300 shrink-0 relative",
+                      "bg-gradient-to-br from-[#2a655f]/10 to-[#3a8a82]/10",
+                      "hover:from-[#2a655f]/20 hover:to-[#3a8a82]/20",
+                      "hover:scale-105 active:scale-95",
+                      "border-2 border-[#2a655f]/20 hover:border-[#2a655f]/50",
+                      "text-[#2a655f] dark:text-[#3a8a82]",
+                      "shadow-md hover:shadow-xl hover:shadow-[#2a655f]/25",
+                      "group"
+                    )}
                     onClick={handleBack}
                   >
-                    <ArrowLeft className="h-5 w-5" />
+                    {/* ✅ خلفية متوهجة */}
+                    <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#2a655f]/5 to-[#3a8a82]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    
+                    {/* ✅ السهم مع حركة عكس الاتجاه */}
+                    <span className="relative z-10">
+                      {isRtl ? (
+                        <ArrowRight className={cn(
+                          "h-5 w-5 transition-all duration-300",
+                          "group-hover:-translate-x-1 group-hover:scale-110"
+                        )} />
+                      ) : (
+                        <ArrowLeft className={cn(
+                          "h-5 w-5 transition-all duration-300",
+                          "group-hover:translate-x-1 group-hover:scale-110"
+                        )} />
+                      )}
+                    </span>
+                    
+                    {/* ✅ نقاط تموج */}
+                    <span className="absolute -inset-1 rounded-2xl border-2 border-[#2a655f]/0 group-hover:border-[#2a655f]/20 transition-all duration-500 animate-pulse-slow" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-0">
-                  <p>{app.lang === "ar" ? "رجوع" : "Back"}</p>
+                <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-0 rounded-xl px-4 py-2 shadow-lg">
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    <span className="text-white/70">🔙</span>
+                    {app.lang === "ar" ? "العودة للخلف" : "Go Back"}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -491,6 +531,17 @@ export function ChatHeader({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ✅ ستايل الحركة البطيئة */}
+      <style>{`
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.05); }
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 2s ease-in-out infinite;
+        }
+      `}</style>
     </>
   );
 }

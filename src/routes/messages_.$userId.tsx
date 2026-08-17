@@ -4,14 +4,13 @@ import { createFileRoute, useNavigate, useLocation } from "@tanstack/react-route
 import { useEffect, useState, useRef } from "react";
 import { useApp } from "@/lib/i18n";
 import { ChatMessages } from "@/components/chat/ChatMessages";
-import { Loader2, ArrowLeft, ArrowRight, Search, Phone, MoreVertical, Video, Store, Sparkles, ShieldCheck } from "lucide-react";
+import { ChatHeader } from "@/components/chat/ChatHeader";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGetOrCreateConversation } from "@/lib/hooks/useConversation";
 import { useConversationStore } from "@/lib/stores/conversationStore";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 
 console.log("🔴 CHAT PAGE LOADED");
 
@@ -244,103 +243,33 @@ function ChatPage() {
         }
       `}</style>
 
-      {/* ====== هيدر المحادثة الفاخر (يتكيف مع كافة الشاشات) ====== */}
-      <header className="relative shrink-0 flex items-center justify-between border-b border-[#2a655f]/20 bg-white/90 dark:bg-[#173d38]/90 backdrop-blur-xl px-4 py-3 shadow-lg z-20">
-        
-        {/* خط إشعاعي علوي متوهج */}
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#3a8a82] to-transparent" />
+      {/* ====== ✅ استخدام ChatHeader بدلاً من الهيدر المخصص ====== */}
+      <ChatHeader
+        user={{
+          id: otherUser.id,
+          full_name: otherUser.full_name || null,
+          avatar_url: otherUser.avatar_url || null,
+          store_name: otherUser.store_name || null,
+          store_logo_url: otherUser.store_logo_url || null,
+          is_online: otherUser?.is_online || false,
+          last_seen_at: otherUser?.last_seen_at || null,
+        }}
+        conversationId={conversationId}
+        isStore={isStore}
+        onBack={handleBack}
+        onCall={handleVoiceCall}
+        onVideoCall={handleVideoCall}
+        onViewProfile={() => navigate({ to: "/profile" })}
+        onViewStore={() => {
+          if (isStore) {
+            navigate({ to: "/store/$id", params: { id: userId } });
+          }
+        }}
+        showBackButton={true}
+        showActions={true}
+      />
 
-        {/* معلومات المستخدم الآخر وزر الرجوع المطور */}
-        <div className="flex items-center gap-3 min-w-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleBack}
-            className="h-10 w-10 shrink-0 rounded-2xl bg-[#2a655f]/10 hover:bg-[#2a655f]/20 text-[#2a655f] dark:text-[#3a8a82] transition-all border border-[#2a655f]/20 shadow-sm cursor-pointer"
-          >
-            {isRtl ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
-          </Button>
-
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="relative shrink-0">
-              <Avatar className="h-11 w-11 ring-2 ring-[#2a655f]/40 shadow-md transition-transform hover:scale-105">
-                <img src={avatar} alt={name} className="object-cover h-full w-full" />
-                <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-sm font-extrabold">
-                  {name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              {isStore && (
-                <div className="absolute -bottom-0.5 -right-0.5 h-4.5 w-4.5 rounded-full bg-[#2a655f] border-2 border-white dark:border-slate-900 flex items-center justify-center shadow">
-                  <Store className="h-2.5 w-2.5 text-white" />
-                </div>
-              )}
-            </div>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-black text-sm md:text-base text-slate-900 dark:text-white truncate tracking-wide">
-                  {name}
-                </span>
-                {isStore && (
-                  <Badge className="text-[9px] px-2 py-0.5 h-4 bg-[#2a655f]/15 text-[#2a655f] dark:text-emerald-300 border border-[#2a655f]/30 rounded-full font-extrabold hidden sm:inline-flex">
-                    {app.lang === "ar" ? "متجر معتمد" : "Verified Store"}
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold tracking-wider uppercase">
-                  {app.lang === "ar" ? "متصل الآن" : "Active Now"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* أزرار الإجراءات الاحترافية والساحرة */}
-        <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
-          
-          {/* زر المكالمة الصوتية */}
-          <button 
-            onClick={handleVoiceCall}
-            className="group relative flex items-center justify-center h-10 w-10 rounded-2xl bg-[#2a655f]/10 hover:bg-[#2a655f] text-[#2a655f] hover:text-white transition-all duration-300 border border-[#2a655f]/20 shadow-sm cursor-pointer"
-            title={app.lang === "ar" ? "مكالمة صوتية" : "Voice call"}
-          >
-            <Phone className="h-4 w-4 animate-chat-float" />
-          </button>
-
-          {/* زر مكالمة الفيديو */}
-          <button 
-            onClick={handleVideoCall}
-            className="group relative flex items-center justify-center h-10 w-10 rounded-2xl bg-[#2a655f]/10 hover:bg-[#2a655f] text-[#2a655f] hover:text-white transition-all duration-300 border border-[#2a655f]/20 shadow-sm cursor-pointer"
-            title={app.lang === "ar" ? "مكالمة فيديو" : "Video call"}
-          >
-            <Video className="h-4 w-4 animate-chat-float" style={{ animationDelay: '0.5s' }} />
-          </button>
-
-          {/* زر البحث السريع */}
-          <button 
-            className="hidden sm:flex items-center justify-center h-10 w-10 rounded-2xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 text-slate-600 dark:text-slate-300 transition-all border border-slate-200/60 dark:border-slate-700/60 cursor-pointer"
-            title={app.lang === "ar" ? "بحث في المحادثة" : "Search in chat"}
-          >
-            <Search className="h-4 w-4" />
-          </button>
-
-          {/* زر الخيارات الإضافية */}
-          <button 
-            className="flex items-center justify-center h-10 w-10 rounded-2xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 text-slate-600 dark:text-slate-300 transition-all border border-slate-200/60 dark:border-slate-700/60 cursor-pointer"
-            title={app.lang === "ar" ? "خيارات إضافية" : "More options"}
-          >
-            <MoreVertical className="h-4 w-4" />
-          </button>
-
-        </div>
-      </header>
-
-      {/* ====== منطقة نافذة الرسائل التفاعلية (معالجة الشاشات كاملة) ====== */}
+      {/* ====== منطقة نافذة الرسائل التفاعلية ====== */}
       <div className="flex-1 overflow-hidden relative p-1 sm:p-3 max-w-5xl w-full mx-auto">
         <div className="h-full w-full rounded-3xl overflow-hidden shadow-2xl border border-[#2a655f]/20 bg-white/95 dark:bg-[#1a2b28]/95 backdrop-blur-xl">
           <ChatMessages

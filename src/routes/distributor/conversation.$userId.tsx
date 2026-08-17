@@ -5,14 +5,16 @@ import { useEffect, useState } from "react";
 import { useApp } from "@/lib/i18n";
 import { ChatMessages } from "@/components/chat/ChatMessages";
 import { 
-  Loader2, ArrowLeft, Phone, MoreVertical, Video, User, Building2, Truck, Crown, Store
+  Loader2, Phone, MoreVertical, Video, User, Building2, Truck, Crown, Store, ChevronRight
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useConversationStore } from "@/lib/stores/conversationStore";
+import { useUserStatus } from "@/lib/hooks/useConversation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/distributor/conversation/$userId")({
   component: DistributorConversationPage,
@@ -29,6 +31,11 @@ function DistributorConversationPage() {
   const [otherUserRoles, setOtherUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [conversationId, setConversationId] = useState<string | null>(null);
+
+  // ✅ استخدام useUserStatus لجلب حالة المستخدم
+  const { data: userStatus } = useUserStatus(userId);
+  const isOnline = userStatus?.is_online || false;
+  const lastSeen = userStatus?.last_seen_at || null;
 
   const { setActiveConversation } = useConversationStore();
 
@@ -181,33 +188,41 @@ function DistributorConversationPage() {
         
         {/* الجهة اليسرى: زر الرجوع + معلومات المستخدم */}
         <div className="flex items-center gap-2">
+          {/* ✅ زر الرجوع المحسن - سهم لليسار مع خلفية مميزة */}
           <Button
             variant="ghost"
             size="icon"
             onClick={handleBack}
-            className="h-8 w-8 shrink-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 sm:h-9 sm:w-9"
+            className="h-9 w-9 shrink-0 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all duration-300 hover:scale-105 group"
           >
-            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+            <ChevronRight className="h-5 w-5 text-slate-700 dark:text-slate-300 group-hover:scale-110 transition-transform duration-300" />
           </Button>
 
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 sm:h-12 sm:w-12 ring-2 ring-slate-200 dark:ring-slate-700">
-              <img 
-                src={otherUser?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(otherUser?.full_name || 'User')}&background=0d2e2a&color=fff`} 
-                alt={otherUser?.full_name || 'User'}
-                className="object-cover"
-              />
-              <AvatarFallback className="bg-[#0d2e2a] text-white">
-                {(otherUser?.full_name || 'U').charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-10 w-10 sm:h-12 sm:w-12 ring-2 ring-slate-200 dark:ring-slate-700">
+                <img 
+                  src={otherUser?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(otherUser?.full_name || 'User')}&background=0d2e2a&color=fff`} 
+                  alt={otherUser?.full_name || 'User'}
+                  className="object-cover"
+                />
+                <AvatarFallback className="bg-[#0d2e2a] text-white">
+                  {(otherUser?.full_name || 'U').charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              
+              {/* ✅ دائرة الحالة (أونلاين/أوفلاين) */}
+              <span className={cn(
+                "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white dark:border-slate-900",
+                isOnline ? "bg-emerald-500" : "bg-slate-400"
+              )} />
+            </div>
             
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold truncate text-slate-900 dark:text-white">
                   {otherUser?.full_name || (app.lang === "ar" ? "مستخدم" : "User")}
                 </span>
-                {/* ✅ عرض دور واحد فقط (أعلى صلاحية) */}
                 <Badge 
                   variant="secondary"
                   className="text-[9px] px-1.5 py-0 h-4 rounded-full flex items-center gap-0.5"
@@ -216,11 +231,24 @@ function DistributorConversationPage() {
                   {roleInfo.label}
                 </Badge>
               </div>
-              {/* ✅ عرض دور واحد فقط تحت الاسم */}
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <RoleIcon className={`h-3 w-3 ${roleInfo.color}`} />
-                {roleInfo.label}
-              </p>
+              
+              {/* ✅ عرض حالة المستخدم تحت الاسم */}
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className={cn(
+                  "h-1.5 w-1.5 rounded-full",
+                  isOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
+                )} />
+                <p className="text-[10px] text-muted-foreground">
+                  {isOnline 
+                    ? (app.lang === "ar" ? "متصل الآن" : "Online")
+                    : lastSeen 
+                      ? (app.lang === "ar" 
+                          ? `آخر ظهور ${new Date(lastSeen).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}` 
+                          : `Last seen ${new Date(lastSeen).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`)
+                      : (app.lang === "ar" ? "غير متصل" : "Offline")
+                  }
+                </p>
+              </div>
             </div>
           </div>
         </div>

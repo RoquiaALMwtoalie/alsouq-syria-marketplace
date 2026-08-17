@@ -62,8 +62,7 @@ import {
   useCategoriesRealtime,
 } from "@/lib/hooks";
 
-// ===== ✅ ✅ ✅ استيراد AI Assistant =====
-import { AIAssistant } from "@/components/AIAssistant";
+
 
 // ===== ✅ ✅ ✅ ProgressBar Component - z-index معدل ✅ ✅ ✅
 const ProgressBar = ({ progress }: { progress: number }) => {
@@ -769,22 +768,27 @@ function RealtimeManager() {
 }
 
 // ===== ✅ ✅ ✅ مكون SimpleRedirect =====
+// ===== ✅ ✅ ✅ مكون SimpleRedirect - مع إصلاح مشكلة Logout =====
 function SimpleRedirect() {
   const app = useApp();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [loading, setLoading] = useState(true);
   const redirectedRef = useRef(false);
+  const isArabic = app.lang === "ar";
 
   useEffect(() => {
+    // ✅ إذا لم يكن هناك مستخدم، أوقف التحميل وأعد تعيين الـ ref
+    if (!app.user) {
+      setLoading(false);
+      redirectedRef.current = false; // ✅ إعادة تعيين
+      return;
+    }
+
+    // ✅ إذا تم التوجيه بالفعل، لا تكرر
     if (redirectedRef.current) return;
 
     const checkAndRedirect = async () => {
-      if (!app.user) {
-        setLoading(false);
-        return;
-      }
-
       try {
         const { data, error } = await supabase
           .from("user_roles")
@@ -798,19 +802,136 @@ function SimpleRedirect() {
         const isDeliveryCompany = roles.includes("delivery_company");
         const isDistributor = roles.includes("distributor");
 
-        if (isDistributor && pathname.startsWith("/distributor")) {
-          setLoading(false);
-          return;
-        }
-        if (isDeliveryCompany && pathname.startsWith("/delivery")) {
-          setLoading(false);
-          return;
-        }
-        if (isAdmin && pathname.startsWith("/admin")) {
-          setLoading(false);
-          return;
+        console.log("🔍 [Redirect] Roles:", { isAdmin, isDeliveryCompany, isDistributor });
+        console.log("🔍 [Redirect] Path:", pathname);
+
+        // ============================================================
+        // ✅ 1. منع الموزع من فتح صفحات delivery أو admin
+        // ============================================================
+      // ============================================================
+// ✅ 6. ✅ إعادة التوجيه للموزع من أي صفحة غير مسموحة
+// ============================================================
+// ============================================================
+// ✅ 6. ✅ إعادة التوجيه للموزع من أي صفحة غير مسموحة
+// ============================================================
+if (isDistributor && !isAdmin) {
+  const distributorPaths = [
+    "/distributor/dashboard",
+    "/distributor/messages",
+    "/distributor/conversation",
+    "/distributor/settings",
+    "/distributor/review",
+  ];
+  
+  const isAllowedPath = distributorPaths.some(path => pathname.startsWith(path));
+  
+  // ✅ منع الموزع من فتح auth/complete
+  if (pathname === "/auth/complete") {
+    redirectedRef.current = true;
+    console.log("🚫 [Redirect] Distributor blocked from auth/complete");
+    navigate({ to: "/distributor/dashboard" });
+    return;
+  }
+  
+  // ✅ إذا كان المسار غير مسموح للموزع، حوله للداشبورد (بدون Toast)
+  if (!isAllowedPath) {
+    redirectedRef.current = true;
+    console.log("🚚 [Redirect] Distributor → /distributor/dashboard from:", pathname);
+    navigate({ to: "/distributor/dashboard" });
+    // ✅ تم إزالة Toast.error
+    return;
+  }
+}
+
+        // ============================================================
+        // ✅ 2. منع شركة التوصيل من فتح صفحات موزع أو admin
+        // ============================================================
+        if (isDeliveryCompany && !isAdmin) {
+          if (pathname.startsWith("/distributor") || pathname.startsWith("/admin")) {
+            redirectedRef.current = true;
+            console.log("🚫 [Redirect] Delivery blocked from:", pathname);
+            navigate({ to: "/delivery/dashboard" });
+            toast.error(isArabic ? "⚠️ غير مسموح بالدخول إلى هذه الصفحة" : "⚠️ Access denied");
+            return;
+          }
         }
 
+        // ============================================================
+        // ✅ 3. منع العميل (بدون دور) من فتح صفحات الإدارة
+        // ============================================================
+        if (!isAdmin && !isDeliveryCompany && !isDistributor) {
+          if (
+            pathname.startsWith("/distributor") || 
+            pathname.startsWith("/delivery") || 
+            pathname.startsWith("/admin")
+          ) {
+            redirectedRef.current = true;
+            console.log("🚫 [Redirect] Customer blocked from:", pathname);
+            navigate({ to: "/" });
+            toast.error(isArabic ? "⚠️ غير مسموح بالدخول إلى هذه الصفحة" : "⚠️ Access denied");
+            return;
+          }
+        }
+
+        // ============================================================
+        // ✅ 4. ✅ منع الموزع من فتح أي صفحة غير موجودة
+        // ============================================================
+        if (isDistributor && !isAdmin) {
+          const allowedPaths = [
+            "/distributor/dashboard",
+            "/distributor/messages",
+            "/distributor/conversation",
+            "/distributor/settings",
+            "/distributor/review",
+          ];
+          
+          const isAllowed = allowedPaths.some(path => pathname.startsWith(path));
+          
+          // ✅ منع الموزع من فتح auth/complete
+          if (pathname === "/auth/complete") {
+            redirectedRef.current = true;
+            console.log("🚫 [Redirect] Distributor blocked from auth/complete");
+            navigate({ to: "/distributor/dashboard" });
+            return;
+          }
+          
+          if (!isAllowed && pathname.startsWith("/distributor")) {
+            redirectedRef.current = true;
+            console.log("🚫 [Redirect] Distributor invalid page:", pathname);
+            navigate({ to: "/distributor/dashboard" });
+            toast.error(isArabic ? "⚠️ هذه الصفحة غير متاحة" : "⚠️ Page not available");
+            return;
+          }
+        }
+
+        // ============================================================
+        // ✅ 5. منع شركة التوصيل من فتح أي صفحة غير موجودة
+        // ============================================================
+        if (isDeliveryCompany && !isAdmin) {
+          const allowedPaths = [
+            "/delivery/dashboard",
+            "/delivery/messages",
+            "/delivery/conversation",
+            "/delivery/orders",
+            "/delivery/distributors",
+            "/delivery/reports",
+            "/delivery/complete",
+          ];
+          
+          const isAllowed = allowedPaths.some(path => pathname.startsWith(path));
+          
+          if (!isAllowed && pathname.startsWith("/delivery")) {
+            redirectedRef.current = true;
+            console.log("🚫 [Redirect] Delivery invalid page:", pathname);
+            navigate({ to: "/delivery/dashboard" });
+            toast.error(isArabic ? "⚠️ هذه الصفحة غير متاحة" : "⚠️ Page not available");
+            return;
+          }
+        }
+
+        // ============================================================
+        // ✅ 6. إعادة التوجيه للصفحة المناسبة عند الدخول للرئيسية
+        // ============================================================
         if (isDistributor && (pathname === "/" || pathname === "")) {
           redirectedRef.current = true;
           console.log("🚚 [Redirect] Distributor → /distributor/dashboard");
@@ -825,28 +946,34 @@ function SimpleRedirect() {
           return;
         }
 
-        if (!isAdmin && !isDeliveryCompany && !isDistributor) {
-          if (pathname.startsWith("/distributor") || pathname.startsWith("/delivery") || pathname.startsWith("/admin")) {
-            redirectedRef.current = true;
-            console.log("👤 [Redirect] Customer → /");
-            navigate({ to: "/" });
-            return;
-          }
+        if (isAdmin && (pathname === "/" || pathname === "")) {
+          redirectedRef.current = true;
+          console.log("👑 [Redirect] Admin → /admin");
+          navigate({ to: "/admin" });
+          return;
         }
 
+        setLoading(false);
+
       } catch (error) {
-        console.error("Error checking roles:", error);
-      } finally {
+        console.error("❌ Error checking roles:", error);
         setLoading(false);
       }
     };
 
     checkAndRedirect();
-  }, [app.user, pathname, navigate]);
+  }, [app.user, pathname, navigate, isArabic]);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-950/80 z-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2a655f] border-t-transparent" />
+      </div>
+    );
+  }
 
   return null;
 }
-
 // ============================================================
 // ✅ RootComponent - لا يستخدم useApp
 // ============================================================
@@ -893,8 +1020,10 @@ function RootComponent() {
     pathname.startsWith("/delivery/distributors") ||
     pathname.startsWith("/distributor/settings") ||
     pathname.startsWith("/distributor/review") ||
-    pathname.startsWith("/messages") ||
-    pathname.startsWith("/messages_");
+    pathname.startsWith("/messages") || 
+    pathname.startsWith("/auth/complete") ||
+    pathname.startsWith("/messages_") ||
+    pathname.startsWith("/tracking"); // ✅ أضف هذا السطر
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -1030,8 +1159,7 @@ function RootContent({
       
       <Toaster position="top-center" richColors />
       
-      {/* ✅ ✅ ✅ إضافة المساعد الذكي */}
-      {app.user && <AIAssistant />}
+
     </>
   );
 }

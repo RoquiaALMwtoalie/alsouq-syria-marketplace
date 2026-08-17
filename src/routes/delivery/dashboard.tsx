@@ -30,10 +30,7 @@ import {
   Megaphone, Rocket, Gem, Crown, Flame, Compass, Target, Zap, Award, BadgeCheck,
   KeyRound, Lock, Unlock, EyeOff, CheckSquare, MapPinHouse,
   LayoutDashboard, Users as UsersIcon, TrendingUp as TrendingUpIcon,
-  Edit3,  // ← أضف هذه
-  Map,    // ← أضف هذه
-  Info,   // ← أضف هذه
-  FileText // ← أضف هذه
+  Edit3, Map, Info, FileText, Check, Power, PowerOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +77,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -112,6 +109,7 @@ import { DeliveryAdminsManager } from "@/components/dashboard/delivery/DeliveryA
 import { DeliveryAccountMenu } from "@/components/dashboard/delivery/DeliveryAccountMenu";
 import { ImageInput } from "@/components/ImageInput";
 import { AddressPicker, type PickedLocation } from "@/components/AddressPicker";
+
 const ICON_MAP: Record<string, any> = {
   'clock': Clock,
   'check-circle': CheckCircle,
@@ -157,12 +155,13 @@ function DeliveryDashboardPage() {
   const app = useApp();
   const t = useT();
   const navigate = useNavigate();
-// في بداية الدالة DeliveryDashboardPage
-const [addressMethod, setAddressMethod] = useState<"manual" | "map">("manual");
-const [location, setLocation] = useState<PickedLocation | null>(null);
-const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  
+  // ===== STATES =====
+  const [addressMethod, setAddressMethod] = useState<"manual" | "map">("manual");
+  const [location, setLocation] = useState<PickedLocation | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("pending"); // ✅ افتراضي: قيد المراجعة
   const [activeTab, setActiveTab] = useState<"orders" | "distributors" | "analytics" | "admins">("orders");
   const [filterType, setFilterType] = useState<"all" | "orders" | "distributors">("all");
   const [showCompanyDialog, setShowCompanyDialog] = useState(false);
@@ -172,9 +171,11 @@ const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [showDistributorPassword, setShowDistributorPassword] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [showConvertDialog, setShowConvertDialog] = useState(false);
-  const [existingUserData, setExistingUserData] = useState<any>(null);
-  const [pendingFormData, setPendingFormData] = useState<any>(null);
+  
+  // ✅ State لتعطيل الموزع
+  const [showDeactivateDistributorDialog, setShowDeactivateDistributorDialog] = useState(false);
+  const [deactivatingDistributor, setDeactivatingDistributor] = useState<any>(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
 
   // ✅ State لقبول ورفض الطلبات
   const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
@@ -187,11 +188,32 @@ const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [distributorSearch, setDistributorSearch] = useState("");
   const [estimatedDeliveryHours, setEstimatedDeliveryHours] = useState<number>(2);
   const [estimatedPickupHours, setEstimatedPickupHours] = useState<number>(0.5);
+  const hasRedirected = useRef(false);
 
-  // ✅ جلب البيانات
+  // ✅ State للـ Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  
+  // ============================================================
+  // ✅✅✅ جلب البيانات - الترتيب الصحيح ✅✅✅
+  // ============================================================
+
+  // 1️⃣ جلب الشركة أولاً (لأن الموزعين يعتمدون عليها)
+  const { data: company, isLoading: companyLoading, refetch: refetchCompany } = useMyDeliveryCompany(app.user?.id);
+
+  // 2️⃣ جلب الموزعين (يعتمد على company.id)
+  const { 
+    data: allDistributors = [], 
+    isLoading: distributorsLoading,
+    refetch: refetchDistributors 
+  } = useDistributors({
+    companyId: company?.id,
+    isAvailable: true,
+    active: true,
+  });
+
+  // 3️⃣ باقي البيانات (لا تعتمد على company)
   const { data: orders = [], isLoading: ordersLoading, refetch: refetchOrders } = useDeliveryOrders(app.user?.id);
-  const { data: distributors = [], isLoading: distributorsLoading, refetch: refetchDistributors } = useDistributors({});
-const { data: company, isLoading: companyLoading, refetch: refetchCompany } = useMyDeliveryCompany(app.user?.id);
   const { data: governorates = [] } = useGovernorates();
   const { data: allCompanies } = useDeliveryCompanies({ active: true });
   const { data: userRoles = [], refetch: refetchUserRoles } = useUserRoles(app.user?.id);
@@ -210,20 +232,46 @@ const { data: company, isLoading: companyLoading, refetch: refetchCompany } = us
   const acceptOrderMutation = useAcceptDeliveryOrder();
   const rejectOrderMutation = useRejectDeliveryOrder();
 
-  // ✅ جلب الموزعين الأقرب
-  const { data: nearestDistributors, isLoading: nearestLoading } = useNearestDistributors(
-    selectedOrderId || ""
-  );
-
   const unreadNotificationsCount = notifications.filter((n: any) => !n.is_read).length;
   const isArabic = app.lang === "ar";
- 
 
-  // ✅ التحقق من اكتمال بيانات الشركة
   useEffect(() => {
-    if (companyLoading) return;
-    
-    if (company && !company.is_verified) {
+    console.log("🔍 [useEffect] companyLoading:", companyLoading);
+    console.log("🔍 [useEffect] company:", company);
+    console.log("🔍 [useEffect] is_verified:", company?.is_verified);
+    console.log("🔍 [useEffect] pathname:", window.location.pathname);
+    console.log("🔍 [useEffect] hasRedirected:", hasRedirected.current);
+
+    if (companyLoading) {
+      console.log("⏳ [useEffect] Loading, waiting...");
+      return;
+    }
+
+    if (window.location.pathname === "/delivery/complete") {
+      console.log("📍 [useEffect] Already on complete page, resetting ref");
+      hasRedirected.current = false;
+      return;
+    }
+
+    if (hasRedirected.current) {
+      console.log("🚫 [useEffect] Already redirected once, skipping");
+      return;
+    }
+
+    if (!company) {
+      console.log("ℹ️ [useEffect] No company yet, waiting...");
+      return;
+    }
+
+    if (company.is_verified === true) {
+      console.log("✅ [useEffect] Company is verified!");
+      hasRedirected.current = false;
+      return;
+    }
+
+    if (company && company.is_verified === false) {
+      console.log("🚫 [useEffect] Company not verified, redirecting...");
+      hasRedirected.current = true;
       navigate({ to: "/delivery/complete" });
       toast.info(
         isArabic 
@@ -232,6 +280,7 @@ const { data: company, isLoading: companyLoading, refetch: refetchCompany } = us
       );
     }
   }, [company, companyLoading, navigate, isArabic]);
+  
   const isDeliveryCompany = useMemo(() => {
     if (!Array.isArray(userRoles)) return false;
     return userRoles.includes('delivery_company') || userRoles.includes('delivery_company_admin');
@@ -274,29 +323,53 @@ const { data: company, isLoading: companyLoading, refetch: refetchCompany } = us
     };
   }, [orders]);
 
-  // ✅ فلترة الطلبات
+  // ✅ فلترة الطلبات (جميع طلبات الشركة، مرتبة حسب الأحدث)
   const filteredOrders = useMemo(() => {
     let result = orders;
+    
+    // ✅ فلترة حسب الحالة
     if (statusFilter !== "all") {
       result = result.filter((o: any) => o.status === statusFilter);
     }
+    
+    // ✅ فلترة حسب البحث
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((o: any) => {
         return o.tracking_number?.toLowerCase().includes(q) ||
           o.delivery_name?.toLowerCase().includes(q) ||
           o.pickup_name?.toLowerCase().includes(q) ||
-          o.delivery_address?.toLowerCase().includes(q);
+          o.delivery_address?.toLowerCase().includes(q) ||
+          o.id?.toLowerCase().includes(q);
       });
     }
+    
+    // ✅ ترتيب حسب الأحدث أولاً (created_at)
+    result = [...result].sort((a, b) => {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+    
     return result;
   }, [orders, statusFilter, searchQuery]);
+
+  // ✅ حساب عدد الصفحات للـ Pagination
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredOrders.slice(start, end);
+  }, [filteredOrders, currentPage, itemsPerPage]);
+
+  // ✅ عند تغيير الفلتر أو البحث، نعيد الصفحة إلى 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchQuery]);
 
   // ✅ الموزع الحالي
   const currentDistributor = useMemo(() => {
     if (!app.user?.id) return null;
-    return distributors.find((d: any) => d.user_id === app.user.id);
-  }, [distributors, app.user?.id]);
+    return allDistributors.find((d: any) => d.user_id === app.user.id);
+  }, [allDistributors, app.user?.id]);
 
   // ✅ قبول الطلب مع وقت متوقع
   const handleAcceptDelivery = useCallback(async () => {
@@ -426,12 +499,12 @@ const { data: company, isLoading: companyLoading, refetch: refetchCompany } = us
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       toast.success(isArabic ? "✅ تم تسجيل الخروج بنجاح" : "✅ Logged out successfully");
-      navigate({ to: "/" });
+      window.location.href = "/auth/login";
     } catch (error) {
       toast.error(isArabic ? "❌ فشل تسجيل الخروج" : "❌ Logout failed");
       console.error(error);
     }
-  }, [navigate, isArabic]);
+  }, [isArabic]);
 
   const handleMessages = useCallback(() => {
     navigate({ to: "/delivery/messages" });
@@ -474,70 +547,69 @@ const { data: company, isLoading: companyLoading, refetch: refetchCompany } = us
   }, [app.user, getOrCreateConversation, navigate, isArabic]);
 
   // ✅ تحديث الشركة
-const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  const form = e.currentTarget;
-  const formData = new FormData(form);
+  const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
-  const patch: any = {
-    name_ar: formData.get("name_ar") as string,
-    name_en: formData.get("name_en") as string,
-    phone: formData.get("phone") as string,
-    description_ar: formData.get("description_ar") as string,
-    description_en: formData.get("description_en") as string,
-    base_price: parseFloat(formData.get("base_price") as string) || 0,
-    price_per_km: parseFloat(formData.get("price_per_km") as string) || 0,
-    free_delivery_threshold: parseFloat(formData.get("free_delivery_threshold") as string) || 0,
-    min_delivery_fee: parseFloat(formData.get("min_delivery_fee") as string) || 0,
-    max_delivery_fee: parseFloat(formData.get("max_delivery_fee") as string) || 999999,
-    avg_delivery_time: parseInt(formData.get("avg_delivery_time") as string) || 60,
-    has_tracking: formData.get("has_tracking") === "on",
-    has_insurance: formData.get("has_insurance") === "on",
-    has_cod: formData.get("has_cod") === "on",
-    has_express: formData.get("has_express") === "on",
-    is_active: formData.get("is_active") === "on",
-  };
+    const patch: any = {
+      name_ar: formData.get("name_ar") as string,
+      name_en: formData.get("name_en") as string,
+      phone: formData.get("phone") as string,
+      description_ar: formData.get("description_ar") as string,
+      description_en: formData.get("description_en") as string,
+      base_price: parseFloat(formData.get("base_price") as string) || 0,
+      price_per_km: parseFloat(formData.get("price_per_km") as string) || 0,
+      free_delivery_threshold: parseFloat(formData.get("free_delivery_threshold") as string) || 0,
+      min_delivery_fee: parseFloat(formData.get("min_delivery_fee") as string) || 0,
+      max_delivery_fee: parseFloat(formData.get("max_delivery_fee") as string) || 999999,
+      avg_delivery_time: parseInt(formData.get("avg_delivery_time") as string) || 60,
+      has_tracking: formData.get("has_tracking") === "on",
+      has_insurance: formData.get("has_insurance") === "on",
+      has_cod: formData.get("has_cod") === "on",
+      has_express: formData.get("has_express") === "on",
+      is_active: formData.get("is_active") === "on",
+    };
 
-  // ✅✅✅ إذا اختار الخريطة ✅✅✅
-  if (addressMethod === "map" && location) {
-    patch.address_ar = location.address;
-    patch.address_en = location.address;
-    
-    const { error: updateProfileError } = await supabase
-      .from("profiles")
-      .update({
-        lat: location.lat || 0,
-        lng: location.lng || 0,
-        address_text: location.address.trim(),
-      })
-      .eq("id", app.user?.id);
-    
-    if (updateProfileError) {
-      console.error("❌ خطأ في تحديث إحداثيات البروفايل:", updateProfileError);
+    if (addressMethod === "map" && location) {
+      patch.address_ar = location.address;
+      patch.address_en = location.address;
+      
+      const { error: updateProfileError } = await supabase
+        .from("profiles")
+        .update({
+          lat: location.lat || 0,
+          lng: location.lng || 0,
+          address_text: location.address.trim(),
+        })
+        .eq("id", app.user?.id);
+      
+      if (updateProfileError) {
+        console.error("❌ خطأ في تحديث إحداثيات البروفايل:", updateProfileError);
+      }
+    } else {
+      patch.address_ar = formData.get("address_ar") as string;
+      patch.address_en = formData.get("address_ar") as string;
     }
-  } else {
-    patch.address_ar = formData.get("address_ar") as string;
-    patch.address_en = formData.get("address_ar") as string;
-  }
 
-  // ✅✅✅ إضافة صورة الشعار ✅✅✅
-  if (logoUrl) {
-    patch.logo_url = logoUrl;
-  }
+    if (logoUrl) {
+      patch.logo_url = logoUrl;
+    }
 
-  try {
-    await updateCompanyMutation.mutateAsync({
-      id: company.id,
-      patch
-    });
-    toast.success(isArabic ? "✅ تم تحديث معلومات الشركة" : "✅ Company updated successfully");
-    setShowCompanyDialog(false);
-    await refetchCompany();
-  } catch (error) {
-    toast.error(isArabic ? "❌ فشل التحديث" : "❌ Update failed");
-    console.error(error);
-  }
-}, [company, updateCompanyMutation, isArabic, refetchCompany, addressMethod, location, logoUrl, app.user?.id]);
+    try {
+      await updateCompanyMutation.mutateAsync({
+        id: company.id,
+        patch
+      });
+      toast.success(isArabic ? "✅ تم تحديث معلومات الشركة" : "✅ Company updated successfully");
+      setShowCompanyDialog(false);
+      await refetchCompany();
+    } catch (error) {
+      toast.error(isArabic ? "❌ فشل التحديث" : "❌ Update failed");
+      console.error(error);
+    }
+  }, [company, updateCompanyMutation, isArabic, refetchCompany, addressMethod, location, logoUrl, app.user?.id]);
+
   // ✅ تحديث الموزع
   const handleUpdateDistributor = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -605,9 +677,6 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
           : `✅ Distributor added successfully!\n📱 Phone: ${phone}\n🔑 Password: ${password}\n👤 Name: ${full_name_en || full_name_ar}`
       );
 
-      setShowConvertDialog(false);
-      setExistingUserData(null);
-      setPendingFormData(null);
       setShowAddDistributorDialog(false);
       await refetchDistributors();
 
@@ -617,65 +686,7 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
     }
   };
 
-  // ✅ دالة تحويل المستخدم إلى موزع
-  const convertUserToDistributor = async () => {
-    if (!existingUserData || !pendingFormData) return;
-
-    const userId = existingUserData.id;
-    const { full_name_ar, full_name_en, phone, address_ar, address_en, governorate_id, is_available, distributor_type, avatar_url } = pendingFormData;
-
-    try {
-      if (full_name_ar && full_name_ar !== existingUserData.full_name) {
-        await supabase
-          .from("profiles")
-          .update({ full_name: full_name_ar })
-          .eq("id", userId);
-      }
-
-      await supabase.from("user_roles").insert({
-        user_id: userId,
-        role: "distributor"
-      });
-
-      const { data: distributorId, error: distributorError } = await supabase.rpc('add_distributor', {
-        p_user_id: userId,
-        p_full_name_ar: full_name_ar || existingUserData.full_name || `موزع ${phone}`,
-        p_full_name_en: full_name_en || `Distributor ${phone}`,
-        p_phone: phone,
-        p_email: `${phone}@distributor.sy`,
-        p_address_ar: address_ar || null,
-        p_address_en: address_en || null,
-        p_governorate_id: governorate_id || null,
-        p_is_available: is_available,
-        p_distributor_type: distributor_type || 'freelance',
-        p_avatar_url: avatar_url || existingUserData.avatar_url || null,
-        p_delivery_company_id: company?.id || null,
-      });
-
-      if (distributorError) {
-        console.error("❌ RPC error:", distributorError);
-        throw distributorError;
-      }
-
-      toast.success(
-        isArabic
-          ? `✅ تم تحويل "${existingUserData.full_name}" إلى موزع بنجاح!`
-          : `✅ Successfully converted "${existingUserData.full_name}" to distributor!`
-      );
-
-      setShowConvertDialog(false);
-      setExistingUserData(null);
-      setPendingFormData(null);
-      await refetchDistributors();
-      await refetchUserRoles();
-
-    } catch (error) {
-      console.error("Error converting user:", error);
-      toast.error(isArabic ? "❌ فشل تحويل المستخدم" : "❌ Failed to convert user");
-    }
-  };
-
-  // ✅ إضافة موزع
+  // ✅ إضافة موزع (بدون تحويل - يمنع إذا الرقم موجود)
   const handleAddDistributor = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -702,45 +713,29 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
     }
 
     try {
-      const { data: existingProfile } = await supabase
+      // ✅ 1️⃣ التحقق من وجود الرقم في profiles
+      const { data: existingProfile, error: profileCheckError } = await supabase
         .from("profiles")
-        .select("id, full_name, phone, avatar_url")
+        .select("id")
         .eq("phone", phone)
         .maybeSingle();
 
+      if (profileCheckError) {
+        console.error("Error checking profile:", profileCheckError);
+        throw new Error("حدث خطأ في التحقق من الرقم");
+      }
+
+      // ❌ إذا كان الرقم موجوداً، نمنع الإضافة (بدون تحويل)
       if (existingProfile) {
-        const { data: existingDistributor } = await supabase
-          .from("distributors")
-          .select("id")
-          .eq("user_id", existingProfile.id)
-          .maybeSingle();
-
-        if (existingDistributor) {
-          toast.error(
-            isArabic
-              ? `❌ المستخدم "${existingProfile.full_name}" بالفعل موزع`
-              : `❌ User "${existingProfile.full_name}" is already a distributor`
-          );
-          return;
-        }
-
-        setExistingUserData(existingProfile);
-        setPendingFormData({
-          full_name_ar,
-          full_name_en,
-          phone,
-          password,
-          address_ar,
-          address_en,
-          governorate_id,
-          is_available,
-          distributor_type,
-          avatar_url: avatarUrl
-        });
-        setShowConvertDialog(true);
+        toast.error(
+          isArabic 
+            ? "❌ هذا الرقم مستخدم من قبل ولا يمكن إضافته كموزع"
+            : "❌ This phone number is already in use and cannot be added as a distributor"
+        );
         return;
       }
 
+      // ✅ 2️⃣ إذا الرقم غير موجود، ننشئ موزع جديد
       if (!password || password.length < 6) {
         toast.error(isArabic ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
         return;
@@ -764,6 +759,77 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
       toast.error(isArabic ? "❌ حدث خطأ: " + (error.message || "") : "❌ Error: " + (error.message || ""));
     }
   }, [company, isArabic, avatarUrl, createNewDistributor]);
+
+  // ✅ ✅ ✅ دالة تعطيل الموزع
+  const handleDeactivateDistributor = async () => {
+    if (!deactivatingDistributor) return;
+    
+    setIsDeactivating(true);
+    
+    try {
+      const distributorId = deactivatingDistributor.id;
+      const distributorName = deactivatingDistributor.full_name_ar || deactivatingDistributor.full_name_en || 'الموزع';
+      
+      // ✅ 1️⃣ التحقق من وجود طلبات معلقة
+      const { data: pendingOrders, error: ordersError } = await supabase
+        .from("delivery_orders")
+        .select("id, status")
+        .eq("distributor_id", distributorId)
+        .in("status", ["pending", "assigned", "picked_up", "in_transit"]);
+      
+      if (ordersError) throw ordersError;
+      
+      if (pendingOrders && pendingOrders.length > 0) {
+        toast.error(
+          isArabic 
+            ? `❌ لا يمكن تعطيل الموزع لديه ${pendingOrders.length} طلبات معلقة`
+            : `❌ Cannot deactivate distributor with ${pendingOrders.length} pending orders`
+        );
+        setIsDeactivating(false);
+        return;
+      }
+      
+      // ✅ 2️⃣ تعطيل الموزع
+      const { error: updateError } = await supabase
+        .from("distributors")
+        .update({
+          is_available: false,
+          is_active: false,
+          deactivated_at: new Date().toISOString(),
+          deactivated_by: app.user?.id,
+        })
+        .eq("id", distributorId);
+      
+      if (updateError) throw updateError;
+      
+      toast.success(
+        isArabic 
+          ? `✅ تم تعطيل الموزع "${distributorName}" بنجاح`
+          : `✅ Distributor "${distributorName}" deactivated successfully`
+      );
+      
+      setShowDeactivateDistributorDialog(false);
+      setDeactivatingDistributor(null);
+      setIsDeactivating(false);
+      
+      await refetchDistributors();
+      
+    } catch (error: any) {
+      console.error("❌ Error deactivating distributor:", error);
+      toast.error(
+        isArabic 
+          ? `❌ فشل تعطيل الموزع: ${error.message || 'خطأ غير معروف'}`
+          : `❌ Failed to deactivate distributor: ${error.message || 'Unknown error'}`
+      );
+      setIsDeactivating(false);
+    }
+  };
+
+  // ✅ فتح ديالوج تعطيل الموزع
+  const openDeactivateDistributorDialog = (distributor: any) => {
+    setDeactivatingDistributor(distributor);
+    setShowDeactivateDistributorDialog(true);
+  };
 
   // ✅ جلب أدمن النظام
   const [systemAdmin, setSystemAdmin] = useState<any>(null);
@@ -815,10 +881,10 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
 
   // ✅ الشركات التابعة
   const companyDistributors = useMemo(() => {
-    return distributors.filter(
+    return allDistributors.filter(
       (d: any) => d.delivery_company_id === company?.id && d.user_id !== app.user?.id
     );
-  }, [distributors, company, app.user]);
+  }, [allDistributors, company, app.user]);
 
   // ✅ عرض التحميل
   if (app.authLoading || ordersLoading || distributorsLoading) {
@@ -838,616 +904,192 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-[#0d2e2a]/5 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#0d2e2a]/10">
 
-        {/* HEADER */}
-        <div className="relative bg-gradient-to-r from-[#0d2e2a]/80 via-[#1a4f4a]/80 to-[#2a655f]/80 backdrop-blur-md text-white overflow-hidden shadow-lg shadow-[#0d2e2a]/10 border-b border-white/10">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-          </div>
+{/* ============================================================
+    HEADER - مثل صفحة الموزعين بالضبط
+    ============================================================ */}
+<div className="relative bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] text-white overflow-hidden shadow-xl border-b border-white/10 sticky top-0 z-50">
+  
+  {/* خلفية متحركة */}
+  <div className="absolute inset-0 opacity-10">
+    <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+    <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+  </div>
 
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+  {/* ✅ المحتوى الرئيسي - مثل صفحة الموزعين بالضبط */}
+  <div className="relative mx-auto max-w-7xl px-4 py-3 md:py-4">
+    <div className="flex items-center justify-between flex-wrap gap-2">
+      
+      {/* ===== الجانب الأيسر - شعار + اسم التطبيق (كبير) ===== */}
+    {/* ===== الجانب الأيسر - شعار + اسم التطبيق (مع حركة) ===== */}
+<div className="flex items-center gap-3 group flex-1 min-w-0">
+  
+  {/* ✅ الشعار مع حركة (مثل صفحة الموزع) */}
+  <div className="relative h-16 w-16 md:h-20 md:w-20 flex items-center justify-center group-hover:scale-110 transition-all duration-500 flex-shrink-0 animate-float-logo">
+    {/* خلفية متوهجة */}
+    <div className="absolute inset-0 rounded-full bg-[#2a655f]/30 blur-2xl group-hover:bg-[#d4af37]/20 transition-all duration-700 animate-pulse-slow" />
+    
+    {/* حلقة تدور حول الشعار */}
+    <div className="absolute -inset-2 rounded-full border-2 border-[#d4af37]/20 animate-spin-slow" />
+    <div className="absolute -inset-4 rounded-full border border-[#d4af37]/10 animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '8s' }} />
+    
+    {/* الشعار */}
+    <img 
+      src="/images/Logo.png" 
+      alt="السوق لعندك"
+      className="h-14 w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl relative z-10 animate-pulse-glow"
+      loading="eager"
+    />
+    
+    {/* نقاط متحركة حول الشعار */}
+    <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#2a655f] animate-ping" />
+    <div className="absolute -bottom-1 -left-1 h-2.5 w-2.5 rounded-full bg-[#d4af37] animate-ping" style={{ animationDelay: '0.5s' }} />
+    <div className="absolute top-1/2 -right-3 h-2 w-2 rounded-full bg-[#3a8a82] animate-pulse" style={{ animationDelay: '1s' }} />
+    <div className="absolute top-1/2 -left-3 h-2 w-2 rounded-full bg-[#f0d060] animate-pulse" style={{ animationDelay: '1.5s' }} />
+    <div className="absolute -top-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#4a9f95] animate-bounce" />
+    <div className="absolute -bottom-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#d4af37] animate-bounce" style={{ animationDelay: '0.7s' }} />
+  </div>
+  
+  {/* ✅ اسم التطبيق مع الترجمة */}
+  <div className="flex flex-col min-w-0">
+    <h1 className="text-xl md:text-3xl font-black tracking-tight leading-tight">
+      <span className="bg-gradient-to-r from-[#f5d742] via-[#f0e68c] to-[#f5d742] bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(245,215,66,0.4)] whitespace-nowrap">
+        {isArabic ? "السوق لعندك" : "Souq Le3ndak"}
+      </span>
+    </h1>
+    
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-[10px] md:text-xs text-white/60 flex items-center gap-1">
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+        </span>
+        {isArabic ? "شركة توصيل • نشط" : "Delivery Company • Active"}
+      </span>
+      
+      <span className="text-[8px] md:text-[10px] text-white/30">|</span>
+      
+      <span className="text-[8px] md:text-[10px] text-white/40 flex items-center gap-1">
+        <Sparkles className="h-2.5 w-2.5 md:h-3 md:w-3 animate-spin-slow text-yellow-400/60" />
+        {isArabic ? "توصيل سريع" : "Fast Delivery"}
+      </span>
+    </div>
+  </div>
+</div>
 
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-8">
-            <div className="absolute top-1/2 -translate-y-1/2 animate-drive-across">
-              <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm px-8 py-4 rounded-full border border-white/10 shadow-lg">
-                <Truck className="h-12 w-12 text-white animate-bounce-truck" />
-                <div className="flex gap-1.5">
-                  <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s' }} />
-                  <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s', animationDelay: '0.3s' }} />
-                  <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s', animationDelay: '0.6s' }} />
-                  <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s', animationDelay: '0.9s' }} />
-                </div>
-                <span className="text-xs font-bold text-white/40 tracking-widest">● ● ●</span>
-                <div className="flex gap-1">
-                  <div className="h-1.5 w-1.5 rounded-full bg-white/15 animate-pulse" />
-                  <div className="h-1.5 w-1.5 rounded-full bg-white/15 animate-pulse" style={{ animationDelay: '0.5s' }} />
-                  <div className="h-1.5 w-1.5 rounded-full bg-white/15 animate-pulse" style={{ animationDelay: '1s' }} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative mx-auto max-w-7xl px-4 py-4 md:py-6">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#0d2e2a] via-[#1a4f4a] to-[#2a655f] flex items-center justify-center shadow-xl shadow-[#0d2e2a]/30 group-hover:shadow-2xl group-hover:scale-110 transition-all duration-500 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/5 animate-shimmer" />
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[#0d2e2a]/0 via-white/10 to-[#0d2e2a]/0 rounded-2xl animate-pulse" />
-                  <Truck className="h-5.5 w-5.5 text-white drop-shadow-lg animate-float-truck relative z-10" />
-                  <div className="absolute -bottom-0.5 left-1.5 flex gap-1.5 z-10">
-                    <div className="h-1.5 w-1.5 rounded-full bg-white/40 animate-spin-slow" style={{ animationDuration: '1.5s' }} />
-                    <div className="h-1.5 w-1.5 rounded-full bg-white/40 animate-spin-slow" style={{ animationDuration: '1.5s', animationDelay: '0.5s' }} />
-                  </div>
-                  <div className="absolute -bottom-0.5 right-1.5 flex gap-1.5 z-10">
-                    <div className="h-1.5 w-1.5 rounded-full bg-white/40 animate-spin-slow" style={{ animationDuration: '1.5s', animationDelay: '1s' }} />
-                    <div className="h-1.5 w-1.5 rounded-full bg-white/40 animate-spin-slow" style={{ animationDuration: '1.5s', animationDelay: '1.5s' }} />
-                  </div>
-                </div>
-                <div>
-                  <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text">
-                    {company?.name_ar || company?.name_en || (isArabic ? "شركة التوصيل" : "Delivery Company")}
-                  </h1>
-                  <p className="text-[10px] text-white/70 flex items-center gap-1">
-                    <Sparkles className="h-2.5 w-2.5 animate-spin-slow text-yellow-300" />
-                    <span className="flex items-center gap-1">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+      {/* ===== الجانب الأيمن - الأزرار ===== */}
+      <div className="flex items-center gap-1 flex-wrap flex-shrink-0">
+        {/* 🔔 الإشعارات */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div>
+              <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
+                  >
+                    <Bell className="h-4 w-4 md:h-5 md:w-5" />
+                    {unreadNotificationsCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
+                        {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                       </span>
-                      {isArabic ? "نشط • جاهز للاستلام" : "Active • Ready to receive"}
-                    </span>
-                  </p>
-                </div>
-              </div>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                {/* ... كود ديالوج الإشعارات كما هو ... */}
+              </Dialog>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+            <p>{isArabic ? "الإشعارات" : "Notifications"}</p>
+          </TooltipContent>
+        </Tooltip>
 
-           <div className="flex items-center gap-1.5 flex-wrap">
-  {/* NOTIFICATIONS */}
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <div>
-        <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-          <DialogTrigger asChild>
+        {/* 💬 الرسائل */}
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button
               size="sm"
               variant="ghost"
-              className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
+              className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
+              onClick={handleMessages}
             >
-              <Bell className="h-4 w-4" />
-              {unreadNotificationsCount > 0 && (
+              <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
+              {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
-                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                  {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </Button>
-          </DialogTrigger>
-          {/* ... باقي كود الـ Dialog ... */}
-        </Dialog>
-      </div>
-    </TooltipTrigger>
-    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-      <p>{isArabic ? "الإشعارات" : "Notifications"}</p>
-    </TooltipContent>
-  </Tooltip>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+            <p>{isArabic ? "الرسائل" : "Messages"}</p>
+          </TooltipContent>
+        </Tooltip>
 
-  {/* MESSAGES */}
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <Button
-        size="sm"
-        variant="ghost"
-        className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
-        onClick={handleMessages}
-      >
-        <MessageCircle className="h-4 w-4" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
-      </Button>
-    </TooltipTrigger>
-    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-      <p>{isArabic ? "الرسائل" : "Messages"}</p>
-    </TooltipContent>
-  </Tooltip>
-
-  {/* LANGUAGE */}
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <Button
-        size="sm"
-        variant="ghost"
-        className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
-        onClick={toggleLanguage}
-      >
-        <Languages className="h-4 w-4" />
-      </Button>
-    </TooltipTrigger>
-    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-      <p>{isArabic ? "تبديل اللغة" : "Switch Language"}</p>
-    </TooltipContent>
-  </Tooltip>
-
-  <div className="w-px h-6 bg-white/10 mx-0.5" />
-
-{company && isDeliveryCompany && (
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <Dialog open={showCompanyDialog} onOpenChange={setShowCompanyDialog}>
-        <DialogTrigger asChild>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative group"
-          >
-            <Building2 className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
-            <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-[#1a4f4a] animate-pulse" />
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="rounded-2xl max-h-[90vh] overflow-y-auto p-0 border-0 shadow-2xl">
-          {/* رأس الديالوج */}
-          <div className="sticky top-0 z-10 bg-gradient-to-r from-[#0d2e2a] via-[#1a4f4a] to-[#2a655f] p-6 text-white rounded-t-2xl">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <DialogTitle className="text-xl font-bold">
-                  {isArabic ? "🏢 تعديل معلومات الشركة" : "🏢 Edit Company Info"}
-                </DialogTitle>
-                <p className="text-white/80 text-sm mt-0.5">
-                  {isArabic ? "تحديث بيانات شركة التوصيل" : "Update delivery company information"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6 space-y-6">
-            {/* ✅✅✅ صورة الشركة ✅✅✅ */}
-            <div className="flex flex-col items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border-2 border-dashed border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 transition-all duration-300">
-              <ImageInput
-                value={logoUrl || company?.logo_url || ""}
-                onChange={(value) => setLogoUrl(value)}
-                userId={app.user?.id}
-                folder="delivery-companies"
-                lang={app.lang}
-                label={isArabic ? "📸 شعار الشركة" : "📸 Company Logo"}
-                previewClassName="h-24 w-24 rounded-full object-cover border-4 border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 transition-all duration-300"
-                hint={isArabic ? "اضغط لرفع شعار الشركة" : "Click to upload company logo"}
-              />
-              <p className="text-xs text-muted-foreground">
-                {isArabic ? "🖼️ يفضل استخدام صورة مربعة 500×500 بكسل" : "🖼️ Prefer square image 500×500px"}
-              </p>
-            </div>
-
-            <form onSubmit={handleUpdateCompany} className="space-y-5">
-              {/* ===== الاسم ===== */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
-                    <Building2 className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
-                    {isArabic ? "اسم الشركة (عربي)" : "Company Name (Arabic)"} *
-                  </Label>
-                  <Input
-                    name="name_ar"
-                    defaultValue={company?.name_ar || ''}
-                    placeholder={isArabic ? "شركة التوصيل السريع" : "Fast Delivery Company"}
-                    required
-                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
-                    <Globe className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
-                    {isArabic ? "اسم الشركة (إنجليزي)" : "Company Name (English)"} *
-                  </Label>
-                  <Input
-                    name="name_en"
-                    defaultValue={company?.name_en || ''}
-                    placeholder={isArabic ? "Fast Delivery Company" : "Fast Delivery Company"}
-                    required
-                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
-                  />
-                </div>
-              </div>
-
-              {/* ===== رقم الهاتف ===== */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
-                  <Phone className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
-                  {isArabic ? "رقم الهاتف" : "Phone Number"} *
-                </Label>
-                <Input
-                  name="phone"
-                  defaultValue={company?.phone || ''}
-                  type="tel"
-                  placeholder="09XXXXXXXX"
-                  required
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
-                />
-              </div>
-
-              {/* ===== ✅✅✅ اختيار طريقة إدخال العنوان ✅✅✅ ===== */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
-                  {isArabic ? "📍 طريقة إدخال العنوان" : "📍 Address Input Method"}
-                </Label>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setAddressMethod("manual")}
-                    className={`
-                      flex items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300
-                      ${addressMethod === "manual" 
-                        ? "bg-[#0d2e2a]/10 border-2 border-[#0d2e2a] shadow-lg scale-[1.02]" 
-                        : "bg-slate-100/50 dark:bg-slate-800/50 border-2 border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-200/50 hover:scale-[1.02]"}
-                    `}
-                  >
-                    <Edit3 className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                      {isArabic ? "📝 كتابة يدوية" : "✏️ Manual"}
-                    </span>
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => setAddressMethod("map")}
-                    className={`
-                      flex items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300
-                      ${addressMethod === "map" 
-                        ? "bg-[#0d2e2a]/10 border-2 border-[#0d2e2a] shadow-lg scale-[1.02]" 
-                        : "bg-slate-100/50 dark:bg-slate-800/50 border-2 border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-200/50 hover:scale-[1.02]"}
-                    `}
-                  >
-                    <Map className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                      {isArabic ? "🗺️ اختيار من الخريطة" : "🗺️ Map"}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* ===== ✅✅✅ حقل العنوان بناءً على الاختيار ✅✅✅ ===== */}
-              {addressMethod === "manual" ? (
-                <div className="space-y-2 animate-in fade-in-50 duration-300">
-                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                    {isArabic ? "العنوان" : "Address"} *
-                  </Label>
-                  <Textarea
-                    name="address_ar"
-                    defaultValue={company?.address_ar || ''}
-                    placeholder={isArabic ? "مثال: شارع الأندلس، مبنى 5، الطابق 3" : "Example: Al-Andalus Street, Building 5, Floor 3"}
-                    required
-                    rows={2}
-                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
-                  />
-                </div>
-              ) : (
-                <div className="space-y-2 animate-in fade-in-50 duration-300">
-                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                    {isArabic ? "اختر موقعك على الخريطة" : "Select your location on the map"} *
-                  </Label>
-                  <div className="rounded-xl border-2 border-[#0d2e2a]/20 p-3 bg-white dark:bg-slate-900 focus-within:border-[#0d2e2a] transition-all duration-300 hover:shadow-md">
-                    <AddressPicker
-                      value={location || (company?.lat && company?.lng ? {
-                        lat: company.lat,
-                        lng: company.lng,
-                        address: company.address_ar || ''
-                      } : undefined)}
-                      onChange={setLocation}
-                      lang={app.lang}
-                    />
-                  </div>
-                  {location && (
-                    <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in-50 duration-300">
-                      <CheckCircle className="h-3.5 w-3.5" />
-                      ✅ {isArabic ? "تم اختيار الموقع" : "Location selected"}
-                    </p>
-                  )}
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Info className="h-3 w-3" />
-                    {isArabic 
-                      ? "📍 سيتم استخدام العنوان المختار من الخريطة تلقائياً" 
-                      : "📍 The selected address from the map will be used automatically"}
-                  </p>
-                </div>
-              )}
-
-              {/* ===== الوصف ===== */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
-                    <FileText className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
-                    {isArabic ? "الوصف (عربي)" : "Description (Arabic)"}
-                  </Label>
-                  <Textarea
-                    name="description_ar"
-                    defaultValue={company?.description_ar || ''}
-                    placeholder={isArabic ? "وصف الشركة بالعربية" : "Company description in Arabic"}
-                    rows={3}
-                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
-                    <FileText className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
-                    {isArabic ? "الوصف (إنجليزي)" : "Description (English)"}
-                  </Label>
-                  <Textarea
-                    name="description_en"
-                    defaultValue={company?.description_en || ''}
-                    placeholder={isArabic ? "وصف الشركة بالإنجليزية" : "Company description in English"}
-                    rows={3}
-                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
-                  />
-                </div>
-              </div>
-
-              {/* ===== التسعير ===== */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
-                  <DollarSign className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
-                  {isArabic ? "💰 التسعير" : "💰 Pricing"}
-                </Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                      {isArabic ? "السعر الأساسي" : "Base Price"} *
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
-                        {app.currency}
-                      </span>
-                      <Input
-                        name="base_price"
-                        type="number"
-                        step="0.01"
-                        defaultValue={company?.base_price || 0}
-                        required
-                        className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                      {isArabic ? "سعر الكيلومتر" : "Price per KM"} *
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
-                        {app.currency}
-                      </span>
-                      <Input
-                        name="price_per_km"
-                        type="number"
-                        step="0.01"
-                        defaultValue={company?.price_per_km || 0}
-                        required
-                        className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                      {isArabic ? "الحد الأدنى" : "Min Fee"} *
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
-                        {app.currency}
-                      </span>
-                      <Input
-                        name="min_delivery_fee"
-                        type="number"
-                        step="0.01"
-                        defaultValue={company?.min_delivery_fee || 0}
-                        required
-                        className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                      {isArabic ? "الحد الأقصى" : "Max Fee"} *
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
-                        {app.currency}
-                      </span>
-                      <Input
-                        name="max_delivery_fee"
-                        type="number"
-                        step="0.01"
-                        defaultValue={company?.max_delivery_fee || 999999}
-                        required
-                        className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* ===== قيمة التوصيل المجاني ووقت التوصيل ===== */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                    {isArabic ? "قيمة التوصيل المجاني" : "Free Delivery Threshold"}
-                  </Label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">
-                      {app.currency}
-                    </span>
-                    <Input
-                      name="free_delivery_threshold"
-                      type="number"
-                      step="0.01"
-                      defaultValue={company?.free_delivery_threshold || 0}
-                      className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 ps-7 transition-all duration-300"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium text-[#0d2e2a] dark:text-white">
-                    {isArabic ? "متوسط وقت التوصيل" : "Avg Delivery Time"} *
-                  </Label>
-                  <Input
-                    name="avg_delivery_time"
-                    type="number"
-                    defaultValue={company?.avg_delivery_time || 60}
-                    required
-                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 text-sm h-9 transition-all duration-300"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    {isArabic ? "⏱️ بالدقائق" : "⏱️ In minutes"}
-                  </p>
-                </div>
-              </div>
-
-              {/* ===== الخيارات (Checkboxes) ===== */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
-                  <CheckSquare className="h-4 w-4 text-[#0d2e2a] dark:text-[#4a9f95]" />
-                  {isArabic ? "⚙️ الخيارات" : "⚙️ Options"}
-                </Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <label className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 rounded-xl border border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 cursor-pointer transition-all duration-300 group">
-                    <input
-                      type="checkbox"
-                      name="has_tracking"
-                      defaultChecked={company?.has_tracking ?? true}
-                      className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                    />
-                    <Label className="text-xs font-medium cursor-pointer group-hover:text-[#0d2e2a] transition-colors">
-                      {isArabic ? "📍 تتبع" : "📍 Tracking"}
-                    </Label>
-                  </label>
-                  <label className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 rounded-xl border border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 cursor-pointer transition-all duration-300 group">
-                    <input
-                      type="checkbox"
-                      name="has_insurance"
-                      defaultChecked={company?.has_insurance ?? true}
-                      className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                    />
-                    <Label className="text-xs font-medium cursor-pointer group-hover:text-[#0d2e2a] transition-colors">
-                      {isArabic ? "🛡️ تأمين" : "🛡️ Insurance"}
-                    </Label>
-                  </label>
-                  <label className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 rounded-xl border border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 cursor-pointer transition-all duration-300 group">
-                    <input
-                      type="checkbox"
-                      name="has_cod"
-                      defaultChecked={company?.has_cod ?? true}
-                      className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                    />
-                    <Label className="text-xs font-medium cursor-pointer group-hover:text-[#0d2e2a] transition-colors">
-                      {isArabic ? "💵 دفع عند الاستلام" : "💵 Cash on Delivery"}
-                    </Label>
-                  </label>
-                  <label className="flex items-center gap-2 p-3 bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 rounded-xl border border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 cursor-pointer transition-all duration-300 group">
-                    <input
-                      type="checkbox"
-                      name="has_express"
-                      defaultChecked={company?.has_express ?? true}
-                      className="h-4 w-4 rounded border-[#0d2e2a]/30 text-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                    />
-                    <Label className="text-xs font-medium cursor-pointer group-hover:text-[#0d2e2a] transition-colors">
-                      {isArabic ? "⚡ توصيل سريع" : "⚡ Express"}
-                    </Label>
-                  </label>
-                </div>
-              </div>
-
-              {/* ===== حالة النشاط ===== */}
-              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl border-2 border-emerald-200/50 dark:border-emerald-800/30 hover:border-emerald-400/50 transition-all duration-300">
-                <input
-                  type="checkbox"
-                  name="is_active"
-                  defaultChecked={company?.is_active ?? true}
-                  className="h-5 w-5 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500/20 transition-all duration-300"
-                />
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white cursor-pointer flex items-center gap-2">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${company?.is_active !== false ? 'bg-emerald-400' : 'bg-gray-400'} opacity-75`} />
-                    <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${company?.is_active !== false ? 'bg-emerald-500' : 'bg-gray-500'}`} />
-                  </span>
-                  {isArabic ? "🟢 الشركة نشطة" : "🟢 Company is active"}
-                </Label>
-              </div>
-
-              {/* ===== أزرار ===== */}
-              <DialogFooter className="gap-3 pt-4 border-t-2 border-[#0d2e2a]/10">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setShowCompanyDialog(false)}
-                  className="rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/5 hover:border-[#0d2e2a]/40 transition-all duration-300 flex-1"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  {isArabic ? "إلغاء" : "Cancel"}
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white rounded-xl shadow-lg shadow-[#0d2e2a]/30 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] flex-1"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {isArabic ? "💾 حفظ التغييرات" : "💾 Save Changes"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </TooltipTrigger>
-    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-      <p>{isArabic ? "🏢 تعديل الشركة" : "🏢 Edit Company"}</p>
-    </TooltipContent>
-  </Tooltip>
-)}
-
-  <div className="w-px h-6 bg-white/10 mx-0.5" />
-
-  {/* 👤 DELIVERY ACCOUNT MENU (آخر شي عاليسار) */}
-  <DeliveryAccountMenu
-    userData={{
-      id: app.user?.id || '',
-      full_name: company?.name_ar || app.user?.name || (isArabic ? 'مدير شركة' : 'Company Manager'),
-      phone: company?.phone || app.user?.phone || '',
-      avatar_url: company?.logo_url || '',
-      role: 'delivery_company'
-    }}
-    companyName={company?.name_ar}
-    isArabic={isArabic}
-  />
-
-  <div className="w-px h-6 bg-white/10 mx-0.5" />
-
-  {/* 📦 DISTRIBUTOR DIALOG */}
-  {currentDistributor && (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
-          <DialogTrigger asChild>
+        {/* 🌐 اللغة */}
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button
               size="sm"
               variant="ghost"
-              className="h-9 w-9 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
+              className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
+              onClick={toggleLanguage}
             >
-              <UserCircle className="h-4 w-4" />
+              <Languages className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
-          </DialogTrigger>
-          {/* ... كود الديالوج ... */}
-        </Dialog>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-        <p>{isArabic ? "حسابي" : "My Account"}</p>
-      </TooltipContent>
-    </Tooltip>
-  )}
-</div>
-            </div>
-          </div>
-        </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+            <p>{isArabic ? "تبديل اللغة" : "Switch Language"}</p>
+          </TooltipContent>
+        </Tooltip>
 
+        <div className="w-px h-6 bg-white/10 mx-0.5" />
+
+        {/* 👤 حساب المستخدم */}
+        <DeliveryAccountMenu
+          userData={{
+            id: app.user?.id || '',
+            full_name: company?.name_ar || app.user?.name || (isArabic ? 'مدير شركة' : 'Company Manager'),
+            phone: company?.phone || app.user?.phone || '',
+            avatar_url: company?.logo_url || '',
+            role: 'delivery_company'
+          }}
+          companyName={company?.name_ar}
+          isArabic={isArabic}
+          companyId={company?.id}
+          onCompanyUpdated={refetchCompany}
+        />
+
+        <div className="w-px h-6 bg-white/10 mx-0.5" />
+
+        {/* ⚙️ حساب الموزع */}
+        {currentDistributor && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
+                  >
+                    <UserCircle className="h-4 w-4 md:h-5 md:w-5" />
+                  </Button>
+                </DialogTrigger>
+                {/* ... كود ديالوج الموزع ... */}
+              </Dialog>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+              <p>{isArabic ? "حساب الموزع" : "Distributor Account"}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+    </div>
+  </div>
+</div>
         {/* ===== STATS ===== */}
         <div className="mx-auto max-w-7xl px-4 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -1526,7 +1168,7 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
             ))}
           </div>
 
-          {/* ORDERS TAB */}
+          {/* ===== ORDERS TAB (معدل مع Pagination وفلتر pending افتراضي) ===== */}
           {activeTab === "orders" && (
             <div className="animate-in slide-in-from-top-5 duration-300">
               <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -1550,9 +1192,11 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                     <option value="all">{isArabic ? "جميع الحالات" : "All status"}</option>
                     <option value="pending">{isArabic ? "قيد المراجعة" : "Pending"}</option>
                     <option value="assigned">{isArabic ? "تم التعيين" : "Assigned"}</option>
+                    <option value="picked_up">{isArabic ? "تم الاستلام" : "Picked up"}</option>
                     <option value="in_transit">{isArabic ? "قيد التوصيل" : "In transit"}</option>
                     <option value="delivered">{isArabic ? "تم التوصيل" : "Delivered"}</option>
                     <option value="cancelled">{isArabic ? "ملغي" : "Cancelled"}</option>
+                    <option value="failed">{isArabic ? "فشل" : "Failed"}</option>
                   </select>
                 </div>
               </div>
@@ -1576,28 +1220,137 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {filteredOrders.map((order: any) => (
-                    <OrderCard 
-                      key={order.id} 
-                      order={order} 
-                      isArabic={isArabic}
-                      onAccept={() => {
-                        setSelectedDeliveryOrderId(order.id);
-                        setSelectedOrderId(order.order_id);
-                        setSelectedDistributorId("");
-                        setDistributorSearch("");
-                        setAcceptDialogOpen(true);
-                      }}
-                      onReject={() => {
-                        setSelectedDeliveryOrderId(order.id);
-                        setSelectedOrderId(order.order_id);
-                        setRejectReason("");
-                        setRejectDialogOpen(true);
-                      }}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="space-y-3">
+                    {paginatedOrders.map((order: any) => (
+                      <OrderCard 
+                        key={order.id} 
+                        order={order} 
+                        isArabic={isArabic}
+                        onAccept={() => {
+                          console.log("📦 Order data:", order);
+                          console.log("🆔 order.id:", order.id);
+                          console.log("🆔 order.order_id:", order.order_id);
+                          console.log("🔍 order_id exists?", !!order.order_id);
+                          setSelectedDeliveryOrderId(order.id);
+                          setSelectedOrderId(order.order_id);
+                          setSelectedDistributorId("");
+                          setDistributorSearch("");
+                          setAcceptDialogOpen(true);
+                        }}
+                        onReject={() => {
+                          setSelectedDeliveryOrderId(order.id);
+                          setSelectedOrderId(order.order_id);
+                          setRejectReason("");
+                          setRejectDialogOpen(true);
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* ===== ✅ PAGINATION ===== */}
+                  {filteredOrders.length > 0 && totalPages > 1 && (
+                    <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+                      <p className="text-sm text-muted-foreground">
+                        {isArabic 
+                          ? `عرض ${(currentPage - 1) * itemsPerPage + 1} - ${Math.min(currentPage * itemsPerPage, filteredOrders.length)} من ${filteredOrders.length} طلب`
+                          : `Showing ${(currentPage - 1) * itemsPerPage + 1} - ${Math.min(currentPage * itemsPerPage, filteredOrders.length)} of ${filteredOrders.length} orders`}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="rounded-xl h-9 w-9 p-0"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        {[...Array(Math.min(totalPages, 7))].map((_, i) => {
+                          let pageNum;
+                          if (totalPages <= 7) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 4) {
+                            pageNum = i + 1;
+                            if (i === 6) pageNum = totalPages;
+                          } else if (currentPage >= totalPages - 3) {
+                            pageNum = totalPages - 6 + i;
+                          } else {
+                            pageNum = currentPage - 3 + i;
+                          }
+                          
+                          if (i === 0 && pageNum > 1) {
+                            return (
+                              <Button
+                                key="first"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(1)}
+                                className="rounded-xl h-9 min-w-[36px] px-2 text-xs"
+                              >
+                                1
+                              </Button>
+                            );
+                          }
+                          
+                          if (i === 0 && pageNum > 2) {
+                            return (
+                              <span key="dots1" className="px-1 text-muted-foreground">…</span>
+                            );
+                          }
+                          
+                          if (i === 6 && pageNum < totalPages - 1) {
+                            return (
+                              <span key="dots2" className="px-1 text-muted-foreground">…</span>
+                            );
+                          }
+                          
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={cn(
+                                "rounded-xl h-9 min-w-[36px] px-2 text-xs",
+                                currentPage === pageNum && "bg-[#0d2e2a] text-white hover:bg-[#1a4f4a]"
+                              )}
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                          className="rounded-xl h-9 w-9 p-0"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={itemsPerPage}
+                          onChange={(e) => {
+                            setItemsPerPage(Number(e.target.value));
+                            setCurrentPage(1);
+                          }}
+                          className="h-9 px-2 rounded-xl border border-slate-200/50 dark:border-slate-800/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#0d2e2a]/20"
+                        >
+                          <option value="5">5</option>
+                          <option value="10" selected>10</option>
+                          <option value="25">25</option>
+                          <option value="50">50</option>
+                        </select>
+                        <span className="text-xs text-muted-foreground">
+                          {isArabic ? "لكل صفحة" : "per page"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -1611,7 +1364,7 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                     <Users className="h-5 w-5 text-[#0d2e2a]" />
                     {isArabic ? "الموزعين" : "Distributors"}
                     <span className="text-sm font-normal text-muted-foreground">
-                      ({distributors.length})
+                      ({allDistributors.length})
                     </span>
                   </h3>
                   <p className="text-sm text-muted-foreground">
@@ -1856,7 +1609,7 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                     <Skeleton key={i} className="h-40 rounded-2xl" />
                   ))}
                 </div>
-              ) : distributors.length === 0 ? (
+              ) : allDistributors.length === 0 ? (
                 <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border border-dashed border-[#0d2e2a]/30">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                   <h3 className="text-xl font-semibold">
@@ -1868,13 +1621,18 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {distributors.map((dist: any) => (
-                    <DistributorCard key={dist.id} distributor={dist} isArabic={isArabic} />
+                  {allDistributors.map((dist: any) => (
+                    <DistributorCard 
+                      key={dist.id} 
+                      distributor={dist} 
+                      isArabic={isArabic}
+                      onDeactivate={openDeactivateDistributorDialog}
+                    />
                   ))}
                 </div>
               )}
-            </div>
-          )}
+            </div>     
+          )}        
 
           {/* ANALYTICS TAB */}
           {activeTab === "analytics" && (
@@ -1999,35 +1757,36 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                   </DialogTitle>
                   <p className="text-white/80 text-sm mt-0.5">
                     {isArabic
-                      ? "اختر موزعاً وحدد وقت التوصيل المتوقع"
-                      : "Select a distributor and set estimated delivery time"}
+                      ? "اختر موزعاً من شركتك وحدد وقت التوصيل"
+                      : "Select a distributor from your company and set delivery time"}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="p-5 flex-1 overflow-y-auto">
-              {nearestLoading ? (
+              {distributorsLoading ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500/20 border-t-emerald-500" />
                   <p className="text-sm text-muted-foreground mt-2">
                     {isArabic ? "جاري تحميل الموزعين..." : "Loading distributors..."}
                   </p>
                 </div>
-              ) : !nearestDistributors || nearestDistributors.length === 0 ? (
+              ) : !allDistributors || allDistributors.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
                   <p className="font-medium text-slate-700 dark:text-slate-300">
-                    {isArabic ? "❌ لا يوجد موزعين متاحين" : "❌ No distributors available"}
+                    {isArabic ? "❌ لا يوجد موزعين في شركتك" : "❌ No distributors in your company"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {isArabic
-                      ? "يرجى إضافة موزعين للشركة أو تفعيل موزع موجود"
-                      : "Please add distributors to the company or activate an existing one"}
+                      ? "قم بإضافة موزعين للشركة من تبويب الموزعين"
+                      : "Add distributors to your company from the Distributors tab"}
                   </p>
                 </div>
               ) : (
                 <>
+                  {/* ✅ شريط البحث */}
                   <div className="relative mb-4">
                     <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -2036,16 +1795,32 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                       onChange={(e) => setDistributorSearch(e.target.value)}
                       className="ps-9 h-10 rounded-xl border-slate-200/50 dark:border-slate-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20"
                     />
+                    {distributorSearch && (
+                      <button
+                        onClick={() => setDistributorSearch("")}
+                        className="absolute inset-y-0 end-3 flex items-center text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
 
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {nearestDistributors
-                      .filter((d: any) => {
+                  {/* ✅ عدد الموزعين */}
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {isArabic
+                      ? `🟢 ${allDistributors.length} موزع في شركتك`
+                      : `🟢 ${allDistributors.length} distributors in your company`}
+                  </p>
+
+                  {/* ✅ قائمة الموزعين */}
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                    {allDistributors
+                      .filter((dist: any) => {
                         const search = distributorSearch.toLowerCase().trim();
                         if (!search) return true;
-                        const nameAr = d.full_name_ar?.toLowerCase() || "";
-                        const nameEn = d.full_name_en?.toLowerCase() || "";
-                        const phone = d.phone?.toLowerCase() || "";
+                        const nameAr = dist.full_name_ar?.toLowerCase() || "";
+                        const nameEn = dist.full_name_en?.toLowerCase() || "";
+                        const phone = dist.phone?.toLowerCase() || "";
                         return nameAr.includes(search) || nameEn.includes(search) || phone.includes(search);
                       })
                       .map((dist: any) => (
@@ -2059,9 +1834,17 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                               : "border-slate-200/50 dark:border-slate-700/50 hover:border-emerald-300/50 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/10"
                           )}
                         >
-                          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {/* ✅ صورة الموزع */}
+                          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-emerald-200 dark:border-emerald-800/50">
                             {dist.avatar_url ? (
-                              <img src={dist.avatar_url} alt="" className="h-full w-full object-cover" />
+                              <img 
+                                src={dist.avatar_url} 
+                                alt={dist.full_name_ar || dist.full_name_en || "موزع"}
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
                             ) : (
                               <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
                                 {dist.full_name_ar?.charAt(0) || dist.full_name_en?.charAt(0) || "M"}
@@ -2069,19 +1852,26 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                             )}
                           </div>
 
+                          {/* ✅ معلومات الموزع */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="font-semibold text-slate-900 dark:text-white">
                                 {isArabic ? dist.full_name_ar : dist.full_name_en || dist.full_name_ar}
                               </p>
-                              <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 text-[9px]">
-                                ● {isArabic ? "متاح" : "Available"}
-                              </Badge>
+                              {dist.is_available ? (
+                                <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 text-[9px]">
+                                  ● {isArabic ? "متاح" : "Available"}
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-red-500/20 text-red-600 dark:text-red-400 border-0 text-[9px]">
+                                  ● {isArabic ? "غير متاح" : "Unavailable"}
+                                </Badge>
+                              )}
                             </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                               <span className="flex items-center gap-1">
                                 <Phone className="h-3 w-3" />
-                                {dist.phone}
+                                {dist.phone || (isArabic ? "غير متوفر" : "Not available")}
                               </span>
                               <span className="text-muted-foreground/30">|</span>
                               <span className="flex items-center gap-1">
@@ -2089,15 +1879,14 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                                 {Number(dist.rating || 0).toFixed(1)}
                               </span>
                               <span className="text-muted-foreground/30">|</span>
-                              <span className={cn(
-                                "font-medium",
-                                dist.distance < 5 ? "text-emerald-600" : "text-amber-600"
-                              )}>
-                                📍 {dist.distanceText}
+                              <span className="flex items-center gap-1">
+                                <Package className="h-3 w-3" />
+                                {dist.completed_orders || 0} {isArabic ? "طلب" : "orders"}
                               </span>
                             </div>
                           </div>
 
+                          {/* ✅ علامة الاختيار */}
                           <div className={cn(
                             "h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
                             selectedDistributorId === dist.id
@@ -2112,6 +1901,26 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                       ))}
                   </div>
 
+                  {/* ✅ رسالة إذا لم يتم العثور على نتائج */}
+                  {allDistributors.filter((dist: any) => {
+                    const search = distributorSearch.toLowerCase().trim();
+                    if (!search) return true;
+                    const nameAr = dist.full_name_ar?.toLowerCase() || "";
+                    const nameEn = dist.full_name_en?.toLowerCase() || "";
+                    const phone = dist.phone?.toLowerCase() || "";
+                    return nameAr.includes(search) || nameEn.includes(search) || phone.includes(search);
+                  }).length === 0 && distributorSearch && (
+                    <div className="text-center py-4">
+                      <AlertCircle className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        {isArabic 
+                          ? `❌ لا توجد نتائج لـ "${distributorSearch}"`
+                          : `❌ No results for "${distributorSearch}"`}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* ✅ وقت التوصيل المتوقع */}
                   <div className="mt-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-3">
                       <Clock className="h-3.5 w-3.5 text-[#0d2e2a]" />
@@ -2174,14 +1983,6 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
                       </div>
                     </div>
                   </div>
-
-                  {nearestDistributors.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-3 text-center">
-                      {isArabic
-                        ? `🟢 ${nearestDistributors.length} موزع متاح · مرتب حسب الأقرب`
-                        : `🟢 ${nearestDistributors.length} distributors available · sorted by proximity`}
-                    </p>
-                  )}
                 </>
               )}
             </div>
@@ -2333,115 +2134,104 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
           </DialogContent>
         </Dialog>
 
-        {/* ===== CONVERT USER DIALOG ===== */}
-        <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
-          <DialogContent className="max-w-md rounded-2xl overflow-hidden p-0">
-            <div className="bg-gradient-to-r from-[#0d2e2a] to-[#2a655f] p-6 text-white">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                  <UserPlus className="h-6 w-6 text-white" />
+        {/* ===== ✅✅✅ ديالوج تعطيل الموزع ✅✅✅ ===== */}
+        <Dialog open={showDeactivateDistributorDialog} onOpenChange={setShowDeactivateDistributorDialog}>
+          <DialogContent className="max-w-md rounded-2xl border-0 p-0 overflow-hidden shadow-2xl bg-white dark:bg-slate-900">
+            <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-6 text-white">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg">
+                    <PowerOff className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="absolute -inset-1 rounded-2xl bg-amber-400/30 blur-lg animate-pulse" />
                 </div>
                 <div>
-                  <DialogTitle className="text-xl font-bold">
-                    {isArabic ? "🔄 تحويل المستخدم إلى موزع" : "🔄 Convert User to Distributor"}
+                  <DialogTitle className="text-2xl font-bold">
+                    {isArabic ? "⚠️ تعطيل الموزع" : "⚠️ Deactivate Distributor"}
                   </DialogTitle>
                   <p className="text-white/80 text-sm mt-0.5">
-                    {isArabic
-                      ? "هذا الرقم مرتبط بحساب موجود"
-                      : "This number is linked to an existing account"}
+                    {isArabic 
+                      ? "لن يتمكن الموزع من استلام طلبات جديدة" 
+                      : "Distributor will not be able to receive new orders"}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="p-6 space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/10">
-                <div className="h-14 w-14 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center overflow-hidden">
-                  {existingUserData?.avatar_url ? (
-                    <img src={existingUserData.avatar_url} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="text-2xl font-bold text-[#0d2e2a]">
-                      {existingUserData?.full_name?.charAt(0) || 'U'}
-                    </span>
-                  )}
+              <div className="flex items-start gap-3 p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border-2 border-amber-200/50 dark:border-amber-800/30">
+                <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-[#0d2e2a] dark:text-white">
-                    {existingUserData?.full_name || (isArabic ? "مستخدم" : "User")}
-                  </p>
-                  <p className="text-sm text-muted-foreground" dir="ltr">
-                    📱 {existingUserData?.phone}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {isArabic ? "🆔 مستخدم مسجل في النظام" : "🆔 Registered user"}
-                  </p>
-                </div>
-                <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                  {isArabic ? "عميل" : "Customer"}
-                </Badge>
-              </div>
-
-              <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/30 flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                    {isArabic ? "⚠️ تحويل الدور" : "⚠️ Role Change"}
+                  <p className="font-semibold text-amber-700 dark:text-amber-300">
+                    {isArabic ? "هل أنت متأكد؟" : "Are you sure?"}
                   </p>
-                  <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-0.5">
+                  <p className="text-sm text-amber-600/80 dark:text-amber-400/70">
                     {isArabic
-                      ? `سيتم إضافة صلاحية "موزع" للمستخدم "${existingUserData?.full_name}"`
-                      : `The "distributor" role will be added to "${existingUserData?.full_name}"`}
+                      ? `سيتم تعطيل "${deactivatingDistributor?.full_name_ar || deactivatingDistributor?.full_name_en || ''}" ولن يتمكن من استلام طلبات جديدة`
+                      : `"${deactivatingDistributor?.full_name_en || deactivatingDistributor?.full_name_ar || ''}" will be deactivated and won't receive new orders`}
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/10">
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  {isArabic ? "📋 بيانات الموزع الجديدة" : "📋 New Distributor Data"}
-                </p>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{isArabic ? "الاسم" : "Name"}</span>
-                    <span className="font-medium">{pendingFormData?.full_name_ar || pendingFormData?.full_name_en || '-'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{isArabic ? "الهاتف" : "Phone"}</span>
-                    <span className="font-medium" dir="ltr">{pendingFormData?.phone}</span>
+              {deactivatingDistributor && (
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">{isArabic ? "الاسم" : "Name"}</span>
+                      <span className="font-medium">
+                        {deactivatingDistributor.full_name_ar || deactivatingDistributor.full_name_en || '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">{isArabic ? "رقم الهاتف" : "Phone"}</span>
+                      <span className="font-medium" dir="ltr">{deactivatingDistributor.phone || '-'}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <p className="text-xs text-muted-foreground text-center">
-                {isArabic
-                  ? "📌 سيتم إضافة الموزع إلى شركتك الحالية"
-                  : "📌 The distributor will be added to your current company"}
-              </p>
+              <div className="flex items-center gap-2 p-3 bg-blue-50/50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800/30">
+                <Info className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                <p className="text-xs text-blue-700 dark:text-blue-400">
+                  {isArabic
+                    ? "💡 يمكنك تفعيل الموزع مرة أخرى في أي وقت"
+                    : "💡 You can reactivate the distributor at any time"}
+                </p>
+              </div>
             </div>
 
-            <DialogFooter className="p-4 border-t border-[#0d2e2a]/10 bg-slate-50/50 dark:bg-slate-900/50 gap-2">
+            <DialogFooter className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
-                  setShowConvertDialog(false);
-                  setExistingUserData(null);
-                  setPendingFormData(null);
-                  toast.info(
-                    isArabic
-                      ? "📱 يمكنك استخدام رقم آخر لإضافة موزع جديد"
-                      : "📱 You can use another number to add a new distributor"
-                  );
+                  setShowDeactivateDistributorDialog(false);
+                  setDeactivatingDistributor(null);
                 }}
-                className="flex-1"
+                className="flex-1 rounded-xl"
+                disabled={isDeactivating}
               >
                 <X className="h-4 w-4 mr-1.5" />
-                {isArabic ? "استخدام رقم آخر" : "Use Another Number"}
+                {isArabic ? "إلغاء" : "Cancel"}
               </Button>
               <Button
-                onClick={convertUserToDistributor}
-                className="flex-1 bg-gradient-to-r from-[#0d2e2a] to-[#2a655f] text-white hover:from-[#2a655f] hover:to-[#0d2e2a]"
+                variant="destructive"
+                onClick={handleDeactivateDistributor}
+                disabled={isDeactivating}
+                className="flex-1 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-600/30 transition-all duration-300"
               >
-                <UserPlus className="h-4 w-4 mr-1.5" />
-                {isArabic ? "تحويل إلى موزع" : "Convert to Distributor"}
+                {isDeactivating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {isArabic ? "جاري التعطيل..." : "Deactivating..."}
+                  </>
+                ) : (
+                  <>
+                    <PowerOff className="h-4 w-4 mr-2" />
+                    {isArabic ? "تأكيد التعطيل" : "Confirm Deactivate"}
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2530,6 +2320,30 @@ const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElemen
           .animate-pulse-glow {
             animation: pulse-glow 3s ease-in-out infinite;
           }
+            @keyframes float-logo {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-6px) rotate(-2deg); }
+  75% { transform: translateY(4px) rotate(2deg); }
+}
+.animate-float-logo {
+  animation: float-logo 4s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 15px rgba(212,175,55,0.3)); }
+  50% { filter: drop-shadow(0 0 30px rgba(212,175,55,0.6)); }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.3; transform: scale(0.95); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
         `}</style>
       </div>
     </TooltipProvider>
@@ -2724,9 +2538,19 @@ function OrderCard({
 }
 
 // ============================================================
-// 📦 DistributorCard
+// 📦 DistributorCard - مع زر تعطيل
 // ============================================================
-function DistributorCard({ distributor, isArabic }: { distributor: any; isArabic: boolean }) {
+function DistributorCard({ 
+  distributor, 
+  isArabic,
+  onDeactivate
+}: { 
+  distributor: any; 
+  isArabic: boolean;
+  onDeactivate: (distributor: any) => void;
+}) {
+  const isActive = distributor.is_active !== false;
+  
   return (
     <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-[#0d2e2a]/30 transition-all duration-300 hover:scale-[1.02] group">
       <div className="flex items-start gap-4">
@@ -2742,13 +2566,22 @@ function DistributorCard({ distributor, isArabic }: { distributor: any; isArabic
             <p className="font-bold text-slate-900 dark:text-white group-hover:text-[#0d2e2a] transition-colors duration-300 line-clamp-1">
               {isArabic ? distributor.full_name_ar : distributor.full_name_en || distributor.full_name_ar}
             </p>
-            {distributor.is_available ? (
+            {isActive ? (
               <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 text-[9px] animate-pulse">
-                ● {isArabic ? "متاح" : "Available"}
+                ● {isArabic ? "نشط" : "Active"}
               </Badge>
             ) : (
               <Badge className="bg-red-500/20 text-red-600 dark:text-red-400 border-0 text-[9px]">
-                ● {isArabic ? "غير متاح" : "Unavailable"}
+                ● {isArabic ? "معطل" : "Deactivated"}
+              </Badge>
+            )}
+            {distributor.is_available ? (
+              <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 text-[9px]">
+                {isArabic ? "متاح" : "Available"}
+              </Badge>
+            ) : (
+              <Badge className="bg-red-500/20 text-red-600 dark:text-red-400 border-0 text-[9px]">
+                {isArabic ? "غير متاح" : "Unavailable"}
               </Badge>
             )}
           </div>
@@ -2767,11 +2600,48 @@ function DistributorCard({ distributor, isArabic }: { distributor: any; isArabic
               <Phone className="h-3 w-3" />
               {distributor.phone}
             </span>
+            {!isActive && distributor.deactivated_at && (
+              <>
+                <span className="text-muted-foreground/30">|</span>
+                <span className="text-[9px] text-muted-foreground">
+                  {isArabic ? `تم التعطيل: ${new Date(distributor.deactivated_at).toLocaleDateString()}` : `Deactivated: ${new Date(distributor.deactivated_at).toLocaleDateString()}`}
+                </span>
+              </>
+            )}
           </div>
         </div>
-        <Button variant="ghost" size="sm" className="h-8 w-8 rounded-xl hover:bg-[#0d2e2a]/10 transition-all duration-300 group-hover:scale-110">
-          <MoreVertical className="h-4 w-4" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 w-8 rounded-xl hover:bg-red-500/10 transition-all duration-300 group-hover:scale-110">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="rounded-xl p-1 min-w-[180px]">
+            {isActive ? (
+              <DropdownMenuItem 
+                className="rounded-lg cursor-pointer gap-2 text-amber-600 hover:bg-amber-50/50"
+                onClick={() => onDeactivate(distributor)}
+              >
+                <PowerOff className="h-4 w-4" />
+                {isArabic ? "تعطيل الموزع" : "Deactivate Distributor"}
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem 
+                className="rounded-lg cursor-pointer gap-2 text-emerald-600 hover:bg-emerald-50/50"
+                onClick={() => {
+                  toast.info(
+                    isArabic 
+                      ? "ℹ️ يمكنك إعادة تفعيل الموزع من صفحة إدارة الموزعين"
+                      : "ℹ️ You can reactivate the distributor from the Distributors management page"
+                  );
+                }}
+              >
+                <Power className="h-4 w-4" />
+                {isArabic ? "تفعيل الموزع" : "Activate Distributor"}
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

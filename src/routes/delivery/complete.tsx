@@ -140,102 +140,111 @@ function DeliveryCompletePage() {
     })();
   }, []);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const formData = new FormData(form);
+  
+  const patch: any = {
+    name_ar: formData.get("name_ar") as string,
+    name_en: formData.get("name_en") as string,
+    phone: formData.get("phone") as string,
+    description_ar: formData.get("description_ar") as string,
+    description_en: formData.get("description_en") as string,
+    base_price: parseFloat(formData.get("base_price") as string) || 0,
+    price_per_km: parseFloat(formData.get("price_per_km") as string) || 0,
+    free_delivery_threshold: parseFloat(formData.get("free_delivery_threshold") as string) || 0,
+    min_delivery_fee: parseFloat(formData.get("min_delivery_fee") as string) || 0,
+    max_delivery_fee: parseFloat(formData.get("max_delivery_fee") as string) || 999999,
+    avg_delivery_time: parseInt(formData.get("avg_delivery_time") as string) || 60,
+    has_tracking: formData.get("has_tracking") === "on",
+    has_insurance: formData.get("has_insurance") === "on",
+    has_cod: formData.get("has_cod") === "on",
+    has_express: formData.get("has_express") === "on",
+    is_active: formData.get("is_active") === "on",
+    is_verified: true,
+  };
+
+  let governorateId = "";
+
+  // ✅ ✅ ✅ إذا اختار الخريطة ✅ ✅ ✅
+  if (addressMethod === "map" && location) {
+    patch.address_ar = location.address;
+    patch.address_en = location.address;
     
-    const patch: any = {
-      name_ar: formData.get("name_ar") as string,
-      name_en: formData.get("name_en") as string,
-      phone: formData.get("phone") as string,
-      description_ar: formData.get("description_ar") as string,
-      description_en: formData.get("description_en") as string,
-      base_price: parseFloat(formData.get("base_price") as string) || 0,
-      price_per_km: parseFloat(formData.get("price_per_km") as string) || 0,
-      free_delivery_threshold: parseFloat(formData.get("free_delivery_threshold") as string) || 0,
-      min_delivery_fee: parseFloat(formData.get("min_delivery_fee") as string) || 0,
-      max_delivery_fee: parseFloat(formData.get("max_delivery_fee") as string) || 999999,
-      avg_delivery_time: parseInt(formData.get("avg_delivery_time") as string) || 60,
-      has_tracking: formData.get("has_tracking") === "on",
-      has_insurance: formData.get("has_insurance") === "on",
-      has_cod: formData.get("has_cod") === "on",
-      has_express: formData.get("has_express") === "on",
-      is_active: formData.get("is_active") === "on",
-      is_verified: true,
-    };
-
-    let governorateId = "";
-
-    // ✅ ✅ ✅ إذا اختار الخريطة ✅ ✅ ✅
-    if (addressMethod === "map" && location) {
-      patch.address_ar = location.address;
-      patch.address_en = location.address;
-      
-      // استخراج المحافظة من الموقع
-      const result = await extractGovernorateFromAddress(
-        location.address,
-        location.lat,
-        location.lng
-      );
-      governorateId = result.governorate_id;
-      
-      // حفظ الإحداثيات والمحافظة في البروفايل
-      const { error: updateProfileError } = await supabase
-        .from("profiles")
-        .update({
-          lat: location.lat || 0,
-          lng: location.lng || 0,
-          address_text: location.address.trim(),
-          governorate_id: governorateId || null,
-        })
-        .eq("id", app.user?.id);
-      
-      if (updateProfileError) {
-        console.error("❌ خطأ في تحديث البروفايل:", updateProfileError);
-      }
-    } else {
-      // ✅ ✅ ✅ إذا اختار يدوي ✅ ✅ ✅
-      patch.address_ar = formData.get("address_ar") as string;
-      patch.address_en = formData.get("address_en") as string;
-      
-      // استخراج المحافظة من النص
-      const result = await extractGovernorateFromAddress(patch.address_ar);
-      governorateId = result.governorate_id;
-    }
-
-    // ✅ ✅ ✅ إضافة المحافظة إلى الشركة ✅ ✅ ✅
-    if (governorateId) {
-      patch.governorate_id = governorateId;
-      console.log("📍 Saving governorate_id to company:", governorateId);
-    }
-
-    setLoading(true);
+    const result = await extractGovernorateFromAddress(
+      location.address,
+      location.lat,
+      location.lng
+    );
+    governorateId = result.governorate_id;
     
-    try {
-      await updateCompany.mutateAsync({
-        id: companyData.id,
-        patch
-      });
-      
-      toast.success(
-        isArabic 
-          ? "✅ تم إكمال بيانات الشركة بنجاح! جاري التوجيه للداشبورد..."
-          : "✅ Company data completed successfully! Redirecting to dashboard..."
-      );
-      
-      setTimeout(() => {
-        window.location.replace("/delivery/dashboard");
-      }, 1500);
-      
-    } catch (error) {
-      console.error("Error updating company:", error);
-      toast.error(isArabic ? "❌ فشل تحديث بيانات الشركة" : "❌ Failed to update company");
-    } finally {
-      setLoading(false);
+    // ✅ حفظ في profiles
+    const { error: updateProfileError } = await supabase
+      .from("profiles")
+      .update({
+        lat: location.lat || 0,
+        lng: location.lng || 0,
+        address_text: location.address.trim(),
+        governorate_id: governorateId || null,
+      })
+      .eq("id", app.user?.id);
+    
+    if (updateProfileError) {
+      console.error("❌ خطأ في تحديث البروفايل:", updateProfileError);
+    }
+  } else {
+    // ✅ ✅ ✅ إذا اختار يدوي ✅ ✅ ✅
+    patch.address_ar = formData.get("address_ar") as string;
+    patch.address_en = formData.get("address_en") as string;
+    
+    const result = await extractGovernorateFromAddress(patch.address_ar);
+    governorateId = result.governorate_id;
+    
+    // ✅ ✅ ✅ حفظ العنوان في profiles أيضاً (مهم!)
+    const { error: updateProfileError } = await supabase
+      .from("profiles")
+      .update({
+        address_text: patch.address_ar.trim(),
+        governorate_id: governorateId || null,
+      })
+      .eq("id", app.user?.id);
+    
+    if (updateProfileError) {
+      console.error("❌ خطأ في تحديث البروفايل:", updateProfileError);
     }
   }
 
+  if (governorateId) {
+    patch.governorate_id = governorateId;
+    console.log("📍 Saving governorate_id to company:", governorateId);
+  }
+
+  setLoading(true);
+  
+  try {
+    await updateCompany.mutateAsync({
+      id: companyData.id,
+      patch
+    });
+    
+    toast.success(
+      isArabic 
+        ? "✅ تم إكمال بيانات الشركة بنجاح! جاري التوجيه للداشبورد..."
+        : "✅ Company data completed successfully! Redirecting to dashboard..."
+    );
+    
+    setTimeout(() => {
+      window.location.replace("/delivery/dashboard");
+    }, 1500);
+    
+  } catch (error) {
+    console.error("Error updating company:", error);
+    toast.error(isArabic ? "❌ فشل تحديث بيانات الشركة" : "❌ Failed to update company");
+  } finally {
+    setLoading(false);
+  }
+}
   if (checking || companyLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

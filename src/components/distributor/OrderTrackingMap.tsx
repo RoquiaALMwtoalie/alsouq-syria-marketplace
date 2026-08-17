@@ -9,9 +9,16 @@ interface OrderTrackingMapProps {
   pickupAddress?: string;
   distributorLocation?: { lat: number; lng: number };
   order?: any;
+  isFullscreen?: boolean;  // ✅ إضافة prop للتحكم بحجم الخريطة
 }
 
-export function OrderTrackingMap({ deliveryAddress, pickupAddress, distributorLocation, order }: OrderTrackingMapProps) {
+export function OrderTrackingMap({ 
+  deliveryAddress, 
+  pickupAddress, 
+  distributorLocation, 
+  order,
+  isFullscreen = false  // ✅ افتراضي false
+}: OrderTrackingMapProps) {
   const app = useApp();
   const isArabic = app.lang === "ar";
   const [loading, setLoading] = useState(true);
@@ -101,10 +108,10 @@ export function OrderTrackingMap({ deliveryAddress, pickupAddress, distributorLo
           shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
         });
 
-        // ✅ حساب مركز الخريطة (متوسط الإحداثيات)
+        // ✅ حساب مركز الخريطة
         const centerLat = deliveryCoords.lat;
         const centerLng = deliveryCoords.lng;
-        const zoomLevel = 14;
+        const zoomLevel = isFullscreen ? 16 : 14;  // ✅ تكبير أكثر في fullscreen
 
         // ✅ إنشاء الخريطة
         const map = L.map(mapRef.current!).setView([centerLat, centerLng], zoomLevel);
@@ -119,16 +126,21 @@ export function OrderTrackingMap({ deliveryAddress, pickupAddress, distributorLo
           position: "bottomright",
         }).addTo(map);
 
+        // ✅ حجم الأيقونات حسب وضع العرض
+        const iconSize = isFullscreen ? 48 : 36;
+        const iconAnchor = isFullscreen ? [24, 48] : [18, 36];
+        const iconClass = isFullscreen ? 'h-12 w-12' : 'h-9 w-9';
+
         // ============================================================
         // 📍 ماركر: موقع التسليم (العميل)
         // ============================================================
         const deliveryIcon = L.divIcon({
           className: "custom-div-icon",
-          html: `<div class="h-9 w-9 rounded-full bg-red-500 border-2 border-white flex items-center justify-center text-white text-sm font-bold shadow-lg animate-bounce">
+          html: `<div class="${iconClass} rounded-full bg-red-500 border-2 border-white flex items-center justify-center text-white text-sm font-bold shadow-lg animate-bounce">
             🏠
           </div>`,
-          iconSize: [36, 36],
-          iconAnchor: [18, 36],
+          iconSize: [iconSize, iconSize],
+          iconAnchor: iconAnchor,
         });
 
         L.marker([deliveryCoords.lat, deliveryCoords.lng], { icon: deliveryIcon })
@@ -148,11 +160,11 @@ export function OrderTrackingMap({ deliveryAddress, pickupAddress, distributorLo
         if (pickupCoords) {
           const pickupIcon = L.divIcon({
             className: "custom-div-icon",
-            html: `<div class="h-9 w-9 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-white text-sm font-bold shadow-lg">
+            html: `<div class="${iconClass} rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-white text-sm font-bold shadow-lg">
               🏪
             </div>`,
-            iconSize: [36, 36],
-            iconAnchor: [18, 36],
+            iconSize: [iconSize, iconSize],
+            iconAnchor: iconAnchor,
           });
 
           L.marker([pickupCoords.lat, pickupCoords.lng], { icon: pickupIcon })
@@ -172,11 +184,11 @@ export function OrderTrackingMap({ deliveryAddress, pickupAddress, distributorLo
         if (distributorLocation) {
           const distributorIcon = L.divIcon({
             className: "custom-div-icon",
-            html: `<div class="h-9 w-9 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-sm font-bold shadow-lg animate-pulse">
+            html: `<div class="${iconClass} rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-sm font-bold shadow-lg animate-pulse">
               🚚
             </div>`,
-            iconSize: [36, 36],
-            iconAnchor: [18, 36],
+            iconSize: [iconSize, iconSize],
+            iconAnchor: iconAnchor,
           });
 
           L.marker([distributorLocation.lat, distributorLocation.lng], { icon: distributorIcon })
@@ -194,7 +206,7 @@ export function OrderTrackingMap({ deliveryAddress, pickupAddress, distributorLo
             [[distributorLocation.lat, distributorLocation.lng], [deliveryCoords.lat, deliveryCoords.lng]],
             { 
               color: "#0d2e2a", 
-              weight: 3, 
+              weight: isFullscreen ? 4 : 3, 
               opacity: 0.6, 
               dashArray: "8, 8" 
             }
@@ -262,7 +274,7 @@ export function OrderTrackingMap({ deliveryAddress, pickupAddress, distributorLo
             
             const polyline = L.polyline(
               [[pickupCoords.lat, pickupCoords.lng], [deliveryCoords.lat, deliveryCoords.lng]],
-              { color: "#2a655f", weight: 2, opacity: 0.4, dashArray: "5, 5" }
+              { color: "#2a655f", weight: isFullscreen ? 3 : 2, opacity: 0.4, dashArray: "5, 5" }
             ).addTo(map);
 
             if (distance) {
@@ -295,7 +307,7 @@ export function OrderTrackingMap({ deliveryAddress, pickupAddress, distributorLo
     };
 
     initMap();
-  }, [loading, deliveryCoords, pickupCoords, deliveryAddress, pickupAddress, distributorLocation]);
+  }, [loading, deliveryCoords, pickupCoords, deliveryAddress, pickupAddress, distributorLocation, isFullscreen]);
 
   // ✅ حساب المسافة بين نقطتين (هافرسين)
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -309,9 +321,10 @@ export function OrderTrackingMap({ deliveryAddress, pickupAddress, distributorLo
     return R * c;
   };
 
+  // ✅ حالة التحميل
   if (loading) {
     return (
-      <div className="w-full h-64 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+      <div className={`w-full ${isFullscreen ? 'h-full' : 'h-64'} rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center`}>
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-[#0d2e2a]" />
           <p className="text-sm text-muted-foreground">{isArabic ? "جاري تحميل الخريطة..." : "Loading map..."}</p>
@@ -320,9 +333,10 @@ export function OrderTrackingMap({ deliveryAddress, pickupAddress, distributorLo
     );
   }
 
+  // ✅ حالة عدم وجود إحداثيات
   if (!deliveryCoords) {
     return (
-      <div className="w-full h-64 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+      <div className={`w-full ${isFullscreen ? 'h-full' : 'h-64'} rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center`}>
         <p className="text-sm text-muted-foreground">
           {isArabic ? "لا يمكن عرض الخريطة" : "Cannot display map"}
         </p>
@@ -330,5 +344,6 @@ export function OrderTrackingMap({ deliveryAddress, pickupAddress, distributorLo
     );
   }
 
-  return <div ref={mapRef} className="w-full h-64 rounded-xl overflow-hidden" />;
+  // ✅ عرض الخريطة
+  return <div ref={mapRef} className={`w-full ${isFullscreen ? 'h-full' : 'h-64'} rounded-xl overflow-hidden`} />;
 }

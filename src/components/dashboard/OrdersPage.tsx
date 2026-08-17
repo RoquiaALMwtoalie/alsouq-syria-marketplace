@@ -171,225 +171,239 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
 // ===== ACCEPT ORDER (معدل - يرسل اسم المتجر) =====
 // ===== ACCEPT ORDER (معدل - يرسل اسم المتجر + تحديث الكود) =====
+// ✅ ✅ ✅ الكود الصحيح - ياخذ شركة التوصيل من المتجر
+// ===== ACCEPT ORDER - النسخة النهائية مع إصلاحات الصلاحيات =====
 const handleAcceptOrder = useCallback(async (orderId: string) => {
   try {
-    // ✅ جلب الطلب مع order_items وبيانات المتجر
+    console.log("🚀 Starting order acceptance for:", orderId);
+
+    // ✅ 1️⃣ جلب بيانات الطلب
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select(`
-        *,
-        order_items (
-          id,
-          listing_id,
-          quantity,
-          price,
-          listings (
-            id,
-            title_ar,
-            title_en,
-            cover_url,
-            owner_id,
-            profiles:owner_id (
-              store_name,
-              store_address,
-              lat,
-              lng
-            )
-          )
-        ),
-        listings:listing_id (
-          id,
-          title_ar,
-          owner_id,
-          profiles:owner_id (
-            store_name,
-            store_address,
-            lat,
-            lng
-          )
-        )
+        id,
+        seller_id,
+        buyer_id,
+        delivery_address,
+        delivery_lat,
+        delivery_lng,
+        total,
+        buyer_name,
+        buyer_phone,
+        notes
       `)
       .eq("id", orderId)
       .single();
 
-    if (orderError) throw orderError;
-
-    // ✅ التحقق من أن المشتري ليس البائع
-    if (order.buyer_id === order.seller_id) {
-      toast.warning(
-        app.lang === "ar" 
-          ? "⚠️ لا يمكنك قبول طلب من متجرك الخاص" 
-          : "⚠️ You cannot accept an order from your own store"
-      );
+    if (orderError) {
+      console.error("❌ Order fetch error:", orderError);
+      toast.error(app.lang === "ar" ? "❌ لم نتمكن من جلب الطلب" : "❌ Could not fetch order");
       return;
     }
 
+    if (!order) {
+      toast.error(app.lang === "ar" ? "❌ الطلب غير موجود" : "❌ Order not found");
+      return;
+    }
+
+    console.log("📦 Order data:", order);
+
+    // ✅ 2️⃣ جلب بيانات المتجر
+    const { data: storeData, error: storeError } = await supabase
+      .from("profiles")
+      .select(`
+        id,
+        store_name,
+        delivery_company_id,
+        store_address,
+        lat,
+        lng
+      `)
+      .eq("id", order.seller_id)
+      .single();
+
+    if (storeError) {
+      console.error("❌ Store fetch error:", storeError);
+      toast.error(app.lang === "ar" ? "❌ لم نتمكن من جلب بيانات المتجر" : "❌ Could not fetch store data");
+      return;
+    }
+
+    console.log("🏪 Store data:", storeData);
+
+    // ✅ 3️⃣ استخراج شركة التوصيل
+    let deliveryCompanyId = storeData?.delivery_company_id;
+
+    console.log(`🏢 Delivery company from store: ${deliveryCompanyId}`);
+
+    if (!deliveryCompanyId) {
+      console.warn(`⚠️ Store ${storeData.id} (${storeData.store_name}) has no delivery company`);
+      
+      const { data: fallbackCompany } = await supabase
+        .from("delivery_companies")
+        .select("id, name_ar")
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (fallbackCompany) {
+        deliveryCompanyId = fallbackCompany.id;
+        console.log(`🔄 Using fallback company: ${fallbackCompany.name_ar} (${fallbackCompany.id})`);
+      }
+    }
+
+    if (!deliveryCompanyId) {
+      toast.error(app.lang === "ar" ? "❌ لا توجد شركة توصيل متاحة" : "❌ No delivery company available");
+      return;
+    }
+
+    console.log(`✅ Final delivery company: ${deliveryCompanyId}`);
+
+    // ✅ 4️⃣ تحديث الطلب
     const { error: updateError } = await supabase
       .from("orders")
       .update({ 
         status: 'accepted',
-        accepted_at: new Date().toISOString()
+        accepted_at: new Date().toISOString(),
+        delivery_company_id: deliveryCompanyId,
       })
       .eq("id", orderId);
 
-    if (updateError) throw updateError;
-
-    // ✅ ✅ ✅ استخراج اسم المتجر (وليس اسم المنتج)
-    let storeName = '';
-    
-    // ✅ أولاً: حاول جلب اسم المتجر من order_items
-    if (order.order_items && order.order_items.length > 0) {
-      const firstItem = order.order_items[0];
-      const listing = firstItem?.listings;
-      if (listing?.profiles) {
-        storeName = app.lang === "ar" 
-          ? (listing.profiles.store_name || listing.profiles.full_name || 'المتجر')
-          : (listing.profiles.store_name || listing.profiles.full_name || 'Store');
-      }
-    } 
-    // ✅ ثانياً: استخدم listings القديم (للتوافق مع الطلبات القديمة)
-    else if (order.listings?.profiles) {
-      storeName = app.lang === "ar" 
-        ? (order.listings.profiles.store_name || order.listings.profiles.full_name || 'المتجر')
-        : (order.listings.profiles.store_name || order.listings.profiles.full_name || 'Store');
-    }
-    
-    // ✅ إذا لم نجد اسم متجر، استخدم اسم افتراضي
-    if (!storeName) {
-      storeName = app.lang === "ar" ? "المتجر" : "Store";
+    if (updateError) {
+      console.error("❌ Update error:", updateError);
+      throw updateError;
     }
 
-    // ✅ عدد المنتجات في الطلب
-    const itemsCount = order.order_items?.length || 1;
+    console.log("✅ Order updated successfully");
 
-    // ✅ إرسال إشعار للمشتري (مع اسم المتجر)
-    if (order.buyer_id && order.buyer_id !== order.seller_id) {
-      await supabase
-        .from("notifications")
-        .insert({
-          user_id: order.buyer_id,
-          type: "order_accepted",
-          title_ar: "✅ تم قبول طلبك",
-          body_ar: `تم قبول طلبك من متجر "${storeName}" (${itemsCount} منتج${itemsCount > 1 ? 'ات' : ''}) وسيتم شحنه قريباً 🚚`,
-          title_en: "✅ Your order has been accepted",
-          body_en: `Your order from "${storeName}" (${itemsCount} item${itemsCount > 1 ? 's' : ''}) has been accepted and will be shipped soon 🚚`,
-          link_url: `/orders/${orderId}`,
-          metadata: {
-            order_id: orderId,
-            store_name: storeName,
-            items_count: itemsCount,
-          }
-        });
-    }
-
-    // ✅ إنشاء طلب توصيل
-    const { data: company, error: companyError } = await supabase
-      .from("delivery_companies")
-      .select("*")
-      .eq("governorate_id", order.governorate_id)
-      .eq("is_active", true)
+    // ✅ 5️⃣ التحقق من وجود delivery_order مسبقاً
+    const { data: existingDelivery, error: checkError } = await supabase
+      .from("delivery_orders")
+      .select("id")
+      .eq("order_id", orderId)
       .maybeSingle();
 
-    if (company && !companyError) {
+    if (checkError) {
+      console.error("❌ Check delivery order error:", checkError);
+    }
+
+    // ✅ 6️⃣ إنشاء طلب توصيل (إذا لم يكن موجوداً)
+    if (!existingDelivery) {
       const { error: deliveryError } = await supabase
         .from("delivery_orders")
         .insert({
           order_id: orderId,
-          delivery_company_id: company.id,
-          pickup_address: order.order_items?.[0]?.listings?.profiles?.store_address || 
-                           order.listings?.profiles?.store_address || 
-                           "عنوان المتجر",
-          pickup_latitude: order.order_items?.[0]?.listings?.profiles?.lat || 
-                           order.listings?.profiles?.lat || 0,
-          pickup_longitude: order.order_items?.[0]?.listings?.profiles?.lng || 
-                            order.listings?.profiles?.lng || 0,
-          delivery_address: order.delivery_address,
-          delivery_latitude: order.delivery_lat,
-          delivery_longitude: order.delivery_lng,
+          delivery_company_id: deliveryCompanyId,
+          pickup_address: storeData?.store_address || "عنوان المتجر",
+          pickup_latitude: storeData?.lat || 0,
+          pickup_longitude: storeData?.lng || 0,
+          delivery_address: order.delivery_address || "عنوان التوصيل",
+          delivery_latitude: order.delivery_lat || 0,
+          delivery_longitude: order.delivery_lng || 0,
           status: 'pending',
+          created_at: new Date().toISOString(),
+          estimated_pickup_at: new Date(Date.now() + 3600000).toISOString(),
+          estimated_delivery_at: new Date(Date.now() + 7200000).toISOString(),
+        });
+
+      if (deliveryError) {
+        console.error("❌ Delivery order creation error:", deliveryError);
+        toast.warning(app.lang === "ar" 
+          ? "⚠️ تم قبول الطلب لكن حدث خطأ في إنشاء طلب التوصيل (تحقق من الصلاحيات)" 
+          : "⚠️ Order accepted but delivery order creation failed (check permissions)");
+      } else {
+        console.log("✅ Delivery order created successfully");
+      }
+    } else {
+      console.log("ℹ️ Delivery order already exists, skipping creation");
+    }
+
+    // ✅ 7️⃣ إرسال إشعار لمسؤولي شركة التوصيل
+    const storeName = storeData?.store_name || 'المتجر';
+    
+    // ✅ جلب مسؤولي الشركة
+    const { data: companyAdmins, error: adminsError } = await supabase
+      .from("delivery_company_admins")
+      .select("user_id")
+      .eq("company_id", deliveryCompanyId);
+
+    if (adminsError) {
+      console.error("❌ Error fetching company admins:", adminsError);
+    } else if (companyAdmins && companyAdmins.length > 0) {
+      console.log(`📨 Sending notifications to ${companyAdmins.length} admins`);
+      
+      for (const admin of companyAdmins) {
+        const { error: notifyError } = await supabase
+          .from("notifications")
+          .insert({
+            user_id: admin.user_id,
+            type: "new_delivery",
+            title_ar: `🚚 طلب توصيل جديد من "${storeName}"`,
+            body_ar: `لديك طلب توصيل جديد بقيمة ${order.total?.toLocaleString() || 0} SYP`,
+            title_en: `🚚 New delivery order from "${storeName}"`,
+            body_en: `You have a new delivery order for ${order.total?.toLocaleString() || 0} SYP`,
+            link_url: `/delivery/orders/${orderId}`,
+            metadata: {
+              order_id: orderId,
+              company_id: deliveryCompanyId,
+              store_name: storeName,
+              total: order.total || 0,
+              buyer_name: order.buyer_name,
+              buyer_phone: order.buyer_phone,
+              delivery_address: order.delivery_address,
+            },
+            created_at: new Date().toISOString(),
+          });
+
+        if (notifyError) {
+          console.error(`❌ Notification error for admin ${admin.user_id}:`, notifyError);
+        } else {
+          console.log(`✅ Notification sent to admin ${admin.user_id}`);
+        }
+      }
+    } else {
+      console.warn(`⚠️ No admins found for company ${deliveryCompanyId}`);
+    }
+
+    // ✅ 8️⃣ إشعار للمشتري
+    if (order.buyer_id) {
+      const { error: buyerNotifyError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: order.buyer_id,
+          type: "order_accepted",
+          title_ar: `✅ تم قبول طلبك من "${storeName}"`,
+          body_ar: `تم قبول طلبك بقيمة ${order.total?.toLocaleString() || 0} SYP وسيتم توصيله قريباً`,
+          title_en: `✅ Your order from "${storeName}" was accepted`,
+          body_en: `Your order for ${order.total?.toLocaleString() || 0} SYP was accepted and will be delivered soon`,
+          link_url: `/orders/${orderId}`,
+          metadata: {
+            order_id: orderId,
+            store_name: storeName,
+            total: order.total || 0,
+          },
           created_at: new Date().toISOString(),
         });
 
-      if (deliveryError) console.error("❌ Error creating delivery order:", deliveryError);
-
-      await notifyDeliveryCompanyAdmins(company.id, {
-        type: "new_delivery",
-        title_ar: "🚚 طلب توصيل جديد",
-        body_ar: `لديك طلب توصيل جديد من متجر "${storeName}" إلى ${order.delivery_address || "عنوان العميل"}`,
-        link_url: `/delivery/orders/${orderId}`,
-        metadata: {
-          order_id: orderId,
-          delivery_address: order.delivery_address,
-          company_id: company.id,
-          store_name: storeName,
-        }
-      });
-    }
-
-    // ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅
-    // 🔥🔥🔥 التعديل الجديد: تحديث used_count للكود 🔥🔥🔥
-    // ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅
-    if (order.promo_code_id) {
-      try {
-        // 1. التحقق من أن الكود لم يستخدم بعد
-        const { data: promo, error: promoError } = await supabase
-          .from("promo_codes")
-          .select("used_count, usage_limit")
-          .eq("id", order.promo_code_id)
-          .single();
-        
-        if (!promoError && promo) {
-          if (promo.used_count < (promo.usage_limit || 999999)) {
-            // 2. ✅ زيادة used_count
-            const { error: updatePromoError } = await supabase
-              .from("promo_codes")
-              .update({
-                used_count: promo.used_count + 1,
-                updated_at: new Date().toISOString()
-              })
-              .eq("id", order.promo_code_id);
-            
-            if (updatePromoError) {
-              console.error("❌ Error updating promo code used_count:", updatePromoError);
-            } else {
-              console.log(`✅ Promo code used_count updated to ${promo.used_count + 1}`);
-            }
-            
-            // 3. ✅ تحديث حالة الاستخدام من pending إلى confirmed
-            const { error: usageError } = await supabase
-              .from("promo_code_usage")
-              .update({
-                status: 'confirmed',
-                confirmed_at: new Date().toISOString()
-              })
-              .eq("order_id", orderId)
-              .eq("status", 'pending');
-            
-            if (usageError) {
-              console.error("❌ Error updating promo_code_usage status:", usageError);
-            } else {
-              console.log(`✅ Promo usage confirmed for order ${orderId}`);
-            }
-            
-          } else {
-            console.warn(`⚠️ Promo code ${order.promo_code_id} has reached usage limit`);
-          }
-        }
-      } catch (error) {
-        console.error("❌ Error processing promo code acceptance:", error);
+      if (buyerNotifyError) {
+        console.error("❌ Buyer notification error:", buyerNotifyError);
+      } else {
+        console.log("✅ Buyer notification sent");
       }
     }
-    // 🔥🔥🔥 نهاية التعديل الجديد 🔥🔥🔥
-    // ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅
 
-    toast.success(app.lang === "ar" ? "✅ تم قبول الطلب" : "✅ Order accepted");
+    toast.success(app.lang === "ar" 
+      ? `✅ تم قبول الطلب وإرساله لشركة التوصيل` 
+      : `✅ Order accepted and sent to delivery company`);
+
     refetchOrders();
+    setDetailDialogOpen(false);
+    setSelectedOrder(null);
 
   } catch (error) {
     console.error("❌ Error accepting order:", error);
     toast.error(app.lang === "ar" ? "❌ حدث خطأ في قبول الطلب" : "❌ Error accepting order");
   }
-}, [app.lang, refetchOrders]);
+}, [app.lang, refetchOrders, setDetailDialogOpen, setSelectedOrder]);
   // ===== REJECT ORDER =====
 // ===== REJECT ORDER (معدل - يرسل اسم المتجر) =====
 const handleRejectOrder = useCallback(async (orderId: string, reason: string) => {

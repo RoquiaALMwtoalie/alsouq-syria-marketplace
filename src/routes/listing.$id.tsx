@@ -382,7 +382,7 @@ const handleVariationSelect = useCallback((variation: any) => {
     }
   }
 }, [selectedVariation, colors]);
-  const handleAddToCart = useCallback(async () => {
+const handleAddToCart = useCallback(async () => {
     if (!app.user) {
       toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
       navigate({ to: "/auth/$mode", params: { mode: "login" } });
@@ -396,6 +396,16 @@ const handleVariationSelect = useCallback((variation: any) => {
     
     if (!listing.is_available) {
       toast.error(app.lang === "ar" ? "❌ هذا المنتج غير متوفر حالياً" : "❌ This product is currently unavailable");
+      return;
+    }
+
+    // ✅ ✅ ✅ منع التاجر من شراء منتجاته الخاصة
+    if (listing.owner_id === app.user.id) {
+      toast.error(
+        app.lang === "ar" 
+          ? "❌ لا يمكنك شراء منتجات من متجرك الخاص" 
+          : "❌ You cannot purchase products from your own store"
+      );
       return;
     }
 
@@ -514,7 +524,6 @@ const handleVariationSelect = useCallback((variation: any) => {
       );
     }
   }, [app.user, listing, isVariationSelected, getVariationErrorMessage, selectedColor, selectedSize, selectedVariation, quantity, addToCartMutation, navigate, app.lang]);
-
   const handleConfirmClearCart = useCallback(async () => {
     if (!app.user || !pendingAddData) return;
     

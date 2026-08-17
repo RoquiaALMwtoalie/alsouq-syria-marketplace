@@ -440,11 +440,13 @@ function AuthPage() {
 
       const digits = phone.replace(/[^0-9]/g, "");
       
-      const possibleEmails = [
-        `${digits}@delivery.com`,
-        `${digits}@distributor.sy`,
-        `sy${digits}@souqi.local`
-      ];
+   const possibleEmails = [
+  `sy${digits}@souqi.local`,           // ✅ المستخدمين العاديين
+  `${digits}@delivery.com`,            // ✅ مالكي الشركات (إن وجد)
+  `${digits}@distributor.sy`,          // ✅ الموزعين (إن وجد)  
+  `${digits}@company-admin.com`,       // ✅ ✅ ✅ مدراء الشركات
+  `${digits}@company.com`,             // ✅ ✅ ✅ مالكي الشركات (طريقة ثانية)
+];
 
       let signInData = null;
       let signInError = null;

@@ -745,206 +745,214 @@ export function ChatInput({
         )}
       </AnimatePresence>
 
-      {/* ====== حقل الإدخال ====== */}
-      <div
-        className={cn(
-          "flex items-end gap-2 p-2",
-          "bg-white/95 dark:bg-[#0d1f1d]/95",
-          "border-2",
-          "rounded-2xl",
-          "transition-all duration-300",
-          isFocused
-            ? "border-[#2a655f] shadow-lg shadow-[#2a655f]/20"
-            : "border-[#2a655f]/30 hover:border-[#3a8a82]/50",
-          "backdrop-blur-xl",
-          className
-        )}
-      >
-        {/* أزرار المرفقات */}
-        <div className="flex items-center gap-0.5 shrink-0">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-[#2a655f]/20 hover:border-[#3a8a82]/40 group"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={disabled || isLoading}
-                >
-                  <AnimatedIcon Icon={Paperclip} className="h-5 w-5 text-[#2a655f] group-hover:text-[#3a8a82]" color="text-[#2a655f]" delay={0} size="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-[#2a655f] text-white border-0">
-                <p>{app.lang === "ar" ? "مرفقات" : "Attachments"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            className="hidden"
-            accept="*/*"
-            onChange={(e) => handleFileSelect(e.target.files, 'file')}
-          />
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-[#2a655f]/20 hover:border-[#3a8a82]/40 group"
-                  onClick={() => imageInputRef.current?.click()}
-                  disabled={disabled || isLoading}
-                >
-                  <AnimatedIcon Icon={Image} className="h-5 w-5 text-[#2a655f] group-hover:text-[#3a8a82]" color="text-[#2a655f]" delay={100} size="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-[#2a655f] text-white border-0">
-                <p>{app.lang === "ar" ? "صورة" : "Image"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <input
-            ref={imageInputRef}
-            type="file"
-            multiple
-            className="hidden"
-            accept="image/*"
-            onChange={(e) => handleFileSelect(e.target.files, 'image')}
-          />
-        </div>
-
-        {/* حقل النص */}
-        <Textarea
-          ref={inputRef}
-          value={message}
-          onChange={(e) => {
-            const value = e.target.value;
-            if (value.length <= maxLength) {
-              setMessage(value);
-              handleTyping(value);
-            }
-          }}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          placeholder={defaultPlaceholder}
-          disabled={disabled || isLoading || isRecording}
-          className={cn(
-            "flex-1 min-h-[40px] max-h-[120px] resize-none",
-            "border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
-            "bg-transparent p-1 text-sm",
-            "placeholder:text-muted-foreground/60",
-            isRecording && "opacity-50"
-          )}
-          rows={1}
-        />
-
-        {/* عدد الأحرف */}
-        {message.length > 0 && (
-          <span
-            className={cn(
-              "text-[10px] font-medium shrink-0 px-1",
-              isOverLimit
-                ? "text-red-500"
-                : isNearLimit
-                ? "text-yellow-500"
-                : "text-[#2a655f]"
-            )}
-          >
-            {remainingChars}
-          </span>
-        )}
-
-        {/* ✅ الأزرار الجانبية */}
-        <div className={cn("flex items-center gap-0.5 shrink-0", isRTL ? "flex-row" : "flex-row")}>
-          <EmojiPicker
-            onEmojiSelect={handleEmojiSelect}
-            open={showEmojiPicker}
-            onOpenChange={setShowEmojiPicker}
-          />
-
-          {/* ✅ زر الموقع */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-[#2a655f]/20 hover:border-[#3a8a82]/40 group"
-                  onClick={handleSendLocation}
-                  disabled={disabled || isLoading}
-                >
-                  <AnimatedIcon Icon={MapPin} className="h-5 w-5 text-[#2a655f] group-hover:text-[#3a8a82]" color="text-[#2a655f]" delay={200} size="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-[#2a655f] text-white border-0">
-                <p>{app.lang === "ar" ? "موقع" : "Location"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          {/* ✅ زر التسجيل الصوتي */}
+{/* ====== حقل الإدخال ====== */}
+<div
+  className={cn(
+    "flex items-end gap-1 md:gap-2 p-1.5 md:p-2",
+    "bg-white/95 dark:bg-[#0d1f1d]/95",
+    "border-2",
+    "rounded-2xl",
+    "transition-all duration-300",
+    isFocused
+      ? "border-[#2a655f] shadow-lg shadow-[#2a655f]/20"
+      : "border-[#2a655f]/30 hover:border-[#3a8a82]/50",
+    "backdrop-blur-xl",
+    className
+  )}
+>
+  {/* أزرار المرفقات */}
+  <div className="flex items-center gap-0.5 shrink-0">
+    {/* زر المرفقات - يظهر دائماً */}
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
           <Button
-            variant={isRecording ? "destructive" : "ghost"}
+            variant="ghost"
             size="icon"
-            className={cn(
-              "h-10 w-10 rounded-2xl transition-all border-2",
-              isRecording
-                ? "border-red-500 bg-red-500/10 animate-pulse shadow-lg shadow-red-500/30"
-                : "border-[#2a655f]/20 hover:border-[#3a8a82]/40 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20"
-            )}
-            onClick={() => {
-              if (isRecording) {
-                stopRecording();
-              } else {
-                checkMicrophonePermission();
-              }
-            }}
+            className="h-8 w-8 md:h-10 md:w-10 rounded-xl md:rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-[#2a655f]/20 hover:border-[#3a8a82]/40 group"
+            onClick={() => fileInputRef.current?.click()}
             disabled={disabled || isLoading}
           >
-            {isRecording ? (
-              <AnimatedIcon Icon={MicOff} className="h-5 w-5 text-red-500" color="text-red-500" delay={0} size="h-5 w-5" />
-            ) : (
-              <AnimatedIcon Icon={Mic} className="h-5 w-5 text-[#2a655f]" color="text-[#2a655f]" delay={300} size="h-5 w-5" />
-            )}
+            <AnimatedIcon Icon={Paperclip} className="h-3.5 w-3.5 md:h-5 md:w-5 text-[#2a655f] group-hover:text-[#3a8a82]" color="text-[#2a655f]" delay={0} size="h-3.5 w-3.5 md:h-5 md:w-5" />
           </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="bg-[#2a655f] text-white border-0">
+          <p>{app.lang === "ar" ? "مرفقات" : "Attachments"}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
 
-          {/* ✅ زر الإرسال - آخر عنصر */}
-          <Button
-            onClick={handleSend}
-            disabled={
-              (!message.trim() && attachments.length === 0) ||
-              isLoading ||
-              disabled ||
-              isRecording ||
-              isOverLimit
-            }
-            className={cn(
-              "h-12 w-12 rounded-2xl p-0",
-              "bg-gradient-to-r from-[#2a655f] to-[#3a8a82]",
-              "hover:from-[#1a4f4a] hover:to-[#2a655f]",
-              "text-white shadow-lg shadow-[#2a655f]/30",
-              "transition-all duration-300",
-              "hover:scale-110 hover:shadow-xl hover:shadow-[#2a655f]/40",
-              "active:scale-95",
-              "disabled:opacity-50 disabled:hover:scale-100",
-              isRTL ? "order-last" : ""
-            )}
-          >
-            {isLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <AnimatedIcon Icon={SendHorizontal} className="h-5 w-5 text-white" color="text-white" delay={0} size="h-5 w-5" />
-            )}
-          </Button>
-        </div>
-      </div>
+    <input
+      ref={fileInputRef}
+      type="file"
+      multiple
+      className="hidden"
+      accept="*/*"
+      onChange={(e) => handleFileSelect(e.target.files, 'file')}
+    />
+
+    {/* زر الصورة - يظهر على الشاشات المتوسطة فما فوق */}
+    <div className="hidden sm:flex">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 md:h-10 md:w-10 rounded-xl md:rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-[#2a655f]/20 hover:border-[#3a8a82]/40 group"
+              onClick={() => imageInputRef.current?.click()}
+              disabled={disabled || isLoading}
+            >
+              <AnimatedIcon Icon={Image} className="h-3.5 w-3.5 md:h-5 md:w-5 text-[#2a655f] group-hover:text-[#3a8a82]" color="text-[#2a655f]" delay={100} size="h-3.5 w-3.5 md:h-5 md:w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="bg-[#2a655f] text-white border-0">
+            <p>{app.lang === "ar" ? "صورة" : "Image"}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+
+    <input
+      ref={imageInputRef}
+      type="file"
+      multiple
+      className="hidden"
+      accept="image/*"
+      onChange={(e) => handleFileSelect(e.target.files, 'image')}
+    />
+  </div>
+
+  {/* حقل النص */}
+  <Textarea
+    ref={inputRef}
+    value={message}
+    onChange={(e) => {
+      const value = e.target.value;
+      if (value.length <= maxLength) {
+        setMessage(value);
+        handleTyping(value);
+      }
+    }}
+    onKeyDown={handleKeyDown}
+    onFocus={() => setIsFocused(true)}
+    onBlur={() => setIsFocused(false)}
+    placeholder={defaultPlaceholder}
+    disabled={disabled || isLoading || isRecording}
+    className={cn(
+      "flex-1 min-h-[32px] md:min-h-[40px] max-h-[80px] md:max-h-[120px] resize-none",
+      "border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+      "bg-transparent p-0.5 md:p-1",
+      "text-xs md:text-sm",
+      "placeholder:text-muted-foreground/60",
+      isRecording && "opacity-50"
+    )}
+    rows={1}
+  />
+
+  {/* عدد الأحرف - يظهر فقط على الشاشات المتوسطة */}
+  {message.length > 0 && (
+    <span
+      className={cn(
+        "hidden sm:inline-block text-[10px] font-medium shrink-0 px-1",
+        isOverLimit
+          ? "text-red-500"
+          : isNearLimit
+          ? "text-yellow-500"
+          : "text-[#2a655f]"
+      )}
+    >
+      {remainingChars}
+    </span>
+  )}
+
+  {/* ✅ الأزرار الجانبية */}
+  <div className={cn("flex items-center gap-0.5 shrink-0", isRTL ? "flex-row" : "flex-row")}>
+    {/* زر الإيموجي - يظهر دائماً */}
+    <EmojiPicker
+      onEmojiSelect={handleEmojiSelect}
+      open={showEmojiPicker}
+      onOpenChange={setShowEmojiPicker}
+    />
+
+    {/* زر الموقع - يظهر على الشاشات المتوسطة فما فوق */}
+    <div className="hidden sm:flex">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 md:h-10 md:w-10 rounded-xl md:rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all border border-[#2a655f]/20 hover:border-[#3a8a82]/40 group"
+              onClick={handleSendLocation}
+              disabled={disabled || isLoading}
+            >
+              <AnimatedIcon Icon={MapPin} className="h-3.5 w-3.5 md:h-5 md:w-5 text-[#2a655f] group-hover:text-[#3a8a82]" color="text-[#2a655f]" delay={200} size="h-3.5 w-3.5 md:h-5 md:w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="bg-[#2a655f] text-white border-0">
+            <p>{app.lang === "ar" ? "موقع" : "Location"}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+
+    {/* زر التسجيل الصوتي */}
+    <Button
+      variant={isRecording ? "destructive" : "ghost"}
+      size="icon"
+      className={cn(
+        "h-8 w-8 md:h-10 md:w-10 rounded-xl md:rounded-2xl transition-all border-2",
+        isRecording
+          ? "border-red-500 bg-red-500/10 animate-pulse shadow-lg shadow-red-500/30"
+          : "border-[#2a655f]/20 hover:border-[#3a8a82]/40 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20"
+      )}
+      onClick={() => {
+        if (isRecording) {
+          stopRecording();
+        } else {
+          checkMicrophonePermission();
+        }
+      }}
+      disabled={disabled || isLoading}
+    >
+      {isRecording ? (
+        <AnimatedIcon Icon={MicOff} className="h-3.5 w-3.5 md:h-5 md:w-5 text-red-500" color="text-red-500" delay={0} size="h-3.5 w-3.5 md:h-5 md:w-5" />
+      ) : (
+        <AnimatedIcon Icon={Mic} className="h-3.5 w-3.5 md:h-5 md:w-5 text-[#2a655f]" color="text-[#2a655f]" delay={300} size="h-3.5 w-3.5 md:h-5 md:w-5" />
+      )}
+    </Button>
+
+    {/* زر الإرسال */}
+    <Button
+      onClick={handleSend}
+      disabled={
+        (!message.trim() && attachments.length === 0) ||
+        isLoading ||
+        disabled ||
+        isRecording ||
+        isOverLimit
+      }
+      className={cn(
+        "h-9 w-9 md:h-12 md:w-12 rounded-xl md:rounded-2xl p-0",
+        "bg-gradient-to-r from-[#2a655f] to-[#3a8a82]",
+        "hover:from-[#1a4f4a] hover:to-[#2a655f]",
+        "text-white shadow-lg shadow-[#2a655f]/30",
+        "transition-all duration-300",
+        "hover:scale-110 hover:shadow-xl hover:shadow-[#2a655f]/40",
+        "active:scale-95",
+        "disabled:opacity-50 disabled:hover:scale-100",
+        isRTL ? "order-last" : ""
+      )}
+    >
+      {isLoading ? (
+        <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
+      ) : (
+        <AnimatedIcon Icon={SendHorizontal} className="h-4 w-4 md:h-5 md:w-5 text-white" color="text-white" delay={0} size="h-4 w-4 md:h-5 md:w-5" />
+      )}
+    </Button>
+  </div>
+</div>
 
       {isNearLimit && !isOverLimit && (
         <p className="text-xs text-yellow-500 mt-1 px-1">

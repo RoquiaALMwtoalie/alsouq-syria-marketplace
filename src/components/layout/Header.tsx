@@ -1089,9 +1089,9 @@ export const Header = memo(function Header() {
                                     <p className={`text-sm ${isUnread ? "font-black text-slate-950 dark:text-white" : "font-bold text-slate-900 dark:text-slate-200"}`}>
                                       {notification.title_ar || notification.title_en || "إشعار"}
                                     </p>
-                                    <p className={`text-xs mt-1 line-clamp-2 ${isUnread ? "text-slate-800 dark:text-slate-200 font-semibold" : "text-slate-600 dark:text-slate-400 font-medium"}`}>
-                                      {notification.body_ar || notification.body_en || notification.message}
-                                    </p>
+                                    <p className={`text-xs mt-1 whitespace-pre-wrap break-words ${isUnread ? "text-slate-800 dark:text-slate-200 font-semibold" : "text-slate-600 dark:text-slate-400 font-medium"}`}>
+  {notification.body_ar || notification.body_en || notification.message}
+</p>
                                     <div className="flex items-center gap-2 mt-2">
                                       <span className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-1 font-bold">
                                         <Clock className="h-3 w-3 text-pink-500" />

@@ -1,8 +1,8 @@
 // src/components/LoginSplash.tsx
-// 🖼️ شاشة ترحيب مع شعارك الخاص + ألوان السستم + احترافية
+// 🖼️ شاشة ترحيب متجاوبة تماماً مع منع قص الصورة على الموبايل
 
 import { useEffect, useState } from "react";
-import { Heart, Shield, Award, Truck, Sparkles } from "lucide-react";
+import { Heart, Shield, Award, Truck } from "lucide-react";
 import { useApp } from "@/lib/i18n";
 
 // ============================================================
@@ -12,23 +12,23 @@ import { useApp } from "@/lib/i18n";
 const styles = `
 @keyframes float-logo {
   0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-10px) scale(1.02); }
+  50% { transform: translateY(-6px) scale(1.02); }
 }
 .animate-float-logo {
   animation: float-logo 3s ease-in-out infinite;
 }
 
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(30px); }
+  from { opacity: 0; transform: translateY(15px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in-up {
-  animation: fade-in-up 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: fade-in-up 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 30px rgba(42, 101, 95, 0.3); }
-  50% { box-shadow: 0 0 60px rgba(42, 101, 95, 0.6); }
+  0%, 100% { box-shadow: 0 0 20px rgba(42, 101, 95, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(42, 101, 95, 0.6); }
 }
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
@@ -52,19 +52,7 @@ const styles = `
 .animate-progress-bar {
   animation: progress-bar 2.5s ease-in-out forwards;
 }
-
-@keyframes sparkle-float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.6; }
-  50% { transform: translateY(-15px) rotate(180deg); opacity: 1; }
-}
-.animate-sparkle-float {
-  animation: sparkle-float 4s ease-in-out infinite;
-}
 `;
-
-// ============================================================
-// 🎯 المكون الرئيسي
-// ============================================================
 
 interface LoginSplashProps {
   onComplete: () => void;
@@ -79,7 +67,6 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
   const isArabic = app.lang === "ar";
 
   useEffect(() => {
-    // ✅ شريط التقدم (5 ثواني)
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
@@ -90,12 +77,10 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
       });
     }, 50);
 
-    // ✅ إظهار المحتوى بعد 0.5 ثانية
     const showTimer = setTimeout(() => {
       setShowContent(true);
-    }, 400);
+    }, 300);
 
-    // ✅ إخفاء الـ Splash بعد 5 ثواني
     const hideTimer = setTimeout(() => {
       setVisible(false);
       setTimeout(onComplete, 400);
@@ -111,115 +96,109 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] overflow-hidden select-none">
+    <div className="fixed inset-0 z-[9999] overflow-hidden select-none bg-black">
+      <style>{styles}</style>
       
-      {/* ✅ صورة الخلفية */}
-      <div className="absolute inset-0">
+      {/* ✅ خلفية متجاوبة تمنع قص الصورة نهائياً على الموبايل */}
+      <div className="absolute inset-0 flex items-center justify-center bg-black">
         <img 
           src="/images/delivery-man.png" 
           alt="Delivery Background"
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain md:object-cover opacity-85"
           loading="eager"
         />
-        
-        {/* ✅ طبقة تدرج فوق الصورة عشان النص يبان */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
+        {/* طبقة تدرج لضمان وضوح النصوص فوق الصورة */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/90" />
       </div>
 
-      {/* ✅ المحتوى فوق الخلفية */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full w-full px-4 md:px-8">
+      {/* ✅ المحتوى فوق الخلفية مع دعم Scroll آمن للموبايلات الصغيرة */}
+      <div className="relative z-10 flex flex-col items-center justify-between h-full w-full px-4 py-5 md:p-8 overflow-y-auto">
         
-        {/* ✅ الشعار + النص */}
-        <div className={`text-center max-w-2xl mx-auto transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className="hidden sm:block" />
+
+        {/* الحاوية الوسطى */}
+        <div className={`text-center max-w-xl mx-auto my-auto w-full transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
           
-          {/* ✅ شعارك (Logo.png) */}
-          <div className="relative inline-block mb-4 md:mb-6 animate-float-logo">
+          {/* الشعار */}
+          <div className="relative inline-block mb-2 sm:mb-4 animate-float-logo">
+            <div className="absolute -inset-5 sm:-inset-8 rounded-full bg-[#2a655f]/30 blur-xl animate-pulse-glow" />
             
-            {/* ✅ توهج حول الشعار بلون السستم */}
-            <div className="absolute -inset-8 md:-inset-12 rounded-full bg-[#2a655f]/30 blur-2xl animate-pulse-glow" />
-            
-            {/* ✅ الشعار نفسه */}
-            <div className="relative w-32 h-32 md:w-44 md:h-44 lg:w-52 lg:h-52">
+            <div className="relative w-20 h-20 sm:w-32 sm:h-32 md:w-40 md:h-40 mx-auto">
               <img 
                 src="/images/Logo.png" 
                 alt="السوق لعندك"
                 className="w-full h-full object-contain drop-shadow-2xl"
                 loading="eager"
               />
-              
-              {/* ✅ تأثير لمعان حول الشعار بلون السستم */}
-              <div className="absolute -inset-4 rounded-full border-2 border-[#2a655f]/20 animate-pulse" />
-              <div className="absolute -inset-8 rounded-full border-2 border-[#3a8a82]/10 animate-pulse" style={{ animationDelay: '0.5s' }} />
+              <div className="absolute -inset-2 rounded-full border-2 border-[#2a655f]/20 animate-pulse" />
             </div>
           </div>
 
-          {/* ✅ اسم التطبيق (تم تغيير اللون: صار أهدى وأحلى 👇) */}
-          <h1 className="text-2xl md:text-4xl lg:text-5xl font-black mb-2">
-            <span className="text-[#d4af37] drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]">
+          {/* اسم التطبيق */}
+          <h1 className="text-xl sm:text-3xl font-black mb-1">
+            <span className="text-[#d4af37] drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]">
               {isArabic ? "السوق لعندك" : "Souqi Le3ndak"}
             </span>
           </h1>
 
-          {/* ✅ الوصف الذكي (لون النص صار أغمق قليلاً ليناسب ألوان السستم) */}
-          <div className="space-y-2 md:space-y-3">
-            <p className="text-sm md:text-lg lg:text-xl font-bold text-[#4a9e96]/90 tracking-wide">
+          {/* الوصف */}
+          <div className="space-y-1 px-2">
+            <p className="text-xs sm:text-base font-bold text-[#4a9e96]/90 tracking-wide">
               {isArabic ? "🇸🇾 سوقك السوري بين يديك" : "🇸🇾 Your Syrian Market"}
             </p>
             
-            <p className="text-xs md:text-sm lg:text-base text-white/70 max-w-lg mx-auto leading-relaxed">
+            <p className="text-[11px] sm:text-xs text-white/70 max-w-md mx-auto leading-relaxed line-clamp-2 sm:line-clamp-none">
               {isArabic 
-                ? "اكتشف آلاف المنتجات من متاجر موثوقة في جميع المحافظات السورية. تسوق بسهولة، وادفع بأمان، واستلم طلبك أينما كنت."
-                : "Discover thousands of products from trusted stores across all Syrian governorates. Shop easily, pay securely, and receive your order wherever you are."}
+                ? "اكتشف آلاف المنتجات من متاجر موثوقة في جميع المحافظات السورية. تسوق بسهولة وادفع بأمان."
+                : "Discover thousands of products from trusted stores across all Syrian governorates."}
             </p>
           </div>
 
-          {/* ✅ شارات الجودة */}
-          <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 mt-4 md:mt-6">
+          {/* شارات الجودة */}
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4">
             {[
               { icon: Shield, label: isArabic ? "آمن 100%" : "100% Secure", color: "text-[#2a655f]" },
               { icon: Truck, label: isArabic ? "توصيل سريع" : "Fast Delivery", color: "text-orange-400" },
-              { icon: Award, label: isArabic ? "⭐ 4.9/5" : "⭐ 4.9/5", color: "text-yellow-400" },
-              { icon: Heart, label: isArabic ? "10K+ عميل" : "10K+ Customers", color: "text-pink-400" },
+              { icon: Award, label: "⭐ 4.9/5", color: "text-yellow-400" },
+              { icon: Heart, label: isArabic ? "10K+ عميل" : "10K+ Users", color: "text-pink-400" },
             ].map((badge, index) => {
               const Icon = badge.icon;
               return (
                 <div 
                   key={index}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 animate-fade-in-up"
-                  style={{ animationDelay: `${(index + 1) * 150}ms` }}
+                  className="flex items-center gap-1 px-2 py-0.5 sm:py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 animate-fade-in-up text-[10px] sm:text-xs"
+                  style={{ animationDelay: `${(index + 1) * 80}ms` }}
                 >
-                  <Icon className={`h-3.5 w-3.5 ${badge.color}`} />
-                  <span className="text-[10px] md:text-xs font-bold text-white/90">{badge.label}</span>
+                  <Icon className={`h-3 w-3 ${badge.color}`} />
+                  <span className="font-bold text-white/90">{badge.label}</span>
                 </div>
               );
             })}
           </div>
 
-          {/* ✅ شريط التقدم */}
-          <div className="mt-6 md:mt-8 w-full max-w-xs mx-auto">
+          {/* شريط التقدم */}
+          <div className="mt-4 sm:mt-5 w-3/4 sm:max-w-xs mx-auto">
             <div className="relative h-1.5 rounded-full bg-white/10 overflow-hidden">
               <div 
                 className="h-full rounded-full bg-gradient-to-r from-[#2a655f] via-[#4a9e96] to-[#6abcb4] animate-progress-bar"
                 style={{ transformOrigin: 'left', transform: `scaleX(${progress / 100})` }}
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
             </div>
+            <p className="text-[10px] text-white/40 mt-1 font-mono">
+              {isArabic ? `جاري التحميل ${progress}%` : `Loading ${progress}%`}
+            </p>
           </div>
-
-          {/* ✅ نص التحميل */}
-          <p className="text-[10px] md:text-xs text-white/30 mt-2 font-mono">
-            {isArabic ? `جاري التحميل ${progress}%` : `Loading ${progress}%`}
-          </p>
         </div>
 
-        {/* ✅ حقوق النشر في الأسفل */}
-        <div className="absolute bottom-3 md:bottom-4 left-0 right-0 text-center">
-          <p className="text-[6px] md:text-[8px] text-white/20 tracking-[0.2em] font-bold uppercase flex items-center justify-center gap-3">
+        {/* حقوق النشر */}
+        <div className="w-full text-center mt-2">
+          <p className="text-[7px] sm:text-[9px] text-white/30 tracking-[0.15em] font-bold uppercase flex items-center justify-center gap-2">
             <span>© {new Date().getFullYear()}</span>
-            <Heart className="h-2 w-2 text-[#2a655f]/50 animate-heartbeat" />
+            <Heart className="h-2 w-2 text-[#2a655f]/70 animate-heartbeat" />
             <span>{isArabic ? "السوق لعندك" : "Souqi Le3ndak"}</span>
           </p>
         </div>
+
       </div>
     </div>
   );

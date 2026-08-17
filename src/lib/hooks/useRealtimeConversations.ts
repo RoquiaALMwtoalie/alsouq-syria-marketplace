@@ -105,6 +105,78 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 };
 
 // ============================================================
+// 🔥 HOOK: حالة المستخدم مع Realtime (محدثة لحظياً) ✅ NEW
+// ============================================================
+export function useRealtimeUserStatus(userId: string | undefined) {
+  const [isOnline, setIsOnline] = useState(false);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    // جلب البيانات الأولية
+    const fetchUserStatus = async () => {
+      try {
+        const { data: userData, error } = await supabase
+          .from("profiles")
+          .select("is_online, last_seen_at")
+          .eq("id", userId)
+          .single();
+
+        if (error) throw error;
+
+        if (isMounted) {
+          setData(userData);
+          setIsOnline(userData?.is_online || false);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching user status:", error);
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchUserStatus();
+
+    // ✅ الاشتراك في التحديثات اللحظية (Realtime)
+    const channel = supabase
+      .channel(`user-status-${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${userId}`,
+        },
+        (payload) => {
+          if (!isMounted) return;
+          const updated = payload.new as any;
+          setData(updated);
+          setIsOnline(updated?.is_online || false);
+        }
+      )
+      .subscribe();
+
+    // ✅ تنظيف القناة عند إزالة المكون
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
+  return { data, isOnline, loading };
+}
+
+// ============================================================
 // ====== الـ Hook الرئيسي (مُحسّن لمنع الـ Re-renders اللانهائية)
 // ============================================================
 export function useRealtimeConversations(userId: string | undefined) {

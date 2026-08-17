@@ -15,10 +15,11 @@ import {
   useForwardMessage,
   useMuteConversation,
   usePinConversation,
-  useUserStatus,
-  useRealtimeUserStatus,
   useSendTypingIndicator,
+  useUserStatus, // ✅ استخدم useUserStatus
 } from "@/lib/hooks/useConversation";
+// ❌ حذف الاستيراد الغير ضروري
+// import { useRealtimeUserStatus } from "@/lib/hooks/useRealtimeConversations";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { MessageList } from "@/components/chat/MessageList";
 import { ChatInput } from "@/components/chat/ChatInput";
@@ -39,6 +40,7 @@ interface ChatMessagesProps {
   otherUserId: string;
   className?: string;
   onBack?: () => void;
+  hideHeader?: boolean;
 }
 
 // ====== المكون الرئيسي ======
@@ -48,6 +50,7 @@ export function ChatMessages({
   otherUserId,
   className,
   onBack,
+  hideHeader = false,
 }: ChatMessagesProps) {
   const app = useApp();
   const navigate = useNavigate();
@@ -83,7 +86,19 @@ export function ChatMessages({
   const forwardMessage = useForwardMessage();
   const muteConversation = useMuteConversation();
   const pinConversation = usePinConversation();
+  
+  // ✅ استخدم useUserStatus بدلاً من useRealtimeUserStatus
   const { data: userStatus } = useUserStatus(otherUserId);
+  const isOnline = userStatus?.is_online || false;
+
+  // ✅ سجل القيم للتحقق
+  useEffect(() => {
+    console.log("🔍 User Status Debug:");
+    console.log("  - isOnline:", isOnline);
+    console.log("  - userStatus:", userStatus);
+    console.log("  - otherUserId:", otherUserId);
+  }, [isOnline, userStatus, otherUserId]);
+
   const sendTyping = useSendTypingIndicator(conversationId, userId);
 
   // ====== Store ======
@@ -385,39 +400,48 @@ export function ChatMessages({
         />
       )}
 
-      {/* الهيدر الاحترافي المتناسق مع السستم */}
-      <ChatHeader
-        user={{
-          id: otherUserId,
-          full_name: otherUser?.full_name || null,
-          avatar_url: otherUser?.avatar_url || null,
-          store_name: otherUser?.store_name || null,
-          store_logo_url: otherUser?.store_logo_url || null,
-          is_online: userStatus?.is_online || false,
-          last_seen_at: userStatus?.last_seen_at || null,
-        }}
-        conversationId={conversationId}
-        isStore={isStore}
-        isMuted={isMuted}
-        isPinned={isPinned}
-        isArchived={isArchived}
-        onBack={onBack || (() => navigate({ to: "/messages" }))}
-        onMute={handleMute}
-        onPin={handlePin}
-        onArchive={handleArchive}
-        onDelete={handleDeleteConversation}
-        onSearch={() => setIsSearchOpen(true)}
-        onCall={handleVoiceCall}
-        onVideoCall={handleVideoCall}
-        onViewProfile={() => navigate({ to: "/profile" })}
-        onViewStore={() => {
-          if (isStore) {
-            navigate({ to: "/store/$id", params: { id: otherUserId } });
-          }
-        }}
-      />
+      {/* ✅ الهيدر - يظهر فقط إذا لم يكن مخفياً */}
+      {!hideHeader && (
+        <>
+          {console.log("📤 Passing to ChatHeader:")}
+          {console.log("  - isOnline:", isOnline)}
+          {console.log("  - userStatus:", userStatus)}
+          {console.log("  - otherUserId:", otherUserId)}
+          
+          <ChatHeader
+            user={{
+              id: otherUserId,
+              full_name: otherUser?.full_name || null,
+              avatar_url: otherUser?.avatar_url || null,
+              store_name: otherUser?.store_name || null,
+              store_logo_url: otherUser?.store_logo_url || null,
+              is_online: isOnline,
+              last_seen_at: userStatus?.last_seen_at || null,
+            }}
+            conversationId={conversationId}
+            isStore={isStore}
+            isMuted={isMuted}
+            isPinned={isPinned}
+            isArchived={isArchived}
+            onBack={onBack || (() => navigate({ to: "/messages" }))}
+            onMute={handleMute}
+            onPin={handlePin}
+            onArchive={handleArchive}
+            onDelete={handleDeleteConversation}
+            onSearch={() => setIsSearchOpen(true)}
+            onCall={handleVoiceCall}
+            onVideoCall={handleVideoCall}
+            onViewProfile={() => navigate({ to: "/profile" })}
+            onViewStore={() => {
+              if (isStore) {
+                navigate({ to: "/store/$id", params: { id: otherUserId } });
+              }
+            }}
+          />
+        </>
+      )}
 
-      {/* قائمة الرسائل مع تصميم عصري وبدون هوية الماسنجر الزرقاء القديمة */}
+      {/* قائمة الرسائل */}
       <div className="flex-1 overflow-hidden p-2 sm:p-4">
         <div className="h-full w-full rounded-3xl overflow-hidden shadow-2xl border border-[#2a655f]/20 bg-white/95 dark:bg-[#1a2b28]/95 backdrop-blur-xl">
           <MessageList
@@ -443,7 +467,7 @@ export function ChatMessages({
         </div>
       </div>
 
-      {/* حقل الإدخال الاحترافي والآمن */}
+      {/* حقل الإدخال */}
       <div className="p-3 bg-white/90 dark:bg-[#173d38]/90 backdrop-blur-md border-t border-[#2a655f]/20 shadow-lg">
         <div className="max-w-4xl mx-auto">
           <ChatInput
@@ -469,7 +493,7 @@ export function ChatMessages({
         </div>
       </div>
 
-      {/* شريط تحديد الرسائل العائم المتناسق */}
+      {/* شريط تحديد الرسائل */}
       <AnimatePresence>
         {selectedMessages.length > 0 && (
           <motion.div
