@@ -103,8 +103,35 @@ function CartPage() {
     refetch: refetchCart 
   } = useCart(app.user?.id);
   
-  // ✅ ✅ ✅ حساب قيمة السلة من قاعدة البيانات
-  const cartTotal = useCartTotal(app.user?.id);
+  // ✅✅✅ تعريف items (أولاً)
+  const items = useMemo(() => {
+    if (!cart?.items) return [];
+    
+    return cart.items.map((item: any) => {
+      const price = Number(item.price);
+      const quantity = Number(item.quantity);
+      const subtotal = price * quantity;
+      const subtotal_usd = item.price_usd ? Number(item.price_usd) * quantity : null;
+      
+      return {
+        ...item,
+        subtotal,
+        subtotal_usd,
+        listing: item.listing || null,
+      };
+    });
+  }, [cart?.items]);
+
+  // ✅✅✅ جب storeId من أول منتج في السلة (ثانياً - بعد تعريف items)
+  const storeIdFromCart = useMemo(() => {
+    if (!items || items.length === 0) return undefined;
+    const firstItem = items[0];
+    const listing = firstItem.listing || firstItem;
+    return listing.owner_id || firstItem.listing_id;
+  }, [items]);
+
+  // ✅✅✅ حساب قيمة السلة (ثالثاً - بعد storeIdFromCart)
+  const cartTotal = useCartTotal(app.user?.id, storeIdFromCart);
   
   // ✅ جلب عناوين المستخدم
   useEffect(() => {
@@ -137,25 +164,6 @@ function CartPage() {
     
     fetchUserAddresses();
   }, [app.user]);
-
-  // ✅✅✅ تعريف items (محسن مع تتبع التغييرات)
-  const items = useMemo(() => {
-    if (!cart?.items) return [];
-    
-    return cart.items.map((item: any) => {
-      const price = Number(item.price);
-      const quantity = Number(item.quantity);
-      const subtotal = price * quantity;
-      const subtotal_usd = item.price_usd ? Number(item.price_usd) * quantity : null;
-      
-      return {
-        ...item,
-        subtotal,
-        subtotal_usd,
-        listing: item.listing || null,
-      };
-    });
-  }, [cart?.items]);
 
   // ✅ ✅ ✅ استخراج اسم المتجر وصورته من أول منتج في السلة
   const storeInfo = useMemo(() => {
@@ -242,162 +250,162 @@ function CartPage() {
   }, []);
 
   // ✅ حساب التوصيل - مُحسّن (نفس طريقة store.$id.tsx)
-  useEffect(() => {
-    // ✅ منع التنفيذ في أول ريندر
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+// ✅ حساب التوصيل - مُحسّن (نفس طريقة store.$id.tsx)
+useEffect(() => {
+  // ✅ منع التنفيذ في أول ريندر
+  if (isFirstRender.current) {
+    isFirstRender.current = false;
+    return;
+  }
 
-    // ✅ إلغاء الـ timeout السابق
-    if (deliveryTimeoutRef.current) {
-      clearTimeout(deliveryTimeoutRef.current);
-    }
+  // ✅ إلغاء الـ timeout السابق
+  if (deliveryTimeoutRef.current) {
+    clearTimeout(deliveryTimeoutRef.current);
+  }
 
-    // ✅ تأخير الحساب لتجنب التحديثات المتكررة
-    deliveryTimeoutRef.current = setTimeout(() => {
-      const calculateDelivery = async () => {
-        // ✅ 1. التحقق من وجود عنوان ومتجر
-        if (!selectedAddress || !cart?.store?.id) {
+  // ✅ تأخير الحساب لتجنب التحديثات المتكررة
+  deliveryTimeoutRef.current = setTimeout(() => {
+    const calculateDelivery = async () => {
+      // ✅ 1. التحقق من وجود عنوان و storeId
+      if (!selectedAddress || !storeIdFromCart) {  // ✅ استخدم storeIdFromCart
+        setDeliveryFee(0);
+        setDeliveryCompany(null);
+        return;
+      }
+      
+      setIsCalculatingDelivery(true);
+      try {
+        // ✅ 2. جلب بيانات المتجر (مع delivery_company_id)
+        const { data: store, error: storeError } = await supabase
+          .from("profiles")
+          .select("delivery_company_id, lat, lng, governorate_id")
+          .eq("id", storeIdFromCart)  // ✅ استخدم storeIdFromCart
+          .maybeSingle();
+
+        if (storeError || !store) {
+          console.error("❌ [Cart] Store not found:", storeError);
           setDeliveryFee(0);
           setDeliveryCompany(null);
           return;
         }
-        
-        setIsCalculatingDelivery(true);
-        try {
-          // ✅ 2. جلب بيانات المتجر (مع delivery_company_id)
-          const { data: store, error: storeError } = await supabase
-            .from("profiles")
-            .select("delivery_company_id, lat, lng, governorate_id")
-            .eq("id", cart.store.id)
+
+        // ✅ 3. تحديد شركة التوصيل
+        let selectedCompany = null;
+
+        // ✅ 3a. إذا كان للمتجر شركة توصيل محددة
+        if (store.delivery_company_id) {
+          const { data: company, error: companyError } = await supabase
+            .from("delivery_companies")
+            .select("*")
+            .eq("id", store.delivery_company_id)
+            .eq("is_active", true)
             .maybeSingle();
 
-          if (storeError || !store) {
-            console.error("❌ [Cart] Store not found:", storeError);
-            setDeliveryFee(0);
-            setDeliveryCompany(null);
-            return;
+          if (!companyError && company) {
+            selectedCompany = company;
+            console.log("✅ [Cart] Using store's delivery company:", company.name_ar);
           }
+        }
 
-          // ✅ 3. تحديد شركة التوصيل
-          let selectedCompany = null;
+        // ✅ 3b. إذا لم تكن هناك شركة محددة، ابحث عن شركة تغطي المحافظة
+        if (!selectedCompany) {
+          const { data: companies, error: companiesError } = await supabase
+            .from("delivery_companies")
+            .select("*")
+            .eq("is_active", true);
 
-          // ✅ 3a. إذا كان للمتجر شركة توصيل محددة
-          if (store.delivery_company_id) {
-            const { data: company, error: companyError } = await supabase
-              .from("delivery_companies")
-              .select("*")
-              .eq("id", store.delivery_company_id)
-              .eq("is_active", true)
-              .maybeSingle();
-
-            if (!companyError && company) {
-              selectedCompany = company;
-              console.log("✅ [Cart] Using store's delivery company:", company.name_ar);
-            }
-          }
-
-          // ✅ 3b. إذا لم تكن هناك شركة محددة، ابحث عن شركة تغطي المحافظة
-          if (!selectedCompany) {
-            const { data: companies, error: companiesError } = await supabase
-              .from("delivery_companies")
-              .select("*")
-              .eq("is_active", true);
-
-            if (!companiesError && companies) {
-              const matchingCompanies = companies.filter((c: any) => {
-                const coverage = c.coverage_areas || [];
-                if (coverage.includes("all") || coverage.includes(store.governorate_id)) {
-                  return true;
-                }
-                if (c.governorate_id === store.governorate_id) {
-                  return true;
-                }
-                return false;
-              });
-
-              if (matchingCompanies.length > 0) {
-                selectedCompany = matchingCompanies.sort((a: any, b: any) => 
-                  (a.base_price || 0) - (b.base_price || 0)
-                )[0];
-                console.log("✅ [Cart] Using best matching company:", selectedCompany.name_ar);
+          if (!companiesError && companies) {
+            const matchingCompanies = companies.filter((c: any) => {
+              const coverage = c.coverage_areas || [];
+              if (coverage.includes("all") || coverage.includes(store.governorate_id)) {
+                return true;
               }
+              if (c.governorate_id === store.governorate_id) {
+                return true;
+              }
+              return false;
+            });
+
+            if (matchingCompanies.length > 0) {
+              selectedCompany = matchingCompanies.sort((a: any, b: any) => 
+                (a.base_price || 0) - (b.base_price || 0)
+              )[0];
+              console.log("✅ [Cart] Using best matching company:", selectedCompany.name_ar);
             }
           }
+        }
 
-          // ✅ 3c. استخدام شركة افتراضية
-          if (!selectedCompany) {
-            const { data: fallbackCompany, error: fallbackError } = await supabase
-              .from("delivery_companies")
-              .select("*")
-              .eq("is_active", true)
-              .limit(1)
-              .maybeSingle();
+        // ✅ 3c. استخدام شركة افتراضية
+        if (!selectedCompany) {
+          const { data: fallbackCompany, error: fallbackError } = await supabase
+            .from("delivery_companies")
+            .select("*")
+            .eq("is_active", true)
+            .limit(1)
+            .maybeSingle();
 
-            if (!fallbackError && fallbackCompany) {
-              selectedCompany = fallbackCompany;
-              console.log("✅ [Cart] Using fallback company:", selectedCompany.name_ar);
-            }
+          if (!fallbackError && fallbackCompany) {
+            selectedCompany = fallbackCompany;
+            console.log("✅ [Cart] Using fallback company:", selectedCompany.name_ar);
           }
+        }
 
-          if (!selectedCompany) {
-            setDeliveryFee(0);
-            setDeliveryCompany(null);
-            return;
-          }
-
-          // ✅ 4. حساب المسافة
-          let distance = 0;
-          const hasValidCoordinates = store.lat && store.lng && selectedAddress.lat && selectedAddress.lng;
-
-          if (hasValidCoordinates) {
-            distance = calculateDistance(
-              store.lat,
-              store.lng,
-              selectedAddress.lat,
-              selectedAddress.lng
-            );
-            console.log(`📍 [Cart] Real distance: ${distance.toFixed(2)} km`);
-          } else {
-            const storeGovId = store.governorate_id;
-            const userGovId = selectedAddress.governorate_id;
-            
-            if (storeGovId === userGovId) {
-              distance = 5;
-            } else {
-              distance = 25;
-            }
-            console.log(`📍 [Cart] Estimated distance: ${distance} km`);
-          }
-
-          // ✅ 5. حساب سعر التوصيل (باستخدام cartTotal من قاعدة البيانات)
-          const fee = calculateDeliveryPrice(selectedCompany, distance, cartTotal);
-
-          console.log(`💰 [Cart] Delivery fee: ${fee} SYP (cartTotal: ${cartTotal}, threshold: ${selectedCompany?.free_delivery_threshold || 0})`);
-          
-          setDeliveryFee(fee);
-          setDeliveryCompany(selectedCompany);
-
-        } catch (error) {
-          console.error("❌ [Cart] Error calculating delivery:", error);
+        if (!selectedCompany) {
           setDeliveryFee(0);
           setDeliveryCompany(null);
-        } finally {
-          setIsCalculatingDelivery(false);
+          return;
         }
-      };
-      
-      calculateDelivery();
-    }, 300);
 
-    return () => {
-      if (deliveryTimeoutRef.current) {
-        clearTimeout(deliveryTimeoutRef.current);
+        // ✅ 4. حساب المسافة
+        let distance = 0;
+        const hasValidCoordinates = store.lat && store.lng && selectedAddress.lat && selectedAddress.lng;
+
+        if (hasValidCoordinates) {
+          distance = calculateDistance(
+            store.lat,
+            store.lng,
+            selectedAddress.lat,
+            selectedAddress.lng
+          );
+          console.log(`📍 [Cart] Real distance: ${distance.toFixed(2)} km`);
+        } else {
+          const storeGovId = store.governorate_id;
+          const userGovId = selectedAddress.governorate_id;
+          
+          if (storeGovId === userGovId) {
+            distance = 5;
+          } else {
+            distance = 25;
+          }
+          console.log(`📍 [Cart] Estimated distance: ${distance} km`);
+        }
+
+        // ✅ 5. حساب سعر التوصيل (باستخدام cartTotal من قاعدة البيانات)
+        const fee = calculateDeliveryPrice(selectedCompany, distance, cartTotal);
+
+        console.log(`💰 [Cart] Delivery fee: ${fee} SYP (cartTotal: ${cartTotal}, threshold: ${selectedCompany?.free_delivery_threshold || 0})`);
+        
+        setDeliveryFee(fee);
+        setDeliveryCompany(selectedCompany);
+
+      } catch (error) {
+        console.error("❌ [Cart] Error calculating delivery:", error);
+        setDeliveryFee(0);
+        setDeliveryCompany(null);
+      } finally {
+        setIsCalculatingDelivery(false);
       }
     };
-  }, [selectedAddress, cart?.store?.id, cartTotal, calculateDistance, calculateDeliveryPrice]);
+    
+    calculateDelivery();
+  }, 300);
 
+  return () => {
+    if (deliveryTimeoutRef.current) {
+      clearTimeout(deliveryTimeoutRef.current);
+    }
+  };
+}, [selectedAddress, storeIdFromCart, cartTotal, calculateDistance, calculateDeliveryPrice]);  // ✅ استخدم storeIdFromCart
   // ✅✅✅ حساب الإجماليات (محسن)
   const totals = useMemo(() => {
     const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
@@ -1240,32 +1248,32 @@ const applyPromoCode = useCallback(async () => {
                 </Button>
               </div>
               
-              {/* ✅ عرض معلومات التوصيل - محسّن */}
-              {selectedAddress && (
-                <div className="mt-3 pt-3 border-t border-[#2a655f]/10 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Truck className="h-4 w-4 text-[#2a655f]" />
-                    {isCalculatingDelivery ? (
-                      <span className="flex items-center gap-1">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        {app.lang === "ar" ? "جاري الحساب..." : "Calculating..."}
-                      </span>
-                    ) : (
-                      <span>
-                        {deliveryFee === 0 
-                          ? (app.lang === "ar" ? "🆓 توصيل مجاني" : "🆓 Free Delivery")
-                          : `${app.lang === "ar" ? "توصيل" : "Delivery"}: ${formatPrice(deliveryFee, app.currency, app.lang)}`
-                        }
-                      </span>
-                    )}
-                  </div>
-                  {deliveryCompany && (
-                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
-                      {deliveryCompany.name_ar || "شركة توصيل"}
-                    </Badge>
-                  )}
-                </div>
-              )}
+             {/* ✅ عرض معلومات التوصيل - محسّن */}
+{selectedAddress && (
+  <div className="mt-3 pt-3 border-t border-[#2a655f]/10 flex items-center justify-between">
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <Truck className="h-4 w-4 text-[#2a655f]" />
+      {isCalculatingDelivery ? (
+        <span className="flex items-center gap-1">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          {app.lang === "ar" ? "جاري الحساب..." : "Calculating..."}
+        </span>
+      ) : (
+        <span>
+          {deliveryFee === 0 
+            ? (app.lang === "ar" ? "🆓 توصيل مجاني" : "🆓 Free Delivery")
+            : `${app.lang === "ar" ? "توصيل" : "Delivery"}: ${formatPrice(deliveryFee, app.currency, app.lang)}`
+          }
+        </span>
+      )}
+    </div>
+    {deliveryCompany && (
+      <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+        {deliveryCompany.name_ar || "شركة توصيل"}
+      </Badge>
+    )}
+  </div>
+)}
             </div>
 
             {/* ✅ قائمة المنتجات */}

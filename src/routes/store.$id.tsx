@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { useCartTotal } from "@/lib/hooks/useCartTotal"; // ✅ استيراد الـ Hook
 
 // ✅ Lazy Loading للـ ListingCard
 const ListingCard = lazy(() => import("@/components/ListingCard"));
@@ -71,6 +72,9 @@ function StorePage() {
   const { data: store, isLoading: storeLoading } = useStoreProfile(id) as { data: any; isLoading: boolean };
   const getOrCreateConversation = useGetOrCreateConversation();
   const { data: companies = [] } = useDeliveryCompanies({ active: true });
+  
+  // ✅ ✅ ✅ استخدام useCartTotal مع storeId لجلب قيمة منتجات هذا المتجر فقط
+  const cartTotalForStore = useCartTotal(app.user?.id, id);
 
   // ====== جلب المنتجات مع Pagination وفلتر العروض ======
   const { 
@@ -261,51 +265,9 @@ function StorePage() {
           console.log(`📍 [Delivery] Estimated distance: ${distance} km (no coordinates)`);
         }
 
-        // ✅✅✅ 4. جلب قيمة السلة من عناصر السلة
-        let orderTotal = 0;
-        if (app.user) {
-          try {
-            const { data: cartData, error: cartError } = await supabase
-              .from("carts")
-              .select(`
-                id,
-                cart_items (
-                  quantity,
-                  price,
-                  listing_id,
-                  listing:listings!inner (
-                    owner_id
-                  )
-                )
-              `)
-              .eq("user_id", app.user.id)
-              .eq("status", "active")
-              .maybeSingle();
-
-            if (cartError) {
-              console.error("❌ [Delivery] Error fetching cart:", cartError);
-            }
-            
-            if (cartData && cartData.cart_items && cartData.cart_items.length > 0) {
-              // ✅ فلترة المنتجات التي تنتمي لهذا المتجر فقط
-              const storeItems = cartData.cart_items.filter((item: any) => {
-                const ownerId = item.listing?.owner_id || item.listing_id;
-                return ownerId === id;
-              });
-              
-              orderTotal = storeItems.reduce((sum: number, item: any) => {
-                return sum + (Number(item.price) * Number(item.quantity));
-              }, 0);
-              
-              console.log(`🛒 [Delivery] Cart subtotal for this store: ${orderTotal} SYP`);
-              console.log(`🛒 [Delivery] Total items in cart: ${cartData.cart_items.length}, Store items: ${storeItems.length}`);
-            } else {
-              console.log(`🛒 [Delivery] Cart is empty or has no items`);
-            }
-          } catch (error) {
-            console.error("❌ [Delivery] Error calculating cart total:", error);
-          }
-        }
+        // ✅✅✅ 4. ✅ استخدام cartTotalForStore من الـ Hook بدلاً من الاستعلام اليدوي
+        const orderTotal = cartTotalForStore || 0;
+        console.log(`🛒 [Delivery] Cart subtotal for this store: ${orderTotal} SYP`);
 
         // ✅ 5. حساب سعر التوصيل
         const freeThreshold = selectedCompany.free_delivery_threshold || 0;
@@ -355,7 +317,7 @@ function StorePage() {
     return () => {
       isMounted = false;
     };
-  }, [store, app.user, calculateDistance, calculateDeliveryPrice]);
+  }, [store, app.user, cartTotalForStore, calculateDistance, calculateDeliveryPrice]); // ✅ أضفنا cartTotalForStore كـ dependency
 
   // ====== تحميل المزيد ======
   const loadMore = useCallback(() => {
@@ -636,20 +598,20 @@ function StorePage() {
                 </Badge>
               </div>
               
-              <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                <span>{isArabic ? `المسافة: ${deliveryPrice.distance} كم` : `Distance: ${deliveryPrice.distance} km`}</span>
-                <span className="text-muted-foreground/30">|</span>
-                <span className="text-pink-600 font-medium">{deliveryPrice.companyName}</span>
-                {deliveryPrice.breakdown?.hasCoordinates ? (
-                  <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[8px] px-1.5 py-0">
-                    📍 {isArabic ? "موقع دقيق" : "Precise"}
-                  </Badge>
-                ) : (
-                  <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[8px] px-1.5 py-0">
-                    📍 {isArabic ? "تقديري" : "Estimated"}
-                  </Badge>
-                )}
-              </p>
+             <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+  <span>{isArabic ? `المسافة: ${deliveryPrice.distance} كم` : `Distance: ${deliveryPrice.distance} km`}</span>
+  <span className="text-muted-foreground/30">|</span>
+  <span className="text-pink-600 font-medium">{deliveryPrice.companyName}</span>
+  {deliveryPrice.breakdown?.hasCoordinates ? (
+    <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[8px] px-1.5 py-0">
+      📍 {isArabic ? "موقع دقيق" : "Precise"}
+    </Badge>
+  ) : (
+    <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[8px] px-1.5 py-0">
+      📍 {isArabic ? "تقديري" : "Estimated"}
+    </Badge>
+  )}
+</div>
               
               {deliveryPrice.freeThreshold > 0 && (
                 <div className="flex items-center gap-2 mt-1">

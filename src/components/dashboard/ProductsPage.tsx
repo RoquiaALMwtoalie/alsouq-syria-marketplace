@@ -43,7 +43,7 @@ const { saveAs } = pkg;
 export const ProductsPage = React.memo(function ProductsPage() {
   const app = useApp();
   const t = useT();
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const { data: cats = [] } = useCategories();
   const { data: govs = [] } = useGovernorates();
   
@@ -60,11 +60,12 @@ export const ProductsPage = React.memo(function ProductsPage() {
   const update = useUpdateListing();
   const del = useDeleteListing();
   const sendNotification = useSendNotificationV2();
-  const addToCart = useAddToCart(); // ✅ Hook لإضافة المنتج للسلة
+  const addToCart = useAddToCart();
   const isOpeningDialog = useRef(false);
   
   // ✅ منع فتح نافذة التفاصيل بشكل متكرر
   const isOpeningDetail = useRef(false);
+  
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "pending" | "published" | "archived">("all");
@@ -76,7 +77,8 @@ export const ProductsPage = React.memo(function ProductsPage() {
   // ✅ Slider State
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
-  const itemsPerSlide = 4;
+  // ❌ احذف هذا السطر من هنا
+  // const itemsPerSlide = filteredProducts.length;  // غلط!
   
   // Dialogs
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -102,7 +104,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
   // ✅ State لاختيار التركيبة في صفحة التفاصيل
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
 
-  // ✅ تحسين الـ useMemo مع تثبيت dependencies
+  // ✅ تعريف filteredProducts (أولاً)
   const filteredProducts = useMemo(() => {
     let result = myListings;
     if (filterStatus !== "all") result = result.filter((p: any) => p.status === filterStatus);
@@ -117,6 +119,9 @@ export const ProductsPage = React.memo(function ProductsPage() {
     }
     return result;
   }, [myListings, searchQuery, filterStatus, filterType]);
+
+  // ✅ تعريف itemsPerSlide (ثانياً - بعد filteredProducts)
+  const itemsPerSlide = filteredProducts.length || 4;
 
   const totalPages = Math.ceil(filteredProducts.length / limit);
   const paginatedProducts = useMemo(() => {
@@ -1481,61 +1486,69 @@ const openProductDetail = useCallback((product: any) => {
                   </div>
                 )}
 
-                {/* ===== ✅ التركيبات مع إمكانية الاختيار ===== */}
-                {selectedProduct?.variations && selectedProduct.variations.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                      <Layers className="h-4 w-4 text-[#2a655f]" />
-                      {app.lang === "ar" ? "اختر التركيبة" : "Select Variation"}
-                      <span className="text-xs text-muted-foreground/60">
-                        ({selectedProduct.variations.length})
-                      </span>
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      {selectedProduct.variations.map((variation: any) => {
-                        const isSelected = selectedVariation?.id === variation.id;
-                        return (
-                          <div 
-                            key={variation.id}
-                            onClick={() => setSelectedVariation(variation)}
-                            className={cn(
-                              "p-3 rounded-xl border-2 transition-all duration-300 cursor-pointer hover:scale-[1.02]",
-                              isSelected 
-                                ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20" 
-                                : "border-slate-200/50 hover:border-[#2a655f]/50 hover:shadow-md"
-                            )}
-                          >
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center justify-between">
-                                <div className="flex flex-wrap items-center gap-1">
-                                  {Object.entries(variation.combination || {}).map(([key, value]) => (
-                                    <span key={key} className="text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                                      {key}: <span className="font-bold text-[#2a655f]">{String(value)}</span>
-                                    </span>
-                                  ))}
-                                </div>
-                                {isSelected && (
-                                  <CheckCircle2 className="h-5 w-5 text-[#2a655f] flex-shrink-0" />
-                                )}
-                              </div>
-                              {variation.price && variation.price > 0 && (
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <span className="text-xs text-muted-foreground">
-                                    {app.lang === "ar" ? "السعر:" : "Price:"}
-                                  </span>
-                                  <span className="text-xs font-bold text-[#2a655f]">
-                                    {formatPrice(variation.price, app.currency, app.lang)}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+           {/* ===== ✅ التركيبات مع إمكانية الاختيار ===== */}
+{selectedProduct?.variations && selectedProduct.variations.length > 0 && (
+  <div className="mt-4">
+    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+      <Layers className="h-4 w-4 text-[#2a655f]" />
+      {app.lang === "ar" ? "اختر التركيبة" : "Select Variation"}
+    </p>
+    <div className="grid grid-cols-2 gap-2 mt-2">
+      {selectedProduct.variations.map((variation: any) => {
+        const isSelected = selectedVariation?.id === variation.id;
+        return (
+          <div 
+            key={variation.id}
+            onClick={() => setSelectedVariation(variation)}
+            className={cn(
+              "p-3 rounded-xl border-2 transition-all duration-300 cursor-pointer hover:scale-[1.02]",
+              isSelected 
+                ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20" 
+                : "border-slate-200/50 hover:border-[#2a655f]/50 hover:shadow-md"
+            )}
+          >
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center gap-1">
+                  {Object.entries(variation.combination || {}).map(([key, value]) => (
+                    <span key={key} className="text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                      {key}: <span className="font-bold text-[#2a655f]">{String(value)}</span>
+                    </span>
+                  ))}
+                </div>
+                {isSelected && (
+                  <CheckCircle2 className="h-5 w-5 text-[#2a655f] flex-shrink-0" />
                 )}
-
+              </div>
+              
+              {/* ✅ عرض السعرين (القديم والجديد) للعروض */}
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                {/* ✅ السعر الجديد */}
+                <span className="text-xs font-bold text-[#2a655f]">
+                  {formatPrice(variation.price || selectedProduct.price, app.currency, app.lang)}
+                </span>
+                
+                {/* ✅ السعر القديم (يظهر فقط للعروض) */}
+                {selectedProduct.is_offer && variation.old_price && variation.old_price > 0 && (
+                  <span className="text-xs text-red-400 line-through">
+                    {formatPrice(variation.old_price, app.currency, app.lang)}
+                  </span>
+                )}
+                
+                {/* ✅ إذا ما في old_price للفيرنتة، استخدم old_price من المنتج */}
+                {selectedProduct.is_offer && (!variation.old_price || variation.old_price <= 0) && selectedProduct.old_price && selectedProduct.old_price > 0 && (
+                  <span className="text-xs text-red-400 line-through">
+                    {formatPrice(Number(selectedProduct.old_price), app.currency, app.lang)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
                 {/* ===== المقاسات ===== */}
                 {selectedProduct.sizes && selectedProduct.sizes.length > 0 && (
                   <div className="mt-4">
