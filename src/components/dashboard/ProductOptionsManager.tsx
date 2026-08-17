@@ -53,7 +53,7 @@ export interface Variation {
   is_available: boolean;
   sku?: string;
   price?: number;
-  old_price?: number;  // ✅ هذا السطر الجديد
+  old_price?: number;
   is_new?: boolean;
 }
 
@@ -75,6 +75,7 @@ interface ProductOptionsManagerProps {
   externalColorImages?: Record<string, string>;
   sizes?: string[];
   onSizesChange?: (sizes: string[]) => void;
+  isOffer?: boolean; // ✅ جديد: يحدد إذا كان المنتج عرضاً
 }
 
 export function ProductOptionsManager({ 
@@ -89,6 +90,7 @@ export function ProductOptionsManager({
   externalColorImages = {},
   sizes = [],
   onSizesChange,
+  isOffer = false, // ✅ جديد
 }: ProductOptionsManagerProps) {
   const [newValue, setNewValue] = useState("");
   const [activeType, setActiveType] = useState<string>("colors");
@@ -271,7 +273,7 @@ export function ProductOptionsManager({
       return {
         ...v,
         price: existingVariation?.price ?? 0,
-        old_price: existingVariation?.old_price ?? 0,  // ✅ ✅ ✅ الحفاظ على old_price
+        old_price: existingVariation?.old_price ?? 0,
         stock_quantity: existingVariation?.stock_quantity ?? 0,
         is_available: existingVariation?.is_available ?? true,
         is_new: isNew,
@@ -368,7 +370,7 @@ export function ProductOptionsManager({
             combination: { ...current },
             is_available: true,
             price: 0,
-            old_price: 0,  // ✅ ✅ ✅
+            old_price: 0,
             stock_quantity: 0,
           });
         }
@@ -432,7 +434,7 @@ export function ProductOptionsManager({
           combination: { ...current },
           is_available: true,
           price: 0,
-          old_price: 0,  // ✅ ✅ ✅
+          old_price: 0,
           stock_quantity: 0,
         });
         return;
@@ -455,7 +457,7 @@ export function ProductOptionsManager({
       const variationsWithDefaults = allVariations.map(v => ({
         ...v,
         price: 0,
-        old_price: 0,  // ✅ ✅ ✅
+        old_price: 0,
         stock_quantity: 0,
         is_new: true,
       }));
@@ -1132,11 +1134,14 @@ export function ProductOptionsManager({
                       {/* ✅ حقول الأسعار لكل تركيبة */}
                       <div className="flex flex-col gap-1.5 mt-1.5 pt-1.5 border-t border-slate-200/50 dark:border-slate-700/50">
                         
-                        {/* ✅ السعر الجديد */}
+                        {/* ✅ السعر (للمنتج العادي) أو السعر الجديد (للعرض) */}
                         <div className="flex items-center gap-2">
                           <div className="flex-1 flex items-center gap-1">
                             <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                              {lang === "ar" ? "💰 السعر الجديد:" : "💰 New Price:"}
+                              {isOffer 
+                                ? (lang === "ar" ? "💰 السعر الجديد:" : "💰 New Price:")
+                                : (lang === "ar" ? "💰 السعر:" : "💰 Price:")
+                              }
                               <span className="text-red-500">*</span>
                             </span>
                             <Input
@@ -1168,7 +1173,7 @@ export function ProductOptionsManager({
                             />
                           </div>
                           
-                          {/* ✅ عرض السعر الجديد */}
+                          {/* ✅ عرض السعر */}
                           {variation.price && variation.price > 0 ? (
                             <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                               {variation.price} ل.س
@@ -1180,45 +1185,47 @@ export function ProductOptionsManager({
                           )}
                         </div>
 
-                        {/* ✅ السعر القديم (للعروض) */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center gap-1">
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap line-through">
-                              {lang === "ar" ? "📌 السعر القديم:" : "📌 Old Price:"}
-                            </span>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={variation.old_price !== undefined && variation.old_price !== null && variation.old_price > 0 ? variation.old_price : ''}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                const oldPrice = val === '' ? 0 : Number(val);
-                                const updated = localVariations.map(v => 
-                                  v.id === variation.id ? { ...v, old_price: oldPrice } : v
-                                );
-                                setLocalVariations(updated);
-                                if (onVariationsChange) {
-                                  onVariationsChange(updated);
-                                }
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              className="h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
-                              placeholder={lang === "ar" ? "اختياري" : "Optional"}
-                            />
+                        {/* ✅ السعر القديم (يظهر فقط للعروض) */}
+                        {isOffer && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 flex items-center gap-1">
+                              <span className="text-[10px] text-muted-foreground whitespace-nowrap line-through">
+                                {lang === "ar" ? "📌 السعر القديم:" : "📌 Old Price:"}
+                              </span>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={variation.old_price !== undefined && variation.old_price !== null && variation.old_price > 0 ? variation.old_price : ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const oldPrice = val === '' ? 0 : Number(val);
+                                  const updated = localVariations.map(v => 
+                                    v.id === variation.id ? { ...v, old_price: oldPrice } : v
+                                  );
+                                  setLocalVariations(updated);
+                                  if (onVariationsChange) {
+                                    onVariationsChange(updated);
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
+                                placeholder={lang === "ar" ? "اختياري" : "Optional"}
+                              />
+                            </div>
+                            
+                            {/* ✅ عرض السعر القديم */}
+                            {variation.old_price && variation.old_price > 0 ? (
+                              <span className="text-[10px] font-medium text-red-400 line-through whitespace-nowrap">
+                                {variation.old_price} ل.س
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-medium text-muted-foreground/50 whitespace-nowrap">
+                                {lang === "ar" ? "—" : "—"}
+                              </span>
+                            )}
                           </div>
-                          
-                          {/* ✅ عرض السعر القديم */}
-                          {variation.old_price && variation.old_price > 0 ? (
-                            <span className="text-[10px] font-medium text-red-400 line-through whitespace-nowrap">
-                              {variation.old_price} ل.س
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-medium text-muted-foreground/50 whitespace-nowrap">
-                              {lang === "ar" ? "—" : "—"}
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   );
