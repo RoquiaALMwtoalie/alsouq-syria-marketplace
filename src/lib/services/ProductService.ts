@@ -250,10 +250,11 @@ static async saveVariations(listingId: string, variations: any[]) {
     
     entries.push({
       listing_id: listingId,
-      combination: combinedCombination, // ✅ استخدام التركيبة المعدلة
+      combination: combinedCombination,
       is_active: v.is_available !== false,
       sku: sku,
       price: priceToSave,
+      old_price: v.old_price || null,  // ✅ ✅ ✅ هذا السطر الجديد
       color_id: colorId,
       stock_quantity: v.stock_quantity || 0,
     });
@@ -308,7 +309,6 @@ static async saveVariations(listingId: string, variations: any[]) {
   
   return { inserted: entries.length };
 }
-  
   /**
    * ✅ حذف جميع بيانات المنتج
    */

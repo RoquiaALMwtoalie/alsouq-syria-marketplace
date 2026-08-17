@@ -47,13 +47,15 @@ const OPTION_TYPES = [
 // ============================================================
 // 📦 واجهات
 // ============================================================
+// 🟢 بعد التعديل (أضف old_price)
 export interface Variation {
   id: string;
   combination: Record<string, string>;
   is_available: boolean;
   sku?: string;
   price?: number;
-  is_new?: boolean; // ✅ جديد: لتحديد التركيبات الجديدة
+  old_price?: number;  // ✅ هذا السطر الجديد
+  is_new?: boolean;
 }
 
 export interface ColorWithImage {

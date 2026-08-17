@@ -1117,14 +1117,17 @@ export function CategoriesAdmin() {
               </div>
 
               <div>
-                <ImageInput
-                  folder="categories"
-                  value={editing.image_url || ""}
-                  onChange={(value) => setEditing({ ...editing, image_url: value })}
-                  label={isRTL ? "صورة التصنيف" : "Category Image"}
-                  hint={isRTL ? "ارفع صورة احترافية — الأبعاد المفضلة 1200×800" : "Upload a professional image — 1200×800 preferred"}
-                  previewClassName="aspect-video h-auto rounded-xl"
-                />
+            
+<ImageInput
+  folder="uploads/categories"  // ✅ هذا هو المطلوب
+  value={editing.image_url || ""}
+  onChange={(value) => setEditing({ ...editing, image_url: value })}
+  userId={app.user?.id}
+  lang={app.lang}
+  label={isRTL ? "صورة التصنيف" : "Category Image"}
+  hint={isRTL ? "ارفع صورة احترافية — الأبعاد المفضلة 1200×800" : "Upload a professional image — 1200×800 preferred"}
+  previewClassName="aspect-video h-auto rounded-xl border border-[#0d2e2a]/20"
+/>
               </div>
 
               {/* ✅ تحكم التصنيف المميز */}

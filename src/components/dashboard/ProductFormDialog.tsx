@@ -383,6 +383,7 @@ useEffect(() => {
         product.variations.map((v: any) => ({
           id: v.id,
           price: v.price,
+          old_price: v.old_price,
           combination: v.combination
         }))
       );
@@ -392,7 +393,8 @@ useEffect(() => {
         id: v.id,
         combination: v.combination || {},
         is_available: v.is_available !== undefined ? v.is_available : v.is_active !== false,
-        price: v.price || 0, // ✅ الحفاظ على السعر
+        price: v.price || 0,
+        old_price: v.old_price || null, // ✅ ✅ ✅ الحفاظ على old_price
         sku: v.sku || '',
         stock_quantity: v.stock_quantity || 0,
         color_id: v.color_id || null,
@@ -403,6 +405,7 @@ useEffect(() => {
         mappedVariations.map((v: any) => ({
           id: v.id,
           price: v.price,
+          old_price: v.old_price,
           combination: v.combination
         }))
       );
@@ -687,6 +690,7 @@ useEffect(() => {
       variations: variations.map(v => ({
         ...v,
         price: v.price || form.price,
+        old_price: v.old_price || form.old_price || null,
       })),
       colors: tempColors,
       image_urls: form.image_urls,

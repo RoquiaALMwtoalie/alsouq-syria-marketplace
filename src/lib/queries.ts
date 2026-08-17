@@ -100,12 +100,14 @@ export interface ProductOption {
   updated_at: string;
 }
 
+// ✅ تأكد من وجود old_price في الـ type
 export interface ProductVariation {
   id: string;
   listing_id: string;
   sku: string;
   combination: Record<string, string>;
   price: number;
+  old_price?: number | null;  // ✅ هذا السطر
   stock_quantity: number;
   reserved_quantity: number;
   image_url?: string;

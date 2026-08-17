@@ -486,6 +486,7 @@ const handleSaveProduct = useCallback(async (data: any) => {
   // ===== ✅ تحويل المنتج إلى عرض =====
 // ===== ✅ تحويل المنتج إلى عرض (مصحح) =====
 // ✅ التصحيح
+// ✅ التعديل المطلوب في handleConvertToOffer
 const handleConvertToOffer = useCallback(async (productId: string, newPrice: number) => {
   try {
     setIsConverting(true);
@@ -499,6 +500,7 @@ const handleConvertToOffer = useCallback(async (productId: string, newPrice: num
     const originalPrice = Number(product.price);
     const discountPercent = Math.round(((originalPrice - newPrice) / originalPrice) * 100);
     
+    // ✅ 1. تحديث المنتج الرئيسي
     await update.mutateAsync({
       id: productId,
       patch: {
@@ -506,10 +508,22 @@ const handleConvertToOffer = useCallback(async (productId: string, newPrice: num
         old_price: originalPrice,
         price: newPrice,
         discount_percent: discountPercent,
-        status: "published",  // ✅ بدل pending
+        status: "published",
         updated_at: new Date().toISOString(),
       }
     });
+
+    // ✅ 2. ✅✅✅ التعديل هنا: تحديث الفيرنتات مع old_price
+    if (product.variations && product.variations.length > 0) {
+      const updatedVariations = product.variations.map((v: any) => ({
+        ...v,
+        price: newPrice,
+        old_price: v.price,  // ✅ ✅ ✅ هذا السطر الجديد
+      }));
+      
+      // ✅ حفظ الفيرنتات المحدثة
+      await ProductService.saveVariations(productId, updatedVariations);
+    }
 
     toast.success(
       app.lang === "ar"
@@ -521,7 +535,7 @@ const handleConvertToOffer = useCallback(async (productId: string, newPrice: num
     setProductToConvert(null);
     await refetchMyListings();
 
-    // ✅ إشعار للأدمن (لكن المنتج يضل منشور)
+    // ✅ إشعار للأدمن
     await notifyAdmin(
       product.title_ar,
       "تحويل إلى عرض",
@@ -540,7 +554,6 @@ const handleConvertToOffer = useCallback(async (productId: string, newPrice: num
     setIsConverting(false);
   }
 }, [myListings, update, refetchMyListings, notifyAdmin, app.user, app.lang]);
-
 // ===== ✅ إعادة نشر المنتج (للمسودات) =====
 const handleRepublish = useCallback(async (product: any) => {
   try {
