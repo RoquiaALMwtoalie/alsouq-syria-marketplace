@@ -2,7 +2,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Building2, Phone, MapPin, Save, Sparkles, Map, Edit3 } from "lucide-react";
+import { Building2, Phone, MapPin, Save, Sparkles, Map, Edit3, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -155,7 +155,7 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     price_per_km: parseFloat(formData.get("price_per_km") as string) || 0,
     free_delivery_threshold: parseFloat(formData.get("free_delivery_threshold") as string) || 0,
     min_delivery_fee: parseFloat(formData.get("min_delivery_fee") as string) || 0,
-    max_delivery_fee: parseFloat(formData.get("max_delivery_fee") as string) || 999999,
+    max_delivery_fee: parseFloat(formData.get("max_delivery_fee") as string) || 15000,
     avg_delivery_time: parseInt(formData.get("avg_delivery_time") as string) || 60,
     has_tracking: formData.get("has_tracking") === "on",
     has_insurance: formData.get("has_insurance") === "on",
@@ -501,22 +501,31 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
                     />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium text-white/90">
-                    {isArabic ? "الحد الأقصى" : "Max Fee"} *
-                  </Label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">ل.س</span>
-                    <Input 
-                      name="max_delivery_fee" 
-                      type="number"
-                      step="0.01"
-                      defaultValue={companyData?.max_delivery_fee || 999999}
-                      required
-                      className="h-10 bg-white/90 text-foreground border-0 ps-10 focus:ring-2 focus:ring-[#2a655f]/50"
-                    />
-                  </div>
-                </div>
+               <div className="space-y-1">
+  <Label className="text-xs font-medium text-white/90 flex items-center gap-1">
+    <DollarSign className="h-3.5 w-3.5" />
+    {isArabic ? "الحد الأقصى للتوصيل" : "Max Delivery Fee"} *
+    <span className="text-[10px] text-yellow-300/80 font-normal">
+      ({isArabic ? "مثال: 15000" : "Example: 15000"})
+    </span>
+  </Label>
+  <div className="relative">
+    <span className="absolute inset-y-0 start-3 flex items-center text-xs text-muted-foreground">ل.س</span>
+    <Input 
+      name="max_delivery_fee" 
+      type="number"
+      step="0.01"
+      defaultValue={companyData?.max_delivery_fee || 15000}
+      required
+      className="h-10 bg-white/90 text-foreground border-0 ps-10 focus:ring-2 focus:ring-[#2a655f]/50"
+    />
+  </div>
+  <p className="text-[10px] text-white/70">
+    {isArabic 
+      ? "💡 الحد الأقصى لسعر التوصيل (يُفضل ألا يتجاوز 15,000 ل.س)" 
+      : "💡 Maximum delivery fee (preferably not exceeding 15,000 SYP)"}
+  </p>
+</div>
               </div>
 
               {/* ===== قيمة التوصيل المجاني ووقت التوصيل ===== */}

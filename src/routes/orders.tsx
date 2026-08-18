@@ -63,6 +63,9 @@ function OrdersPage() {
       items: any[];
       totalItems: number;
       totalPrice: number;
+      totalWithDelivery: number;
+      deliveryFee: number;
+      promoDiscount: number;
       status: string;
       createdAt: string;
       updatedAt: string;
@@ -120,6 +123,9 @@ function OrdersPage() {
           items: [],
           totalItems: 0,
           totalPrice: 0,
+          totalWithDelivery: 0,
+          deliveryFee: 0,
+          promoDiscount: 0,
           status: order.status,
           createdAt: order.created_at,
           updatedAt: order.updated_at,
@@ -166,6 +172,14 @@ function OrdersPage() {
       // ✅ حساب الإجماليات
       groups[orderId].totalItems += itemsToAdd.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0);
       groups[orderId].totalPrice += itemsToAdd.reduce((sum: number, item: any) => sum + (Number(item.total) || Number(item.price) * (item.quantity || 1) || 0), 0);
+      
+      // ✅ ✅ ✅ إضافة الإجمالي الكامل من الطلب (بما في ذلك التوصيل والخصم)
+      const totalWithDelivery = order.total_with_delivery || 
+        (Number(order.total || 0) + Number(order.delivery_fee || 0) - Number(order.promo_discount || 0));
+      
+      groups[orderId].totalWithDelivery += totalWithDelivery;
+      groups[orderId].deliveryFee += Number(order.delivery_fee || 0);
+      groups[orderId].promoDiscount += Number(order.promo_discount || 0);
       
       // ✅ تحديث الحالة (أعلى أولوية: pending > accepted > shipped > delivered > rejected > cancelled)
       const statusPriority: Record<string, number> = {
@@ -785,16 +799,53 @@ function OrdersPage() {
                           </div>
                         )}
 
-                        {/* ✅ إجمالي الطلبية */}
+                        {/* ✅ ✅ ✅ إجمالي الطلبية (المجموع الفرعي + التوصيل + الخصم) */}
                         <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                          
+                          {/* المجموع الفرعي */}
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-muted-foreground">
-                              {app.lang === "ar" ? "إجمالي الطلبية" : "Total Order"}
+                              {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
                             </span>
-                            <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                            <span className="text-lg font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
                               {formatPrice(group.totalPrice, app.currency, app.lang)}
                             </span>
                           </div>
+                          
+                          {/* ✅ سعر التوصيل */}
+                          {group.deliveryFee > 0 && (
+                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
+                              <span className="text-sm text-muted-foreground">
+                                {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
+                              </span>
+                              <span className="text-sm font-medium text-[#0d2e2a] dark:text-[#3a8a82]">
+                                {formatPrice(group.deliveryFee, app.currency, app.lang)}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* ✅ الخصم */}
+                          {group.promoDiscount > 0 && (
+                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
+                              <span className="text-sm">
+                                {app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}
+                              </span>
+                              <span className="text-sm font-bold">
+                                -{formatPrice(group.promoDiscount, app.currency, app.lang)}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* ✅ الإجمالي الكامل */}
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
+                            <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
+                              {app.lang === "ar" ? "الإجمالي الكامل" : "Total"}
+                            </span>
+                            <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                              {formatPrice(group.totalWithDelivery, app.currency, app.lang)}
+                            </span>
+                          </div>
+                          
                           <div className="flex items-center justify-between mt-1">
                             <span className="text-xs text-muted-foreground">
                               {group.totalItems} {app.lang === "ar" ? "منتج" : "items"}

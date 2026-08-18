@@ -385,7 +385,7 @@ useEffect(() => {
 
         console.log(`💰 [Cart] Delivery fee: ${fee} SYP (cartTotal: ${cartTotal}, threshold: ${selectedCompany?.free_delivery_threshold || 0})`);
         
-        setDeliveryFee(fee);
+setDeliveryFee(Number(fee) || 0);
         setDeliveryCompany(selectedCompany);
 
       } catch (error) {
@@ -407,18 +407,18 @@ useEffect(() => {
   };
 }, [selectedAddress, storeIdFromCart, cartTotal, calculateDistance, calculateDeliveryPrice]);  // ✅ استخدم storeIdFromCart
   // ✅✅✅ حساب الإجماليات (محسن)
-  const totals = useMemo(() => {
-    const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-    const total = subtotal + deliveryFee - promoDiscount;
-    
-    return {
-      subtotal,
-      deliveryFee,
-      total,
-      itemCount: items.length,
-      totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
-    };
-  }, [items, deliveryFee, promoDiscount]);
+const totals = useMemo(() => {
+  const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+  const total = subtotal + deliveryFee - promoDiscount;
+  
+  return {
+    subtotal,
+    deliveryFee,
+    total,
+    itemCount: items.length,
+    totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
+  };
+}, [items, deliveryFee, promoDiscount]);
   
   // ✅ تغيير العنوان
   const handleAddressChange = useCallback((addressId: string) => {
@@ -946,27 +946,30 @@ const applyPromoCode = useCallback(async () => {
         const firstItem = itemsList[0];
         const firstListing = firstItem.listing || firstItem;
         const governorateId = firstListing.governorate_id || null;
-
-        const orderData: any = {
-          buyer_id: app.user.id,
-          seller_id: sellerId,
-          listing_id: firstItem.listing_id,
-          total: total,
-          quantity: itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0),
-          notes: `طلب من ${storeInfo.name} (${itemsList.length} منتجات)`,
-          governorate_id: governorateId,
-          delivery_address: selectedAddress.address_text,
-          delivery_lat: selectedAddress.lat || 0,
-          delivery_lng: selectedAddress.lng || 0,
-          buyer_name: buyerName,
-          buyer_phone: buyerPhone,
-          status: 'pending',
-          currency: itemsList[0]?.currency || 'SYP',
-          created_at: new Date().toISOString(),
-          promo_code_id: promoApplied && promoData ? promoData.id : null,
-          promo_discount: promoApplied && promoData ? promoDiscount : 0,
-        };
-
+// ✅ في دالة checkout، عند إنشاء orderData
+const orderData: any = {
+  buyer_id: app.user.id,
+  seller_id: sellerId,
+  listing_id: firstItem.listing_id,
+  total: total,  // المجموع الفرعي
+  quantity: itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0),
+  notes: `طلب من ${storeInfo.name} (${itemsList.length} منتجات)`,
+  governorate_id: governorateId,
+  delivery_address: selectedAddress.address_text,
+  delivery_lat: selectedAddress.lat || 0,
+  delivery_lng: selectedAddress.lng || 0,
+  buyer_name: buyerName,
+  buyer_phone: buyerPhone,
+  status: 'pending',
+  currency: itemsList[0]?.currency || 'SYP',
+  created_at: new Date().toISOString(),
+  
+  // ✅ ✅ ✅ أضف هذه الحقول
+  delivery_fee: deliveryFee,  // سعر التوصيل
+  promo_discount: promoApplied ? promoDiscount : 0,  // قيمة الخصم
+  promo_code_id: promoApplied && promoData ? promoData.id : null,  // كود الخصم
+  total_with_delivery: totals.total,  // ✅ الإجمالي الكامل (مطابق للسلة)
+};
         const { data: order, error: orderError } = await supabase
           .from("orders")
           .insert(orderData)

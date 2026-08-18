@@ -661,6 +661,7 @@ export function useMyOrders(userId: string | undefined) {
             quantity,
             price,
             currency,
+            variation_combination,
             listings (
               id,
               title_ar,
@@ -697,20 +698,28 @@ export function useMyOrders(userId: string | undefined) {
       
       // ✅ تحويل البيانات للتوافق مع الواجهة القديمة
       const transformedData = data?.map((order: any) => {
+        // ✅ حساب الإجمالي الكامل إذا لم يكن موجوداً
+        const totalWithDelivery = order.total_with_delivery ?? 
+          (Number(order.total || 0) + Number(order.delivery_fee || 0) - Number(order.promo_discount || 0));
+        
         // إذا كان عندنا order_items، استخدمها
         if (order.order_items && order.order_items.length > 0) {
           return {
             ...order,
-            // ✅ أول منتج في order_items يكون الرئيسي (للتوافق)
+            total_with_delivery: totalWithDelivery,  // ✅ أضف هذا
+            // أول منتج في order_items يكون الرئيسي (للتوافق)
             listing_id: order.order_items[0]?.listing_id,
             quantity: order.order_items.reduce((sum: number, item: any) => sum + item.quantity, 0),
             total: order.order_items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0),
-            // ✅ تجميع listings من order_items
+            // تجميع listings من order_items
             listings: order.order_items[0]?.listings || order.listings,
           };
         }
         // إذا كان الطلب قديماً (بدون order_items)
-        return order;
+        return {
+          ...order,
+          total_with_delivery: totalWithDelivery,  // ✅ أضف هذا
+        };
       });
       
       return transformedData ?? [];

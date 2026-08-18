@@ -1145,32 +1145,34 @@ export function ProductOptionsManager({
                               <span className="text-red-500">*</span>
                             </span>
                             <Input
-                              type="number"
-                              min="1"
-                              step="1"
-                              value={variation.price !== undefined && variation.price !== null && variation.price > 0 ? variation.price : ''}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                const newPrice = val === '' ? 0 : Number(val);
-                                const updated = localVariations.map(v => 
-                                  v.id === variation.id ? { ...v, price: newPrice, is_new: false } : v
-                                );
-                                setLocalVariations(updated);
-                                if (onVariationsChange) {
-                                  onVariationsChange(updated);
-                                }
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              className={cn(
-                                "h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300",
-                                (!variation.price || variation.price <= 0) && isNew
-                                  ? "border-red-500 dark:border-red-500 bg-red-50/50 dark:bg-red-950/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
-                                  : (!variation.price || variation.price <= 0)
-                                  ? "border-red-300 dark:border-red-800 focus:border-red-500"
-                                  : "border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
-                              )}
-                              placeholder={lang === "ar" ? "مطلوب" : "Required"}
-                            />
+  type="number"
+  min="1"
+  step="1"
+  value={variation.price !== undefined && variation.price !== null && variation.price > 0 ? variation.price : ''}
+  onChange={(e) => {
+    const val = e.target.value;
+    const newPrice = val === '' ? 0 : Number(val);
+    const updated = localVariations.map(v => 
+      v.id === variation.id ? { ...v, price: newPrice, is_new: false } : v
+    );
+    setLocalVariations(updated);
+    if (onVariationsChange) {
+      onVariationsChange(updated);
+    }
+  }}
+  onMouseDown={(e) => e.stopPropagation()}  // ✅ أضف هذا
+  onKeyDown={(e) => e.stopPropagation()}    // ✅ أضف هذا
+  onClick={(e) => e.stopPropagation()}
+  className={cn(
+    "h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300",
+    (!variation.price || variation.price <= 0) && isNew
+      ? "border-red-500 dark:border-red-500 bg-red-50/50 dark:bg-red-950/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+      : (!variation.price || variation.price <= 0)
+      ? "border-red-300 dark:border-red-800 focus:border-red-500"
+      : "border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
+  )}
+  placeholder={lang === "ar" ? "مطلوب" : "Required"}
+/>
                           </div>
                           
                           {/* ✅ عرض السعر */}
@@ -1192,26 +1194,28 @@ export function ProductOptionsManager({
                               <span className="text-[10px] text-muted-foreground whitespace-nowrap line-through">
                                 {lang === "ar" ? "📌 السعر القديم:" : "📌 Old Price:"}
                               </span>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="1"
-                                value={variation.old_price !== undefined && variation.old_price !== null && variation.old_price > 0 ? variation.old_price : ''}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  const oldPrice = val === '' ? 0 : Number(val);
-                                  const updated = localVariations.map(v => 
-                                    v.id === variation.id ? { ...v, old_price: oldPrice } : v
-                                  );
-                                  setLocalVariations(updated);
-                                  if (onVariationsChange) {
-                                    onVariationsChange(updated);
-                                  }
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
-                                placeholder={lang === "ar" ? "اختياري" : "Optional"}
-                              />
+                         <Input
+  type="number"
+  min="0"
+  step="1"
+  value={variation.old_price !== undefined && variation.old_price !== null && variation.old_price > 0 ? variation.old_price : ''}
+  onChange={(e) => {
+    const val = e.target.value;
+    const oldPrice = val === '' ? 0 : Number(val);
+    const updated = localVariations.map(v => 
+      v.id === variation.id ? { ...v, old_price: oldPrice } : v
+    );
+    setLocalVariations(updated);
+    if (onVariationsChange) {
+      onVariationsChange(updated);
+    }
+  }}
+  onMouseDown={(e) => e.stopPropagation()}  // ✅ أضف هذا
+  onKeyDown={(e) => e.stopPropagation()}    // ✅ أضف هذا
+  onClick={(e) => e.stopPropagation()}
+  className="h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
+  placeholder={lang === "ar" ? "اختياري" : "Optional"}
+/>
                             </div>
                             
                             {/* ✅ عرض السعر القديم */}
