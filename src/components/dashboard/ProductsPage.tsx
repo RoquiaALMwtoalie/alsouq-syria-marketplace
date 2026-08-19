@@ -1,8 +1,7 @@
 // src/components/dashboard/ProductsPage.tsx
-// src/components/dashboard/ProductsPage.tsx
 
-import { useQueryClient } from "@tanstack/react-query"; // ✅ أضف هذا السطر
-import React, { useState, useMemo, useCallback, useEffect,useRef  } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { 
   Plus, Package, ShoppingBag, Gift, Layers, 
   Search, Filter, RefreshCw, FileSpreadsheet, FileText,
@@ -12,7 +11,7 @@ import {
   Share2, Heart, Bookmark, Star, ZoomIn, ZoomOut,
   MessageCircle, ThumbsUp, ThumbsDown, ChevronDown,
   Sparkles, Zap, TrendingUp, Award, Target, Rocket,
-  Play, Pause,ShoppingCart  
+  Play, Pause, ShoppingCart, Percent, Tags
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +37,15 @@ import { ConvertToOfferDialog } from "./ConvertToOfferDialog";
 // ✅ IMPORT: Hook السلة
 import { useAddToCart } from "@/lib/hooks/useCart";
 
+// ✅ IMPORT: نافذة العرض الترويجي (BOGO/Cross-sell/Bundle)
+import { AddBogoOfferDialog } from "./AddBogoOfferDialog";
+
+// ✅ ✅ ✅ IMPORT: حذف العرض الترويجي 🔥🔥🔥
+import { useDeleteProductOffer, useSellerOffers } from "@/lib/hooks/useProductOffers";
+
+// ✅ ✅ ✅ IMPORT: نافذة تفاصيل العرض الترويجي
+import { PromoOfferDetailDialog } from "./PromoOfferDetailDialog";
+
 const { saveAs } = pkg;
 
 export const ProductsPage = React.memo(function ProductsPage() {
@@ -56,6 +64,11 @@ export const ProductsPage = React.memo(function ProductsPage() {
     refetch: refetchMyListings 
   } = useMyListings(app.user?.id);
   
+  // ✅ جلب العروض الترويجية للبائع
+  // بعد جلب sellerOffers
+const { data: sellerOffers = [], refetch: refetchSellerOffers } = useSellerOffers(app.user?.id);
+
+console.log("🟢 [ProductsPage] sellerOffers from API:", sellerOffers);
   const create = useCreateListing();
   const update = useUpdateListing();
   const del = useDeleteListing();
@@ -69,16 +82,16 @@ export const ProductsPage = React.memo(function ProductsPage() {
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "pending" | "published" | "archived">("all");
-  const [filterType, setFilterType] = useState<"all" | "product" | "offer">("all");
+  const [filterType, setFilterType] = useState<"all" | "product" | "offer" | "promo">("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(12);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  
+  // ✅ أضف هذه الـ State مع باقي الـ State
+const [detailCurrentImage, setDetailCurrentImage] = useState<string>("");
+const [detailSelectedColor, setDetailSelectedColor] = useState<any>(null);
   // ✅ Slider State
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
-  // ❌ احذف هذا السطر من هنا
-  // const itemsPerSlide = filteredProducts.length;  // غلط!
   
   // Dialogs
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -104,12 +117,58 @@ export const ProductsPage = React.memo(function ProductsPage() {
   // ✅ State لاختيار التركيبة في صفحة التفاصيل
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
 
-  // ✅ تعريف filteredProducts (أولاً)
+  // ✅ ✅ ✅ State للعرض الترويجي (BOGO/Cross-sell/Bundle)
+  const [offerDialogOpen, setOfferDialogOpen] = useState(false);
+  const [selectedOfferProduct, setSelectedOfferProduct] = useState<any>(null);
+  const [editingOffer, setEditingOffer] = useState<any>(null);
+
+  // ✅ ✅ ✅ Delete Promo Offer Mutation
+  const deletePromoOffer = useDeleteProductOffer();
+
+  // ✅ ✅ ✅ State لتفاصيل العرض الترويجي
+  const [promoDetailDialogOpen, setPromoDetailDialogOpen] = useState(false);
+  const [selectedPromoOffer, setSelectedPromoOffer] = useState<any>(null);
+  const [selectedPromoProduct, setSelectedPromoProduct] = useState<any>(null);
+
+  // ✅ ✅ ✅ ربط العروض الترويجية بالمنتجات
+const productsWithPromo = useMemo(() => {
+  if (!myListings.length || !sellerOffers.length) return myListings;
+  
+  console.log("🟢 [ProductsPage] 🔥 productsWithPromo - sellerOffers:", sellerOffers);
+  
+  const mapped = myListings.map((product: any) => {
+    const promoOffer = sellerOffers.find((offer: any) => offer.listing_id === product.id);
+    console.log(`🟢 [ProductsPage] product: ${product.title_ar}, has promo:`, !!promoOffer);
+    return {
+      ...product,
+      promo_offer: promoOffer || null,
+      has_promo: !!promoOffer,
+    };
+  });
+  
+  console.log("🟢 [ProductsPage] productsWithPromo result:", mapped);
+  return mapped;
+}, [myListings, sellerOffers]);
+
+  // ✅ تعريف filteredProducts مع دعم العروض الترويجية
   const filteredProducts = useMemo(() => {
-    let result = myListings;
-    if (filterStatus !== "all") result = result.filter((p: any) => p.status === filterStatus);
-    if (filterType === "product") result = result.filter((p: any) => p.is_offer !== true);
-    else if (filterType === "offer") result = result.filter((p: any) => p.is_offer === true);
+    let result = productsWithPromo;
+    
+    // ✅ فلتر الحالة
+    if (filterStatus !== "all") {
+      result = result.filter((p: any) => p.status === filterStatus);
+    }
+    
+    // ✅ فلتر النوع (منتج / عرض تخفيض / عرض ترويجي)
+    if (filterType === "product") {
+      result = result.filter((p: any) => p.is_offer !== true && !p.has_promo);
+    } else if (filterType === "offer") {
+      result = result.filter((p: any) => p.is_offer === true);
+    } else if (filterType === "promo") {
+      result = result.filter((p: any) => p.has_promo === true);
+    }
+    
+    // ✅ فلتر البحث
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((p: any) => {
@@ -117,10 +176,11 @@ export const ProductsPage = React.memo(function ProductsPage() {
         return title.includes(q);
       });
     }
+    
     return result;
-  }, [myListings, searchQuery, filterStatus, filterType]);
+  }, [productsWithPromo, searchQuery, filterStatus, filterType]);
 
-  // ✅ تعريف itemsPerSlide (ثانياً - بعد filteredProducts)
+  // ✅ تعريف itemsPerSlide
   const itemsPerSlide = filteredProducts.length || 4;
 
   const totalPages = Math.ceil(filteredProducts.length / limit);
@@ -148,14 +208,21 @@ export const ProductsPage = React.memo(function ProductsPage() {
     setCurrentSlide(0);
   }, [searchQuery, filterStatus, filterType]);
 
-  const stats = useMemo(() => ({
-    total: myListings.length,
-    pending: myListings.filter((p: any) => p.status === "pending").length,
-    published: myListings.filter((p: any) => p.status === "published").length,
-    archived: myListings.filter((p: any) => p.status === "archived").length,
-    offers: myListings.filter((p: any) => p.is_offer === true).length,
-    products: myListings.filter((p: any) => p.is_offer !== true).length,
-  }), [myListings]);
+  // ✅ إحصائيات مع دعم العروض الترويجية
+  const stats = useMemo(() => {
+    const promoCount = productsWithPromo.filter((p: any) => p.has_promo).length;
+    
+    return {
+      total: productsWithPromo.length,
+      pending: productsWithPromo.filter((p: any) => p.status === "pending").length,
+      published: productsWithPromo.filter((p: any) => p.status === "published").length,
+      archived: productsWithPromo.filter((p: any) => p.status === "archived").length,
+      offers: productsWithPromo.filter((p: any) => p.is_offer === true).length,
+      products: productsWithPromo.filter((p: any) => p.is_offer !== true && !p.has_promo).length,
+      promo: promoCount,
+      totalOffers: sellerOffers.length,
+    };
+  }, [productsWithPromo, sellerOffers]);
 
   // ===== تصدير =====
   const exportToExcel = useCallback(() => {
@@ -163,7 +230,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
       'اسم المنتج': p.title_ar || '—',
       'السعر': formatPrice(Number(p.price), app.currency, app.lang),
       'الحالة': p.status === 'pending' ? 'قيد المراجعة' : p.status === 'published' ? 'منشور' : 'مؤرشف',
-      'النوع': p.is_offer ? 'عرض' : 'منتج',
+      'النوع': p.is_offer ? 'عرض تخفيض' : p.has_promo ? 'عرض ترويجي' : 'منتج',
       'التصنيف': getCategoryName(p.category_id),
       'تاريخ الإضافة': new Date(p.created_at).toLocaleDateString(app.lang === 'ar' ? 'ar-SA' : 'en-US'),
     }));
@@ -187,10 +254,11 @@ export const ProductsPage = React.memo(function ProductsPage() {
       <table><thead><tr><th>#</th><th>اسم المنتج</th><th>السعر</th><th>الحالة</th><th>النوع</th><th>التصنيف</th></tr></thead><tbody>
     `;
     filteredProducts.forEach((p: any, i: number) => {
+      const type = p.is_offer ? 'عرض تخفيض' : p.has_promo ? 'عرض ترويجي' : 'منتج';
       html += `<tr><td>${i+1}</td><td>${p.title_ar||'—'}</td>
         <td>${formatPrice(Number(p.price), app.currency, app.lang)}</td>
         <td>${p.status === 'pending' ? 'قيد المراجعة' : p.status === 'published' ? 'منشور' : 'مؤرشف'}</td>
-        <td>${p.is_offer ? 'عرض' : 'منتج'}</td>
+        <td>${type}</td>
         <td>${getCategoryName(p.category_id)}</td></tr>`;
     });
     html += `</tbody></table></body></html>`;
@@ -211,160 +279,178 @@ export const ProductsPage = React.memo(function ProductsPage() {
   }, [govs, app.lang]);
 
   // ===== دالة إرسال إشعار للأدمن =====
-// src/components/dashboard/ProductsPage.tsx
-
-const notifyAdmin = useCallback(async (productTitle: string, actionType: string, userId: string, listingId: string) => {
-  console.log("🔍 [STEP 1] notifyAdmin called with:", { 
-    productTitle, 
-    actionType, 
-    userId, 
-    listingId 
-  });
-
-  try {
-    console.log("🔍 [STEP 2] Fetching admin from user_roles...");
-    
-    const { data: adminRole, error: roleError } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "admin")
-      .limit(1)
-      .maybeSingle();
-
-    console.log("🔍 [STEP 3] Admin fetch result:", { 
-      adminRole, 
-      roleError,
-      hasAdmin: !!adminRole,
-      hasUserId: !!adminRole?.user_id 
+  const notifyAdmin = useCallback(async (productTitle: string, actionType: string, userId: string, listingId: string) => {
+    console.log("🔍 [STEP 1] notifyAdmin called with:", { 
+      productTitle, 
+      actionType, 
+      userId, 
+      listingId 
     });
 
-    if (roleError) {
-      console.error("❌ [STEP 4] Error fetching admin:", roleError);
-      return;
-    }
-
-    if (!adminRole) {
-      console.error("❌ [STEP 5] No admin found in user_roles table!");
-      const { data: allRoles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("*");
+    try {
+      console.log("🔍 [STEP 2] Fetching admin from user_roles...");
       
-      console.log("📊 [STEP 5] All user_roles:", allRoles);
-      console.log("📊 [STEP 5] Roles error:", rolesError);
-      return;
-    }
+      const { data: adminRole, error: roleError } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin")
+        .limit(1)
+        .maybeSingle();
 
-    if (!adminRole.user_id) {
-      console.error("❌ [STEP 6] Admin user_id is null!", { adminRole });
-      return;
-    }
-
-    console.log("✅ [STEP 7] Admin found successfully:", adminRole.user_id);
-
-    console.log("🔍 [STEP 8] Fetching user profile...");
-    
-    const { data: userProfile, error: profileError } = await supabase
-      .from("profiles")
-      .select("full_name, store_name")
-      .eq("id", userId)
-      .maybeSingle();
-
-    console.log("🔍 [STEP 9] User profile result:", { 
-      userProfile, 
-      profileError,
-      hasProfile: !!userProfile 
-    });
-
-    const userName = userProfile?.full_name || userProfile?.store_name || userId || 'مستخدم';
-    console.log("✅ [STEP 10] User name:", userName);
-
-    console.log("🔍 [STEP 11] Preparing notification data...");
-    
-    // ✅ ✅ ✅ تحديد التاب المناسب بناءً على نوع الطلب
-    let tabTarget = "";
-    if (actionType === "إضافة" || actionType === "تعديل" || actionType === "إعادة نشر") {
-      // ✅ طلب منتج → ياخذه إلى تاب المنتجات
-      tabTarget = "listings";
-    }
-
-    const notificationData = {
-      user_id: adminRole.user_id,
-      type: "product_pending",
-      title_ar: `📦 طلب ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} منتج`,
-      body_ar: `قام ${userName} بـ ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} المنتج "${productTitle}"، بحاجة للمراجعة`,
-      // ✅ ✅ ✅ الرابط مع التاب المناسب
-      link_url: `/admin?tab=${tabTarget}`,
-      metadata: {
-        product_id: listingId,
-        action: actionType,
-        user_name: userName,
-        user_id: userId,
-        tab: tabTarget, // ✅ نحفظ التاب في الميتاداتا
-      },
-      created_at: new Date().toISOString(),
-      is_read: false,
-    };
-
-    console.log("✅ [STEP 12] Notification data ready:", notificationData);
-
-    console.log("🔍 [STEP 13] Sending notification to Supabase...");
-    
-    const { error: notifError } = await supabase
-      .from("notifications")
-      .insert(notificationData);
-
-    if (notifError) {
-      console.error("❌ [STEP 14] Error sending notification:", notifError);
-      console.error("❌ [STEP 14] Error details:", {
-        code: notifError.code,
-        message: notifError.message,
-        details: notifError.details,
-        hint: notifError.hint,
+      console.log("🔍 [STEP 3] Admin fetch result:", { 
+        adminRole, 
+        roleError,
+        hasAdmin: !!adminRole,
+        hasUserId: !!adminRole?.user_id 
       });
-    } else {
-      console.log(`✅ [STEP 15] Admin notified successfully!`);
-      console.log(`✅ [STEP 15] Product: ${productTitle}, Admin: ${adminRole.user_id}`);
-      console.log(`✅ [STEP 15] Link: /admin?tab=${tabTarget}`);
+
+      if (roleError) {
+        console.error("❌ [STEP 4] Error fetching admin:", roleError);
+        return;
+      }
+
+      if (!adminRole) {
+        console.error("❌ [STEP 5] No admin found in user_roles table!");
+        const { data: allRoles, error: rolesError } = await supabase
+          .from("user_roles")
+          .select("*");
+        
+        console.log("📊 [STEP 5] All user_roles:", allRoles);
+        console.log("📊 [STEP 5] Roles error:", rolesError);
+        return;
+      }
+
+      if (!adminRole.user_id) {
+        console.error("❌ [STEP 6] Admin user_id is null!", { adminRole });
+        return;
+      }
+
+      console.log("✅ [STEP 7] Admin found successfully:", adminRole.user_id);
+
+      console.log("🔍 [STEP 8] Fetching user profile...");
+      
+      const { data: userProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("full_name, store_name")
+        .eq("id", userId)
+        .maybeSingle();
+
+      console.log("🔍 [STEP 9] User profile result:", { 
+        userProfile, 
+        profileError,
+        hasProfile: !!userProfile 
+      });
+
+      const userName = userProfile?.full_name || userProfile?.store_name || userId || 'مستخدم';
+      console.log("✅ [STEP 10] User name:", userName);
+
+      console.log("🔍 [STEP 11] Preparing notification data...");
+      
+      let tabTarget = "";
+      if (actionType === "إضافة" || actionType === "تعديل" || actionType === "إعادة نشر") {
+        tabTarget = "listings";
+      }
+
+      const notificationData = {
+        user_id: adminRole.user_id,
+        type: "product_pending",
+        title_ar: `📦 طلب ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} منتج`,
+        body_ar: `قام ${userName} بـ ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} المنتج "${productTitle}"، بحاجة للمراجعة`,
+        link_url: `/admin?tab=${tabTarget}`,
+        metadata: {
+          product_id: listingId,
+          action: actionType,
+          user_name: userName,
+          user_id: userId,
+          tab: tabTarget,
+        },
+        created_at: new Date().toISOString(),
+        is_read: false,
+      };
+
+      console.log("✅ [STEP 12] Notification data ready:", notificationData);
+
+      console.log("🔍 [STEP 13] Sending notification to Supabase...");
+      
+      const { error: notifError } = await supabase
+        .from("notifications")
+        .insert(notificationData);
+
+      if (notifError) {
+        console.error("❌ [STEP 14] Error sending notification:", notifError);
+        console.error("❌ [STEP 14] Error details:", {
+          code: notifError.code,
+          message: notifError.message,
+          details: notifError.details,
+          hint: notifError.hint,
+        });
+      } else {
+        console.log(`✅ [STEP 15] Admin notified successfully!`);
+        console.log(`✅ [STEP 15] Product: ${productTitle}, Admin: ${adminRole.user_id}`);
+        console.log(`✅ [STEP 15] Link: /admin?tab=${tabTarget}`);
+      }
+
+    } catch (error) {
+      console.error("❌ [STEP 16] Unexpected error in notifyAdmin:", error);
+      console.error("❌ [STEP 16] Error stack:", error instanceof Error ? error.stack : 'No stack');
     }
+  }, []);
 
-  } catch (error) {
-    console.error("❌ [STEP 16] Unexpected error in notifyAdmin:", error);
-    console.error("❌ [STEP 16] Error stack:", error instanceof Error ? error.stack : 'No stack');
-  }
-}, []);
   // ===== حفظ المنتج =====
-// ===== حفظ المنتج (مصحح) =====
-// ===== حفظ المنتج (مصحح مع تحديث الكاش) =====
-const handleSaveProduct = useCallback(async (data: any) => {
-  setDialogOpen(false);
-  
-  const isEditing = !!dialogProduct;
-  toast.success(
-    isEditing
-      ? app.lang === "ar" ? "✅ تم تعديل المنتج بنجاح" : "✅ Product updated successfully"
-      : data.is_offer
-        ? app.lang === "ar" ? "✅ تم إرسال العرض للمراجعة" : "✅ Offer sent for review"
-        : app.lang === "ar" ? "✅ تم إرسال المنتج للمراجعة" : "✅ Product sent for review"
-  );
+  const handleSaveProduct = useCallback(async (data: any) => {
+    setDialogOpen(false);
+    
+    const isEditing = !!dialogProduct;
+    toast.success(
+      isEditing
+        ? app.lang === "ar" ? "✅ تم تعديل المنتج بنجاح" : "✅ Product updated successfully"
+        : data.is_offer
+          ? app.lang === "ar" ? "✅ تم إرسال العرض للمراجعة" : "✅ Offer sent for review"
+          : app.lang === "ar" ? "✅ تم إرسال المنتج للمراجعة" : "✅ Product sent for review"
+    );
 
-  setTimeout(() => {
-    setDialogProduct(null);
-  }, 100);
+    setTimeout(() => {
+      setDialogProduct(null);
+    }, 100);
 
-  try {
-    setIsSaving(true);
-    const price = Number(data.price);
-    const oldPrice = Number(data.old_price) || 0;
-    const discount = data.is_offer && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : null;
+    try {
+      setIsSaving(true);
+      const price = Number(data.price);
+      const oldPrice = Number(data.old_price) || 0;
+      const discount = data.is_offer && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : null;
 
-    let listingId: string;
-    const productTitle = data.title_ar;
-    const currentDialogProduct = dialogProduct;
+      let listingId: string;
+      const productTitle = data.title_ar;
+      const currentDialogProduct = dialogProduct;
 
-    if (isEditing && currentDialogProduct) {
-      await update.mutateAsync({
-        id: currentDialogProduct.id,
-        patch: {
+      if (isEditing && currentDialogProduct) {
+        await update.mutateAsync({
+          id: currentDialogProduct.id,
+          patch: {
+            title_ar: data.title_ar,
+            description_ar: data.description_ar || null,
+            price,
+            old_price: oldPrice || null,
+            discount_percent: discount,
+            is_offer: data.is_offer,
+            is_available: data.is_available,
+            delivery_method: data.delivery_method,
+            payment_method: data.payment_method,
+            delivery_note: data.delivery_note || null,
+            kind: data.kind || "product",
+            category_id: data.category_id,
+            governorate_id: data.governorate_id,
+            cover_url: data.cover_url,
+            updated_at: new Date().toISOString(),
+          }
+        });
+
+        listingId = currentDialogProduct.id;
+        await ProductService.deleteProductData(listingId);
+
+      } else {
+        const result = await create.mutateAsync({
+          owner_id: app.user!.id,
           title_ar: data.title_ar,
           description_ar: data.description_ar || null,
           price,
@@ -379,101 +465,75 @@ const handleSaveProduct = useCallback(async (data: any) => {
           category_id: data.category_id,
           governorate_id: data.governorate_id,
           cover_url: data.cover_url,
-          updated_at: new Date().toISOString(),
-        }
+          image_urls: [data.cover_url, ...(data.image_urls || [])].filter(Boolean),
+          status: "pending",
+        } as any);
+
+        listingId = result.id;
+      }
+
+      console.log("🔍🔍🔍 [ProductsPage] ===== BEFORE SAVE ALL DATA =====");
+      console.log("🔍🔍🔍 [ProductsPage] data.options:", data.options);
+      console.log("🔍🔍🔍 [ProductsPage] data.options.sizes:", data.options.sizes);
+      console.log("🔍🔍🔍 [ProductsPage] data.options keys:", Object.keys(data.options || {}));
+      console.log("🔍🔍🔍 [ProductsPage] ===== BEFORE SAVE ALL DATA END =====");
+      
+      console.log("🔍🔍🔍 [ProductsPage] data.options.sizes:", data.options.sizes);
+      console.log("🔍🔍🔍 [ProductsPage] data.options:", data.options);
+
+      await ProductService.saveAllProductData(listingId, {
+        options: data.options || {},
+        colors: data.colors || [],
+        variations: data.variations || [],
+        image_urls: data.image_urls || [],
       });
 
-      listingId = currentDialogProduct.id;
-      await ProductService.deleteProductData(listingId);
+      const actionType = isEditing ? "تعديل" : "إضافة";
 
-    } else {
-      const result = await create.mutateAsync({
-        owner_id: app.user!.id,
-        title_ar: data.title_ar,
-        description_ar: data.description_ar || null,
-        price,
-        old_price: oldPrice || null,
-        discount_percent: discount,
-        is_offer: data.is_offer,
-        is_available: data.is_available,
-        delivery_method: data.delivery_method,
-        payment_method: data.payment_method,
-        delivery_note: data.delivery_note || null,
-        kind: data.kind || "product",
-        category_id: data.category_id,
-        governorate_id: data.governorate_id,
-        cover_url: data.cover_url,
-        image_urls: [data.cover_url, ...(data.image_urls || [])].filter(Boolean),
-        status: "pending",
-      } as any);
+      notifyAdmin(productTitle, actionType, app.user!.id, listingId).catch(console.error);
+      
+      queryClient.invalidateQueries({ 
+        queryKey: ["listings", "my", app.user?.id] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["listings"] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["listing", listingId] 
+      });
+      
+      await refetchMyListings();
 
-      listingId = result.id;
+      if (!isEditing) {
+        getUserDisplayName(app.user!.id).then(async (userName) => {
+          const { data: existingApp } = await supabase
+            .from("seller_applications")
+            .select("id, status")
+            .eq("user_id", app.user!.id)
+            .eq("status", "pending")
+            .limit(1)
+            .maybeSingle();
+
+          if (!existingApp) {
+            await supabase.from("seller_applications").insert({
+              user_id: app.user!.id,
+              store_name: userName,
+              store_description: `طلب إضافة منتج: ${productTitle}`,
+              application_type: 'product',
+              status: 'pending',
+            });
+          }
+        }).catch(console.error);
+      }
+      
+    } catch (e) {
+      console.error("❌ Error in handleSaveProduct:", e);
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsSaving(false);
     }
+  }, [dialogProduct, update, create, app.user, notifyAdmin, refetchMyListings, app.lang, queryClient]);
 
-    console.log("🔍🔍🔍 [ProductsPage] ===== BEFORE SAVE ALL DATA =====");
-    console.log("🔍🔍🔍 [ProductsPage] data.options:", data.options);
-    console.log("🔍🔍🔍 [ProductsPage] data.options.sizes:", data.options.sizes);
-    console.log("🔍🔍🔍 [ProductsPage] data.options keys:", Object.keys(data.options || {}));
-    console.log("🔍🔍🔍 [ProductsPage] ===== BEFORE SAVE ALL DATA END =====");
-    
-    console.log("🔍🔍🔍 [ProductsPage] data.options.sizes:", data.options.sizes);
-    console.log("🔍🔍🔍 [ProductsPage] data.options:", data.options);
-
-    await ProductService.saveAllProductData(listingId, {
-      options: data.options || {},
-      colors: data.colors || [],
-      variations: data.variations || [],
-      image_urls: data.image_urls || [],
-    });
-
-    const actionType = isEditing ? "تعديل" : "إضافة";
-
-    notifyAdmin(productTitle, actionType, app.user!.id, listingId).catch(console.error);
-    
-    // ✅ ✅ ✅ 🔥🔥🔥 التغيير الأهم: تحديث الكاش بشكل صحيح
-    // 1. إبطال الكاش أولاً
-    queryClient.invalidateQueries({ 
-      queryKey: ["listings", "my", app.user?.id] 
-    });
-    queryClient.invalidateQueries({ 
-      queryKey: ["listings"] 
-    });
-    queryClient.invalidateQueries({ 
-      queryKey: ["listing", listingId] 
-    });
-    
-    // 2. ثم إعادة الجلب
-    await refetchMyListings();
-
-    if (!isEditing) {
-      getUserDisplayName(app.user!.id).then(async (userName) => {
-        const { data: existingApp } = await supabase
-          .from("seller_applications")
-          .select("id, status")
-          .eq("user_id", app.user!.id)
-          .eq("status", "pending")
-          .limit(1)
-          .maybeSingle();
-
-        if (!existingApp) {
-          await supabase.from("seller_applications").insert({
-            user_id: app.user!.id,
-            store_name: userName,
-            store_description: `طلب إضافة منتج: ${productTitle}`,
-            application_type: 'product',
-            status: 'pending',
-          });
-        }
-      }).catch(console.error);
-    }
-    
-  } catch (e) {
-    console.error("❌ Error in handleSaveProduct:", e);
-    toast.error(e instanceof Error ? e.message : String(e));
-  } finally {
-    setIsSaving(false);
-  }
-}, [dialogProduct, update, create, app.user, notifyAdmin, refetchMyListings, app.lang, queryClient]);
   // ===== حذف المنتج =====
   const handleDeleteProduct = useCallback(async () => {
     if (!productToDelete) return;
@@ -488,136 +548,165 @@ const handleSaveProduct = useCallback(async (data: any) => {
     }
   }, [productToDelete, del, refetchMyListings, app.lang]);
 
-  // ===== ✅ تحويل المنتج إلى عرض =====
-// ===== ✅ تحويل المنتج إلى عرض (مصحح) =====
-// ✅ التصحيح
-// ✅ التعديل المطلوب في handleConvertToOffer
-const handleConvertToOffer = useCallback(async (productId: string, newPrice: number) => {
-  try {
-    setIsConverting(true);
-    
-    const product = myListings.find((p: any) => p.id === productId);
-    if (!product) {
-      toast.error(app.lang === "ar" ? "المنتج غير موجود" : "Product not found");
-      return;
-    }
-
-    const originalPrice = Number(product.price);
-    const discountPercent = Math.round(((originalPrice - newPrice) / originalPrice) * 100);
-    
-    // ✅ 1. تحديث المنتج الرئيسي
-    await update.mutateAsync({
-      id: productId,
-      patch: {
-        is_offer: true,
-        old_price: originalPrice,
-        price: newPrice,
-        discount_percent: discountPercent,
-        status: "published",
-        updated_at: new Date().toISOString(),
-      }
-    });
-
-    // ✅ 2. ✅✅✅ التعديل هنا: تحديث الفيرنتات مع old_price
-    if (product.variations && product.variations.length > 0) {
-      const updatedVariations = product.variations.map((v: any) => ({
-        ...v,
-        price: newPrice,
-        old_price: v.price,  // ✅ ✅ ✅ هذا السطر الجديد
-      }));
+  // ===== ✅ تحويل المنتج إلى عرض تخفيض =====
+  const handleConvertToOffer = useCallback(async (productId: string, newPrice: number) => {
+    try {
+      setIsConverting(true);
       
-      // ✅ حفظ الفيرنتات المحدثة
-      await ProductService.saveVariations(productId, updatedVariations);
-    }
-
-    toast.success(
-      app.lang === "ar"
-        ? `🎉 تم تحويل "${product.title_ar}" إلى عرض بخصم ${discountPercent}%`
-        : `🎉 Converted "${product.title_ar}" to offer with ${discountPercent}% discount`
-    );
-
-    setConvertDialogOpen(false);
-    setProductToConvert(null);
-    await refetchMyListings();
-
-    // ✅ إشعار للأدمن
-    await notifyAdmin(
-      product.title_ar,
-      "تحويل إلى عرض",
-      app.user!.id,
-      productId
-    );
-
-  } catch (error) {
-    console.error("❌ Error converting to offer:", error);
-    toast.error(
-      app.lang === "ar"
-        ? "❌ حدث خطأ أثناء تحويل المنتج إلى عرض"
-        : "❌ Error converting product to offer"
-    );
-  } finally {
-    setIsConverting(false);
-  }
-}, [myListings, update, refetchMyListings, notifyAdmin, app.user, app.lang]);
-// ===== ✅ إعادة نشر المنتج (للمسودات) =====
-const handleRepublish = useCallback(async (product: any) => {
-  try {
-    setIsSaving(true);
-    
-    // ✅ تحديث حالة المنتج إلى pending (قيد المراجعة)
-    await update.mutateAsync({
-      id: product.id,
-      patch: {
-        status: "pending",
-        updated_at: new Date().toISOString(),
+      const product = myListings.find((p: any) => p.id === productId);
+      if (!product) {
+        toast.error(app.lang === "ar" ? "المنتج غير موجود" : "Product not found");
+        return;
       }
-    });
-    
-    toast.success(
-      app.lang === "ar" 
-        ? "📤 تم إرسال طلب إعادة النشر للمراجعة" 
-        : "📤 Republish request sent for review"
-    );
-    
-    // ✅ إرسال إشعار للأدمن (مع دعم "إعادة نشر")
-    await notifyAdmin(
-      product.title_ar,
-      "إعادة نشر",
-      app.user!.id,
-      product.id
-    );
-    
-    // ✅ تحديث الكاش
-    queryClient.invalidateQueries({ 
-      queryKey: ["listings", "my", app.user?.id] 
-    });
-    queryClient.invalidateQueries({ 
-      queryKey: ["listings"] 
-    });
-    queryClient.invalidateQueries({ 
-      queryKey: ["listing", product.id] 
-    });
-    
-    // ✅ تحديث القائمة
-    await refetchMyListings();
-    
-  } catch (error) {
-    console.error("❌ Error republishing product:", error);
-    toast.error(
-      app.lang === "ar" 
-        ? "❌ فشل إرسال طلب إعادة النشر" 
-        : "❌ Failed to send republish request"
-    );
-  } finally {
-    setIsSaving(false);
-  }
-}, [update, app.user, app.lang, notifyAdmin, refetchMyListings, queryClient]);
+
+      const originalPrice = Number(product.price);
+      const discountPercent = Math.round(((originalPrice - newPrice) / originalPrice) * 100);
+      
+      await update.mutateAsync({
+        id: productId,
+        patch: {
+          is_offer: true,
+          old_price: originalPrice,
+          price: newPrice,
+          discount_percent: discountPercent,
+          status: "published",
+          updated_at: new Date().toISOString(),
+        }
+      });
+
+      if (product.variations && product.variations.length > 0) {
+        const updatedVariations = product.variations.map((v: any) => ({
+          ...v,
+          price: newPrice,
+          old_price: v.price,
+        }));
+        
+        await ProductService.saveVariations(productId, updatedVariations);
+      }
+
+      toast.success(
+        app.lang === "ar"
+          ? `🎉 تم تحويل "${product.title_ar}" إلى عرض تخفيض بخصم ${discountPercent}%`
+          : `🎉 Converted "${product.title_ar}" to discount offer with ${discountPercent}% off`
+      );
+
+      setConvertDialogOpen(false);
+      setProductToConvert(null);
+      await refetchMyListings();
+
+      await notifyAdmin(
+        product.title_ar,
+        "تحويل إلى عرض",
+        app.user!.id,
+        productId
+      );
+
+    } catch (error) {
+      console.error("❌ Error converting to offer:", error);
+      toast.error(
+        app.lang === "ar"
+          ? "❌ حدث خطأ أثناء تحويل المنتج إلى عرض تخفيض"
+          : "❌ Error converting product to discount offer"
+      );
+    } finally {
+      setIsConverting(false);
+    }
+  }, [myListings, update, refetchMyListings, notifyAdmin, app.user, app.lang]);
+
+  // ===== ✅ إعادة نشر المنتج (للمسودات) =====
+  const handleRepublish = useCallback(async (product: any) => {
+    try {
+      setIsSaving(true);
+      
+      await update.mutateAsync({
+        id: product.id,
+        patch: {
+          status: "pending",
+          updated_at: new Date().toISOString(),
+        }
+      });
+      
+      toast.success(
+        app.lang === "ar" 
+          ? "📤 تم إرسال طلب إعادة النشر للمراجعة" 
+          : "📤 Republish request sent for review"
+      );
+      
+      await notifyAdmin(
+        product.title_ar,
+        "إعادة نشر",
+        app.user!.id,
+        product.id
+      );
+      
+      queryClient.invalidateQueries({ 
+        queryKey: ["listings", "my", app.user?.id] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["listings"] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["listing", product.id] 
+      });
+      
+      await refetchMyListings();
+      
+    } catch (error) {
+      console.error("❌ Error republishing product:", error);
+      toast.error(
+        app.lang === "ar" 
+          ? "❌ فشل إرسال طلب إعادة النشر" 
+          : "❌ Failed to send republish request"
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }, [update, app.user, app.lang, notifyAdmin, refetchMyListings, queryClient]);
 
   // ===== ✅ فتح نافذة التحويل =====
   const openConvertDialog = useCallback((product: any) => {
     setProductToConvert(product);
     setConvertDialogOpen(true);
   }, []);
+
+  // ===== ✅ ✅ ✅ دوال العروض الترويجية =====
+  const handleAddPromoOffer = useCallback((product: any) => {
+    console.log("🟢 [ProductsPage] handleAddPromoOffer called with:", product);
+    setSelectedOfferProduct(product);
+    setEditingOffer(null);
+    setOfferDialogOpen(true);
+  }, []);
+
+  const handleEditPromoOffer = useCallback((offer: any) => {
+    console.log("🟢 [ProductsPage] handleEditPromoOffer called with:", offer);
+    setSelectedOfferProduct(null);
+    setEditingOffer(offer);
+    setOfferDialogOpen(true);
+  }, []);
+
+  const handleRemovePromoOffer = useCallback(async (offerId: string) => {
+    if (confirm(app.lang === "ar" ? "هل تريد إزالة العرض الترويجي من هذا المنتج؟" : "Remove this promo offer from this product?")) {
+      try {
+        await deletePromoOffer.mutateAsync(offerId);
+        await refetchMyListings();
+        await refetchSellerOffers();
+        toast.success(app.lang === "ar" ? "✅ تم إزالة العرض الترويجي بنجاح" : "✅ Promo offer removed successfully");
+      } catch (error) {
+        console.error("Error removing promo offer:", error);
+        toast.error(app.lang === "ar" ? "❌ فشل إزالة العرض الترويجي" : "❌ Failed to remove promo offer");
+      }
+    }
+  }, [deletePromoOffer, refetchMyListings, refetchSellerOffers, app.lang]);
+
+const handleViewPromoOffer = useCallback((offer: any) => {
+  console.log("🟢 [ProductsPage] 🔥🔥🔥 handleViewPromoOffer CALLED! 🔥🔥🔥");
+  console.log("🟢 [ProductsPage] offer:", offer);
+  setSelectedPromoOffer(offer);
+  const product = myListings.find((p: any) => p.id === offer.listing_id);
+  console.log("🟢 [ProductsPage] found product:", product);
+  setSelectedPromoProduct(product || null);
+  setPromoDetailDialogOpen(true);  // ✅ هذا يفتح نافذة التفاصيل
+}, [myListings]);
 
   // ===== فتح نافذة الإضافة =====
   const openAddDialog = useCallback((type: "product" | "offer") => {
@@ -633,56 +722,60 @@ const handleRepublish = useCallback(async (product: any) => {
   }, []);
 
   // ===== فتح نافذة التعديل =====
-// src/components/dashboard/ProductsPage.tsx
+  const openEditDialog = useCallback((product: any) => {
+    if (isOpeningDialog.current) {
+      console.log("⚠️ [openEditDialog] Already opening, skipping...");
+      return;
+    }
+    
+    isOpeningDialog.current = true;
+    
+    console.log("🔍🔍🔍 [ProductsPage] openEditDialog - product:", {
+      id: product.id,
+      title: product.title_ar,
+      optionsCount: product.options?.length || 0,
+      colorsCount: product.colors?.length || 0,
+      variationsCount: product.variations?.length || 0,
+      hasMetadata: !!product.metadata,
+    });
+    
+    setDialogProduct(product);
+    setDialogType(product.is_offer ? "offer" : "product");
+    setDialogOpen(true);
+    
+    setTimeout(() => {
+      isOpeningDialog.current = false;
+    }, 500);
+  }, []);
 
-// ✅ في بداية المكون، بعد الـ useState
-
-
-// ✅ تعديل openEditDialog
-const openEditDialog = useCallback((product: any) => {
-  if (isOpeningDialog.current) {
-    console.log("⚠️ [openEditDialog] Already opening, skipping...");
-    return;
-  }
-  
-  isOpeningDialog.current = true;
-  
-  console.log("🔍🔍🔍 [ProductsPage] openEditDialog - product:", {
-    id: product.id,
-    title: product.title_ar,
-    optionsCount: product.options?.length || 0,
-    colorsCount: product.colors?.length || 0,
-    variationsCount: product.variations?.length || 0,
-    hasMetadata: !!product.metadata,
-  });
-  
-  setDialogProduct(product);
-  setDialogType(product.is_offer ? "offer" : "product");
-  setDialogOpen(true);
-  
-  // ✅ إعادة تعيين بعد فترة
-  setTimeout(() => {
-    isOpeningDialog.current = false;
-  }, 500);
-}, []);
-
-// ✅ تعديل openProductDetail
-
-// ===== فتح تفاصيل المنتج =====
+  // ===== فتح تفاصيل المنتج =====
 const openProductDetail = useCallback((product: any) => {
-  console.log("🔍 [openProductDetail] ===== PRODUCT DATA =====");
-  console.log("🔍 [openProductDetail] Product:", product);
-  console.log("🔍 [openProductDetail] variations:", product.variations);
-  console.log("🔍 [openProductDetail] variations count:", product.variations?.length || 0);
-  
-  // ✅ إعادة تعيين التركيبة المختارة عند فتح منتج جديد
   setSelectedVariation(null);
   setSelectedProduct(product);
   setCurrentImageIndex(0);
   setIsZoomed(false);
+  
+  // ✅ ✅ ✅ تعيين الصورة الرئيسية
+  setDetailCurrentImage(product?.cover_url || '');
+  setDetailSelectedColor(null);
+  
   setDetailDialogOpen(true);
 }, []);
-
+// ✅ ✅ ✅ دالة تغيير اللون في التفاصيل
+const handleDetailColorSelect = useCallback((color: any) => {
+  setDetailSelectedColor(color);
+  
+  // ✅ تغيير الصورة إلى صورة اللون
+  if (color?.image_url) {
+    setDetailCurrentImage(color.image_url);
+  } else {
+    // إذا لم توجد صورة للون، ارجع للصورة الرئيسية
+    setDetailCurrentImage(selectedProduct?.cover_url || '');
+  }
+  
+  // ✅ إعادة تعيين الفيرنت المختار
+  setSelectedVariation(null);
+}, [selectedProduct]);
   // ===== ✅ إضافة المنتج للسلة من صفحة التفاصيل =====
   const handleAddToCartFromDetail = useCallback(async () => {
     if (!app.user) {
@@ -817,9 +910,15 @@ const openProductDetail = useCallback((product: any) => {
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30 transition-colors">
-              <Gift className="h-3.5 w-3.5 text-emerald-500" />
+              <Percent className="h-3.5 w-3.5 text-emerald-500" />
               <span className="text-emerald-600 dark:text-emerald-400 font-medium">{stats.offers}</span>
-              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "عرض" : "offers"}</span>
+              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "تخفيض" : "discounts"}</span>
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/30 hover:bg-purple-100/50 dark:hover:bg-purple-950/30 transition-colors">
+              <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+              <span className="text-purple-600 dark:text-purple-400 font-medium">{stats.promo}</span>
+              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "ترويجي" : "promo"}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200/50 dark:border-yellow-800/30 hover:bg-yellow-100/50 dark:hover:bg-yellow-950/30 transition-colors">
@@ -831,6 +930,7 @@ const openProductDetail = useCallback((product: any) => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* ✅ زر أضف منتج */}
           <Button 
             size="sm" 
             className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 hover:scale-105 transition-all duration-300 group"
@@ -839,14 +939,31 @@ const openProductDetail = useCallback((product: any) => {
             <Plus className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" /> 
             {app.lang === "ar" ? "أضف منتج" : "Add Product"}
           </Button>
+          
+          {/* ✅ زر أضف عرض تخفيض */}
           <Button 
             size="sm" 
             className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:scale-105 transition-all duration-300 group"
             onClick={() => openAddDialog("offer")}
           >
-            <Gift className="h-4 w-4 mr-1.5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" /> 
-            {app.lang === "ar" ? "أضف عرض" : "Add Offer"}
+            <Percent className="h-4 w-4 mr-1.5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" /> 
+            {app.lang === "ar" ? "عرض تخفيض" : "Discount Offer"}
           </Button>
+
+          {/* ✅ زر عرض ترويجي (BOGO/Cross-sell/Bundle) */}
+          <Button 
+            size="sm" 
+            className="rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 hover:scale-105 transition-all duration-300 group"
+            onClick={() => {
+              setSelectedOfferProduct(null);
+              setEditingOffer(null);
+              setOfferDialogOpen(true);
+            }}
+          >
+            <Sparkles className="h-4 w-4 mr-1.5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" /> 
+            {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
+          </Button>
+
           <Button 
             variant="outline" 
             size="sm" 
@@ -868,7 +985,7 @@ const openProductDetail = useCallback((product: any) => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => refetchMyListings()} 
+            onClick={() => { refetchMyListings(); refetchSellerOffers(); }} 
             className="rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5 transition-all duration-300 group"
           >
             <RefreshCw className="h-4 w-4 mr-1.5 group-hover:rotate-180 transition-transform duration-700" /> 
@@ -878,11 +995,12 @@ const openProductDetail = useCallback((product: any) => {
       </div>
 
       {/* ===== STATS CARDS ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         {[
           { key: 'total', label: app.lang === 'ar' ? 'الإجمالي' : 'Total', value: stats.total, icon: Package, color: 'text-[#2a655f]', bg: 'bg-[#2a655f]/10', border: 'border-[#2a655f]/20', gradient: 'from-[#2a655f]/5 to-[#2a655f]/10' },
           { key: 'products', label: app.lang === 'ar' ? 'منتجات' : 'Products', value: stats.products, icon: ShoppingBag, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-200/50 dark:border-indigo-800/30', gradient: 'from-indigo-500/5 to-indigo-500/10' },
-          { key: 'offers', label: app.lang === 'ar' ? 'عروض' : 'Offers', value: stats.offers, icon: Gift, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-200/50 dark:border-emerald-800/30', gradient: 'from-emerald-500/5 to-emerald-500/10' },
+          { key: 'offers', label: app.lang === 'ar' ? 'تخفيضات' : 'Discounts', value: stats.offers, icon: Percent, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-200/50 dark:border-emerald-800/30', gradient: 'from-emerald-500/5 to-emerald-500/10' },
+          { key: 'promo', label: app.lang === 'ar' ? 'ترويجية' : 'Promo', value: stats.promo, icon: Sparkles, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-200/50 dark:border-purple-800/30', gradient: 'from-purple-500/5 to-purple-500/10' },
           { key: 'pending', label: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: stats.pending, icon: Clock, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-200/50 dark:border-yellow-800/30', gradient: 'from-yellow-500/5 to-yellow-500/10' },
           { key: 'published', label: app.lang === 'ar' ? 'منشورة' : 'Published', value: stats.published, icon: CheckCircle2, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-200/50 dark:border-green-800/30', gradient: 'from-green-500/5 to-green-500/10' },
         ].map((stat) => (
@@ -941,16 +1059,17 @@ const openProductDetail = useCallback((product: any) => {
         </Select>
         
         <Select value={filterType} onValueChange={(v: any) => { setFilterType(v); setPage(1); }}>
-          <SelectTrigger className="w-[150px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 transition-all duration-300">
+          <SelectTrigger className="w-[170px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 transition-all duration-300">
             <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-slate-400" />
+              <Tags className="h-4 w-4 text-slate-400" />
               <SelectValue placeholder={app.lang === "ar" ? "النوع" : "Type"} />
             </div>
           </SelectTrigger>
           <SelectContent className="rounded-xl border-[#2a655f]/20">
             <SelectItem value="all" className="hover:bg-[#2a655f]/10">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
             <SelectItem value="product" className="hover:bg-[#2a655f]/10">📦 {app.lang === "ar" ? "منتج" : "Product"}</SelectItem>
-            <SelectItem value="offer" className="hover:bg-[#2a655f]/10">🏷️ {app.lang === "ar" ? "عرض" : "Offer"}</SelectItem>
+            <SelectItem value="offer" className="hover:bg-[#2a655f]/10">🏷️ {app.lang === "ar" ? "عرض تخفيض" : "Discount"}</SelectItem>
+            <SelectItem value="promo" className="hover:bg-[#2a655f]/10">✨ {app.lang === "ar" ? "عرض ترويجي" : "Promo"}</SelectItem>
           </SelectContent>
         </Select>
         
@@ -1040,8 +1159,19 @@ const openProductDetail = useCallback((product: any) => {
                 className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105 group"
                 onClick={() => openAddDialog("offer")}
               >
-                <Gift className="h-4 w-4 me-2 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" /> 
-                {app.lang === "ar" ? "أضف عرض خاص" : "Add Special Offer"}
+                <Percent className="h-4 w-4 me-2 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" /> 
+                {app.lang === "ar" ? "أضف عرض تخفيض" : "Add Discount Offer"}
+              </Button>
+              <Button 
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 transition-all duration-300 hover:scale-105 group"
+                onClick={() => {
+                  setSelectedOfferProduct(null);
+                  setEditingOffer(null);
+                  setOfferDialogOpen(true);
+                }}
+              >
+                <Sparkles className="h-4 w-4 me-2 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" /> 
+                {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
               </Button>
             </div>
           </div>
@@ -1089,7 +1219,11 @@ const openProductDetail = useCallback((product: any) => {
                           }}
                           onView={() => openProductDetail(product)}
                           onConvertToOffer={openConvertDialog}
-                           onRepublish={handleRepublish}
+                          onRepublish={handleRepublish}
+                          onAddBogoOffer={handleAddPromoOffer}
+                          onRemoveBogoOffer={handleRemovePromoOffer}
+                          onEditPromoOffer={handleEditPromoOffer}
+                          onViewPromoOffer={handleViewPromoOffer}
                           lang={app.lang}
                           currency={app.currency}
                           formatPrice={formatPrice}
@@ -1168,7 +1302,11 @@ const openProductDetail = useCallback((product: any) => {
                       }}
                       onView={() => openProductDetail(product)}
                       onConvertToOffer={openConvertDialog}
-                       onRepublish={handleRepublish}
+                      onRepublish={handleRepublish}
+                      onAddBogoOffer={handleAddPromoOffer}
+                      onRemoveBogoOffer={handleRemovePromoOffer}
+                      onEditPromoOffer={handleEditPromoOffer}
+                      onViewPromoOffer={handleViewPromoOffer}
                       lang={app.lang}
                       currency={app.currency}
                       formatPrice={formatPrice}
@@ -1301,15 +1439,15 @@ const openProductDetail = useCallback((product: any) => {
                     
                     return (
                       <>
-                        <img
-                          src={images[currentImageIndex]}
-                          alt={selectedProduct.title_ar}
-                          className={cn(
-                            "max-h-full max-w-full object-contain rounded-xl transition-all duration-500 cursor-pointer",
-                            isZoomed && "scale-150 cursor-zoom-out"
-                          )}
-                          onClick={() => setIsZoomed(!isZoomed)}
-                        />
+                      <img
+  src={detailCurrentImage || selectedProduct?.cover_url || '/placeholder.png'}
+  alt={selectedProduct?.title_ar}
+  className={cn(
+    "max-h-full max-w-full object-contain rounded-xl transition-all duration-500 cursor-pointer",
+    isZoomed && "scale-150 cursor-zoom-out"
+  )}
+  onClick={() => setIsZoomed(!isZoomed)}
+/>
                         
                         {images.length > 1 && (
                           <>
@@ -1451,104 +1589,125 @@ const openProductDetail = useCallback((product: any) => {
                   </div>
                 </div>
 
-                {/* ===== الألوان ===== */}
-                {selectedProduct.colors && selectedProduct.colors.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                      <Palette className="h-4 w-4 text-[#2a655f]" />
-                      {app.lang === "ar" ? "اللون" : "Color"}
-                      <span className="text-xs text-muted-foreground/60 ms-1">
-                        ({selectedProduct.colors.length} {app.lang === "ar" ? "خيار" : "options"})
-                      </span>
-                    </p>
-                    <div className="flex flex-wrap gap-3 mt-2">
-                      {selectedProduct.colors.map((color: any) => (
-                        <div key={color.id} className="flex flex-col items-center gap-1 group cursor-pointer">
-                          <div className="relative h-14 w-14 rounded-xl overflow-hidden border-2 border-slate-200/50 group-hover:border-[#2a655f] transition-all duration-300 shadow-sm group-hover:shadow-md group-hover:scale-110">
-                            <img 
-                              src={color.image_url} 
-                              alt={color.color_name_ar}
-                              className="h-full w-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/placeholder-color.png';
-                              }}
-                            />
-                            <div className="absolute inset-0 bg-[#2a655f]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                              <CheckCircle2 className="h-5 w-5 text-[#2a655f] drop-shadow-lg" />
-                            </div>
-                          </div>
-                          <span className="text-[10px] text-muted-foreground group-hover:text-[#2a655f] transition-colors duration-300 font-medium">
-                            {color.color_name_ar}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-           {/* ===== ✅ التركيبات مع إمكانية الاختيار ===== */}
-{selectedProduct?.variations && selectedProduct.variations.length > 0 && (
+              {/* ===== الألوان في التفاصيل ===== */}
+{selectedProduct?.colors && selectedProduct.colors.length > 0 && (
   <div className="mt-4">
     <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-      <Layers className="h-4 w-4 text-[#2a655f]" />
-      {app.lang === "ar" ? "اختر التركيبة" : "Select Variation"}
+      <Palette className="h-4 w-4 text-[#2a655f]" />
+      {app.lang === "ar" ? "اللون" : "Color"}
+      <span className="text-xs text-muted-foreground/60 ms-1">
+        ({selectedProduct.colors.length} {app.lang === "ar" ? "خيار" : "options"})
+      </span>
     </p>
-    <div className="grid grid-cols-2 gap-2 mt-2">
-      {selectedProduct.variations.map((variation: any) => {
-        const isSelected = selectedVariation?.id === variation.id;
+    <div className="flex flex-wrap gap-3 mt-2">
+      {selectedProduct.colors.map((color: any) => {
+        const isSelected = detailSelectedColor?.id === color.id;
         return (
           <div 
-            key={variation.id}
-            onClick={() => setSelectedVariation(variation)}
-            className={cn(
-              "p-3 rounded-xl border-2 transition-all duration-300 cursor-pointer hover:scale-[1.02]",
-              isSelected 
-                ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20" 
-                : "border-slate-200/50 hover:border-[#2a655f]/50 hover:shadow-md"
-            )}
+            key={color.id} 
+            className="flex flex-col items-center gap-1 group cursor-pointer"
+            onClick={() => handleDetailColorSelect(color)}
           >
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-wrap items-center gap-1">
-                  {Object.entries(variation.combination || {}).map(([key, value]) => (
-                    <span key={key} className="text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                      {key}: <span className="font-bold text-[#2a655f]">{String(value)}</span>
-                    </span>
-                  ))}
+            <div className={cn(
+              "relative h-14 w-14 rounded-xl overflow-hidden border-2 transition-all duration-300 shadow-sm",
+              isSelected 
+                ? "border-[#2a655f] ring-2 ring-[#2a655f]/30 scale-110 shadow-md shadow-[#2a655f]/20" 
+                : "border-slate-200/50 group-hover:border-[#2a655f] group-hover:scale-105"
+            )}>
+              <img 
+                src={color.image_url} 
+                alt={color.color_name_ar}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/placeholder-color.png';
+                }}
+              />
+              {isSelected && (
+                <div className="absolute inset-0 bg-[#2a655f]/20 flex items-center justify-center">
+                  <CheckCircle2 className="h-6 w-6 text-[#2a655f] drop-shadow-lg" />
                 </div>
-                {isSelected && (
-                  <CheckCircle2 className="h-5 w-5 text-[#2a655f] flex-shrink-0" />
-                )}
-              </div>
-              
-              {/* ✅ عرض السعرين (القديم والجديد) للعروض */}
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                {/* ✅ السعر الجديد */}
-                <span className="text-xs font-bold text-[#2a655f]">
-                  {formatPrice(variation.price || selectedProduct.price, app.currency, app.lang)}
-                </span>
-                
-                {/* ✅ السعر القديم (يظهر فقط للعروض) */}
-                {selectedProduct.is_offer && variation.old_price && variation.old_price > 0 && (
-                  <span className="text-xs text-red-400 line-through">
-                    {formatPrice(variation.old_price, app.currency, app.lang)}
-                  </span>
-                )}
-                
-                {/* ✅ إذا ما في old_price للفيرنتة، استخدم old_price من المنتج */}
-                {selectedProduct.is_offer && (!variation.old_price || variation.old_price <= 0) && selectedProduct.old_price && selectedProduct.old_price > 0 && (
-                  <span className="text-xs text-red-400 line-through">
-                    {formatPrice(Number(selectedProduct.old_price), app.currency, app.lang)}
-                  </span>
-                )}
-              </div>
+              )}
             </div>
+            <span className={cn(
+              "text-[10px] transition-colors duration-300 font-medium",
+              isSelected ? "text-[#2a655f] font-bold" : "text-muted-foreground group-hover:text-[#2a655f]"
+            )}>
+              {color.color_name_ar}
+            </span>
           </div>
         );
       })}
     </div>
+    {detailSelectedColor && (
+      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+        {app.lang === "ar" ? "اللون المختار:" : "Selected color:"} 
+        <span className="font-bold text-[#2a655f]">{detailSelectedColor.color_name_ar}</span>
+      </p>
+    )}
   </div>
 )}
+
+                {/* ===== ✅ التركيبات مع إمكانية الاختيار ===== */}
+                {selectedProduct?.variations && selectedProduct.variations.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Layers className="h-4 w-4 text-[#2a655f]" />
+                      {app.lang === "ar" ? "اختر التركيبة" : "Select Variation"}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {selectedProduct.variations.map((variation: any) => {
+                        const isSelected = selectedVariation?.id === variation.id;
+                        return (
+                          <div 
+                            key={variation.id}
+                            onClick={() => setSelectedVariation(variation)}
+                            className={cn(
+                              "p-3 rounded-xl border-2 transition-all duration-300 cursor-pointer hover:scale-[1.02]",
+                              isSelected 
+                                ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20" 
+                                : "border-slate-200/50 hover:border-[#2a655f]/50 hover:shadow-md"
+                            )}
+                          >
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center justify-between">
+                                <div className="flex flex-wrap items-center gap-1">
+                                  {Object.entries(variation.combination || {}).map(([key, value]) => (
+                                    <span key={key} className="text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                                      {key}: <span className="font-bold text-[#2a655f]">{String(value)}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                                {isSelected && (
+                                  <CheckCircle2 className="h-5 w-5 text-[#2a655f] flex-shrink-0" />
+                                )}
+                              </div>
+                              
+                              {/* ✅ عرض السعرين (القديم والجديد) للعروض */}
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                <span className="text-xs font-bold text-[#2a655f]">
+                                  {formatPrice(variation.price || selectedProduct.price, app.currency, app.lang)}
+                                </span>
+                                
+                                {selectedProduct.is_offer && variation.old_price && variation.old_price > 0 && (
+                                  <span className="text-xs text-red-400 line-through">
+                                    {formatPrice(variation.old_price, app.currency, app.lang)}
+                                  </span>
+                                )}
+                                
+                                {selectedProduct.is_offer && (!variation.old_price || variation.old_price <= 0) && selectedProduct.old_price && selectedProduct.old_price > 0 && (
+                                  <span className="text-xs text-red-400 line-through">
+                                    {formatPrice(Number(selectedProduct.old_price), app.currency, app.lang)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {/* ===== المقاسات ===== */}
                 {selectedProduct.sizes && selectedProduct.sizes.length > 0 && (
                   <div className="mt-4">
@@ -1611,12 +1770,8 @@ const openProductDetail = useCallback((product: any) => {
                   </span>
                 </div>
 
-                
                 {/* ===== أزرار الإجراءات ===== */}
                 <div className="mt-6 flex flex-wrap items-center gap-3">
-               
-
-                  {/* زر تعديل */}
                   <Button
                     variant="outline"
                     className="flex-1 rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 h-12 group transition-all duration-300 hover:scale-105"
@@ -1629,7 +1784,6 @@ const openProductDetail = useCallback((product: any) => {
                     {app.lang === "ar" ? "تعديل" : "Edit"}
                   </Button>
 
-                  {/* زر حذف */}
                   <Button
                     variant="outline"
                     className="flex-1 rounded-xl border-red-200/50 text-red-500 hover:text-red-600 hover:bg-red-50/50 h-12 group transition-all duration-300 hover:scale-105"
@@ -1752,6 +1906,40 @@ const openProductDetail = useCallback((product: any) => {
         currency={app.currency}
         formatPrice={formatPrice}
       />
+
+      {/* ✅ ✅ ✅ نافذة العرض الترويجي (BOGO/Cross-sell/Bundle) */}
+      <AddBogoOfferDialog
+        open={offerDialogOpen}
+        onOpenChange={setOfferDialogOpen}
+        product={selectedOfferProduct}
+        existingOffer={editingOffer}
+        onSuccess={() => {
+          refetchMyListings();
+          refetchSellerOffers();
+          toast.success(app.lang === "ar" ? "✅ تم إضافة العرض الترويجي بنجاح" : "✅ Promo offer added successfully");
+        }}
+      />
+
+    {/* ✅ ✅ ✅ نافذة تفاصيل العرض الترويجي */}
+<PromoOfferDetailDialog
+  open={promoDetailDialogOpen}
+  onOpenChange={setPromoDetailDialogOpen}
+  offer={selectedPromoOffer}
+  product={selectedPromoProduct}
+  lang={app.lang}
+  currency={app.currency}
+  formatPrice={formatPrice}
+  onEdit={() => {
+    if (selectedPromoOffer) {
+      handleEditPromoOffer(selectedPromoOffer);
+    }
+  }}
+  onDelete={() => {
+    if (selectedPromoOffer) {
+      handleRemovePromoOffer(selectedPromoOffer.id);
+    }
+  }}
+/>
     </div>
   );
 });

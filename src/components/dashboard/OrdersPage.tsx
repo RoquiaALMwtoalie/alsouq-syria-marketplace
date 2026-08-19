@@ -375,7 +375,7 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
           body_ar: `تم قبول طلبك بقيمة ${order.total?.toLocaleString() || 0} SYP وسيتم توصيله قريباً`,
           title_en: `✅ Your order from "${storeName}" was accepted`,
           body_en: `Your order for ${order.total?.toLocaleString() || 0} SYP was accepted and will be delivered soon`,
-          link_url: `/orders/${orderId}`,
+         link_url: `/orders`,
           metadata: {
             order_id: orderId,
             store_name: storeName,
@@ -489,7 +489,7 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
           body_ar: `تم رفض طلبك من متجر "${storeName}" (${itemsCount} منتج${itemsCount > 1 ? 'ات' : ''}). السبب: ${reason.trim()}`,
           title_en: "❌ Your order was rejected",
           body_en: `Your order from "${storeName}" (${itemsCount} item${itemsCount > 1 ? 's' : ''}) was rejected. Reason: ${reason.trim()}`,
-          link_url: `/orders/${orderId}`,
+         link_url: `/orders`,
           metadata: {
             rejection_reason: reason.trim(),
             order_id: orderId,
@@ -1296,70 +1296,76 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
                 </div>
               )}
 
-              {/* ✅ ✅ ✅ إجمالي الطلب (معدل - يشمل التوصيل والخصم) */}
-              <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
-                
-                {/* المجموع الفرعي */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
-                  </span>
-                  <span className="text-lg font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
-                    {formatPrice(Number(selectedOrder.total) || 0, app.currency, app.lang)}
-                  </span>
-                </div>
-                
-                {/* سعر التوصيل */}
-                {selectedOrder.delivery_fee !== undefined && Number(selectedOrder.delivery_fee) > 0 && (
-                  <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
-                    <span className="text-sm text-muted-foreground">
-                      {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
-                    </span>
-                    <span className="text-sm font-medium text-[#0d2e2a] dark:text-[#3a8a82]">
-                      {formatPrice(Number(selectedOrder.delivery_fee) || 0, app.currency, app.lang)}
-                    </span>
-                  </div>
-                )}
-                
-                {/* الخصم */}
-                {selectedOrder.promo_discount && Number(selectedOrder.promo_discount) > 0 && (
-                  <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
-                    <span className="text-sm">
-                      {app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}
-                    </span>
-                    <span className="text-sm font-bold">
-                      -{formatPrice(Number(selectedOrder.promo_discount) || 0, app.currency, app.lang)}
-                    </span>
-                  </div>
-                )}
-                
-                {/* ✅ الإجمالي الكامل - من قاعدة البيانات */}
-                <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
-                  <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
-                    {app.lang === "ar" ? "الإجمالي الكامل" : "Total"}
-                  </span>
-                  <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
-                    {formatPrice(
-                      Number(selectedOrder.total_with_delivery) || 
-                      (Number(selectedOrder.total || 0) + Number(selectedOrder.delivery_fee || 0) - Number(selectedOrder.promo_discount || 0)), 
-                      app.currency, 
-                      app.lang
-                    )}
-                  </span>
-                </div>
-                
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs text-muted-foreground">
-                    {selectedOrder.order_items?.length || 1} {app.lang === "ar" ? "منتج" : "items"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(selectedOrder.created_at).toLocaleString(
-                      app.lang === "ar" ? "ar-SA" : "en-US",
-                      { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
-                    )}
-                  </span>
-                </div>
-              </div>
+           {/* ✅ ✅ ✅ إجمالي الطلب (معدل - يشمل التوصيل والخصم) */}
+<div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+  
+  {/* المجموع الفرعي */}
+  <div className="flex items-center justify-between">
+    <span className="text-sm font-medium text-muted-foreground">
+      {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
+    </span>
+    <span className="text-lg font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+      {formatPrice(Number(selectedOrder.total) || 0, app.currency, app.lang)}
+    </span>
+  </div>
+  
+  {/* سعر التوصيل */}
+  {selectedOrder.delivery_fee !== undefined && Number(selectedOrder.delivery_fee) > 0 && (
+    <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
+      <span className="text-sm text-muted-foreground">
+        {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
+      </span>
+      <span className="text-sm font-medium text-[#0d2e2a] dark:text-[#3a8a82]">
+        {formatPrice(Number(selectedOrder.delivery_fee) || 0, app.currency, app.lang)}
+      </span>
+    </div>
+  )}
+  
+  {/* ✅ ✅ ✅ الخصم - معدل */}
+  {(() => {
+    const discount = Number(selectedOrder.promo_discount) || 0;
+    if (discount > 0) {
+      return (
+        <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
+          <span className="text-sm">
+            {app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}
+          </span>
+          <span className="text-sm font-bold">
+            -{formatPrice(discount, app.currency, app.lang)}
+          </span>
+        </div>
+      );
+    }
+    return null;
+  })()}
+  
+  {/* ✅ الإجمالي الكامل - من قاعدة البيانات */}
+  <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
+    <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
+      {app.lang === "ar" ? "الإجمالي الكامل" : "Total"}
+    </span>
+    <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+      {formatPrice(
+        Number(selectedOrder.total_with_delivery) || 
+        (Number(selectedOrder.total || 0) + Number(selectedOrder.delivery_fee || 0) - (Number(selectedOrder.promo_discount) || 0)), 
+        app.currency, 
+        app.lang
+      )}
+    </span>
+  </div>
+  
+  <div className="flex items-center justify-between mt-1">
+    <span className="text-xs text-muted-foreground">
+      {selectedOrder.order_items?.length || 1} {app.lang === "ar" ? "منتج" : "items"}
+    </span>
+    <span className="text-xs text-muted-foreground">
+      {new Date(selectedOrder.created_at).toLocaleString(
+        app.lang === "ar" ? "ar-SA" : "en-US",
+        { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+      )}
+    </span>
+  </div>
+</div>
 
               <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex justify-end">
                 <Button

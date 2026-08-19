@@ -245,8 +245,8 @@ export function useAddToCart() {
       selectedColor,
       selectedSize,
       selectedVariationId,
-      variationPrice,              // ✅ سعر التركيبة
-      variationCombination,        // ✅ تركيبة (لون، مقاس، إلخ)
+      variationPrice,
+      variationCombination,
       onStoreConflict,
     }: {
       userId: string;
@@ -255,8 +255,8 @@ export function useAddToCart() {
       selectedColor?: string;
       selectedSize?: string;
       selectedVariationId?: string;
-      variationPrice?: number;     // ✅ جديد
-      variationCombination?: Record<string, string>;  // ✅ جديد
+      variationPrice?: number;
+      variationCombination?: Record<string, string>;
       onStoreConflict?: (data: any) => void;
     }) => {
       console.log("🛒 [useAddToCart] START - userId:", userId, "listingId:", listingId);
@@ -274,7 +274,11 @@ export function useAddToCart() {
       
       console.log("✅ [useAddToCart] Listing found:", listing.title_ar);
       
-      // ✅ تحديد السعر (استخدم سعر التركيبة إذا وجد)
+      // ✅ ✅ ✅ منع المستخدم من إضافة منتجات متجره الخاص
+      if (listing.owner_id === userId) {
+        throw new Error("لا يمكنك إضافة منتجات من متجرك الخاص إلى السلة");
+      }
+      
       const finalPrice = variationPrice || listing?.price || 0;
       
       const compatibility = await checkCompatibility.mutateAsync({
@@ -315,7 +319,6 @@ export function useAddToCart() {
       
       console.log("🛒 [useAddToCart] cartId:", cartId);
       
-      // ✅ التحقق من وجود العنصر بنفس التركيبة
       let query = supabase
         .from("cart_items")
         .select("id, quantity")
@@ -363,12 +366,11 @@ export function useAddToCart() {
       } else {
         console.log("🔄 [useAddToCart] Adding new item...");
         
-        // ✅ بناء بيانات الإدراج مع دعم التركيبات
         const insertData: any = {
           cart_id: cartId,
           listing_id: listingId,
           quantity: quantity,
-          price: finalPrice,  // ✅ استخدم سعر التركيبة
+          price: finalPrice,
           price_usd: listing.price_usd,
           currency: listing.currency || 'SYP',
           variation_snapshot: {
@@ -389,7 +391,6 @@ export function useAddToCart() {
         if (selectedVariationId) {
           insertData.selected_variation_id = selectedVariationId;
         }
-        // ✅ ✅ ✅ حفظ التركيبة كاملة
         if (variationCombination) {
           insertData.variation_combination = variationCombination;
         }
@@ -421,11 +422,16 @@ export function useAddToCart() {
     },
     onError: (error: any) => {
       console.error("❌ [useAddToCart] Mutation ERROR:", error);
-      toast.error("❌ فشل إضافة المنتج للسلة");
+      
+      // ✅ ✅ ✅ عرض رسالة مناسبة
+      if (error.message.includes("لا يمكنك إضافة منتجات من متجرك الخاص")) {
+        toast.error("❌ لا يمكنك إضافة منتجات من متجرك الخاص إلى السلة");
+      } else {
+        toast.error("❌ فشل إضافة المنتج للسلة");
+      }
     },
   });
 }
-
 // ============================================================
 // ✅ 4. تحديث عنصر في السلة (المهم)
 // ============================================================

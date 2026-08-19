@@ -476,7 +476,6 @@ export function AdminPromoCodes() {
       percentage: { ar: "نسبة مئوية", en: "Percentage", icon: Percent },
       fixed: { ar: "قيمة ثابتة", en: "Fixed", icon: DollarSign },
       free_shipping: { ar: "توصيل مجاني", en: "Free Shipping", icon: Truck },
-      buy_x_get_y: { ar: "اشترِ واحصل", en: "Buy X Get Y", icon: Gift },
     };
     return map[type] || map.percentage;
   }, []);
@@ -486,7 +485,6 @@ export function AdminPromoCodes() {
       percentage: "bg-[#0d2e2a]/10 text-[#0d2e2a] border-[#0d2e2a]/20",
       fixed: "bg-[#1a4f4a]/10 text-[#1a4f4a] border-[#1a4f4a]/20",
       free_shipping: "bg-[#2d6b63]/10 text-[#2d6b63] border-[#2d6b63]/20",
-      buy_x_get_y: "bg-[#4a9f95]/10 text-[#4a9f95] border-[#4a9f95]/20",
     };
     return map[type] || "bg-slate-500/10 text-slate-600";
   }, []);
@@ -528,7 +526,7 @@ export function AdminPromoCodes() {
   const deleteMutation = useDeletePromoCode();
   const toggleMutation = useTogglePromoCodeStatus();
 
-  // ✅ Form state مع حقول buy_x_get_y و store_id
+  // ✅ Form state
   const [formData, setFormData] = useState({
     code: "",
     label: "",
@@ -541,8 +539,6 @@ export function AdminPromoCodes() {
     is_active: true,
     is_public: false,
     expires_at: "",
-    buy_quantity: 2,
-    get_quantity: 1,
     store_id: "",
     store_name: "",
   });
@@ -560,8 +556,6 @@ export function AdminPromoCodes() {
       is_active: true,
       is_public: false,
       expires_at: "",
-      buy_quantity: 2,
-      get_quantity: 1,
       store_id: "",
       store_name: "",
     });
@@ -588,12 +582,6 @@ const handleAddCode = async (e: React.FormEvent) => {
     const selectedStore = activeStores.find((s: any) => s.id === selectedStoreId);
     const storeName = selectedStore?.store_name || null;
 
-    const metadata: any = {};
-    if (formData.type === 'buy_x_get_y') {
-      metadata.buy_quantity = formData.buy_quantity || 2;
-      metadata.get_quantity = formData.get_quantity || 1;
-    }
-
     // ✅ تحويل expires_at للصيغة الصحيحة
     let expiresAt = formData.expires_at || null;
     if (expiresAt) {
@@ -612,9 +600,9 @@ const handleAddCode = async (e: React.FormEvent) => {
       usage_limit: parseInt(formData.usage_limit) || 1,
       is_active: formData.is_active,
       is_public: formData.is_public,
-      expires_at: expiresAt, // ✅ استخدم المتغير الجديد
+      expires_at: expiresAt,
       created_by: app.user?.id,
-      metadata: metadata,
+      metadata: {},
       store_id: isStoreSpecific ? selectedStoreId : null,
       store_name: isStoreSpecific ? storeName : null,
     });
@@ -644,12 +632,6 @@ const handleEditCode = async (e: React.FormEvent) => {
     const selectedStore = activeStores.find((s: any) => s.id === selectedStoreId);
     const storeName = selectedStore?.store_name || null;
 
-    const metadata: any = {};
-    if (formData.type === 'buy_x_get_y') {
-      metadata.buy_quantity = formData.buy_quantity || 2;
-      metadata.get_quantity = formData.get_quantity || 1;
-    }
-
     // ✅ تحويل expires_at للصيغة الصحيحة
     let expiresAt = formData.expires_at || null;
     if (expiresAt) {
@@ -670,8 +652,8 @@ const handleEditCode = async (e: React.FormEvent) => {
         usage_limit: parseInt(formData.usage_limit) || 1,
         is_active: formData.is_active,
         is_public: formData.is_public,
-        expires_at: expiresAt, // ✅ استخدم المتغير الجديد
-        metadata: metadata,
+        expires_at: expiresAt,
+        metadata: {},
         store_id: isStoreSpecific ? selectedStoreId : null,
         store_name: isStoreSpecific ? storeName : null,
       },
@@ -750,9 +732,7 @@ const openEditDialog = useCallback((code: PromoCode) => {
     usage_limit: String(code.usage_limit || 1),
     is_active: code.is_active,
     is_public: code.is_public || false,
-    expires_at: formattedExpiresAt, // ✅ استخدم الصيغة الصحيحة للعرض
-    buy_quantity: metadata.buy_quantity || 2,
-    get_quantity: metadata.get_quantity || 1,
+    expires_at: formattedExpiresAt,
     store_id: code.store_id || "",
     store_name: code.store_name || "",
   });
@@ -839,7 +819,6 @@ const openEditDialog = useCallback((code: PromoCode) => {
               <SelectItem value="percentage">{isArabic ? "📊 نسبة مئوية" : "📊 Percentage"}</SelectItem>
               <SelectItem value="fixed">{isArabic ? "💰 قيمة ثابتة" : "💰 Fixed"}</SelectItem>
               <SelectItem value="free_shipping">{isArabic ? "🚚 توصيل مجاني" : "🚚 Free Shipping"}</SelectItem>
-              <SelectItem value="buy_x_get_y">{isArabic ? "🎁 اشترِ واحصل" : "🎁 Buy X Get Y"}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -1093,7 +1072,6 @@ const openEditDialog = useCallback((code: PromoCode) => {
                     <SelectItem value="percentage">{isArabic ? "📊 نسبة مئوية" : "📊 Percentage"}</SelectItem>
                     <SelectItem value="fixed">{isArabic ? "💰 قيمة ثابتة" : "💰 Fixed"}</SelectItem>
                     <SelectItem value="free_shipping">{isArabic ? "🚚 توصيل مجاني" : "🚚 Free Shipping"}</SelectItem>
-                    <SelectItem value="buy_x_get_y">{isArabic ? "🎁 اشترِ واحصل" : "🎁 Buy X Get Y"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1274,51 +1252,6 @@ const openEditDialog = useCallback((code: PromoCode) => {
                   : "📅 Select expiry date & time (leave empty for unlimited)"}
               </p>
             </div>
-
-            {/* ✅ حقول buy_x_get_y */}
-            {formData.type === 'buy_x_get_y' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
-                <div className="space-y-2">
-                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                    {isArabic ? "عدد المنتجات للشراء" : "Buy Quantity"}
-                  </Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={formData.buy_quantity}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      buy_quantity: parseInt(e.target.value) || 2 
-                    })}
-                    placeholder="2"
-                    className="rounded-xl border-[#0d2e2a]/20"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {isArabic ? "مثال: 2 (اشترِ 2)" : "Example: 2 (Buy 2)"}
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                    {isArabic ? "عدد المنتجات المجانية" : "Free Quantity"}
-                  </Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={formData.get_quantity}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      get_quantity: parseInt(e.target.value) || 1 
-                    })}
-                    placeholder="1"
-                    className="rounded-xl border-[#0d2e2a]/20"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {isArabic ? "مثال: 1 (احصل على 1 مجاني)" : "Example: 1 (Get 1 free)"}
-                  </p>
-                </div>
-              </div>
-            )}
 
             {/* ✅ ✅ ✅ خيار الكود العام / المخصص */}
             <div className="space-y-3 pt-2">
@@ -1612,7 +1545,6 @@ const openEditDialog = useCallback((code: PromoCode) => {
               <SelectItem value="percentage">{isArabic ? "📊 نسبة مئوية" : "📊 Percentage"}</SelectItem>
               <SelectItem value="fixed">{isArabic ? "💰 قيمة ثابتة" : "💰 Fixed"}</SelectItem>
               <SelectItem value="free_shipping">{isArabic ? "🚚 توصيل مجاني" : "🚚 Free Shipping"}</SelectItem>
-              <SelectItem value="buy_x_get_y">{isArabic ? "🎁 اشترِ واحصل" : "🎁 Buy X Get Y"}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1790,51 +1722,6 @@ const openEditDialog = useCallback((code: PromoCode) => {
             : "📅 Select expiry date & time (leave empty for unlimited)"}
         </p>
       </div>
-
-      {/* ✅ حقول buy_x_get_y */}
-      {formData.type === 'buy_x_get_y' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
-          <div className="space-y-2">
-            <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-              {isArabic ? "عدد المنتجات للشراء" : "Buy Quantity"}
-            </Label>
-            <Input
-              type="number"
-              min="1"
-              value={formData.buy_quantity}
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                buy_quantity: parseInt(e.target.value) || 2 
-              })}
-              placeholder="2"
-              className="rounded-xl border-[#0d2e2a]/20"
-            />
-            <p className="text-xs text-muted-foreground">
-              {isArabic ? "مثال: 2 (اشترِ 2)" : "Example: 2 (Buy 2)"}
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-              {isArabic ? "عدد المنتجات المجانية" : "Free Quantity"}
-            </Label>
-            <Input
-              type="number"
-              min="1"
-              value={formData.get_quantity}
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                get_quantity: parseInt(e.target.value) || 1 
-              })}
-              placeholder="1"
-              className="rounded-xl border-[#0d2e2a]/20"
-            />
-            <p className="text-xs text-muted-foreground">
-              {isArabic ? "مثال: 1 (احصل على 1 مجاني)" : "Example: 1 (Get 1 free)"}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* ✅ خيار الكود العام / المخصص */}
       <div className="space-y-3 pt-2">

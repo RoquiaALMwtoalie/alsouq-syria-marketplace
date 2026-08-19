@@ -31,7 +31,6 @@ import { Route as StoresRouteImport } from './routes/stores'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as VoiceSearchRouteImport } from './routes/voice-search'
 import { Route as AuthModeRouteImport } from './routes/auth.$mode'
-import { Route as AuthCompleteRouteImport } from './routes/auth.complete'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as DeliveryIndexRouteImport } from './routes/delivery/index'
 import { Route as DeliverySlugRouteImport } from './routes/delivery/$slug'
@@ -47,9 +46,11 @@ import { Route as DistributorSettingsRouteImport } from './routes/distributor/se
 import { Route as DistributorsIndexRouteImport } from './routes/distributors/index'
 import { Route as ListingIdRouteImport } from './routes/listing.$id'
 import { Route as MessagesUserIdRouteImport } from './routes/messages_.$userId'
+import { Route as OfferIdRouteImport } from './routes/offer/$id'
 import { Route as StoreIdRouteImport } from './routes/store.$id'
 import { Route as TrackingTrackingNumberRouteImport } from './routes/tracking/$trackingNumber'
 import { Route as DeliveryConversationUserIdRouteImport } from './routes/delivery/conversation.$userId'
+import { Route as DeliveryOrdersIdRouteImport } from './routes/delivery/orders/$id'
 import { Route as DeliveryOrdersNewRouteImport } from './routes/delivery/orders/new'
 import { Route as DistributorConversationUserIdRouteImport } from './routes/distributor/conversation.$userId'
 import { Route as DistributorReviewOrderIdRouteImport } from './routes/distributor/review/$orderId'
@@ -165,11 +166,6 @@ const AuthModeRoute = AuthModeRouteImport.update({
   path: '/auth/$mode',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthCompleteRoute = AuthCompleteRouteImport.update({
-  id: '/auth/complete',
-  path: '/auth/complete',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
   path: '/category/$slug',
@@ -245,6 +241,11 @@ const MessagesUserIdRoute = MessagesUserIdRouteImport.update({
   path: '/messages/$userId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OfferIdRoute = OfferIdRouteImport.update({
+  id: '/offer/$id',
+  path: '/offer/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoreIdRoute = StoreIdRouteImport.update({
   id: '/store/$id',
   path: '/store/$id',
@@ -261,6 +262,11 @@ const DeliveryConversationUserIdRoute =
     path: '/delivery/conversation/$userId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DeliveryOrdersIdRoute = DeliveryOrdersIdRouteImport.update({
+  id: '/delivery/orders/$id',
+  path: '/delivery/orders/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DeliveryOrdersNewRoute = DeliveryOrdersNewRouteImport.update({
   id: '/delivery/orders/new',
   path: '/delivery/orders/new',
@@ -307,7 +313,6 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/voice-search': typeof VoiceSearchRoute
   '/auth/$mode': typeof AuthModeRoute
-  '/auth/complete': typeof AuthCompleteRoute
   '/category/$slug': typeof CategorySlugRoute
   '/delivery/$slug': typeof DeliverySlugRoute
   '/delivery/complete': typeof DeliveryCompleteRoute
@@ -321,11 +326,13 @@ export interface FileRoutesByFullPath {
   '/distributor/settings': typeof DistributorSettingsRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$userId': typeof MessagesUserIdRoute
+  '/offer/$id': typeof OfferIdRoute
   '/store/$id': typeof StoreIdRoute
   '/tracking/$trackingNumber': typeof TrackingTrackingNumberRoute
   '/delivery/': typeof DeliveryIndexRoute
   '/distributors/': typeof DistributorsIndexRoute
   '/delivery/conversation/$userId': typeof DeliveryConversationUserIdRoute
+  '/delivery/orders/$id': typeof DeliveryOrdersIdRoute
   '/delivery/orders/new': typeof DeliveryOrdersNewRoute
   '/distributor/conversation/$userId': typeof DistributorConversationUserIdRoute
   '/distributor/review/$orderId': typeof DistributorReviewOrderIdRoute
@@ -354,7 +361,6 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/voice-search': typeof VoiceSearchRoute
   '/auth/$mode': typeof AuthModeRoute
-  '/auth/complete': typeof AuthCompleteRoute
   '/category/$slug': typeof CategorySlugRoute
   '/delivery/$slug': typeof DeliverySlugRoute
   '/delivery/complete': typeof DeliveryCompleteRoute
@@ -368,11 +374,13 @@ export interface FileRoutesByTo {
   '/distributor/settings': typeof DistributorSettingsRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$userId': typeof MessagesUserIdRoute
+  '/offer/$id': typeof OfferIdRoute
   '/store/$id': typeof StoreIdRoute
   '/tracking/$trackingNumber': typeof TrackingTrackingNumberRoute
   '/delivery': typeof DeliveryIndexRoute
   '/distributors': typeof DistributorsIndexRoute
   '/delivery/conversation/$userId': typeof DeliveryConversationUserIdRoute
+  '/delivery/orders/$id': typeof DeliveryOrdersIdRoute
   '/delivery/orders/new': typeof DeliveryOrdersNewRoute
   '/distributor/conversation/$userId': typeof DistributorConversationUserIdRoute
   '/distributor/review/$orderId': typeof DistributorReviewOrderIdRoute
@@ -402,7 +410,6 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/voice-search': typeof VoiceSearchRoute
   '/auth/$mode': typeof AuthModeRoute
-  '/auth/complete': typeof AuthCompleteRoute
   '/category/$slug': typeof CategorySlugRoute
   '/delivery/$slug': typeof DeliverySlugRoute
   '/delivery/complete': typeof DeliveryCompleteRoute
@@ -416,11 +423,13 @@ export interface FileRoutesById {
   '/distributor/settings': typeof DistributorSettingsRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages_/$userId': typeof MessagesUserIdRoute
+  '/offer/$id': typeof OfferIdRoute
   '/store/$id': typeof StoreIdRoute
   '/tracking/$trackingNumber': typeof TrackingTrackingNumberRoute
   '/delivery/': typeof DeliveryIndexRoute
   '/distributors/': typeof DistributorsIndexRoute
   '/delivery/conversation/$userId': typeof DeliveryConversationUserIdRoute
+  '/delivery/orders/$id': typeof DeliveryOrdersIdRoute
   '/delivery/orders/new': typeof DeliveryOrdersNewRoute
   '/distributor/conversation/$userId': typeof DistributorConversationUserIdRoute
   '/distributor/review/$orderId': typeof DistributorReviewOrderIdRoute
@@ -451,7 +460,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/voice-search'
     | '/auth/$mode'
-    | '/auth/complete'
     | '/category/$slug'
     | '/delivery/$slug'
     | '/delivery/complete'
@@ -465,11 +473,13 @@ export interface FileRouteTypes {
     | '/distributor/settings'
     | '/listing/$id'
     | '/messages/$userId'
+    | '/offer/$id'
     | '/store/$id'
     | '/tracking/$trackingNumber'
     | '/delivery/'
     | '/distributors/'
     | '/delivery/conversation/$userId'
+    | '/delivery/orders/$id'
     | '/delivery/orders/new'
     | '/distributor/conversation/$userId'
     | '/distributor/review/$orderId'
@@ -498,7 +508,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/voice-search'
     | '/auth/$mode'
-    | '/auth/complete'
     | '/category/$slug'
     | '/delivery/$slug'
     | '/delivery/complete'
@@ -512,11 +521,13 @@ export interface FileRouteTypes {
     | '/distributor/settings'
     | '/listing/$id'
     | '/messages/$userId'
+    | '/offer/$id'
     | '/store/$id'
     | '/tracking/$trackingNumber'
     | '/delivery'
     | '/distributors'
     | '/delivery/conversation/$userId'
+    | '/delivery/orders/$id'
     | '/delivery/orders/new'
     | '/distributor/conversation/$userId'
     | '/distributor/review/$orderId'
@@ -545,7 +556,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/voice-search'
     | '/auth/$mode'
-    | '/auth/complete'
     | '/category/$slug'
     | '/delivery/$slug'
     | '/delivery/complete'
@@ -559,11 +569,13 @@ export interface FileRouteTypes {
     | '/distributor/settings'
     | '/listing/$id'
     | '/messages_/$userId'
+    | '/offer/$id'
     | '/store/$id'
     | '/tracking/$trackingNumber'
     | '/delivery/'
     | '/distributors/'
     | '/delivery/conversation/$userId'
+    | '/delivery/orders/$id'
     | '/delivery/orders/new'
     | '/distributor/conversation/$userId'
     | '/distributor/review/$orderId'
@@ -593,7 +605,6 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   VoiceSearchRoute: typeof VoiceSearchRoute
   AuthModeRoute: typeof AuthModeRoute
-  AuthCompleteRoute: typeof AuthCompleteRoute
   CategorySlugRoute: typeof CategorySlugRoute
   DeliverySlugRoute: typeof DeliverySlugRoute
   DeliveryCompleteRoute: typeof DeliveryCompleteRoute
@@ -607,11 +618,13 @@ export interface RootRouteChildren {
   DistributorSettingsRoute: typeof DistributorSettingsRoute
   ListingIdRoute: typeof ListingIdRoute
   MessagesUserIdRoute: typeof MessagesUserIdRoute
+  OfferIdRoute: typeof OfferIdRoute
   StoreIdRoute: typeof StoreIdRoute
   TrackingTrackingNumberRoute: typeof TrackingTrackingNumberRoute
   DeliveryIndexRoute: typeof DeliveryIndexRoute
   DistributorsIndexRoute: typeof DistributorsIndexRoute
   DeliveryConversationUserIdRoute: typeof DeliveryConversationUserIdRoute
+  DeliveryOrdersIdRoute: typeof DeliveryOrdersIdRoute
   DeliveryOrdersNewRoute: typeof DeliveryOrdersNewRoute
   DistributorConversationUserIdRoute: typeof DistributorConversationUserIdRoute
   DistributorReviewOrderIdRoute: typeof DistributorReviewOrderIdRoute
@@ -774,13 +787,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthModeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/complete': {
-      id: '/auth/complete'
-      path: '/auth/complete'
-      fullPath: '/auth/complete'
-      preLoaderRoute: typeof AuthCompleteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/category/$slug': {
       id: '/category/$slug'
       path: '/category/$slug'
@@ -886,6 +892,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MessagesUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/offer/$id': {
+      id: '/offer/$id'
+      path: '/offer/$id'
+      fullPath: '/offer/$id'
+      preLoaderRoute: typeof OfferIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/store/$id': {
       id: '/store/$id'
       path: '/store/$id'
@@ -905,6 +918,13 @@ declare module '@tanstack/react-router' {
       path: '/delivery/conversation/$userId'
       fullPath: '/delivery/conversation/$userId'
       preLoaderRoute: typeof DeliveryConversationUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/orders/$id': {
+      id: '/delivery/orders/$id'
+      path: '/delivery/orders/$id'
+      fullPath: '/delivery/orders/$id'
+      preLoaderRoute: typeof DeliveryOrdersIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/delivery/orders/new': {
@@ -961,7 +981,6 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   VoiceSearchRoute: VoiceSearchRoute,
   AuthModeRoute: AuthModeRoute,
-  AuthCompleteRoute: AuthCompleteRoute,
   CategorySlugRoute: CategorySlugRoute,
   DeliverySlugRoute: DeliverySlugRoute,
   DeliveryCompleteRoute: DeliveryCompleteRoute,
@@ -975,11 +994,13 @@ const rootRouteChildren: RootRouteChildren = {
   DistributorSettingsRoute: DistributorSettingsRoute,
   ListingIdRoute: ListingIdRoute,
   MessagesUserIdRoute: MessagesUserIdRoute,
+  OfferIdRoute: OfferIdRoute,
   StoreIdRoute: StoreIdRoute,
   TrackingTrackingNumberRoute: TrackingTrackingNumberRoute,
   DeliveryIndexRoute: DeliveryIndexRoute,
   DistributorsIndexRoute: DistributorsIndexRoute,
   DeliveryConversationUserIdRoute: DeliveryConversationUserIdRoute,
+  DeliveryOrdersIdRoute: DeliveryOrdersIdRoute,
   DeliveryOrdersNewRoute: DeliveryOrdersNewRoute,
   DistributorConversationUserIdRoute: DistributorConversationUserIdRoute,
   DistributorReviewOrderIdRoute: DistributorReviewOrderIdRoute,

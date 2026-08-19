@@ -5270,6 +5270,325 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
 }
+// ============================================================
+// 🎁 PRODUCT OFFERS - جلب العروض الترويجية للعرض العام
+// ============================================================
+
+/**
+ * جلب العروض الترويجية مع فلترة (للعرض العام)
+ */
+export async function getProductOffers(options?: {
+  storeId?: string;
+  listingId?: string;
+  isActive?: boolean;
+  limit?: number;
+  offset?: number;
+  offerType?: 'bogo' | 'cross_sell' | 'bundle';
+  featured?: boolean;
+  categoryId?: string;
+}) {
+  console.log("📡 [getProductOffers] ===== START =====");
+  console.log("📡 [getProductOffers] Options received:", JSON.stringify(options, null, 2));
+  
+  let query = supabase
+    .from("product_offers")
+    .select(`
+      *,
+      store:store_id (
+        id,
+        full_name,
+        store_name,
+        store_logo_url,
+        store_cover_url
+      ),
+      category:category_id (
+        id,
+        name_ar,
+        name_en,
+        slug,
+        icon,
+        image_url
+      )
+    `)
+    .order("featured_sort", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  // ✅ فلتر حسب النشاط
+  if (options?.isActive !== undefined) {
+    query = query.eq("is_active", options.isActive);
+  } else {
+    query = query.eq("is_active", true);
+  }
+
+  // ✅ فلتر حسب المتجر
+  if (options?.storeId) {
+    query = query.eq("store_id", options.storeId);
+  }
+
+  // ✅ فلتر حسب التصنيف
+  if (options?.categoryId) {
+    query = query.eq("category_id", options.categoryId);
+  }
+
+  // ✅ فلتر حسب نوع العرض
+  if (options?.offerType) {
+    query = query.eq("offer_type", options.offerType);
+  }
+
+  // ✅ فلتر المميزين
+  if (options?.featured !== undefined) {
+    query = query.eq("is_featured", options.featured);
+  }
+
+  // ✅ فلتر الصلاحية
+  const now = new Date().toISOString();
+  query = query.or(`expires_at.is.null,expires_at.gt.${now}`);
+
+  // ✅ Pagination
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+  if (options?.offset) {
+    query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
+  }
+
+  console.log("🚀 [getProductOffers] Executing query...");
+  
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("❌ [getProductOffers] Error:", error);
+    throw error;
+  }
+
+  if (!data || data.length === 0) {
+    console.log("⚠️ [getProductOffers] No offers found");
+    return [];
+  }
+
+  console.log(`📊 [getProductOffers] Found ${data.length} offers`);
+
+  // ✅ ✅ ✅ جلب جميع البيانات لكل عرض
+  const offersWithFullData = await Promise.all(
+    data.map(async (offer: any) => {
+      console.log(`🔄 Processing offer ${offer.id}: ${offer.offer_type}`);
+
+      // ============================================================
+      // 1️⃣ جلب المنتج الرئيسي (listing_id) مع كل علاقاته
+      // ============================================================
+      const { data: mainProduct, error: mainError } = await supabase
+        .from("listings")
+        .select(`
+          *,
+          profile:profiles!owner_id (
+            id, full_name, store_name, store_logo_url, store_cover_url, avatar_url
+          ),
+          governorates!governorate_id (
+            id, name_ar, name_en
+          ),
+          categories!category_id (
+            id, name_ar, name_en, slug, icon, image_url
+          ),
+          colors:product_colors (
+            id, color_name_ar, color_name_en, color_hex, image_url
+          ),
+          variations:product_variations (
+            id, sku, combination, price, old_price, stock_quantity, image_url, is_active
+          ),
+          options:product_options (
+            id, option_type, option_value, option_label_ar, option_label_en, sort_order
+          ),
+          listing_images (
+            id, url, sort_order
+          )
+        `)
+        .eq("id", offer.listing_id)
+        .maybeSingle();
+
+      if (mainError) {
+        console.error(`❌ Error fetching main product:`, mainError);
+      }
+
+      // ============================================================
+      // 2️⃣ جلب المنتج الهدية (free_listing_id) إن وجد
+      // ============================================================
+      let freeProduct = null;
+      if (offer.free_listing_id) {
+        const { data: freeData, error: freeError } = await supabase
+          .from("listings")
+          .select(`
+            *,
+            profile:profiles!owner_id (
+              id, full_name, store_name, store_logo_url, store_cover_url, avatar_url
+            ),
+            governorates!governorate_id (
+              id, name_ar, name_en
+            ),
+            categories!category_id (
+              id, name_ar, name_en, slug, icon, image_url
+            ),
+            colors:product_colors (
+              id, color_name_ar, color_name_en, color_hex, image_url
+            ),
+            variations:product_variations (
+              id, sku, combination, price, old_price, stock_quantity, image_url, is_active
+            ),
+            listing_images (
+              id, url, sort_order
+            )
+          `)
+          .eq("id", offer.free_listing_id)
+          .maybeSingle();
+
+        if (!freeError && freeData) {
+          freeProduct = freeData;
+          console.log(`   🎁 Free product: ${freeProduct.title_ar}`);
+        }
+      }
+
+      // ============================================================
+      // 3️⃣ جلب المنتجات المطلوبة (required_product_ids) للـ Bundle
+      // ============================================================
+      let requiredProducts = [];
+      if (offer.required_product_ids && offer.required_product_ids.length > 0) {
+        const { data: requiredData, error: requiredError } = await supabase
+          .from("listings")
+          .select(`
+            *,
+            profile:profiles!owner_id (
+              id, full_name, store_name, store_logo_url, store_cover_url, avatar_url
+            ),
+            governorates!governorate_id (
+              id, name_ar, name_en
+            ),
+            categories!category_id (
+              id, name_ar, name_en, slug, icon, image_url
+            ),
+            colors:product_colors (
+              id, color_name_ar, color_name_en, color_hex, image_url
+            ),
+            variations:product_variations (
+              id, sku, combination, price, old_price, stock_quantity, image_url, is_active
+            ),
+            listing_images (
+              id, url, sort_order
+            )
+          `)
+          .in("id", offer.required_product_ids);
+
+        if (!requiredError && requiredData) {
+          requiredProducts = requiredData;
+          console.log(`   📦 Required products: ${requiredProducts.length}`);
+        }
+      }
+
+      // ============================================================
+      // 4️⃣ فلترة الفيرنتات حسب الـ IDs المحددة
+      // ============================================================
+      
+      // ✅ فيرنتات المنتج الرئيسي (variation_ids)
+      let mainVariations = mainProduct?.variations || [];
+      if (offer.variation_ids && offer.variation_ids.length > 0) {
+        mainVariations = mainVariations.filter((v: any) => 
+          offer.variation_ids.includes(v.id)
+        );
+      }
+
+      // ✅ فيرنتات المنتج الهدية (result_variation_ids)
+      let freeVariations = freeProduct?.variations || [];
+      if (offer.result_variation_ids && offer.result_variation_ids.length > 0) {
+        freeVariations = freeVariations.filter((v: any) => 
+          offer.result_variation_ids.includes(v.id)
+        );
+      }
+
+      // ✅ فيرنتات المنتجات المطلوبة (required_variations)
+      let requiredVariations = [];
+      if (offer.required_variations && offer.required_variations.length > 0) {
+        requiredVariations = offer.required_variations.map((rv: any) => {
+          const product = requiredProducts.find((p: any) => p.id === rv.product_id);
+          const variations = product?.variations?.filter((v: any) => 
+            rv.variation_ids?.includes(v.id)
+          ) || [];
+          return {
+            ...rv,
+            product,
+            variations
+          };
+        });
+      }
+
+      // ============================================================
+      // 5️⃣ بناء الكائن النهائي
+      // ============================================================
+      return {
+        ...offer,
+        
+        // ✅ المنتج الرئيسي
+        main_product: mainProduct || null,
+        main_variations: mainVariations,
+        
+        // ✅ المنتج الهدية (للـ BOGO و Cross-sell)
+        free_product: freeProduct,
+        free_variations: freeVariations,
+        
+        // ✅ المنتجات المطلوبة (للـ Bundle)
+        required_products: requiredProducts,
+        required_variations: requiredVariations,
+        
+        // ✅ ✅ ✅ منتجات موحدة (للعرض في الـ UI)
+        products: mainProduct ? [mainProduct] : [],
+        
+        // ✅ ✅ ✅ كل الفيرنتات المتاحة في العرض
+        all_variations: {
+          main: mainVariations,
+          free: freeVariations,
+          required: requiredVariations
+        },
+        
+        // ✅ ✅ ✅ تفاصيل العرض بالعربية والإنجليزية
+        display: {
+          ar: offer.display_text_ar || mainProduct?.title_ar || "عرض ترويجي",
+          en: offer.display_text_en || mainProduct?.title_en || "Promo Offer"
+        }
+      };
+    })
+  );
+
+  console.log(`✅ [getProductOffers] Completed: ${offersWithFullData.length} offers processed`);
+  console.log("📊 [getProductOffers] Sample:", offersWithFullData?.[0]);
+  console.log("🔍 [getProductOffers] ===== END =====");
+  
+  return offersWithFullData;
+}
+// ============================================================
+// 🎁 HOOK: useProductOffers (للعرض العام)
+// ============================================================
+
+export function useProductOffers(options?: {
+  storeId?: string;
+  listingId?: string;
+  isActive?: boolean;
+  limit?: number;
+  offset?: number;
+  offerType?: 'bogo' | 'cross_sell' | 'bundle';
+  featured?: boolean;
+  categoryId?: string;
+}) {
+  console.log("🎯 [useProductOffers] Hook called with options:", options);
+  
+  return useQuery({
+    queryKey: ["product-offers", options],
+    queryFn: () => {
+      console.log("🔄 [useProductOffers] queryFn executing...");
+      return getProductOffers(options);
+    },
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+}
 export function useGetOrCreateConversation() {
   const queryClient = useQueryClient();
   

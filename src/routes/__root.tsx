@@ -1,4 +1,4 @@
-// src/__root.tsx - الكود المصحح بالكامل مع AI Assistant
+// src/__root.tsx - الكود المصحح بالكامل مع AI Assistant وحماية متقدمة للـ Routes
 
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
@@ -10,7 +10,7 @@ import {
   Scripts,
   useNavigate,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode, useState, useRef } from "react";
+import { useEffect, type ReactNode, useState, useRef, useCallback, useMemo } from "react";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -767,213 +767,375 @@ function RealtimeManager() {
   return null;
 }
 
-// ===== ✅ ✅ ✅ مكون SimpleRedirect =====
-// ===== ✅ ✅ ✅ مكون SimpleRedirect - مع إصلاح مشكلة Logout =====
-function SimpleRedirect() {
+// ============================================================
+// ✅ ✅ ✅ مكون RouteGuard الاحترافي - مع حل مشكلة Cache
+// ============================================================
+function RouteGuard() {
   const app = useApp();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [loading, setLoading] = useState(true);
-  const redirectedRef = useRef(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const redirectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isArabic = app.lang === "ar";
+  const currentPathRef = useRef(pathname);
+  const previousPathRef = useRef<string | null>(null);
 
+  // ✅ تحديث الـ ref عند تغيير المسار
   useEffect(() => {
-    // ✅ إذا لم يكن هناك مستخدم، أوقف التحميل وأعد تعيين الـ ref
-    if (!app.user) {
+    previousPathRef.current = currentPathRef.current;
+    currentPathRef.current = pathname;
+  }, [pathname]);
+
+  // ✅ تنظيف الـ timeout عند unmount
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // ✅ ✅ ✅ حل مشكلة Cache القديم
+  const clearCacheIfUserChanged = useCallback(() => {
+    if (!app.user) return;
+    
+    const cachedUserId = sessionStorage.getItem('cached_user_id');
+    const currentUserId = app.user.id;
+    
+    if (cachedUserId && cachedUserId !== currentUserId) {
+      console.log('🔄 [RouteGuard] User changed, clearing cache...');
+      sessionStorage.removeItem('user_roles');
+      sessionStorage.removeItem('cached_user_id');
+      console.log('✅ [RouteGuard] Cache cleared for new user');
+    }
+    
+    // ✅ إذا لم يكن هناك cached_user_id، قم بتعيينه
+    if (!cachedUserId) {
+      sessionStorage.setItem('cached_user_id', currentUserId);
+      console.log('✅ [RouteGuard] cached_user_id set to:', currentUserId);
+    }
+  }, [app.user]);
+
+  // ✅ تنفيذ مسح الـ Cache عند تغيير المستخدم
+  useEffect(() => {
+    clearCacheIfUserChanged();
+  }, [app.user, clearCacheIfUserChanged]);
+
+  // ✅ دوال التحقق من الصلاحيات (محسّنة للسرعة)
+ // ✅ دوال التحقق من الصلاحيات (محسّنة للسرعة)
+// ✅ دوال التحقق من الصلاحيات - تجبر جلب الأدوار من الـ DB
+const checkAuthorization = useCallback(async () => {
+  // ✅ إذا لم يكن هناك مستخدم، السماح بالوصول (لصفحات التسجيل والدخول)
+  if (!app.user) {
+    setLoading(false);
+    setIsAuthorized(true);
+    return;
+  }
+
+  try {
+    // ✅ ✅ ✅ إجبار جلب الأدوار من قاعدة البيانات مباشرة (تجاهل Cache)
+    console.log('🔄 [RouteGuard] Forcing fresh roles from DB...');
+    
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", app.user.id);
+
+    if (error) throw error;
+    
+    const roles = data?.map((r: any) => r.role) || [];
+    
+    // ✅ ✅ ✅ تحديث الـ Cache بالدور الجديد
+    sessionStorage.setItem('user_roles', JSON.stringify(roles));
+    sessionStorage.setItem('cached_user_id', app.user.id);
+    console.log('📦 [RouteGuard] Fresh roles from DB:', roles);
+
+    const isAdmin = roles.includes("admin");
+    const isDeliveryCompany = roles.includes("delivery_company");
+    const isDistributor = roles.includes("distributor");
+
+    console.log("🔍 [RouteGuard] Path:", pathname);
+    console.log("🔍 [RouteGuard] Roles:", { isAdmin, isDeliveryCompany, isDistributor });
+
+    // ============================================================
+    // ✅ 1. تعريف المسارات المسموحة لكل دور
+    // ============================================================
+    
+    // ✅ المسارات العامة (متاحة للجميع)
+    const publicPaths = [
+      "/",
+      "/auth",
+      "/auth/login",
+      "/auth/register",
+      "/reset-password",
+      "/products",
+      "/categories",
+      "/search",
+      "/voice-search",
+      "/listing",
+      "/offer",
+      "/cart",
+      "/orders",
+      "/tracking",
+      "/contact",
+      "/about",
+      "/terms",
+      "/privacy",
+    ];
+
+    // ✅ المسارات الخاصة بالمسؤول (Admin)
+    const adminPaths = [
+      "/admin",
+      "/admin/dashboard",
+      "/admin/users",
+      "/admin/orders",
+      "/admin/products",
+      "/admin/categories",
+      "/admin/settings",
+      "/admin/analytics",
+      "/admin/reports",
+      "/admin/promo-codes",
+      "/admin/announcements",
+      "/admin/banners",
+      "/admin/delivery",
+      "/admin/delivery/companies",
+      "/admin/delivery/distributors",
+      "/admin/delivery/orders",
+      "/admin/delivery/admins",
+      "/admin/offers",
+      "/admin/bookings",
+      "/admin/complaints",
+      "/admin/reviews",
+      "/admin/notifications",
+      "/admin/logs",
+      "/admin/backup",
+      "/admin/restore",
+      "/admin/import",
+      "/admin/export",
+      "/admin/tools",
+    ];
+
+    // ✅ المسارات الخاصة بشركة التوصيل (Delivery Company)
+    const deliveryPaths = [
+      "/delivery/dashboard",
+      "/delivery/orders",
+      "/delivery/orders/new",
+      "/delivery/orders",
+      "/delivery/distributors",
+      "/delivery/messages",
+      "/delivery/conversation",
+      "/delivery/settings",
+      "/delivery/reports",
+      "/delivery/analytics",
+      "/delivery/complete",
+      "/delivery/admins",
+      "/delivery/notifications",
+      "/delivery/tracking",
+    ];
+
+    // ✅ المسارات الخاصة بالموزع (Distributor)
+    const distributorPaths = [
+      "/distributor/dashboard",
+      "/distributor/messages",
+      "/distributor/conversation",
+      "/distributor/settings",
+      "/distributor/review",
+      "/distributor/notifications",
+      "/distributor/tracking",
+      "/distributor/orders",
+      "/distributor/earnings",
+      "/distributor/profile",
+      "/distributor/complete",
+    ];
+
+    // ============================================================
+    // ✅ 2. التحقق من الوصول
+    // ============================================================
+
+    // ✅ 2.1 التحقق من المسارات العامة
+    const isPublicPath = publicPaths.some(path => 
+      pathname === path || pathname.startsWith(path + '/')
+    );
+
+    if (isPublicPath) {
+      console.log('✅ [RouteGuard] Public path, access granted:', pathname);
       setLoading(false);
-      redirectedRef.current = false; // ✅ إعادة تعيين
+      setIsAuthorized(true);
       return;
     }
 
-    // ✅ إذا تم التوجيه بالفعل، لا تكرر
-    if (redirectedRef.current) return;
+    // ✅ 2.2 إذا كان المستخدم مسؤول (Admin)
+    if (isAdmin) {
+      // ✅ المسؤول يسمح له بكل شيء
+      console.log('✅ [RouteGuard] Admin, access granted:', pathname);
+      setLoading(false);
+      setIsAuthorized(true);
+      return;
+    }
 
-    const checkAndRedirect = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", app.user.id);
-
-        if (error) throw error;
-        
-        const roles = data?.map((r: any) => r.role) || [];
-        const isAdmin = roles.includes("admin");
-        const isDeliveryCompany = roles.includes("delivery_company");
-        const isDistributor = roles.includes("distributor");
-
-        console.log("🔍 [Redirect] Roles:", { isAdmin, isDeliveryCompany, isDistributor });
-        console.log("🔍 [Redirect] Path:", pathname);
-
-        // ============================================================
-        // ✅ 1. منع الموزع من فتح صفحات delivery أو admin
-        // ============================================================
-      // ============================================================
-// ✅ 6. ✅ إعادة التوجيه للموزع من أي صفحة غير مسموحة
-// ============================================================
-// ============================================================
-// ✅ 6. ✅ إعادة التوجيه للموزع من أي صفحة غير مسموحة
-// ============================================================
-if (isDistributor && !isAdmin) {
-  const distributorPaths = [
-    "/distributor/dashboard",
-    "/distributor/messages",
-    "/distributor/conversation",
-    "/distributor/settings",
-    "/distributor/review",
-  ];
-  
-  const isAllowedPath = distributorPaths.some(path => pathname.startsWith(path));
-  
-  // ✅ منع الموزع من فتح auth/complete
-  if (pathname === "/auth/complete") {
-    redirectedRef.current = true;
-    console.log("🚫 [Redirect] Distributor blocked from auth/complete");
-    navigate({ to: "/distributor/dashboard" });
-    return;
-  }
-  
-  // ✅ إذا كان المسار غير مسموح للموزع، حوله للداشبورد (بدون Toast)
-  if (!isAllowedPath) {
-    redirectedRef.current = true;
-    console.log("🚚 [Redirect] Distributor → /distributor/dashboard from:", pathname);
-    navigate({ to: "/distributor/dashboard" });
-    // ✅ تم إزالة Toast.error
-    return;
-  }
-}
-
-        // ============================================================
-        // ✅ 2. منع شركة التوصيل من فتح صفحات موزع أو admin
-        // ============================================================
-        if (isDeliveryCompany && !isAdmin) {
-          if (pathname.startsWith("/distributor") || pathname.startsWith("/admin")) {
-            redirectedRef.current = true;
-            console.log("🚫 [Redirect] Delivery blocked from:", pathname);
-            navigate({ to: "/delivery/dashboard" });
-            toast.error(isArabic ? "⚠️ غير مسموح بالدخول إلى هذه الصفحة" : "⚠️ Access denied");
-            return;
-          }
-        }
-
-        // ============================================================
-        // ✅ 3. منع العميل (بدون دور) من فتح صفحات الإدارة
-        // ============================================================
-        if (!isAdmin && !isDeliveryCompany && !isDistributor) {
-          if (
-            pathname.startsWith("/distributor") || 
-            pathname.startsWith("/delivery") || 
-            pathname.startsWith("/admin")
-          ) {
-            redirectedRef.current = true;
-            console.log("🚫 [Redirect] Customer blocked from:", pathname);
-            navigate({ to: "/" });
-            toast.error(isArabic ? "⚠️ غير مسموح بالدخول إلى هذه الصفحة" : "⚠️ Access denied");
-            return;
-          }
-        }
-
-        // ============================================================
-        // ✅ 4. ✅ منع الموزع من فتح أي صفحة غير موجودة
-        // ============================================================
-        if (isDistributor && !isAdmin) {
-          const allowedPaths = [
-            "/distributor/dashboard",
-            "/distributor/messages",
-            "/distributor/conversation",
-            "/distributor/settings",
-            "/distributor/review",
-          ];
-          
-          const isAllowed = allowedPaths.some(path => pathname.startsWith(path));
-          
-          // ✅ منع الموزع من فتح auth/complete
-          if (pathname === "/auth/complete") {
-            redirectedRef.current = true;
-            console.log("🚫 [Redirect] Distributor blocked from auth/complete");
-            navigate({ to: "/distributor/dashboard" });
-            return;
-          }
-          
-          if (!isAllowed && pathname.startsWith("/distributor")) {
-            redirectedRef.current = true;
-            console.log("🚫 [Redirect] Distributor invalid page:", pathname);
-            navigate({ to: "/distributor/dashboard" });
-            toast.error(isArabic ? "⚠️ هذه الصفحة غير متاحة" : "⚠️ Page not available");
-            return;
-          }
-        }
-
-        // ============================================================
-        // ✅ 5. منع شركة التوصيل من فتح أي صفحة غير موجودة
-        // ============================================================
-        if (isDeliveryCompany && !isAdmin) {
-          const allowedPaths = [
-            "/delivery/dashboard",
-            "/delivery/messages",
-            "/delivery/conversation",
-            "/delivery/orders",
-            "/delivery/distributors",
-            "/delivery/reports",
-            "/delivery/complete",
-          ];
-          
-          const isAllowed = allowedPaths.some(path => pathname.startsWith(path));
-          
-          if (!isAllowed && pathname.startsWith("/delivery")) {
-            redirectedRef.current = true;
-            console.log("🚫 [Redirect] Delivery invalid page:", pathname);
-            navigate({ to: "/delivery/dashboard" });
-            toast.error(isArabic ? "⚠️ هذه الصفحة غير متاحة" : "⚠️ Page not available");
-            return;
-          }
-        }
-
-        // ============================================================
-        // ✅ 6. إعادة التوجيه للصفحة المناسبة عند الدخول للرئيسية
-        // ============================================================
-        if (isDistributor && (pathname === "/" || pathname === "")) {
-          redirectedRef.current = true;
-          console.log("🚚 [Redirect] Distributor → /distributor/dashboard");
-          navigate({ to: "/distributor/dashboard" });
-          return;
-        }
-
-        if (isDeliveryCompany && (pathname === "/" || pathname === "")) {
-          redirectedRef.current = true;
-          console.log("🏢 [Redirect] Delivery → /delivery/dashboard");
-          navigate({ to: "/delivery/dashboard" });
-          return;
-        }
-
-        if (isAdmin && (pathname === "/" || pathname === "")) {
-          redirectedRef.current = true;
-          console.log("👑 [Redirect] Admin → /admin");
-          navigate({ to: "/admin" });
-          return;
-        }
-
+    // ✅ 2.3 إذا كان المستخدم شركة توصيل (Delivery Company)
+    if (isDeliveryCompany) {
+      const isDeliveryPath = deliveryPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      
+      if (isDeliveryPath) {
+        console.log('✅ [RouteGuard] Delivery path, access granted:', pathname);
         setLoading(false);
-
-      } catch (error) {
-        console.error("❌ Error checking roles:", error);
-        setLoading(false);
+        setIsAuthorized(true);
+        return;
       }
-    };
 
-    checkAndRedirect();
-  }, [app.user, pathname, navigate, isArabic]);
+      // ❌ منع شركة التوصيل من الوصول لصفحات الموزع أو المسؤول
+      const isDistributorPath = distributorPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      const isAdminPath = adminPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      
+      if (isDistributorPath || isAdminPath) {
+        console.log('🚫 [RouteGuard] Delivery → blocked path:', pathname);
+        redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
+        return;
+      }
+    }
 
+    // ✅ 2.4 إذا كان المستخدم موزع (Distributor)
+    if (isDistributor) {
+      const isDistributorPath = distributorPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      
+      if (isDistributorPath) {
+        console.log('✅ [RouteGuard] Distributor path, access granted:', pathname);
+        setLoading(false);
+        setIsAuthorized(true);
+        return;
+      }
+
+      // ❌ منع الموزع من الوصول لصفحات شركة التوصيل أو المسؤول
+      const isDeliveryPath = deliveryPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      const isAdminPath = adminPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      
+      if (isDeliveryPath || isAdminPath) {
+        console.log('🚫 [RouteGuard] Distributor → blocked path:', pathname);
+        redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
+        return;
+      }
+    }
+
+    // ✅ 2.5 مستخدم عادي (بدون دور)
+    if (!isAdmin && !isDeliveryCompany && !isDistributor) {
+      // ✅ منع المستخدم العادي من الوصول لصفحات الإدارة
+      const isRestrictedPath = adminPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      ) || distributorPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      ) || deliveryPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      
+      if (isRestrictedPath) {
+        console.log('🚫 [RouteGuard] Regular user → restricted path:', pathname);
+        redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
+        return;
+      }
+    }
+
+    // ✅ إذا لم يتم العثور على أي قاعدة، السماح بالوصول
+    console.log('✅ [RouteGuard] No restriction found, access granted:', pathname);
+    setLoading(false);
+    setIsAuthorized(true);
+
+  } catch (error) {
+    console.error('❌ [RouteGuard] Error checking authorization:', error);
+    setLoading(false);
+    setIsAuthorized(true); // السماح بالوصول في حالة الخطأ
+  }
+}, [app.user, pathname, navigate, isArabic]);
+  // ✅ دالة التوجيه إلى الصفحة الآمنة
+  const redirectToSafePage = useCallback((
+    isAdmin: boolean,
+    isDeliveryCompany: boolean,
+    isDistributor: boolean
+  ) => {
+    // ✅ منع التوجيه المتكرر لنفس المسار
+    if (redirectTimeoutRef.current) {
+      clearTimeout(redirectTimeoutRef.current);
+    }
+
+    // ✅ تحديد الصفحة الآمنة حسب الدور
+    let safePath = '/auth/login';
+    
+    if (isAdmin) safePath = '/admin/dashboard';
+    else if (isDistributor) safePath = '/distributor/dashboard';
+    else if (isDeliveryCompany) safePath = '/delivery/dashboard';
+    else safePath = '/auth/login';
+
+    // ✅ إذا كنا بالفعل في الصفحة الآمنة، لا تفعل شيئاً
+    if (pathname === safePath) {
+      setLoading(false);
+      setIsAuthorized(true);
+      return;
+    }
+
+    console.log(`🔄 [RouteGuard] Redirecting to: ${safePath}`);
+
+    // ✅ تأخير التوجيه لمنع التنقل السريع
+    redirectTimeoutRef.current = setTimeout(() => {
+      setLoading(false);
+      setIsAuthorized(false);
+      
+      // ✅ استخدام replace بدلاً من navigate لمنع إضافة الصفحة المحظورة إلى التاريخ
+      navigate({ to: safePath, replace: true });
+      
+      // ✅ عرض رسالة للمستخدم
+      toast.warning(
+        isArabic 
+          ? "⚠️ غير مسموح بالوصول إلى هذه الصفحة. تم إعادة توجيهك." 
+          : "⚠️ Access denied. You have been redirected."
+      );
+    }, 300);
+  }, [pathname, navigate, isArabic]);
+
+  // ✅ تنفيذ التحقق
+  useEffect(() => {
+    checkAuthorization();
+  }, [checkAuthorization]);
+
+  // ✅ عرض شاشة تحميل أثناء التحقق (مع تحسين الأداء)
   if (loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-950/80 z-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2a655f] border-t-transparent" />
+      <div className="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-950/80 z-[9999]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#2a655f] border-t-transparent" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-3 w-3 rounded-full bg-[#2a655f] animate-pulse" />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground animate-pulse">
+            {isArabic ? "جاري التحقق من الصلاحيات..." : "Checking permissions..."}
+          </p>
+        </div>
       </div>
     );
   }
 
+  // ✅ إذا لم يكن مصرحاً، لا نعرض المحتوى (سيتم التوجيه)
+  if (!isAuthorized) {
+    return null;
+  }
+
   return null;
 }
+
 // ============================================================
 // ✅ RootComponent - لا يستخدم useApp
 // ============================================================
@@ -1010,6 +1172,7 @@ function RootComponent() {
     pathname.startsWith("/delivery/complete") ||
     pathname.startsWith("/distributor/complete") ||
     pathname.startsWith("/delivery/orders/new") ||
+    pathname.startsWith("/delivery/orders/") ||
     pathname.startsWith("/delivery/messages") ||
     pathname.startsWith("/delivery/conversation") ||
     pathname.startsWith("/delivery/conversation/$userId") ||
@@ -1021,10 +1184,8 @@ function RootComponent() {
     pathname.startsWith("/distributor/settings") ||
     pathname.startsWith("/distributor/review") ||
     pathname.startsWith("/messages") || 
-    pathname.startsWith("/auth/complete") ||
     pathname.startsWith("/messages_") ||
-    pathname.startsWith("/tracking"); // ✅ أضف هذا السطر
-
+    pathname.startsWith("/tracking");
   return (
     <QueryClientProvider client={queryClient}>
       <AppProvider>
@@ -1143,8 +1304,10 @@ function RootContent({
 
   return (
     <>
+      {/* ✅ RouteGuard - حماية متقدمة قبل أي شيء */}
+      <RouteGuard />
+      
       <RealtimeManager />
-      <SimpleRedirect />
       <NotificationPermissionHandler />
       <ProgressBar progress={scrollProgress} />
       

@@ -1,10 +1,11 @@
-// src/routes/cart.tsx - الكود المُصحّح بالكامل
+// src/routes/cart.tsx - الكود المُصحّح بالكامل مع دعم العروض الترويجية
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { 
   ShoppingBag, Trash2, Plus, Minus, ArrowRight, Store, Shield, 
   Truck, Clock, Award, Sparkles, Tag, X, Loader2, Gift, CheckCircle2,
-  MapPin, Edit2, PlusCircle, Navigation, Home, Building2, AlertCircle
+  MapPin, Edit2, PlusCircle, Navigation, Home, Building2, AlertCircle,
+  Percent, Package
 } from "lucide-react";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useApp, formatPrice } from "@/lib/i18n";
@@ -118,6 +119,9 @@ function CartPage() {
         subtotal,
         subtotal_usd,
         listing: item.listing || null,
+        // ✅ ✅ ✅ تحديد نوع العنصر
+        isPromoOffer: item.is_promo_offer === true,
+        isDiscountOffer: item.listing?.is_offer === true && item.is_promo_offer !== true,
       };
     });
   }, [cart?.items]);
@@ -209,7 +213,7 @@ function CartPage() {
     };
   }, [items, app.lang]);
 
-  // ✅ دالة حساب المسافة (هافرسين) - نفس الموجودة في store.$id.tsx
+  // ✅ دالة حساب المسافة (هافرسين)
   const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
     if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
     if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) return 0;
@@ -225,7 +229,7 @@ function CartPage() {
     return R * c;
   }, []);
 
-  // ✅ دالة حساب سعر التوصيل - نفس الموجودة في store.$id.tsx
+  // ✅ دالة حساب سعر التوصيل
   const calculateDeliveryPrice = useCallback((company: any, distanceInKm: number, orderTotal: number): number => {
     const freeThreshold = company.free_delivery_threshold || 0;
     if (freeThreshold > 0 && orderTotal >= freeThreshold) {
@@ -249,176 +253,164 @@ function CartPage() {
     return Math.round(price);
   }, []);
 
-  // ✅ حساب التوصيل - مُحسّن (نفس طريقة store.$id.tsx)
-// ✅ حساب التوصيل - مُحسّن (نفس طريقة store.$id.tsx)
-useEffect(() => {
-  // ✅ منع التنفيذ في أول ريندر
-  if (isFirstRender.current) {
-    isFirstRender.current = false;
-    return;
-  }
+  // ✅ حساب التوصيل
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
 
-  // ✅ إلغاء الـ timeout السابق
-  if (deliveryTimeoutRef.current) {
-    clearTimeout(deliveryTimeoutRef.current);
-  }
-
-  // ✅ تأخير الحساب لتجنب التحديثات المتكررة
-  deliveryTimeoutRef.current = setTimeout(() => {
-    const calculateDelivery = async () => {
-      // ✅ 1. التحقق من وجود عنوان و storeId
-      if (!selectedAddress || !storeIdFromCart) {  // ✅ استخدم storeIdFromCart
-        setDeliveryFee(0);
-        setDeliveryCompany(null);
-        return;
-      }
-      
-      setIsCalculatingDelivery(true);
-      try {
-        // ✅ 2. جلب بيانات المتجر (مع delivery_company_id)
-        const { data: store, error: storeError } = await supabase
-          .from("profiles")
-          .select("delivery_company_id, lat, lng, governorate_id")
-          .eq("id", storeIdFromCart)  // ✅ استخدم storeIdFromCart
-          .maybeSingle();
-
-        if (storeError || !store) {
-          console.error("❌ [Cart] Store not found:", storeError);
-          setDeliveryFee(0);
-          setDeliveryCompany(null);
-          return;
-        }
-
-        // ✅ 3. تحديد شركة التوصيل
-        let selectedCompany = null;
-
-        // ✅ 3a. إذا كان للمتجر شركة توصيل محددة
-        if (store.delivery_company_id) {
-          const { data: company, error: companyError } = await supabase
-            .from("delivery_companies")
-            .select("*")
-            .eq("id", store.delivery_company_id)
-            .eq("is_active", true)
-            .maybeSingle();
-
-          if (!companyError && company) {
-            selectedCompany = company;
-            console.log("✅ [Cart] Using store's delivery company:", company.name_ar);
-          }
-        }
-
-        // ✅ 3b. إذا لم تكن هناك شركة محددة، ابحث عن شركة تغطي المحافظة
-        if (!selectedCompany) {
-          const { data: companies, error: companiesError } = await supabase
-            .from("delivery_companies")
-            .select("*")
-            .eq("is_active", true);
-
-          if (!companiesError && companies) {
-            const matchingCompanies = companies.filter((c: any) => {
-              const coverage = c.coverage_areas || [];
-              if (coverage.includes("all") || coverage.includes(store.governorate_id)) {
-                return true;
-              }
-              if (c.governorate_id === store.governorate_id) {
-                return true;
-              }
-              return false;
-            });
-
-            if (matchingCompanies.length > 0) {
-              selectedCompany = matchingCompanies.sort((a: any, b: any) => 
-                (a.base_price || 0) - (b.base_price || 0)
-              )[0];
-              console.log("✅ [Cart] Using best matching company:", selectedCompany.name_ar);
-            }
-          }
-        }
-
-        // ✅ 3c. استخدام شركة افتراضية
-        if (!selectedCompany) {
-          const { data: fallbackCompany, error: fallbackError } = await supabase
-            .from("delivery_companies")
-            .select("*")
-            .eq("is_active", true)
-            .limit(1)
-            .maybeSingle();
-
-          if (!fallbackError && fallbackCompany) {
-            selectedCompany = fallbackCompany;
-            console.log("✅ [Cart] Using fallback company:", selectedCompany.name_ar);
-          }
-        }
-
-        if (!selectedCompany) {
-          setDeliveryFee(0);
-          setDeliveryCompany(null);
-          return;
-        }
-
-        // ✅ 4. حساب المسافة
-        let distance = 0;
-        const hasValidCoordinates = store.lat && store.lng && selectedAddress.lat && selectedAddress.lng;
-
-        if (hasValidCoordinates) {
-          distance = calculateDistance(
-            store.lat,
-            store.lng,
-            selectedAddress.lat,
-            selectedAddress.lng
-          );
-          console.log(`📍 [Cart] Real distance: ${distance.toFixed(2)} km`);
-        } else {
-          const storeGovId = store.governorate_id;
-          const userGovId = selectedAddress.governorate_id;
-          
-          if (storeGovId === userGovId) {
-            distance = 5;
-          } else {
-            distance = 25;
-          }
-          console.log(`📍 [Cart] Estimated distance: ${distance} km`);
-        }
-
-        // ✅ 5. حساب سعر التوصيل (باستخدام cartTotal من قاعدة البيانات)
-        const fee = calculateDeliveryPrice(selectedCompany, distance, cartTotal);
-
-        console.log(`💰 [Cart] Delivery fee: ${fee} SYP (cartTotal: ${cartTotal}, threshold: ${selectedCompany?.free_delivery_threshold || 0})`);
-        
-setDeliveryFee(Number(fee) || 0);
-        setDeliveryCompany(selectedCompany);
-
-      } catch (error) {
-        console.error("❌ [Cart] Error calculating delivery:", error);
-        setDeliveryFee(0);
-        setDeliveryCompany(null);
-      } finally {
-        setIsCalculatingDelivery(false);
-      }
-    };
-    
-    calculateDelivery();
-  }, 300);
-
-  return () => {
     if (deliveryTimeoutRef.current) {
       clearTimeout(deliveryTimeoutRef.current);
     }
-  };
-}, [selectedAddress, storeIdFromCart, cartTotal, calculateDistance, calculateDeliveryPrice]);  // ✅ استخدم storeIdFromCart
-  // ✅✅✅ حساب الإجماليات (محسن)
-const totals = useMemo(() => {
-  const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-  const total = subtotal + deliveryFee - promoDiscount;
-  
-  return {
-    subtotal,
-    deliveryFee,
-    total,
-    itemCount: items.length,
-    totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
-  };
-}, [items, deliveryFee, promoDiscount]);
+
+    deliveryTimeoutRef.current = setTimeout(() => {
+      const calculateDelivery = async () => {
+        if (!selectedAddress || !storeIdFromCart) {
+          setDeliveryFee(0);
+          setDeliveryCompany(null);
+          return;
+        }
+        
+        setIsCalculatingDelivery(true);
+        try {
+          const { data: store, error: storeError } = await supabase
+            .from("profiles")
+            .select("delivery_company_id, lat, lng, governorate_id")
+            .eq("id", storeIdFromCart)
+            .maybeSingle();
+
+          if (storeError || !store) {
+            console.error("❌ [Cart] Store not found:", storeError);
+            setDeliveryFee(0);
+            setDeliveryCompany(null);
+            return;
+          }
+
+          let selectedCompany = null;
+
+          if (store.delivery_company_id) {
+            const { data: company, error: companyError } = await supabase
+              .from("delivery_companies")
+              .select("*")
+              .eq("id", store.delivery_company_id)
+              .eq("is_active", true)
+              .maybeSingle();
+
+            if (!companyError && company) {
+              selectedCompany = company;
+              console.log("✅ [Cart] Using store's delivery company:", company.name_ar);
+            }
+          }
+
+          if (!selectedCompany) {
+            const { data: companies, error: companiesError } = await supabase
+              .from("delivery_companies")
+              .select("*")
+              .eq("is_active", true);
+
+            if (!companiesError && companies) {
+              const matchingCompanies = companies.filter((c: any) => {
+                const coverage = c.coverage_areas || [];
+                if (coverage.includes("all") || coverage.includes(store.governorate_id)) {
+                  return true;
+                }
+                if (c.governorate_id === store.governorate_id) {
+                  return true;
+                }
+                return false;
+              });
+
+              if (matchingCompanies.length > 0) {
+                selectedCompany = matchingCompanies.sort((a: any, b: any) => 
+                  (a.base_price || 0) - (b.base_price || 0)
+                )[0];
+                console.log("✅ [Cart] Using best matching company:", selectedCompany.name_ar);
+              }
+            }
+          }
+
+          if (!selectedCompany) {
+            const { data: fallbackCompany, error: fallbackError } = await supabase
+              .from("delivery_companies")
+              .select("*")
+              .eq("is_active", true)
+              .limit(1)
+              .maybeSingle();
+
+            if (!fallbackError && fallbackCompany) {
+              selectedCompany = fallbackCompany;
+              console.log("✅ [Cart] Using fallback company:", selectedCompany.name_ar);
+            }
+          }
+
+          if (!selectedCompany) {
+            setDeliveryFee(0);
+            setDeliveryCompany(null);
+            return;
+          }
+
+          let distance = 0;
+          const hasValidCoordinates = store.lat && store.lng && selectedAddress.lat && selectedAddress.lng;
+
+          if (hasValidCoordinates) {
+            distance = calculateDistance(
+              store.lat,
+              store.lng,
+              selectedAddress.lat,
+              selectedAddress.lng
+            );
+            console.log(`📍 [Cart] Real distance: ${distance.toFixed(2)} km`);
+          } else {
+            const storeGovId = store.governorate_id;
+            const userGovId = selectedAddress.governorate_id;
+            
+            if (storeGovId === userGovId) {
+              distance = 5;
+            } else {
+              distance = 25;
+            }
+            console.log(`📍 [Cart] Estimated distance: ${distance} km`);
+          }
+
+          const fee = calculateDeliveryPrice(selectedCompany, distance, cartTotal);
+          console.log(`💰 [Cart] Delivery fee: ${fee} SYP (cartTotal: ${cartTotal})`);
+          
+          setDeliveryFee(Number(fee) || 0);
+          setDeliveryCompany(selectedCompany);
+
+        } catch (error) {
+          console.error("❌ [Cart] Error calculating delivery:", error);
+          setDeliveryFee(0);
+          setDeliveryCompany(null);
+        } finally {
+          setIsCalculatingDelivery(false);
+        }
+      };
+      
+      calculateDelivery();
+    }, 300);
+
+    return () => {
+      if (deliveryTimeoutRef.current) {
+        clearTimeout(deliveryTimeoutRef.current);
+      }
+    };
+  }, [selectedAddress, storeIdFromCart, cartTotal, calculateDistance, calculateDeliveryPrice]);
+
+  // ✅✅✅ حساب الإجماليات
+  const totals = useMemo(() => {
+    const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const total = subtotal + deliveryFee - promoDiscount;
+    
+    return {
+      subtotal,
+      deliveryFee,
+      total,
+      itemCount: items.length,
+      totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
+    };
+  }, [items, deliveryFee, promoDiscount]);
   
   // ✅ تغيير العنوان
   const handleAddressChange = useCallback((addressId: string) => {
@@ -433,6 +425,17 @@ const totals = useMemo(() => {
     }
   }, [userAddresses, promoApplied]);
 
+  // ✅ إزالة كود الخصم
+  const removePromoCode = useCallback(() => {
+    setPromoCode("");
+    setPromoApplied(false);
+    setPromoDiscount(0);
+    setPromoMessage("");
+    setPromoData(null);
+    setFreeItems([]);
+    toast.info(app.lang === "ar" ? "🗑️ تم إزالة كود الخصم" : "🗑️ Promo code removed");
+  }, [app.lang]);
+
   // ✅ ✅ ✅ إضافة عنوان جديد (مع التحقق من الإجبارية)
   const handleAddAddress = useCallback(async () => {
     if (!app.user || !newLocation) {
@@ -440,13 +443,11 @@ const totals = useMemo(() => {
       return;
     }
     
-    // ✅ ✅ ✅ التحقق من اسم العنوان (إجباري)
     if (!newAddressLabel.trim()) {
       toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال اسم للعنوان (مثال: المنزل، العمل)" : "⚠️ Please enter a label for the address (e.g. Home, Work)");
       return;
     }
     
-    // ✅ ✅ ✅ التحقق من التفاصيل الإضافية (إجباري)
     if (!newAddressDetails.trim()) {
       toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال تفاصيل إضافية للعنوان (رقم الطابق، رقم الشقة، معلم قريب)" : "⚠️ Please enter additional details (floor, apartment, nearby landmark)");
       return;
@@ -492,18 +493,7 @@ const totals = useMemo(() => {
     }
   }, [app.user, newLocation, newAddressLabel, newAddressDetails, userAddresses.length, app.lang]);
 
-  // ✅ إزالة كود الخصم
-  const removePromoCode = useCallback(() => {
-    setPromoCode("");
-    setPromoApplied(false);
-    setPromoDiscount(0);
-    setPromoMessage("");
-    setPromoData(null);
-    setFreeItems([]);
-    toast.info(app.lang === "ar" ? "🗑️ تم إزالة كود الخصم" : "🗑️ Promo code removed");
-  }, [app.lang]);
-
-// ✅ تطبيق كود الخصم - لوجك احترافي متكامل
+// ✅ تطبيق كود الخصم
 const applyPromoCode = useCallback(async () => {
   console.log("🔍 [PROMO] ===== START APPLYING PROMO CODE =====");
   console.log("🔍 [PROMO] Code entered:", promoCode.trim().toUpperCase());
@@ -513,12 +503,27 @@ const applyPromoCode = useCallback(async () => {
     return;
   }
 
+  // ✅ ✅ ✅ التحقق: هل يوجد كود مطبق بالفعل؟
+  if (promoApplied) {
+    console.log("❌ [PROMO] A promo code is already applied");
+    toast.error(
+      app.lang === "ar" 
+        ? "⚠️ لا يمكن تطبيق أكثر من كود خصم واحد. قم بإزالة الكود الحالي أولاً" 
+        : "⚠️ Cannot apply more than one promo code. Please remove the current code first"
+    );
+    setPromoMessage(
+      app.lang === "ar" 
+        ? "⚠️ يوجد كود خصم مطبق بالفعل، قم بإزالته أولاً" 
+        : "⚠️ A promo code is already applied, please remove it first"
+    );
+    setIsApplyingPromo(false);
+    return;
+  }
+
   setIsApplyingPromo(true);
   setPromoMessage("");
 
   try {
-    // ✅ 1. جلب الكود من قاعدة البيانات
-    console.log("🔍 [PROMO] Step 1: Fetching code from database...");
     const { data, error } = await supabase
       .from("promo_codes")
       .select("*")
@@ -531,9 +536,6 @@ const applyPromoCode = useCallback(async () => {
       throw error;
     }
 
-    console.log("🔍 [PROMO] Step 2: Database result:", { data, error });
-
-    // ❌ الكود غير موجود
     if (!data) {
       console.log("❌ [PROMO] Code not found or inactive");
       setPromoMessage(app.lang === "ar" ? "❌ كود غير صالح" : "❌ Invalid code");
@@ -553,17 +555,10 @@ const applyPromoCode = useCallback(async () => {
       store_name: data.store_name,
     });
 
-    // ✅ 2. التحقق من الصلاحية (التاريخ)
-    console.log("🔍 [PROMO] Step 3: Checking date validity...");
     const now = new Date();
     const expiresAt = data.expires_at ? new Date(data.expires_at) : null;
     const startsAt = data.starts_at ? new Date(data.starts_at) : null;
 
-    console.log("📌 [PROMO] Current time:", now.toISOString());
-    console.log("📌 [PROMO] Starts at:", startsAt?.toISOString() || "N/A");
-    console.log("📌 [PROMO] Expires at:", expiresAt?.toISOString() || "N/A");
-
-    // ❌ لم يبدأ بعد
     if (startsAt && now < startsAt) {
       console.log("❌ [PROMO] Code not active yet");
       setPromoMessage(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
@@ -571,7 +566,6 @@ const applyPromoCode = useCallback(async () => {
       return;
     }
 
-    // ❌ انتهى
     if (expiresAt && now > expiresAt) {
       console.log("❌ [PROMO] Code expired");
       setPromoMessage(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
@@ -581,11 +575,6 @@ const applyPromoCode = useCallback(async () => {
 
     console.log("✅ [PROMO] Code is valid (active and within date range)");
 
-    // ✅ 3. التحقق من عدد الاستخدامات المتبقية
-    console.log("🔍 [PROMO] Step 4: Checking usage limit...");
-    console.log(`📌 [PROMO] Used: ${data.used_count || 0}, Limit: ${data.usage_limit || 'Unlimited'}`);
-
-    // ❌ تم استهلاك الكود بالكامل
     if (data.usage_limit && data.used_count >= data.usage_limit) {
       console.log("❌ [PROMO] Code usage limit reached");
       setPromoMessage(
@@ -601,7 +590,6 @@ const applyPromoCode = useCallback(async () => {
       return;
     }
 
-    // ⚠️ تنبيه إذا تبقى استخدامات قليلة
     if (data.usage_limit) {
       const remaining = data.usage_limit - data.used_count;
       console.log(`📌 [PROMO] Remaining uses: ${remaining}`);
@@ -614,9 +602,6 @@ const applyPromoCode = useCallback(async () => {
       }
     }
     console.log("✅ [PROMO] Usage limit check passed");
-
-    // ✅ 4. التحقق من وجود طلب معلق بنفس الكود
-    console.log("🔍 [PROMO] Step 5: Checking for pending orders with this code...");
 
     const { data: existingUsage, error: usageCheckError } = await supabase
       .from("promo_code_usage")
@@ -653,7 +638,6 @@ const applyPromoCode = useCallback(async () => {
     }
     console.log("✅ [PROMO] No pending usage found");
 
-    // ✅ 5. التحقق من المتجر (إذا كان الكود مخصصاً)
     if (data.store_id) {
       console.log("🔍 [PROMO] Step 6: Checking store specificity...");
       console.log("📌 [PROMO] Code is for store:", data.store_id, data.store_name);
@@ -667,7 +651,6 @@ const applyPromoCode = useCallback(async () => {
         return isDifferent;
       });
 
-      // ❌ إذا كان هناك منتج من متجر مختلف
       if (hasDifferentStore) {
         console.log("❌ [PROMO] Cart contains products from different stores");
         setPromoMessage(
@@ -687,7 +670,6 @@ const applyPromoCode = useCallback(async () => {
       console.log("✅ [PROMO] Step 6: Code is public (no store restriction)");
     }
 
-    // ✅ 6. حساب المجموع الفرعي والتحقق من الحد الأدنى
     console.log("🔍 [PROMO] Step 7: Calculating subtotal and checking min order...");
     const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
     const minOrder = data.min_order || 0;
@@ -695,7 +677,6 @@ const applyPromoCode = useCallback(async () => {
     console.log("📌 [PROMO] Subtotal:", subtotal);
     console.log("📌 [PROMO] Minimum order:", minOrder);
 
-    // ❌ لم يتم تجاوز الحد الأدنى
     if (subtotal < minOrder) {
       console.log("❌ [PROMO] Subtotal below minimum order");
       setPromoMessage(
@@ -712,7 +693,6 @@ const applyPromoCode = useCallback(async () => {
     }
     console.log("✅ [PROMO] Subtotal meets minimum order requirement");
 
-    // ✅ 7. حساب الخصم حسب النوع
     console.log("🔍 [PROMO] Step 8: Calculating discount...");
     let discount = 0;
     let discountMessage = "";
@@ -733,7 +713,6 @@ const applyPromoCode = useCallback(async () => {
       discountMessage = app.lang === "ar" ? "توصيل مجاني" : "Free Shipping";
       console.log("📌 [PROMO] Free shipping discount:", deliveryFee);
       
-      // ❌ التوصيل مجاني بالفعل
       if (deliveryFee === 0) {
         console.log("✅ [PROMO] Delivery is already free");
         setPromoMessage(app.lang === "ar" ? "✅ التوصيل مجاني بالفعل" : "✅ Shipping is already free");
@@ -747,7 +726,6 @@ const applyPromoCode = useCallback(async () => {
       const getQty = data.metadata?.get_quantity || 1;
       console.log("📌 [PROMO] Buy X Get Y:", buyQty, "→ get", getQty, "free");
       
-      // ✅ حساب المنتجات المجانية (أرخص المنتجات)
       const sortedItems = [...items].sort((a, b) => a.price - b.price);
       let freeItemsCount = 0;
       let freeDiscount = 0;
@@ -772,7 +750,6 @@ const applyPromoCode = useCallback(async () => {
       discountMessage = `${app.lang === "ar" ? `اشترِ ${buyQty} واحصل على ${getQty} مجاناً` : `Buy ${buyQty} Get ${getQty} Free`}`;
       console.log("📌 [PROMO] Buy X Get Y discount:", freeDiscount);
       
-      // ❌ لا توجد منتجات مؤهلة
       if (discount === 0) {
         console.log("❌ [PROMO] No free items qualify");
         setPromoMessage(
@@ -789,13 +766,11 @@ const applyPromoCode = useCallback(async () => {
       }
     }
 
-    // ✅ 8. تطبيق الحد الأقصى للخصم
     if (data.max_discount && discount > data.max_discount) {
       console.log("📌 [PROMO] Applying max discount limit:", data.max_discount);
       discount = data.max_discount;
     }
 
-    // ✅ 9. التحقق من أن الخصم لا يتجاوز المجموع
     if (discount > subtotal) {
       console.log("📌 [PROMO] Discount exceeds subtotal, adjusting...");
       discount = subtotal;
@@ -804,7 +779,6 @@ const applyPromoCode = useCallback(async () => {
     console.log("💰 [PROMO] Final discount:", discount);
     console.log("💰 [PROMO] Final discount message:", discountMessage);
 
-    // ❌ الخصم 0 (لا يمكن تطبيقه)
     if (discount <= 0) {
       console.log("❌ [PROMO] Discount is 0, cannot apply");
       setPromoMessage(app.lang === "ar" ? "❌ لا يمكن تطبيق الخصم" : "❌ Cannot apply discount");
@@ -812,7 +786,6 @@ const applyPromoCode = useCallback(async () => {
       return;
     }
 
-    // ✅ 10. تطبيق الخصم
     console.log("✅ [PROMO] Step 9: Applying discount...");
     setPromoApplied(true);
     setPromoDiscount(discount);
@@ -841,7 +814,7 @@ const applyPromoCode = useCallback(async () => {
     setIsApplyingPromo(false);
     console.log("🔍 [PROMO] ===== END APPLYING PROMO CODE =====");
   }
-}, [promoCode, items, deliveryFee, app.lang, app.currency, app.user?.id]);
+}, [promoCode, promoApplied, items, deliveryFee, app.lang, app.currency, app.user?.id]);
 
   // ✅ تحديث الكمية
   const handleUpdateQuantity = useCallback(async (itemId: string, newQuantity: number) => {
@@ -892,7 +865,7 @@ const applyPromoCode = useCallback(async () => {
   }, [app.user, clearCart, promoApplied, removePromoCode, app.lang]);
 
   // ✅ إتمام الشراء
-  const checkout = useCallback(async () => {
+const checkout = useCallback(async () => {
     if (!app.user) {
       toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
       navigate({ to: "/auth/$mode", params: { mode: "login" } });
@@ -910,7 +883,15 @@ const applyPromoCode = useCallback(async () => {
     }
 
     try {
-      // ✅ ✅ ✅ جلب اسم المستخدم ورقمه من profiles
+      // ✅ ✅ ✅ طباعة القيم قبل الحفظ للتحقق
+      console.log("📊 [Checkout] ===== ORDER SUMMARY =====");
+      console.log("💰 deliveryFee:", deliveryFee);
+      console.log("💰 promoDiscount:", promoDiscount);
+      console.log("💰 totals.total:", totals.total);
+      console.log("💰 totals.subtotal:", totals.subtotal);
+      console.log("💰 promoApplied:", promoApplied);
+      console.log("💰 promoData:", promoData);
+
       const { data: userProfile, error: profileError } = await supabase
         .from("profiles")
         .select("full_name, phone")
@@ -924,7 +905,6 @@ const applyPromoCode = useCallback(async () => {
       const buyerName = userProfile?.full_name || app.user.full_name || app.user.email || 'عميل';
       const buyerPhone = userProfile?.phone || app.user.phone || '';
 
-      // ✅ تجميع المنتجات حسب البائع
       const groupedBySeller = items.reduce((acc: any, item: any) => {
         const listing = item.listing || item;
         const sellerId = listing.owner_id || item.listing_id;
@@ -933,7 +913,6 @@ const applyPromoCode = useCallback(async () => {
         return acc;
       }, {});
 
-      // ✅ لكل بائع، ننشئ طلب واحد
       for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
         const itemsList = sellerItems as any[];
         
@@ -946,30 +925,44 @@ const applyPromoCode = useCallback(async () => {
         const firstItem = itemsList[0];
         const firstListing = firstItem.listing || firstItem;
         const governorateId = firstListing.governorate_id || null;
-// ✅ في دالة checkout، عند إنشاء orderData
-const orderData: any = {
-  buyer_id: app.user.id,
-  seller_id: sellerId,
-  listing_id: firstItem.listing_id,
-  total: total,  // المجموع الفرعي
-  quantity: itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0),
-  notes: `طلب من ${storeInfo.name} (${itemsList.length} منتجات)`,
-  governorate_id: governorateId,
-  delivery_address: selectedAddress.address_text,
-  delivery_lat: selectedAddress.lat || 0,
-  delivery_lng: selectedAddress.lng || 0,
-  buyer_name: buyerName,
-  buyer_phone: buyerPhone,
-  status: 'pending',
-  currency: itemsList[0]?.currency || 'SYP',
-  created_at: new Date().toISOString(),
-  
-  // ✅ ✅ ✅ أضف هذه الحقول
-  delivery_fee: deliveryFee,  // سعر التوصيل
-  promo_discount: promoApplied ? promoDiscount : 0,  // قيمة الخصم
-  promo_code_id: promoApplied && promoData ? promoData.id : null,  // كود الخصم
-  total_with_delivery: totals.total,  // ✅ الإجمالي الكامل (مطابق للسلة)
-};
+
+        // ✅ ✅ ✅ حساب total_with_delivery بشكل صحيح
+        const finalDeliveryFee = deliveryFee || 0;
+        const finalPromoDiscount = promoApplied ? promoDiscount : 0;
+        const finalTotalWithDelivery = totals.total || (total + finalDeliveryFee - finalPromoDiscount);
+
+        console.log(`📊 [Checkout] Order for seller ${sellerId}:`);
+        console.log(`   total: ${total}`);
+        console.log(`   deliveryFee: ${finalDeliveryFee}`);
+        console.log(`   promoDiscount: ${finalPromoDiscount}`);
+        console.log(`   total_with_delivery: ${finalTotalWithDelivery}`);
+
+        const orderData: any = {
+          buyer_id: app.user.id,
+          seller_id: sellerId,
+          listing_id: firstItem.listing_id,
+          total: total,
+          quantity: itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0),
+          notes: `طلب من ${storeInfo.name} (${itemsList.length} منتجات)`,
+          governorate_id: governorateId,
+          delivery_address: selectedAddress.address_text,
+          delivery_lat: selectedAddress.lat || 0,
+          delivery_lng: selectedAddress.lng || 0,
+          buyer_name: buyerName,
+          buyer_phone: buyerPhone,
+          status: 'pending',
+          currency: itemsList[0]?.currency || 'SYP',
+          created_at: new Date().toISOString(),
+          
+          // ✅ ✅ ✅ تأكد من حفظ القيم بشكل صحيح
+          delivery_fee: finalDeliveryFee,
+          promo_discount: finalPromoDiscount,
+          promo_code_id: promoApplied && promoData ? promoData.id : null,
+          total_with_delivery: finalTotalWithDelivery,
+        };
+
+        console.log("📊 [Checkout] Final orderData:", orderData);
+
         const { data: order, error: orderError } = await supabase
           .from("orders")
           .insert(orderData)
@@ -978,7 +971,8 @@ const orderData: any = {
 
         if (orderError) throw orderError;
 
-        // ✅ إضافة المنتجات كـ order_items
+        console.log(`✅ [Checkout] Order created with ID: ${order.id}`);
+
         const orderItems = itemsList.map((item: any) => ({
           order_id: order.id,
           listing_id: item.listing_id,
@@ -994,10 +988,8 @@ const orderData: any = {
 
         if (itemsError) throw itemsError;
 
-        // ✅ ✅ ✅ تسجيل استخدام كود الخصم (إذا تم تطبيقه)
         if (promoApplied && promoData && order) {
           try {
-            // 1. ✅ تسجيل استخدام الكود في جدول promo_code_usage (حالة pending)
             const { error: usageError } = await supabase
               .from("promo_code_usage")
               .insert({
@@ -1021,9 +1013,6 @@ const orderData: any = {
               console.log(`✅ Promo code ${promoData.code} usage recorded for order ${order.id} (pending)`);
             }
             
-            // 2. ❌ لا نزيد used_count هنا (يتم عند قبول الطلب)
-            // ✅ used_count يزداد فقط عند قبول الطلب من قبل البائع/الأدمن
-            
           } catch (error) {
             console.error("❌ Error in promo code recording:", error);
           }
@@ -1039,7 +1028,7 @@ const orderData: any = {
             body_ar: `لديك طلب جديد من ${buyerName} (${itemsList.length} منتجات)${promoApplied ? ` 🔥 تم استخدام كود خصم` : ''}`,
             title_en: "📦 New Order",
             body_en: `You have a new order from ${buyerName} (${itemsList.length} products)${promoApplied ? ` 🔥 Promo code used` : ''}`,
-            link_url: `/orders/${order.id}`,
+           link_url: `/dashboard`,
             metadata: {
               order_id: order.id,
               buyer_id: app.user.id,
@@ -1075,7 +1064,6 @@ const orderData: any = {
       );
     }
   }, [app.user, items, clearCart, promoApplied, removePromoCode, navigate, app.lang, selectedAddress, storeInfo.name, promoData, promoDiscount, totals, deliveryFee, freeItems]);
-
   if (isLoading || isLoadingAddresses) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
@@ -1251,42 +1239,50 @@ const orderData: any = {
                 </Button>
               </div>
               
-             {/* ✅ عرض معلومات التوصيل - محسّن */}
-{selectedAddress && (
-  <div className="mt-3 pt-3 border-t border-[#2a655f]/10 flex items-center justify-between">
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-      <Truck className="h-4 w-4 text-[#2a655f]" />
-      {isCalculatingDelivery ? (
-        <span className="flex items-center gap-1">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          {app.lang === "ar" ? "جاري الحساب..." : "Calculating..."}
-        </span>
-      ) : (
-        <span>
-          {deliveryFee === 0 
-            ? (app.lang === "ar" ? "🆓 توصيل مجاني" : "🆓 Free Delivery")
-            : `${app.lang === "ar" ? "توصيل" : "Delivery"}: ${formatPrice(deliveryFee, app.currency, app.lang)}`
-          }
-        </span>
-      )}
-    </div>
-    {deliveryCompany && (
-      <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
-        {deliveryCompany.name_ar || "شركة توصيل"}
-      </Badge>
-    )}
-  </div>
-)}
+              {/* ✅ عرض معلومات التوصيل */}
+              {selectedAddress && (
+                <div className="mt-3 pt-3 border-t border-[#2a655f]/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Truck className="h-4 w-4 text-[#2a655f]" />
+                    {isCalculatingDelivery ? (
+                      <span className="flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        {app.lang === "ar" ? "جاري الحساب..." : "Calculating..."}
+                      </span>
+                    ) : (
+                      <span>
+                        {deliveryFee === 0 
+                          ? (app.lang === "ar" ? "🆓 توصيل مجاني" : "🆓 Free Delivery")
+                          : `${app.lang === "ar" ? "توصيل" : "Delivery"}: ${formatPrice(deliveryFee, app.currency, app.lang)}`
+                        }
+                      </span>
+                    )}
+                  </div>
+                  {deliveryCompany && (
+                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                      {deliveryCompany.name_ar || "شركة توصيل"}
+                    </Badge>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* ✅ قائمة المنتجات */}
+            {/* ✅ ✅ ✅ قائمة المنتجات مع تصنيفها (منتج عادي / عرض تخفيضي / عرض ترويجي) */}
             {items.map((item: any) => {
               const listing = item.listing || item;
+              const isPromoOffer = item.isPromoOffer === true;
+              const isDiscountOffer = item.isDiscountOffer === true;
+              const isRegularProduct = !isPromoOffer && !isDiscountOffer;
               
               return (
                 <div 
                   key={item.id} 
-                  className="group bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-4 hover:shadow-xl hover:border-[#2a655f]/30 transition-all duration-300 hover:scale-[1.01]"
+                  className={cn(
+                    "group bg-white dark:bg-slate-900/80 rounded-2xl border p-4 hover:shadow-xl transition-all duration-300 hover:scale-[1.01]",
+                    isPromoOffer && "border-purple-500/50 hover:border-purple-500/80 hover:shadow-purple-500/20",
+                    isDiscountOffer && "border-red-500/50 hover:border-red-500/80 hover:shadow-red-500/20",
+                    isRegularProduct && "border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30"
+                  )}
                 >
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative h-28 w-28 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 mx-auto sm:mx-0">
@@ -1298,11 +1294,45 @@ const orderData: any = {
                           (e.target as HTMLImageElement).src = '/placeholder.png';
                         }}
                       />
+                      {/* ✅ شارة نوع العنصر على الصورة */}
+                      {isPromoOffer && (
+                        <div className="absolute top-1 left-1">
+                          <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 text-[8px] px-1.5 py-0.5">
+                            <Gift className="h-2.5 w-2.5 inline mr-0.5" />
+                            {app.lang === "ar" ? "ترويجي" : "Promo"}
+                          </Badge>
+                        </div>
+                      )}
+                      {isDiscountOffer && (
+                        <div className="absolute top-1 left-1">
+                          <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[8px] px-1.5 py-0.5">
+                            <Percent className="h-2.5 w-2.5 inline mr-0.5" />
+                            {app.lang === "ar" ? "تخفيض" : "Sale"}
+                          </Badge>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                         <div className="flex-1">
+                          {/* ✅ عرض ترويجي - شارة كبيرة */}
+                          {isPromoOffer && (
+                            <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 text-[9px] mb-1">
+                              <Gift className="h-3 w-3 mr-1" />
+                              {app.lang === "ar" ? "🎁 عرض ترويجي" : "🎁 Promo Offer"}
+                            </Badge>
+                          )}
+                          
+                          {/* ✅ عرض تخفيضي - شارة */}
+                          {isDiscountOffer && (
+                            <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[9px] mb-1">
+                              <Percent className="h-3 w-3 mr-1" />
+                              {app.lang === "ar" ? "🔥 عرض تخفيض" : "🔥 Discount"}
+                              {listing.discount_percent && ` ${listing.discount_percent}%`}
+                            </Badge>
+                          )}
+                          
                           <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors line-clamp-1">
                             {app.lang === "ar" ? listing.title_ar : (listing.title_en || listing.title_ar)}
                           </h3>
@@ -1333,15 +1363,36 @@ const orderData: any = {
                             )}
                           </div>
                           
-                          {/* ✅ السعر - مع سعر المشطوب فقط للعروض */}
-                          <div className="mt-2 flex items-center gap-3">
+                          {/* ✅ عرض تفاصيل العرض الترويجي (الهدية) */}
+                          {isPromoOffer && item.offer_data && (
+                            <div className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 flex-wrap">
+                              <Gift className="h-3 w-3" />
+                              {app.lang === "ar" 
+                                ? `🎁 هدية: ${item.offer_data.get_quantity || 1} مجاناً`
+                                : `🎁 Gift: ${item.offer_data.get_quantity || 1} free`
+                              }
+                              {item.selected_gift_variation && (
+                                <Badge variant="outline" className="text-[9px] border-emerald-300/50 text-emerald-600">
+                                  ✅ {app.lang === "ar" ? "فيرنت مختار" : "Variation selected"}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* ✅ السعر */}
+                          <div className="mt-2 flex items-center gap-3 flex-wrap">
                             <span className="text-xl font-bold text-[#2a655f] dark:text-[#3a8a82]">
                               {formatPrice(Number(item.price || listing.price), app.currency, app.lang)}
                             </span>
-                            {listing.is_offer && listing.old_price && (
+                            {listing.old_price && listing.old_price > 0 && (
                               <span className="text-xs text-muted-foreground line-through">
                                 {formatPrice(Number(listing.old_price), app.currency, app.lang)}
                               </span>
+                            )}
+                            {isPromoOffer && (
+                              <Badge className="bg-emerald-500/90 text-white border-0 text-[9px]">
+                                ✅ {app.lang === "ar" ? "عرض" : "Offer"}
+                              </Badge>
                             )}
                           </div>
                         </div>

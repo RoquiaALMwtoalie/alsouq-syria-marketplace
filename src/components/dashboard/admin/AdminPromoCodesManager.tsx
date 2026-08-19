@@ -12,7 +12,7 @@ export interface PromoCode {
   code: string;
   label: string;
   description: string;
-  type: 'percentage' | 'fixed' | 'free_shipping' | 'buy_x_get_y';
+  type: 'percentage' | 'fixed' | 'free_shipping';
   value: number;
   min_order: number;
   max_discount: number | null;

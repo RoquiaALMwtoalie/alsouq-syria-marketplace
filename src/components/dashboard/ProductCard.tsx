@@ -1,8 +1,9 @@
-// src/components/dashboard/ProductCard.tsx
+// src/components/dashboard/ProductCard.tsx - الكود الكامل المصحح (زر الحذف يظهر دائماً)
 
 import { 
   Package, Gift, Clock, Edit2, Trash2, Eye, MoreVertical, 
-  DollarSign, Layers, Star, CheckCircle2, Archive, FileText, RefreshCw 
+  DollarSign, Layers, Star, CheckCircle2, Archive, FileText, RefreshCw,
+  Sparkles, Zap, Tag, Percent, Plus, Minus, Calendar, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,10 @@ interface ProductCardProps {
   onView: () => void;
   onConvertToOffer?: (product: any) => void;
   onRepublish?: (product: any) => void;
+  onAddPromoOffer?: (product: any) => void;
+  onEditPromoOffer?: (offer: any) => void;
+  onRemovePromoOffer?: (offerId: string) => void;
+  onViewPromoOffer?: (offer: any) => void;
   lang: string;
   currency: string;
   formatPrice: (price: number, currency: string, lang: string) => string;
@@ -35,6 +40,10 @@ export function ProductCard({
   onView, 
   onConvertToOffer,
   onRepublish,
+  onAddPromoOffer,
+  onEditPromoOffer,
+  onRemovePromoOffer,
+  onViewPromoOffer,
   lang, 
   currency, 
   formatPrice, 
@@ -49,10 +58,12 @@ export function ProductCard({
   const discount = product.discount_percent;
   const avgRating = product.avg_rating || product.rating || 0;
   const reviewsCount = product.reviews_count || 0;
+  
+  const hasPromoOffer = product.promo_offer !== null && product.promo_offer !== undefined;
+  const promoOffer = product.promo_offer;
 
   const fullStars = Math.round(avgRating);
 
-  // ✅ دالة تحويل المنتج لعرض (Fallback)
   const handleConvertToOffer = async () => {
     if (!oldPrice || oldPrice <= product.price) {
       toast.error(
@@ -106,7 +117,6 @@ export function ProductCard({
     }
   };
 
-  // ✅ دالة فتح مودال التحويل
   const openConvertDialog = () => {
     if (onConvertToOffer) {
       onConvertToOffer(product);
@@ -115,7 +125,6 @@ export function ProductCard({
     }
   };
 
-  // ✅ دالة عرض الحالة مع الألوان المناسبة
   const getStatusBadge = () => {
     const statusMap: Record<string, { color: string; icon: any; label: string }> = {
       pending: { 
@@ -154,10 +163,62 @@ export function ProductCard({
     );
   };
 
+  const getPromoTypeLabel = (type: string) => {
+    const types: Record<string, { label: string; icon: any; color: string }> = {
+      bogo: { 
+        label: lang === "ar" ? "اشتر 1 واحصل على 1" : "Buy 1 Get 1", 
+        icon: Gift, 
+        color: "text-purple-600" 
+      },
+      cross_sell: { 
+        label: lang === "ar" ? "شراء منتج والحصول على آخر" : "Buy product get another", 
+        icon: Tag, 
+        color: "text-blue-600" 
+      },
+      bundle: { 
+        label: lang === "ar" ? "باقة منتجات" : "Bundle", 
+        icon: Package, 
+        color: "text-orange-600" 
+      },
+    };
+    return types[type] || types.bogo;
+  };
+
+  const renderPromoBadge = () => {
+    if (!hasPromoOffer || !promoOffer) return null;
+    
+    const typeInfo = getPromoTypeLabel(promoOffer.offer_type);
+    const Icon = typeInfo.icon;
+    
+    return (
+      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+        <Badge 
+          className={cn(
+            "border-0 shadow-lg rounded-full px-2.5 py-0.5 text-[10px] font-bold flex items-center gap-1",
+            "bg-gradient-to-r from-purple-500 to-indigo-500 text-white"
+          )}
+        >
+          <Sparkles className="h-2.5 w-2.5" />
+          {lang === "ar" ? "عرض ترويجي" : "Promo"}
+        </Badge>
+        <Badge 
+          variant="outline" 
+          className="border-purple-300/50 text-purple-700 dark:text-purple-300 text-[9px] rounded-full px-2 py-0 h-5 flex items-center gap-0.5"
+        >
+          <Icon className="h-2.5 w-2.5" />
+          {typeInfo.label}
+        </Badge>
+      </div>
+    );
+  };
+
+  // ============================================================
+  // ✅ VIEW MODE: LIST
+  // ============================================================
   if (viewMode === "list") {
     return (
       <>
-        <div className="group bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-200/50 dark:border-slate-800/50 hover:border-[#2a655f]/50 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all duration-300 flex flex-col sm:flex-row">
+        <div className="group bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-200/50 dark:border-slate-800/50 hover:border-[#2a655f]/50 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all duration-300 flex flex-col sm:flex-row min-h-[180px]">
           <div className="sm:w-48 h-48 sm:h-auto flex-shrink-0 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 relative overflow-hidden">
             {product.cover_url ? (
               <img src={product.cover_url} alt={product.title_ar} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -172,6 +233,12 @@ export function ProductCard({
                 </Badge>
               )}
               {getStatusBadge()}
+              {hasPromoOffer && (
+                <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 shadow-lg rounded-full px-2.5 py-0.5 text-[10px] flex items-center gap-1">
+                  <Sparkles className="h-2.5 w-2.5" />
+                  {lang === "ar" ? "ترويجي" : "Promo"}
+                </Badge>
+              )}
             </div>
             
             {!product.is_available && (
@@ -181,11 +248,13 @@ export function ProductCard({
             )}
           </div>
           
-          <div className="flex-1 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex-1 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[180px]">
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-base line-clamp-1 group-hover:text-[#2a655f] transition-colors">
                 {product.title_ar}
               </div>
+              
+              {renderPromoBadge()}
               
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <div className="flex items-center gap-0.5">
@@ -201,8 +270,8 @@ export function ProductCard({
               
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <Badge className={isOffer ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0 rounded-full text-[10px]" : "bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-0 rounded-full text-[10px]"}>
-                  {isOffer ? <Gift className="h-3 w-3 mr-1" /> : <Package className="h-3 w-3 mr-1" />}
-                  {isOffer ? (lang === "ar" ? "عرض" : "Offer") : (lang === "ar" ? "منتج" : "Product")}
+                  {isOffer ? <Percent className="h-3 w-3 mr-1" /> : <Package className="h-3 w-3 mr-1" />}
+                  {isOffer ? (lang === "ar" ? "عرض تخفيض" : "Discount") : (lang === "ar" ? "منتج" : "Product")}
                 </Badge>
                 <span className={`inline-flex items-center gap-1 text-xs ${product.is_available ? 'text-emerald-600' : 'text-red-500'}`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${product.is_available ? 'bg-emerald-500' : 'bg-red-500'}`} />
@@ -249,62 +318,173 @@ export function ProductCard({
               )}
             </div>
             
-            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-              <Button size="sm" variant="outline" className="rounded-xl text-xs h-9 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 hover:scale-105 transition-all duration-300 relative z-10" onClick={onEdit}>
-                <Edit2 className="h-3.5 w-3.5 mr-1.5 text-[#2a655f] group-hover:rotate-12 transition-transform" />
-                {lang === "ar" ? "تعديل" : "Edit"}
+            {/* ===== أزرار الإجراءات - LIST VIEW (كل الأزرار تظهر دائماً) ===== */}
+            <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap">
+              {/* ✅ زر تعديل */}
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="rounded-xl text-xs h-8 px-2.5 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 hover:scale-105 transition-all duration-300 relative z-10 whitespace-nowrap" 
+                onClick={() => {
+                  if (hasPromoOffer && onEditPromoOffer) {
+                    onEditPromoOffer(promoOffer);
+                  } else {
+                    onEdit();
+                  }
+                }}
+              >
+                <Edit2 className="h-3.5 w-3.5 mr-1.5 text-[#2a655f] group-hover:rotate-12 transition-transform flex-shrink-0" />
+                {hasPromoOffer 
+                  ? (lang === "ar" ? "تعديل العرض" : "Edit Offer")
+                  : (lang === "ar" ? "تعديل" : "Edit")
+                }
               </Button>
               
+              {/* ✅ زر إعادة نشر (للمسودات فقط) */}
               {status === "draft" && onRepublish && (
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="rounded-xl text-xs h-9 px-2.5 border-blue-500/30 text-blue-600 hover:bg-blue-50/50 hover:border-blue-500/50 hover:scale-105 transition-all duration-300 relative z-10"
+                  className="rounded-xl text-xs h-8 px-2 border-blue-500/30 text-blue-600 hover:bg-blue-50/50 hover:border-blue-500/50 hover:scale-105 transition-all duration-300 relative z-10 whitespace-nowrap"
                   onClick={() => onRepublish(product)}
                 >
-                  <RefreshCw className="h-3.5 w-3.5 mr-1.5 text-blue-500 group-hover:rotate-180 transition-transform duration-500" />
-                  {lang === "ar" ? "إعادة نشر" : "Republish"}
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5 text-blue-500 group-hover:rotate-180 transition-transform duration-500 flex-shrink-0" />
+                  {lang === "ar" ? "نشر" : "Publish"}
                 </Button>
               )}
               
-              {!isOffer && (
+              {/* ✅ زر عرض ترويجي (للمنتجات بدون عرض ترويجي) */}
+              {!hasPromoOffer && onAddPromoOffer && (
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="rounded-xl text-xs h-9 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 hover:scale-105 transition-all duration-300 relative z-10"
-                  onClick={openConvertDialog}
+                  className="rounded-xl text-xs h-8 px-2 border-purple-500/30 text-purple-600 hover:bg-purple-50/50 hover:border-purple-500/50 hover:scale-105 transition-all duration-300 relative z-10 whitespace-nowrap"
+                  onClick={() => onAddPromoOffer(product)}
                 >
-                  <Gift className="h-3.5 w-3.5 mr-1.5 text-[#2a655f] group-hover:scale-110 transition-transform" />
-                  {lang === "ar" ? "تحويل لعرض" : "To Offer"}
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5 text-purple-500 group-hover:scale-110 transition-transform flex-shrink-0" />
+                  {lang === "ar" ? "ترويج" : "Promo"}
                 </Button>
               )}
               
-              <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50/50 rounded-xl h-9 w-9 p-0 hover:scale-110 transition-all duration-300 relative z-10" onClick={onDelete}>
+              {/* ✅ زر تخفيض (للمنتجات العادية فقط) */}
+              {!isOffer && !hasPromoOffer && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="rounded-xl text-xs h-8 px-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 hover:scale-105 transition-all duration-300 relative z-10 whitespace-nowrap"
+                  onClick={openConvertDialog}
+                >
+                  <Percent className="h-3.5 w-3.5 mr-1.5 text-[#2a655f] group-hover:scale-110 transition-transform flex-shrink-0" />
+                  {lang === "ar" ? "تخفيض" : "Discount"}
+                </Button>
+              )}
+              
+              {/* ✅ ✅ ✅ زر الحذف - دائم الظهور */}
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="text-red-500 hover:text-red-600 hover:bg-red-50/50 rounded-xl h-8 w-8 p-0 hover:scale-110 transition-all duration-300 relative z-10 flex-shrink-0" 
+                onClick={() => {
+                  if (hasPromoOffer && onRemovePromoOffer) {
+                    onRemovePromoOffer(promoOffer.id);
+                  } else {
+                    onDelete();
+                  }
+                }}
+              >
                 <Trash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
               </Button>
-              <Button size="sm" variant="ghost" className="rounded-xl h-9 w-9 p-0 hover:scale-110 hover:bg-[#2a655f]/5 transition-all duration-300 relative z-10" onClick={onView}>
-                <Eye className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
-              </Button>
+              
+              {/* ✅ زر العين - قائمة منسدلة */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="ghost" className="rounded-xl h-8 w-8 p-0 hover:scale-110 hover:bg-[#2a655f]/5 transition-all duration-300 relative z-10 flex-shrink-0">
+                    <Eye className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="rounded-xl min-w-[220px] p-1 border-2 border-[#2a655f]/10 shadow-xl">
+                  <DropdownMenuItem className="cursor-pointer rounded-lg text-sm group hover:bg-[#2a655f]/10 transition-colors duration-200" onClick={onView}>
+                    <Eye className="h-4 w-4 mr-2 text-[#2a655f]" />
+                    {lang === "ar" ? "عرض تفاصيل المنتج" : "View Product Details"}
+                  </DropdownMenuItem>
+                  
+                  {hasPromoOffer && onViewPromoOffer && (
+                    <DropdownMenuItem 
+                      className="cursor-pointer rounded-lg text-sm group text-purple-600 hover:text-purple-700 hover:bg-purple-50/50 transition-colors duration-200"
+                      onClick={() => onViewPromoOffer(promoOffer)}
+                    >
+                      <Eye className="h-4 w-4 mr-2 text-purple-500" />
+                      {lang === "ar" ? "عرض تفاصيل العرض الترويجي" : "View Promo Offer Details"}
+                    </DropdownMenuItem>
+                  )}
+                  
+                  <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 my-1" />
+                  
+                  <DropdownMenuItem className="cursor-pointer rounded-lg text-sm group hover:bg-[#2a655f]/10 transition-colors duration-200" onClick={onEdit}>
+                    <Edit2 className="h-4 w-4 mr-2 text-[#2a655f]" />
+                    {lang === "ar" ? "تعديل المنتج" : "Edit Product"}
+                  </DropdownMenuItem>
+                  
+                  {hasPromoOffer && onEditPromoOffer && (
+                    <DropdownMenuItem 
+                      className="cursor-pointer rounded-lg text-sm group text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 transition-colors duration-200"
+                      onClick={() => onEditPromoOffer(promoOffer)}
+                    >
+                      <Edit2 className="h-4 w-4 mr-2 text-blue-500" />
+                      {lang === "ar" ? "تعديل العرض الترويجي" : "Edit Promo Offer"}
+                    </DropdownMenuItem>
+                  )}
+                  
+                  <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 my-1" />
+                  
+                  <DropdownMenuItem className="cursor-pointer rounded-lg text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-200" onClick={onDelete}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {lang === "ar" ? "حذف المنتج" : "Delete Product"}
+                  </DropdownMenuItem>
+                  
+                  {hasPromoOffer && onRemovePromoOffer && (
+                    <DropdownMenuItem 
+                      className="cursor-pointer rounded-lg text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
+                      onClick={() => onRemovePromoOffer(promoOffer.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {lang === "ar" ? "حذف العرض الترويجي" : "Remove Promo Offer"}
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {status === "draft" && onRepublish && (
+                    <>
+                      <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 my-1" />
+                      <DropdownMenuItem 
+                        className="cursor-pointer rounded-lg text-sm group text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 transition-colors duration-200"
+                        onClick={() => onRepublish(product)}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2 text-blue-500" />
+                        {lang === "ar" ? "إعادة نشر" : "Republish"}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
 
-        {/* ✅ مودال التحويل (لحالة القائمة) */}
         <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
           <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-2xl shadow-[#2a655f]/10 bg-white dark:bg-slate-900 p-0 overflow-hidden">
             <DialogHeader className="p-6 pb-2 border-b border-[#2a655f]/10">
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 animate-pulse flex-shrink-0">
-                  <Gift className="h-6 w-6 text-white" />
+                  <Percent className="h-6 w-6 text-white" />
                 </div>
                 <div>
                   <DialogTitle className="text-xl font-bold text-[#2a655f]">
-                    {lang === "ar" ? "🎁 تحويل المنتج لعرض" : "🎁 Convert to Offer"}
+                    {lang === "ar" ? "🎁 تحويل المنتج لعرض تخفيض" : "🎁 Convert to Discount Offer"}
                   </DialogTitle>
                   <DialogDescription className="text-sm text-muted-foreground">
                     {lang === "ar" 
-                      ? `تحويل "${product.title_ar}" إلى عرض خاص` 
-                      : `Convert "${product.title_en || product.title_ar}" to a special offer`}
+                      ? `تحويل "${product.title_ar}" إلى عرض تخفيض` 
+                      : `Convert "${product.title_en || product.title_ar}" to a discount offer`}
                   </DialogDescription>
                 </div>
               </div>
@@ -403,8 +583,8 @@ export function ProductCard({
                   </span>
                 ) : (
                   <>
-                    <Gift className="h-4 w-4 mr-2" />
-                    {lang === "ar" ? "تحويل لعرض" : "Convert to Offer"}
+                    <Percent className="h-4 w-4 mr-2" />
+                    {lang === "ar" ? "تحويل لعرض تخفيض" : "Convert to Discount"}
                   </>
                 )}
               </Button>
@@ -416,16 +596,15 @@ export function ProductCard({
   }
 
   // ============================================================
-  // ✅ VIEW MODE: GRID - مع Borders وتصميم محسن وألوان النظام
+  // ✅ VIEW MODE: GRID
   // ============================================================
   return (
     <>
-      <div className="group relative bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-200/60 dark:border-slate-800/60 hover:border-[#2a655f]/50 hover:shadow-2xl hover:shadow-[#2a655f]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02]">
-        {/* ===== Border Glow Effect ===== */}
+      <div className="group relative bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-200/60 dark:border-slate-800/60 hover:border-[#2a655f]/50 hover:shadow-2xl hover:shadow-[#2a655f]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] flex flex-col h-full min-h-[400px] max-h-[500px]">
+        
         <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#2a655f]/0 via-[#2a655f]/0 to-[#2a655f]/0 opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:via-[#2a655f]/10" />
         
-        {/* ===== صورة المنتج ===== */}
-        <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 cursor-pointer" onClick={onView}>
+        <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 cursor-pointer flex-shrink-0">
           {product.cover_url ? (
             <img 
               src={product.cover_url} 
@@ -438,26 +617,30 @@ export function ProductCard({
             </div>
           )}
           
-          {/* ===== Badges ===== */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
             {isOffer && (
               <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 shadow-lg rounded-full px-3 py-1 text-xs font-bold flex items-center gap-1.5 animate-pulse">
-                🔥 {lang === "ar" ? "عرض" : "Offer"}
+                🔥 {lang === "ar" ? "تخفيض" : "Discount"}
                 {discount && ` -${discount}%`}
+              </Badge>
+            )}
+            
+            {hasPromoOffer && (
+              <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 shadow-lg rounded-full px-3 py-1 text-xs font-bold flex items-center gap-1.5 animate-pulse">
+                <Sparkles className="h-3 w-3" />
+                {lang === "ar" ? "عرض ترويجي" : "Promo"}
               </Badge>
             )}
             
             {getStatusBadge()}
           </div>
           
-          {/* ===== حالة التوفر ===== */}
           {!product.is_available && (
             <Badge className="absolute top-3 right-3 bg-red-500/90 text-white border-0 shadow-lg rounded-full px-3 py-1 text-xs animate-pulse">
               ❌ {lang === "ar" ? "غير متوفر" : "Unavailable"}
             </Badge>
           )}
           
-          {/* ===== التصنيف ===== */}
           <div className="absolute bottom-3 left-3">
             <Badge variant="secondary" className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50 shadow-lg rounded-full px-3 py-1 text-xs font-medium group-hover:border-[#2a655f]/30 transition-all duration-300">
               <Layers className="h-3 w-3 mr-1 text-[#2a655f]" />
@@ -465,41 +648,64 @@ export function ProductCard({
             </Badge>
           </div>
           
-          {/* ===== أيقونة Eye عند Hover ===== */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
-            <div className="bg-white/95 dark:bg-slate-900/95 rounded-full p-3.5 shadow-2xl hover:scale-110 transition-transform border-2 border-white/20 dark:border-slate-700/50 group-hover:border-[#2a655f]/30">
+            <div 
+              className="bg-white/95 dark:bg-slate-900/95 rounded-full p-3.5 shadow-2xl hover:scale-110 transition-transform border-2 border-white/20 dark:border-slate-700/50 group-hover:border-[#2a655f]/30 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (hasPromoOffer && onViewPromoOffer && promoOffer) {
+                  onViewPromoOffer(promoOffer);
+                } else {
+                  onView();
+                }
+              }}
+            >
               <Eye className="h-5 w-5 text-[#2a655f] group-hover:scale-110 transition-transform" />
             </div>
           </div>
 
-          {/* ===== زر تحويل المنتج لعرض ===== */}
-          {!isOffer && (
-            <div className="absolute bottom-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+          <div className="absolute bottom-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+            {!hasPromoOffer && onAddPromoOffer && (
               <Button
                 size="sm"
-                className="h-8 px-2.5 rounded-lg bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/30 hover:shadow-[#2a655f]/50 transition-all duration-300 hover:scale-105"
+                className="h-7 px-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-600/30 hover:shadow-purple-600/50 transition-all duration-300 hover:scale-105"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddPromoOffer(product);
+                }}
+              >
+                <Sparkles className="h-3 w-3 mr-1" />
+                <span className="text-[9px] font-bold">
+                  {lang === "ar" ? "ترويج" : "Promo"}
+                </span>
+              </Button>
+            )}
+            
+            {!isOffer && !hasPromoOffer && (
+              <Button
+                size="sm"
+                className="h-7 px-2 rounded-lg bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/30 hover:shadow-[#2a655f]/50 transition-all duration-300 hover:scale-105"
                 onClick={(e) => {
                   e.stopPropagation();
                   openConvertDialog();
                 }}
               >
-                <Gift className="h-3.5 w-3.5 mr-1" />
-                <span className="text-[10px] font-bold">
-                  {lang === "ar" ? "تحويل لعرض" : "Convert to Offer"}
+                <Percent className="h-3 w-3 mr-1" />
+                <span className="text-[9px] font-bold">
+                  {lang === "ar" ? "تخفيض" : "Discount"}
                 </span>
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
         
-        {/* ===== معلومات المنتج ===== */}
-        <div className="p-4 space-y-2.5">
-          {/* ===== اسم المنتج ===== */}
+        <div className="p-4 space-y-2.5 flex-1 flex flex-col">
           <div className="font-semibold text-base line-clamp-1 group-hover:text-[#2a655f] transition-colors duration-300">
             {product.title_ar}
           </div>
           
-          {/* ===== التقييم بالنجوم ===== */}
+          {renderPromoBadge()}
+          
           <div className="flex items-center gap-1.5">
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -512,7 +718,6 @@ export function ProductCard({
             <span className="text-xs text-muted-foreground">({reviewsCount})</span>
           </div>
           
-          {/* ===== الألوان المصغرة ===== */}
           {product.colors && product.colors.length > 0 && (
             <div className="flex items-center gap-1">
               <div className="flex -space-x-1">
@@ -540,8 +745,7 @@ export function ProductCard({
             </div>
           )}
           
-          {/* ===== السعر ===== */}
-          <div className="flex items-end justify-between border-t border-slate-200/50 dark:border-slate-800/50 pt-2.5 mt-1">
+          <div className="flex items-end justify-between border-t border-slate-200/50 dark:border-slate-800/50 pt-2.5 mt-auto">
             <div>
               <div className="text-xl font-bold text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-105 transition-transform duration-300">
                 {formatPrice(Number(product.price), currency, lang)}
@@ -554,7 +758,6 @@ export function ProductCard({
             )}
           </div>
           
-          {/* ===== حالة التوفر ===== */}
           <div className="flex items-center gap-1.5">
             <span className={cn(
               "h-1.5 w-1.5 rounded-full transition-all duration-300",
@@ -570,118 +773,179 @@ export function ProductCard({
             </span>
           </div>
           
-          {/* ===== أزرار الإجراءات ===== */}
-          <div className="flex items-center gap-2 pt-2.5 border-t border-slate-200/50 dark:border-slate-800/50">
+          {/* ===== أزرار الإجراءات - GRID VIEW (كل الأزرار تظهر دائماً) ===== */}
+          <div className="flex items-center gap-1 pt-2.5 border-t border-slate-200/50 dark:border-slate-800/50 flex-wrap">
+            {/* ✅ زر تعديل */}
             <Button 
               size="sm" 
               variant="outline" 
-              className="flex-1 rounded-xl text-xs font-medium h-9 group border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 hover:scale-[1.02] transition-all duration-300 relative z-10" 
-              onClick={onEdit}
+              className="flex-1 rounded-xl text-[10px] font-medium h-7 px-1.5 group border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 hover:scale-[1.02] transition-all duration-300 relative z-10 min-w-0" 
+              onClick={() => {
+                if (hasPromoOffer && onEditPromoOffer) {
+                  onEditPromoOffer(promoOffer);
+                } else {
+                  onEdit();
+                }
+              }}
             >
-              <Edit2 className="h-3.5 w-3.5 mr-1.5 text-[#2a655f] group-hover:rotate-12 transition-transform duration-300" />
-              {lang === "ar" ? "تعديل" : "Edit"}
+              <Edit2 className="h-3 w-3 mr-0.5 text-[#2a655f] group-hover:rotate-12 transition-transform duration-300 flex-shrink-0" />
+              <span className="truncate text-[9px] sm:text-[10px]">
+                {hasPromoOffer 
+                  ? (lang === "ar" ? "تعديل العرض" : "Edit Offer")
+                  : (lang === "ar" ? "تعديل" : "Edit")
+                }
+              </span>
             </Button>
             
-            {/* ✅ زر إعادة النشر - يظهر فقط للمسودات */}
+            {/* ✅ زر إعادة نشر (للمسودات فقط) */}
             {status === "draft" && onRepublish && (
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="rounded-xl text-xs h-9 px-2.5 border-blue-500/30 text-blue-600 hover:bg-blue-50/50 hover:border-blue-500/50 hover:scale-[1.02] transition-all duration-300 relative z-10"
+                className="rounded-xl text-[10px] h-7 px-1.5 border-blue-500/30 text-blue-600 hover:bg-blue-50/50 hover:border-blue-500/50 hover:scale-[1.02] transition-all duration-300 relative z-10 flex-shrink-0"
                 onClick={() => onRepublish(product)}
               >
-                <RefreshCw className="h-3.5 w-3.5 mr-1 text-blue-500 group-hover:rotate-180 transition-transform duration-500" />
-                <span className="hidden sm:inline">{lang === "ar" ? "إعادة نشر" : "Republish"}</span>
+                <RefreshCw className="h-3 w-3 text-blue-500 group-hover:rotate-180 transition-transform duration-500 flex-shrink-0" />
+                <span className="hidden xs:inline text-[9px]">{lang === "ar" ? "نشر" : "Publish"}</span>
               </Button>
             )}
             
-            {!isOffer && (
+            {/* ✅ زر عرض ترويجي (للمنتجات بدون عرض ترويجي) */}
+            {!hasPromoOffer && onAddPromoOffer && (
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="rounded-xl text-xs h-9 px-2.5 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 hover:scale-[1.02] transition-all duration-300 relative z-10"
-                onClick={openConvertDialog}
+                className="rounded-xl text-[10px] h-7 px-1.5 border-purple-500/30 text-purple-600 hover:bg-purple-50/50 hover:border-purple-500/50 hover:scale-[1.02] transition-all duration-300 relative z-10 flex-shrink-0"
+                onClick={() => onAddPromoOffer(product)}
               >
-                <Gift className="h-3.5 w-3.5 mr-1 text-[#2a655f] group-hover:scale-110 transition-transform duration-300" />
-                <span className="hidden sm:inline">{lang === "ar" ? "عرض" : "Offer"}</span>
+                <Sparkles className="h-3 w-3 text-purple-500 group-hover:scale-110 transition-transform duration-300 flex-shrink-0" />
+                <span className="hidden xs:inline text-[9px]">{lang === "ar" ? "ترويج" : "Promo"}</span>
               </Button>
             )}
             
+            {/* ✅ زر تخفيض (للمنتجات العادية فقط) */}
+            {!isOffer && !hasPromoOffer && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="rounded-xl text-[10px] h-7 px-1.5 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 hover:scale-[1.02] transition-all duration-300 relative z-10 flex-shrink-0"
+                onClick={openConvertDialog}
+              >
+                <Percent className="h-3 w-3 text-[#2a655f] group-hover:scale-110 transition-transform duration-300 flex-shrink-0" />
+                <span className="hidden xs:inline text-[9px]">{lang === "ar" ? "تخفيض" : "Discount"}</span>
+              </Button>
+            )}
+            
+            {/* ✅ ✅ ✅ زر الحذف - دائم الظهور */}
             <Button 
               size="sm" 
               variant="ghost" 
-              className="text-red-500 hover:text-red-600 hover:bg-red-50/50 rounded-xl h-9 w-9 p-0 group hover:scale-110 transition-all duration-300 relative z-10" 
-              onClick={onDelete}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50/50 rounded-xl h-7 w-7 p-0 group hover:scale-110 transition-all duration-300 relative z-10 flex-shrink-0" 
+              onClick={() => {
+                if (hasPromoOffer && onRemovePromoOffer) {
+                  onRemovePromoOffer(promoOffer.id);
+                } else {
+                  onDelete();
+                }
+              }}
             >
-              <Trash2 className="h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
+              <Trash2 className="h-3.5 w-3.5 group-hover:scale-110 transition-transform duration-300" />
             </Button>
             
+            {/* ✅ زر العين - قائمة منسدلة */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className="rounded-xl h-9 w-9 p-0 group hover:scale-110 hover:bg-[#2a655f]/5 transition-all duration-300 relative z-10"
+                  className="rounded-xl h-7 w-7 p-0 group hover:scale-110 hover:bg-[#2a655f]/5 transition-all duration-300 relative z-10 flex-shrink-0"
                 >
-                  <MoreVertical className="h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
+                  <Eye className="h-3.5 w-3.5 group-hover:scale-110 transition-transform duration-300" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="rounded-xl min-w-[180px] p-1 border-2 border-[#2a655f]/10 shadow-xl">
+              <DropdownMenuContent align="end" className="rounded-xl min-w-[200px] p-1 border-2 border-[#2a655f]/10 shadow-xl">
                 <DropdownMenuItem className="cursor-pointer rounded-lg text-sm group hover:bg-[#2a655f]/10 transition-colors duration-200" onClick={onView}>
                   <Eye className="h-4 w-4 mr-2 text-[#2a655f]" />
-                  {lang === "ar" ? "عرض التفاصيل" : "View Details"}
+                  {lang === "ar" ? "عرض تفاصيل المنتج" : "View Product Details"}
                 </DropdownMenuItem>
                 
-                {!isOffer && (
+                {hasPromoOffer && onViewPromoOffer && (
                   <DropdownMenuItem 
-                    className="cursor-pointer rounded-lg text-sm group text-[#2a655f] hover:text-[#1a4f4a] hover:bg-[#2a655f]/10 transition-colors duration-200"
-                    onClick={openConvertDialog}
+                    className="cursor-pointer rounded-lg text-sm group text-purple-600 hover:text-purple-700 hover:bg-purple-50/50 transition-colors duration-200"
+                    onClick={() => onViewPromoOffer(promoOffer)}
                   >
-                    <Gift className="h-4 w-4 mr-2 text-[#2a655f]" />
-                    {lang === "ar" ? "تحويل لعرض" : "Convert to Offer"}
+                    <Eye className="h-4 w-4 mr-2 text-purple-500" />
+                    {lang === "ar" ? "عرض تفاصيل العرض الترويجي" : "View Promo Offer Details"}
+                  </DropdownMenuItem>
+                )}
+                
+                <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 my-1" />
+                
+                <DropdownMenuItem className="cursor-pointer rounded-lg text-sm group hover:bg-[#2a655f]/10 transition-colors duration-200" onClick={onEdit}>
+                  <Edit2 className="h-4 w-4 mr-2 text-[#2a655f]" />
+                  {lang === "ar" ? "تعديل المنتج" : "Edit Product"}
+                </DropdownMenuItem>
+                
+                {hasPromoOffer && onEditPromoOffer && (
+                  <DropdownMenuItem 
+                    className="cursor-pointer rounded-lg text-sm group text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 transition-colors duration-200"
+                    onClick={() => onEditPromoOffer(promoOffer)}
+                  >
+                    <Edit2 className="h-4 w-4 mr-2 text-blue-500" />
+                    {lang === "ar" ? "تعديل العرض الترويجي" : "Edit Promo Offer"}
+                  </DropdownMenuItem>
+                )}
+                
+                <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 my-1" />
+                
+                <DropdownMenuItem className="cursor-pointer rounded-lg text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-200" onClick={onDelete}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {lang === "ar" ? "حذف المنتج" : "Delete Product"}
+                </DropdownMenuItem>
+                
+                {hasPromoOffer && onRemovePromoOffer && (
+                  <DropdownMenuItem 
+                    className="cursor-pointer rounded-lg text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
+                    onClick={() => onRemovePromoOffer(promoOffer.id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {lang === "ar" ? "حذف العرض الترويجي" : "Remove Promo Offer"}
                   </DropdownMenuItem>
                 )}
                 
                 {status === "draft" && onRepublish && (
-                  <DropdownMenuItem 
-                    className="cursor-pointer rounded-lg text-sm group text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 transition-colors duration-200"
-                    onClick={() => onRepublish(product)}
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2 text-blue-500" />
-                    {lang === "ar" ? "إعادة نشر" : "Republish"}
-                  </DropdownMenuItem>
+                  <>
+                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 my-1" />
+                    <DropdownMenuItem 
+                      className="cursor-pointer rounded-lg text-sm group text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 transition-colors duration-200"
+                      onClick={() => onRepublish(product)}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2 text-blue-500" />
+                      {lang === "ar" ? "إعادة نشر" : "Republish"}
+                    </DropdownMenuItem>
+                  </>
                 )}
-                
-                <DropdownMenuItem className="cursor-pointer rounded-lg text-sm group hover:bg-[#2a655f]/10 transition-colors duration-200" onClick={onEdit}>
-                  <Edit2 className="h-4 w-4 mr-2 text-[#2a655f]" />
-                  {lang === "ar" ? "تعديل" : "Edit"}
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer rounded-lg text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-200" onClick={onDelete}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {lang === "ar" ? "حذف" : "Delete"}
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
       </div>
 
-      {/* ===== مودال تحويل المنتج لعرض (Fallback) - لم يتغير ===== */}
       <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
         <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-2xl shadow-[#2a655f]/10 bg-white dark:bg-slate-900 p-0 overflow-hidden">
           <DialogHeader className="p-6 pb-2 border-b border-[#2a655f]/10">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 animate-pulse flex-shrink-0">
-                <Gift className="h-6 w-6 text-white" />
+                <Percent className="h-6 w-6 text-white" />
               </div>
               <div>
                 <DialogTitle className="text-xl font-bold text-[#2a655f]">
-                  {lang === "ar" ? "🎁 تحويل المنتج لعرض" : "🎁 Convert to Offer"}
+                  {lang === "ar" ? "🎁 تحويل المنتج لعرض تخفيض" : "🎁 Convert to Discount Offer"}
                 </DialogTitle>
                 <DialogDescription className="text-sm text-muted-foreground">
                   {lang === "ar" 
-                    ? `تحويل "${product.title_ar}" إلى عرض خاص` 
-                    : `Convert "${product.title_en || product.title_ar}" to a special offer`}
+                    ? `تحويل "${product.title_ar}" إلى عرض تخفيض` 
+                    : `Convert "${product.title_en || product.title_ar}" to a discount offer`}
                 </DialogDescription>
               </div>
             </div>
@@ -780,8 +1044,8 @@ export function ProductCard({
                 </span>
               ) : (
                 <>
-                  <Gift className="h-4 w-4 mr-2" />
-                  {lang === "ar" ? "تحويل لعرض" : "Convert to Offer"}
+                  <Percent className="h-4 w-4 mr-2" />
+                  {lang === "ar" ? "تحويل لعرض تخفيض" : "Convert to Discount"}
                 </>
               )}
             </Button>

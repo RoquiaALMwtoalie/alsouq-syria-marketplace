@@ -30,7 +30,8 @@ import {
   Megaphone, Rocket, Gem, Crown, Flame, Compass, Target, Zap, Award, BadgeCheck,
   KeyRound, Lock, Unlock, EyeOff, CheckSquare, MapPinHouse,
   LayoutDashboard, Users as UsersIcon, TrendingUp as TrendingUpIcon,
-  Edit3, Map, Info, FileText, Check, Power, PowerOff
+  Edit3, Map, Info, FileText, Check, Power, PowerOff,
+  Download, FileSpreadsheet, Printer, FileDown, Table2, ClipboardCopy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -161,7 +162,7 @@ function DeliveryDashboardPage() {
   const [location, setLocation] = useState<PickedLocation | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("pending"); // ✅ افتراضي: قيد المراجعة
+  const [statusFilter, setStatusFilter] = useState<string>("pending");
   const [activeTab, setActiveTab] = useState<"orders" | "distributors" | "analytics" | "admins">("orders");
   const [filterType, setFilterType] = useState<"all" | "orders" | "distributors">("all");
   const [showCompanyDialog, setShowCompanyDialog] = useState(false);
@@ -234,6 +235,211 @@ function DeliveryDashboardPage() {
 
   const unreadNotificationsCount = notifications.filter((n: any) => !n.is_read).length;
   const isArabic = app.lang === "ar";
+
+  // ============================================================
+  // ✅ دوال التصدير والطباعة
+  // ============================================================
+
+  // ✅ دالة تصدير إلى Excel (CSV)
+  const exportToCSV = (data: any[], filename: string) => {
+    if (!data || data.length === 0) {
+      toast.error(isArabic ? "❌ لا توجد بيانات للتصدير" : "❌ No data to export");
+      return;
+    }
+
+    try {
+      const headers = Object.keys(data[0]).filter(key => 
+        !['id', 'created_at', 'updated_at', 'deleted_at'].includes(key)
+      );
+      
+      let csv = headers.join(',') + '\n';
+      
+      data.forEach((row: any) => {
+        const values = headers.map(header => {
+          let value = row[header] || '';
+          if (typeof value === 'string' && value.includes(',')) {
+            value = `"${value}"`;
+          }
+          if (typeof value === 'string' && value.includes('\n')) {
+            value = value.replace(/\n/g, ' ');
+          }
+          return value;
+        });
+        csv += values.join(',') + '\n';
+      });
+
+      const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${filename}_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+
+      toast.success(
+        isArabic 
+          ? `✅ تم تصدير ${data.length} سجل بنجاح` 
+          : `✅ Exported ${data.length} records successfully`
+      );
+    } catch (error) {
+      console.error("❌ Export error:", error);
+      toast.error(isArabic ? "❌ فشل التصدير" : "❌ Export failed");
+    }
+  };
+
+  // ✅ دالة تصدير إلى Word (HTML)
+  const exportToWord = (data: any[], title: string) => {
+    if (!data || data.length === 0) {
+      toast.error(isArabic ? "❌ لا توجد بيانات للتصدير" : "❌ No data to export");
+      return;
+    }
+
+    try {
+      let html = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' 
+              xmlns:w='urn:schemas-microsoft-com:office:word' 
+              xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <meta charset="utf-8">
+          <title>${title}</title>
+          <!--[if gte mso 9]>
+          <xml>
+            <w:WordDocument>
+              <w:View>Print</w:View>
+              <w:Zoom>100</w:Zoom>
+            </w:WordDocument>
+          </xml>
+          <![endif]-->
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; direction: ${isArabic ? 'rtl' : 'ltr'}; }
+            h1 { color: #0d2e2a; border-bottom: 3px solid #2a655f; padding-bottom: 10px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background-color: #2a655f; color: white; padding: 12px 10px; text-align: ${isArabic ? 'right' : 'left'}; font-weight: bold; }
+            td { padding: 10px; border: 1px solid #ddd; }
+            tr:nth-child(even) { background-color: #f5f5f5; }
+            tr:hover { background-color: #e8f0f0; }
+            .footer { margin-top: 30px; color: #666; font-size: 12px; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; }
+            .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+            .badge-pending { background: #f59e0b; color: white; }
+            .badge-assigned { background: #8b5cf6; color: white; }
+            .badge-picked_up { background: #3b82f6; color: white; }
+            .badge-in_transit { background: #f97316; color: white; }
+            .badge-delivered { background: #22c55e; color: white; }
+            .badge-cancelled { background: #ef4444; color: white; }
+            .badge-failed { background: #ef4444; color: white; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <p><strong>${isArabic ? 'تاريخ التصدير' : 'Export Date'}:</strong> ${new Date().toLocaleString(isArabic ? 'ar-SA' : 'en-US')}</p>
+          <p><strong>${isArabic ? 'عدد السجلات' : 'Total Records'}:</strong> ${data.length}</p>
+          <table>
+            <thead>
+              <tr>
+      `;
+
+      const headers = Object.keys(data[0]).filter(key => 
+        !['id', 'created_at', 'updated_at', 'deleted_at'].includes(key)
+      );
+      
+      headers.forEach(header => {
+        const labelMap: Record<string, string> = {
+          tracking_number: isArabic ? 'رقم التتبع' : 'Tracking Number',
+          status: isArabic ? 'الحالة' : 'Status',
+          delivery_fee: isArabic ? 'رسوم التوصيل' : 'Delivery Fee',
+          delivery_address: isArabic ? 'عنوان التوصيل' : 'Delivery Address',
+          created_at: isArabic ? 'تاريخ الإنشاء' : 'Created At',
+          distributor_id: isArabic ? 'الموزع' : 'Distributor',
+          delivery_company_id: isArabic ? 'شركة التوصيل' : 'Delivery Company',
+          pickup_address: isArabic ? 'عنوان الاستلام' : 'Pickup Address',
+          notes_ar: isArabic ? 'ملاحظات' : 'Notes',
+          notes_en: 'Notes',
+          order_id: isArabic ? 'رقم الطلب' : 'Order ID',
+          buyer_name: isArabic ? 'اسم العميل' : 'Customer Name',
+          buyer_phone: isArabic ? 'رقم العميل' : 'Customer Phone',
+          total: isArabic ? 'المجموع' : 'Total',
+          cod_amount: isArabic ? 'مبلغ الدفع' : 'COD Amount',
+          delivered_at: isArabic ? 'تاريخ التوصيل' : 'Delivered At',
+          picked_up_at: isArabic ? 'تاريخ الاستلام' : 'Picked Up At',
+          cancelled_at: isArabic ? 'تاريخ الإلغاء' : 'Cancelled At',
+        };
+        const label = labelMap[header] || header;
+        html += `<th>${label}</th>`;
+      });
+      
+      html += `</tr></thead><tbody>`;
+
+      data.forEach((row: any) => {
+        html += `<tr>`;
+        headers.forEach(header => {
+          let value = row[header] || '-';
+          
+          if (header === 'status') {
+            const statusLabels: Record<string, string> = {
+              pending: isArabic ? 'قيد المراجعة' : 'Pending',
+              assigned: isArabic ? 'تم التعيين' : 'Assigned',
+              picked_up: isArabic ? 'تم الاستلام' : 'Picked up',
+              in_transit: isArabic ? 'قيد التوصيل' : 'In Transit',
+              delivered: isArabic ? 'تم التوصيل' : 'Delivered',
+              cancelled: isArabic ? 'ملغي' : 'Cancelled',
+              failed: isArabic ? 'فشل' : 'Failed',
+            };
+            const label = statusLabels[value] || value;
+            const colorClass = `badge-${value}`;
+            html += `<td><span class="badge ${colorClass}">${label}</span></td>`;
+          } 
+          else if (header === 'created_at' || header === 'updated_at' || header === 'delivered_at' || header === 'picked_up_at' || header === 'cancelled_at') {
+            html += `<td>${value ? new Date(value).toLocaleString(isArabic ? 'ar-SA' : 'en-US') : '-'}</td>`;
+          }
+          else if (header === 'delivery_fee' || header === 'total' || header === 'cod_amount') {
+            html += `<td>${Number(value).toLocaleString()} SYP</td>`;
+          }
+          else if (typeof value === 'string' && value.length > 50) {
+            html += `<td>${value.substring(0, 50)}...</td>`;
+          }
+          else {
+            html += `<td>${value}</td>`;
+          }
+        });
+        html += `</tr>`;
+      });
+
+      html += `
+            </tbody>
+          </table>
+          <div class="footer">
+            ${isArabic ? 'تم التصدير من لوحة تحكم شركة التوصيل - السوق لعندك' : 'Exported from Delivery Company Dashboard - Souq Le3ndak'}
+            <br>© ${new Date().getFullYear()} ${isArabic ? 'السوق لعندك. جميع الحقوق محفوظة' : 'Souq Le3ndak. All rights reserved.'}
+          </div>
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([html], { type: 'application/msword;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${title}_${new Date().toISOString().slice(0,10)}.doc`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+
+      toast.success(
+        isArabic 
+          ? `✅ تم تصدير ${data.length} سجل إلى Word بنجاح` 
+          : `✅ Exported ${data.length} records to Word successfully`
+      );
+    } catch (error) {
+      console.error("❌ Export to Word error:", error);
+      toast.error(isArabic ? "❌ فشل التصدير إلى Word" : "❌ Export to Word failed");
+    }
+  };
+
+  // ✅ دالة الطباعة
+  const handlePrint = () => {
+    window.print();
+  };
 
   useEffect(() => {
     console.log("🔍 [useEffect] companyLoading:", companyLoading);
@@ -323,16 +529,14 @@ function DeliveryDashboardPage() {
     };
   }, [orders]);
 
-  // ✅ فلترة الطلبات (جميع طلبات الشركة، مرتبة حسب الأحدث)
+  // ✅ فلترة الطلبات
   const filteredOrders = useMemo(() => {
     let result = orders;
     
-    // ✅ فلترة حسب الحالة
     if (statusFilter !== "all") {
       result = result.filter((o: any) => o.status === statusFilter);
     }
     
-    // ✅ فلترة حسب البحث
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((o: any) => {
@@ -344,7 +548,6 @@ function DeliveryDashboardPage() {
       });
     }
     
-    // ✅ ترتيب حسب الأحدث أولاً (created_at)
     result = [...result].sort((a, b) => {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
@@ -686,7 +889,7 @@ function DeliveryDashboardPage() {
     }
   };
 
-  // ✅ إضافة موزع (بدون تحويل - يمنع إذا الرقم موجود)
+  // ✅ إضافة موزع
   const handleAddDistributor = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -713,7 +916,6 @@ function DeliveryDashboardPage() {
     }
 
     try {
-      // ✅ 1️⃣ التحقق من وجود الرقم في profiles
       const { data: existingProfile, error: profileCheckError } = await supabase
         .from("profiles")
         .select("id")
@@ -725,7 +927,6 @@ function DeliveryDashboardPage() {
         throw new Error("حدث خطأ في التحقق من الرقم");
       }
 
-      // ❌ إذا كان الرقم موجوداً، نمنع الإضافة (بدون تحويل)
       if (existingProfile) {
         toast.error(
           isArabic 
@@ -735,7 +936,6 @@ function DeliveryDashboardPage() {
         return;
       }
 
-      // ✅ 2️⃣ إذا الرقم غير موجود، ننشئ موزع جديد
       if (!password || password.length < 6) {
         toast.error(isArabic ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
         return;
@@ -760,7 +960,7 @@ function DeliveryDashboardPage() {
     }
   }, [company, isArabic, avatarUrl, createNewDistributor]);
 
-  // ✅ ✅ ✅ دالة تعطيل الموزع
+  // ✅ دالة تعطيل الموزع
   const handleDeactivateDistributor = async () => {
     if (!deactivatingDistributor) return;
     
@@ -770,7 +970,6 @@ function DeliveryDashboardPage() {
       const distributorId = deactivatingDistributor.id;
       const distributorName = deactivatingDistributor.full_name_ar || deactivatingDistributor.full_name_en || 'الموزع';
       
-      // ✅ 1️⃣ التحقق من وجود طلبات معلقة
       const { data: pendingOrders, error: ordersError } = await supabase
         .from("delivery_orders")
         .select("id, status")
@@ -789,7 +988,6 @@ function DeliveryDashboardPage() {
         return;
       }
       
-      // ✅ 2️⃣ تعطيل الموزع
       const { error: updateError } = await supabase
         .from("distributors")
         .update({
@@ -905,42 +1103,30 @@ function DeliveryDashboardPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-[#0d2e2a]/5 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#0d2e2a]/10">
 
 {/* ============================================================
-    HEADER - مثل صفحة الموزعين بالضبط
+    HEADER
     ============================================================ */}
 <div className="relative bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] text-white overflow-hidden shadow-xl border-b border-white/10 sticky top-0 z-50">
   
-  {/* خلفية متحركة */}
   <div className="absolute inset-0 opacity-10">
     <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
     <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
   </div>
 
-  {/* ✅ المحتوى الرئيسي - مثل صفحة الموزعين بالضبط */}
   <div className="relative mx-auto max-w-7xl px-4 py-3 md:py-4">
     <div className="flex items-center justify-between flex-wrap gap-2">
       
-      {/* ===== الجانب الأيسر - شعار + اسم التطبيق (كبير) ===== */}
-    {/* ===== الجانب الأيسر - شعار + اسم التطبيق (مع حركة) ===== */}
 <div className="flex items-center gap-3 group flex-1 min-w-0">
   
-  {/* ✅ الشعار مع حركة (مثل صفحة الموزع) */}
   <div className="relative h-16 w-16 md:h-20 md:w-20 flex items-center justify-center group-hover:scale-110 transition-all duration-500 flex-shrink-0 animate-float-logo">
-    {/* خلفية متوهجة */}
     <div className="absolute inset-0 rounded-full bg-[#2a655f]/30 blur-2xl group-hover:bg-[#d4af37]/20 transition-all duration-700 animate-pulse-slow" />
-    
-    {/* حلقة تدور حول الشعار */}
     <div className="absolute -inset-2 rounded-full border-2 border-[#d4af37]/20 animate-spin-slow" />
     <div className="absolute -inset-4 rounded-full border border-[#d4af37]/10 animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '8s' }} />
-    
-    {/* الشعار */}
     <img 
       src="/images/Logo.png" 
       alt="السوق لعندك"
       className="h-14 w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl relative z-10 animate-pulse-glow"
       loading="eager"
     />
-    
-    {/* نقاط متحركة حول الشعار */}
     <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#2a655f] animate-ping" />
     <div className="absolute -bottom-1 -left-1 h-2.5 w-2.5 rounded-full bg-[#d4af37] animate-ping" style={{ animationDelay: '0.5s' }} />
     <div className="absolute top-1/2 -right-3 h-2 w-2 rounded-full bg-[#3a8a82] animate-pulse" style={{ animationDelay: '1s' }} />
@@ -949,14 +1135,12 @@ function DeliveryDashboardPage() {
     <div className="absolute -bottom-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#d4af37] animate-bounce" style={{ animationDelay: '0.7s' }} />
   </div>
   
-  {/* ✅ اسم التطبيق مع الترجمة */}
   <div className="flex flex-col min-w-0">
     <h1 className="text-xl md:text-3xl font-black tracking-tight leading-tight">
       <span className="bg-gradient-to-r from-[#f5d742] via-[#f0e68c] to-[#f5d742] bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(245,215,66,0.4)] whitespace-nowrap">
         {isArabic ? "السوق لعندك" : "Souq Le3ndak"}
       </span>
     </h1>
-    
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-[10px] md:text-xs text-white/60 flex items-center gap-1">
         <span className="relative flex h-1.5 w-1.5">
@@ -965,9 +1149,7 @@ function DeliveryDashboardPage() {
         </span>
         {isArabic ? "شركة توصيل • نشط" : "Delivery Company • Active"}
       </span>
-      
       <span className="text-[8px] md:text-[10px] text-white/30">|</span>
-      
       <span className="text-[8px] md:text-[10px] text-white/40 flex items-center gap-1">
         <Sparkles className="h-2.5 w-2.5 md:h-3 md:w-3 animate-spin-slow text-yellow-400/60" />
         {isArabic ? "توصيل سريع" : "Fast Delivery"}
@@ -976,9 +1158,7 @@ function DeliveryDashboardPage() {
   </div>
 </div>
 
-      {/* ===== الجانب الأيمن - الأزرار ===== */}
       <div className="flex items-center gap-1 flex-wrap flex-shrink-0">
-        {/* 🔔 الإشعارات */}
         <Tooltip>
           <TooltipTrigger asChild>
             <div>
@@ -997,7 +1177,6 @@ function DeliveryDashboardPage() {
                     )}
                   </Button>
                 </DialogTrigger>
-                {/* ... كود ديالوج الإشعارات كما هو ... */}
               </Dialog>
             </div>
           </TooltipTrigger>
@@ -1006,7 +1185,6 @@ function DeliveryDashboardPage() {
           </TooltipContent>
         </Tooltip>
 
-        {/* 💬 الرسائل */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -1028,7 +1206,6 @@ function DeliveryDashboardPage() {
           </TooltipContent>
         </Tooltip>
 
-        {/* 🌐 اللغة */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -1047,7 +1224,6 @@ function DeliveryDashboardPage() {
 
         <div className="w-px h-6 bg-white/10 mx-0.5" />
 
-        {/* 👤 حساب المستخدم */}
         <DeliveryAccountMenu
           userData={{
             id: app.user?.id || '',
@@ -1064,7 +1240,6 @@ function DeliveryDashboardPage() {
 
         <div className="w-px h-6 bg-white/10 mx-0.5" />
 
-        {/* ⚙️ حساب الموزع */}
         {currentDistributor && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1078,7 +1253,6 @@ function DeliveryDashboardPage() {
                     <UserCircle className="h-4 w-4 md:h-5 md:w-5" />
                   </Button>
                 </DialogTrigger>
-                {/* ... كود ديالوج الموزع ... */}
               </Dialog>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
@@ -1090,6 +1264,7 @@ function DeliveryDashboardPage() {
     </div>
   </div>
 </div>
+
         {/* ===== STATS ===== */}
         <div className="mx-auto max-w-7xl px-4 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -1168,7 +1343,7 @@ function DeliveryDashboardPage() {
             ))}
           </div>
 
-          {/* ===== ORDERS TAB (معدل مع Pagination وفلتر pending افتراضي) ===== */}
+          {/* ===== ORDERS TAB ===== */}
           {activeTab === "orders" && (
             <div className="animate-in slide-in-from-top-5 duration-300">
               <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -1198,6 +1373,54 @@ function DeliveryDashboardPage() {
                     <option value="cancelled">{isArabic ? "ملغي" : "Cancelled"}</option>
                     <option value="failed">{isArabic ? "فشل" : "Failed"}</option>
                   </select>
+                </div>
+
+                {/* ✅ أزرار التصدير والطباعة للطلبات */}
+                <div className="flex items-center gap-2 ml-auto">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => exportToCSV(filteredOrders, 'الطلبات')}
+                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                      >
+                        <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "إكسل" : "Excel"}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{isArabic ? "تصدير إلى Excel" : "Export to Excel"}</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => exportToWord(filteredOrders, 'تقرير الطلبات')}
+                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                      >
+                        <FileText className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "Word" : "Word"}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{isArabic ? "تصدير إلى Word" : "Export to Word"}</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePrint}
+                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                      >
+                        <Printer className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
+                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "طباعة" : "Print"}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{isArabic ? "طباعة التقرير" : "Print Report"}</TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
 
@@ -1248,7 +1471,6 @@ function DeliveryDashboardPage() {
                     ))}
                   </div>
 
-                  {/* ===== ✅ PAGINATION ===== */}
                   {filteredOrders.length > 0 && totalPages > 1 && (
                     <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
                       <p className="text-sm text-muted-foreground">
@@ -1355,7 +1577,7 @@ function DeliveryDashboardPage() {
             </div>
           )}
 
-          {/* DISTRIBUTORS TAB */}
+          {/* ===== DISTRIBUTORS TAB ===== */}
           {activeTab === "distributors" && (
             <div>
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -1372,6 +1594,52 @@ function DeliveryDashboardPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* ✅ أزرار التصدير والطباعة للموزعين */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => exportToCSV(allDistributors, 'الموزعين')}
+                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                      >
+                        <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "إكسل" : "Excel"}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{isArabic ? "تصدير الموزعين إلى Excel" : "Export distributors to Excel"}</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => exportToWord(allDistributors, 'تقرير الموزعين')}
+                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                      >
+                        <FileText className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "Word" : "Word"}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{isArabic ? "تصدير الموزعين إلى Word" : "Export distributors to Word"}</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePrint}
+                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                      >
+                        <Printer className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
+                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "طباعة" : "Print"}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{isArabic ? "طباعة تقرير الموزعين" : "Print distributors report"}</TooltipContent>
+                  </Tooltip>
+
                   <Dialog open={showAddDistributorDialog} onOpenChange={setShowAddDistributorDialog}>
                     <DialogTrigger asChild>
                       <Button className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white hover:from-[#1a4f4a] hover:to-[#0d2e2a] transition-all duration-300 hover:scale-105">
@@ -1572,8 +1840,7 @@ function DeliveryDashboardPage() {
                           <div className="text-xs text-muted-foreground bg-[#0d2e2a]/10 p-3 rounded-xl border border-[#0d2e2a]/20">
                             {isArabic
                               ? `🔗 سيتم ربط الموزع بشركة "${company.name_ar}"`
-                              : `🔗 Distributor will be linked to company "${company.name_en}"`
-                            }
+                              : `🔗 Distributor will be linked to company "${company.name_en}"`}
                           </div>
                         )}
 
@@ -1634,9 +1901,94 @@ function DeliveryDashboardPage() {
             </div>     
           )}        
 
-          {/* ANALYTICS TAB */}
+          {/* ===== ANALYTICS TAB ===== */}
           {activeTab === "analytics" && (
             <div className="animate-in slide-in-from-top-5 duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-[#0d2e2a]" />
+                    {isArabic ? "📊 التحليلات" : "📊 Analytics"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isArabic ? "إحصائيات وتقارير الأداء" : "Statistics and performance reports"}
+                  </p>
+                </div>
+                
+                {/* ✅ أزرار التصدير والطباعة للتحليلات */}
+                <div className="flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const analyticsData = [
+                            { 
+                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'إجمالي الطلبات' : 'Total Orders',
+                              [isArabic ? 'القيمة' : 'Value']: stats.total 
+                            },
+                            { 
+                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'قيد المراجعة' : 'Pending',
+                              [isArabic ? 'القيمة' : 'Value']: stats.pending 
+                            },
+                            { 
+                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'تم التعيين' : 'Assigned',
+                              [isArabic ? 'القيمة' : 'Value']: stats.assigned 
+                            },
+                            { 
+                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'قيد التوصيل' : 'In Transit',
+                              [isArabic ? 'القيمة' : 'Value']: stats.inTransit 
+                            },
+                            { 
+                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'تم التوصيل' : 'Delivered',
+                              [isArabic ? 'القيمة' : 'Value']: stats.delivered 
+                            },
+                            { 
+                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'ملغي' : 'Cancelled',
+                              [isArabic ? 'القيمة' : 'Value']: stats.cancelled 
+                            },
+                            { 
+                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'الإيرادات' : 'Revenue',
+                              [isArabic ? 'القيمة' : 'Value']: stats.totalRevenue 
+                            },
+                            { 
+                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'نسبة الإنجاز' : 'Completion Rate',
+                              [isArabic ? 'القيمة' : 'Value']: `${stats.completionRate}%` 
+                            },
+                            { 
+                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'متوسط وقت التوصيل' : 'Avg Delivery Time',
+                              [isArabic ? 'القيمة' : 'Value']: `${stats.avgDeliveryTime} ${isArabic ? 'دقيقة' : 'min'}` 
+                            },
+                          ];
+                          exportToCSV(analyticsData, 'التقارير_التحليلية');
+                        }}
+                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                      >
+                        <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "إكسل" : "Excel"}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{isArabic ? "تصدير التحليلات إلى Excel" : "Export analytics to Excel"}</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePrint}
+                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                      >
+                        <Printer className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
+                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "طباعة" : "Print"}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{isArabic ? "طباعة التحليلات" : "Print analytics"}</TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="border-2 border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 transition-all duration-300 shadow-xl shadow-[#0d2e2a]/5">
                   <CardHeader>
@@ -1731,9 +2083,20 @@ function DeliveryDashboardPage() {
             </div>
           )}
 
-          {/* ADMINS TAB */}
+          {/* ===== ADMINS TAB ===== */}
           {activeTab === "admins" && company && (
             <div className="animate-in slide-in-from-top-5 duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-[#0d2e2a]" />
+                    {isArabic ? "👑 المدراء" : "👑 Managers"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isArabic ? "إدارة مدراء شركة التوصيل" : "Manage delivery company managers"}
+                  </p>
+                </div>
+              </div>
               <DeliveryAdminsManager
                 companyId={company.id}
                 companyName={company.name_ar}
@@ -1786,7 +2149,6 @@ function DeliveryDashboardPage() {
                 </div>
               ) : (
                 <>
-                  {/* ✅ شريط البحث */}
                   <div className="relative mb-4">
                     <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -1805,14 +2167,12 @@ function DeliveryDashboardPage() {
                     )}
                   </div>
 
-                  {/* ✅ عدد الموزعين */}
                   <p className="text-xs text-muted-foreground mb-3">
                     {isArabic
                       ? `🟢 ${allDistributors.length} موزع في شركتك`
                       : `🟢 ${allDistributors.length} distributors in your company`}
                   </p>
 
-                  {/* ✅ قائمة الموزعين */}
                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                     {allDistributors
                       .filter((dist: any) => {
@@ -1834,7 +2194,6 @@ function DeliveryDashboardPage() {
                               : "border-slate-200/50 dark:border-slate-700/50 hover:border-emerald-300/50 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/10"
                           )}
                         >
-                          {/* ✅ صورة الموزع */}
                           <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-emerald-200 dark:border-emerald-800/50">
                             {dist.avatar_url ? (
                               <img 
@@ -1852,7 +2211,6 @@ function DeliveryDashboardPage() {
                             )}
                           </div>
 
-                          {/* ✅ معلومات الموزع */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="font-semibold text-slate-900 dark:text-white">
@@ -1886,7 +2244,6 @@ function DeliveryDashboardPage() {
                             </div>
                           </div>
 
-                          {/* ✅ علامة الاختيار */}
                           <div className={cn(
                             "h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
                             selectedDistributorId === dist.id
@@ -1901,7 +2258,6 @@ function DeliveryDashboardPage() {
                       ))}
                   </div>
 
-                  {/* ✅ رسالة إذا لم يتم العثور على نتائج */}
                   {allDistributors.filter((dist: any) => {
                     const search = distributorSearch.toLowerCase().trim();
                     if (!search) return true;
@@ -1920,7 +2276,6 @@ function DeliveryDashboardPage() {
                     </div>
                   )}
 
-                  {/* ✅ وقت التوصيل المتوقع */}
                   <div className="mt-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-3">
                       <Clock className="h-3.5 w-3.5 text-[#0d2e2a]" />
@@ -2134,7 +2489,7 @@ function DeliveryDashboardPage() {
           </DialogContent>
         </Dialog>
 
-        {/* ===== ✅✅✅ ديالوج تعطيل الموزع ✅✅✅ ===== */}
+        {/* ===== ديالوج تعطيل الموزع ===== */}
         <Dialog open={showDeactivateDistributorDialog} onOpenChange={setShowDeactivateDistributorDialog}>
           <DialogContent className="max-w-md rounded-2xl border-0 p-0 overflow-hidden shadow-2xl bg-white dark:bg-slate-900">
             <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-6 text-white">
@@ -2398,7 +2753,7 @@ function ModernStatCard({
 }
 
 // ============================================================
-// 📦 OrderCard - مع أزرار قبول ورفض
+// 📦 OrderCard
 // ============================================================
 function OrderCard({ 
   order, 
@@ -2470,7 +2825,6 @@ function OrderCard({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* ✅ أزرار قبول ورفض للطلبات المعلقة */}
           {isPending && (
             <div className="flex items-center gap-1.5">
               <Button
@@ -2509,28 +2863,23 @@ function OrderCard({
             <Eye className="h-4 w-4" />
           </Button>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 rounded-xl hover:bg-[#0d2e2a]/10 transition-all duration-300">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-xl p-1 min-w-[160px]">
-              <DropdownMenuItem className="rounded-lg cursor-pointer gap-2 hover:bg-[#0d2e2a]/10">
-                <CheckCircle className="h-4 w-4 text-emerald-500" />
-                {isArabic ? "تحديث الحالة" : "Update Status"}
-              </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-lg cursor-pointer gap-2 hover:bg-[#0d2e2a]/10">
-                <UserCheck className="h-4 w-4 text-blue-500" />
-                {isArabic ? "تعيين موزع" : "Assign Distributor"}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="rounded-lg cursor-pointer gap-2 text-red-500 hover:bg-red-50/50">
-                <Trash2 className="h-4 w-4" />
-                {isArabic ? "حذف" : "Delete"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+   <DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" size="sm" className="h-8 w-8 rounded-xl hover:bg-[#0d2e2a]/10 transition-all duration-300">
+      <MoreVertical className="h-4 w-4" />
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end" className="rounded-xl p-1 min-w-[160px]">
+    <DropdownMenuItem className="rounded-lg cursor-pointer gap-2 hover:bg-[#0d2e2a]/10">
+      <CheckCircle className="h-4 w-4 text-emerald-500" />
+      {isArabic ? "تحديث الحالة" : "Update Status"}
+    </DropdownMenuItem>
+    <DropdownMenuItem className="rounded-lg cursor-pointer gap-2 hover:bg-[#0d2e2a]/10">
+      <UserCheck className="h-4 w-4 text-blue-500" />
+      {isArabic ? "تعيين موزع" : "Assign Distributor"}
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
         </div>
       </div>
     </div>
@@ -2538,7 +2887,7 @@ function OrderCard({
 }
 
 // ============================================================
-// 📦 DistributorCard - مع زر تعطيل
+// 📦 DistributorCard
 // ============================================================
 function DistributorCard({ 
   distributor, 

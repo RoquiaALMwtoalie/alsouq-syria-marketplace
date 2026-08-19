@@ -472,7 +472,7 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             type: 'store_approved',
             titleAr: "✅ تمت الموافقة على طلبك",
             bodyAr: `تمت الموافقة على طلب فتح متجر "${appData.store_name}" 🎉`,
-            linkUrl: '/dashboard/store',
+            linkUrl: '/dashboard',
             imageUrl: appData.store_logo_url,
             metadata: {
               application_id: appData.id,
@@ -512,7 +512,7 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             type: 'product_approved',
             titleAr: "✅ تمت الموافقة على طلبك",
             bodyAr: `تمت الموافقة على إضافة المنتج، وهو الآن متاح للبيع 🛍️`,
-            linkUrl: '/dashboard/products',
+            linkUrl: '/dashboard',
             imageUrl: listing?.cover_url || null,
             metadata: {
               application_id: appData.id,
@@ -579,7 +579,7 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             type: 'product_rejected',
             titleAr: "❌ تم رفض طلبك",
             bodyAr: `تم رفض طلب إضافة المنتج${admin_note ? `\nالسبب: ${admin_note}` : ''}`,
-            linkUrl: '/dashboard/products',
+            linkUrl: '/dashboard',
             imageUrl: listing?.cover_url || null,
             metadata: {
               application_id: appData.id,

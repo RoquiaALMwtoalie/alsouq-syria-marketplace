@@ -7,9 +7,10 @@ import {
   ChevronLeft, ChevronRight, Store, Truck, Shield, Clock, Award,
   BadgePercent, Package, ArrowRight, Sparkles, CalendarDays,
   Minus, Plus, X, Check, CreditCard, Wallet, Send, Palette, Ruler, Layers,
-  ShoppingCart, Trash2, CheckCircle, AlertTriangle
+  ShoppingCart, Trash2, CheckCircle, AlertTriangle, Gift, Tag, Percent
 } from "lucide-react";
 import { useToggleFavorite } from "@/lib/queries";
+import { useProductOffer } from "@/lib/hooks/useProductOffers";
 import { useApp, formatPrice, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -76,6 +77,9 @@ function ListingDetailPage() {
     isError,
   } = useListing(id);
   
+  // ✅ ✅ ✅ جلب العرض الترويجي للمنتج
+  const { data: promoOffer } = useProductOffer(id);
+  
   const { data: reviews = [] } = useListingReviews(id);
   const { data: similarListings = [] } = useSimilarListings(
     listing?.category_id,
@@ -133,22 +137,87 @@ function ListingDetailPage() {
     null,
   [listing]);
 
-  const isInCart = useMemo(() => {
-    return cart?.items?.some((item: any) => item.listing_id === listing?.id);
-  }, [cart, listing]);
+// ✅ ✅ ✅ التحقق من وجود المنتج في السلة مع نفس التركيبة
+const isInCart = useMemo(() => {
+  if (!cart?.items || !listing) return false;
+  
+  return cart.items.some((item: any) => {
+    // نفس المنتج
+    if (item.listing_id !== listing.id) return false;
+    
+    // نفس اللون (إذا تم اختيار لون)
+    if (selectedColor && item.selected_color !== selectedColor) return false;
+    
+    // نفس المقاس (إذا تم اختيار مقاس)
+    if (selectedSize && item.selected_size !== selectedSize) return false;
+    
+    // نفس الفيرنت (إذا تم اختيار فيرنت)
+    if (selectedVariation?.id && item.selected_variation_id !== selectedVariation.id) return false;
+    
+    return true;
+  });
+}, [cart, listing, selectedColor, selectedSize, selectedVariation]);
 
-  const cartItemCount = useMemo(() => {
-    const item = cart?.items?.find((item: any) => item.listing_id === listing?.id);
-    return item?.quantity || 0;
-  }, [cart, listing]);
+// ✅ ✅ ✅ عدد العناصر في السلة لنفس التركيبة
+const cartItemCount = useMemo(() => {
+  if (!cart?.items || !listing) return 0;
+  
+  const item = cart.items.find((item: any) => {
+    if (item.listing_id !== listing.id) return false;
+    if (selectedColor && item.selected_color !== selectedColor) return false;
+    if (selectedSize && item.selected_size !== selectedSize) return false;
+    if (selectedVariation?.id && item.selected_variation_id !== selectedVariation.id) return false;
+    return true;
+  });
+  
+  return item?.quantity || 0;
+}, [cart, listing, selectedColor, selectedSize, selectedVariation]);
+
+  // ✅ ✅ ✅ حساب نسبة الخصم للعرض الترويجي
+  const promoDiscountPercent = useMemo(() => {
+    if (promoOffer && promoOffer.buy_quantity && promoOffer.get_quantity) {
+      return Math.round((promoOffer.get_quantity / (promoOffer.buy_quantity + promoOffer.get_quantity)) * 100);
+    }
+    return 0;
+  }, [promoOffer]);
+
+  // ✅ ✅ ✅ حساب قيمة التوفير للعرض الترويجي
+  const promoSavings = useMemo(() => {
+    if (promoOffer && promoOffer.get_quantity && listing?.price) {
+      return Number(listing.price) * promoOffer.get_quantity;
+    }
+    return 0;
+  }, [promoOffer, listing]);
+
+  // ✅ ✅ ✅ الحصول على نوع العرض الترويجي
+  const getPromoTypeLabel = useCallback((type: string) => {
+    const types: Record<string, { label: string; icon: any; color: string }> = {
+      bogo: { 
+        label: app.lang === "ar" ? "اشتر 1 واحصل على 1" : "Buy 1 Get 1", 
+        icon: Gift,
+        color: "text-purple-500"
+      },
+      cross_sell: { 
+        label: app.lang === "ar" ? "شراء منتج والحصول على آخر" : "Buy product get another", 
+        icon: Tag,
+        color: "text-blue-500"
+      },
+      bundle: { 
+        label: app.lang === "ar" ? "باقة منتجات" : "Bundle", 
+        icon: Package,
+        color: "text-orange-500"
+      },
+    };
+    return types[type] || types.bogo;
+  }, [app.lang]);
+
+  const promoType = promoOffer?.offer_type ? getPromoTypeLabel(promoOffer.offer_type) : null;
 
 const sortedVariations = useMemo(() => {
   return [...variations].sort((a, b) => {
-    // استخراج جميع المفاتيح من التركيبة الأولى
     const keysA = Object.keys(a.combination || {});
     const keysB = Object.keys(b.combination || {});
     
-    // مقارنة حسب أول مفتاح موجود
     for (const key of keysA) {
       if (keysB.includes(key)) {
         const valA = String(a.combination[key] || '');
@@ -159,7 +228,6 @@ const sortedVariations = useMemo(() => {
       }
     }
     
-    // إذا كانت كل المفاتيح متساوية، قارن حسب الـ id
     return (a.id || '').localeCompare(b.id || '');
   });
 }, [variations]);
@@ -174,7 +242,6 @@ const filteredVariations = useMemo(() => {
   return sortedVariations.filter((v: any) => {
     if (!isVariationAvailable(v)) return false;
     
-    // ✅ التحقق من وجود اللون في الـ combination (بغض النظر عن المفتاح)
     if (selectedColor) {
       const hasColor = Object.values(v.combination || {}).some(
         (val: any) => String(val) === selectedColor
@@ -182,7 +249,6 @@ const filteredVariations = useMemo(() => {
       if (!hasColor) return false;
     }
     
-    // ✅ التحقق من وجود المقاس في الـ combination (بغض النظر عن المفتاح)
     if (selectedSize) {
       const hasSize = Object.values(v.combination || {}).some(
         (val: any) => String(val) === selectedSize
@@ -193,22 +259,16 @@ const filteredVariations = useMemo(() => {
     return true;
   });
 }, [sortedVariations, selectedColor, selectedSize]);
-  // ✅ ✅ ✅ تحديد ما إذا تم اختيار الفيرنتات بالكامل
+
   const isVariationSelected = useMemo(() => {
-    // 1. إذا ما في فيرنتات أصلًا → عادي
     if (colors.length === 0 && sizes.length === 0 && variations.length === 0) {
       return true;
     }
     
-    // 2. إذا في ألوان → لازم تختار لون
     if (colors.length > 0 && !selectedColor) return false;
-    
-    // 3. إذا في مقاسات → لازم تختار مقاس
     if (sizes.length > 0 && !selectedSize) return false;
     
-    // 4. إذا في فيرنتات معقدة → لازم تختار فيرنت
     if (variations.length > 0 && !selectedVariation) {
-      //但是如果选择了颜色和尺寸，并且有匹配的variation，则允许
       if (selectedColor && selectedSize) {
         const matching = variations.find((v: any) => 
           v.combination?.color === selectedColor && 
@@ -223,12 +283,9 @@ const filteredVariations = useMemo(() => {
     return true;
   }, [colors, sizes, variations, selectedColor, selectedSize, selectedVariation]);
 
-  // ✅ ✅ ✅ رسالة الخطأ المناسبة (حسب نوع الخيارات)
   const getVariationErrorMessage = useMemo(() => {
-    // ✅ 1. أولاً: إذا كان فيه تركيبات (Variations)
     if (variations.length > 0) {
       if (!selectedVariation) {
-        // إذا اختار لون ومقاس لكن ما في تركيبة مطابقة
         if (selectedColor && selectedSize) {
           const matching = variations.find((v: any) => 
             v.combination?.color === selectedColor && 
@@ -248,17 +305,14 @@ const filteredVariations = useMemo(() => {
       return "";
     }
 
-    // ✅ 2. إذا كان فيه ألوان فقط (بدون تركيبات)
     if (colors.length > 0 && !selectedColor && sizes.length === 0) {
       return app.lang === "ar" ? "⚠️ اختر اللون أولاً" : "⚠️ Select color first";
     }
 
-    // ✅ 3. إذا كان فيه مقاسات فقط (بدون تركيبات)
     if (sizes.length > 0 && !selectedSize && colors.length === 0) {
       return app.lang === "ar" ? "⚠️ اختر المقاس أولاً" : "⚠️ Select size first";
     }
 
-    // ✅ 4. إذا كان فيه ألوان + مقاسات (بدون تركيبات)
     if (colors.length > 0 && sizes.length > 0) {
       if (!selectedColor && !selectedSize) {
         return app.lang === "ar" 
@@ -340,11 +394,9 @@ const filteredVariations = useMemo(() => {
     setSelectedVariation(null);
   }, [selectedSize]);
 
-// ✅ دالة اختيار التركيبة - تعديل لاستخراج اللون من أي مفتاح
 const handleVariationSelect = useCallback((variation: any) => {
   setSelectedVariation(selectedVariation?.id === variation.id ? null : variation);
   
-  // ✅ ✅ ✅ البحث عن اللون في التركيبة بأي مفتاح
   if (variation.combination) {
     const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
     let colorValue = null;
@@ -365,7 +417,6 @@ const handleVariationSelect = useCallback((variation: any) => {
     }
   }
   
-  // ✅ البحث عن المقاس في التركيبة
   if (variation.combination) {
     const sizeKeys = ['size', 'sizes', 'المقاس', 'مقاس'];
     let sizeValue = null;
@@ -382,148 +433,164 @@ const handleVariationSelect = useCallback((variation: any) => {
     }
   }
 }, [selectedVariation, colors]);
+
 const handleAddToCart = useCallback(async () => {
-    if (!app.user) {
-      toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
-      navigate({ to: "/auth/$mode", params: { mode: "login" } });
-      return;
+  if (!app.user) {
+    // ✅ ✅ ✅ توجيه مباشر لصفحة تسجيل الدخول مع حفظ بيانات المنتج
+    sessionStorage.setItem('redirect_after_login', window.location.pathname);
+    sessionStorage.setItem('product_to_cart', JSON.stringify({
+      listingId: listing?.id,
+      quantity: quantity,
+      selectedColor: selectedColor,
+      selectedSize: selectedSize,
+      selectedVariationId: selectedVariation?.id,
+      variationPrice: selectedVariation?.price,
+      variationCombination: selectedVariation?.combination,
+    }));
+    
+    toast.info(
+      app.lang === "ar" 
+        ? "🔐 سيتم إضافة المنتج للسلة بعد تسجيل الدخول" 
+        : "🔐 Product will be added to cart after login",
+      { duration: 2000 }
+    );
+    
+    navigate({ to: "/auth/$mode", params: { mode: "login" } });
+    return;
+  }
+  
+  if (!listing) {
+    toast.error(app.lang === "ar" ? "المنتج غير موجود" : "Product not found");
+    return;
+  }
+  
+  if (!listing.is_available) {
+    toast.error(app.lang === "ar" ? "❌ هذا المنتج غير متوفر حالياً" : "❌ This product is currently unavailable");
+    return;
+  }
+
+  if (listing.owner_id === app.user.id) {
+    toast.error(
+      app.lang === "ar" 
+        ? "❌ لا يمكنك شراء منتجات من متجرك الخاص" 
+        : "❌ You cannot purchase products from your own store"
+    );
+    return;
+  }
+
+  if (!isVariationSelected) {
+    const variationsSection = document.getElementById('variations-section');
+    if (variationsSection) {
+      variationsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      variationsSection.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2', 'rounded-xl', 'transition-all', 'duration-300');
+      setTimeout(() => {
+        variationsSection.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2', 'rounded-xl');
+      }, 3000);
     }
     
-    if (!listing) {
-      toast.error(app.lang === "ar" ? "المنتج غير موجود" : "Product not found");
-      return;
+    toast.warning(
+      app.lang === "ar" 
+        ? `👆 ${getVariationErrorMessage}` 
+        : `👆 ${getVariationErrorMessage}`
+    );
+    return;
+  }
+
+  if (quantity < 1) {
+    toast.warning(app.lang === "ar" ? "⚠️ الكمية يجب أن تكون على الأقل 1" : "⚠️ Quantity must be at least 1");
+    return;
+  }
+
+  try {
+    const result = await addToCartMutation.mutateAsync({
+      userId: app.user.id,
+      listingId: listing.id,
+      quantity: quantity,
+      selectedColor: selectedColor || undefined,
+      selectedSize: selectedSize || undefined,
+      selectedVariationId: selectedVariation?.id || undefined,
+      variationPrice: selectedVariation?.price || undefined,
+      variationCombination: selectedVariation?.combination || undefined,
+      onStoreConflict: async (data: any) => {
+        const { data: currentStore } = await supabase
+          .from("profiles")
+          .select("store_name")
+          .eq("id", data.currentStoreId)
+          .maybeSingle();
+        
+        const { data: newStore } = await supabase
+          .from("profiles")
+          .select("store_name")
+          .eq("id", data.newStoreId)
+          .maybeSingle();
+        
+        setCurrentStoreName(currentStore?.store_name || "متجر");
+        setNewStoreName(newStore?.store_name || "متجر");
+        setPendingAddData({ 
+          listingId: listing.id, 
+          quantity, 
+          selectedColor, 
+          selectedSize, 
+          selectedVariationId: selectedVariation?.id,
+          variationPrice: selectedVariation?.price,
+          variationCombination: selectedVariation?.combination,
+        });
+        setShowStoreConflict(true);
+      },
+    });
+    
+    if (result?.action === 'conflict') return;
+    
+    let details = [];
+    if (selectedColor) details.push(`🎨 ${selectedColor}`);
+    if (selectedSize) details.push(`📏 ${selectedSize}`);
+    if (selectedVariation) {
+      const combo = Object.values(selectedVariation.combination).join(' • ');
+      details.push(`🔧 ${combo}`);
     }
     
-    if (!listing.is_available) {
-      toast.error(app.lang === "ar" ? "❌ هذا المنتج غير متوفر حالياً" : "❌ This product is currently unavailable");
-      return;
-    }
-
-    // ✅ ✅ ✅ منع التاجر من شراء منتجاته الخاصة
-    if (listing.owner_id === app.user.id) {
-      toast.error(
-        app.lang === "ar" 
-          ? "❌ لا يمكنك شراء منتجات من متجرك الخاص" 
-          : "❌ You cannot purchase products from your own store"
-      );
-      return;
-    }
-
-    // ✅ ✅ ✅ التحقق من اختيار الفيرنتات
-    if (!isVariationSelected) {
-      // سكرول لقسم الفيرنتات
-      const variationsSection = document.getElementById('variations-section');
-      if (variationsSection) {
-        variationsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        variationsSection.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2', 'rounded-xl', 'transition-all', 'duration-300');
-        setTimeout(() => {
-          variationsSection.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2', 'rounded-xl');
-        }, 3000);
-      }
-      
-      toast.warning(
-        app.lang === "ar" 
-          ? `👆 ${getVariationErrorMessage}` 
-          : `👆 ${getVariationErrorMessage}`
-      );
-      return;
-    }
-
-    if (quantity < 1) {
-      toast.warning(app.lang === "ar" ? "⚠️ الكمية يجب أن تكون على الأقل 1" : "⚠️ Quantity must be at least 1");
-      return;
-    }
-
-    try {
-      const result = await addToCartMutation.mutateAsync({
-        userId: app.user.id,
-        listingId: listing.id,
-        quantity: quantity,
-        selectedColor: selectedColor || undefined,
-        selectedSize: selectedSize || undefined,
-        selectedVariationId: selectedVariation?.id || undefined,
-        variationPrice: selectedVariation?.price || undefined,
-        variationCombination: selectedVariation?.combination || undefined,
-        onStoreConflict: async (data: any) => {
-          const { data: currentStore } = await supabase
-            .from("profiles")
-            .select("store_name")
-            .eq("id", data.currentStoreId)
-            .maybeSingle();
-          
-          const { data: newStore } = await supabase
-            .from("profiles")
-            .select("store_name")
-            .eq("id", data.newStoreId)
-            .maybeSingle();
-          
-          setCurrentStoreName(currentStore?.store_name || "متجر");
-          setNewStoreName(newStore?.store_name || "متجر");
-          setPendingAddData({ 
-            listingId: listing.id, 
-            quantity, 
-            selectedColor, 
-            selectedSize, 
-            selectedVariationId: selectedVariation?.id,
-            variationPrice: selectedVariation?.price,
-            variationCombination: selectedVariation?.combination,
-          });
-          setShowStoreConflict(true);
+    const detailsText = details.length > 0 ? ` (${details.join(', ')})` : '';
+    
+    toast.success(
+      app.lang === "ar" 
+        ? `🛒 تم إضافة ${quantity} × "${listing.title_ar}" للسلة${detailsText}`
+        : `🛒 Added ${quantity} × "${listing.title_en || listing.title_ar}" to cart${detailsText}`,
+      { 
+        duration: 4000,
+        action: {
+          label: app.lang === "ar" ? "🛒 عرض السلة" : "🛒 View Cart",
+          onClick: () => navigate({ to: "/cart" })
         },
-      });
-      
-      if (result?.action === 'conflict') return;
-      
-      let details = [];
-      if (selectedColor) details.push(`🎨 ${selectedColor}`);
-      if (selectedSize) details.push(`📏 ${selectedSize}`);
-      if (selectedVariation) {
-        const combo = Object.values(selectedVariation.combination).join(' • ');
-        details.push(`🔧 ${combo}`);
-      }
-      
-      const detailsText = details.length > 0 ? ` (${details.join(', ')})` : '';
-      
-      toast.success(
-        app.lang === "ar" 
-          ? `🛒 تم إضافة ${quantity} × "${listing.title_ar}" للسلة${detailsText}`
-          : `🛒 Added ${quantity} × "${listing.title_en || listing.title_ar}" to cart${detailsText}`,
-        { 
-          duration: 4000,
-          action: {
-            label: app.lang === "ar" ? "🛒 عرض السلة" : "🛒 View Cart",
-            onClick: () => navigate({ to: "/cart" })
-          },
-          style: {
-            background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',
-            border: '1px solid #f9a8d4',
-            borderRadius: '16px',
-            boxShadow: '0 20px 60px rgba(236, 72, 153, 0.25)',
-          },
-          actionButtonStyle: {
-            background: 'linear-gradient(135deg, #f472b6, #ec4899, #db2777)',
-            color: 'white',
-            fontWeight: 'bold',
-            borderRadius: '12px',
-            padding: '8px 24px',
-            boxShadow: '0 8px 30px rgba(236, 72, 153, 0.4)',
-            border: 'none',
-            fontSize: '14px',
-          }
+        style: {
+          background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',
+          border: '1px solid #f9a8d4',
+          borderRadius: '16px',
+          boxShadow: '0 20px 60px rgba(236, 72, 153, 0.25)',
+        },
+        actionButtonStyle: {
+          background: 'linear-gradient(135deg, #f472b6, #ec4899, #db2777)',
+          color: 'white',
+          fontWeight: 'bold',
+          borderRadius: '12px',
+          padding: '8px 24px',
+          boxShadow: '0 8px 30px rgba(236, 72, 153, 0.4)',
+          border: 'none',
+          fontSize: '14px',
         }
-      );
-      
-      setQuantity(1);
-      
-    } catch (error: any) {
-      console.error("❌ Error adding to cart:", error);
-      toast.error(
-        app.lang === "ar" 
-          ? `❌ فشل إضافة المنتج للسلة: ${error.message || 'خطأ غير معروف'}`
-          : `❌ Failed to add to cart: ${error.message || 'Unknown error'}`
-      );
-    }
-  }, [app.user, listing, isVariationSelected, getVariationErrorMessage, selectedColor, selectedSize, selectedVariation, quantity, addToCartMutation, navigate, app.lang]);
+      }
+    );
+    
+    setQuantity(1);
+    
+  } catch (error: any) {
+    console.error("❌ Error adding to cart:", error);
+    toast.error(
+      app.lang === "ar" 
+        ? `❌ فشل إضافة المنتج للسلة: ${error.message || 'خطأ غير معروف'}`
+        : `❌ Failed to add to cart: ${error.message || 'Unknown error'}`
+    );
+  }
+}, [app.user, listing, isVariationSelected, getVariationErrorMessage, selectedColor, selectedSize, selectedVariation, quantity, addToCartMutation, navigate, app.lang]);
   const handleConfirmClearCart = useCallback(async () => {
     if (!app.user || !pendingAddData) return;
     
@@ -726,12 +793,23 @@ const handleAddToCart = useCallback(async () => {
                 )}
                 
                 <div className="absolute top-4 start-4 flex flex-col gap-2">
+                  {/* ✅ عرض تخفيضي */}
                   {listing.is_offer && (
-                    <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm font-bold">
+                    <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm font-bold animate-pulse">
                       🔥 {app.lang === "ar" ? "عرض خاص" : "Special Offer"}
                       {listing.discount_percent && ` -${listing.discount_percent}%`}
                     </Badge>
                   )}
+                  
+                  {/* ✅ ✅ ✅ عرض ترويجي */}
+                  {promoOffer && promoOffer.is_active && (
+                    <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm font-bold animate-pulse">
+                      <Gift className="h-3.5 w-3.5 inline mr-1" />
+                      {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
+                      {promoDiscountPercent > 0 && ` -${promoDiscountPercent}%`}
+                    </Badge>
+                  )}
+                  
                   {listing.status === "pending" && (
                     <Badge className="bg-yellow-500/90 text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm">
                       ⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}
@@ -832,6 +910,7 @@ const handleAddToCart = useCallback(async () => {
               {/* ===== السعر ===== */}
               <div className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-2xl border border-primary/10">
                 <div className="flex flex-col gap-3">
+                  {/* ✅ عرض تخفيضي */}
                   {listing.is_offer && listing.old_price && (
                     <div className="flex items-center gap-4 flex-wrap">
                       {listing.old_price && (
@@ -847,11 +926,53 @@ const handleAddToCart = useCallback(async () => {
                     </div>
                   )}
                   
+                  {/* ✅ ✅ ✅ عرض ترويجي - تفاصيل */}
+                  {promoOffer && promoOffer.is_active && (
+                    <div className="flex flex-wrap items-center gap-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-xl border border-purple-200/50 dark:border-purple-800/30">
+                      <div className="flex items-center gap-2">
+                        {promoType && (
+                          <Badge className={cn(
+                            "border-0 text-[10px] font-bold px-2 py-0.5",
+                            promoType.color
+                          )}>
+                            {promoType.icon && <promoType.icon className="h-3 w-3 inline mr-1" />}
+                            {promoType.label}
+                          </Badge>
+                        )}
+                        <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 text-[10px] px-2 py-0.5">
+                          <Gift className="h-3 w-3 inline mr-1" />
+                          {app.lang === "ar" ? "اشتري" : "Buy"} {promoOffer.buy_quantity || 2} 
+                          {app.lang === "ar" ? " واحصل على" : " get"} {promoOffer.get_quantity || 1} 
+                          {app.lang === "ar" ? " مجاناً" : " free"}
+                        </Badge>
+                      </div>
+                      
+                      {promoDiscountPercent > 0 && (
+                        <Badge className="bg-gradient-to-r from-purple-600 to-rose-500 text-white border-0 text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-md shadow-purple-500/20 animate-pulse">
+                          🎁 {promoDiscountPercent}% OFF
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                  
                   <div className="flex flex-col gap-1">
                     <div className="flex items-end gap-4 flex-wrap">
                       <span className="text-4xl md:text-5xl font-black text-primary">
                         {formatPrice(Number(listing.price), app.currency, app.lang)}
                       </span>
+                      
+                      {/* ✅ ✅ ✅ قيمة التوفير للعرض الترويجي */}
+                      {promoOffer && promoOffer.is_active && promoSavings > 0 && (
+                        <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-full border border-emerald-200/50">
+                          <Gift className="h-4 w-4 text-emerald-500" />
+                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                            {app.lang === "ar" ? "وفر" : "Save"} {formatPrice(promoSavings, app.currency, app.lang)}
+                          </span>
+                          <Badge className="bg-emerald-500/90 text-white border-0 text-[9px] px-1.5 py-0.5">
+                            {app.lang === "ar" ? "مجاناً" : "FREE"}
+                          </Badge>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
@@ -1024,7 +1145,7 @@ const handleAddToCart = useCallback(async () => {
                 </div>
               )}
 
-{/* ===== جدول التركيبات (مع ترتيب ثابت للأعمدة) ===== */}
+{/* ===== جدول التركيبات ===== */}
 {variations.length > 0 && (
   <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 scroll-mt-20">
     <div className="flex items-center justify-between mb-3">
@@ -1052,7 +1173,6 @@ const handleAddToCart = useCallback(async () => {
         <thead className="bg-[#0d2e2a]/5 dark:bg-slate-800/50">
           <tr>
             {(() => {
-              // استخراج المفاتيح الفريدة من جميع التركيبات
               const keys = new Set<string>();
               sortedVariations.forEach((v: any) => {
                 if (v.combination) {
@@ -1060,16 +1180,6 @@ const handleAddToCart = useCallback(async () => {
                 }
               });
               
-              // 🔍🔍🔍 DEBUG: console.log للمفاتيح المستخرجة
-              console.log("🔍🔍🔍 [TABLE DEBUG] ===== START =====");
-              console.log("🔍🔍🔍 [TABLE DEBUG] variations.length:", variations.length);
-              console.log("🔍🔍🔍 [TABLE DEBUG] sortedVariations.length:", sortedVariations.length);
-              console.log("🔍🔍🔍 [TABLE DEBUG] All keys from combinations:", Array.from(keys));
-              console.log("🔍🔍🔍 [TABLE DEBUG] First variation combination:", sortedVariations[0]?.combination);
-              console.log("🔍🔍🔍 [TABLE DEBUG] First variation keys:", Object.keys(sortedVariations[0]?.combination || {}));
-              console.log("🔍🔍🔍 [TABLE DEBUG] ===== END =====");
-              
-              // ✅ ترتيب ثابت للأعمدة حسب الأولوية
               const priorityOrder = ['color', 'colors', 'size', 'fabric', 'season', 'material', 'style', 'brand'];
               const sortedKeys = Array.from(keys).sort((a, b) => {
                 const indexA = priorityOrder.indexOf(a);
@@ -1079,8 +1189,6 @@ const handleAddToCart = useCallback(async () => {
                 if (indexB === -1) return -1;
                 return indexA - indexB;
               });
-              
-              console.log("🔍🔍🔍 [TABLE DEBUG] Sorted keys after priority:", sortedKeys);
               
               return sortedKeys.map((key) => (
                 <th key={key} className="px-3 py-2 text-right font-medium text-muted-foreground text-[11px]">
@@ -1112,7 +1220,6 @@ const handleAddToCart = useCallback(async () => {
             const isSelected = selectedVariation?.id === v.id;
             const keys = Object.keys(v.combination || {});
             
-            // ✅ ترتيب المفاتيح بنفس الترتيب
             const priorityOrder = ['color', 'colors', 'size', 'fabric', 'season', 'material', 'style', 'brand'];
             const sortedKeys = [...keys].sort((a, b) => {
               const indexA = priorityOrder.indexOf(a);
@@ -1160,19 +1267,16 @@ const handleAddToCart = useCallback(async () => {
                   </td>
                 ))}
               <td className="px-3 py-2.5 text-xs">
-  {/* ✅ السعر الجديد (أو السعر العادي للمنتجات) */}
   <span className="font-semibold text-[#0d2e2a]">
     {v.price ? formatPrice(v.price, app.currency, app.lang) : formatPrice(Number(listing.price), app.currency, app.lang)}
   </span>
   
-  {/* ✅ السعر القديم (يظهر فقط للعروض) */}
   {listing.is_offer && v.old_price && v.old_price > 0 && (
     <span className="ml-2 text-xs text-red-400 line-through">
       {formatPrice(v.old_price, app.currency, app.lang)}
     </span>
   )}
   
-  {/* ✅ إذا كان العرض وما في old_price للفيرنتة، استخدم old_price من listing */}
   {listing.is_offer && (!v.old_price || v.old_price <= 0) && listing.old_price && listing.old_price > 0 && (
     <span className="ml-2 text-xs text-red-400 line-through">
       {formatPrice(Number(listing.old_price), app.currency, app.lang)}
@@ -1284,7 +1388,6 @@ const handleAddToCart = useCallback(async () => {
               </div>
 
               <div className="space-y-3">
-                {/* ===== ✅ زر الإضافة المعدل ===== */}
                 <Button 
                   size="lg" 
                   className={cn(

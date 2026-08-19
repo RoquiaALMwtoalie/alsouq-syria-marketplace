@@ -473,49 +473,71 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleChangePassword = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (newPassword.length < 6) {
+    toast.error(isArabic ? "❌ كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل" : "❌ New password must be at least 6 characters");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    toast.error(isArabic ? "❌ كلمة المرور غير متطابقة" : "❌ Passwords do not match");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) throw error;
+
+    toast.success(
+      isArabic 
+        ? "✅ تم تغيير كلمة المرور بنجاح" 
+        : "✅ Password changed successfully"
+    );
     
-    if (newPassword.length < 6) {
-      toast.error(isArabic ? "❌ كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل" : "❌ New password must be at least 6 characters");
-      return;
+    setShowPasswordDialog(false);
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    
+  } catch (error: any) {
+    console.error("Error changing password:", error);
+    
+    // ✅ ✅ ✅ ترجمة رسائل الخطأ من Supabase
+    const errorMessage = error.message || '';
+    let translatedMessage = '';
+    
+    if (errorMessage.includes('New password should be different from the old password')) {
+      translatedMessage = isArabic 
+        ? "❌ كلمة المرور الجديدة يجب أن تكون مختلفة عن القديمة" 
+        : "❌ New password should be different from the old password";
+    } 
+    else if (errorMessage.includes('Password should be at least 6 characters')) {
+      translatedMessage = isArabic 
+        ? "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل" 
+        : "❌ Password should be at least 6 characters";
+    } 
+    else if (errorMessage.includes('Invalid credentials') || errorMessage.includes('Invalid login credentials')) {
+      translatedMessage = isArabic 
+        ? "❌ كلمة المرور الحالية غير صحيحة" 
+        : "❌ Current password is incorrect";
+    } 
+    else {
+      translatedMessage = isArabic 
+        ? `❌ فشل تغيير كلمة المرور` 
+        : `❌ Failed to change password`;
     }
-
-    if (newPassword !== confirmPassword) {
-      toast.error(isArabic ? "❌ كلمة المرور غير متطابقة" : "❌ Passwords do not match");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
-
-      toast.success(
-        isArabic 
-          ? "✅ تم تغيير كلمة المرور بنجاح" 
-          : "✅ Password changed successfully"
-      );
-      
-      setShowPasswordDialog(false);
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      
-    } catch (error: any) {
-      console.error("Error changing password:", error);
-      toast.error(
-        isArabic 
-          ? `❌ فشل تغيير كلمة المرور: ${error.message}` 
-          : `❌ Failed to change password: ${error.message}`
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    
+    toast.error(translatedMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const getInitials = (name?: string) => {
     if (!name) return "D";

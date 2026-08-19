@@ -23,7 +23,8 @@ import {
   Car, Bike, Bus, Train, Ship,
   Anchor, Compass as CompassIcon, 
   Globe, Map, Pin, Flag, Truck as TruckIcon,
-  X, Maximize2, FileText, Loader2, ArrowLeft
+  X, Maximize2, FileText, Loader2, ArrowLeft,
+  Download, FileSpreadsheet, Printer, FileDown, Table2, ClipboardCopy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -109,6 +110,209 @@ function DistributorDashboardPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  // ============================================================
+  // ✅ دوال التصدير والطباعة
+  // ============================================================
+
+  // ✅ دالة تصدير إلى Excel (CSV)
+  const exportToCSV = (data: any[], filename: string) => {
+    if (!data || data.length === 0) {
+      toast.error(isArabic ? "❌ لا توجد بيانات للتصدير" : "❌ No data to export");
+      return;
+    }
+
+    try {
+      const headers = Object.keys(data[0]).filter(key => 
+        !['id', 'created_at', 'updated_at', 'deleted_at'].includes(key)
+      );
+      
+      let csv = headers.join(',') + '\n';
+      
+      data.forEach((row: any) => {
+        const values = headers.map(header => {
+          let value = row[header] || '';
+          if (typeof value === 'string' && value.includes(',')) {
+            value = `"${value}"`;
+          }
+          if (typeof value === 'string' && value.includes('\n')) {
+            value = value.replace(/\n/g, ' ');
+          }
+          return value;
+        });
+        csv += values.join(',') + '\n';
+      });
+
+      const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${filename}_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+
+      toast.success(
+        isArabic 
+          ? `✅ تم تصدير ${data.length} سجل بنجاح` 
+          : `✅ Exported ${data.length} records successfully`
+      );
+    } catch (error) {
+      console.error("❌ Export error:", error);
+      toast.error(isArabic ? "❌ فشل التصدير" : "❌ Export failed");
+    }
+  };
+
+  // ✅ دالة تصدير إلى Word (HTML)
+  const exportToWord = (data: any[], title: string) => {
+    if (!data || data.length === 0) {
+      toast.error(isArabic ? "❌ لا توجد بيانات للتصدير" : "❌ No data to export");
+      return;
+    }
+
+    try {
+      let html = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' 
+              xmlns:w='urn:schemas-microsoft-com:office:word' 
+              xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <meta charset="utf-8">
+          <title>${title}</title>
+          <!--[if gte mso 9]>
+          <xml>
+            <w:WordDocument>
+              <w:View>Print</w:View>
+              <w:Zoom>100</w:Zoom>
+            </w:WordDocument>
+          </xml>
+          <![endif]-->
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; direction: ${isArabic ? 'rtl' : 'ltr'}; }
+            h1 { color: #0d2e2a; border-bottom: 3px solid #2a655f; padding-bottom: 10px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background-color: #2a655f; color: white; padding: 12px 10px; text-align: ${isArabic ? 'right' : 'left'}; font-weight: bold; }
+            td { padding: 10px; border: 1px solid #ddd; }
+            tr:nth-child(even) { background-color: #f5f5f5; }
+            tr:hover { background-color: #e8f0f0; }
+            .footer { margin-top: 30px; color: #666; font-size: 12px; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; }
+            .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+            .badge-pending { background: #f59e0b; color: white; }
+            .badge-assigned { background: #8b5cf6; color: white; }
+            .badge-picked_up { background: #3b82f6; color: white; }
+            .badge-in_transit { background: #f97316; color: white; }
+            .badge-delivered { background: #22c55e; color: white; }
+            .badge-cancelled { background: #ef4444; color: white; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <p><strong>${isArabic ? 'تاريخ التصدير' : 'Export Date'}:</strong> ${new Date().toLocaleString(isArabic ? 'ar-SA' : 'en-US')}</p>
+          <p><strong>${isArabic ? 'عدد السجلات' : 'Total Records'}:</strong> ${data.length}</p>
+          <table>
+            <thead>
+              <tr>
+      `;
+
+      const headers = Object.keys(data[0]).filter(key => 
+        !['id', 'created_at', 'updated_at', 'deleted_at'].includes(key)
+      );
+      
+      headers.forEach(header => {
+        const labelMap: Record<string, string> = {
+          tracking_number: isArabic ? 'رقم التتبع' : 'Tracking Number',
+          status: isArabic ? 'الحالة' : 'Status',
+          delivery_fee: isArabic ? 'رسوم التوصيل' : 'Delivery Fee',
+          delivery_address: isArabic ? 'عنوان التوصيل' : 'Delivery Address',
+          created_at: isArabic ? 'تاريخ الإنشاء' : 'Created At',
+          distributor_id: isArabic ? 'الموزع' : 'Distributor',
+          delivery_company_id: isArabic ? 'شركة التوصيل' : 'Delivery Company',
+          pickup_address: isArabic ? 'عنوان الاستلام' : 'Pickup Address',
+          notes_ar: isArabic ? 'ملاحظات' : 'Notes',
+          notes_en: 'Notes',
+          order_id: isArabic ? 'رقم الطلب' : 'Order ID',
+          buyer_name: isArabic ? 'اسم العميل' : 'Customer Name',
+          buyer_phone: isArabic ? 'رقم العميل' : 'Customer Phone',
+          total: isArabic ? 'المجموع' : 'Total',
+          cod_amount: isArabic ? 'مبلغ الدفع' : 'COD Amount',
+          delivered_at: isArabic ? 'تاريخ التوصيل' : 'Delivered At',
+          picked_up_at: isArabic ? 'تاريخ الاستلام' : 'Picked Up At',
+          cancelled_at: isArabic ? 'تاريخ الإلغاء' : 'Cancelled At',
+        };
+        const label = labelMap[header] || header;
+        html += `<th>${label}</th>`;
+      });
+      
+      html += `</tr></thead><tbody>`;
+
+      data.forEach((row: any) => {
+        html += `<tr>`;
+        headers.forEach(header => {
+          let value = row[header] || '-';
+          
+          if (header === 'status') {
+            const statusLabels: Record<string, string> = {
+              pending: isArabic ? 'قيد المراجعة' : 'Pending',
+              assigned: isArabic ? 'تم التعيين' : 'Assigned',
+              picked_up: isArabic ? 'تم الاستلام' : 'Picked up',
+              in_transit: isArabic ? 'قيد التوصيل' : 'In Transit',
+              delivered: isArabic ? 'تم التوصيل' : 'Delivered',
+              cancelled: isArabic ? 'ملغي' : 'Cancelled',
+            };
+            const label = statusLabels[value] || value;
+            const colorClass = `badge-${value}`;
+            html += `<td><span class="badge ${colorClass}">${label}</span></td>`;
+          } 
+          else if (header === 'created_at' || header === 'updated_at' || header === 'delivered_at' || header === 'picked_up_at' || header === 'cancelled_at') {
+            html += `<td>${value ? new Date(value).toLocaleString(isArabic ? 'ar-SA' : 'en-US') : '-'}</td>`;
+          }
+          else if (header === 'delivery_fee' || header === 'total' || header === 'cod_amount') {
+            html += `<td>${Number(value).toLocaleString()} SYP</td>`;
+          }
+          else if (typeof value === 'string' && value.length > 50) {
+            html += `<td>${value.substring(0, 50)}...</td>`;
+          }
+          else {
+            html += `<td>${value}</td>`;
+          }
+        });
+        html += `</tr>`;
+      });
+
+      html += `
+            </tbody>
+          </table>
+          <div class="footer">
+            ${isArabic ? 'تم التصدير من لوحة تحكم الموزع - السوق لعندك' : 'Exported from Distributor Dashboard - Souq Le3ndak'}
+            <br>© ${new Date().getFullYear()} ${isArabic ? 'السوق لعندك. جميع الحقوق محفوظة' : 'Souq Le3ndak. All rights reserved.'}
+          </div>
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([html], { type: 'application/msword;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${title}_${new Date().toISOString().slice(0,10)}.doc`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+
+      toast.success(
+        isArabic 
+          ? `✅ تم تصدير ${data.length} سجل إلى Word بنجاح` 
+          : `✅ Exported ${data.length} records to Word successfully`
+      );
+    } catch (error) {
+      console.error("❌ Export to Word error:", error);
+      toast.error(isArabic ? "❌ فشل التصدير إلى Word" : "❌ Export to Word failed");
+    }
+  };
+
+  // ✅ دالة الطباعة
+  const handlePrint = () => {
+    window.print();
+  };
 
   useEffect(() => {
     const fetchDistributors = async () => {
@@ -253,7 +457,6 @@ function DistributorDashboardPage() {
   // ✅ التحقق من وجود صورة للموزع عند فتح الصفحة
   useEffect(() => {
     if (currentDistributor && !currentDistributor.avatar_url) {
-      // ✅ تأخير بسيط عشان يظهر بعد تحميل الصفحة
       const timer = setTimeout(() => {
         setShowAvatarDialog(true);
       }, 1000);
@@ -271,49 +474,59 @@ function DistributorDashboardPage() {
     setIsUploadingAvatar(true);
 
     try {
-      // ✅ 1. رفع الصورة إلى Supabase Storage
       const fileExt = avatarFile.name.split('.').pop();
-      const fileName = `${currentDistributor.id}-${Date.now()}.${fileExt}`;
-      const filePath = `distributors/${fileName}`;
+      const fileName = `distributors/${currentDistributor.id}-${Date.now()}.${fileExt}`;
+      const filePath = fileName;
+
+      console.log("📤 [Upload] File name:", fileName);
+      console.log("📤 [Upload] File path:", filePath);
+      console.log("📤 [Upload] Bucket:", 'uploads');
 
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, avatarFile);
+        .from('uploads')
+        .upload(filePath, avatarFile, {
+          cacheControl: '3600',
+          upsert: true,
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("❌ [Upload] Upload error:", uploadError);
+        throw uploadError;
+      }
 
-      // ✅ 2. جلب الـ Public URL
+      console.log("✅ [Upload] File uploaded successfully");
+
       const { data: urlData } = supabase.storage
-        .from('avatars')
+        .from('uploads')
         .getPublicUrl(filePath);
 
       const avatarUrl = urlData.publicUrl;
+      console.log("✅ [Upload] Public URL:", avatarUrl);
 
-      // ✅ 3. تحديث جدول distributors
       const { error: updateError } = await supabase
         .from('distributors')
         .update({ avatar_url: avatarUrl })
         .eq('id', currentDistributor.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("❌ [Upload] Update distributor error:", updateError);
+        throw updateError;
+      }
 
-      // ✅ 4. تحديث جدول profiles أيضاً
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ avatar_url: avatarUrl })
         .eq('id', app.user?.id);
 
       if (profileError) {
-        console.warn("⚠️ Could not update profile avatar:", profileError);
+        console.warn("⚠️ [Upload] Could not update profile avatar:", profileError);
       }
 
-      // ✅ 5. تحديث الـ State
       setShowAvatarDialog(false);
       setAvatarFile(null);
       setAvatarPreview(null);
       setIsUploadingAvatar(false);
 
-      // ✅ 6. إعادة جلب بيانات الموزع
       await refetchDistributors();
 
       toast.success(
@@ -323,11 +536,23 @@ function DistributorDashboardPage() {
       );
 
     } catch (error: any) {
-      console.error("❌ Error uploading avatar:", error);
+      console.error("❌ [Upload] Error uploading avatar:", error);
+      
+      let errorMessage = error.message;
+      if (error.message?.includes('permission')) {
+        errorMessage = isArabic 
+          ? "ليس لديك صلاحية لرفع الصورة. يرجى التواصل مع المدير."
+          : "You don't have permission to upload. Please contact admin.";
+      } else if (error.message?.includes('duplicate')) {
+        errorMessage = isArabic 
+          ? "هذه الصورة موجودة بالفعل. جارٍ استبدالها..."
+          : "This image already exists. Replacing...";
+      }
+      
       toast.error(
         isArabic 
-          ? `❌ فشل رفع الصورة: ${error.message}`
-          : `❌ Upload failed: ${error.message}`
+          ? `❌ فشل رفع الصورة: ${errorMessage}`
+          : `❌ Upload failed: ${errorMessage}`
       );
       setIsUploadingAvatar(false);
     }
@@ -335,65 +560,63 @@ function DistributorDashboardPage() {
 
   const [companyAdmin, setCompanyAdmin] = useState<any>(null);
 
- // ✅ جلب أدمن الشركة يلي الموزع تابع لها
-useEffect(() => {
-  const fetchCompanyAdmin = async () => {
-    // 1️⃣ تأكد إنو الموزع عنده شركة
-    if (!currentDistributor?.delivery_company_id) {
-      setCompanyAdmin(null);
-      return;
-    }
-
-    try {
-      const companyId = currentDistributor.delivery_company_id;
-      console.log("🔍 جلب أدمن الشركة:", companyId);
-
-      // 2️⃣ جلب الأدمن من جدول delivery_company_admins
-      const { data: companyAdmins, error: adminsError } = await supabase
-        .from("delivery_company_admins")
-        .select(`
-          user_id,
-          company_id,
-          created_at,
-          profiles:user_id (
-            id,
-            full_name,
-            phone,
-            avatar_url
-          )
-        `)
-        .eq("company_id", companyId)  // ✅ نفس الشركة يلي الموزع تابع لها
-        .limit(1);
-
-      if (adminsError) {
-        console.error("❌ خطأ في جلب أدمن الشركة:", adminsError);
-        throw adminsError;
-      }
-
-      console.log("📋 أدمن الشركة:", companyAdmins);
-
-      // 3️⃣ إذا لقينا أدمن، خزن معلوماته
-      if (companyAdmins && companyAdmins.length > 0) {
-        const admin = companyAdmins[0];
-        setCompanyAdmin({
-          id: admin.profiles?.id || admin.user_id,
-          full_name: admin.profiles?.full_name || "غير معروف",
-          phone: admin.profiles?.phone || "",
-          avatar_url: admin.profiles?.avatar_url || "",
-        });
-        console.log("✅ تم تعيين أدمن الشركة:", admin.profiles?.full_name);
-      } else {
+  // ✅ جلب أدمن الشركة يلي الموزع تابع لها
+  useEffect(() => {
+    const fetchCompanyAdmin = async () => {
+      if (!currentDistributor?.delivery_company_id) {
         setCompanyAdmin(null);
-        console.log("ℹ️ لا يوجد أدمن لهذه الشركة");
+        return;
       }
-    } catch (error) {
-      console.error("❌ خطأ في جلب أدمن الشركة:", error);
-      setCompanyAdmin(null);
-    }
-  };
 
-  fetchCompanyAdmin();
-}, [currentDistributor?.delivery_company_id]);  // ✅ يتغير لما يتغير الموزع
+      try {
+        const companyId = currentDistributor.delivery_company_id;
+        console.log("🔍 جلب أدمن الشركة:", companyId);
+
+        const { data: companyAdmins, error: adminsError } = await supabase
+          .from("delivery_company_admins")
+          .select(`
+            user_id,
+            company_id,
+            created_at,
+            profiles:user_id (
+              id,
+              full_name,
+              phone,
+              avatar_url
+            )
+          `)
+          .eq("company_id", companyId)
+          .limit(1);
+
+        if (adminsError) {
+          console.error("❌ خطأ في جلب أدمن الشركة:", adminsError);
+          throw adminsError;
+        }
+
+        console.log("📋 أدمن الشركة:", companyAdmins);
+
+        if (companyAdmins && companyAdmins.length > 0) {
+          const admin = companyAdmins[0];
+          setCompanyAdmin({
+            id: admin.profiles?.id || admin.user_id,
+            full_name: admin.profiles?.full_name || "غير معروف",
+            phone: admin.profiles?.phone || "",
+            avatar_url: admin.profiles?.avatar_url || "",
+          });
+          console.log("✅ تم تعيين أدمن الشركة:", admin.profiles?.full_name);
+        } else {
+          setCompanyAdmin(null);
+          console.log("ℹ️ لا يوجد أدمن لهذه الشركة");
+        }
+      } catch (error) {
+        console.error("❌ خطأ في جلب أدمن الشركة:", error);
+        setCompanyAdmin(null);
+      }
+    };
+
+    fetchCompanyAdmin();
+  }, [currentDistributor?.delivery_company_id]);
+
   const orders = useMemo(() => {
     if (!currentDistributor?.id) return [];
     return allOrders.filter((order: any) => order.distributor_id === currentDistributor.id);
@@ -469,20 +692,18 @@ useEffect(() => {
     return result;
   }, [activeOrders, statusFilter, searchQuery]);
 
- const handleLogout = async () => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    toast.success(isArabic ? "تم تسجيل الخروج بنجاح" : "Logged out successfully");
-    
-    // ✅ ✅ ✅ خذني لصفحة تسجيل الدخول
-    window.location.href = "/auth/login";
-    
-  } catch (error) {
-    toast.error(isArabic ? "فشل تسجيل الخروج" : "Logout failed");
-    console.error(error);
-  }
-};
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success(isArabic ? "تم تسجيل الخروج بنجاح" : "Logged out successfully");
+      window.location.href = "/auth/login";
+    } catch (error) {
+      toast.error(isArabic ? "فشل تسجيل الخروج" : "Logout failed");
+      console.error(error);
+    }
+  };
+
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     if (!currentDistributor?.id) {
       toast.error(isArabic ? "لا يوجد موزع" : "No distributor found");
@@ -780,9 +1001,9 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* ORDERS TAB */}
+        {/* ORDERS TAB - مع أزرار التصدير */}
         <div className="mx-auto max-w-7xl px-4 pb-6">
-          <div className="flex items-center gap-2 border-b border-[#0d2e2a]/10 mb-6">
+          <div className="flex items-center justify-between gap-2 border-b border-[#0d2e2a]/10 mb-6 flex-wrap">
             <button className="flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 border-[#0d2e2a] text-[#0d2e2a] dark:text-[#4a9f95] hover:scale-105">
               <Package className="h-4 w-4 animate-bounce-slow" />
               {isArabic ? "الطلبات النشطة" : "Active Orders"}
@@ -792,7 +1013,56 @@ useEffect(() => {
                 </Badge>
               )}
             </button>
+
+            {/* ✅ أزرار التصدير والطباعة للطلبات النشطة */}
+            <div className="flex items-center gap-2 pb-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => exportToCSV(filteredOrders, 'الطلبات_النشطة')}
+                    className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                    <span className="hidden sm:inline text-xs mr-1">{isArabic ? "إكسل" : "Excel"}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{isArabic ? "تصدير إلى Excel" : "Export to Excel"}</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => exportToWord(filteredOrders, 'تقرير_الطلبات_النشطة')}
+                    className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                  >
+                    <FileText className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                    <span className="hidden sm:inline text-xs mr-1">{isArabic ? "Word" : "Word"}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{isArabic ? "تصدير إلى Word" : "Export to Word"}</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrint}
+                    className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                  >
+                    <Printer className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
+                    <span className="hidden sm:inline text-xs mr-1">{isArabic ? "طباعة" : "Print"}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{isArabic ? "طباعة التقرير" : "Print Report"}</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
+
           <div className="animate-in slide-in-from-top-5 duration-300">
             <div className="flex flex-wrap items-center gap-3 mb-6">
               <div className="relative flex-1 min-w-[200px] max-w-sm group">
@@ -869,9 +1139,9 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* HISTORY */}
+        {/* HISTORY - مع أزرار التصدير */}
         <div className="mx-auto max-w-7xl px-4 pb-12">
-          <div className="flex items-center gap-2 border-b border-[#0d2e2a]/10 mb-6">
+          <div className="flex items-center justify-between gap-2 border-b border-[#0d2e2a]/10 mb-6 flex-wrap">
             <button className="flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 border-[#0d2e2a] text-[#0d2e2a] dark:text-[#4a9f95] hover:scale-105">
               <Clock className="h-4 w-4 animate-spin-slow" />
               {isArabic ? "تاريخ الطلبات" : "Order History"}
@@ -879,7 +1149,56 @@ useEffect(() => {
                 {historyOrders.length}
               </Badge>
             </button>
+
+            {/* ✅ أزرار التصدير والطباعة لتاريخ الطلبات */}
+            <div className="flex items-center gap-2 pb-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => exportToCSV(historyOrders, 'تاريخ_الطلبات')}
+                    className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                    <span className="hidden sm:inline text-xs mr-1">{isArabic ? "إكسل" : "Excel"}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{isArabic ? "تصدير إلى Excel" : "Export to Excel"}</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => exportToWord(historyOrders, 'تقرير_تاريخ_الطلبات')}
+                    className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                  >
+                    <FileText className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                    <span className="hidden sm:inline text-xs mr-1">{isArabic ? "Word" : "Word"}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{isArabic ? "تصدير إلى Word" : "Export to Word"}</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrint}
+                    className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+                  >
+                    <Printer className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
+                    <span className="hidden sm:inline text-xs mr-1">{isArabic ? "طباعة" : "Print"}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{isArabic ? "طباعة التقرير" : "Print Report"}</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
+
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <div className="relative flex-1 min-w-[200px] max-w-sm group">
               <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#0d2e2a] transition-all duration-300 group-focus-within:scale-110" />
@@ -1112,184 +1431,180 @@ useEffect(() => {
           </DialogContent>
         </Dialog>
 
-{/* ===== ✅✅✅ ديالوج رفع صورة الموزع ✅✅✅ ===== */}
-{currentDistributor && !currentDistributor.avatar_url && (
-  <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
-    <DialogContent className="w-[95vw] max-w-md rounded-2xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-slate-900">
-      <div className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] p-4 md:p-6 text-white rounded-t-2xl">
-        <div className="flex items-center gap-3 md:gap-4">
-          <div className="relative">
-            <div className="h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg">
-              <Camera className="h-6 w-6 md:h-7 md:w-7 text-white" />
-            </div>
-            <div className="absolute -inset-1 rounded-2xl bg-[#d4af37]/30 blur-lg animate-pulse" />
-          </div>
-          <div>
-            <DialogTitle className="text-lg md:text-2xl font-bold">
-              {isArabic ? "📸 أضف صورة ملفك الشخصي" : "📸 Add Your Profile Picture"}
-            </DialogTitle>
-            <p className="text-white/80 text-xs md:text-sm mt-0.5">
-              {isArabic 
-                ? "ساعد العملاء على التعرف عليك بشكل أفضل"
-                : "Help customers recognize you better"}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 md:p-6 space-y-3 md:space-y-4">
-        {/* ✅ معاينة الصورة */}
-        <div className="flex flex-col items-center gap-3 md:gap-4">
-          <div className="relative">
-            <div className="h-28 w-28 md:h-32 md:w-32 rounded-full border-4 border-dashed border-[#2a655f]/30 bg-[#2a655f]/5 flex items-center justify-center overflow-hidden transition-all duration-300 hover:border-[#2a655f]/50 group">
-              {avatarPreview ? (
-                <img 
-                  src={avatarPreview} 
-                  alt="Preview" 
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                  <Camera className="h-8 w-8 md:h-10 md:w-10 text-[#2a655f]/30 group-hover:text-[#2a655f]/50 transition-colors" />
-                  <span className="text-[10px] md:text-xs">{isArabic ? "اختر صورة" : "Choose image"}</span>
+        {/* ديالوج رفع صورة الموزع */}
+        {currentDistributor && !currentDistributor.avatar_url && (
+          <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
+            <DialogContent className="w-[95vw] max-w-md rounded-2xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-slate-900">
+              <div className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] p-4 md:p-6 text-white rounded-t-2xl">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="relative">
+                    <div className="h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg">
+                      <Camera className="h-6 w-6 md:h-7 md:w-7 text-white" />
+                    </div>
+                    <div className="absolute -inset-1 rounded-2xl bg-[#d4af37]/30 blur-lg animate-pulse" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-lg md:text-2xl font-bold">
+                      {isArabic ? "📸 أضف صورة ملفك الشخصي" : "📸 Add Your Profile Picture"}
+                    </DialogTitle>
+                    <p className="text-white/80 text-xs md:text-sm mt-0.5">
+                      {isArabic 
+                        ? "ساعد العملاء على التعرف عليك بشكل أفضل"
+                        : "Help customers recognize you better"}
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
-            {avatarPreview && (
-              <button
-                onClick={() => {
-                  setAvatarFile(null);
-                  setAvatarPreview(null);
-                }}
-                className="absolute -top-1 -right-1 h-5 w-5 md:h-6 md:w-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-all duration-300 hover:scale-110 shadow-lg"
-              >
-                <X className="h-3 w-3 md:h-4 md:w-4" />
-              </button>
-            )}
-          </div>
-
-          {/* ✅ زر اختيار الصورة */}
-          <Button
-            variant="outline"
-            className="w-full rounded-xl border-[#2a655f]/30 hover:bg-[#2a655f]/10 transition-all duration-300 h-9 md:h-10 text-sm"
-            onClick={() => document.getElementById('avatar-input')?.click()}
-          >
-            <Camera className="h-3 w-3 md:h-4 md:w-4 mr-2" />
-            {avatarPreview 
-              ? (isArabic ? "تغيير الصورة" : "Change image") 
-              : (isArabic ? "اختر صورة من جهازك" : "Choose image from your device")}
-          </Button>
-          <input
-            id="avatar-input"
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                setAvatarFile(file);
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                  setAvatarPreview(event.target?.result as string);
-                };
-                reader.readAsDataURL(file);
-              }
-            }}
-          />
-
-          <p className="text-[10px] md:text-xs text-muted-foreground text-center">
-            {isArabic 
-              ? "📷 يفضل استخدام صورة واضحة بحجم 500x500 بكسل على الأقل"
-              : "📷 Use a clear image at least 500x500 pixels"}
-          </p>
-        </div>
-
-        {/* ✅ تحذير */}
-        <div className="flex items-start gap-2 md:gap-3 p-3 md:p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border-2 border-amber-200/50 dark:border-amber-800/30">
-          <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-xs md:text-sm font-medium text-amber-700 dark:text-amber-300">
-              {isArabic ? "⚠️ صورة الموزع مهمة جداً" : "⚠️ Distributor photo is very important"}
-            </p>
-            <p className="text-[10px] md:text-xs text-amber-600/80 dark:text-amber-400/70">
-              {isArabic
-                ? "ستظهر هذه الصورة للعملاء عند اختيار الموزع المناسب لتوصيل طلباتهم"
-                : "This photo will appear to customers when choosing the right distributor for their orders"}
-            </p>
-          </div>
-        </div>
-
-        {/* ✅ مثال لشكل الصورة في البطاقة */}
-        <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-          <p className="text-[10px] md:text-xs font-medium text-muted-foreground mb-2 md:mb-3">
-            {isArabic ? "📌 كيف ستبدو صورته للعملاء:" : "📌 How it will look to customers:"}
-          </p>
-          <div className="flex items-center gap-3 md:gap-4 p-2 md:p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
-            <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-[#2a655f]/20 flex items-center justify-center flex-shrink-0">
-              {avatarPreview ? (
-                <img 
-                  src={avatarPreview} 
-                  alt="Preview" 
-                  className="h-full w-full object-cover rounded-full"
-                />
-              ) : (
-                <Users className="h-5 w-5 md:h-6 md:w-6 text-[#2a655f]/40" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-xs md:text-sm">
-                {currentDistributor?.full_name_ar || currentDistributor?.full_name_en || isArabic ? "الموزع" : "Distributor"}
-              </p>
-              <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
-                <Star className="h-2.5 w-2.5 md:h-3 md:w-3 fill-yellow-400 text-yellow-400" />
-                <span>{currentDistributor?.rating || 0}</span>
-                <span className="text-muted-foreground/30">|</span>
-                <Package className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                <span>{currentDistributor?.completed_orders || 0} {isArabic ? "طلب" : "orders"}</span>
               </div>
-            </div>
-            <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[8px] md:text-[9px]">
-              ● {isArabic ? "متاح" : "Available"}
-            </Badge>
-          </div>
-        </div>
-      </div>
 
-      <DialogFooter className="p-3 md:p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 gap-2 flex-col sm:flex-row rounded-b-2xl">
-        <Button
-          variant="outline"
-          onClick={() => {
-            setShowAvatarDialog(false);
-            setAvatarFile(null);
-            setAvatarPreview(null);
-          }}
-          className="w-full sm:w-auto rounded-xl h-9 md:h-10 text-sm"
-          disabled={isUploadingAvatar}
-        >
-          <X className="h-3 w-3 md:h-4 md:w-4 mr-1.5" />
-          {isArabic ? "تخطي الآن" : "Skip for now"}
-        </Button>
-        <Button
-          onClick={handleUploadAvatar}
-          disabled={!avatarFile || isUploadingAvatar}
-          className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white shadow-lg shadow-[#2a655f]/30 transition-all duration-300 h-9 md:h-10 text-sm"
-        >
-          {isUploadingAvatar ? (
-            <>
-              <Loader2 className="h-3 w-3 md:h-4 md:w-4 mr-2 animate-spin" />
-              {isArabic ? "جاري الرفع..." : "Uploading..."}
-            </>
-          ) : (
-            <>
-              <Camera className="h-3 w-3 md:h-4 md:w-4 mr-2" />
-              {isArabic ? "رفع الصورة" : "Upload Image"}
-            </>
-          )}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-)}
+              <div className="p-4 md:p-6 space-y-3 md:space-y-4">
+                <div className="flex flex-col items-center gap-3 md:gap-4">
+                  <div className="relative">
+                    <div className="h-28 w-28 md:h-32 md:w-32 rounded-full border-4 border-dashed border-[#2a655f]/30 bg-[#2a655f]/5 flex items-center justify-center overflow-hidden transition-all duration-300 hover:border-[#2a655f]/50 group">
+                      {avatarPreview ? (
+                        <img 
+                          src={avatarPreview} 
+                          alt="Preview" 
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                          <Camera className="h-8 w-8 md:h-10 md:w-10 text-[#2a655f]/30 group-hover:text-[#2a655f]/50 transition-colors" />
+                          <span className="text-[10px] md:text-xs">{isArabic ? "اختر صورة" : "Choose image"}</span>
+                        </div>
+                      )}
+                    </div>
+                    {avatarPreview && (
+                      <button
+                        onClick={() => {
+                          setAvatarFile(null);
+                          setAvatarPreview(null);
+                        }}
+                        className="absolute -top-1 -right-1 h-5 w-5 md:h-6 md:w-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-all duration-300 hover:scale-110 shadow-lg"
+                      >
+                        <X className="h-3 w-3 md:h-4 md:w-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-xl border-[#2a655f]/30 hover:bg-[#2a655f]/10 transition-all duration-300 h-9 md:h-10 text-sm"
+                    onClick={() => document.getElementById('avatar-input')?.click()}
+                  >
+                    <Camera className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+                    {avatarPreview 
+                      ? (isArabic ? "تغيير الصورة" : "Change image") 
+                      : (isArabic ? "اختر صورة من جهازك" : "Choose image from your device")}
+                  </Button>
+                  <input
+                    id="avatar-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setAvatarFile(file);
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          setAvatarPreview(event.target?.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+
+                  <p className="text-[10px] md:text-xs text-muted-foreground text-center">
+                    {isArabic 
+                      ? "📷 يفضل استخدام صورة واضحة بحجم 500x500 بكسل على الأقل"
+                      : "📷 Use a clear image at least 500x500 pixels"}
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2 md:gap-3 p-3 md:p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border-2 border-amber-200/50 dark:border-amber-800/30">
+                  <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs md:text-sm font-medium text-amber-700 dark:text-amber-300">
+                      {isArabic ? "⚠️ صورة الموزع مهمة جداً" : "⚠️ Distributor photo is very important"}
+                    </p>
+                    <p className="text-[10px] md:text-xs text-amber-600/80 dark:text-amber-400/70">
+                      {isArabic
+                        ? "ستظهر هذه الصورة للعملاء عند اختيار الموزع المناسب لتوصيل طلباتهم"
+                        : "This photo will appear to customers when choosing the right distributor for their orders"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <p className="text-[10px] md:text-xs font-medium text-muted-foreground mb-2 md:mb-3">
+                    {isArabic ? "📌 كيف ستبدو صورته للعملاء:" : "📌 How it will look to customers:"}
+                  </p>
+                  <div className="flex items-center gap-3 md:gap-4 p-2 md:p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                    <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-[#2a655f]/20 flex items-center justify-center flex-shrink-0">
+                      {avatarPreview ? (
+                        <img 
+                          src={avatarPreview} 
+                          alt="Preview" 
+                          className="h-full w-full object-cover rounded-full"
+                        />
+                      ) : (
+                        <Users className="h-5 w-5 md:h-6 md:w-6 text-[#2a655f]/40" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-xs md:text-sm">
+                        {currentDistributor?.full_name_ar || currentDistributor?.full_name_en || isArabic ? "الموزع" : "Distributor"}
+                      </p>
+                      <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
+                        <Star className="h-2.5 w-2.5 md:h-3 md:w-3 fill-yellow-400 text-yellow-400" />
+                        <span>{currentDistributor?.rating || 0}</span>
+                        <span className="text-muted-foreground/30">|</span>
+                        <Package className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                        <span>{currentDistributor?.completed_orders || 0} {isArabic ? "طلب" : "orders"}</span>
+                      </div>
+                    </div>
+                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[8px] md:text-[9px]">
+                      ● {isArabic ? "متاح" : "Available"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="p-3 md:p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 gap-2 flex-col sm:flex-row rounded-b-2xl">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAvatarDialog(false);
+                    setAvatarFile(null);
+                    setAvatarPreview(null);
+                  }}
+                  className="w-full sm:w-auto rounded-xl h-9 md:h-10 text-sm"
+                  disabled={isUploadingAvatar}
+                >
+                  <X className="h-3 w-3 md:h-4 md:w-4 mr-1.5" />
+                  {isArabic ? "تخطي الآن" : "Skip for now"}
+                </Button>
+                <Button
+                  onClick={handleUploadAvatar}
+                  disabled={!avatarFile || isUploadingAvatar}
+                  className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white shadow-lg shadow-[#2a655f]/30 transition-all duration-300 h-9 md:h-10 text-sm"
+                >
+                  {isUploadingAvatar ? (
+                    <>
+                      <Loader2 className="h-3 w-3 md:h-4 md:w-4 mr-2 animate-spin" />
+                      {isArabic ? "جاري الرفع..." : "Uploading..."}
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+                      {isArabic ? "رفع الصورة" : "Upload Image"}
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
 
         <style>{`
           @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -1342,7 +1657,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
 }
 
 // ============================================================
-// 📦 OrderCard Component - النسخة المحسنة بالكامل
+// 📦 OrderCard Component
 // ============================================================
 function OrderCard({ 
   order, 
@@ -1451,7 +1766,6 @@ function OrderCard({
                   {order.delivery_fee} {app.currency}
                 </span>
                 
-                {/* ✅ زر الاتصال بالعميل - كبير ومميز جداً بالأخضر الزاهي */}
                 {buyerPhone && (
                   <>
                     <span className="text-muted-foreground/30">|</span>
@@ -1487,7 +1801,6 @@ function OrderCard({
               </Button>
             )}
             
-            {/* زر تفاصيل الطلب */}
             <Button 
               variant="outline" 
               size="sm" 
@@ -1502,7 +1815,6 @@ function OrderCard({
               {isArabic ? "التفاصيل" : "Details"}
             </Button>
             
-            {/* زر تكبير الخريطة */}
             {address && (
               <Button 
                 variant="outline" 
@@ -1519,7 +1831,6 @@ function OrderCard({
               </Button>
             )}
             
-            {/* ✅ زر تتبع الطلب - بدل العين - كبير ومميز */}
             <Button 
               variant="ghost" 
               size="sm" 
@@ -1528,7 +1839,6 @@ function OrderCard({
                 e.stopPropagation();
                 const trackingId = order.tracking_number || order.id;
                 if (trackingId) {
-                  // ✅ استخدام navigate بدلاً من window.location.href (بدون ريفريش)
                   navigate({ to: `/tracking/${trackingId}` });
                 } else {
                   toast.error(isArabic ? "لا يوجد رقم تتبع للطلب" : "No tracking number for this order");
@@ -1541,7 +1851,6 @@ function OrderCard({
           </div>
         </div>
 
-        {/* الخريطة المصغرة */}
         {showMap && address && (
           <div className="mt-4 animate-in slide-in-from-top-3 duration-300 z-10 relative">
             <OrderTrackingMap 
@@ -1555,12 +1864,10 @@ function OrderCard({
         )}
       </div>
 
-      {/* ===== خريطة بملء الشاشة - مع زر رجوع ثابت ===== */}
       {isMapFullscreen && fullscreenMapAddress && (
         <div className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex items-center justify-center">
           <div className="relative w-full h-full max-w-7xl mx-auto p-2 md:p-4">
             
-            {/* ✅ زر الرجوع - ثابت في أعلى يسار الشاشة مع z-index عالي */}
             <button
               onClick={() => {
                 setIsMapFullscreen(false);
@@ -1575,7 +1882,6 @@ function OrderCard({
               </span>
             </button>
             
-            {/* زر الإغلاق (X) في أعلى يمين الشاشة */}
             <button
               onClick={() => {
                 setIsMapFullscreen(false);
@@ -1587,7 +1893,6 @@ function OrderCard({
               <X className="h-6 w-6 md:h-7 md:w-7" />
             </button>
             
-            {/* عنوان الخريطة في أعلى المنتصف */}
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-white/95 dark:bg-slate-900/95 rounded-2xl px-6 py-3 shadow-2xl max-w-[80%] border border-[#2a655f]/20">
               <p className="text-sm md:text-base font-medium text-slate-900 dark:text-white flex items-center gap-3">
                 <MapPin className="h-4 w-4 md:h-5 md:w-5 text-[#2a655f] flex-shrink-0" />
@@ -1595,7 +1900,6 @@ function OrderCard({
               </p>
             </div>
             
-            {/* الخريطة بملء الشاشة */}
             <div className="w-full h-full rounded-xl md:rounded-2xl overflow-hidden border-2 border-[#2a655f]/30 shadow-2xl">
               <OrderTrackingMap 
                 deliveryAddress={fullscreenMapAddress}

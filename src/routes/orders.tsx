@@ -53,7 +53,7 @@ function OrdersPage() {
   // ============================================================
   // ✅ ✅ ✅ تجميع الطلبات حسب معرف الطلب (order_id) مع دعم order_items
   // ============================================================
-  const groupedOrders = useMemo(() => {
+const groupedOrders = useMemo(() => {
     const groups: Record<string, {
       orderId: string;
       storeId: string;
@@ -180,6 +180,18 @@ function OrdersPage() {
       groups[orderId].totalWithDelivery += totalWithDelivery;
       groups[orderId].deliveryFee += Number(order.delivery_fee || 0);
       groups[orderId].promoDiscount += Number(order.promo_discount || 0);
+
+      // ✅ ✅ ✅ LOG 1: طباعة بيانات كل طلب
+      console.log(`📊 [Orders] Order ${orderId}:`, {
+        total: order.total,
+        delivery_fee: order.delivery_fee,
+        promo_discount: order.promo_discount,
+        total_with_delivery: order.total_with_delivery,
+        calculated: totalWithDelivery,
+        final_total: groups[orderId].totalWithDelivery,
+        final_delivery: groups[orderId].deliveryFee,
+        final_promo: groups[orderId].promoDiscount,
+      });
       
       // ✅ تحديث الحالة (أعلى أولوية: pending > accepted > shipped > delivered > rejected > cancelled)
       const statusPriority: Record<string, number> = {
@@ -201,12 +213,28 @@ function OrdersPage() {
       }
     });
 
+    // ✅ ✅ ✅ LOG 2: طباعة جميع المجموعات قبل الـ return
+    console.log("📊 [Orders] All grouped orders:", Object.values(groups));
+    console.log("📊 [Orders] Total orders:", Object.values(groups).length);
+
     // ✅ تحويل إلى مصفوفة وترتيب حسب التاريخ (الأحدث أولاً)
-    return Object.values(groups).sort((a, b) => 
+    const sorted = Object.values(groups).sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [orders, app.lang]);
 
+    // ✅ ✅ ✅ LOG 3: طباعة أول طلب بعد الترتيب
+    if (sorted.length > 0) {
+      console.log("📊 [Orders] First order after sorting:", {
+        orderId: sorted[0].orderId,
+        totalPrice: sorted[0].totalPrice,
+        deliveryFee: sorted[0].deliveryFee,
+        promoDiscount: sorted[0].promoDiscount,
+        totalWithDelivery: sorted[0].totalWithDelivery,
+      });
+    }
+
+    return sorted;
+  }, [orders, app.lang]);
   // ============================================================
   // ✅ ✅ ✅ دالة إلغاء الطلب كامل (وليس كل منتج على حدة)
   // ============================================================
@@ -657,13 +685,13 @@ function OrdersPage() {
 
                         {/* ✅ قائمة المنتجات في هذه الطلبية */}
                         <div className="space-y-3">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                            <Package className="h-3.5 w-3.5" />
-                            {app.lang === "ar" ? "المنتجات" : "Products"}
-                            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
-                              {group.items.length}
-                            </Badge>
-                          </p>
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+  <Package className="h-3.5 w-3.5" />
+  {app.lang === "ar" ? "المنتجات" : "Products"}
+  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+    {group.items.length}
+  </Badge>
+</div>
                           
                           {group.items.map((item: any) => {
                             // ✅ ✅ ✅ جلب الـ listings من item مباشرة (من order_items)

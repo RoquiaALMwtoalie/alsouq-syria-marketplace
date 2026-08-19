@@ -109,25 +109,32 @@ export function DistributorAccountMenu({
   const [governorates, setGovernorates] = useState<any[]>([]);
 
   // ✅ دالة جلب الرابط العام للصورة
-  const getPublicAvatarUrl = (path: string | null) => {
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    
-    // ✅ استخراج اسم الملف من المسار
-    const fileName = path.split('/').pop();
-    if (!fileName) return null;
-    
-    // ✅ بناء الرابط الصحيح
-    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const publicUrl = `${baseUrl}/storage/v1/object/public/uploads/distributors/${fileName}`;
-    
-    console.log("📸 [getPublicAvatarUrl] path:", path);
-    console.log("📸 [getPublicAvatarUrl] fileName:", fileName);
-    console.log("📸 [getPublicAvatarUrl] publicUrl:", publicUrl);
-    
-    return publicUrl;
-  };
-
+ // ✅ دالة جلب الرابط العام للصورة - النسخة المُصحّحة
+const getPublicAvatarUrl = (path: string | null) => {
+  if (!path) return null;
+  
+  // ✅ إذا كان الرابط كاملاً (يبدأ بـ http)، استخدمه مباشرة
+  if (path.startsWith('http')) {
+    console.log("📸 [getPublicAvatarUrl] Using full URL:", path);
+    return path;
+  }
+  
+  // ✅ إذا كان المسار يحتوي على مجلدات، استخرج اسم الملف فقط
+  let fileName = path;
+  if (path.includes('/')) {
+    fileName = path.split('/').pop() || path;
+  }
+  
+  // ✅ بناء الرابط الصحيح باستخدام Bucket 'uploads'
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const publicUrl = `${baseUrl}/storage/v1/object/public/uploads/${fileName}`;
+  
+  console.log("📸 [getPublicAvatarUrl] path:", path);
+  console.log("📸 [getPublicAvatarUrl] fileName:", fileName);
+  console.log("📸 [getPublicAvatarUrl] publicUrl:", publicUrl);
+  
+  return publicUrl;
+};
   // ✅ جلب المحافظات
   useEffect(() => {
     const fetchGovernorates = async () => {
@@ -279,77 +286,61 @@ const handleLogout = async () => {
   };
 
   // ✅ دالة معالجة تغيير الصورة
-  const handleImageChange = (value: string) => {
-    console.log("📸 [handleImageChange] value received:", value);
-    console.log("📸 [handleImageChange] value type:", typeof value);
-    console.log("📸 [handleImageChange] value length:", value?.length);
-    
-    // ✅ إذا كان الرابط يحتوي على http، استخراج المسار فقط
-    let storagePath = value;
-    let publicUrl = value;
-    
-    if (value?.startsWith('http')) {
-      // ✅ استخراج المسار من الرابط العام
-      const match = value.match(/\/uploads\/(.+)$/);
-      if (match) {
-        // ✅ استخراج اسم الملف فقط
-        const fileName = match[1].split('/').pop();
-        storagePath = `distributors/${fileName}`;
-        
-        // ✅ بناء الرابط العام للعرض الفوري
-        const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-        publicUrl = `${baseUrl}/storage/v1/object/public/uploads/distributors/${fileName}`;
-        
-        console.log("📸 [handleImageChange] storagePath:", storagePath);
-        console.log("📸 [handleImageChange] publicUrl for display:", publicUrl);
-      }
+// ✅ دالة معالجة تغيير الصورة - مع تحديث الـ State
+const handleImageChange = (value: string) => {
+  console.log("📸 [handleImageChange] value received:", value);
+  
+  // ✅ إذا كان الرابط يحتوي على http، استخدمه مباشرة
+  let publicUrl = value;
+  let storagePath = value;
+  
+  if (value?.startsWith('http')) {
+    // ✅ استخراج اسم الملف من الرابط (وليس المسار الكامل)
+    const match = value.match(/\/uploads\/([^/]+)$/); // ✅ يستخرج اسم الملف فقط
+    if (match) {
+      storagePath = match[1]; // ✅ تخزين اسم الملف فقط في قاعدة البيانات
+      publicUrl = value; // ✅ استخدام الرابط الكامل للعرض
     }
-    
-    // ✅ تحديث الـ state بالرابط العام (للعرض الفوري)
-    setLocalUserData(prev => ({
-      ...prev,
-      avatar_url: publicUrl
-    }));
-    
-    // ✅ تحديث في قاعدة البيانات (بالمسار)
-    const updateAvatarInDB = async () => {
-      try {
-        console.log("📸 [handleImageChange] updating DB with path:", storagePath);
-        
-        // تحديث في جدول distributors
-        const { error: distError } = await supabase
-          .from("distributors")
-          .update({ avatar_url: storagePath })
-          .eq("user_id", userData.id);
-        
-        if (distError) {
-          console.error("❌ [handleImageChange] distributor error:", distError);
-          throw distError;
-        }
-        
-        // تحديث في جدول profiles
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({ avatar_url: storagePath })
-          .eq("id", userData.id);
-        
-        if (profileError) {
-          console.error("❌ [handleImageChange] profile error:", profileError);
-          throw profileError;
-        }
-        
-        console.log("✅ [handleImageChange] avatar updated successfully!");
-        toast.success(isArabic ? "✅ تم تحديث الصورة بنجاح" : "✅ Image updated successfully");
-        
-      } catch (error) {
-        console.error("❌ [handleImageChange] error:", error);
-        toast.error(isArabic ? "❌ فشل تحديث الصورة" : "❌ Failed to update image");
-      }
-    };
-    
-    updateAvatarInDB();
+  }
+  
+  // ✅ ✅ ✅ تحديث الـ State المحلي فوراً (مهم جداً)
+  setLocalUserData(prev => ({
+    ...prev,
+    avatar_url: publicUrl  // ✅ استخدم الرابط الكامل للعرض
+  }));
+  
+  // ✅ تحديث في قاعدة البيانات (باسم الملف فقط)
+  const updateAvatarInDB = async () => {
+    try {
+      console.log("📸 [handleImageChange] updating DB with path:", storagePath);
+      
+      // تحديث في جدول distributors
+      const { error: distError } = await supabase
+        .from("distributors")
+        .update({ avatar_url: storagePath })  // ✅ نخزن اسم الملف فقط
+        .eq("user_id", userData.id);
+      
+      if (distError) throw distError;
+      
+      // تحديث في جدول profiles
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: storagePath })  // ✅ نخزن اسم الملف فقط
+        .eq("id", userData.id);
+      
+      if (profileError) throw profileError;
+      
+      console.log("✅ [handleImageChange] avatar updated successfully!");
+      toast.success(isArabic ? "✅ تم تحديث الصورة بنجاح" : "✅ Image updated successfully");
+      
+    } catch (error) {
+      console.error("❌ [handleImageChange] error:", error);
+      toast.error(isArabic ? "❌ فشل تحديث الصورة" : "❌ Failed to update image");
+    }
   };
-
+  
+  updateAvatarInDB();
+};
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useRef, useMemo, useCallback, Suspense } from "react";
 import { useApp, useT } from "@/lib/i18n";
-import { useListings, useBanners, useAllStores, useCategories, useMostFavoritedListings, useMostFavoritedStores, useTrendingListings, useTrendingStores } from "@/lib/queries";
+import { useListings, useBanners, useAllStores, useCategories, useMostFavoritedListings, useMostFavoritedStores, useTrendingListings, useTrendingStores, useProductOffers } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -93,21 +93,107 @@ function Home() {
   const products = productsData.data || [];
   const totalPages = productsData.totalPages || 1;
   
-  // ✅ العروض
-  const { data: allDealsData = { data: [], count: 0, totalPages: 0 } } = useListings({
+  // ✅ العروض التخفيضية من listings
+  const { data: discountOffersData = { data: [], count: 0, totalPages: 0 } } = useListings({
     isOffer: true,
     sort: "discount_desc",
     limit: 12,
   });
-  const allDeals = allDealsData.data || [];
+  const discountOffers = discountOffersData.data || [];
 
-  // ✅ العروض الحصرية
-  const { data: offersData = { data: [], count: 0, totalPages: 0 } } = useListings({
-    isOffer: true,
-    limit: 4,
-    sort: "recent",
+  // ✅ العروض الترويجية من product_offers (تحويلها لنفس شكل listings)
+ // ✅ العروض الترويجية - الصفحة الرئيسية (بدون فلتر تصنيف)
+// ✅ العروض الترويجية - الصفحة الرئيسية
+const { data: promoOffers = [], isLoading: promoLoading } = useProductOffers({ 
+  isActive: true,
+  limit: 30
+});
+
+console.log('🔍 [Home] promoOffers:', promoOffers);
+console.log('🔍 [Home] promoOffers length:', promoOffers.length);
+console.log('🔍 [Home] promoLoading:', promoLoading);
+
+  // ✅ تحويل العروض الترويجية لنفس شكل listings عشان تتعامل معها زي العروض التخفيضية
+// ✅ تحويل العروض الترويجية لنفس شكل listings
+const promoOffersAsListings = useMemo(() => {
+  console.log('🔍 [Home] promoOffersAsListings - promoOffers:', promoOffers);
+  console.log('🔍 [Home] promoOffersAsListings - promoOffers length:', promoOffers.length);
+  
+  if (!promoOffers || promoOffers.length === 0) return [];
+  
+  const result = promoOffers.map((offer: any) => {
+    console.log('🔍 [Home] Processing offer:', offer);
+    
+    // ✅ جلب المنتج الرئيسي
+    let mainProduct = null;
+    if (Array.isArray(offer.products) && offer.products.length > 0) {
+      mainProduct = offer.products.find((p: any) => p.id === offer.listing_id) || offer.products[0];
+    } else if (offer.products && typeof offer.products === 'object' && !Array.isArray(offer.products)) {
+      mainProduct = offer.products;
+    }
+    
+    console.log('🔍 [Home] mainProduct:', mainProduct);
+    
+    // ✅ ✅ ✅ نفس هيكل store.$id.tsx بالضبط
+    return {
+      ...mainProduct,  // ✅ كل بيانات المنتج
+      id: offer.id,
+      listing_id: offer.listing_id,
+      title_ar: offer.display_text_ar || mainProduct?.title_ar || (app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"),
+      title_en: offer.display_text_en || mainProduct?.title_en || (app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"),
+      description_ar: offer.display_text_ar || mainProduct?.description_ar || "",
+      description_en: offer.display_text_en || mainProduct?.description_en || "",
+      price: mainProduct?.price || 0,
+      old_price: mainProduct?.old_price || null,
+      discount_percent: mainProduct?.discount_percent || null,
+      is_offer: false,
+      is_promo_offer: true,
+      cover_url: mainProduct?.cover_url || null,
+      status: "published",
+      is_available: true,
+      owner_id: offer.store_id,
+      created_at: offer.created_at,
+      updated_at: offer.updated_at,
+      promo_offer: offer,
+      offer_type: offer.offer_type,
+      buy_quantity: offer.buy_quantity,
+      get_quantity: offer.get_quantity,
+      free_listing_id: offer.free_listing_id,
+      required_product_ids: offer.required_product_ids || [],
+      variation_ids: offer.variation_ids || [],
+      result_variation_ids: offer.result_variation_ids || [],
+      expires_at: offer.expires_at,
+      is_featured: offer.is_featured,
+      products: offer.products || [],
+      
+      // ✅ ✅ ✅ الحقول المفقودة (نفس store.$id.tsx)
+      colors: mainProduct?.colors || [],
+      variations: mainProduct?.variations || [],
+      listing_images: mainProduct?.listing_images || [],
+      governorates: mainProduct?.governorates || null,
+      profile: mainProduct?.profile || null,
+      categories: mainProduct?.categories || null,
+      rating: mainProduct?.rating || 0,
+      reviews_count: mainProduct?.reviews_count || 0,
+      owner_id: mainProduct?.owner_id || offer.store_id,
+      
+      // ✅ ✅ ✅ للمحافظة والتصنيف في ListingCard
+      governorate_id: mainProduct?.governorate_id || null,
+      category_id: mainProduct?.category_id || null,
+    };
   });
-  const offers = offersData.data || [];
+  
+  console.log('🔍 [Home] promoOffersAsListings result:', result);
+  return result;
+}, [promoOffers, app.lang, app.currency]);
+// ✅ دمج العروض التخفيضية والترويجية في قائمة واحدة
+const allOffers = useMemo(() => {
+  console.log('🔍 [Home] discountOffers:', discountOffers);
+  console.log('🔍 [Home] promoOffersAsListings:', promoOffersAsListings);
+  const merged = [...discountOffers, ...promoOffersAsListings];
+  console.log('🔍 [Home] allOffers merged:', merged);
+  return merged;
+}, [discountOffers, promoOffersAsListings]);
 
   const { data: stores = [], isLoading: sLoading } = useAllStores(8);
 
@@ -227,69 +313,68 @@ function Home() {
         getCategoryIcon={getCategoryIcon} 
       />
 
-      {/* ✅ العرض الاحترافي مثل نون - مع إمكانية التبديل بين العرض الكل والعروض */}
-      {allDeals.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
-          {/* Header مع إحصائيات */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🔥</span>
-                <h2 className="text-2xl font-bold">
-                  {app.lang === "ar" ? "عروض اليوم" : "Today's Deals"}
-                </h2>
-                <Badge className="bg-pink-400 text-white">
-                  {allDeals.length}
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                {app.lang === "ar" 
-                  ? `خصومات تصل إلى ${Math.max(...allDeals.map(d => d.discount_percent || 0))}%` 
-                  : `Up to ${Math.max(...allDeals.map(d => d.discount_percent || 0))}% off`
-                }
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link to="/category/$slug" params={{ slug: "offers" }}>
-                <Button variant="outline" size="sm" className="rounded-full border-pink-300/50 text-pink-600 hover:bg-pink-500/10 hover:text-pink-600 hover:scale-105 transition-all duration-300">
-                  {app.lang === "ar" ? "عرض الكل" : "View All"}
-                  <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-            </div>
-          </div>
+      {/* ✅ عروض اليوم - كل العروض سوا (تخفيضية + ترويجية) زي ما هي */}
+{allOffers.length > 0 && (
+  <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🔥</span>
+          <h2 className="text-2xl font-bold">
+            {app.lang === "ar" ? "عروض اليوم" : "Today's Offers"}
+          </h2>
+          <Badge className="bg-pink-400 text-white">
+            {allOffers.length}
+          </Badge>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">
+          {app.lang === "ar" 
+            ? `خصومات وعروض حصرية` 
+            : `Exclusive discounts and offers`
+          }
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Link to="/category/$slug" params={{ slug: "offers" }}>
+          <Button variant="outline" size="sm" className="rounded-full border-pink-300/50 text-pink-600 hover:bg-pink-500/10 hover:text-pink-600 hover:scale-105 transition-all duration-300">
+            {app.lang === "ar" ? "عرض الكل" : "View All"}
+            <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </Link>
+      </div>
+    </div>
 
-          {/* العروض كـ Grid مع إمكانية التمرير */}
-          <div className="relative group">
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-              {allDeals.map((item, index) => (
-                <div key={item.id} className="min-w-[200px] md:min-w-[250px] flex-shrink-0">
-                  <ListingCard item={item} />
-                </div>
-              ))}
-            </div>
-            
-            <button 
-              className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 backdrop-blur shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100"
-              onClick={() => {
-                const container = document.querySelector('.scrollbar-hide');
-                if (container) container.scrollLeft -= 300;
-              }}
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-            <button 
-              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 backdrop-blur shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100"
-              onClick={() => {
-                const container = document.querySelector('.scrollbar-hide');
-                if (container) container.scrollLeft += 300;
-              }}
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
+    <div className="relative group">
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        {allOffers.map((item: any, index: number) => (
+          <div key={item.id || index} className="w-[200px] md:w-[250px] flex-shrink-0">
+            {/* ✅ كل العروض تتعامل معها بنفس البطاقة (ListingCard) */}
+            <ListingCard item={item} />
           </div>
-        </section>
-      )}
+        ))}
+      </div>
+      
+      <button 
+        className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 backdrop-blur shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+        onClick={() => {
+          const container = document.querySelector('.scrollbar-hide');
+          if (container) container.scrollLeft -= 300;
+        }}
+      >
+        <ChevronLeft className="h-6 w-6" />
+      </button>
+      <button 
+        className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 backdrop-blur shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+        onClick={() => {
+          const container = document.querySelector('.scrollbar-hide');
+          if (container) container.scrollLeft += 300;
+        }}
+      >
+        <ChevronRight className="h-6 w-6" />
+      </button>
+    </div>
+  </section>
+)}
       
       {/* ===== FEATURED PRODUCTS - أيقونة Gem ===== */}
       <FeaturedSection />
@@ -338,8 +423,8 @@ function Home() {
       {/* ===== RECENTLY VIEWED ===== */}
       <RecentlyViewed />
 
-      {/* ===== OFFERS STRIP - أيقونة Gift ===== */}
-      {offers.length > 0 && (
+      {/* ===== OFFERS STRIP - أيقونة Gift (كل العروض سوا) ===== */}
+      {allOffers.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-14">
           <div className="rounded-3xl bg-gradient-to-br from-[#fce4ec] via-[#f9a8d4] to-[#fbcfe8] p-6 md:p-10 relative overflow-hidden shadow-2xl shadow-pink-500/20 group border border-pink-300/30">
             <div className="absolute -end-8 -top-8 h-56 w-56 rounded-full bg-white/30 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
@@ -355,7 +440,7 @@ function Home() {
                   {app.lang === "ar" ? "أفضل العروض على السوق لعندك" : "Best Offers on Souqi"}
                 </h3>
                 <p className="text-[#1a4f4a]/80 dark:text-white/70 text-sm mt-1">
-                  {app.lang === "ar" ? "خصومات تصل إلى 70% لفترة محدودة" : "Up to 70% off for a limited time"}
+                  {app.lang === "ar" ? "خصومات وعروض ترويجية لفترة محدودة" : "Discounts and promo offers for a limited time"}
                 </p>
               </div>
               <Link to="/category/$slug" params={{ slug: "offers" }}>
@@ -367,9 +452,9 @@ function Home() {
             </div>
             
             <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 relative">
-              {offers.slice(0, 4).map((d, index) => (
-                <div key={d.id} className="animate-fade-up" style={{ animationDelay: `${index * 100}ms` }}>
-                  <ListingCard item={d} />
+              {allOffers.slice(0, 4).map((item: any, index: number) => (
+                <div key={item.id || index} className="animate-fade-up" style={{ animationDelay: `${index * 100}ms` }}>
+                  <ListingCard item={item} />
                 </div>
               ))}
             </div>

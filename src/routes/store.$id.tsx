@@ -1,16 +1,17 @@
-// src/routes/store.$id.tsx - الكود المُصحّح بالكامل مع لمسات وردية
+// src/routes/store.$id.tsx - الكود المُصحّح بالكامل مثل التصنيفات تماماً
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback, useRef, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, lazy, Suspense, useMemo } from "react";
 import { 
   Star, MessageCircle, Store as StoreIcon, Loader2, 
   Clock, MapPin, Globe, Building2, Truck,
   Sparkles, Package, Share2, Flame, BadgeCheck,
   Search, X, ArrowUpDown, Grid3X3, List, ChevronDown,
-  RefreshCw, Eye, Heart, TrendingUp, Zap, Gift, Target, Award
+  RefreshCw, Eye, Heart, TrendingUp, Zap, Gift, Target, Award,
+  LayoutGrid, Check
 } from "lucide-react";
 import { useApp, useT } from "@/lib/i18n";
-import { useListings, useStoreProfile, useDeliveryCompanies } from "@/lib/queries";
+import { useListings, useStoreProfile, useDeliveryCompanies, useProductOffers } from "@/lib/queries";
 import { useGetOrCreateConversation } from "@/lib/hooks/useConversation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { useCartTotal } from "@/lib/hooks/useCartTotal"; // ✅ استيراد الـ Hook
+import { useCartTotal } from "@/lib/hooks/useCartTotal";
 
 // ✅ Lazy Loading للـ ListingCard
 const ListingCard = lazy(() => import("@/components/ListingCard"));
@@ -36,6 +37,152 @@ export const Route = createFileRoute("/store/$id")({
   component: StorePage,
   head: () => ({ meta: [{ title: "Store — Souqi" }] }),
 });
+
+// ============================================================
+// ✅ SortDropdown (نفس الموجود في category/$slug.tsx)
+// ============================================================
+function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val: string) => void; lang: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const options = [
+    { value: 'recent', label: lang === 'ar' ? '🕐 الأحدث' : '🕐 Recent', icon: Clock, color: 'text-blue-500' },
+    { value: 'popular', label: lang === 'ar' ? '🔥 الأكثر رواجاً' : '🔥 Popular', icon: Flame, color: 'text-orange-500' },
+    { value: 'price_asc', label: lang === 'ar' ? '💰 السعر: منخفض→مرتفع' : '💰 Price: Low→High', icon: ArrowUpDown, color: 'text-emerald-500' },
+    { value: 'price_desc', label: lang === 'ar' ? '💰 السعر: مرتفع→منخفض' : '💰 Price: High→Low', icon: ArrowUpDown, color: 'text-rose-500' },
+    { value: 'rating', label: lang === 'ar' ? '⭐ الأعلى تقييماً' : '⭐ Top Rated', icon: Star, color: 'text-yellow-500' },
+  ];
+
+  const selectedOption = options.find(opt => opt.value === value) || options[0];
+  const IconComponent = selectedOption.icon;
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center gap-2 h-10 px-4 rounded-xl border text-sm font-medium transition-all duration-300 min-w-[170px] group",
+          isOpen 
+            ? "border-pink-400/50 bg-pink-500/5 dark:bg-pink-500/10 shadow-lg shadow-pink-500/20" 
+            : "border-pink-300/30 dark:border-pink-400/30 bg-white dark:bg-[#1e293b] hover:border-pink-400/50 hover:shadow-lg hover:shadow-pink-500/10"
+        )}
+      >
+        <IconComponent className={cn("h-4 w-4 transition-transform duration-300 group-hover:scale-110", selectedOption.color)} />
+        <span className="flex-1 text-start truncate text-slate-700 dark:text-slate-300">{selectedOption.label}</span>
+        <ChevronDown className={cn(
+          "h-4 w-4 text-muted-foreground transition-all duration-300 flex-shrink-0",
+          isOpen ? 'rotate-180 text-pink-500' : 'group-hover:text-pink-500'
+        )} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1e293b] rounded-xl border border-pink-300/30 dark:border-pink-400/30 shadow-2xl shadow-pink-500/20 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="py-2">
+            {options.map((option) => {
+              const isSelected = value === option.value;
+              const OptIcon = option.icon;
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  className={cn(
+                    "w-full px-4 py-2.5 text-sm text-start flex items-center gap-3 transition-all duration-200",
+                    isSelected 
+                      ? "bg-pink-500/10 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400" 
+                      : "text-slate-700 dark:text-slate-300 hover:bg-pink-500/5 dark:hover:bg-pink-500/10 hover:text-pink-600"
+                  )}
+                >
+                  <OptIcon className={cn("h-4 w-4", option.color)} />
+                  <span className="flex-1 font-medium">{option.label}</span>
+                  {isSelected && (
+                    <Check className="h-4 w-4 text-pink-500 animate-bounce" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// ✅ Product Filter Tabs (نفس الموجود في category/$slug.tsx)
+// ============================================================
+// ✅ ProductFilterTabs - مع console.log
+function ProductFilterTabs({ 
+  value, 
+  onChange, 
+  counts,
+  lang 
+}: { 
+  value: 'all' | 'products' | 'offers'; 
+  onChange: (val: 'all' | 'products' | 'offers') => void;
+  counts: { all: number; products: number; offers: number };
+  lang: string;
+}) {
+  const tabs = [
+    { id: 'all' as const, label: lang === 'ar' ? 'الكل' : 'All', icon: LayoutGrid, count: counts.all },
+    { id: 'products' as const, label: lang === 'ar' ? 'منتجات' : 'Products', icon: Package, count: counts.products },
+    { id: 'offers' as const, label: lang === 'ar' ? 'عروض' : 'Offers', icon: Flame, count: counts.offers },
+  ];
+
+  return (
+    <div className="relative flex items-center bg-pink-500/5 dark:bg-pink-500/10 rounded-xl p-1 border border-pink-300/20">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = value === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => {
+              console.log('🔍 [ProductFilterTabs] Clicked:', tab.id, 'Current value:', value);
+              onChange(tab.id);
+            }}
+            className={cn(
+              "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5",
+              isActive 
+                ? "text-white" 
+                : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {tab.label}
+            <Badge className={cn(
+              "text-[8px] px-1.5 py-0",
+              isActive 
+                ? "bg-white/20 text-white" 
+                : "bg-pink-500/10 dark:bg-pink-500/30 text-pink-600 dark:text-pink-400"
+            )}>
+              {tab.count}
+            </Badge>
+          </button>
+        );
+      })}
+      
+      <div 
+        className={cn(
+          "absolute top-1 h-[calc(100%-8px)] w-[calc(33.33%-4px)] rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 shadow-lg shadow-pink-500/30 transition-all duration-300 ease-out",
+          value === 'all' ? "left-1" : value === 'products' ? "left-[calc(33.33%+2px)]" : "left-[calc(66.66%+2px)]"
+        )}
+      />
+    </div>
+  );
+}
 
 function StorePage() {
   const { id } = Route.useParams();
@@ -59,24 +206,22 @@ function StorePage() {
   } | null>(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
 
-  // ====== State الفلتر والترتيب (محسّن للأداء) ======
+  // ====== State الفلتر والترتيب (نفس التصنيفات) ======
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "popular" | "price_asc" | "price_desc" | "rating">("recent");
-  const [viewFilter, setViewFilter] = useState<"all" | "offers">("all");
+  const [viewFilter, setViewFilter] = useState<"all" | "products" | "offers">("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [allListings, setAllListings] = useState<any[]>([]);
 
   // ====== Hooks ======
   const { data: store, isLoading: storeLoading } = useStoreProfile(id) as { data: any; isLoading: boolean };
   const getOrCreateConversation = useGetOrCreateConversation();
   const { data: companies = [] } = useDeliveryCompanies({ active: true });
   
-  // ✅ ✅ ✅ استخدام useCartTotal مع storeId لجلب قيمة منتجات هذا المتجر فقط
   const cartTotalForStore = useCartTotal(app.user?.id, id);
 
-  // ====== جلب المنتجات مع Pagination وفلتر العروض ======
+  // ====== جلب المنتجات والعروض التخفيضية من listings ======
   const { 
     data: listingsData, 
     isLoading: listingsLoading,
@@ -87,30 +232,174 @@ function StorePage() {
     page: page,
     limit: limit,
     search: searchQuery || undefined,
-    isOffer: viewFilter === "offers" ? true : undefined,
   });
 
-  // ✅ استخراج البيانات بالشكل الصحيح
-  const listings = listingsData?.data || [];
+  // ====== جلب العروض الترويجية من product_offers ======
+  const { data: promoOffersRaw = [], isLoading: promoLoading } = useProductOffers({ 
+    isActive: true,
+    limit: 100,
+    storeId: id,
+  });
+
+  // ✅ ترتيب العروض الترويجية حسب الـ sortBy (نفس التصنيفات)
+  const promoOffers = useMemo(() => {
+    if (!promoOffersRaw || promoOffersRaw.length === 0) return [];
+    
+    const sorted = [...promoOffersRaw];
+    
+    switch (sortBy) {
+      case 'price_asc':
+        sorted.sort((a, b) => {
+          const priceA = a.products?.[0]?.price || 0;
+          const priceB = b.products?.[0]?.price || 0;
+          return priceA - priceB;
+        });
+        break;
+      case 'price_desc':
+        sorted.sort((a, b) => {
+          const priceA = a.products?.[0]?.price || 0;
+          const priceB = b.products?.[0]?.price || 0;
+          return priceB - priceA;
+        });
+        break;
+      case 'recent':
+        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'rating':
+        sorted.sort((a, b) => (b.products?.[0]?.rating || 0) - (a.products?.[0]?.rating || 0));
+        break;
+      case 'popular':
+      default:
+        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+    }
+    
+    return sorted;
+  }, [promoOffersRaw, sortBy]);
+
+  const rows = listingsData?.data || [];
   const totalCount = listingsData?.count || 0;
   const totalPages = listingsData?.totalPages || 1;
 
-  // ✅ عدد العروض
-  const offersCount = listings.filter((item: any) => item.is_offer === true).length;
+  // ✅ دمج كل العناصر مع الترتيب الاحترافي (نفس التصنيفات)
+  const allItems = useMemo(() => {
+    // ✅ منتجات وعروض تخفيضية من useListings
+    const listingsItems = rows.map((item: any) => ({
+      ...item,
+      is_offer: item.is_offer || false,
+      is_promo_offer: false,
+    }));
+    
+    // ✅ عروض ترويجية من product_offers (مرتبة مسبقاً)
+    const promoItems = promoOffers.map((offer: any) => {
+      let mainProduct = null;
+      
+      if (Array.isArray(offer.products) && offer.products.length > 0) {
+        mainProduct = offer.products.find((p: any) => p.id === offer.listing_id) || offer.products[0];
+      } else if (offer.products && typeof offer.products === 'object' && !Array.isArray(offer.products)) {
+        mainProduct = offer.products;
+      }
+      
+      return {
+        ...mainProduct,
+        id: offer.id,
+        listing_id: offer.listing_id,
+        title_ar: offer.display_text_ar || mainProduct?.title_ar || (app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"),
+        title_en: offer.display_text_en || mainProduct?.title_en || (app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"),
+        description_ar: offer.display_text_ar || mainProduct?.description_ar || "",
+        description_en: offer.display_text_en || mainProduct?.description_en || "",
+        price: mainProduct?.price || 0,
+        old_price: null,
+        discount_percent: null,
+        is_offer: false,
+        is_promo_offer: true,
+        cover_url: mainProduct?.cover_url || null,
+        status: "published",
+        is_available: true,
+        owner_id: offer.store_id,
+        created_at: offer.created_at,
+        updated_at: offer.updated_at,
+        promo_offer: offer,
+        offer_type: offer.offer_type,
+        buy_quantity: offer.buy_quantity,
+        get_quantity: offer.get_quantity,
+        free_listing_id: offer.free_listing_id,
+        required_product_ids: offer.required_product_ids,
+        expires_at: offer.expires_at,
+        is_featured: offer.is_featured,
+        products: offer.products || [],
+        colors: mainProduct?.colors || [],
+        variations: mainProduct?.variations || [],
+        listing_images: mainProduct?.listing_images || [],
+        governorates: mainProduct?.governorates || null,
+        profile: mainProduct?.profile || null,
+        categories: mainProduct?.categories || null,
+        rating: mainProduct?.rating || 0,
+        reviews_count: mainProduct?.reviews_count || 0,
+        variation_ids: offer.variation_ids || [],
+        result_variation_ids: offer.result_variation_ids || [],
+      };
+    });
 
-  // ====== تجميع المنتجات ======
-  useEffect(() => {
-    if (page === 1) {
-      setAllListings(listings);
-    } else {
-      setAllListings(prev => [...prev, ...listings]);
+    // ✅ دمج الكل
+    let all = [...listingsItems, ...promoItems];
+
+    // ✅ ترتيب الكل حسب الـ sortBy (نفس التصنيفات)
+    if (sortBy === 'price_asc') {
+      all.sort((a, b) => (a.price || 0) - (b.price || 0));
+    } else if (sortBy === 'price_desc') {
+      all.sort((a, b) => (b.price || 0) - (a.price || 0));
+    } else if (sortBy === 'recent') {
+      all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (sortBy === 'rating') {
+      all.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     }
-  }, [listings, page]);
 
-  // ====== إعادة تعيين الصفحة عند تغيير الفلتر ======
+    return all;
+  }, [rows, promoOffers, app.lang, sortBy]);
+
+  // ✅ فلترة العناصر حسب النوع (نفس التصنيفات)
+  const filteredByType = useMemo(() => {
+    if (viewFilter === 'all') return allItems;
+    
+    if (viewFilter === 'products') {
+      return allItems.filter((item: any) => 
+        !item.is_offer && !item.is_promo_offer
+      );
+    }
+    
+    if (viewFilter === 'offers') {
+      return allItems.filter((item: any) => 
+        item.is_offer === true || item.is_promo_offer === true
+      );
+    }
+    
+    return allItems;
+  }, [allItems, viewFilter]);
+
+  // ✅ عدد العروض (تخفيضية + ترويجية)
+  const offersCount = useMemo(() => {
+    return allItems.filter((item: any) => 
+      item.is_offer === true || item.is_promo_offer === true
+    ).length;
+  }, [allItems]);
+
+  // ✅ عدد المنتجات (بدون عروض)
+  const productsCount = useMemo(() => {
+    return allItems.filter((item: any) => 
+      !item.is_offer && !item.is_promo_offer
+    ).length;
+  }, [allItems]);
+
+  // ✅ ✅ ✅ العناصر المعروضة (نفس التصنيفات - بدون useEffect)
+  const displayListings = useMemo(() => {
+    if (page === 1) return filteredByType;
+    return filteredByType;
+  }, [filteredByType, page]);
+
+  // ✅ ✅ ✅ إعادة تعيين الصفحة عند تغيير الفلاتر (نفس التصنيفات)
   useEffect(() => {
     setPage(1);
-    setAllListings([]);
   }, [searchQuery, sortBy, viewFilter]);
 
   // ====== حساب المسافة (هافرسين) ======
@@ -129,7 +418,7 @@ function StorePage() {
     return R * c;
   }, []);
 
-  // ====== حساب سعر التوصيل (مثل نون) ======
+  // ====== حساب سعر التوصيل ======
   const calculateDeliveryPrice = useCallback((company: any, distanceInKm: number, orderTotal: number): number => {
     const freeThreshold = company.free_delivery_threshold || 0;
     if (freeThreshold > 0 && orderTotal >= freeThreshold) {
@@ -154,7 +443,7 @@ function StorePage() {
     return price <= 0 ? 0 : price;
   }, []);
 
-  // ====== حساب سعر التوصيل (محسّن مع الهيكلية الجديدة) ======
+  // ====== حساب سعر التوصيل ======
   useEffect(() => {
     let isMounted = true;
 
@@ -163,7 +452,6 @@ function StorePage() {
 
       setDeliveryLoading(true);
       try {
-        // ✅ 1. جلب عنوان المستخدم الافتراضي
         const { data: userAddress, error: addressError } = await supabase
           .from("user_addresses")
           .select("governorate_id, lat, lng, address_text")
@@ -176,7 +464,6 @@ function StorePage() {
           return;
         }
 
-        // ✅ 2. جلب شركة التوصيل
         let deliveryCompanyId = store.delivery_company_id;
         let selectedCompany = null;
 
@@ -190,7 +477,6 @@ function StorePage() {
 
           if (!companyError && company) {
             selectedCompany = company;
-            console.log("✅ [Delivery] Using store's delivery company:", company.name_ar);
           }
         }
 
@@ -217,7 +503,6 @@ function StorePage() {
               selectedCompany = matchingCompanies.sort((a: any, b: any) => 
                 (a.base_price || 0) - (b.base_price || 0)
               )[0];
-              console.log("✅ [Delivery] Using best matching company:", selectedCompany.name_ar);
             }
           }
         }
@@ -232,7 +517,6 @@ function StorePage() {
 
           if (!fallbackError && fallbackCompany) {
             selectedCompany = fallbackCompany;
-            console.log("✅ [Delivery] Using fallback company:", selectedCompany.name_ar);
           }
         }
 
@@ -241,7 +525,6 @@ function StorePage() {
           return;
         }
 
-        // ✅ 3. حساب المسافة
         let distance = 0;
         const hasValidCoordinates = store.lat && store.lng && userAddress.lat && userAddress.lng;
 
@@ -252,7 +535,6 @@ function StorePage() {
             userAddress.lat,
             userAddress.lng
           );
-          console.log(`📍 [Delivery] Real distance: ${distance.toFixed(2)} km`);
         } else {
           const storeGovId = store.governorate_id;
           const userGovId = userAddress.governorate_id;
@@ -262,26 +544,15 @@ function StorePage() {
           } else {
             distance = 25;
           }
-          console.log(`📍 [Delivery] Estimated distance: ${distance} km (no coordinates)`);
         }
 
-        // ✅✅✅ 4. ✅ استخدام cartTotalForStore من الـ Hook بدلاً من الاستعلام اليدوي
         const orderTotal = cartTotalForStore || 0;
-        console.log(`🛒 [Delivery] Cart subtotal for this store: ${orderTotal} SYP`);
 
-        // ✅ 5. حساب سعر التوصيل
         const freeThreshold = selectedCompany.free_delivery_threshold || 0;
         let price = calculateDeliveryPrice(selectedCompany, distance, orderTotal);
         const isFree = price === 0;
         const remainingForFree = freeThreshold > 0 ? Math.max(0, freeThreshold - orderTotal) : 0;
 
-        console.log(`💰 [Delivery] Final price: ${price} SYP (${isFree ? 'FREE' : 'paid'})`);
-        console.log(`💰 [Delivery] Free threshold: ${freeThreshold} SYP`);
-        console.log(`💰 [Delivery] Order total: ${orderTotal} SYP`);
-        console.log(`💰 [Delivery] Remaining for free: ${remainingForFree} SYP`);
-        console.log(`💰 [Delivery] Distance: ${distance} km`);
-
-        // ✅ 6. تحديث الحالة
         if (isMounted) {
           setDeliveryPrice({
             distance: Math.round(distance * 100) / 100,
@@ -317,7 +588,7 @@ function StorePage() {
     return () => {
       isMounted = false;
     };
-  }, [store, app.user, cartTotalForStore, calculateDistance, calculateDeliveryPrice]); // ✅ أضفنا cartTotalForStore كـ dependency
+  }, [store, app.user, cartTotalForStore, calculateDistance, calculateDeliveryPrice]);
 
   // ====== تحميل المزيد ======
   const loadMore = useCallback(() => {
@@ -367,7 +638,6 @@ function StorePage() {
     setSortBy("recent");
     setViewFilter("all");
     setPage(1);
-    setAllListings([]);
   }, []);
 
   // ====== عرض التحميل ======
@@ -401,8 +671,7 @@ function StorePage() {
   const name = store.store_name || store.full_name || (app.lang === "ar" ? "متجر" : "Store");
   const storeType = store.store_type || "online";
   const isArabic = app.lang === "ar";
-  const isLoading = listingsLoading || isFetching;
-  const displayListings = page === 1 ? listings : allListings;
+  const isLoading = listingsLoading || isFetching || promoLoading;
 
   return (
     <div className="bg-gradient-to-b from-pink-500/5 via-transparent to-rose-500/5 dark:from-pink-500/20 dark:to-rose-500/10 min-h-screen">
@@ -483,7 +752,7 @@ function StorePage() {
               </span>
               <span className="flex items-center gap-1">
                 <Package className="h-3.5 w-3.5" />
-                {totalCount} {t("products_tab")}
+                {allItems.length} {t("products_tab")}
               </span>
               
               <span className="flex items-center gap-1 bg-pink-500/10 px-2.5 py-0.5 rounded-full text-pink-600 text-xs font-medium">
@@ -545,182 +814,182 @@ function StorePage() {
         </div>
       </div>
 
-   {/* ====== سعر التوصيل (محسّن مثل نون مع عرض الحد الأدنى) ====== */}
-{app.user && deliveryPrice && !deliveryLoading && (
-  <div className="mx-auto max-w-7xl px-4 mt-4">
-    <Card className={cn(
-      "border-2 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden",
-      deliveryPrice.isFree 
-        ? 'border-pink-400/40 hover:border-pink-500/60 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/20 dark:to-pink-950/10' 
-        : deliveryPrice.governorateMatch 
-          ? 'border-pink-400/30 hover:border-pink-500/50' 
-          : 'border-amber-500/30 hover:border-amber-500/50'
-    )}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className={cn(
-              "h-12 w-12 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110",
-              deliveryPrice.isFree 
-                ? "bg-pink-500/20" 
-                : "bg-pink-500/10"
-            )}>
-              <Truck className={cn(
-                "h-6 w-6 transition-all duration-500",
-                deliveryPrice.isFree 
-                  ? "text-pink-500 animate-bounce" 
-                  : "text-pink-600 animate-float"
-              )} />
-            </div>
-            
-            <div>
-              <div className="font-semibold text-sm flex items-center gap-2">
-                {deliveryPrice.isFree ? (
-                  <>
-                    <span className="text-pink-600 dark:text-pink-400">🚚 توصيل مجاني</span>
-                    <Badge className="bg-pink-500/20 text-pink-600 border-0 text-[9px] px-2 py-0.5 animate-pulse">
-                      {isArabic ? "🎉 عرض خاص" : "🎉 Special Offer"}
-                    </Badge>
-                  </>
-                ) : (
-                  <span className="text-slate-700 dark:text-slate-200">{isArabic ? "🚚 سعر التوصيل" : "🚚 Delivery Price"}</span>
-                )}
+      {/* ====== سعر التوصيل ====== */}
+      {app.user && deliveryPrice && !deliveryLoading && (
+        <div className="mx-auto max-w-7xl px-4 mt-4">
+          <Card className={cn(
+            "border-2 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden",
+            deliveryPrice.isFree 
+              ? 'border-pink-400/40 hover:border-pink-500/60 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/20 dark:to-pink-950/10' 
+              : deliveryPrice.governorateMatch 
+                ? 'border-pink-400/30 hover:border-pink-500/50' 
+                : 'border-amber-500/30 hover:border-amber-500/50'
+          )}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "h-12 w-12 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110",
+                    deliveryPrice.isFree 
+                      ? "bg-pink-500/20" 
+                      : "bg-pink-500/10"
+                  )}>
+                    <Truck className={cn(
+                      "h-6 w-6 transition-all duration-500",
+                      deliveryPrice.isFree 
+                        ? "text-pink-500 animate-bounce" 
+                        : "text-pink-600 animate-float"
+                    )} />
+                  </div>
+                  
+                  <div>
+                    <div className="font-semibold text-sm flex items-center gap-2">
+                      {deliveryPrice.isFree ? (
+                        <>
+                          <span className="text-pink-600 dark:text-pink-400">🚚 توصيل مجاني</span>
+                          <Badge className="bg-pink-500/20 text-pink-600 border-0 text-[9px] px-2 py-0.5 animate-pulse">
+                            {isArabic ? "🎉 عرض خاص" : "🎉 Special Offer"}
+                          </Badge>
+                        </>
+                      ) : (
+                        <span className="text-slate-700 dark:text-slate-200">{isArabic ? "🚚 سعر التوصيل" : "🚚 Delivery Price"}</span>
+                      )}
+                      
+                      <Badge className={cn(
+                        "border-0 text-[9px] px-2 py-0.5 animate-pulse",
+                        deliveryPrice.governorateMatch 
+                          ? 'bg-pink-500/20 text-pink-600 dark:bg-pink-500/30 dark:text-pink-400' 
+                          : 'bg-amber-500/20 text-amber-600 dark:bg-amber-500/30 dark:text-amber-400'
+                      )}>
+                        {deliveryPrice.governorateMatch 
+                          ? (isArabic ? "📍 نفس المحافظة" : "📍 Same Governorate") 
+                          : (isArabic ? "📍 محافظة مختلفة" : "📍 Different Governorate")}
+                      </Badge>
+                    </div>
+                    
+                    <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                      <span>{isArabic ? `المسافة: ${deliveryPrice.distance} كم` : `Distance: ${deliveryPrice.distance} km`}</span>
+                      <span className="text-muted-foreground/30">|</span>
+                      <span className="text-pink-600 font-medium">{deliveryPrice.companyName}</span>
+                      {deliveryPrice.breakdown?.hasCoordinates ? (
+                        <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[8px] px-1.5 py-0">
+                          📍 {isArabic ? "موقع دقيق" : "Precise"}
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[8px] px-1.5 py-0">
+                          📍 {isArabic ? "تقديري" : "Estimated"}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {deliveryPrice.freeThreshold > 0 && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20">
+                          <Gift className="h-3 w-3 text-pink-500" />
+                          <span className="text-[10px] font-medium text-pink-600 dark:text-pink-400">
+                            {isArabic 
+                              ? `🎯 توصيل مجاني للطلبات التي تتجاوز ${deliveryPrice.freeThreshold} SYP`
+                              : `🎯 Free delivery on orders over ${deliveryPrice.freeThreshold} SYP`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 
-                <Badge className={cn(
-                  "border-0 text-[9px] px-2 py-0.5 animate-pulse",
-                  deliveryPrice.governorateMatch 
-                    ? 'bg-pink-500/20 text-pink-600 dark:bg-pink-500/30 dark:text-pink-400' 
-                    : 'bg-amber-500/20 text-amber-600 dark:bg-amber-500/30 dark:text-amber-400'
-                )}>
-                  {deliveryPrice.governorateMatch 
-                    ? (isArabic ? "📍 نفس المحافظة" : "📍 Same Governorate") 
-                    : (isArabic ? "📍 محافظة مختلفة" : "📍 Different Governorate")}
-                </Badge>
+                <div className="text-right">
+                  {deliveryPrice.isFree ? (
+                    <Badge className="bg-pink-500/20 text-pink-600 border-0 text-sm px-4 py-1.5 animate-bounce rounded-xl">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {isArabic ? "🆓 مجاني" : "🆓 Free"}
+                      </span>
+                    </Badge>
+                  ) : (
+                    <div className="flex flex-col items-end">
+                      <span className="text-2xl font-bold text-pink-600 dark:text-pink-400">
+                        {deliveryPrice.price} SYP
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
               
-             <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-  <span>{isArabic ? `المسافة: ${deliveryPrice.distance} كم` : `Distance: ${deliveryPrice.distance} km`}</span>
-  <span className="text-muted-foreground/30">|</span>
-  <span className="text-pink-600 font-medium">{deliveryPrice.companyName}</span>
-  {deliveryPrice.breakdown?.hasCoordinates ? (
-    <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[8px] px-1.5 py-0">
-      📍 {isArabic ? "موقع دقيق" : "Precise"}
-    </Badge>
-  ) : (
-    <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[8px] px-1.5 py-0">
-      📍 {isArabic ? "تقديري" : "Estimated"}
-    </Badge>
-  )}
-</div>
-              
-              {deliveryPrice.freeThreshold > 0 && (
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20">
-                    <Gift className="h-3 w-3 text-pink-500" />
-                    <span className="text-[10px] font-medium text-pink-600 dark:text-pink-400">
-                      {isArabic 
-                        ? `🎯 توصيل مجاني للطلبات التي تتجاوز ${deliveryPrice.freeThreshold} SYP`
-                        : `🎯 Free delivery on orders over ${deliveryPrice.freeThreshold} SYP`}
+              {!deliveryPrice.isFree && deliveryPrice.freeThreshold > 0 && deliveryPrice.remainingForFree > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-3.5 w-3.5 text-pink-500 animate-pulse" />
+                      <span className="font-medium text-pink-600 dark:text-pink-400">
+                        {isArabic ? "🎯 أضف منتجات بقيمة" : "🎯 Add items worth"}
+                      </span>
+                      <span className="font-bold text-pink-600 dark:text-pink-400 text-xs">
+                        {deliveryPrice.remainingForFree} SYP
+                      </span>
+                      <span className="text-pink-600/70 dark:text-pink-400/70">
+                        {isArabic ? "للحصول على توصيل مجاني" : "to get free delivery"}
+                      </span>
+                    </div>
+                    <Badge className="bg-gradient-to-r from-pink-500/20 to-pink-400/20 text-pink-600 dark:text-pink-300 border-0 text-[9px] px-2 py-0.5 animate-pulse">
+                      <Gift className="h-2.5 w-2.5 inline mr-0.5" />
+                      {isArabic ? "🎁 عرض" : "🎁 Offer"}
+                    </Badge>
+                  </div>
+                  <div className="relative h-2 w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-pink-500 via-pink-400 to-rose-500 rounded-full transition-all duration-1000 shadow-lg shadow-pink-500/20"
+                      style={{ 
+                        width: `${Math.min(100, ((deliveryPrice.orderTotal || 0) / deliveryPrice.freeThreshold) * 100)}%` 
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                  </div>
+                  <div className="flex items-center justify-between mt-1 text-[10px]">
+                    <span className="text-muted-foreground/70">
+                      {isArabic ? "📦 قيمة الطلب الحالية" : "📦 Current order value"}
+                      <span className="font-bold text-pink-600 dark:text-pink-400 mr-1">
+                        {deliveryPrice.orderTotal || 0} SYP
+                      </span>
                     </span>
+                    <span className="text-muted-foreground/50">
+                      {isArabic ? "الهدف" : "Target"} 
+                      <span className="font-bold text-[#0d2e2a] dark:text-white mr-1">
+                        {deliveryPrice.freeThreshold} SYP
+                      </span>
+                    </span>
+                  </div>
+                  
+                  {deliveryPrice.remainingForFree > 0 && (
+                    <div className="mt-2 p-2 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/30 dark:to-pink-950/20 rounded-lg border border-pink-200/50 dark:border-pink-800/30 flex items-center gap-2">
+                      <Award className="h-4 w-4 text-pink-500 flex-shrink-0" />
+                      <p className="text-[10px] text-pink-700 dark:text-pink-300 font-medium">
+                        {isArabic 
+                          ? `💡 أضف منتجات بقيمة ${deliveryPrice.remainingForFree} SYP إضافية وستحصل على توصيل مجاني! 🎉`
+                          : `💡 Add ${deliveryPrice.remainingForFree} SYP more worth of products and get free delivery! 🎉`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {deliveryPrice.isFree && deliveryPrice.freeThreshold > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+                  <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/30 dark:to-pink-950/20 rounded-lg border border-pink-200/50 dark:border-pink-800/30">
+                    <Sparkles className="h-4 w-4 text-pink-500 flex-shrink-0 animate-pulse" />
+                    <p className="text-[10px] text-pink-700 dark:text-pink-300 font-medium">
+                      {isArabic 
+                        ? `🎉 قيمة طلبك (${deliveryPrice.orderTotal || 0} SYP) تجاوزت الحد الأدنى (${deliveryPrice.freeThreshold} SYP) → توصيل مجاني!`
+                        : `🎉 Your order value (${deliveryPrice.orderTotal || 0} SYP) exceeded the minimum (${deliveryPrice.freeThreshold} SYP) → Free delivery!`}
+                    </p>
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-          
-          <div className="text-right">
-            {deliveryPrice.isFree ? (
-              <Badge className="bg-pink-500/20 text-pink-600 border-0 text-sm px-4 py-1.5 animate-bounce rounded-xl">
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {isArabic ? "🆓 مجاني" : "🆓 Free"}
-                </span>
-              </Badge>
-            ) : (
-              <div className="flex flex-col items-end">
-                <span className="text-2xl font-bold text-pink-600 dark:text-pink-400">
-                  {deliveryPrice.price} SYP
-                </span>
-              </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
         </div>
-        
-        {!deliveryPrice.isFree && deliveryPrice.freeThreshold > 0 && deliveryPrice.remainingForFree > 0 && (
-          <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
-              <div className="flex items-center gap-2">
-                <Target className="h-3.5 w-3.5 text-pink-500 animate-pulse" />
-                <span className="font-medium text-pink-600 dark:text-pink-400">
-                  {isArabic ? "🎯 أضف منتجات بقيمة" : "🎯 Add items worth"}
-                </span>
-                <span className="font-bold text-pink-600 dark:text-pink-400 text-xs">
-                  {deliveryPrice.remainingForFree} SYP
-                </span>
-                <span className="text-pink-600/70 dark:text-pink-400/70">
-                  {isArabic ? "للحصول على توصيل مجاني" : "to get free delivery"}
-                </span>
-              </div>
-              <Badge className="bg-gradient-to-r from-pink-500/20 to-pink-400/20 text-pink-600 dark:text-pink-300 border-0 text-[9px] px-2 py-0.5 animate-pulse">
-                <Gift className="h-2.5 w-2.5 inline mr-0.5" />
-                {isArabic ? "🎁 عرض" : "🎁 Offer"}
-              </Badge>
-            </div>
-            <div className="relative h-2 w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-pink-500 via-pink-400 to-rose-500 rounded-full transition-all duration-1000 shadow-lg shadow-pink-500/20"
-                style={{ 
-                  width: `${Math.min(100, ((deliveryPrice.orderTotal || 0) / deliveryPrice.freeThreshold) * 100)}%` 
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-            </div>
-            <div className="flex items-center justify-between mt-1 text-[10px]">
-              <span className="text-muted-foreground/70">
-                {isArabic ? "📦 قيمة الطلب الحالية" : "📦 Current order value"}
-                <span className="font-bold text-pink-600 dark:text-pink-400 mr-1">
-                  {deliveryPrice.orderTotal || 0} SYP
-                </span>
-              </span>
-              <span className="text-muted-foreground/50">
-                {isArabic ? "الهدف" : "Target"} 
-                <span className="font-bold text-[#0d2e2a] dark:text-white mr-1">
-                  {deliveryPrice.freeThreshold} SYP
-                </span>
-              </span>
-            </div>
-            
-            {deliveryPrice.remainingForFree > 0 && (
-              <div className="mt-2 p-2 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/30 dark:to-pink-950/20 rounded-lg border border-pink-200/50 dark:border-pink-800/30 flex items-center gap-2">
-                <Award className="h-4 w-4 text-pink-500 flex-shrink-0" />
-                <p className="text-[10px] text-pink-700 dark:text-pink-300 font-medium">
-                  {isArabic 
-                    ? `💡 أضف منتجات بقيمة ${deliveryPrice.remainingForFree} SYP إضافية وستحصل على توصيل مجاني! 🎉`
-                    : `💡 Add ${deliveryPrice.remainingForFree} SYP more worth of products and get free delivery! 🎉`}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {deliveryPrice.isFree && deliveryPrice.freeThreshold > 0 && (
-          <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
-            <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/30 dark:to-pink-950/20 rounded-lg border border-pink-200/50 dark:border-pink-800/30">
-              <Sparkles className="h-4 w-4 text-pink-500 flex-shrink-0 animate-pulse" />
-              <p className="text-[10px] text-pink-700 dark:text-pink-300 font-medium">
-                {isArabic 
-                  ? `🎉 قيمة طلبك (${deliveryPrice.orderTotal || 0} SYP) تجاوزت الحد الأدنى (${deliveryPrice.freeThreshold} SYP) → توصيل مجاني!`
-                  : `🎉 Your order value (${deliveryPrice.orderTotal || 0} SYP) exceeded the minimum (${deliveryPrice.freeThreshold} SYP) → Free delivery!`}
-              </p>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  </div>
-)}
+      )}
 
-      {/* ====== الفلتر والترتيب ====== */}
+      {/* ====== الفلتر والترتيب (نفس التصنيفات) ====== */}
       <section className="mx-auto max-w-7xl px-4 py-6">
         
         {/* شريط البحث والفلتر */}
@@ -751,79 +1020,31 @@ function StorePage() {
           {/* أزرار الفلتر والترتيب */}
           <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
             
-            {/* ✅ فلتر المنتجات / العروض (مثل الكبسة) */}
-            <div className="relative flex items-center bg-pink-500/5 dark:bg-pink-500/20 rounded-xl p-1 border border-pink-300/20">
-              <button
-                onClick={() => {
-                  setViewFilter("all");
-                  setPage(1);
-                  setAllListings([]);
-                }}
-                className={cn(
-                  "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
-                  viewFilter === "all" 
-                    ? "text-white" 
-                    : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
-                )}
-              >
-                <span className="flex items-center gap-1.5">
-                  <Package className="h-3.5 w-3.5" />
-                  {isArabic ? "منتجات" : "Products"}
-                  <Badge className="bg-white/20 text-white text-[8px] px-1.5 py-0">
-                    {totalCount}
-                  </Badge>
-                </span>
-              </button>
-              
-              <button
-                onClick={() => {
-                  setViewFilter("offers");
-                  setPage(1);
-                  setAllListings([]);
-                }}
-                className={cn(
-                  "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
-                  viewFilter === "offers" 
-                    ? "text-white" 
-                    : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
-                )}
-              >
-                <span className="flex items-center gap-1.5">
-                  <Flame className="h-3.5 w-3.5" />
-                  {isArabic ? "عروض" : "Offers"}
-                  <Badge className="bg-red-500/30 text-white text-[8px] px-1.5 py-0">
-                    {offersCount}
-                  </Badge>
-                </span>
-              </button>
-              
-              <div 
-                className={cn(
-                  "absolute top-1 h-[calc(100%-8px)] w-[calc(50%-4px)] rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 shadow-lg shadow-pink-500/30 transition-all duration-300 ease-out",
-                  viewFilter === "all" ? "left-1" : "left-[calc(50%-2px)]"
-                )}
-              />
-            </div>
+            {/* ✅ Product Filter Tabs - نفس التصنيفات */}
+           <ProductFilterTabs
+  value={viewFilter}
+  onChange={(val) => {
+    console.log('🔍 Changing to:', val);
+    setViewFilter(val);
+    setPage(1);
+  }}
+  counts={{
+    all: allItems.length,
+    products: productsCount,
+    offers: offersCount,
+  }}
+  lang={app.lang}
+/>
 
-            {/* ترتيب */}
-            <Select value={sortBy} onValueChange={(v: any) => {
-              setSortBy(v);
-              setPage(1);
-            }}>
-              <SelectTrigger className="w-[140px] h-10 rounded-xl border-pink-300/30 bg-white dark:bg-[#1e293b]">
-                <div className="flex items-center gap-2">
-                  <ArrowUpDown className="h-4 w-4 text-pink-500" />
-                  <SelectValue placeholder={isArabic ? "ترتيب" : "Sort"} />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">{isArabic ? "🕐 الأحدث" : "🕐 Recent"}</SelectItem>
-                <SelectItem value="popular">{isArabic ? "🔥 الأكثر رواجاً" : "🔥 Popular"}</SelectItem>
-                <SelectItem value="price_asc">{isArabic ? "💰 السعر: منخفض→مرتفع" : "💰 Price: Low→High"}</SelectItem>
-                <SelectItem value="price_desc">{isArabic ? "💰 السعر: مرتفع→منخفض" : "💰 Price: High→Low"}</SelectItem>
-                <SelectItem value="rating">{isArabic ? "⭐ الأعلى تقييماً" : "⭐ Top Rated"}</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* ✅ ترتيب - نفس الـ SortDropdown في التصنيفات */}
+            <SortDropdown
+              value={sortBy}
+              onChange={(val) => {
+                setSortBy(val as any);
+                setPage(1);
+              }}
+              lang={app.lang}
+            />
 
             {/* تبديل العرض */}
             <div className="flex items-center bg-white dark:bg-[#1e293b] rounded-xl border border-pink-300/30 p-1">
@@ -853,9 +1074,13 @@ function StorePage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="font-medium text-pink-600">
-              {viewFilter === "offers" ? offersCount : totalCount}
+              {viewFilter === "offers" ? offersCount : 
+               viewFilter === "products" ? productsCount : 
+               allItems.length}
             </span>
-            {viewFilter === "offers" ? (isArabic ? "عرض" : "offers") : (isArabic ? "منتج" : "products")}
+            {viewFilter === "offers" ? (isArabic ? "عرض" : "offers") : 
+             viewFilter === "products" ? (isArabic ? "منتج" : "products") :
+             (isArabic ? "منتج" : "products")}
             {searchQuery && (
               <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
                 <Search className="h-3 w-3 mr-1" />
@@ -943,7 +1168,7 @@ function StorePage() {
               </div>
             )}
 
-            {page >= totalPages && totalCount > limit && (
+            {page >= totalPages && allItems.length > limit && (
               <div className="flex justify-center mt-6 text-sm text-muted-foreground">
                 {isArabic ? "🎉 تم تحميل جميع المنتجات" : "🎉 All products loaded"}
               </div>
@@ -951,12 +1176,12 @@ function StorePage() {
           </>
         )}
 
-        {totalCount > 0 && (
+        {allItems.length > 0 && (
           <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground border-t border-pink-300/20 pt-4">
             <span>
               {isArabic 
-                ? `عرض ${displayListings.length} من ${viewFilter === "offers" ? offersCount : totalCount} ${viewFilter === "offers" ? "عرض" : "منتج"}` 
-                : `Showing ${displayListings.length} of ${viewFilter === "offers" ? offersCount : totalCount} ${viewFilter === "offers" ? "offers" : "products"}`}
+                ? `عرض ${displayListings.length} من ${viewFilter === "offers" ? offersCount : viewFilter === "products" ? productsCount : allItems.length} ${viewFilter === "offers" ? "عرض" : "منتج"}` 
+                : `Showing ${displayListings.length} of ${viewFilter === "offers" ? offersCount : viewFilter === "products" ? productsCount : allItems.length} ${viewFilter === "offers" ? "offers" : "products"}`}
             </span>
             <span className="flex items-center gap-2">
               <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
@@ -1008,7 +1233,6 @@ export function isStoreCurrentlyOpen(store: any): boolean {
   if (!store || store.store_online === false) return false;
 
   if (!store.store_opens_at || !store.store_closes_at) {
-    console.log('ℹ️ [Store] No opening hours set, assuming open');
     return true;
   }
 
@@ -1017,7 +1241,6 @@ export function isStoreCurrentlyOpen(store: any): boolean {
     const closes = store.store_closes_at.slice(0, 5);
 
     if (!opens || !closes || opens.length < 5 || closes.length < 5) {
-      console.log('ℹ️ [Store] Invalid time format, assuming open');
       return true;
     }
 
@@ -1028,7 +1251,6 @@ export function isStoreCurrentlyOpen(store: any): boolean {
     const [ch, cm] = closes.split(":").map(Number);
 
     if (isNaN(oh) || isNaN(om) || isNaN(ch) || isNaN(cm)) {
-      console.log('ℹ️ [Store] Invalid time numbers, assuming open');
       return true;
     }
 
@@ -1041,7 +1263,6 @@ export function isStoreCurrentlyOpen(store: any): boolean {
       return cur >= o || cur <= c;
     }
   } catch (error) {
-    console.error('❌ [Store] Error checking store status:', error);
     return true;
   }
 }

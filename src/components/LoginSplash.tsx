@@ -6,16 +6,57 @@ import { Heart, Shield, Award, Truck } from "lucide-react";
 import { useApp } from "@/lib/i18n";
 
 // ============================================================
-// 🎨 الأنماط والحركات
+// 🎨 الأنماط والحركات - مطابقة للهيدر
 // ============================================================
 
 const styles = `
 @keyframes float-logo {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-6px) scale(1.02); }
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-6px) rotate(-2deg); }
+  75% { transform: translateY(4px) rotate(2deg); }
 }
 .animate-float-logo {
-  animation: float-logo 3s ease-in-out infinite;
+  animation: float-logo 4s ease-in-out infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.3; transform: scale(0.95); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 15px rgba(212,175,55,0.3)); }
+  50% { filter: drop-shadow(0 0 30px rgba(212,175,55,0.6)); }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+@keyframes ping {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.animate-ping {
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.animate-bounce {
+  animation: bounce 2s ease-in-out infinite;
 }
 
 @keyframes fade-in-up {
@@ -26,19 +67,11 @@ const styles = `
   animation: fade-in-up 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(42, 101, 95, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(42, 101, 95, 0.6); }
-}
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
 @keyframes heartbeat {
   0%, 100% { transform: scale(1); }
-  14% { transform: scale(1.2); }
+  14% { transform: scale(1.15); }
   28% { transform: scale(1); }
-  42% { transform: scale(1.1); }
+  42% { transform: scale(1.08); }
   70% { transform: scale(1); }
 }
 .animate-heartbeat {
@@ -84,7 +117,7 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
     const hideTimer = setTimeout(() => {
       setVisible(false);
       setTimeout(onComplete, 400);
-    }, 5000);
+    }, 2000);
 
     return () => {
       clearInterval(progressInterval);
@@ -119,25 +152,39 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
         {/* الحاوية الوسطى */}
         <div className={`text-center max-w-xl mx-auto my-auto w-full transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
           
-          {/* الشعار */}
-          <div className="relative inline-block mb-2 sm:mb-4 animate-float-logo">
-            <div className="absolute -inset-5 sm:-inset-8 rounded-full bg-[#2a655f]/30 blur-xl animate-pulse-glow" />
+          {/* ✅ الشعار مع حركات مطابقة للهيدر */}
+          <div className="relative inline-block mb-2 sm:mb-4">
             
-            <div className="relative w-20 h-20 sm:w-32 sm:h-32 md:w-40 md:h-40 mx-auto">
+            {/* خلفية متوهجة */}
+            <div className="absolute inset-0 rounded-full bg-[#2a655f]/30 blur-2xl animate-pulse-slow" />
+            
+            {/* حلقة تدور حول الشعار */}
+            <div className="absolute -inset-3 rounded-full border-2 border-[#d4af37]/20 animate-spin-slow" />
+            <div className="absolute -inset-6 rounded-full border border-[#d4af37]/10 animate-spin-slow" style={{ animationDirection: 'reverse' }} />
+            
+            {/* الشعار مع حركة float */}
+            <div className="relative w-20 h-20 sm:w-32 sm:h-32 md:w-40 md:h-40 mx-auto animate-float-logo">
               <img 
                 src="/images/Logo.png" 
                 alt="السوق لعندك"
-                className="w-full h-full object-contain drop-shadow-2xl"
+                className="w-full h-full object-contain drop-shadow-2xl relative z-10 animate-pulse-glow"
                 loading="eager"
               />
-              <div className="absolute -inset-2 rounded-full border-2 border-[#2a655f]/20 animate-pulse" />
+              
+              {/* نقاط متحركة حول الشعار (مثل الهيدر) */}
+              <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#2a655f] animate-ping" />
+              <div className="absolute -bottom-1 -left-1 h-2.5 w-2.5 rounded-full bg-[#d4af37] animate-ping" style={{ animationDelay: '0.5s' }} />
+              <div className="absolute top-1/2 -right-4 h-2 w-2 rounded-full bg-[#3a8a82] animate-pulse" style={{ animationDelay: '1s' }} />
+              <div className="absolute top-1/2 -left-4 h-2 w-2 rounded-full bg-[#f0d060] animate-pulse" style={{ animationDelay: '1.5s' }} />
+              <div className="absolute -top-4 left-1/2 h-1.5 w-1.5 rounded-full bg-[#4a9f95] animate-bounce" />
+              <div className="absolute -bottom-4 left-1/2 h-1.5 w-1.5 rounded-full bg-[#d4af37] animate-bounce" style={{ animationDelay: '0.7s' }} />
             </div>
           </div>
 
           {/* اسم التطبيق */}
           <h1 className="text-xl sm:text-3xl font-black mb-1">
-            <span className="text-[#d4af37] drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]">
-              {isArabic ? "السوق لعندك" : "Souqi Le3ndak"}
+            <span className="bg-gradient-to-r from-[#f5d742] via-[#f0e68c] to-[#f5d742] bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(245,215,66,0.4)]">
+              {isArabic ? "السوق لعندك" : "Souq Le3ndak"}
             </span>
           </h1>
 
@@ -195,7 +242,7 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
           <p className="text-[7px] sm:text-[9px] text-white/30 tracking-[0.15em] font-bold uppercase flex items-center justify-center gap-2">
             <span>© {new Date().getFullYear()}</span>
             <Heart className="h-2 w-2 text-[#2a655f]/70 animate-heartbeat" />
-            <span>{isArabic ? "السوق لعندك" : "Souqi Le3ndak"}</span>
+            <span>{isArabic ? "السوق لعندك" : "Souq Le3ndak"}</span>
           </p>
         </div>
 
