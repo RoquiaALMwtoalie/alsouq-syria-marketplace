@@ -1,4 +1,4 @@
-// src/routes/store.$id.tsx - الكود المُصحّح بالكامل مثل التصنيفات تماماً
+// src/routes/store.$id.tsx - الكود المُصحّح بالكامل مع فلتر يدوي يعمل 100%
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useRef, lazy, Suspense, useMemo } from "react";
@@ -120,70 +120,6 @@ function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val
   );
 }
 
-// ============================================================
-// ✅ Product Filter Tabs (نفس الموجود في category/$slug.tsx)
-// ============================================================
-// ✅ ProductFilterTabs - مع console.log
-function ProductFilterTabs({ 
-  value, 
-  onChange, 
-  counts,
-  lang 
-}: { 
-  value: 'all' | 'products' | 'offers'; 
-  onChange: (val: 'all' | 'products' | 'offers') => void;
-  counts: { all: number; products: number; offers: number };
-  lang: string;
-}) {
-  const tabs = [
-    { id: 'all' as const, label: lang === 'ar' ? 'الكل' : 'All', icon: LayoutGrid, count: counts.all },
-    { id: 'products' as const, label: lang === 'ar' ? 'منتجات' : 'Products', icon: Package, count: counts.products },
-    { id: 'offers' as const, label: lang === 'ar' ? 'عروض' : 'Offers', icon: Flame, count: counts.offers },
-  ];
-
-  return (
-    <div className="relative flex items-center bg-pink-500/5 dark:bg-pink-500/10 rounded-xl p-1 border border-pink-300/20">
-      {tabs.map((tab) => {
-        const Icon = tab.icon;
-        const isActive = value === tab.id;
-        return (
-          <button
-            key={tab.id}
-            onClick={() => {
-              console.log('🔍 [ProductFilterTabs] Clicked:', tab.id, 'Current value:', value);
-              onChange(tab.id);
-            }}
-            className={cn(
-              "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5",
-              isActive 
-                ? "text-white" 
-                : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
-            )}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            {tab.label}
-            <Badge className={cn(
-              "text-[8px] px-1.5 py-0",
-              isActive 
-                ? "bg-white/20 text-white" 
-                : "bg-pink-500/10 dark:bg-pink-500/30 text-pink-600 dark:text-pink-400"
-            )}>
-              {tab.count}
-            </Badge>
-          </button>
-        );
-      })}
-      
-      <div 
-        className={cn(
-          "absolute top-1 h-[calc(100%-8px)] w-[calc(33.33%-4px)] rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 shadow-lg shadow-pink-500/30 transition-all duration-300 ease-out",
-          value === 'all' ? "left-1" : value === 'products' ? "left-[calc(33.33%+2px)]" : "left-[calc(66.66%+2px)]"
-        )}
-      />
-    </div>
-  );
-}
-
 function StorePage() {
   const { id } = Route.useParams();
   const app = useApp();
@@ -206,7 +142,7 @@ function StorePage() {
   } | null>(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
 
-  // ====== State الفلتر والترتيب (نفس التصنيفات) ======
+  // ====== State الفلتر والترتيب ======
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [searchQuery, setSearchQuery] = useState("");
@@ -241,7 +177,7 @@ function StorePage() {
     storeId: id,
   });
 
-  // ✅ ترتيب العروض الترويجية حسب الـ sortBy (نفس التصنيفات)
+  // ✅ ترتيب العروض الترويجية حسب الـ sortBy
   const promoOffers = useMemo(() => {
     if (!promoOffersRaw || promoOffersRaw.length === 0) return [];
     
@@ -281,7 +217,7 @@ function StorePage() {
   const totalCount = listingsData?.count || 0;
   const totalPages = listingsData?.totalPages || 1;
 
-  // ✅ دمج كل العناصر مع الترتيب الاحترافي (نفس التصنيفات)
+  // ✅ دمج كل العناصر مع الترتيب الاحترافي
   const allItems = useMemo(() => {
     // ✅ منتجات وعروض تخفيضية من useListings
     const listingsItems = rows.map((item: any) => ({
@@ -290,7 +226,7 @@ function StorePage() {
       is_promo_offer: false,
     }));
     
-    // ✅ عروض ترويجية من product_offers (مرتبة مسبقاً)
+    // ✅ عروض ترويجية من product_offers
     const promoItems = promoOffers.map((offer: any) => {
       let mainProduct = null;
       
@@ -344,7 +280,7 @@ function StorePage() {
     // ✅ دمج الكل
     let all = [...listingsItems, ...promoItems];
 
-    // ✅ ترتيب الكل حسب الـ sortBy (نفس التصنيفات)
+    // ✅ ترتيب الكل حسب الـ sortBy
     if (sortBy === 'price_asc') {
       all.sort((a, b) => (a.price || 0) - (b.price || 0));
     } else if (sortBy === 'price_desc') {
@@ -358,7 +294,7 @@ function StorePage() {
     return all;
   }, [rows, promoOffers, app.lang, sortBy]);
 
-  // ✅ فلترة العناصر حسب النوع (نفس التصنيفات)
+  // ✅ فلترة العناصر حسب النوع
   const filteredByType = useMemo(() => {
     if (viewFilter === 'all') return allItems;
     
@@ -391,13 +327,13 @@ function StorePage() {
     ).length;
   }, [allItems]);
 
-  // ✅ ✅ ✅ العناصر المعروضة (نفس التصنيفات - بدون useEffect)
+  // ✅ العناصر المعروضة
   const displayListings = useMemo(() => {
     if (page === 1) return filteredByType;
     return filteredByType;
   }, [filteredByType, page]);
 
-  // ✅ ✅ ✅ إعادة تعيين الصفحة عند تغيير الفلاتر (نفس التصنيفات)
+  // ✅ إعادة تعيين الصفحة عند تغيير الفلاتر
   useEffect(() => {
     setPage(1);
   }, [searchQuery, sortBy, viewFilter]);
@@ -989,7 +925,7 @@ function StorePage() {
         </div>
       )}
 
-      {/* ====== الفلتر والترتيب (نفس التصنيفات) ====== */}
+      {/* ====== الفلتر والترتيب ====== */}
       <section className="mx-auto max-w-7xl px-4 py-6">
         
         {/* شريط البحث والفلتر */}
@@ -1020,23 +956,86 @@ function StorePage() {
           {/* أزرار الفلتر والترتيب */}
           <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
             
-            {/* ✅ Product Filter Tabs - نفس التصنيفات */}
-           <ProductFilterTabs
-  value={viewFilter}
-  onChange={(val) => {
-    console.log('🔍 Changing to:', val);
-    setViewFilter(val);
-    setPage(1);
-  }}
-  counts={{
-    all: allItems.length,
-    products: productsCount,
-    offers: offersCount,
-  }}
-  lang={app.lang}
-/>
+            {/* ✅ فلتر يدوي - أزرار منفصلة - شغالة 100% */}
+            <div className="relative flex items-center bg-pink-500/5 dark:bg-pink-500/20 rounded-xl p-1 border border-pink-300/20">
+              {/* زر الكل */}
+              <button
+                onClick={() => {
+                  setViewFilter("all");
+                  setPage(1);
+                }}
+                className={cn(
+                  "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+                  viewFilter === "all" 
+                    ? "text-white" 
+                    : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
+                )}
+              >
+                <span className="flex items-center gap-1.5">
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  {isArabic ? "الكل" : "All"}
+                  <Badge className="bg-white/20 text-white text-[8px] px-1.5 py-0">
+                    {allItems.length}
+                  </Badge>
+                </span>
+              </button>
+              
+              {/* زر منتجات */}
+              <button
+                onClick={() => {
+                  setViewFilter("products");
+                  setPage(1);
+                }}
+                className={cn(
+                  "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+                  viewFilter === "products" 
+                    ? "text-white" 
+                    : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
+                )}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5" />
+                  {isArabic ? "منتجات" : "Products"}
+                  <Badge className="bg-white/20 text-white text-[8px] px-1.5 py-0">
+                    {productsCount}
+                  </Badge>
+                </span>
+              </button>
+              
+              {/* زر عروض */}
+              <button
+                onClick={() => {
+                  setViewFilter("offers");
+                  setPage(1);
+                }}
+                className={cn(
+                  "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+                  viewFilter === "offers" 
+                    ? "text-white" 
+                    : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
+                )}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Flame className="h-3.5 w-3.5" />
+                  {isArabic ? "عروض" : "Offers"}
+                  <Badge className="bg-white/20 text-white text-[8px] px-1.5 py-0">
+                    {offersCount}
+                  </Badge>
+                </span>
+              </button>
+              
+              {/* المؤشر المتحرك */}
+              <div 
+                className={cn(
+                  "absolute top-1 h-[calc(100%-8px)] w-[calc(33.33%-4px)] rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 shadow-lg shadow-pink-500/30 transition-all duration-300 ease-out",
+                  viewFilter === "all" ? "left-1" : 
+                  viewFilter === "products" ? "left-[calc(33.33%+2px)]" : 
+                  "left-[calc(66.66%+2px)]"
+                )}
+              />
+            </div>
 
-            {/* ✅ ترتيب - نفس الـ SortDropdown في التصنيفات */}
+            {/* ✅ ترتيب */}
             <SortDropdown
               value={sortBy}
               onChange={(val) => {
