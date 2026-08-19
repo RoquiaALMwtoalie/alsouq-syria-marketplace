@@ -1299,3 +1299,4 @@ function ProductSkeleton() {
     </div>
   );
 }
+
