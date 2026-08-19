@@ -1,4 +1,4 @@
-// src/routes/store.$id.tsx - الكود المُصحّح بالكامل مع فلتر يدوي يعمل 100%
+// src/routes/store.$id.tsx - الكود المُصحّح بالكامل مع Toggle Buttons أنيقة
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useRef, lazy, Suspense, useMemo } from "react";
@@ -956,8 +956,8 @@ function StorePage() {
           {/* أزرار الفلتر والترتيب */}
           <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
             
-            {/* ✅ فلتر يدوي - أزرار منفصلة - شغالة 100% */}
-            <div className="relative flex items-center bg-pink-500/5 dark:bg-pink-500/20 rounded-xl p-1 border border-pink-300/20">
+            {/* ✅ Toggle Buttons - تصميم جديد وأنيق */}
+            <div className="flex items-center gap-1 bg-pink-500/5 dark:bg-pink-500/10 rounded-xl p-1 border border-pink-300/20">
               {/* زر الكل */}
               <button
                 onClick={() => {
@@ -965,19 +965,22 @@ function StorePage() {
                   setPage(1);
                 }}
                 className={cn(
-                  "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+                  "px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5",
                   viewFilter === "all" 
-                    ? "text-white" 
-                    : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
+                    ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30" 
+                    : "text-[#0d2e2a] dark:text-white/60 hover:bg-pink-500/10 hover:text-pink-600"
                 )}
               >
-                <span className="flex items-center gap-1.5">
-                  <LayoutGrid className="h-3.5 w-3.5" />
-                  {isArabic ? "الكل" : "All"}
-                  <Badge className="bg-white/20 text-white text-[8px] px-1.5 py-0">
-                    {allItems.length}
-                  </Badge>
-                </span>
+                <LayoutGrid className="h-3.5 w-3.5" />
+                {isArabic ? "الكل" : "All"}
+                <Badge className={cn(
+                  "text-[9px] px-1.5 py-0",
+                  viewFilter === "all" 
+                    ? "bg-white/20 text-white" 
+                    : "bg-pink-500/10 text-pink-600"
+                )}>
+                  {allItems.length}
+                </Badge>
               </button>
               
               {/* زر منتجات */}
@@ -987,19 +990,22 @@ function StorePage() {
                   setPage(1);
                 }}
                 className={cn(
-                  "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+                  "px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5",
                   viewFilter === "products" 
-                    ? "text-white" 
-                    : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
+                    ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30" 
+                    : "text-[#0d2e2a] dark:text-white/60 hover:bg-blue-500/10 hover:text-blue-600"
                 )}
               >
-                <span className="flex items-center gap-1.5">
-                  <Package className="h-3.5 w-3.5" />
-                  {isArabic ? "منتجات" : "Products"}
-                  <Badge className="bg-white/20 text-white text-[8px] px-1.5 py-0">
-                    {productsCount}
-                  </Badge>
-                </span>
+                <Package className="h-3.5 w-3.5" />
+                {isArabic ? "منتجات" : "Products"}
+                <Badge className={cn(
+                  "text-[9px] px-1.5 py-0",
+                  viewFilter === "products" 
+                    ? "bg-white/20 text-white" 
+                    : "bg-blue-500/10 text-blue-600"
+                )}>
+                  {productsCount}
+                </Badge>
               </button>
               
               {/* زر عروض */}
@@ -1009,30 +1015,23 @@ function StorePage() {
                   setPage(1);
                 }}
                 className={cn(
-                  "relative z-10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+                  "px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5",
                   viewFilter === "offers" 
-                    ? "text-white" 
-                    : "text-[#0d2e2a] dark:text-white/60 hover:text-pink-600 dark:hover:text-pink-400"
+                    ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30" 
+                    : "text-[#0d2e2a] dark:text-white/60 hover:bg-orange-500/10 hover:text-orange-600"
                 )}
               >
-                <span className="flex items-center gap-1.5">
-                  <Flame className="h-3.5 w-3.5" />
-                  {isArabic ? "عروض" : "Offers"}
-                  <Badge className="bg-white/20 text-white text-[8px] px-1.5 py-0">
-                    {offersCount}
-                  </Badge>
-                </span>
+                <Flame className="h-3.5 w-3.5" />
+                {isArabic ? "عروض" : "Offers"}
+                <Badge className={cn(
+                  "text-[9px] px-1.5 py-0",
+                  viewFilter === "offers" 
+                    ? "bg-white/20 text-white" 
+                    : "bg-orange-500/10 text-orange-600"
+                )}>
+                  {offersCount}
+                </Badge>
               </button>
-              
-              {/* المؤشر المتحرك */}
-              <div 
-                className={cn(
-                  "absolute top-1 h-[calc(100%-8px)] w-[calc(33.33%-4px)] rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 shadow-lg shadow-pink-500/30 transition-all duration-300 ease-out",
-                  viewFilter === "all" ? "left-1" : 
-                  viewFilter === "products" ? "left-[calc(33.33%+2px)]" : 
-                  "left-[calc(66.66%+2px)]"
-                )}
-              />
             </div>
 
             {/* ✅ ترتيب */}
