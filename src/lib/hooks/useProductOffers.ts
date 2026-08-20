@@ -72,91 +72,58 @@ export function useProductOfferById(offerId: string | undefined) {
         queryFn: async () => {
             if (!offerId) return null;
             
-            // ✅ جلب العرض الأساسي
-            const { data: offer, error: offerError } = await supabase
-                .from("product_offers")
-                .select("*")
-                .eq("id", offerId)
-                .maybeSingle();
+            console.log("🔍 [useProductOfferById] Fetching offer via RPC:", offerId);
+            
+            // ✅ ✅ ✅ استخدام RPC مباشرة (بدلاً من 3 استعلامات منفصلة)
+            const { data, error } = await supabase
+                .rpc('get_product_offers_with_details', {
+                    p_limit: 1,
+                    p_offset: 0,
+                    p_store_id: null,
+                    p_category_id: null,
+                    p_is_active: true
+                });
 
-            if (offerError) {
-                console.error("❌ [useProductOfferById] Error:", offerError);
+            if (error) {
+                console.error("❌ [useProductOfferById] RPC Error:", error);
                 return null;
             }
 
+            // ✅ البحث عن العرض بالـ ID في النتائج
+            const offer = (data || []).find((item: any) => item.id === offerId);
+            
             if (!offer) {
-                console.log("ℹ️ [useProductOfferById] No offer found");
+                console.log("ℹ️ [useProductOfferById] No offer found with ID:", offerId);
                 return null;
             }
 
-            // ✅ جلب المنتج الرئيسي مع الفيرنتات والألوان وبيانات المتجر
-            const { data: product, error: productError } = await supabase
-                .from("listings")
-                .select(`
-                    id,
-                    title_ar,
-                    title_en,
-                    description_ar,
-                    description_en,
-                    price,
-                    old_price,
-                    discount_percent,
-                    cover_url,
-                    currency,
-                    is_available,
-                    rating,
-                    owner_id,
-                    category_id,
-                    colors:product_colors (
-                        id,
-                        color_name_ar,
-                        color_name_en,
-                        color_hex,
-                        image_url
-                    ),
-                    variations:product_variations (
-                        id,
-                        sku,
-                        combination,
-                        price,
-                        old_price,
-                        stock_quantity,
-                        image_url,
-                        is_active
-                    ),
-                    profiles!fk_listings_owner_id (
-                        id,
-                        full_name,
-                        store_name,
-                        store_description,
-                        store_logo_url,
-                        store_cover_url,
-                        avatar_url,
-                        store_active,
-                        store_online,
-                        allows_messaging
-                    )
-                `)
-                .eq("id", offer.listing_id)
-                .maybeSingle();
-
-            if (productError) {
-                console.error("❌ [useProductOfferById] Error fetching product:", productError);
+            console.log("✅ [useProductOfferById] Offer found via RPC:", offer.id);
+            
+            // ============================================================
+            // ✅ ✅ ✅ نفس المنطق القديم بالضبط، ولكن مع بيانات RPC
+            // ============================================================
+            
+            // ✅ استخراج المنتج الرئيسي من RPC (قد يكون مصفوفة أو كائن)
+            let product = null;
+            if (offer.products && Array.isArray(offer.products) && offer.products.length > 0) {
+                product = offer.products[0];
+            } else if (offer.products && !Array.isArray(offer.products)) {
+                product = offer.products;
             }
-
+            
+            // ✅ تعيين المنتج الرئيسي (نفس الكود القديم)
             offer.products = product;
 
             // ============================================================
-            // ✅ ✅ ✅ معالجة الهدية (BOGO + Cross-sell + Bundle)
+            // ✅ ✅ ✅ معالجة الهدية (نفس الكود القديم تماماً)
             // ============================================================
             let freeProduct = null;
             let freeVariations = [];
 
-            // ✅ الحالة 1: BOGO بدون free_listing_id → الهدية = نفس المنتج
+            // ✅ الحالة 1: BOGO بدون free_listing_id → الهدية = نفس المنتج (نفس الكود القديم)
             if (offer.offer_type === 'bogo' && !offer.free_listing_id) {
                 freeProduct = product;
                 
-                // ✅ فيرنتات الهدية = result_variation_ids (إذا وجدت)
                 if (product) {
                     if (offer.result_variation_ids && offer.result_variation_ids.length > 0) {
                         freeVariations = (product.variations || []).filter((v: any) =>
@@ -170,52 +137,19 @@ export function useProductOfferById(offerId: string | undefined) {
                 console.log("🎁 [useProductOfferById] BOGO: Using same product as gift");
                 console.log("🎨 [useProductOfferById] Free variations:", freeVariations.length);
             }
-            // ✅ الحالة 2: يوجد free_listing_id محدد (Cross-sell / Bundle)
+            // ✅ الحالة 2: يوجد free_listing_id محدد (نفس الكود القديم)
             else if (offer.free_listing_id) {
-                const { data: freeData, error: freeError } = await supabase
-                    .from("listings")
-                    .select(`
-                        id,
-                        title_ar,
-                        title_en,
-                        price,
-                        cover_url,
-                        rating,
-                        category_id,
-                        colors:product_colors (
-                            id,
-                            color_name_ar,
-                            color_name_en,
-                            color_hex,
-                            image_url
-                        ),
-                        variations:product_variations (
-                            id,
-                            sku,
-                            combination,
-                            price,
-                            old_price,
-                            stock_quantity,
-                            image_url,
-                            is_active
-                        ),
-                        profiles!fk_listings_owner_id (
-                            id,
-                            full_name,
-                            store_name,
-                            store_description,
-                            store_logo_url,
-                            store_cover_url,
-                            avatar_url
-                        )
-                    `)
-                    .eq("id", offer.free_listing_id)
-                    .maybeSingle();
-
-                if (!freeError && freeData) {
+                // ✅ من RPC، free_product قد يكون مصفوفة أو كائن
+                let freeData = null;
+                if (offer.free_product && Array.isArray(offer.free_product) && offer.free_product.length > 0) {
+                    freeData = offer.free_product[0];
+                } else if (offer.free_product && !Array.isArray(offer.free_product)) {
+                    freeData = offer.free_product;
+                }
+                
+                if (freeData) {
                     freeProduct = freeData;
                     
-                    // ✅ فيرنتات الهدية = result_variation_ids (إذا وجدت)
                     if (offer.result_variation_ids && offer.result_variation_ids.length > 0) {
                         freeVariations = (freeData.variations || []).filter((v: any) =>
                             offer.result_variation_ids.includes(v.id)
@@ -229,13 +163,14 @@ export function useProductOfferById(offerId: string | undefined) {
                 }
             }
 
-            // ✅ إضافة free_product و free_variations إلى الـ offer
+            // ✅ إضافة free_product و free_variations إلى الـ offer (نفس الكود القديم)
             offer.free_product = freeProduct;
             offer.free_variations = freeVariations;
 
             console.log("✅ [useProductOfferById] Offer loaded:", offer.id);
-            console.log("✅ [useProductOfferById] Product profiles:", offer.products?.profiles);
+            console.log("✅ [useProductOfferById] Product:", offer.products?.title_ar);
             console.log("✅ [useProductOfferById] Free product:", offer.free_product?.title_ar || "No free product");
+            console.log("✅ [useProductOfferById] Free variations:", offer.free_variations?.length || 0);
             
             return offer;
         },

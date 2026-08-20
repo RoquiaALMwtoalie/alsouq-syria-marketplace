@@ -5565,6 +5565,9 @@ export async function getProductOffers(options?: {
 // 🎁 HOOK: useProductOffers (للعرض العام)
 // ============================================================
 
+// في src/lib/queries.ts
+
+// 🔥 استبدل دالة useProductOffers الحالية بهذه:
 export function useProductOffers(options?: {
   storeId?: string;
   listingId?: string;
@@ -5582,7 +5585,7 @@ export function useProductOffers(options?: {
     queryFn: async () => {
       console.log("🔄 [useProductOffers] queryFn executing...");
       
-      // ✅ ✅ ✅ استخدام RPC (نفس useListings)
+      // ✅ ✅ ✅ استخدم RPC مباشرة
       const { data, error } = await supabase
         .rpc('get_product_offers_with_details', {
           p_limit: options?.limit || 30,
@@ -5608,12 +5611,6 @@ export function useProductOffers(options?: {
     retry: 1,
   });
 }
-
-
-
-
-
-
 
 
 
