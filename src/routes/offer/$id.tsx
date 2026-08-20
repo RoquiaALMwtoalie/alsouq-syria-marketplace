@@ -1,7 +1,7 @@
 // src/routes/offer/$id.tsx
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useApp, formatPrice } from "@/lib/i18n";
 import { useProductOfferById } from "@/lib/hooks/useProductOffers";
 import { useAddToCart, useClearCart } from "@/lib/hooks/useCart";
@@ -179,13 +179,15 @@ function OfferDetailPage() {
     return 0;
   }, [offer, mainProduct, mainVariations, selectedVariations, quantity, requiredProducts]);
 
-  // ✅ التحقق من اختيار الفيرنتات
+  // ✅ التحقق من اختيار الفيرنتات (تم تعديلها لإزالة شرط الهدية لأنها محددة مسبقاً)
   const isVariationSelected = useMemo(() => {
     if (!offer) return false;
     
     if (offer.offer_type === 'bogo' || offer.offer_type === 'cross_sell') {
+      // ✅ فقط تحقق من فيرنت المنتج الرئيسي
       if (mainVariations.length > 0 && !selectedVariations[offer.listing_id]) return false;
-      if (freeProduct && giftVariations.length > 0 && !selectedGiftVariation) return false;
+      // ❌ إزالة شرط اختيار فيرنت الهدية لأنها محددة مسبقاً
+      // if (freeProduct && giftVariations.length > 0 && !selectedGiftVariation) return false;
       return true;
     }
     
@@ -196,12 +198,21 @@ function OfferDetailPage() {
           return false;
         }
       }
-      if (freeProduct && giftVariations.length > 0 && !selectedGiftVariation) return false;
+      // ❌ إزالة شرط اختيار فيرنت الهدية للـ Bundle أيضاً
+      // if (freeProduct && giftVariations.length > 0 && !selectedGiftVariation) return false;
       return true;
     }
     
     return true;
   }, [offer, mainVariations, selectedVariations, freeProduct, giftVariations, selectedGiftVariation, requiredProducts]);
+
+  // ✅ ✅ ✅ اختيار أول فيرنت هدية تلقائياً (لأنها محددة مسبقاً)
+  useEffect(() => {
+    if (offer && giftVariations.length > 0 && !selectedGiftVariation) {
+      setSelectedGiftVariation(giftVariations[0].id);
+      console.log("🎁 [OfferDetailPage] Auto-selected gift variation:", giftVariations[0].id);
+    }
+  }, [offer, giftVariations, selectedGiftVariation]);
 
   // ✅ هل هو عرض Bundle؟
   const isBundle = useMemo(() => {
@@ -341,6 +352,7 @@ const handleAddToCart = useCallback(async () => {
       },
     });
 
+    // ✅ ✅ ✅ Toast مع زر "عرض السلة" (نفس اللي في cart.tsx)
     toast.success(
       app.lang === "ar" 
         ? `🛒 تم إضافة العرض للسلة (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`
@@ -362,8 +374,7 @@ const handleAddToCart = useCallback(async () => {
         : `❌ Failed to add offer to cart: ${error.message || 'Unknown error'}`
     );
   }
-}, [app.user, app.lang, offer, isVariationSelected, mainProduct, selectedVariations, selectedGiftVariation, quantity, addToCartMutation, navigate]);
-  const handleConfirmClearCart = useCallback(async () => {
+}, [app.user, app.lang, offer, isVariationSelected, mainProduct, selectedVariations, selectedGiftVariation, quantity, addToCartMutation, navigate]); const handleConfirmClearCart = useCallback(async () => {
     if (!app.user || !pendingAddData) return;
     
     try {
@@ -774,18 +785,10 @@ const handleAddToCart = useCallback(async () => {
                   <h3 className="font-bold text-sm flex items-center gap-2 text-emerald-600">
                     <GiftIcon className="h-4 w-4" />
                     {app.lang === "ar" ? "🎁 الهدية" : "🎁 Gift"}
-                    {giftVariations.length > 0 && (
-                      <span className="text-xs text-red-500">*</span>
-                    )}
+                    {/* ✅ إزالة علامة * لأن الهدية محددة مسبقاً */}
                   </h3>
-                  <span className={cn(
-                    "text-xs font-medium transition-all duration-300",
-                    selectedGiftVariation || giftVariations.length === 0
-                      ? "text-emerald-600" : "text-amber-500"
-                  )}>
-                    {selectedGiftVariation || giftVariations.length === 0
-                      ? `✅ ${app.lang === "ar" ? "مختار" : "Selected"}` 
-                      : (app.lang === "ar" ? "⚠️ مطلوب" : "⚠️ Required")}
+                  <span className="text-xs font-medium text-emerald-600">
+                    ✅ {app.lang === "ar" ? "محددة مسبقاً" : "Pre-selected"}
                   </span>
                 </div>
                 
@@ -809,45 +812,22 @@ const handleAddToCart = useCallback(async () => {
                       <Badge className="bg-emerald-500/90 text-white border-0 text-[10px]">
                         ✅ {app.lang === "ar" ? "مجاناً" : "FREE"}
                       </Badge>
+                      {/* ✅ عرض فيرنت الهدية المحدد تلقائياً (للعلم فقط) */}
+                      {giftVariations.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          🎨 {app.lang === "ar" ? "الفيرنت المحدد:" : "Selected variation:"}{" "}
+                          {giftVariations.map((v: any) => {
+                            const combo = v.combination || {};
+                            return Object.entries(combo)
+                              .map(([key, value]) => `${value}`)
+                              .join(' • ');
+                          }).join(', ')}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  {giftVariations.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                        <Layers className="h-3.5 w-3.5" />
-                        {app.lang === "ar" ? "اختر فيرنت الهدية (المتاح في العرض)" : "Select gift variation (available in offer)"}
-                        <span className="text-red-500 ml-1">*</span>
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {giftVariations.map((v: any) => {
-                          const combo = v.combination || {};
-                          const comboText = Object.entries(combo)
-                            .map(([key, value]) => `${value}`)
-                            .join(' • ');
-                          const isSelected = selectedGiftVariation === v.id;
-
-                          return (
-                            <button
-                              key={v.id}
-                              onClick={() => setSelectedGiftVariation(isSelected ? null : v.id)}
-                              className={cn(
-                                "px-4 py-2 border-2 rounded-xl text-sm font-medium transition-all",
-                                isSelected
-                                  ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm"
-                                  : "border-slate-200/50 hover:border-emerald-300 hover:bg-emerald-50/50"
-                              )}
-                            >
-                              {comboText}
-                              <Badge className="ml-1 bg-emerald-500/90 text-white border-0 text-[9px]">
-                                {app.lang === "ar" ? "مجاناً" : "FREE"}
-                              </Badge>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                  {/* ❌ حذف أزرار اختيار فيرنتات الهدية بالكامل لأنها محددة مسبقاً */}
                 </div>
               </div>
             )}

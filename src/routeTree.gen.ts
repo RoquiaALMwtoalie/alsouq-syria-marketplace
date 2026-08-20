@@ -19,6 +19,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as OffersRouteImport } from './routes/offers'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProductsRouteImport } from './routes/products'
@@ -104,6 +105,11 @@ const FavoritesRoute = FavoritesRouteImport.update({
 const MessagesRoute = MessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OffersRoute = OffersRouteImport.update({
+  id: '/offers',
+  path: '/offers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrdersRoute = OrdersRouteImport.update({
@@ -301,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/faq': typeof FaqRoute
   '/favorites': typeof FavoritesRoute
   '/messages': typeof MessagesRoute
+  '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
@@ -349,6 +356,7 @@ export interface FileRoutesByTo {
   '/faq': typeof FaqRoute
   '/favorites': typeof FavoritesRoute
   '/messages': typeof MessagesRoute
+  '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
@@ -398,6 +406,7 @@ export interface FileRoutesById {
   '/faq': typeof FaqRoute
   '/favorites': typeof FavoritesRoute
   '/messages': typeof MessagesRoute
+  '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
@@ -448,6 +457,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/favorites'
     | '/messages'
+    | '/offers'
     | '/orders'
     | '/privacy'
     | '/products'
@@ -496,6 +506,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/favorites'
     | '/messages'
+    | '/offers'
     | '/orders'
     | '/privacy'
     | '/products'
@@ -544,6 +555,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/favorites'
     | '/messages'
+    | '/offers'
     | '/orders'
     | '/privacy'
     | '/products'
@@ -593,6 +605,7 @@ export interface RootRouteChildren {
   FaqRoute: typeof FaqRoute
   FavoritesRoute: typeof FavoritesRoute
   MessagesRoute: typeof MessagesRoute
+  OffersRoute: typeof OffersRoute
   OrdersRoute: typeof OrdersRoute
   PrivacyRoute: typeof PrivacyRoute
   ProductsRoute: typeof ProductsRoute
@@ -701,6 +714,13 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/messages'
       preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/offers': {
+      id: '/offers'
+      path: '/offers'
+      fullPath: '/offers'
+      preLoaderRoute: typeof OffersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orders': {
@@ -969,6 +989,7 @@ const rootRouteChildren: RootRouteChildren = {
   FaqRoute: FaqRoute,
   FavoritesRoute: FavoritesRoute,
   MessagesRoute: MessagesRoute,
+  OffersRoute: OffersRoute,
   OrdersRoute: OrdersRoute,
   PrivacyRoute: PrivacyRoute,
   ProductsRoute: ProductsRoute,
