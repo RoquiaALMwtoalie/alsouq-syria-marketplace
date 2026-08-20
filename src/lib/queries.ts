@@ -5579,9 +5579,28 @@ export function useProductOffers(options?: {
   
   return useQuery({
     queryKey: ["product-offers", options],
-    queryFn: () => {
+    queryFn: async () => {
       console.log("🔄 [useProductOffers] queryFn executing...");
-      return getProductOffers(options);
+      
+      // ✅ ✅ ✅ استخدام RPC (نفس useListings)
+      const { data, error } = await supabase
+        .rpc('get_product_offers_with_details', {
+          p_limit: options?.limit || 30,
+          p_offset: options?.offset || 0,
+          p_store_id: options?.storeId || null,
+          p_category_id: options?.categoryId || null,
+          p_is_active: options?.isActive !== undefined ? options.isActive : true
+        });
+
+      if (error) {
+        console.error("❌ [useProductOffers] RPC Error:", error);
+        return [];
+      }
+
+      console.log(`📊 [useProductOffers] Found ${data?.length || 0} offers`);
+      console.log("📊 [useProductOffers] Sample:", data?.[0]);
+      
+      return data || [];
     },
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -5589,6 +5608,16 @@ export function useProductOffers(options?: {
     retry: 1,
   });
 }
+
+
+
+
+
+
+
+
+
+
 export function useGetOrCreateConversation() {
   const queryClient = useQueryClient();
   
