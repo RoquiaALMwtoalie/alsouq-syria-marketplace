@@ -71,6 +71,7 @@ export function useProductOffer(listingId: string | undefined, variationId?: str
 // ============================================================
 // ✅✅✅ النسخة المحسّنة - تستخدم RPC مع p_offer_id (جديدة)
 // ============================================================
+// ✅ تعديل useProductOfferByIdV2 لاستخدام الدالة الجديدة
 export function useProductOfferByIdV2(offerId: string | undefined) {
     return useQuery({
         queryKey: ["product-offer-by-id-v2", offerId],
@@ -80,15 +81,10 @@ export function useProductOfferByIdV2(offerId: string | undefined) {
             
             console.log("🔍 [useProductOfferByIdV2] Fetching offer with RPC:", offerId);
             
-            // ✅ استخدام RPC مع p_offer_id
+            // ✅ استخدام الدالة الجديدة (بدون تعارض)
             const { data, error } = await supabase
-                .rpc('get_product_offers_with_details', {
-                    p_limit: 1,
-                    p_offset: 0,
-                    p_store_id: null,
-                    p_category_id: null,
-                    p_is_active: true,
-                    p_offer_id: offerId  // ✅ المعامل الجديد
+                .rpc('get_product_offer_by_id', {
+                    p_offer_id: offerId  // ✅ دالة منفصلة
                 });
 
             if (error) {
@@ -96,25 +92,21 @@ export function useProductOfferByIdV2(offerId: string | undefined) {
                 return null;
             }
 
-            // ✅ البيانات رجعت كمصفوفة، نأخذ أول عنصر
-            const offer = (data || [])[0] || null;
-            
-            if (!offer) {
+            if (!data) {
                 console.log("ℹ️ [useProductOfferByIdV2] No offer found:", offerId);
                 return null;
             }
 
-            console.log("✅ [useProductOfferByIdV2] Offer found:", offer.id);
-            console.log("🎁 [useProductOfferByIdV2] Free product:", offer.free_product?.title_ar || 'No free product');
+            console.log("✅ [useProductOfferByIdV2] Offer found:", data.id);
+            console.log("🎁 [useProductOfferByIdV2] Free product:", data.free_product?.title_ar || 'No free product');
             
-            return offer;
+            return data;
         },
         staleTime: 60 * 1000,
         retry: 1,
         gcTime: 5 * 60 * 1000,
     });
 }
-
 // ============================================================
 // 📦 جلب جميع عروض البائع (محسّن لجلب كل التفاصيل)
 // ============================================================
