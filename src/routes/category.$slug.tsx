@@ -12,7 +12,7 @@ import {
   CircleDot, Rocket, Sparkle, Compass, Wand2,
   LayoutGrid
 } from "lucide-react";
-import { useApp, useT } from "@/lib/i18n";
+import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { useGovernorates, useListings, useStoresByCategory, useCategories } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
@@ -204,7 +204,10 @@ function CategoryPage() {
   const [sort, setSort] = useState<"popularity" | "newest" | "price_low" | "price_high" | "discount" | "rating">("popularity");
   const [rating, setRating] = useState(0);
   const [search, setSearch] = useState(searchParams?.q ?? "");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]);
+  
+  // ✅ ✅ ✅ نطاق السعر - باستخدام Inputs بدلاً من Slider
+  const [minPrice, setMinPrice] = useState<number>(0);
+  const [maxPrice, setMaxPrice] = useState<number>(10000000);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(1);
@@ -288,44 +291,49 @@ function CategoryPage() {
     return allItems;
   }, [allItems, productFilter]);
 
-  // ✅ فلترة متقدمة
-// ✅ فلترة متقدمة (السعر، التقييم، التوفر، البحث)
-const items = useMemo(() => {
-  let filtered = filteredByType;
-  
-  // ✅ فلتر البحث الذكي
-  if (search && search.trim()) {
-    const s = search.toLowerCase().trim();
-    filtered = filtered.filter((item: any) => {
-      const titleAr = (item.title_ar || "").toLowerCase();
-      const titleEn = (item.title_en || "").toLowerCase();
-      const descAr = (item.description_ar || "").toLowerCase();
-      const descEn = (item.description_en || "").toLowerCase();
-      
-      return titleAr.includes(s) || 
-             titleEn.includes(s) || 
-             descAr.includes(s) || 
-             descEn.includes(s);
+  // ✅ فلترة متقدمة (السعر، التقييم، التوفر، البحث)
+  const items = useMemo(() => {
+    let filtered = filteredByType;
+    
+    // ✅ فلتر البحث الذكي
+    if (search && search.trim()) {
+      const s = search.toLowerCase().trim();
+      filtered = filtered.filter((item: any) => {
+        const titleAr = (item.title_ar || "").toLowerCase();
+        const titleEn = (item.title_en || "").toLowerCase();
+        const descAr = (item.description_ar || "").toLowerCase();
+        const descEn = (item.description_en || "").toLowerCase();
+        
+        return titleAr.includes(s) || 
+               titleEn.includes(s) || 
+               descAr.includes(s) || 
+               descEn.includes(s);
+      });
+    }
+    
+    // ✅ فلتر التقييم
+    if (rating > 0) {
+      filtered = filtered.filter((r: any) => Number(r.rating) >= rating);
+    }
+    
+    // ✅ ✅ ✅ فلتر السعر باستخدام minPrice و maxPrice
+    // تحويل minPrice و maxPrice إلى أرقام صالحة
+    const min = Number(minPrice) || 0;
+    const max = Number(maxPrice) || 10000000;
+    
+    filtered = filtered.filter((r: any) => {
+      const price = Number(r.price);
+      return price >= min && price <= max;
     });
-  }
-  
-  // فلتر التقييم
-  if (rating > 0) {
-    filtered = filtered.filter((r: any) => Number(r.rating) >= rating);
-  }
-  
-  // فلتر السعر
-  filtered = filtered.filter((r: any) => 
-    Number(r.price) >= priceRange[0] && Number(r.price) <= priceRange[1]
-  );
-  
-  // فلتر التوفر
-  if (showAvailableOnly) {
-    filtered = filtered.filter((r: any) => r.is_available !== false);
-  }
-  
-  return filtered;
-}, [filteredByType, search, rating, priceRange, showAvailableOnly]);
+    
+    // ✅ فلتر التوفر
+    if (showAvailableOnly) {
+      filtered = filtered.filter((r: any) => r.is_available !== false);
+    }
+    
+    return filtered;
+  }, [filteredByType, search, rating, minPrice, maxPrice, showAvailableOnly]);
+
   // ✅ إحصائيات
   const stats = useMemo(() => {
     const all = allItems.length;
@@ -344,7 +352,7 @@ const items = useMemo(() => {
   // ✅ إعادة تعيين الصفحة
   useEffect(() => {
     setPage(1);
-  }, [search, sort, gov, rating, priceRange, showAvailableOnly, productFilter]);
+  }, [search, sort, gov, rating, minPrice, maxPrice, showAvailableOnly, productFilter]);
 
   // ✅ Pagination
   const goToPage = (newPage: number) => {
@@ -360,7 +368,8 @@ const items = useMemo(() => {
     setGov("all");
     setRating(0);
     setSearch("");
-    setPriceRange([0, 10000000]);
+    setMinPrice(0);
+    setMaxPrice(10000000);
     setShowAvailableOnly(false);
     setPage(1);
   };
@@ -402,26 +411,49 @@ const items = useMemo(() => {
         </Select>
       </div>
 
-      <div>
-        <div className="font-semibold mb-2 text-sm text-pink-600 dark:text-pink-400 flex items-center gap-2">
-          <Tag className="h-4 w-4" />
-          {app.lang === "ar" ? "نطاق السعر" : "Price Range"}
-        </div>
-        <div className="px-2">
-          <Slider
-            min={0}
-            max={10000000}
-            step={1000}
-            value={priceRange}
-            onValueChange={(v) => setPriceRange(v as [number, number])}
-            className="[&>span:first-child]:bg-pink-500"
-          />
-        </div>
-        <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-          <span>{priceRange[0].toLocaleString()} SYP</span>
-          <span>{priceRange[1].toLocaleString()} SYP</span>
-        </div>
-      </div>
+  {/* ✅ ✅ ✅ نطاق السعر - Inputs بدون "من" و "إلى" داخل الحقول */}
+<div>
+  <div className="font-semibold mb-2 text-sm text-pink-600 dark:text-pink-400 flex items-center gap-2">
+    <Tag className="h-4 w-4" />
+    {app.lang === "ar" ? "نطاق السعر" : "Price Range"}
+  </div>
+  <div className="flex items-center gap-2">
+    <div className="relative flex-1">
+      <Input
+        type="number"
+        value={minPrice === 0 ? "" : minPrice}
+        onChange={(e) => {
+          const val = e.target.value === "" ? 0 : Number(e.target.value);
+          setMinPrice(val);
+          setPage(1);
+        }}
+        placeholder={app.lang === "ar" ? "الحد الأدنى" : "Min"}
+        className="h-10 rounded-xl px-3 border-pink-300/30 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
+        min={0}
+      />
+    </div>
+    <span className="text-muted-foreground text-sm font-medium px-1">-</span>
+    <div className="relative flex-1">
+      <Input
+        type="number"
+        value={maxPrice === 10000000 ? "" : maxPrice}
+        onChange={(e) => {
+          const val = e.target.value === "" ? 10000000 : Number(e.target.value);
+          setMaxPrice(val);
+          setPage(1);
+        }}
+        placeholder={app.lang === "ar" ? "الحد الأعلى" : "Max"}
+        className="h-10 rounded-xl px-3 border-pink-300/30 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
+        min={0}
+      />
+    </div>
+  </div>
+  <div className="flex items-center justify-between mt-1.5 text-[10px] text-muted-foreground">
+    <span>{minPrice === 0 ? "0" : formatPrice(minPrice, app.currency, app.lang)}</span>
+    <span className="text-pink-500 text-[8px] animate-pulse">●</span>
+    <span>{maxPrice === 10000000 ? (app.lang === "ar" ? "غير محدود" : "Unlimited") : formatPrice(maxPrice, app.currency, app.lang)}</span>
+  </div>
+</div>
 
       <div>
         <div className="font-semibold mb-2 text-sm text-pink-600 dark:text-pink-400 flex items-center gap-2">

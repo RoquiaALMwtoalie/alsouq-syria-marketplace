@@ -1,4 +1,4 @@
-// src/routes/store.$id.tsx - الكود المُصحّح بالكامل مع Toggle Buttons أنيقة
+// src/routes/store.$id.tsx - الكود المُصحّح بالكامل مع نطاق السعر (من-إلى)
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useRef, lazy, Suspense, useMemo } from "react";
@@ -8,9 +8,9 @@ import {
   Sparkles, Package, Share2, Flame, BadgeCheck,
   Search, X, ArrowUpDown, Grid3X3, List, ChevronDown,
   RefreshCw, Eye, Heart, TrendingUp, Zap, Gift, Target, Award,
-  LayoutGrid, Check
+  LayoutGrid, Check, Tag, Filter
 } from "lucide-react";
-import { useApp, useT } from "@/lib/i18n";
+import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { useListings, useStoreProfile, useDeliveryCompanies, useProductOffers } from "@/lib/queries";
 import { useGetOrCreateConversation } from "@/lib/hooks/useConversation";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,14 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useCartTotal } from "@/lib/hooks/useCartTotal";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Slider } from "@/components/ui/slider";
 
 // ✅ Lazy Loading للـ ListingCard
 const ListingCard = lazy(() => import("@/components/ListingCard"));
@@ -39,7 +47,7 @@ export const Route = createFileRoute("/store/$id")({
 });
 
 // ============================================================
-// ✅ SortDropdown (نفس الموجود في category/$slug.tsx)
+// ✅ SortDropdown
 // ============================================================
 function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val: string) => void; lang: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -149,6 +157,11 @@ function StorePage() {
   const [sortBy, setSortBy] = useState<"recent" | "popular" | "price_asc" | "price_desc" | "rating">("recent");
   const [viewFilter, setViewFilter] = useState<"all" | "products" | "offers">("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  
+  // ====== State نطاق السعر ======
+  const [minPrice, setMinPrice] = useState<number>(0);
+  const [maxPrice, setMaxPrice] = useState<number>(10000000);
+  const [showAvailableOnly, setShowAvailableOnly] = useState(false);
 
   // ====== Hooks ======
   const { data: store, isLoading: storeLoading } = useStoreProfile(id) as { data: any; isLoading: boolean };
@@ -313,6 +326,43 @@ function StorePage() {
     return allItems;
   }, [allItems, viewFilter]);
 
+  // ✅ فلترة متقدمة (السعر، التقييم، التوفر، البحث)
+  const items = useMemo(() => {
+    let filtered = filteredByType;
+    
+    // ✅ فلتر البحث الذكي
+    if (searchQuery && searchQuery.trim()) {
+      const s = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((item: any) => {
+        const titleAr = (item.title_ar || "").toLowerCase();
+        const titleEn = (item.title_en || "").toLowerCase();
+        const descAr = (item.description_ar || "").toLowerCase();
+        const descEn = (item.description_en || "").toLowerCase();
+        
+        return titleAr.includes(s) || 
+               titleEn.includes(s) || 
+               descAr.includes(s) || 
+               descEn.includes(s);
+      });
+    }
+    
+    // ✅ ✅ ✅ فلتر السعر
+    const min = Number(minPrice) || 0;
+    const max = Number(maxPrice) || 10000000;
+    
+    filtered = filtered.filter((r: any) => {
+      const price = Number(r.price);
+      return price >= min && price <= max;
+    });
+    
+    // ✅ فلتر التوفر
+    if (showAvailableOnly) {
+      filtered = filtered.filter((r: any) => r.is_available !== false);
+    }
+    
+    return filtered;
+  }, [filteredByType, searchQuery, minPrice, maxPrice, showAvailableOnly]);
+
   // ✅ عدد العروض (تخفيضية + ترويجية)
   const offersCount = useMemo(() => {
     return allItems.filter((item: any) => 
@@ -329,14 +379,25 @@ function StorePage() {
 
   // ✅ العناصر المعروضة
   const displayListings = useMemo(() => {
-    if (page === 1) return filteredByType;
-    return filteredByType;
-  }, [filteredByType, page]);
+    if (page === 1) return items;
+    return items;
+  }, [items, page]);
 
   // ✅ إعادة تعيين الصفحة عند تغيير الفلاتر
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, sortBy, viewFilter]);
+  }, [searchQuery, sortBy, viewFilter, minPrice, maxPrice, showAvailableOnly]);
+
+  // ✅ إعادة تعيين الفلاتر
+  const resetFilters = useCallback(() => {
+    setSearchQuery("");
+    setSortBy("recent");
+    setViewFilter("all");
+    setMinPrice(0);
+    setMaxPrice(10000000);
+    setShowAvailableOnly(false);
+    setPage(1);
+  }, []);
 
   // ====== حساب المسافة (هافرسين) ======
   const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -567,14 +628,6 @@ function StorePage() {
       setIsOpeningConversation(false);
     }
   };
-
-  // ====== إعادة تعيين الفلتر ======
-  const resetFilters = useCallback(() => {
-    setSearchQuery("");
-    setSortBy("recent");
-    setViewFilter("all");
-    setPage(1);
-  }, []);
 
   // ====== عرض التحميل ======
   if (storeLoading) {
@@ -956,7 +1009,7 @@ function StorePage() {
           {/* أزرار الفلتر والترتيب */}
           <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
             
-            {/* ✅ Toggle Buttons - تصميم جديد وأنيق */}
+            {/* ✅ Toggle Buttons */}
             <div className="flex items-center gap-1 bg-pink-500/5 dark:bg-pink-500/10 rounded-xl p-1 border border-pink-300/20">
               {/* زر الكل */}
               <button
@@ -1068,126 +1121,224 @@ function StorePage() {
           </div>
         </div>
 
-        {/* إحصائيات النتائج */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="font-medium text-pink-600">
-              {viewFilter === "offers" ? offersCount : 
-               viewFilter === "products" ? productsCount : 
-               allItems.length}
-            </span>
-            {viewFilter === "offers" ? (isArabic ? "عرض" : "offers") : 
-             viewFilter === "products" ? (isArabic ? "منتج" : "products") :
-             (isArabic ? "منتج" : "products")}
-            {searchQuery && (
-              <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
-                <Search className="h-3 w-3 mr-1" />
-                {searchQuery}
-              </Badge>
-            )}
-            {viewFilter === "offers" && (
-              <Badge className="bg-red-500/10 text-red-600 border-red-500/20">
-                <Flame className="h-3 w-3 mr-1" />
-                {isArabic ? "عروض حصرية" : "Exclusive Offers"}
-              </Badge>
-            )}
-          </div>
-          {isLoading && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin text-pink-500" />
-              {isArabic ? "جاري التحميل..." : "Loading..."}
-            </div>
-          )}
-        </div>
-
-        {/* ====== قائمة المنتجات ====== */}
-        {displayListings.length === 0 && !isLoading ? (
-          <div className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 backdrop-blur-sm p-12 text-center border border-pink-300/20">
-            <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40 animate-float" />
-            <p className="text-lg font-medium text-[#0d2e2a] dark:text-white">
-              {searchQuery
-                ? (isArabic ? "لا توجد منتجات تطابق البحث" : "No products match search")
-                : viewFilter === "offers"
-                ? (isArabic ? "لا توجد عروض حالياً" : "No offers available")
-                : (isArabic ? "لا توجد منتجات بعد" : "No products yet")}
-            </p>
-            {(searchQuery || viewFilter === "offers") && (
-              <Button 
-                variant="outline" 
-                onClick={resetFilters}
-                className="mt-4 border-pink-300/30 text-pink-600 hover:bg-pink-500/10"
-              >
-                <RefreshCw className="h-4 w-4 mr-1" />
-                {isArabic ? "إعادة تعيين الفلتر" : "Reset filter"}
-              </Button>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className={cn(
-              "grid gap-4",
-              viewMode === "grid" 
-                ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" 
-                : "grid-cols-1"
-            )}>
-              {displayListings.map((item: any, index: number) => (
-                <div 
-                  key={item.id} 
-                  className="animate-fade-up"
-                  style={{ animationDelay: `${(index % 10) * 50}ms` }}
-                >
-                  <Suspense fallback={<ProductSkeleton />}>
-                    <ListingCard item={item} viewMode={viewMode} />
-                  </Suspense>
+        {/* ====== Sidebar Filters (Desktop) ====== */}
+        <div className="grid lg:grid-cols-[280px_1fr] gap-6">
+          
+          {/* Sidebar */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-32 rounded-2xl bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-sm border border-pink-300/20 p-5 shadow-xl shadow-pink-500/5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="font-bold text-pink-600 dark:text-pink-400 flex items-center gap-2">
+                  <Filter className="h-4 w-4 animate-pulse" />
+                  {isArabic ? "فلاتر" : "Filters"}
                 </div>
-              ))}
-            </div>
-
-            {page < totalPages && (
-              <div ref={loadMoreRef} className="flex justify-center mt-6">
-                <Button
-                  variant="outline"
-                  onClick={loadMore}
-                  disabled={isFetching}
-                  className="rounded-xl border-pink-300/30 hover:bg-pink-500/10 text-pink-600"
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={resetFilters}
+                  className="text-pink-600 hover:bg-pink-500/10 rounded-xl"
                 >
-                  {isFetching ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      {isArabic ? "جاري التحميل..." : "Loading..."}
-                    </>
-                  ) : (
-                    <>
-                      {isArabic ? "عرض المزيد" : "Load More"}
-                      <ChevronDown className="h-4 w-4 ml-1" />
-                    </>
-                  )}
+                  <RefreshCw className="h-3.5 w-3.5 transition-transform duration-500 hover:rotate-180" />
                 </Button>
               </div>
+              
+              <div className="space-y-6">
+                {/* ✅ نطاق السعر */}
+                <div>
+                  <div className="font-semibold mb-2 text-sm text-pink-600 dark:text-pink-400 flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    {isArabic ? "نطاق السعر" : "Price Range"}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        type="number"
+                        value={minPrice === 0 ? "" : minPrice}
+                        onChange={(e) => {
+                          const val = e.target.value === "" ? 0 : Number(e.target.value);
+                          setMinPrice(val);
+                          setPage(1);
+                        }}
+                        placeholder={isArabic ? "الحد الأدنى" : "Min"}
+                        className="h-10 rounded-xl px-3 border-pink-300/30 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
+                        min={0}
+                      />
+                    </div>
+                    <span className="text-muted-foreground text-sm font-medium px-1">-</span>
+                    <div className="relative flex-1">
+                      <Input
+                        type="number"
+                        value={maxPrice === 10000000 ? "" : maxPrice}
+                        onChange={(e) => {
+                          const val = e.target.value === "" ? 10000000 : Number(e.target.value);
+                          setMaxPrice(val);
+                          setPage(1);
+                        }}
+                        placeholder={isArabic ? "الحد الأعلى" : "Max"}
+                        className="h-10 rounded-xl px-3 border-pink-300/30 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
+                        min={0}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-1.5 text-[10px] text-muted-foreground">
+                    <span>{minPrice === 0 ? "0" : formatPrice(minPrice, app.currency, app.lang)}</span>
+                    <span className="text-pink-500 text-[8px] animate-pulse">●</span>
+                    <span>{maxPrice === 10000000 ? (isArabic ? "غير محدود" : "Unlimited") : formatPrice(maxPrice, app.currency, app.lang)}</span>
+                  </div>
+                </div>
+
+                {/* ✅ المتاحة فقط */}
+                <div className="flex items-center gap-3 p-3 bg-pink-500/5 rounded-xl border border-pink-300/20">
+                  <Checkbox 
+                    checked={showAvailableOnly} 
+                    onCheckedChange={(v) => setShowAvailableOnly(v as boolean)}
+                    className="border-pink-300/30 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
+                  />
+                  <span className="text-sm text-pink-600 dark:text-pink-400 font-medium">
+                    {isArabic ? "المنتجات المتاحة فقط" : "Available only"}
+                  </span>
+                </div>
+
+                {/* ✅ زر إعادة تعيين */}
+                <Button 
+                  variant="outline" 
+                  onClick={resetFilters}
+                  className="w-full rounded-xl border-pink-300/30 text-pink-600 hover:bg-pink-500/10 hover:border-pink-400/50 transition-all duration-300 group"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
+                  {isArabic ? "إعادة تعيين" : "Reset"}
+                </Button>
+              </div>
+            </div>
+          </aside>
+
+          {/* ====== Main Content ====== */}
+          <div>
+            
+            {/* إحصائيات النتائج */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="font-medium text-pink-600">
+                  {items.length}
+                </span>
+                {isArabic ? "منتج" : "products"}
+                {searchQuery && (
+                  <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
+                    <Search className="h-3 w-3 mr-1" />
+                    {searchQuery}
+                  </Badge>
+                )}
+                {(minPrice > 0 || maxPrice < 10000000) && (
+                  <Badge className="bg-blue-500/10 text-blue-600 border-blue-300/30">
+                    <Tag className="h-3 w-3 mr-1" />
+                    {formatPrice(minPrice, app.currency, app.lang)} - {maxPrice === 10000000 ? (isArabic ? "∞" : "∞") : formatPrice(maxPrice, app.currency, app.lang)}
+                  </Badge>
+                )}
+                {showAvailableOnly && (
+                  <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-300/30">
+                    <Check className="h-3 w-3 mr-1" />
+                    {isArabic ? "متاحة" : "Available"}
+                  </Badge>
+                )}
+              </div>
+              {isLoading && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin text-pink-500" />
+                  {isArabic ? "جاري التحميل..." : "Loading..."}
+                </div>
+              )}
+            </div>
+
+            {/* ====== قائمة المنتجات ====== */}
+            {items.length === 0 && !isLoading ? (
+              <div className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 backdrop-blur-sm p-12 text-center border border-pink-300/20">
+                <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40 animate-float" />
+                <p className="text-lg font-medium text-[#0d2e2a] dark:text-white">
+                  {searchQuery
+                    ? (isArabic ? "لا توجد منتجات تطابق البحث" : "No products match search")
+                    : viewFilter === "offers"
+                    ? (isArabic ? "لا توجد عروض حالياً" : "No offers available")
+                    : (isArabic ? "لا توجد منتجات بعد" : "No products yet")}
+                </p>
+                {(searchQuery || viewFilter === "offers" || minPrice > 0 || maxPrice < 10000000 || showAvailableOnly) && (
+                  <Button 
+                    variant="outline" 
+                    onClick={resetFilters}
+                    className="mt-4 border-pink-300/30 text-pink-600 hover:bg-pink-500/10"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    {isArabic ? "إعادة تعيين الفلتر" : "Reset filter"}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className={cn(
+                  "grid gap-4",
+                  viewMode === "grid" 
+                    ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" 
+                    : "grid-cols-1"
+                )}>
+                  {items.map((item: any, index: number) => (
+                    <div 
+                      key={item.id} 
+                      className="animate-fade-up"
+                      style={{ animationDelay: `${(index % 10) * 50}ms` }}
+                    >
+                      <Suspense fallback={<ProductSkeleton />}>
+                        <ListingCard item={item} viewMode={viewMode} />
+                      </Suspense>
+                    </div>
+                  ))}
+                </div>
+
+                {page < totalPages && (
+                  <div ref={loadMoreRef} className="flex justify-center mt-6">
+                    <Button
+                      variant="outline"
+                      onClick={loadMore}
+                      disabled={isFetching}
+                      className="rounded-xl border-pink-300/30 hover:bg-pink-500/10 text-pink-600"
+                    >
+                      {isFetching ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          {isArabic ? "جاري التحميل..." : "Loading..."}
+                        </>
+                      ) : (
+                        <>
+                          {isArabic ? "عرض المزيد" : "Load More"}
+                          <ChevronDown className="h-4 w-4 ml-1" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+
+                {page >= totalPages && items.length > limit && (
+                  <div className="flex justify-center mt-6 text-sm text-muted-foreground">
+                    {isArabic ? "🎉 تم تحميل جميع المنتجات" : "🎉 All products loaded"}
+                  </div>
+                )}
+              </>
             )}
 
-            {page >= totalPages && allItems.length > limit && (
-              <div className="flex justify-center mt-6 text-sm text-muted-foreground">
-                {isArabic ? "🎉 تم تحميل جميع المنتجات" : "🎉 All products loaded"}
+            {items.length > 0 && (
+              <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground border-t border-pink-300/20 pt-4">
+                <span>
+                  {isArabic 
+                    ? `عرض ${items.length} من ${viewFilter === "offers" ? offersCount : viewFilter === "products" ? productsCount : allItems.length} ${viewFilter === "offers" ? "عرض" : "منتج"}` 
+                    : `Showing ${items.length} of ${viewFilter === "offers" ? offersCount : viewFilter === "products" ? productsCount : allItems.length} ${viewFilter === "offers" ? "offers" : "products"}`}
+                </span>
+                <span className="flex items-center gap-2">
+                  <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
+                    {isArabic ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
+                  </Badge>
+                </span>
               </div>
             )}
-          </>
-        )}
-
-        {allItems.length > 0 && (
-          <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground border-t border-pink-300/20 pt-4">
-            <span>
-              {isArabic 
-                ? `عرض ${displayListings.length} من ${viewFilter === "offers" ? offersCount : viewFilter === "products" ? productsCount : allItems.length} ${viewFilter === "offers" ? "عرض" : "منتج"}` 
-                : `Showing ${displayListings.length} of ${viewFilter === "offers" ? offersCount : viewFilter === "products" ? productsCount : allItems.length} ${viewFilter === "offers" ? "offers" : "products"}`}
-            </span>
-            <span className="flex items-center gap-2">
-              <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
-                {isArabic ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
-              </Badge>
-            </span>
           </div>
-        )}
+        </div>
       </section>
 
       {/* ====== CSS Animations ====== */}
@@ -1220,6 +1371,11 @@ function StorePage() {
           background-size: 200% auto;
           animation: shimmer 2s linear infinite;
         }
+        @keyframes bounce {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.15); }
+        }
+        .animate-bounce { animation: bounce 0.5s ease-in-out infinite; }
       `}</style>
     </div>
   );
@@ -1299,4 +1455,3 @@ function ProductSkeleton() {
     </div>
   );
 }
-

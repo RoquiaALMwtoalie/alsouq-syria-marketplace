@@ -65,6 +65,9 @@ export function useProductOffer(listingId: string | undefined, variationId?: str
 // ============================================================
 // 📦 جلب العرض الترويجي بواسطة ID (لصفحة التفاصيل)
 // ============================================================
+// ============================================================
+// 📦 جلب العرض الترويجي بواسطة ID (لصفحة التفاصيل) - ✅ تم التعديل
+// ============================================================
 export function useProductOfferById(offerId: string | undefined) {
     return useQuery({
         queryKey: ["product-offer-by-id", offerId],
@@ -72,107 +75,110 @@ export function useProductOfferById(offerId: string | undefined) {
         queryFn: async () => {
             if (!offerId) return null;
             
-            console.log("🔍 [useProductOfferById] Fetching offer via RPC:", offerId);
+            console.log("🔍 [useProductOfferById] Fetching offer:", offerId);
             
-            // ✅ ✅ ✅ استخدام RPC مباشرة (بدلاً من 3 استعلامات منفصلة)
-            const { data, error } = await supabase
-                .rpc('get_product_offers_with_details', {
-                    p_limit: 1,
-                    p_offset: 0,
-                    p_store_id: null,
-                    p_category_id: null,
-                    p_is_active: true
-                });
-
+            // ✅ ✅ ✅ استعلام مباشر بدون RPC
+            const { data: offer, error } = await supabase
+                .from('product_offers')
+                .select(`
+                    *,
+                    store:profiles!store_id(
+                        id,
+                        full_name,
+                        store_name,
+                        avatar_url,
+                        store_logo_url,
+                        store_cover_url
+                    )
+                `)
+                .eq('id', offerId)
+                .maybeSingle();
+            
             if (error) {
-                console.error("❌ [useProductOfferById] RPC Error:", error);
+                console.error("❌ [useProductOfferById] Error:", error);
                 return null;
             }
-
-            // ✅ البحث عن العرض بالـ ID في النتائج
-            const offer = (data || []).find((item: any) => item.id === offerId);
             
             if (!offer) {
-                console.log("ℹ️ [useProductOfferById] No offer found with ID:", offerId);
+                console.log("ℹ️ [useProductOfferById] No offer found:", offerId);
                 return null;
             }
-
-            console.log("✅ [useProductOfferById] Offer found via RPC:", offer.id);
+            
+            console.log("✅ [useProductOfferById] Offer found:", offer.id);
             
             // ============================================================
-            // ✅ ✅ ✅ نفس المنطق القديم بالضبط، ولكن مع بيانات RPC
+            // ✅ جلب المنتج الرئيسي
             // ============================================================
+            const { data: product, error: productError } = await supabase
+                .from('listings')
+                .select(`
+                    *,
+                    variations:product_variations(*),
+                    colors:product_colors(*),
+                    options:product_options(*),
+                    images:listing_images(*),
+                    profiles!owner_id(
+                        id,
+                        full_name,
+                        store_name,
+                        avatar_url,
+                        store_logo_url,
+                        store_cover_url
+                    )
+                `)
+                .eq('id', offer.listing_id)
+                .maybeSingle();
             
-            // ✅ استخراج المنتج الرئيسي من RPC (قد يكون مصفوفة أو كائن)
-            let product = null;
-            if (offer.products && Array.isArray(offer.products) && offer.products.length > 0) {
-                product = offer.products[0];
-            } else if (offer.products && !Array.isArray(offer.products)) {
-                product = offer.products;
+            if (productError) {
+                console.error("❌ [useProductOfferById] Product Error:", productError);
             }
             
-            // ✅ تعيين المنتج الرئيسي (نفس الكود القديم)
-            offer.products = product;
-
             // ============================================================
-            // ✅ ✅ ✅ معالجة الهدية (نفس الكود القديم تماماً)
+            // ✅ ✅ ✅ معالجة الهدية (BOGO)
             // ============================================================
             let freeProduct = null;
-            let freeVariations = [];
-
-            // ✅ الحالة 1: BOGO بدون free_listing_id → الهدية = نفس المنتج (نفس الكود القديم)
+            
+            // ✅ إذا كان BOGO و free_listing_id = null → الهدية = نفس المنتج
             if (offer.offer_type === 'bogo' && !offer.free_listing_id) {
                 freeProduct = product;
-                
-                if (product) {
-                    if (offer.result_variation_ids && offer.result_variation_ids.length > 0) {
-                        freeVariations = (product.variations || []).filter((v: any) =>
-                            offer.result_variation_ids.includes(v.id)
-                        );
-                    } else {
-                        freeVariations = product.variations || [];
-                    }
-                }
-                
                 console.log("🎁 [useProductOfferById] BOGO: Using same product as gift");
-                console.log("🎨 [useProductOfferById] Free variations:", freeVariations.length);
-            }
-            // ✅ الحالة 2: يوجد free_listing_id محدد (نفس الكود القديم)
+            } 
+            // ✅ إذا كان free_listing_id موجود
             else if (offer.free_listing_id) {
-                // ✅ من RPC، free_product قد يكون مصفوفة أو كائن
-                let freeData = null;
-                if (offer.free_product && Array.isArray(offer.free_product) && offer.free_product.length > 0) {
-                    freeData = offer.free_product[0];
-                } else if (offer.free_product && !Array.isArray(offer.free_product)) {
-                    freeData = offer.free_product;
-                }
+                const { data: freeData, error: freeError } = await supabase
+                    .from('listings')
+                    .select(`
+                        *,
+                        variations:product_variations(*),
+                        colors:product_colors(*),
+                        options:product_options(*),
+                        images:listing_images(*)
+                    `)
+                    .eq('id', offer.free_listing_id)
+                    .maybeSingle();
                 
-                if (freeData) {
+                if (!freeError) {
                     freeProduct = freeData;
-                    
-                    if (offer.result_variation_ids && offer.result_variation_ids.length > 0) {
-                        freeVariations = (freeData.variations || []).filter((v: any) =>
-                            offer.result_variation_ids.includes(v.id)
-                        );
-                    } else {
-                        freeVariations = freeData.variations || [];
-                    }
-                    
-                    console.log("🎁 [useProductOfferById] Free product loaded:", freeData.title_ar);
-                    console.log("🎨 [useProductOfferById] Free variations:", freeVariations.length);
+                    console.log("🎁 [useProductOfferById] Free product loaded:", freeProduct?.title_ar);
                 }
             }
-
-            // ✅ إضافة free_product و free_variations إلى الـ offer (نفس الكود القديم)
-            offer.free_product = freeProduct;
-            offer.free_variations = freeVariations;
-
-            console.log("✅ [useProductOfferById] Offer loaded:", offer.id);
-            console.log("✅ [useProductOfferById] Product:", offer.products?.title_ar);
-            console.log("✅ [useProductOfferById] Free product:", offer.free_product?.title_ar || "No free product");
-            console.log("✅ [useProductOfferById] Free variations:", offer.free_variations?.length || 0);
             
-            return offer;
+            // ============================================================
+            // ✅ بناء النتيجة النهائية
+            // ============================================================
+            const result = {
+                ...offer,
+                products: product,
+                free_product: freeProduct,
+            };
+            
+            console.log("✅ [useProductOfferById] Final result:", {
+                id: result.id,
+                product: result.products?.title_ar,
+                freeProduct: result.free_product?.title_ar || 'No free product',
+            });
+            
+            return result;
         },
         staleTime: 60 * 1000,
         retry: 1,

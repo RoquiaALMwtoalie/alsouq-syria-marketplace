@@ -8,7 +8,7 @@ import {
   RefreshCw, Package, Store, Clock, TrendingUp, BadgePercent,
   ChevronLeft, Gift, Percent, LayoutGrid, ChevronRight
 } from "lucide-react";
-import { useApp, useT } from "@/lib/i18n";
+import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { useGovernorates, useListings, useProductOffers, useCategories } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,6 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/s
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
 
 export const Route = createFileRoute("/offers")({
   component: OffersPage,
@@ -125,7 +124,10 @@ function OffersPage() {
   const [sort, setSort] = useState<"newest" | "popularity" | "price_low" | "price_high" | "discount" | "rating">("newest");
   const [rating, setRating] = useState(0);
   const [search, setSearch] = useState("");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]);
+  
+  // ✅ ✅ ✅ نطاق السعر - باستخدام Inputs (نفس طريقة التصنيفات)
+  const [minPrice, setMinPrice] = useState<number>(0);
+  const [maxPrice, setMaxPrice] = useState<number>(10000000);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   
@@ -146,7 +148,7 @@ function OffersPage() {
   // ✅ إعادة تعيين الصفحة عند تغيير الفلاتر
   useEffect(() => {
     setPage(1);
-  }, [search, sort, gov, rating, priceRange, showAvailableOnly]);
+  }, [search, sort, gov, rating, minPrice, maxPrice, showAvailableOnly]);
 
   // ✅ جلب العروض التخفيضية من listings مع Pagination
   const { 
@@ -224,9 +226,8 @@ function OffersPage() {
   const totalCount = listingsData.count || 0;
   const totalPages = listingsData.totalPages || 1;
 
-  // ✅ دمج العروض (تخفيضية + ترويجية) مع الحفاظ على Pagination للعروض التخفيضية
+  // ✅ دمج العروض (تخفيضية + ترويجية)
   const allOffers = useMemo(() => {
-    // ✅ عروض تخفيضية من useListings (مرتبة حسب Pagination)
     const discountItems = rows.map((item: any) => ({
       ...item,
       is_offer: true,
@@ -234,7 +235,6 @@ function OffersPage() {
       offer_source: 'discount',
     }));
     
-    // ✅ عروض ترويجية من product_offers
     const promoItems = promoOffers.map((offer: any) => {
       let mainProduct = null;
       
@@ -277,10 +277,8 @@ function OffersPage() {
       };
     });
 
-    // ✅ دمج الكل وترتيبه
     let all = [...discountItems, ...promoItems];
 
-    // ✅ ترتيب حسب الـ sort
     if (sort === 'price_low') {
       all.sort((a, b) => (a.price || 0) - (b.price || 0));
     } else if (sort === 'price_high') {
@@ -322,10 +320,14 @@ function OffersPage() {
       filtered = filtered.filter((r: any) => Number(r.rating) >= rating);
     }
     
-    // فلتر السعر
-    filtered = filtered.filter((r: any) => 
-      Number(r.price) >= priceRange[0] && Number(r.price) <= priceRange[1]
-    );
+    // ✅ ✅ ✅ فلتر السعر باستخدام minPrice و maxPrice (نفس طريقة التصنيفات)
+    const min = Number(minPrice) || 0;
+    const max = Number(maxPrice) || 10000000;
+    
+    filtered = filtered.filter((r: any) => {
+      const price = Number(r.price);
+      return price >= min && price <= max;
+    });
     
     // فلتر التوفر
     if (showAvailableOnly) {
@@ -333,14 +335,15 @@ function OffersPage() {
     }
     
     return filtered;
-  }, [allOffers, search, rating, priceRange, showAvailableOnly]);
+  }, [allOffers, search, rating, minPrice, maxPrice, showAvailableOnly]);
 
   // ✅ عرض الكل
   const showAll = () => {
     setGov("all");
     setRating(0);
     setSearch("");
-    setPriceRange([0, 10000000]);
+    setMinPrice(0);
+    setMaxPrice(10000000);
     setShowAvailableOnly(false);
     setPage(1);
   };
@@ -398,24 +401,47 @@ function OffersPage() {
         </Select>
       </div>
 
+      {/* ✅ ✅ ✅ نطاق السعر - Inputs (نفس طريقة التصنيفات) */}
       <div>
         <div className="font-semibold mb-2 text-sm text-pink-600 dark:text-pink-400 flex items-center gap-2">
           <Tag className="h-4 w-4" />
           {isArabic ? "نطاق السعر" : "Price Range"}
         </div>
-        <div className="px-2">
-          <Slider
-            min={0}
-            max={10000000}
-            step={1000}
-            value={priceRange}
-            onValueChange={(v) => setPriceRange(v as [number, number])}
-            className="[&>span:first-child]:bg-pink-500"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Input
+              type="number"
+              value={minPrice === 0 ? "" : minPrice}
+              onChange={(e) => {
+                const val = e.target.value === "" ? 0 : Number(e.target.value);
+                setMinPrice(val);
+                setPage(1);
+              }}
+              placeholder={isArabic ? "الحد الأدنى" : "Min"}
+              className="h-10 rounded-xl px-3 border-pink-300/30 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
+              min={0}
+            />
+          </div>
+          <span className="text-muted-foreground text-sm font-medium px-1">-</span>
+          <div className="relative flex-1">
+            <Input
+              type="number"
+              value={maxPrice === 10000000 ? "" : maxPrice}
+              onChange={(e) => {
+                const val = e.target.value === "" ? 10000000 : Number(e.target.value);
+                setMaxPrice(val);
+                setPage(1);
+              }}
+              placeholder={isArabic ? "الحد الأعلى" : "Max"}
+              className="h-10 rounded-xl px-3 border-pink-300/30 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
+              min={0}
+            />
+          </div>
         </div>
-        <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-          <span>{priceRange[0].toLocaleString()} SYP</span>
-          <span>{priceRange[1].toLocaleString()} SYP</span>
+        <div className="flex items-center justify-between mt-1.5 text-[10px] text-muted-foreground">
+          <span>{minPrice === 0 ? "0" : formatPrice(minPrice, app.currency, app.lang)}</span>
+          <span className="text-pink-500 text-[8px] animate-pulse">●</span>
+          <span>{maxPrice === 10000000 ? (isArabic ? "غير محدود" : "Unlimited") : formatPrice(maxPrice, app.currency, app.lang)}</span>
         </div>
       </div>
 
