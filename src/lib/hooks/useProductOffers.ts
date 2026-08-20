@@ -68,117 +68,46 @@ export function useProductOffer(listingId: string | undefined, variationId?: str
 // ============================================================
 // 📦 جلب العرض الترويجي بواسطة ID (لصفحة التفاصيل) - ✅ تم التعديل
 // ============================================================
-export function useProductOfferById(offerId: string | undefined) {
+// ============================================================
+// ✅✅✅ النسخة المحسّنة - تستخدم RPC مع p_offer_id (جديدة)
+// ============================================================
+export function useProductOfferByIdV2(offerId: string | undefined) {
     return useQuery({
-        queryKey: ["product-offer-by-id", offerId],
+        queryKey: ["product-offer-by-id-v2", offerId],
         enabled: !!offerId,
         queryFn: async () => {
             if (!offerId) return null;
             
-            console.log("🔍 [useProductOfferById] Fetching offer:", offerId);
+            console.log("🔍 [useProductOfferByIdV2] Fetching offer with RPC:", offerId);
             
-            // ✅ ✅ ✅ استعلام مباشر بدون RPC
-            const { data: offer, error } = await supabase
-                .from('product_offers')
-                .select(`
-                    *,
-                    store:profiles!store_id(
-                        id,
-                        full_name,
-                        store_name,
-                        avatar_url,
-                        store_logo_url,
-                        store_cover_url
-                    )
-                `)
-                .eq('id', offerId)
-                .maybeSingle();
-            
+            // ✅ استخدام RPC مع p_offer_id
+            const { data, error } = await supabase
+                .rpc('get_product_offers_with_details', {
+                    p_limit: 1,
+                    p_offset: 0,
+                    p_store_id: null,
+                    p_category_id: null,
+                    p_is_active: true,
+                    p_offer_id: offerId  // ✅ المعامل الجديد
+                });
+
             if (error) {
-                console.error("❌ [useProductOfferById] Error:", error);
+                console.error("❌ [useProductOfferByIdV2] RPC Error:", error);
                 return null;
             }
+
+            // ✅ البيانات رجعت كمصفوفة، نأخذ أول عنصر
+            const offer = (data || [])[0] || null;
             
             if (!offer) {
-                console.log("ℹ️ [useProductOfferById] No offer found:", offerId);
+                console.log("ℹ️ [useProductOfferByIdV2] No offer found:", offerId);
                 return null;
             }
+
+            console.log("✅ [useProductOfferByIdV2] Offer found:", offer.id);
+            console.log("🎁 [useProductOfferByIdV2] Free product:", offer.free_product?.title_ar || 'No free product');
             
-            console.log("✅ [useProductOfferById] Offer found:", offer.id);
-            
-            // ============================================================
-            // ✅ جلب المنتج الرئيسي
-            // ============================================================
-            const { data: product, error: productError } = await supabase
-                .from('listings')
-                .select(`
-                    *,
-                    variations:product_variations(*),
-                    colors:product_colors(*),
-                    options:product_options(*),
-                    images:listing_images(*),
-                    profiles!owner_id(
-                        id,
-                        full_name,
-                        store_name,
-                        avatar_url,
-                        store_logo_url,
-                        store_cover_url
-                    )
-                `)
-                .eq('id', offer.listing_id)
-                .maybeSingle();
-            
-            if (productError) {
-                console.error("❌ [useProductOfferById] Product Error:", productError);
-            }
-            
-            // ============================================================
-            // ✅ ✅ ✅ معالجة الهدية (BOGO)
-            // ============================================================
-            let freeProduct = null;
-            
-            // ✅ إذا كان BOGO و free_listing_id = null → الهدية = نفس المنتج
-            if (offer.offer_type === 'bogo' && !offer.free_listing_id) {
-                freeProduct = product;
-                console.log("🎁 [useProductOfferById] BOGO: Using same product as gift");
-            } 
-            // ✅ إذا كان free_listing_id موجود
-            else if (offer.free_listing_id) {
-                const { data: freeData, error: freeError } = await supabase
-                    .from('listings')
-                    .select(`
-                        *,
-                        variations:product_variations(*),
-                        colors:product_colors(*),
-                        options:product_options(*),
-                        images:listing_images(*)
-                    `)
-                    .eq('id', offer.free_listing_id)
-                    .maybeSingle();
-                
-                if (!freeError) {
-                    freeProduct = freeData;
-                    console.log("🎁 [useProductOfferById] Free product loaded:", freeProduct?.title_ar);
-                }
-            }
-            
-            // ============================================================
-            // ✅ بناء النتيجة النهائية
-            // ============================================================
-            const result = {
-                ...offer,
-                products: product,
-                free_product: freeProduct,
-            };
-            
-            console.log("✅ [useProductOfferById] Final result:", {
-                id: result.id,
-                product: result.products?.title_ar,
-                freeProduct: result.free_product?.title_ar || 'No free product',
-            });
-            
-            return result;
+            return offer;
         },
         staleTime: 60 * 1000,
         retry: 1,

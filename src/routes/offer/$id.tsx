@@ -3,7 +3,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useApp, formatPrice } from "@/lib/i18n";
-import { useProductOfferById } from "@/lib/hooks/useProductOffers";
+import { useProductOfferByIdV2 } from "@/lib/hooks/useProductOffers";
 import { useAddToCart, useClearCart } from "@/lib/hooks/useCart";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +50,23 @@ function OfferDetailPage() {
   const [pendingAddData, setPendingAddData] = useState<any>(null);
 
   // ========== ✅ ثانياً: Queries (useQuery) ==========
-  const { data: offer, isLoading, isError } = useProductOfferById(id);
+  const { data: rawOffer, isLoading, isError } = useProductOfferByIdV2(id);
+  
+  // ✅✅✅ معالجة البيانات من RPC (products كمصفوفة)
+  const offer = useMemo(() => {
+    if (!rawOffer) return null;
+    
+    return {
+      ...rawOffer,
+      products: Array.isArray(rawOffer.products) 
+        ? rawOffer.products[0] 
+        : rawOffer.products,
+      free_product: Array.isArray(rawOffer.free_product) 
+        ? rawOffer.free_product[0] 
+        : rawOffer.free_product,
+    };
+  }, [rawOffer]);
+  
   const { data: listingsData } = useListings({ limit: 1000 });
   const listings = listingsData?.data || [];
 
@@ -358,41 +374,38 @@ function OfferDetailPage() {
         },
       });
 
-      // ✅ ✅ ✅ Toast مع زر "عرض السلة" وتحسين الألوان (مثل السلة)
-// ✅ ✅ ✅ Toast مع زر "عرض السلة" (نفس تصميم السلة)
-toast.success(
-  app.lang === "ar" 
-    ? `🛒 تم إضافة العرض للسلة (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`
-    : `🛒 Added offer to cart (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`,
-  { 
-    duration: 4000,
-    // ❌ احذف position عشان يظهر من فوق (الافتراضي)
-    // position: 'bottom-right',
-    icon: '🛒',
-    style: {
-      background: '#0d2e2a',
-      color: 'white',
-      borderRadius: '16px',
-      border: '2px solid #2a655f',
-      boxShadow: '0 20px 60px rgba(13, 46, 42, 0.4)',
-    },
-    className: 'font-bold',
-    action: {
-      label: app.lang === "ar" ? "🛒 عرض السلة 🛒" : "🛒 View Cart 🛒",
-      onClick: () => {
-        navigate({ to: "/cart" });
-        toast.dismiss();
-      }
-    },
-    actionButtonStyle: {
-      background: '#2a655f',
-      color: 'white',
-      borderRadius: '12px',
-      padding: '6px 16px',
-      fontWeight: 'bold',
-    }
-  }
-);
+      // ✅ Toast مع زر "عرض السلة"
+      toast.success(
+        app.lang === "ar" 
+          ? `🛒 تم إضافة العرض للسلة (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`
+          : `🛒 Added offer to cart (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`,
+        { 
+          duration: 4000,
+          icon: '🛒',
+          style: {
+            background: '#0d2e2a',
+            color: 'white',
+            borderRadius: '16px',
+            border: '2px solid #2a655f',
+            boxShadow: '0 20px 60px rgba(13, 46, 42, 0.4)',
+          },
+          className: 'font-bold',
+          action: {
+            label: app.lang === "ar" ? "🛒 عرض السلة 🛒" : "🛒 View Cart 🛒",
+            onClick: () => {
+              navigate({ to: "/cart" });
+              toast.dismiss();
+            }
+          },
+          actionButtonStyle: {
+            background: '#2a655f',
+            color: 'white',
+            borderRadius: '12px',
+            padding: '6px 16px',
+            fontWeight: 'bold',
+          }
+        }
+      );
 
     } catch (error: any) {
       console.error("❌ Error adding offer to cart:", error);
