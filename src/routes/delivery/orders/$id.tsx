@@ -1,6 +1,6 @@
 // src/routes/delivery/orders/$id.tsx
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useApp } from "@/lib/i18n";
+import { useApp, formatPrice } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import {
@@ -9,7 +9,8 @@ import {
   Calendar, DollarSign, Hash, MapPinned, UserRound,
   ShoppingBag, CreditCard, BadgeCheck, ShieldCheck,
   Store, Building2, Gauge, Timer, CheckCircle2, XCircle,
-  AlertCircle, Info, Sparkles, Zap, Award, Crown, Gem
+  AlertCircle, Info, Sparkles, Zap, Award, Crown, Gem,
+  LayoutDashboard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,9 @@ function DeliveryOrderDetailPage() {
               buyer_name,
               buyer_phone,
               total,
+              delivery_fee,
+              promo_discount,
+              total_with_delivery,
               listings:listing_id (
                 id,
                 title_ar,
@@ -91,24 +95,6 @@ function DeliveryOrderDetailPage() {
     return colors[status] || "bg-slate-500/10 text-slate-500";
   };
 
-  // ✅ دالة الحصول على أيقونة السهم حسب اللغة
-  const getBackIcon = () => {
-    if (isArabic) {
-      return (
-        <div className="relative">
-          <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
-          <ArrowRight className="h-4 w-4 absolute -right-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300" style={{ color: 'white' }} />
-        </div>
-      );
-    }
-    return (
-      <div className="relative">
-        <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform duration-300" />
-        <ArrowLeft className="h-4 w-4 absolute -left-1 opacity-0 group-hover:opacity-100 group-hover:-translate-x-2 transition-all duration-300" style={{ color: 'white' }} />
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50/80 via-white to-[#0d2e2a]/5">
@@ -155,27 +141,68 @@ function DeliveryOrderDetailPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-[#0d2e2a]/5 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#0d2e2a]/10 p-4 md:p-8">
       
-      {/* ✅ HEADER مع زر الرجوع المحترف - متوافق مع RTL */}
+      {/* ✅ HEADER مع زر الرجوع المحترف - بدون Refresh */}
       <div className="max-w-4xl mx-auto mb-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
+          
+          {/* ✅ زر الرجوع المحترف */}
           <Button
-            onClick={() => navigate({ to: "/delivery/dashboard" })}
-            className="group bg-white dark:bg-slate-900/80 hover:bg-[#0d2e2a] dark:hover:bg-[#0d2e2a] text-[#0d2e2a] dark:text-white hover:text-white border-2 border-[#0d2e2a]/20 dark:border-slate-700/50 hover:border-[#0d2e2a] dark:hover:border-[#0d2e2a] shadow-md hover:shadow-xl hover:shadow-[#0d2e2a]/20 transition-all duration-300 rounded-2xl px-5 py-2.5 h-auto"
+            onClick={() => {
+              // ✅ محاولة الرجوع للصفحة السابقة بدون Refresh
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                navigate({ to: "/delivery/dashboard", replace: true });
+              }
+            }}
+            className={cn(
+              "group relative overflow-hidden bg-white dark:bg-slate-900/80 hover:bg-[#0d2e2a] dark:hover:bg-[#0d2e2a]",
+              "text-[#0d2e2a] dark:text-white hover:text-white",
+              "border-2 border-[#0d2e2a]/20 dark:border-slate-700/50 hover:border-[#0d2e2a] dark:hover:border-[#0d2e2a]",
+              "shadow-md hover:shadow-xl hover:shadow-[#0d2e2a]/20",
+              "transition-all duration-300 rounded-2xl px-5 py-2.5 h-auto",
+              "hover:scale-[1.02] active:scale-[0.98]"
+            )}
           >
-            <div className="flex items-center gap-2">
-              {/* ✅ السهم يتغير حسب اللغة */}
-              {getBackIcon()}
+            <div className="flex items-center gap-3">
+              {/* ✅ السهم يتغير حسب اللغة مع حركة احترافية */}
+              <div className="relative flex items-center">
+                {isArabic ? (
+                  <>
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
+                    <ArrowRight 
+                      className="h-4 w-4 absolute -right-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300" 
+                      style={{ color: 'white' }} 
+                    />
+                  </>
+                ) : (
+                  <>
+                    <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform duration-300" />
+                    <ArrowLeft 
+                      className="h-4 w-4 absolute -left-1 opacity-0 group-hover:opacity-100 group-hover:-translate-x-2 transition-all duration-300" 
+                      style={{ color: 'white' }} 
+                    />
+                  </>
+                )}
+              </div>
+              
               <span className="font-medium text-sm">
-                {isArabic ? "الرجوع للوحة التحكم" : "Back to Dashboard"}
+                {isArabic ? "الرجوع" : "Back"}
               </span>
-              <div className="h-4 w-px bg-[#0d2e2a]/20 dark:bg-white/20 mx-1" />
-              <span className="text-xs text-muted-foreground group-hover:text-white/70 transition-colors duration-300">
-                {isArabic ? "لوحة شركة التوصيل" : "Delivery Dashboard"}
+              
+              <div className="h-4 w-px bg-[#0d2e2a]/20 dark:bg-white/20" />
+              
+              <span className="text-xs text-muted-foreground group-hover:text-white/70 transition-colors duration-300 flex items-center gap-1.5">
+                <LayoutDashboard className="h-3 w-3" />
+                {isArabic ? "لوحة التحكم" : "Dashboard"}
               </span>
             </div>
+            
+            {/* ✅ تأثير الخلفية المتدرج */}
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#0d2e2a] to-[#2a655f] opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
           </Button>
 
+          {/* ✅ رقم الطلب */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white/80 dark:bg-slate-900/80 px-4 py-2 rounded-2xl border border-[#0d2e2a]/10 shadow-sm">
             <BadgeCheck className="h-4 w-4 text-[#2a655f]" />
             <span>{isArabic ? "طلب #" : "Order #"}</span>
@@ -270,7 +297,10 @@ function DeliveryOrderDetailPage() {
                   {isArabic ? "رسوم التوصيل" : "Delivery Fee"}
                 </div>
                 <p className="font-bold text-sm text-[#2a655f] group-hover:scale-105 transition-transform">
-                  {order.delivery_fee || 0} {app.currency}
+                  {order.delivery_fee === 0 
+                    ? (isArabic ? "🆓 مجاني" : "🆓 Free")
+                    : `${order.delivery_fee || 0} ${app.currency}`
+                  }
                 </p>
               </div>
               
@@ -292,13 +322,13 @@ function DeliveryOrderDetailPage() {
                   <MapPinned className="h-5 w-5 text-[#2a655f]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                     <span>{isArabic ? "📍 عنوان التوصيل" : "📍 Delivery Address"}</span>
                     <span className="h-1 w-1 rounded-full bg-[#2a655f]/30" />
                     <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[9px] rounded-full px-2">
                       {isArabic ? "محدد" : "Set"}
                     </Badge>
-                  </p>
+                  </div>
                   <p className="font-medium text-[#0d2e2a] dark:text-white mt-1 leading-relaxed">
                     {order.delivery_address || order.pickup_address || (isArabic ? "غير محدد" : "Not specified")}
                   </p>
@@ -369,32 +399,73 @@ function DeliveryOrderDetailPage() {
               )}
             </div>
 
-            {/* ✅ المجموع الكلي - بطاقة مميزة */}
-            <div className="relative overflow-hidden rounded-2xl">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0d2e2a] to-[#2a655f] opacity-5" />
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#2a655f] rounded-full blur-3xl opacity-10" />
+            {/* ✅ ✅ ✅ تفاصيل الإجمالي - مع عرض التوصيل المجاني */}
+            <div className="p-5 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30">
               
-              <div className="relative p-5 flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/20">
-                    <CreditCard className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      {isArabic ? "💰 المجموع الكلي" : "💰 Total Amount"}
-                    </p>
-                    <p className="text-xs text-muted-foreground/70">
-                      {isArabic ? "يشمل جميع الرسوم والضرائب" : "Includes all fees and taxes"}
-                    </p>
-                  </div>
+              {/* المجموع الفرعي */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {isArabic ? "المجموع الفرعي" : "Subtotal"}
+                </span>
+                <span className="text-lg font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                  {formatPrice(order.orders?.total || 0, app.currency, app.lang)}
+                </span>
+              </div>
+              
+              {/* ✅ سعر التوصيل - يظهر دائماً (حتى لو 0) */}
+              {order.orders?.delivery_fee !== undefined && (
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#2a655f]/10">
+                  <span className="text-sm text-muted-foreground">
+                    {isArabic ? "سعر التوصيل" : "Delivery Fee"}
+                  </span>
+                  <span className={cn(
+                    "text-sm font-medium",
+                    order.orders.delivery_fee === 0 
+                      ? "text-emerald-500 font-bold" 
+                      : "text-[#0d2e2a] dark:text-[#3a8a82]"
+                  )}>
+                    {order.orders.delivery_fee === 0 
+                      ? (isArabic ? "🆓 مجاني" : "🆓 Free")
+                      : formatPrice(order.orders.delivery_fee, app.currency, app.lang)
+                    }
+                  </span>
+                </div>
+              )}
+              
+              {/* الخصم */}
+              {order.orders?.promo_discount > 0 && (
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#2a655f]/10 text-emerald-500">
+                  <span className="text-sm">
+                    {isArabic ? "💚 الخصم" : "💚 Discount"}
+                  </span>
+                  <span className="text-sm font-bold">
+                    -{formatPrice(order.orders.promo_discount, app.currency, app.lang)}
+                  </span>
+                </div>
+              )}
+              
+              {/* ✅ الإجمالي الكامل */}
+              <div className="flex items-center justify-between mt-3 pt-3 border-t-2 border-[#2a655f]/20">
+                <div>
+                  <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
+                    {isArabic ? "الإجمالي الكامل" : "Total"}
+                  </span>
+                  <p className="text-[10px] text-muted-foreground">
+                    {isArabic ? "يشمل جميع الرسوم والضرائب" : "Includes all fees and taxes"}
+                  </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px] rounded-full px-3 py-1">
+                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[9px] rounded-full px-2.5 py-0.5">
                     <ShieldCheck className="h-3 w-3 mr-1" />
                     {isArabic ? "مدفوع" : "Paid"}
                   </Badge>
-                  <span className="text-3xl md:text-4xl font-black text-[#2a655f] dark:text-[#3a8a82] drop-shadow-[0_2px_15px_rgba(42,101,95,0.2)]">
-                    {order.cod_amount || order.orders?.total || 0} {app.currency}
+                  <span className="text-2xl md:text-3xl font-black text-[#2a655f] dark:text-[#3a8a82] drop-shadow-[0_2px_15px_rgba(42,101,95,0.2)]">
+                    {formatPrice(
+                      order.orders?.total_with_delivery || 
+                      (order.orders?.total || 0) + (order.orders?.delivery_fee || 0) - (order.orders?.promo_discount || 0),
+                      app.currency,
+                      app.lang
+                    )}
                   </span>
                 </div>
               </div>

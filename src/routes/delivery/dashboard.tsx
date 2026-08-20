@@ -31,7 +31,8 @@ import {
   KeyRound, Lock, Unlock, EyeOff, CheckSquare, MapPinHouse,
   LayoutDashboard, Users as UsersIcon, TrendingUp as TrendingUpIcon,
   Edit3, Map, Info, FileText, Check, Power, PowerOff,
-  Download, FileSpreadsheet, Printer, FileDown, Table2, ClipboardCopy
+  Download, FileSpreadsheet, Printer, FileDown, Table2, ClipboardCopy,
+  Loader2  // ✅✅✅ أضف هذا
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -2755,6 +2756,9 @@ function ModernStatCard({
 // ============================================================
 // 📦 OrderCard
 // ============================================================
+// ============================================================
+// 📦 OrderCard (معدل)
+// ============================================================
 function OrderCard({ 
   order, 
   isArabic,
@@ -2767,6 +2771,33 @@ function OrderCard({
   onReject: () => void;
 }) {
   const app = useApp();
+  const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  // ✅ جلب تفاصيل الطلب من جدول orders
+  useEffect(() => {
+    const fetchOrderDetails = async () => {
+      if (!order.order_id) return;
+      
+      setLoadingDetails(true);
+      try {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("total, delivery_fee, promo_discount, total_with_delivery")
+          .eq("id", order.order_id)
+          .single();
+        
+        if (error) throw error;
+        setOrderDetails(data);
+      } catch (error) {
+        console.error("❌ Error fetching order details:", error);
+      } finally {
+        setLoadingDetails(false);
+      }
+    };
+    
+    fetchOrderDetails();
+  }, [order.order_id]);
 
   const statusColors: Record<string, string> = {
     pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -2816,10 +2847,44 @@ function OrderCard({
                 <Clock className="h-3 w-3" />
                 {new Date(order.created_at).toLocaleDateString(isArabic ? "ar-SA" : "en-US")}
               </span>
-              <span className="text-muted-foreground/30">|</span>
-              <span className="font-medium text-[#0d2e2a] dark:text-[#4a9f95]">
-                {order.delivery_fee} {app.currency}
-              </span>
+              
+              {/* ✅ عرض المجموع الفرعي + التوصيل + الإجمالي */}
+              {loadingDetails ? (
+                <span className="flex items-center gap-1 text-[#2a655f]">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                </span>
+              ) : orderDetails ? (
+                <>
+                  <span className="text-muted-foreground/30">|</span>
+                  <span className="font-medium text-[#2a655f] dark:text-[#4a9f95]">
+                    {isArabic ? "المجموع" : "Total"}: {orderDetails.total} {app.currency}
+                  </span>
+                  {orderDetails.delivery_fee > 0 && (
+                    <>
+                      <span className="text-muted-foreground/30">|</span>
+                      <span className="font-medium text-blue-600 dark:text-blue-400">
+                        🚚 {orderDetails.delivery_fee} {app.currency}
+                      </span>
+                    </>
+                  )}
+                  {orderDetails.promo_discount > 0 && (
+                    <>
+                      <span className="text-muted-foreground/30">|</span>
+                      <span className="font-medium text-emerald-500">
+                        💚 -{orderDetails.promo_discount} {app.currency}
+                      </span>
+                    </>
+                  )}
+                  <span className="text-muted-foreground/30">|</span>
+                  <span className="font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                    {isArabic ? "الإجمالي" : "Total With Delivery"}: {orderDetails.total_with_delivery || (orderDetails.total + orderDetails.delivery_fee - orderDetails.promo_discount)} {app.currency}
+                  </span>
+                </>
+              ) : (
+                <span className="font-medium text-[#0d2e2a] dark:text-[#4a9f95]">
+                  {order.delivery_fee} {app.currency}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -2863,29 +2928,12 @@ function OrderCard({
             <Eye className="h-4 w-4" />
           </Button>
           
-   <DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="ghost" size="sm" className="h-8 w-8 rounded-xl hover:bg-[#0d2e2a]/10 transition-all duration-300">
-      <MoreVertical className="h-4 w-4" />
-    </Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent align="end" className="rounded-xl p-1 min-w-[160px]">
-    <DropdownMenuItem className="rounded-lg cursor-pointer gap-2 hover:bg-[#0d2e2a]/10">
-      <CheckCircle className="h-4 w-4 text-emerald-500" />
-      {isArabic ? "تحديث الحالة" : "Update Status"}
-    </DropdownMenuItem>
-    <DropdownMenuItem className="rounded-lg cursor-pointer gap-2 hover:bg-[#0d2e2a]/10">
-      <UserCheck className="h-4 w-4 text-blue-500" />
-      {isArabic ? "تعيين موزع" : "Assign Distributor"}
-    </DropdownMenuItem>
-  </DropdownMenuContent>
-</DropdownMenu>
+          {/* ✅ ✅ ✅ تم إزالة DropdownMenu (زر النقاط الثلاث) */}
         </div>
       </div>
     </div>
   );
 }
-
 // ============================================================
 // 📦 DistributorCard
 // ============================================================

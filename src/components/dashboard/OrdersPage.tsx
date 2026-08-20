@@ -1309,18 +1309,25 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
     </span>
   </div>
   
-  {/* سعر التوصيل */}
-  {selectedOrder.delivery_fee !== undefined && Number(selectedOrder.delivery_fee) > 0 && (
-    <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
-      <span className="text-sm text-muted-foreground">
-        {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
-      </span>
-      <span className="text-sm font-medium text-[#0d2e2a] dark:text-[#3a8a82]">
-        {formatPrice(Number(selectedOrder.delivery_fee) || 0, app.currency, app.lang)}
-      </span>
-    </div>
-  )}
-  
+{/* ✅ سعر التوصيل - يظهر دائماً (حتى لو 0) مع كلمة مجاني */}
+{selectedOrder.delivery_fee !== undefined && (
+  <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
+    <span className="text-sm text-muted-foreground">
+      {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
+    </span>
+    <span className={cn(
+      "text-sm font-medium",
+      Number(selectedOrder.delivery_fee) === 0 
+        ? "text-emerald-500 font-bold" 
+        : "text-[#0d2e2a] dark:text-[#3a8a82]"
+    )}>
+      {Number(selectedOrder.delivery_fee) === 0 
+        ? (app.lang === "ar" ? "🆓 مجاني" : "🆓 Free")
+        : formatPrice(Number(selectedOrder.delivery_fee), app.currency, app.lang)
+      }
+    </span>
+  </div>
+)}
   {/* ✅ ✅ ✅ الخصم - معدل */}
   {(() => {
     const discount = Number(selectedOrder.promo_discount) || 0;

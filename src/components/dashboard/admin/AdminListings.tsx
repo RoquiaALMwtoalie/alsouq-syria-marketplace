@@ -129,7 +129,7 @@ export function AdminListings() {
           type: "product_approved",
           titleAr: "✅ تمت الموافقة على منتجك",
           bodyAr: `تمت الموافقة على منتج "${product.title_ar}" وهو الآن متاح للبيع 🎉`,
-        linkUrl: `/dashboard`, 
+          linkUrl: `/dashboard`,
           imageUrl: product.cover_url || undefined,
           actions: [
             { label_ar: "عرض المنتج", url: `/listing/${product.id}` },
@@ -191,8 +191,8 @@ export function AdminListings() {
           type: "product_rejected",
           titleAr: "❌ تم رفض منتجك",
           bodyAr: `تم رفض منتج "${productToReject.title_ar}"\nالسبب: ${rejectReason}`,
-          linkUrl: `/dashboard`,           // ✅ موجود
-  imageUrl: productToReject.cover_url,      // ✅ موجود
+          linkUrl: `/dashboard`,
+          imageUrl: productToReject.cover_url,
           actions: [
             { label_ar: "مراجعة المنتج", url: "/dashboard/products" },
           ],
@@ -358,6 +358,19 @@ export function AdminListings() {
     saveAs(blob, `المنتجات_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.doc`);
     toast.success(isRTL ? "✅ تم تصدير البيانات إلى Word" : "✅ Data exported to Word");
   }, [filteredRows, stats, isRTL]);
+
+  // ✅ ===== دالة مساعدة لجلب اسم المتجر =====
+  const getStoreName = useCallback((product: any) => {
+    if (product?.profile?.store_name) return product.profile.store_name;
+    if (product?.profile?.full_name) return product.profile.full_name;
+    if (product?.profiles?.store_name) return product.profiles.store_name;
+    if (product?.profiles?.full_name) return product.profiles.full_name;
+    if (product?.owner?.store_name) return product.owner.store_name;
+    if (product?.owner?.full_name) return product.owner.full_name;
+    if (product?.store_name) return product.store_name;
+    if (product?.seller_name) return product.seller_name;
+    return "—";
+  }, []);
 
   // ============================================================
   // ✅ التصميم
@@ -594,7 +607,6 @@ export function AdminListings() {
                 </TableHead>
                 <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[100px]">
                   <div className="flex items-center justify-center gap-2">
-                    <DollarSign className="h-3.5 w-3.5" />
                     {isRTL ? "السعر" : "Price"}
                   </div>
                 </TableHead>
@@ -602,12 +614,6 @@ export function AdminListings() {
                   <div className="flex items-center justify-center gap-2">
                     <Shield className="h-3.5 w-3.5" />
                     {isRTL ? "الحالة" : "Status"}
-                  </div>
-                </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[150px]">
-                  <div className="flex items-center justify-center gap-2">
-                    <MessageCircle className="h-3.5 w-3.5" />
-                    {isRTL ? "سبب الرفض" : "Rejection Reason"}
                   </div>
                 </TableHead>
                 <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[280px]">
@@ -621,7 +627,7 @@ export function AdminListings() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={5} className="text-center py-12">
                     <div className="flex items-center justify-center gap-3">
                       <Loader2 className="h-6 w-6 animate-spin text-[#0d2e2a]" />
                       <span className="text-slate-500">{isRTL ? "جار التحميل..." : "Loading..."}</span>
@@ -631,7 +637,7 @@ export function AdminListings() {
               )}
               {!isLoading && paginatedRows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={5} className="text-center py-12">
                     <div className="flex flex-col items-center gap-3">
                       <div className="h-16 w-16 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center animate-bounce-slow">
                         <Package className="h-8 w-8 text-[#0d2e2a]/40" />
@@ -708,17 +714,17 @@ export function AdminListings() {
                       </div>
                     </TableCell>
                     
-                    {/* ✅ عمود المتجر */}
+                    {/* ✅ عمود المتجر - باستخدام getStoreName */}
                     <TableCell className="text-sm text-slate-600 dark:text-slate-300 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Store className="h-3 w-3 text-[#2d6b63]" />
-                        {r.profiles?.store_name || r.profiles?.full_name || "—"}
+                        {getStoreName(r)}
                       </div>
                     </TableCell>
                     
-                    {/* ✅ عمود السعر */}
+                    {/* ✅ عمود السعر - رقم فقط */}
                     <TableCell className="font-bold text-[#0d2e2a] dark:text-[#4a9f95] text-center">
-                      {formatPrice(r.price, r.currency, app.lang)}
+                      {Number(r.price).toLocaleString(app.lang === "ar" ? "ar-SY" : "en-US")}
                     </TableCell>
                     
                     {/* ✅ عمود الحالة */}
@@ -742,20 +748,6 @@ export function AdminListings() {
                            (isRTL ? "مؤرشف" : "Archived")}
                         </span>
                       </Badge>
-                    </TableCell>
-                    
-                    {/* ✅ عمود سبب الرفض */}
-                    <TableCell className="text-center">
-                      {isArchived && hasRejectionReason ? (
-                        <div className="flex items-center gap-1.5 justify-center group/reason">
-                          <AlertTriangle className="h-3 w-3 text-rose-400 animate-pulse" />
-                          <span className="text-xs text-rose-600 dark:text-rose-400 max-w-[120px] truncate cursor-help group-hover/reason:max-w-[200px] group-hover/reason:whitespace-normal transition-all duration-300">
-                            {r.rejection_reason}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
                     </TableCell>
                     
                     {/* ✅ عمود الإجراءات */}
@@ -1032,11 +1024,11 @@ export function AdminListings() {
                     {productToReject.title_ar}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {productToReject.profiles?.store_name || productToReject.profiles?.full_name || "—"}
+                    {getStoreName(productToReject)}
                   </p>
                 </div>
                 <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
-                  {formatPrice(productToReject.price, productToReject.currency, app.lang)}
+                  {Number(productToReject.price).toLocaleString(app.lang === "ar" ? "ar-SY" : "en-US")}
                 </Badge>
               </div>
             )}
@@ -1156,11 +1148,11 @@ export function AdminListings() {
                       {productToDelete.title_ar}
                     </p>
                     <p className="text-xs text-slate-400">
-                      {productToDelete.profiles?.store_name || productToDelete.profiles?.full_name || "—"}
+                      {getStoreName(productToDelete)}
                     </p>
                   </div>
                   <Badge className="bg-rose-500/10 text-rose-600 border-rose-500/20">
-                    {formatPrice(productToDelete.price, productToDelete.currency, app.lang)}
+                    {Number(productToDelete.price).toLocaleString(app.lang === "ar" ? "ar-SY" : "en-US")}
                   </Badge>
                 </div>
               )}

@@ -1,4 +1,4 @@
-// src/routes/cart.tsx - الكود المُصحّح بالكامل مع دعم العروض الترويجية
+// src/routes/cart.tsx - الكود المُصحّح بالكامل مع دعم العروض الترويجية وصور الفيرنتات
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { 
@@ -114,11 +114,48 @@ function CartPage() {
       const subtotal = price * quantity;
       const subtotal_usd = item.price_usd ? Number(item.price_usd) * quantity : null;
       
+      const listing = item.listing || null;
+      
+      // ✅ ✅ ✅ حساب displayImage (صورة الفيرنت المختار)
+// ✅ ✅ ✅ حساب displayImage (صورة الفيرنت المختار)
+let displayImage = listing?.cover_url || '/placeholder.png';
+
+console.log("🔍 [Cart] item.selected_variation_id:", item.selected_variation_id);
+console.log("🔍 [Cart] listing?.variations:", listing?.variations);
+
+// إذا كان في selected_variation_id
+if (item.selected_variation_id && listing?.variations) {
+  const selectedVariation = listing.variations.find((v: any) => v.id === item.selected_variation_id);
+  
+  console.log("🔍 [Cart] selectedVariation:", selectedVariation);
+  
+  if (selectedVariation) {
+    // ✅ 1. إذا الفيرنت عنده color_id → جيب صورة اللون
+    if (selectedVariation.color_id && listing.colors) {
+      const color = listing.colors.find((c: any) => c.id === selectedVariation.color_id);
+      console.log("🎨 [Cart] Found color:", color);
+      if (color?.image_url) {
+        displayImage = color.image_url;
+        console.log("✅ [Cart] Using color image:", displayImage);
+      }
+    }
+    // ✅ 2. إذا الفيرنت عنده image_url خاصة
+    if (!displayImage || displayImage === listing?.cover_url) {
+      if (selectedVariation.image_url) {
+        displayImage = selectedVariation.image_url;
+        console.log("✅ [Cart] Using variation image:", displayImage);
+      }
+    }
+  }
+}
+
+console.log("📸 [Cart] Final displayImage:", displayImage);
       return {
         ...item,
         subtotal,
         subtotal_usd,
-        listing: item.listing || null,
+        listing: listing,
+        displayImage: displayImage, // ✅ أضف هذا السطر
         // ✅ ✅ ✅ تحديد نوع العنصر
         isPromoOffer: item.is_promo_offer === true,
         isDiscountOffer: item.listing?.is_offer === true && item.is_promo_offer !== true,
@@ -540,6 +577,7 @@ const applyPromoCode = useCallback(async () => {
       console.log("❌ [PROMO] Code not found or inactive");
       setPromoMessage(app.lang === "ar" ? "❌ كود غير صالح" : "❌ Invalid code");
       toast.error(app.lang === "ar" ? "❌ كود الخصم غير صالح" : "❌ Invalid promo code");
+      setIsApplyingPromo(false);
       return;
     }
 
@@ -563,6 +601,7 @@ const applyPromoCode = useCallback(async () => {
       console.log("❌ [PROMO] Code not active yet");
       setPromoMessage(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
       toast.error(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
+      setIsApplyingPromo(false);
       return;
     }
 
@@ -570,11 +609,47 @@ const applyPromoCode = useCallback(async () => {
       console.log("❌ [PROMO] Code expired");
       setPromoMessage(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
       toast.error(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
+      setIsApplyingPromo(false);
       return;
     }
 
     console.log("✅ [PROMO] Code is valid (active and within date range)");
 
+    // ✅ ✅ ✅ الخطوة 1: تحقق من المتجر أولاً (قبل أي شيء آخر)
+    if (data.store_id) {
+      console.log("🔍 [PROMO] Checking store specificity...");
+      console.log("📌 [PROMO] Code is for store:", data.store_id, data.store_name);
+      
+      const hasDifferentStore = items.some((item: any) => {
+        const listing = item.listing || item;
+        const isDifferent = listing.owner_id !== data.store_id;
+        if (isDifferent) {
+          console.log("⚠️ [PROMO] Product", listing.title_ar, "belongs to different store:", listing.owner_id);
+        }
+        return isDifferent;
+      });
+
+      if (hasDifferentStore) {
+        console.log("❌ [PROMO] Cart contains products from different stores");
+        setPromoMessage(
+          app.lang === "ar" 
+            ? `❌ هذا الكود مخصص لمتجر "${data.store_name}" فقط` 
+            : `❌ This code is only for store "${data.store_name}"`
+        );
+        toast.error(
+          app.lang === "ar" 
+            ? `❌ هذا الكود مخصص لمتجر "${data.store_name}" فقط` 
+            : `❌ This code is only for store "${data.store_name}"`
+        );
+        setIsApplyingPromo(false);
+        return; // ❌ يوقف التنفيذ فوراً
+      }
+      console.log("✅ [PROMO] All products belong to the correct store");
+    } else {
+      console.log("✅ [PROMO] Code is public (no store restriction)");
+    }
+
+    // ✅ ✅ ✅ الخطوة 2: تحقق من عدد الاستخدامات
     if (data.usage_limit && data.used_count >= data.usage_limit) {
       console.log("❌ [PROMO] Code usage limit reached");
       setPromoMessage(
@@ -587,9 +662,11 @@ const applyPromoCode = useCallback(async () => {
           ? `❌ تم استخدام هذا الكود بالكامل (${data.used_count}/${data.usage_limit})` 
           : `❌ This code has been fully used (${data.used_count}/${data.usage_limit})`
       );
+      setIsApplyingPromo(false);
       return;
     }
 
+    // ✅ ✅ ✅ الخطوة 3: تحذير عدد الاستخدامات المتبقية (يظهر فقط بعد التأكد من أن الكود للمتجر الصحيح)
     if (data.usage_limit) {
       const remaining = data.usage_limit - data.used_count;
       console.log(`📌 [PROMO] Remaining uses: ${remaining}`);
@@ -603,6 +680,7 @@ const applyPromoCode = useCallback(async () => {
     }
     console.log("✅ [PROMO] Usage limit check passed");
 
+    // ✅ ✅ ✅ الخطوة 4: تحقق من استخدام الكود في طلب معلق
     const { data: existingUsage, error: usageCheckError } = await supabase
       .from("promo_code_usage")
       .select(`
@@ -634,41 +712,10 @@ const applyPromoCode = useCallback(async () => {
           ? `⚠️ هذا الكود قيد الاستخدام في طلب آخر، انتظر حتى يتم قبوله أو رفضه` 
           : `⚠️ This code is already used in another pending order`
       );
+      setIsApplyingPromo(false);
       return;
     }
     console.log("✅ [PROMO] No pending usage found");
-
-    if (data.store_id) {
-      console.log("🔍 [PROMO] Step 6: Checking store specificity...");
-      console.log("📌 [PROMO] Code is for store:", data.store_id, data.store_name);
-      
-      const hasDifferentStore = items.some((item: any) => {
-        const listing = item.listing || item;
-        const isDifferent = listing.owner_id !== data.store_id;
-        if (isDifferent) {
-          console.log("⚠️ [PROMO] Product", listing.title_ar, "belongs to different store:", listing.owner_id);
-        }
-        return isDifferent;
-      });
-
-      if (hasDifferentStore) {
-        console.log("❌ [PROMO] Cart contains products from different stores");
-        setPromoMessage(
-          app.lang === "ar" 
-            ? `❌ هذا الكود مخصص لمتجر "${data.store_name}" فقط` 
-            : `❌ This code is only for store "${data.store_name}"`
-        );
-        toast.error(
-          app.lang === "ar" 
-            ? `❌ هذا الكود مخصص لمتجر "${data.store_name}" فقط` 
-            : `❌ This code is only for store "${data.store_name}"`
-        );
-        return;
-      }
-      console.log("✅ [PROMO] All products belong to the correct store");
-    } else {
-      console.log("✅ [PROMO] Step 6: Code is public (no store restriction)");
-    }
 
     console.log("🔍 [PROMO] Step 7: Calculating subtotal and checking min order...");
     const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
@@ -689,6 +736,7 @@ const applyPromoCode = useCallback(async () => {
           ? `❌ الحد الأدنى للطلب هو ${formatPrice(minOrder, app.currency, app.lang)}` 
           : `❌ Minimum order is ${formatPrice(minOrder, app.currency, app.lang)}`
       );
+      setIsApplyingPromo(false);
       return;
     }
     console.log("✅ [PROMO] Subtotal meets minimum order requirement");
@@ -762,6 +810,7 @@ const applyPromoCode = useCallback(async () => {
             ? `❌ اشترِ ${buyQty} منتج للحصول على ${getQty} مجاناً` 
             : `❌ Buy ${buyQty} items to get ${getQty} free`
         );
+        setIsApplyingPromo(false);
         return;
       }
     }
@@ -783,6 +832,7 @@ const applyPromoCode = useCallback(async () => {
       console.log("❌ [PROMO] Discount is 0, cannot apply");
       setPromoMessage(app.lang === "ar" ? "❌ لا يمكن تطبيق الخصم" : "❌ Cannot apply discount");
       toast.error(app.lang === "ar" ? "❌ لا يمكن تطبيق الخصم" : "❌ Cannot apply discount");
+      setIsApplyingPromo(false);
       return;
     }
 
@@ -815,7 +865,6 @@ const applyPromoCode = useCallback(async () => {
     console.log("🔍 [PROMO] ===== END APPLYING PROMO CODE =====");
   }
 }, [promoCode, promoApplied, items, deliveryFee, app.lang, app.currency, app.user?.id]);
-
   // ✅ تحديث الكمية
   const handleUpdateQuantity = useCallback(async (itemId: string, newQuantity: number) => {
     if (!app.user) {
@@ -1287,7 +1336,7 @@ const checkout = useCallback(async () => {
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative h-28 w-28 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 mx-auto sm:mx-0">
                       <img 
-                        src={listing.cover_url || '/placeholder.png'} 
+                        src={item.displayImage || '/placeholder.png'}
                         alt={app.lang === "ar" ? listing.title_ar : listing.title_en || listing.title_ar}
                         className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => {
@@ -1848,7 +1897,7 @@ const checkout = useCallback(async () => {
               return (
                 <div key={item.id} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                   <img 
-                    src={listing.cover_url || '/placeholder.png'} 
+                    src={item.displayImage || '/placeholder.png'}
                     alt={listing.title_ar}
                     className="h-10 w-10 rounded-lg object-cover"
                     onError={(e) => (e.target as HTMLImageElement).src = '/placeholder.png'}

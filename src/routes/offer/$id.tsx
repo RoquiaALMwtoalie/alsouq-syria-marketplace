@@ -186,8 +186,6 @@ function OfferDetailPage() {
     if (offer.offer_type === 'bogo' || offer.offer_type === 'cross_sell') {
       // ✅ فقط تحقق من فيرنت المنتج الرئيسي
       if (mainVariations.length > 0 && !selectedVariations[offer.listing_id]) return false;
-      // ❌ إزالة شرط اختيار فيرنت الهدية لأنها محددة مسبقاً
-      // if (freeProduct && giftVariations.length > 0 && !selectedGiftVariation) return false;
       return true;
     }
     
@@ -198,13 +196,11 @@ function OfferDetailPage() {
           return false;
         }
       }
-      // ❌ إزالة شرط اختيار فيرنت الهدية للـ Bundle أيضاً
-      // if (freeProduct && giftVariations.length > 0 && !selectedGiftVariation) return false;
       return true;
     }
     
     return true;
-  }, [offer, mainVariations, selectedVariations, freeProduct, giftVariations, selectedGiftVariation, requiredProducts]);
+  }, [offer, mainVariations, selectedVariations, requiredProducts]);
 
   // ✅ ✅ ✅ اختيار أول فيرنت هدية تلقائياً (لأنها محددة مسبقاً)
   useEffect(() => {
@@ -219,31 +215,44 @@ function OfferDetailPage() {
     return offer?.offer_type === 'bundle';
   }, [offer]);
 
-  // ✅ استخراج بيانات المتجر للعرض
+  // ✅ ✅ ✅ استخراج بيانات المتجر للعرض (مصحح)
   const storeId = useMemo(() => {
     return offer?.store_id || mainProduct?.owner_id || null;
   }, [offer, mainProduct]);
 
-  // ✅ استخدم profiles (مع s) لأن الـ query ترجع profiles
+  // ✅ ✅ ✅ اسم المتجر (من offer.store أولاً)
   const offerStoreName = useMemo(() => {
+    // ✅ من offer.store (RPC)
+    if (offer?.store?.store_name) return offer.store.store_name;
+    if (offer?.store?.full_name) return offer.store.full_name;
+    
+    // ✅ من mainProduct
     if (mainProduct?.profiles?.store_name) return mainProduct.profiles.store_name;
     if (mainProduct?.profiles?.full_name) return mainProduct.profiles.full_name;
     if (mainProduct?.profile?.store_name) return mainProduct.profile.store_name;
     if (mainProduct?.profile?.full_name) return mainProduct.profile.full_name;
     if (mainProduct?.owner?.store_name) return mainProduct.owner.store_name;
     if (mainProduct?.owner?.full_name) return mainProduct.owner.full_name;
+    
     return app.lang === "ar" ? "متجر" : "Store";
-  }, [mainProduct, app.lang]);
+  }, [offer, mainProduct, app.lang]);
 
+  // ✅ ✅ ✅ شعار المتجر (من offer.store أولاً)
   const offerStoreLogo = useMemo(() => {
+    // ✅ من offer.store (RPC)
+    if (offer?.store?.store_logo_url) return offer.store.store_logo_url;
+    if (offer?.store?.avatar_url) return offer.store.avatar_url;
+    
+    // ✅ من mainProduct
     if (mainProduct?.profiles?.store_logo_url) return mainProduct.profiles.store_logo_url;
     if (mainProduct?.profiles?.avatar_url) return mainProduct.profiles.avatar_url;
     if (mainProduct?.profile?.store_logo_url) return mainProduct.profile.store_logo_url;
     if (mainProduct?.profile?.avatar_url) return mainProduct.profile.avatar_url;
     if (mainProduct?.owner?.store_logo_url) return mainProduct.owner.store_logo_url;
     if (mainProduct?.owner?.avatar_url) return mainProduct.owner.avatar_url;
+    
     return null;
-  }, [mainProduct]);
+  }, [offer, mainProduct]);
 
   // ========== ✅ خامساً: الـ useCallback (دوال) ==========
   const handleVariationSelect = useCallback((productId: string, variationId: string) => {
@@ -258,123 +267,144 @@ function OfferDetailPage() {
     });
   }, []);
 
-const handleAddToCart = useCallback(async () => {
-  if (!app.user) {
-    toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
-    navigate({ to: "/auth/$mode", params: { mode: "login" } });
-    return;
-  }
+  const handleAddToCart = useCallback(async () => {
+    if (!app.user) {
+      toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
+      navigate({ to: "/auth/$mode", params: { mode: "login" } });
+      return;
+    }
 
-  if (!offer) {
-    toast.error(app.lang === "ar" ? "العرض غير موجود" : "Offer not found");
-    return;
-  }
+    if (!offer) {
+      toast.error(app.lang === "ar" ? "العرض غير موجود" : "Offer not found");
+      return;
+    }
 
-  if (!isVariationSelected) {
-    toast.warning(app.lang === "ar" ? "⚠️ الرجاء اختيار الفيرنتات أولاً" : "⚠️ Please select variations first");
-    return;
-  }
+    if (!isVariationSelected) {
+      toast.warning(app.lang === "ar" ? "⚠️ الرجاء اختيار الفيرنتات أولاً" : "⚠️ Please select variations first");
+      return;
+    }
 
-  // ✅ ✅ ✅ منع المستخدم من إضافة عروض متجره الخاص
-  // 1. التحقق من store_id
-  if (offer.store_id === app.user.id) {
-    toast.error(
-      app.lang === "ar" 
-        ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
-        : "❌ You cannot add offers from your own store to cart"
-    );
-    return;
-  }
+    // ✅ ✅ ✅ منع المستخدم من إضافة عروض متجره الخاص
+    if (offer.store_id === app.user.id) {
+      toast.error(
+        app.lang === "ar" 
+          ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
+          : "❌ You cannot add offers from your own store to cart"
+      );
+      return;
+    }
 
-  // 2. التحقق من mainProduct owner_id
-  if (mainProduct?.owner_id === app.user.id) {
-    toast.error(
-      app.lang === "ar" 
-        ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
-        : "❌ You cannot add offers from your own store to cart"
-    );
-    return;
-  }
+    if (mainProduct?.owner_id === app.user.id) {
+      toast.error(
+        app.lang === "ar" 
+          ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
+          : "❌ You cannot add offers from your own store to cart"
+      );
+      return;
+    }
 
-  // 3. التحقق من mainProduct profile
-  if (mainProduct?.profile?.id === app.user.id || mainProduct?.profiles?.id === app.user.id) {
-    toast.error(
-      app.lang === "ar" 
-        ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
-        : "❌ You cannot add offers from your own store to cart"
-    );
-    return;
-  }
+    if (mainProduct?.profile?.id === app.user.id || mainProduct?.profiles?.id === app.user.id) {
+      toast.error(
+        app.lang === "ar" 
+          ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
+          : "❌ You cannot add offers from your own store to cart"
+      );
+      return;
+    }
 
-  try {
-    await addToCartMutation.mutateAsync({
-      userId: app.user.id,
-      listingId: offer.listing_id,
-      quantity: quantity,
-      selectedVariationId: selectedVariations[offer.listing_id] || undefined,
-      extraData: {
-        is_promo_offer: true,
-        offer_id: offer.id,
-        selected_gift_variation: selectedGiftVariation,
-        selected_variations: selectedVariations,
-        offer_data: {
-          offer_type: offer.offer_type,
-          buy_quantity: offer.buy_quantity,
-          get_quantity: offer.get_quantity,
-          required_product_ids: offer.required_product_ids,
-          free_listing_id: offer.free_listing_id,
-          required_variations: offer.required_variations,
-          result_variation_ids: offer.result_variation_ids,
-        }
-      },
-      onStoreConflict: async (data: any) => {
-        const { data: currentStore } = await supabase
-          .from("profiles")
-          .select("store_name")
-          .eq("id", data.currentStoreId)
-          .maybeSingle();
-        
-        const { data: newStore } = await supabase
-          .from("profiles")
-          .select("store_name")
-          .eq("id", data.newStoreId)
-          .maybeSingle();
-        
-        setCurrentStoreName(currentStore?.store_name || "متجر");
-        setNewStoreName(newStore?.store_name || "متجر");
-        setPendingAddData({ 
-          listingId: offer.listing_id, 
-          quantity, 
-          selectedVariations,
-          selectedGiftVariation,
-        });
-        setShowStoreConflict(true);
-      },
-    });
+    try {
+      await addToCartMutation.mutateAsync({
+        userId: app.user.id,
+        listingId: offer.listing_id,
+        quantity: quantity,
+        selectedVariationId: selectedVariations[offer.listing_id] || undefined,
+        extraData: {
+          is_promo_offer: true,
+          offer_id: offer.id,
+          selected_gift_variation: selectedGiftVariation,
+          selected_variations: selectedVariations,
+          offer_data: {
+            offer_type: offer.offer_type,
+            buy_quantity: offer.buy_quantity,
+            get_quantity: offer.get_quantity,
+            required_product_ids: offer.required_product_ids,
+            free_listing_id: offer.free_listing_id,
+            required_variations: offer.required_variations,
+            result_variation_ids: offer.result_variation_ids,
+          }
+        },
+        onStoreConflict: async (data: any) => {
+          const { data: currentStore } = await supabase
+            .from("profiles")
+            .select("store_name")
+            .eq("id", data.currentStoreId)
+            .maybeSingle();
+          
+          const { data: newStore } = await supabase
+            .from("profiles")
+            .select("store_name")
+            .eq("id", data.newStoreId)
+            .maybeSingle();
+          
+          setCurrentStoreName(currentStore?.store_name || "متجر");
+          setNewStoreName(newStore?.store_name || "متجر");
+          setPendingAddData({ 
+            listingId: offer.listing_id, 
+            quantity, 
+            selectedVariations,
+            selectedGiftVariation,
+          });
+          setShowStoreConflict(true);
+        },
+      });
 
-    // ✅ ✅ ✅ Toast مع زر "عرض السلة" (نفس اللي في cart.tsx)
-    toast.success(
-      app.lang === "ar" 
-        ? `🛒 تم إضافة العرض للسلة (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`
-        : `🛒 Added offer to cart (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`,
-      { 
-        duration: 4000,
-        action: {
-          label: app.lang === "ar" ? "🛒 عرض السلة" : "🛒 View Cart",
-          onClick: () => navigate({ to: "/cart" })
-        }
+      // ✅ ✅ ✅ Toast مع زر "عرض السلة" وتحسين الألوان (مثل السلة)
+// ✅ ✅ ✅ Toast مع زر "عرض السلة" (نفس تصميم السلة)
+toast.success(
+  app.lang === "ar" 
+    ? `🛒 تم إضافة العرض للسلة (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`
+    : `🛒 Added offer to cart (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`,
+  { 
+    duration: 4000,
+    // ❌ احذف position عشان يظهر من فوق (الافتراضي)
+    // position: 'bottom-right',
+    icon: '🛒',
+    style: {
+      background: '#0d2e2a',
+      color: 'white',
+      borderRadius: '16px',
+      border: '2px solid #2a655f',
+      boxShadow: '0 20px 60px rgba(13, 46, 42, 0.4)',
+    },
+    className: 'font-bold',
+    action: {
+      label: app.lang === "ar" ? "🛒 عرض السلة 🛒" : "🛒 View Cart 🛒",
+      onClick: () => {
+        navigate({ to: "/cart" });
+        toast.dismiss();
       }
-    );
-
-  } catch (error: any) {
-    console.error("❌ Error adding offer to cart:", error);
-    toast.error(
-      app.lang === "ar" 
-        ? `❌ فشل إضافة العرض للسلة: ${error.message || 'خطأ غير معروف'}`
-        : `❌ Failed to add offer to cart: ${error.message || 'Unknown error'}`
-    );
+    },
+    actionButtonStyle: {
+      background: '#2a655f',
+      color: 'white',
+      borderRadius: '12px',
+      padding: '6px 16px',
+      fontWeight: 'bold',
+    }
   }
-}, [app.user, app.lang, offer, isVariationSelected, mainProduct, selectedVariations, selectedGiftVariation, quantity, addToCartMutation, navigate]); const handleConfirmClearCart = useCallback(async () => {
+);
+
+    } catch (error: any) {
+      console.error("❌ Error adding offer to cart:", error);
+      toast.error(
+        app.lang === "ar" 
+          ? `❌ فشل إضافة العرض للسلة: ${error.message || 'خطأ غير معروف'}`
+          : `❌ Failed to add offer to cart: ${error.message || 'Unknown error'}`
+      );
+    }
+  }, [app.user, app.lang, offer, isVariationSelected, mainProduct, selectedVariations, selectedGiftVariation, quantity, addToCartMutation, navigate]);
+
+  const handleConfirmClearCart = useCallback(async () => {
     if (!app.user || !pendingAddData) return;
     
     try {
@@ -597,21 +627,21 @@ const handleAddToCart = useCallback(async () => {
               </div>
             </div>
 
-            {/* ===== السعر ===== */}
-            <div className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-2xl border border-primary/10">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-4 flex-wrap">
-                  <span className="text-4xl md:text-5xl font-black text-primary">
-                    {formatPrice(finalPrice, app.currency, app.lang)}
-                  </span>
-                  {discountPercent > 0 && (
-                    <Badge className="bg-gradient-to-r from-rose-500 to-orange-500 text-white border-0 text-sm font-bold px-3 py-1.5 rounded-full shadow-md shadow-rose-500/20 animate-pulse">
-                      🎁 {discountPercent}% OFF
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
+          {/* ===== السعر ===== */}
+<div className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-2xl border border-primary/10">
+  <div className="flex flex-col gap-3">
+    <div className="flex items-center gap-4 flex-wrap">
+      <span className="text-4xl md:text-5xl font-black text-primary">
+        {finalPrice.toLocaleString(app.lang === "ar" ? "ar-SY" : "en-US")}
+      </span>
+      {discountPercent > 0 && (
+        <Badge className="bg-gradient-to-r from-rose-500 to-orange-500 text-white border-0 text-sm font-bold px-3 py-1.5 rounded-full shadow-md shadow-rose-500/20 animate-pulse">
+          🎁 {discountPercent}% OFF
+        </Badge>
+      )}
+    </div>
+  </div>
+</div>
 
             {/* ===== ✅ المنتجات المطلوبة ===== */}
             {isBundle ? (
@@ -785,7 +815,6 @@ const handleAddToCart = useCallback(async () => {
                   <h3 className="font-bold text-sm flex items-center gap-2 text-emerald-600">
                     <GiftIcon className="h-4 w-4" />
                     {app.lang === "ar" ? "🎁 الهدية" : "🎁 Gift"}
-                    {/* ✅ إزالة علامة * لأن الهدية محددة مسبقاً */}
                   </h3>
                   <span className="text-xs font-medium text-emerald-600">
                     ✅ {app.lang === "ar" ? "محددة مسبقاً" : "Pre-selected"}
@@ -812,7 +841,6 @@ const handleAddToCart = useCallback(async () => {
                       <Badge className="bg-emerald-500/90 text-white border-0 text-[10px]">
                         ✅ {app.lang === "ar" ? "مجاناً" : "FREE"}
                       </Badge>
-                      {/* ✅ عرض فيرنت الهدية المحدد تلقائياً (للعلم فقط) */}
                       {giftVariations.length > 0 && (
                         <p className="text-xs text-muted-foreground mt-1">
                           🎨 {app.lang === "ar" ? "الفيرنت المحدد:" : "Selected variation:"}{" "}
@@ -826,8 +854,6 @@ const handleAddToCart = useCallback(async () => {
                       )}
                     </div>
                   </div>
-
-                  {/* ❌ حذف أزرار اختيار فيرنتات الهدية بالكامل لأنها محددة مسبقاً */}
                 </div>
               </div>
             )}

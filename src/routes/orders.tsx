@@ -592,26 +592,26 @@ const groupedOrders = useMemo(() => {
                             )}
                           </div>
                           
-                          {/* ✅ عدد المنتجات + التاريخ + السعر الإجمالي */}
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
-                            <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
-                              <Layers className="h-3 w-3 text-[#2a655f]" />
-                              {group.totalItems} {app.lang === "ar" ? "منتج" : "items"}
-                            </span>
-                            <span className="text-muted-foreground/30">•</span>
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {new Date(group.createdAt).toLocaleDateString(
-                                app.lang === "ar" ? "ar-SA" : "en-US",
-                                { day: 'numeric', month: 'short', year: 'numeric' }
-                              )}
-                            </span>
-                            <span className="text-muted-foreground/30">•</span>
-                            <span className="flex items-center gap-1 font-bold text-[#2a655f] dark:text-[#3a8a82]">
-                              <CreditCard className="h-3 w-3" />
-                              {formatPrice(group.totalPrice, app.currency, app.lang)}
-                            </span>
-                          </div>
+                         {/* ✅ عدد المنتجات + التاريخ + السعر الإجمالي (مع الخصم والتوصيل) */}
+<div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+  <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+    <Layers className="h-3 w-3 text-[#2a655f]" />
+    {group.totalItems} {app.lang === "ar" ? "منتج" : "items"}
+  </span>
+  <span className="text-muted-foreground/30">•</span>
+  <span className="flex items-center gap-1">
+    <Calendar className="h-3 w-3" />
+    {new Date(group.createdAt).toLocaleDateString(
+      app.lang === "ar" ? "ar-SA" : "en-US",
+      { day: 'numeric', month: 'short', year: 'numeric' }
+    )}
+  </span>
+  <span className="text-muted-foreground/30">•</span>
+  <span className="flex items-center gap-1 font-bold text-[#2a655f] dark:text-[#3a8a82]">
+    <CreditCard className="h-3 w-3" />
+    {formatPrice(group.totalWithDelivery, app.currency, app.lang)}
+  </span>
+</div>
                         </div>
                       </div>
 
@@ -840,17 +840,25 @@ const groupedOrders = useMemo(() => {
                             </span>
                           </div>
                           
-                          {/* ✅ سعر التوصيل */}
-                          {group.deliveryFee > 0 && (
-                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
-                              <span className="text-sm text-muted-foreground">
-                                {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
-                              </span>
-                              <span className="text-sm font-medium text-[#0d2e2a] dark:text-[#3a8a82]">
-                                {formatPrice(group.deliveryFee, app.currency, app.lang)}
-                              </span>
-                            </div>
-                          )}
+                      {/* ✅ سعر التوصيل - يظهر دائماً (حتى لو 0) */}
+{group.deliveryFee !== undefined && (
+  <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
+    <span className="text-sm text-muted-foreground">
+      {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
+    </span>
+    <span className={cn(
+      "text-sm font-medium",
+      group.deliveryFee === 0 
+        ? "text-emerald-500 font-bold" 
+        : "text-[#0d2e2a] dark:text-[#3a8a82]"
+    )}>
+      {group.deliveryFee === 0 
+        ? (app.lang === "ar" ? "🆓 مجاني" : "🆓 Free")
+        : formatPrice(group.deliveryFee, app.currency, app.lang)
+      }
+    </span>
+  </div>
+)}
                           
                           {/* ✅ الخصم */}
                           {group.promoDiscount > 0 && (
