@@ -602,13 +602,24 @@ export function useFavorites(userId: string | undefined) {
     queryKey: ["favorites", userId],
     enabled: !!userId,
     queryFn: async () => {
+      console.log("📡 [useFavorites] Using RPC function...");
+      
       const { data, error } = await supabase
-        .from("favorites")
-        .select("listing_id, listings(*, categories(slug, name_ar, name_en), governorates(slug, name_ar, name_en), listing_images(url, sort_order))")
-        .eq("user_id", userId!);
-      if (error) throw error;
+        .rpc('get_user_favorites', { 
+          p_user_id: userId 
+        });
+      
+      if (error) {
+        console.error("❌ [useFavorites] Error:", error);
+        throw error;
+      }
+      
+      console.log(`✅ [useFavorites] Found ${data?.length || 0} favorites`);
       return data ?? [];
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -2065,38 +2076,24 @@ export function useMostFavoritedListings(limit = 12) {
   return useQuery({
     queryKey: ["listings", "most-favorited", limit],
     queryFn: async () => {
-      console.log("📡 [useMostFavoritedListings] Fetching most favorited listings...");
-      
-      const cacheKey = `favorited_${limit}`;
-      const cached = cacheManager.get<any[]>(cacheKey);
-      if (cached) {
-        console.log('✅ [useMostFavoritedListings] Using cached data');
-        return cached;
-      }
+      console.log("📡 [useMostFavoritedListings] Using RPC function...");
       
       const { data, error } = await supabase
-        .rpc('get_public_products_with_variations', {
-          p_limit: limit,
-          p_offset: 0,
-          p_sort: 'popular',
-          p_is_offer: null,
-          p_category_id: null,
-          p_is_featured: null
+        .rpc('get_most_favorited_listings', { 
+          p_limit: limit 
         });
       
-      if (error) throw error;
+      if (error) {
+        console.error("❌ [useMostFavoritedListings] Error:", error);
+        throw error;
+      }
       
-      const listings = Array.isArray(data) ? data : [];
-      const filtered = listings.filter((item: any) => (item.favorites_count || 0) > 0);
-      
-      cacheManager.set(cacheKey, filtered, FAVORITED_CACHE_TTL);
-      console.log(`✅ [useMostFavoritedListings] Found ${filtered.length} listings`);
-      return filtered;
+      console.log(`✅ [useMostFavoritedListings] Found ${data?.length || 0} listings`);
+      return data ?? [];
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
   });
 }
 
@@ -2182,37 +2179,26 @@ export function useTrendingStores(limit = 12) {
   return useQuery({
     queryKey: ["stores", "trending", limit],
     queryFn: async () => {
-      const { data: profs, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url, store_name, store_description, store_phone, store_logo_url, store_cover_url, featured_sort" as any)
-        .eq("is_featured", true)
-        .order("featured_sort", { ascending: true })
-        .limit(limit);
-      if (error) throw error;
-      const ids = (profs ?? []).map((p: any) => p.id as string);
-      if (!ids.length) return [] as StoreRow[];
-      const { data: rows } = await supabase
-        .from("listings").select("owner_id, rating").in("owner_id", ids).eq("status", "published");
-      const map = new Map<string, { count: number; sum: number }>();
-      for (const r of rows ?? []) {
-        const k = (r as any).owner_id as string;
-        const cur = map.get(k) ?? { count: 0, sum: 0 };
-        cur.count += 1; cur.sum += Number((r as any).rating) || 0;
-        map.set(k, cur);
+      console.log("📡 [useTrendingStores] Using RPC function...");
+      
+      const { data, error } = await supabase
+        .rpc('get_featured_stores', { 
+          p_limit: limit 
+        });
+      
+      if (error) {
+        console.error("❌ [useTrendingStores] Error:", error);
+        throw error;
       }
-      return (profs ?? []).map((p: any) => {
-        const s = map.get(p.id) ?? { count: 0, sum: 0 };
-        return {
-          id: p.id, full_name: p.full_name, avatar_url: p.avatar_url,
-          store_name: p.store_name, store_description: p.store_description,
-          store_phone: p.store_phone, store_logo_url: p.store_logo_url, store_cover_url: p.store_cover_url,
-          listing_count: s.count, avg_rating: s.count ? s.sum / s.count : 0,
-        } as StoreRow;
-      });
+      
+      console.log(`✅ [useTrendingStores] Found ${data?.length || 0} stores`);
+      return data ?? [];
     },
+    staleTime: 10 * 60 * 1000,
+    gcTime: 20 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
-
 // ============================================================
 // ✅ Featured Toggle
 // ============================================================
@@ -2253,26 +2239,33 @@ export function useSetStoreFeatured() {
 // ============================================================
 // ✅ NOTIFICATIONS
 // ============================================================
-export function useNotifications(userId: string | undefined) {
+export function useNotifications(userId: string | undefined, limit = 50) {
   return useQuery({
-    queryKey: ["notifications", userId],
+    queryKey: ["notifications", userId, limit],
     enabled: !!userId,
     queryFn: async () => {
-      if (!userId) return [];
+      console.log("📡 [useNotifications] Using RPC function...");
+      
       const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-       .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
+        .rpc('get_user_notifications', { 
+          p_user_id: userId,
+          p_limit: limit,
+          p_offset: 0
+        });
+      
+      if (error) {
+        console.error("❌ [useNotifications] Error:", error);
+        throw error;
+      }
+      
+      console.log(`✅ [useNotifications] Found ${data?.length || 0} notifications`);
       return data ?? [];
     },
-    refetchInterval: 15000,
-    refetchOnWindowFocus: true,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
-
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useMutation({
