@@ -996,22 +996,20 @@ const checkAuthorization = useCallback(async () => {
         }
         
         // ✅ مسؤول → Dashboard الإدارة
-        if (roles.includes('admin')) {
-          console.log('🔄 [RouteGuard] Admin → Redirecting to /admin/dashboard');
-          setLoading(false);
-          setIsAuthorized(false);
-          navigate({ to: '/admin/dashboard', replace: true });
-          return;
-        }
+       if (roles.includes('admin')) {
+      console.log('✅ [RouteGuard] Admin → Access granted to /');
+      setLoading(false);
+      setIsAuthorized(true);
+      return;
+    }
         
         // ✅ بائع → Dashboard البائع
-        if (roles.includes('seller')) {
-          console.log('🔄 [RouteGuard] Seller → Redirecting to /dashboard');
-          setLoading(false);
-          setIsAuthorized(false);
-          navigate({ to: '/dashboard', replace: true });
-          return;
-        }
+       if (roles.includes('seller')) {
+      console.log('✅ [RouteGuard] Seller → Access granted to /');
+      setLoading(false);
+      setIsAuthorized(true);
+      return;
+    }
         
         // ✅ مستخدم عادي → يبقى في الصفحة الرئيسية
         console.log('✅ [RouteGuard] Regular user → Access granted to /');
