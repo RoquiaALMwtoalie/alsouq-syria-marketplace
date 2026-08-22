@@ -1,7 +1,7 @@
 // src/routes/orders.tsx
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { useApp, formatPrice } from "@/lib/i18n";
 import { useMyOrders, useCreateReview, useCreateComplaint } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { StarRating } from "@/components/StarRating";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 export const Route = createFileRoute("/orders")({
   component: OrdersPage,
@@ -235,6 +236,7 @@ const groupedOrders = useMemo(() => {
 
     return sorted;
   }, [orders, app.lang]);
+
   // ============================================================
   // ✅ ✅ ✅ دالة إلغاء الطلب كامل (وليس كل منتج على حدة)
   // ============================================================
@@ -544,14 +546,14 @@ const groupedOrders = useMemo(() => {
                         {/* ✅ لوغو المتجر */}
                         <div className="relative h-14 w-14 rounded-2xl overflow-hidden flex-shrink-0 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-md hover:shadow-xl transition-all duration-300">
                           {group.storeLogo ? (
-                            <img 
-                              src={group.storeLogo} 
+                            <OptimizedImage
+                              src={group.storeLogo}
                               alt={group.storeName}
-                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '';
-                                e.target.style.display = 'none';
-                              }}
+                              width={56}
+                              height={56}
+                              quality={80}
+                              objectFit="cover"
+                              className="h-full w-full transition-transform duration-500 group-hover:scale-110"
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white font-bold text-xl">
@@ -592,7 +594,7 @@ const groupedOrders = useMemo(() => {
                             )}
                           </div>
                           
-                         {/* ✅ عدد المنتجات + التاريخ + السعر الإجمالي (مع الخصم والتوصيل) */}
+                          {/* ✅ عدد المنتجات + التاريخ + السعر الإجمالي (مع الخصم والتوصيل) */}
 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
   <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
     <Layers className="h-3 w-3 text-[#2a655f]" />
@@ -706,13 +708,14 @@ const groupedOrders = useMemo(() => {
                                   {/* صورة المنتج */}
                                   <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
                                     {listing?.cover_url ? (
-                                      <img 
-                                        src={listing.cover_url} 
+                                      <OptimizedImage
+                                        src={listing.cover_url}
                                         alt=""
-                                        className="h-full w-full object-cover"
-                                        onError={(e) => {
-                                          (e.target as HTMLImageElement).src = '/placeholder.png';
-                                        }}
+                                        width={48}
+                                        height={48}
+                                        quality={80}
+                                        objectFit="cover"
+                                        className="h-full w-full"
                                       />
                                     ) : (
                                       <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">

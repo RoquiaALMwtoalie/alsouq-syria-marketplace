@@ -1,5 +1,6 @@
 // src/routes/index.tsx - الأداء الخارق 🚀 مع لمسات وردية ناعمة وأيقونات احترافية
 
+import React, { useEffect, useState, useRef, useMemo, useCallback, Suspense, lazy } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ShoppingBag, Shirt, Smartphone, Home as HomeIcon, Footprints, Watch, BookOpen,
@@ -12,7 +13,6 @@ import {
   Building2,
   Compass
 } from "lucide-react";
-import { useEffect, useState, useRef, useMemo, useCallback, Suspense } from "react";
 import { useApp, useT } from "@/lib/i18n";
 import { useListings, useBanners, useAllStores, useCategories, useMostFavoritedListings, useMostFavoritedStores, useTrendingListings, useTrendingStores, useProductOffers } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { cn } from "@/lib/utils";
-import ListingCard from "@/components/ListingCard";
+import { OptimizedImage } from "@/components/OptimizedImage";
+
+// ✅ ✅ ✅ إضافة Select imports (ناقصة)
 import {
   Select,
   SelectContent,
@@ -29,6 +31,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+// ✅ ✅ ✅ Lazy Loading لـ ListingCard
+const ListingCard = lazy(() => import("@/components/ListingCard"));
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -48,10 +53,6 @@ function Home() {
   const [page, setPage] = useState(1);
   const [bannerIdx, setBannerIdx] = useState(0);
   const LIMIT = 12;
-
-  // ✅ التحقق من اكتمال الملف الشخصي
-
-
 
   // ====== البيانات مع Pagination ======
   const { data: banners = [] } = useBanners();
@@ -74,20 +75,19 @@ function Home() {
   });
   const discountOffers = discountOffersData.data || [];
 
-  // ✅ العروض الترويجية من product_offers (تحويلها لنفس شكل listings)
- // ✅ العروض الترويجية - الصفحة الرئيسية (بدون فلتر تصنيف)
-// ✅ العروض الترويجية - الصفحة الرئيسية
-const { data: promoOffers = [], isLoading: promoLoading } = useProductOffers({ 
-  isActive: true,
-  limit: 30
-});
+  // ✅ ✅ ✅ العروض الترويجية - مع useMemo لتثبيت الـ options (الحل)
+  const offerOptions = useMemo(() => ({ 
+    isActive: true,
+    limit: 30
+  }), []);
+
+  const { data: promoOffers = [], isLoading: promoLoading } = useProductOffers(offerOptions);
 
 console.log('🔍 [Home] promoOffers:', promoOffers);
 console.log('🔍 [Home] promoOffers length:', promoOffers.length);
 console.log('🔍 [Home] promoLoading:', promoLoading);
 
   // ✅ تحويل العروض الترويجية لنفس شكل listings عشان تتعامل معها زي العروض التخفيضية
-// ✅ تحويل العروض الترويجية لنفس شكل listings
 const promoOffersAsListings = useMemo(() => {
   console.log('🔍 [Home] promoOffersAsListings - promoOffers:', promoOffers);
   console.log('🔍 [Home] promoOffersAsListings - promoOffers length:', promoOffers.length);
@@ -148,7 +148,6 @@ const promoOffersAsListings = useMemo(() => {
       categories: mainProduct?.categories || null,
       rating: mainProduct?.rating || 0,
       reviews_count: mainProduct?.reviews_count || 0,
-      owner_id: mainProduct?.owner_id || offer.store_id,
       
       // ✅ ✅ ✅ للمحافظة والتصنيف في ListingCard
       governorate_id: mainProduct?.governorate_id || null,
@@ -159,6 +158,7 @@ const promoOffersAsListings = useMemo(() => {
   console.log('🔍 [Home] promoOffersAsListings result:', result);
   return result;
 }, [promoOffers, app.lang, app.currency]);
+
 // ✅ دمج العروض التخفيضية والترويجية في قائمة واحدة
 const allOffers = useMemo(() => {
   console.log('🔍 [Home] discountOffers:', discountOffers);
@@ -205,12 +205,15 @@ const allOffers = useMemo(() => {
                 className="absolute inset-0 transition-all duration-700 ease-in-out"
                 style={{ opacity: bannerIdx === i ? 1 : 0, pointerEvents: bannerIdx === i ? "auto" : "none" }}
               >
-                <img
+                <OptimizedImage
                   src={b.image_url}
                   alt={app.lang === "ar" ? b.title_ar : (b.title_en || b.title_ar)}
-                  className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-10000 ease-out"
-                  loading={i === 0 ? "eager" : "lazy"}
-                  decoding="async"
+                  width={1200}
+                  height={400}
+                  quality={80}
+                  priority={i === 0}
+                  objectFit="cover"
+                  className="absolute inset-0 h-full w-full group-hover:scale-105 transition-transform duration-10000"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
                 <div className="absolute inset-0 flex flex-col items-start justify-center p-6 sm:p-10 md:p-14 text-white">
@@ -322,7 +325,9 @@ const allOffers = useMemo(() => {
         {allOffers.map((item: any, index: number) => (
           <div key={item.id || index} className="w-[200px] md:w-[250px] flex-shrink-0">
             {/* ✅ كل العروض تتعامل معها بنفس البطاقة (ListingCard) */}
-            <ListingCard item={item} />
+            <Suspense fallback={<ProductSkeleton />}>
+              <ListingCard item={item} />
+            </Suspense>
           </div>
         ))}
       </div>
@@ -427,7 +432,9 @@ const allOffers = useMemo(() => {
             <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 relative">
               {allOffers.slice(0, 4).map((item: any, index: number) => (
                 <div key={item.id || index} className="animate-fade-up" style={{ animationDelay: `${index * 100}ms` }}>
-                  <ListingCard item={item} />
+                  <Suspense fallback={<ProductSkeleton />}>
+                    <ListingCard item={item} />
+                  </Suspense>
                 </div>
               ))}
             </div>
@@ -464,7 +471,9 @@ const allOffers = useMemo(() => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
             {products.map((item, index) => (
               <div key={item.id} className="animate-fade-up" style={{ animationDelay: `${(index % 8) * 50}ms` }}>
-                <ListingCard item={item} />
+                <Suspense fallback={<ProductSkeleton />}>
+                  <ListingCard item={item} />
+                </Suspense>
               </div>
             ))}
           </div>
@@ -663,12 +672,14 @@ export function CategorySlider({ categories }: { categories: any[] }) {
                       isOffer && "bg-gradient-to-r from-pink-400 via-rose-300 to-pink-400 bg-[length:200%_200%] animate-gradient-flow"
                     )}>
                       {imageUrl ? (
-                        <img 
-                          src={imageUrl} 
+                        <OptimizedImage
+                          src={imageUrl}
                           alt={isRtl ? c.name_ar : c.name_en}
-                          className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          loading="lazy"
-                          decoding="async"
+                          width={400}
+                          height={400}
+                          quality={80}
+                          objectFit="cover"
+                          className="absolute inset-0 h-full w-full group-hover:scale-110 transition-transform duration-700"
                         />
                       ) : (
                         <div className="absolute inset-0 bg-gradient-to-br from-[#2a655f]/60 to-[#3a8a82]/60" />
@@ -818,7 +829,9 @@ function FeaturedSection() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {favProducts.slice(0, 8).map((i, index) => (
               <div key={i.id} className="animate-fade-up" style={{ animationDelay: `${index * 50}ms` }}>
-                <ListingCard item={i} />
+                <Suspense fallback={<ProductSkeleton />}>
+                  <ListingCard item={i} />
+                </Suspense>
               </div>
             ))}
           </div>
@@ -895,7 +908,9 @@ function TrendingSection() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {trProducts.slice(0, 8).map((i, index) => (
             <div key={i.id} className="animate-fade-up" style={{ animationDelay: `${index * 50}ms` }}>
-              <ListingCard item={i} />
+              <Suspense fallback={<ProductSkeleton />}>
+                <ListingCard item={i} />
+              </Suspense>
             </div>
           ))}
         </div>
@@ -1291,12 +1306,14 @@ export function StoreCard({ store, badge }: StoreCardProps) {
     >
       <div className="relative h-[130px] w-full bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#3a8a82] overflow-hidden shrink-0">
         {coverUrl ? (
-          <img 
-            src={coverUrl} 
-            className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" 
-            alt={storeName} 
-            loading="lazy"
-            decoding="async"
+          <OptimizedImage
+            src={coverUrl}
+            alt={storeName}
+            width={600}
+            height={200}
+            quality={80}
+            objectFit="cover"
+            className="absolute inset-0 h-full w-full group-hover:scale-110 transition-transform duration-700"
           />
         ) : (
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-300/20 via-transparent to-transparent opacity-60" />
@@ -1320,12 +1337,14 @@ export function StoreCard({ store, badge }: StoreCardProps) {
         <div className="flex items-end justify-between -mt-9 mb-2 relative z-10">
           <div className="h-16 w-16 rounded-2xl bg-white dark:bg-slate-900 p-1 shadow-xl border-2 border-white dark:border-slate-800 group-hover:border-pink-300 transition-all duration-300 group-hover:scale-105 shrink-0 overflow-hidden grid place-items-center">
             {logoUrl ? (
-              <img 
-                src={logoUrl} 
-                className="h-full w-full object-cover rounded-xl" 
-                alt={storeName} 
-                loading="lazy"
-                decoding="async"
+              <OptimizedImage
+                src={logoUrl}
+                alt={storeName}
+                width={80}
+                height={80}
+                quality={85}
+                objectFit="cover"
+                className="h-full w-full rounded-xl"
               />
             ) : (
               <div className="h-full w-full rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white font-black text-xl flex items-center justify-center">
@@ -1478,7 +1497,9 @@ function RecentlyViewed() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {recentItems.map((item, index) => (
           <div key={item.id} className="animate-fade-up" style={{ animationDelay: `${index * 100}ms` }}>
-            <ListingCard item={item} />
+            <Suspense fallback={<ProductSkeleton />}>
+              <ListingCard item={item} />
+            </Suspense>
           </div>
         ))}
       </div>
@@ -1545,3 +1566,6 @@ export function isStoreCurrentlyOpen(store: any): boolean {
   const c = ch * 60 + cm;
   return o <= c ? cur >= o && cur <= c : cur >= o || cur <= c;
 }
+
+// ✅ ✅ ✅ التصدير مع React.memo (الحل النهائي)
+export default Home;

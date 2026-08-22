@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 export const Route = createFileRoute("/stores")({
   component: StoresPage,
@@ -411,7 +412,15 @@ function StoresPage() {
                 >
                   <div className="relative h-28 bg-gradient-to-br from-pink-500 to-rose-500">
                     {s.store_cover_url && (
-                      <img src={s.store_cover_url} className="absolute inset-0 h-full w-full object-cover" alt="" />
+                      <OptimizedImage
+                        src={s.store_cover_url}
+                        alt={s.store_name || "Store"}
+                        width={400}
+                        height={150}
+                        quality={80}
+                        objectFit="cover"
+                        className="absolute inset-0 h-full w-full"
+                      />
                     )}
                     
                     <div className="absolute top-2 end-2 flex gap-1">
@@ -434,7 +443,15 @@ function StoresPage() {
                   <div className="p-4 -mt-8 relative">
                     <div className="h-14 w-14 rounded-xl bg-card border-4 border-card shadow-md overflow-hidden grid place-items-center text-pink-600 font-black text-xl">
                       {s.store_logo_url || s.avatar_url ? (
-                        <img src={s.store_logo_url || s.avatar_url} className="h-full w-full object-cover" alt="" />
+                        <OptimizedImage
+                          src={s.store_logo_url || s.avatar_url}
+                          alt={s.store_name || "Store"}
+                          width={60}
+                          height={60}
+                          quality={85}
+                          objectFit="cover"
+                          className="h-full w-full"
+                        />
                       ) : (
                         (s.store_name || s.full_name || "?")[0]
                       )}

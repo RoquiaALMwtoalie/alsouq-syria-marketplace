@@ -53,6 +53,8 @@ import { useCart } from "@/lib/hooks/useCart";
 import { processVoiceSearch } from "@/lib/voiceSearchEngine";
 import { VoiceSearch } from "@/components/VoiceSearch";
 import { detectVoiceCommand, parseVoiceQuery } from "@/lib/voiceSearch";
+// ✅ إضافة import لـ OptimizedImage
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 const ICON_MAP: Record<string, any> = {
   'clock': Clock,
@@ -208,7 +210,16 @@ function MegaMenu({ categories }: { categories: any[] }) {
                     className={`h-10 w-10 rounded-xl ${!customBg ? 'bg-gradient-to-br from-[#2a655f]/15 to-[#3a8a82]/15 border border-[#2a655f]/20' : 'text-white'} group-hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-sm overflow-hidden`}
                   >
                     {c.image_url ? (
-                      <img src={c.image_url} alt="" className="h-full w-full object-cover rounded-xl" />
+                      // ✅ ✅ ✅ استبدال img بـ OptimizedImage
+                      <OptimizedImage
+                        src={c.image_url}
+                        alt={app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
+                        width={40}
+                        height={40}
+                        quality={80}
+                        objectFit="cover"
+                        className="h-full w-full rounded-xl"
+                      />
                     ) : (
                       <AnimatedIcon 
                         Icon={Icon} 
@@ -249,7 +260,16 @@ function MegaMenu({ categories }: { categories: any[] }) {
                 >
                   <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white shadow-md animate-special-dance shrink-0 overflow-hidden">
                     {c.image_url ? (
-                      <img src={c.image_url} alt="" className="h-full w-full object-cover rounded-xl" />
+                      // ✅ ✅ ✅ استبدال img بـ OptimizedImage
+                      <OptimizedImage
+                        src={c.image_url}
+                        alt={app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
+                        width={40}
+                        height={40}
+                        quality={80}
+                        objectFit="cover"
+                        className="h-full w-full rounded-xl"
+                      />
                     ) : (
                       <AnimatedIcon Icon={Icon} className="h-4 w-4 text-white" color="text-white" delay={0} />
                     )}
@@ -1064,13 +1084,14 @@ export const Header = memo(function Header() {
                               <div className="flex-shrink-0">
                                 {notification.image_url ? (
                                   <div className="relative">
-                                    <img
+                                    <OptimizedImage
                                       src={notification.image_url}
                                       alt=""
+                                      width={48}
+                                      height={48}
+                                      quality={80}
+                                      objectFit="cover"
                                       className="h-12 w-12 rounded-2xl object-cover border-2 border-pink-400/40 shadow-sm"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                      }}
                                     />
                                     {isUnread && (
                                       <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-pink-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
@@ -1266,13 +1287,14 @@ export const Header = memo(function Header() {
                       
                       {app.user && profile?.avatar_url ? (
                         <div className="h-full w-full rounded-2xl overflow-hidden relative">
-                          <img 
+                          <OptimizedImage 
                             src={profile.avatar_url} 
                             alt={app.user.name} 
-                            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
+                            width={40}
+                            height={40}
+                            quality={85}
+                            objectFit="cover"
+                            className="h-full w-full group-hover:scale-110 transition-transform duration-300"
                           />
                         </div>
                       ) : (
@@ -1316,13 +1338,14 @@ export const Header = memo(function Header() {
                           <div className="flex items-center gap-4 relative z-10">
                             <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-[#2a655f]/40 overflow-hidden flex-shrink-0 ring-4 ring-white/60 dark:ring-slate-800/80 transform hover:scale-105 transition-transform duration-300">
                               {profile?.avatar_url ? (
-                                <img 
+                                <OptimizedImage 
                                   src={profile.avatar_url} 
                                   alt={app.user.name} 
-                                  className="h-full w-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                  }}
+                                  width={56}
+                                  height={56}
+                                  quality={85}
+                                  objectFit="cover"
+                                  className="h-full w-full"
                                 />
                               ) : (
                                 <span className="text-white font-black drop-shadow-md">
@@ -1692,7 +1715,16 @@ export const Header = memo(function Header() {
                       
                       <div className="relative flex items-center justify-center h-8 w-8 rounded-full bg-pink-300/30 border-2 border-pink-300 shadow-lg overflow-hidden offer-icon-special">
                         {c.image_url ? (
-                          <img src={c.image_url} alt="" className="h-full w-full object-cover rounded-full" />
+                          // ✅ ✅ ✅ استبدال img بـ OptimizedImage
+                          <OptimizedImage
+                            src={c.image_url}
+                            alt={isRtl ? c.name_ar : (c.name_en || c.name_ar)}
+                            width={32}
+                            height={32}
+                            quality={80}
+                            objectFit="cover"
+                            className="h-full w-full object-cover rounded-full"
+                          />
                         ) : (
                           <Icon className="h-4 w-4 text-pink-600" />
                         )}
@@ -1725,7 +1757,16 @@ export const Header = memo(function Header() {
                     
                     <div className="relative flex items-center justify-center h-7 w-7 rounded-full bg-black/30 border border-white/25 shadow-inner overflow-hidden group-hover:scale-110 transition-transform float-icon">
                       {c.image_url ? (
-                        <img src={c.image_url} alt="" className="h-full w-full object-cover rounded-full" />
+                        // ✅ ✅ ✅ استبدال img بـ OptimizedImage
+                        <OptimizedImage
+                          src={c.image_url}
+                          alt={isRtl ? c.name_ar : (c.name_en || c.name_ar)}
+                          width={28}
+                          height={28}
+                          quality={80}
+                          objectFit="cover"
+                          className="h-full w-full object-cover rounded-full"
+                        />
                       ) : (
                         <Icon className="h-3.5 w-3.5 text-emerald-300 group-hover:text-white transition-colors" />
                       )}

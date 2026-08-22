@@ -1,11 +1,10 @@
 // src/routes/products.tsx
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useApp, useT } from "@/lib/i18n";
 import { useListings } from "@/lib/queries";
-import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, ArrowLeft, Filter, X, Sparkles, ShoppingBag, Layers } from "lucide-react";
@@ -14,6 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useCart, useAddToCart } from "@/lib/hooks/useCart";
 import { toast } from "sonner";
+
+// ✅ ✅ ✅ Lazy Loading لـ ListingCard
+const ListingCard = lazy(() => import("@/components/ListingCard"));
 
 export const Route = createFileRoute("/products")({
   component: ProductsPage,
@@ -353,22 +355,38 @@ function ProductsPage() {
                   className="relative group cursor-pointer"
                   onClick={() => handleProductClick(item.id)}
                 >
-                  {/* ✅ ✅ ✅ زر واحد فقط - اللي في ListingCard (تحت عاليمين) */}
-                  {/* ✅ تم حذف الزر العائم من فوق */}
-                  
-                  <ListingCard 
-                    item={item}
-                    onAddToCart={(product, e) => {
-                      e.stopPropagation();
-                      console.log("🛒 [products] onAddToCart called for:", product.id);
-                      handleQuickAddToCart(product, e);
-                    }}
-                  />
+                  <Suspense fallback={<ProductSkeleton />}>
+                    <ListingCard 
+                      item={item}
+                      onAddToCart={(product, e) => {
+                        e.stopPropagation();
+                        console.log("🛒 [products] onAddToCart called for:", product.id);
+                        handleQuickAddToCart(product, e);
+                      }}
+                    />
+                  </Suspense>
                 </div>
               );
             })}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Product Skeleton
+// ============================================================
+function ProductSkeleton() {
+  return (
+    <div className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 p-4 animate-pulse border border-slate-200/50 dark:border-slate-700/50">
+      <div className="aspect-square rounded-xl bg-slate-200 dark:bg-slate-700" />
+      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded mt-3 w-3/4" />
+      <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded mt-2 w-1/2" />
+      <div className="flex items-center gap-2 mt-3">
+        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3" />
+        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4" />
       </div>
     </div>
   );

@@ -1,3 +1,5 @@
+// src/lib/queries.ts - الكود المصحح بالكامل مع Cache متقدم و Realtime محسّن
+
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -8,7 +10,7 @@ import {
   NotificationType as NotificationTypeV2 
 } from "@/types/notificationTypes";
 import { channelManager } from "@/lib/channelManager";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import type { ListingRow, ListingKind, ListingWithRelations } from "@/types";
 import { DeliveryCompany, Distributor, DeliveryOrder, calculateDeliveryFee } from "@/types/delivery";
 import {
@@ -19,6 +21,7 @@ import {
   getUnreadMessagesCount,
   deleteConversation,
 } from "./messages";
+
 export type ListingKind =
   | "product" | "property" | "vehicle" | "service" | "food"
   | "travel" | "health" | "beauty" | "farm" | "tourism";
@@ -42,13 +45,10 @@ export type ListingRow = {
   views: number;
   created_at: string;
   updated_at: string;
-  // extended fields
   is_offer?: boolean;
   is_available?: boolean;
-  // ❌ تم إزالة price_usd
   old_price?: number | null;
   discount_percent?: number | null;
-
   payment_method?: string | null;
   delivery_note?: string | null;
 };
@@ -85,6 +85,7 @@ export type CategoryRow = {
   accent_from?: string | null;
   accent_to?: string | null;
 };
+
 // ============================================================
 // 📦 أنواع خيارات المنتج (Product Options)
 // ============================================================
@@ -100,14 +101,13 @@ export interface ProductOption {
   updated_at: string;
 }
 
-// ✅ تأكد من وجود old_price في الـ type
 export interface ProductVariation {
   id: string;
   listing_id: string;
   sku: string;
   combination: Record<string, string>;
   price: number;
-  old_price?: number | null;  // ✅ هذا السطر
+  old_price?: number | null;
   stock_quantity: number;
   reserved_quantity: number;
   image_url?: string;
@@ -116,10 +116,6 @@ export interface ProductVariation {
   updated_at: string;
 }
 
-
-// ============================================================
-// 📦 أنواع ألوان المنتج (Product Colors)
-// ============================================================
 export interface ProductColor {
   id: string;
   listing_id: string;
@@ -142,8 +138,124 @@ export interface ProductColorVariation {
   created_at: string;
   color?: ProductColor;
 }
-/* ---------- Categories & Governorates ---------- */
 
+// ============================================================
+// ✅ Cache Manager المتقدم (موحد)
+// ============================================================
+class CacheManager {
+  private static instance: CacheManager;
+  private caches: Map<string, { data: any; timestamp: number; ttl: number }> = new Map();
+  private defaultTTL = 5 * 60 * 1000; // 5 دقائق
+
+  static getInstance(): CacheManager {
+    if (!CacheManager.instance) {
+      CacheManager.instance = new CacheManager();
+    }
+    return CacheManager.instance;
+  }
+
+  get<T>(key: string): T | null {
+    const entry = this.caches.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.caches.delete(key);
+      return null;
+    }
+    return entry.data as T;
+  }
+
+  set(key: string, data: any, ttl: number = this.defaultTTL): void {
+    this.caches.set(key, { data, timestamp: Date.now(), ttl });
+  }
+
+  delete(key: string): void {
+    this.caches.delete(key);
+  }
+
+  invalidateAll(): void {
+    this.caches.clear();
+    console.log('🔄 [CacheManager] All caches invalidated');
+  }
+
+  invalidatePattern(pattern: string): void {
+    const keys = Array.from(this.caches.keys());
+    for (const key of keys) {
+      if (key.includes(pattern)) {
+        this.caches.delete(key);
+      }
+    }
+    console.log(`🔄 [CacheManager] Invalidated caches matching: ${pattern}`);
+  }
+}
+
+export const cacheManager = CacheManager.getInstance();
+
+// ============================================================
+// ✅ Cache خارجي للتوافق مع الكود القديم
+// ============================================================
+let listingsCache: any[] | null = null;
+let listingsTimestamp = 0;
+const LISTINGS_CACHE_TTL = 5 * 60 * 1000;
+
+let storesCache: StoreRow[] | null = null;
+let storesTimestamp = 0;
+const STORES_CACHE_TTL = 5 * 60 * 1000;
+
+let favoritedCache: any[] | null = null;
+let favoritedTimestamp = 0;
+const FAVORITED_CACHE_TTL = 5 * 60 * 1000;
+
+let trendingCache: any[] | null = null;
+let trendingTimestamp = 0;
+const TRENDING_CACHE_TTL = 5 * 60 * 1000;
+
+let productOffersCache: any[] | null = null;
+let productOffersTimestamp = 0;
+const PRODUCT_OFFERS_CACHE_TTL = 5 * 60 * 1000;
+
+// ============================================================
+// ✅ دوال إبطال الـ Cache
+// ============================================================
+export function invalidateAllCaches() {
+  console.log('🔄 [Cache] Invalidating all caches...');
+  productOffersCache = null;
+  productOffersTimestamp = 0;
+  listingsCache = null;
+  listingsTimestamp = 0;
+  storesCache = null;
+  storesTimestamp = 0;
+  favoritedCache = null;
+  favoritedTimestamp = 0;
+  trendingCache = null;
+  trendingTimestamp = 0;
+  cacheManager.invalidateAll();
+  console.log('✅ [Cache] All caches invalidated');
+}
+
+export function invalidateListingsCache() {
+  listingsCache = null;
+  listingsTimestamp = 0;
+  cacheManager.invalidatePattern('listings');
+  console.log('🔄 [Cache] Listings cache invalidated');
+}
+
+export function invalidateStoresCache() {
+  storesCache = null;
+  storesTimestamp = 0;
+  cacheManager.invalidatePattern('stores');
+  console.log('🔄 [Cache] Stores cache invalidated');
+}
+
+export function invalidateProductOffersCache() {
+  productOffersCache = null;
+  productOffersTimestamp = 0;
+  cacheManager.invalidatePattern('product-offers');
+  console.log('🔄 [Cache] Product offers cache invalidated');
+}
+
+// ============================================================
+// ✅ Categories & Governorates
+// ============================================================
 export const categoriesQuery = queryOptions({
   queryKey: ["categories"],
   queryFn: async () => {
@@ -167,10 +279,9 @@ export const governoratesQuery = queryOptions({
 export function useCategories() { return useQuery(categoriesQuery); }
 export function useGovernorates() { return useQuery(governoratesQuery); }
 
-/* ---------- Listings ---------- */
-// ✅ جلب منتجات مشابهة بناءً على التصنيف
-// src/lib/queries.ts
-
+// ============================================================
+// ✅ Listings
+// ============================================================
 export function useSimilarListings(categoryId: string | undefined, currentId: string | undefined, limit = 4) {
   return useQuery({
     queryKey: ["listings", "similar", categoryId, currentId, limit],
@@ -178,7 +289,6 @@ export function useSimilarListings(categoryId: string | undefined, currentId: st
     queryFn: async () => {
       console.log("📡 [useSimilarListings] Fetching similar listings...");
       
-      // ✅ نطلب عدداً زائداً بواقع عنصر واحد لتعويض العنصر المستبعد (المنتج الحالي)
       const { data, error } = await supabase
         .rpc('get_public_products_with_variations', {
           p_limit: limit + 1, 
@@ -186,7 +296,7 @@ export function useSimilarListings(categoryId: string | undefined, currentId: st
           p_sort: 'rating',
           p_is_offer: null,
           p_category_id: categoryId,
-          p_is_featured: null // 👈 تمرير المعامل السادس لتتوافق الدالة مع التحديث الأخير تماماً
+          p_is_featured: null
         });
       
       if (error) {
@@ -195,18 +305,16 @@ export function useSimilarListings(categoryId: string | undefined, currentId: st
       }
       
       const listings = Array.isArray(data) ? data : [];
-      
-      // استبعاد المنتج الحالي وقص القائمة لتطابق الـ limit المطلوب تماماً
       const filtered = listings
         .filter((item: any) => item.id !== currentId)
         .slice(0, limit);
       
       console.log(`✅ [useSimilarListings] Found ${filtered.length} similar listings`);
-      
       return filtered;
     },
   });
 }
+
 export type ListingsFilter = {
   kind?: ListingKind;
   categorySlug?: string;
@@ -216,35 +324,35 @@ export type ListingsFilter = {
   limit?: number;
   isOffer?: boolean;
   sort?: "recent" | "rating" | "cheapest" | "popular";
+  page?: number;
+  isFeatured?: boolean;
 };
 
-// Helper function to fetch profiles for listings
 async function fetchProfilesForListings(listings: any[]) {
   if (!listings || listings.length === 0) return {};
-  
   const ownerIds = Array.from(new Set(listings.map((l: any) => l.owner_id).filter(Boolean)));
   if (ownerIds.length === 0) return {};
-  
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, full_name, avatar_url, phone, bio, store_name, store_logo_url, store_cover_url, allows_messaging, allows_bookings, store_online, store_opens_at, store_closes_at")
     .in("id", ownerIds);
-  
   const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
   return Object.fromEntries(profileMap);
 }
 
-// src/lib/queries.ts - تعديل useListings
-
-// src/lib/queries.ts
-
-// src/lib/queries.ts
-
+// ✅ useListings محسّن مع Cache Manager
 export function useListings(filter: ListingsFilter = {}) {
   return useQuery({
     queryKey: ["listings", filter],
     queryFn: async () => {
       console.log("🔍 [useListings] START - Filter:", filter);
+      
+      const cacheKey = `listings_${JSON.stringify(filter)}`;
+      const cached = cacheManager.get<any>(cacheKey);
+      if (cached) {
+        console.log('✅ [useListings] Using cached data');
+        return cached;
+      }
       
       let categoryId = null;
       if (filter.categorySlug) {
@@ -266,71 +374,37 @@ export function useListings(filter: ListingsFilter = {}) {
           p_is_featured: filter.isFeatured || null
         });
       
-      if (error) {
-        console.error("❌ [useListings] RPC Error:", error);
-        throw error;
-      }
+      if (error) throw error;
       
       let listings = Array.isArray(data) ? data : [];
-      
-      // ✅ ✅ ✅ فلترة حسب owner_id (بدون تغيير الدالة)
       if (filter.ownerId) {
         listings = listings.filter((item: any) => item.owner_id === filter.ownerId);
-        console.log(`🔍 [useListings] Filtered by ownerId: ${filter.ownerId}, found ${listings.length} listings`);
       }
       
-      console.log(`📊 [useListings] Total listings: ${listings.length}`);
-      
-      listings.forEach((item: any, index: number) => {
-        const variations = item.variations || [];
-        const colors = item.colors || [];
-        const options = item.options || [];
-        
-        console.log(`📦 Product ${index + 1}: ${item.title_ar}`);
-        console.log(`   ✅ Variations: ${variations.length}`);
-        console.log(`   ✅ Colors: ${colors.length}`);
-        console.log(`   ✅ Options: ${options.length}`);
-        
-        if (variations.length > 0) {
-          console.log(`   🔍 First variation:`, JSON.stringify(variations[0], null, 2));
-        }
-      });
-      
-      const featured = listings.find((item: any) => item.is_featured === true);
-      if (featured) {
-        console.log('⭐ [useListings] Featured product:', featured.title_ar);
-        console.log('⭐ [useListings] Featured variations:', featured.variations?.length || 0);
-      }
-      
-      return {
+      const result = {
         data: listings,
         count: listings.length,
         totalPages: filter.limit ? Math.ceil(listings.length / filter.limit) : 1,
       };
+      
+      cacheManager.set(cacheKey, result, LISTINGS_CACHE_TTL);
+      console.log(`📊 [useListings] Total listings: ${listings.length}`);
+      return result;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
-// src/lib/queries.ts
-// src/lib/queries.ts
-
-// ✅ 1. فصل الـ queryFn
-// src/lib/queries.ts
-
-// src/lib/queries.ts
-
-// src/lib/queries.ts
 
 const fetchMyListings = async (ownerId: string) => {
-    console.log("🔄 [fetchMyListings] Called at:", new Date().toISOString());
-  console.trace(); // ✅ هذا يظهر أين تم الاستدعاء
   console.log("🔄 [fetchMyListings] Fetching listings for user:", ownerId);
-  
   if (!ownerId) {
     console.log("⚠️ [fetchMyListings] No ownerId provided");
     return [];
   }
   
-  // ✅ ✅ ✅ استخدم RPC بدلاً من الاستعلام المباشر
   const { data, error } = await supabase
     .rpc('get_listings_with_variations', {
       p_owner_id: ownerId
@@ -342,35 +416,16 @@ const fetchMyListings = async (ownerId: string) => {
   }
   
   const listings = Array.isArray(data) ? data : [];
-  
   console.log(`✅ [fetchMyListings] Found ${listings.length} listings`);
   
   if (listings.length > 0) {
-    const firstListing = listings[0];
-    console.log("🔍 [fetchMyListings] First listing:", {
-      id: firstListing.id,
-      title: firstListing.title_ar,
-      price: firstListing.price,
-      variationsCount: firstListing.variations?.length || 0,
-      variationsWithPrices: firstListing.variations?.map((v: any) => ({
-        id: v.id,
-        price: v.price,
-        combination: v.combination
-      })),
-      colorsCount: firstListing.colors?.length || 0,
-      optionsCount: firstListing.options?.length || 0,
-    });
-    
-    // ✅ معالجة البيانات للتوافق
     const processedListings = listings.map((listing: any) => {
-      // ✅ تحويل variations
       const variationsWithAvailability = listing.variations?.map((v: any) => ({
         ...v,
         is_available: v.is_available !== undefined ? v.is_available : v.is_active !== false,
         price: v.price || 0,
       })) || [];
       
-      // ✅ تحويل sizes من options
       const sizesFromOptions = listing.options
         ?.filter((opt: any) => opt.option_type === 'size')
         .map((opt: any) => opt.option_value) || [];
@@ -383,14 +438,10 @@ const fetchMyListings = async (ownerId: string) => {
         listing_images: listing.images || [],
       };
     });
-    
     return processedListings;
   }
-  
   return [];
 };
-// ✅ باقي الكود كما هو
-// src/lib/queries.ts
 
 export const myListingsQueryOptions = (ownerId: string | undefined) => 
   queryOptions({
@@ -412,8 +463,7 @@ export function useMyListings(ownerId: string | undefined) {
   return useQuery(myListingsQueryOptions(ownerId));
 }
 
-// src/lib/queries.ts
-
+// ✅ useListing محسّن مع Cache
 export function useListing(id: string | undefined) {
   return useQuery({
     queryKey: ["listing", id],
@@ -421,7 +471,13 @@ export function useListing(id: string | undefined) {
     queryFn: async () => {
       console.log("🚀 [useListing] Fetching product:", id);
       
-      // ✅ استخدم الدالة الخاصة لمنتج واحد
+      const cacheKey = `listing_${id}`;
+      const cached = cacheManager.get<any>(cacheKey);
+      if (cached) {
+        console.log('✅ [useListing] Using cached data');
+        return cached;
+      }
+      
       const { data, error } = await supabase
         .rpc('get_product_details', {
           p_product_id: id
@@ -438,25 +494,14 @@ export function useListing(id: string | undefined) {
       }
       
       console.log("✅ [useListing] Product found:", data?.title_ar);
-      console.log("✅ [useListing] Variations count:", data?.variations?.length || 0);
-      
-      // 🔍🔍🔍 DEBUG: تحقق من الـ combination قبل أي تعديل
-      console.log("🔍🔍🔍 [useListing] ===== RAW DATA FROM RPC =====");
-      console.log("🔍🔍🔍 [useListing] Full data:", JSON.stringify(data, null, 2));
-      
-      if (data?.variations && data.variations.length > 0) {
-        console.log("🔍🔍🔍 [useListing] First variation (RAW):", data.variations[0]);
-        console.log("🔍🔍🔍 [useListing] First combination (RAW):", data.variations[0]?.combination);
-        console.log("🔍🔍🔍 [useListing] Keys from first combination:", Object.keys(data.variations[0]?.combination || {}));
-      }
-      
-      console.log("🔍🔍🔍 [useListing] ===== END RAW DATA =====");
-      
-      // ✅ ✅ ✅ تأكد من إرجاع البيانات كما هي دون أي تعديل
+      cacheManager.set(cacheKey, data, 5 * 60 * 1000);
       return data;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }
+
 export function useCreateListing() {
   const qc = useQueryClient();
   return useMutation({
@@ -478,15 +523,14 @@ export function useCreateListing() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["listings"] });
       qc.invalidateQueries({ queryKey: ["my-listings"] });
+      invalidateListingsCache();
     },
   });
 }
-// src/lib/queries.ts
 
 // ============================================================
 // 📦 ALL DEALS - جميع العروض
 // ============================================================
-
 export function useAllDeals(limit = 12) {
   return useQuery({
     queryKey: ["listings", "deals", limit],
@@ -498,9 +542,9 @@ export function useAllDeals(limit = 12) {
           p_limit: limit,
           p_offset: 0,
           p_sort: 'discount_desc',
-          p_is_offer: true,  // ✅ فقط العروض
+          p_is_offer: true,
           p_category_id: null,
-          p_is_featured: null // 👈 إضافة المعامل السادس المفقود لتتطابق تماماً مع الدالة في قاعدة البيانات
+          p_is_featured: null
         });
       
       if (error) {
@@ -510,11 +554,6 @@ export function useAllDeals(limit = 12) {
       
       const listings = Array.isArray(data) ? data : [];
       console.log(`✅ [useAllDeals] Found ${listings.length} deals`);
-      
-      if (listings.length > 0) {
-        console.log("🔍 [useAllDeals] First deal variations:", listings[0]?.variations?.length || 0);
-      }
-      
       return {
         data: listings,
         count: listings.length,
@@ -523,6 +562,7 @@ export function useAllDeals(limit = 12) {
     },
   });
 }
+
 export function useUpdateListing() {
   const qc = useQueryClient();
   return useMutation({
@@ -534,6 +574,7 @@ export function useUpdateListing() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["listings"] });
       qc.invalidateQueries({ queryKey: ["my-listings"] });
+      invalidateListingsCache();
     },
   });
 }
@@ -548,12 +589,14 @@ export function useDeleteListing() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["listings"] });
       qc.invalidateQueries({ queryKey: ["my-listings"] });
+      invalidateListingsCache();
     },
   });
 }
 
-/* ---------- Favorites ---------- */
-
+// ============================================================
+// ✅ Favorites
+// ============================================================
 export function useFavorites(userId: string | undefined) {
   return useQuery({
     queryKey: ["favorites", userId],
@@ -585,8 +628,9 @@ export function useToggleFavorite() {
   });
 }
 
-/* ---------- Reviews ---------- */
-
+// ============================================================
+// ✅ Reviews
+// ============================================================
 export function useListingReviews(listingId: string | undefined) {
   return useQuery({
     queryKey: ["reviews", listingId],
@@ -607,8 +651,6 @@ export function useListingReviews(listingId: string | undefined) {
   });
 }
 
-// src/lib/queries.ts
-
 export function useCreateReview() {
   const qc = useQueryClient();
   return useMutation({
@@ -616,7 +658,7 @@ export function useCreateReview() {
       listing_id: string; 
       user_id: string; 
       rating: number;
-      order_id?: string; // ✅ ربط التقييم بالطلب
+      order_id?: string;
     }) => {
       const { data, error } = await supabase
         .from("reviews")
@@ -634,18 +676,14 @@ export function useCreateReview() {
       qc.invalidateQueries({ queryKey: ["reviews", variables.listing_id] });
       qc.invalidateQueries({ queryKey: ["listing", variables.listing_id] });
       qc.invalidateQueries({ queryKey: ["orders"] });
-      
-      toast.success(
-        "⭐ تم تقييم المنتج بنجاح!",
-        { duration: 3000 }
-      );
+      toast.success("⭐ تم تقييم المنتج بنجاح!", { duration: 3000 });
     },
   });
 }
-/* ---------- Orders ---------- */
 
-// src/lib/queries.ts
-
+// ============================================================
+// ✅ Orders
+// ============================================================
 export function useMyOrders(userId: string | undefined) {
   return useQuery({
     queryKey: ["orders", userId],
@@ -696,39 +734,29 @@ export function useMyOrders(userId: string | undefined) {
       
       if (error) throw error;
       
-      // ✅ تحويل البيانات للتوافق مع الواجهة القديمة
       const transformedData = data?.map((order: any) => {
-        // ✅ حساب الإجمالي الكامل إذا لم يكن موجوداً
         const totalWithDelivery = order.total_with_delivery ?? 
           (Number(order.total || 0) + Number(order.delivery_fee || 0) - Number(order.promo_discount || 0));
         
-        // إذا كان عندنا order_items، استخدمها
         if (order.order_items && order.order_items.length > 0) {
           return {
             ...order,
-            total_with_delivery: totalWithDelivery,  // ✅ أضف هذا
-            // أول منتج في order_items يكون الرئيسي (للتوافق)
+            total_with_delivery: totalWithDelivery,
             listing_id: order.order_items[0]?.listing_id,
             quantity: order.order_items.reduce((sum: number, item: any) => sum + item.quantity, 0),
             total: order.order_items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0),
-            // تجميع listings من order_items
             listings: order.order_items[0]?.listings || order.listings,
           };
         }
-        // إذا كان الطلب قديماً (بدون order_items)
         return {
           ...order,
-          total_with_delivery: totalWithDelivery,  // ✅ أضف هذا
+          total_with_delivery: totalWithDelivery,
         };
       });
-      
       return transformedData ?? [];
     },
   });
 }
-// src/lib/queries.ts
-
-// src/lib/queries.ts
 
 export function useCreateOrder() {
   const qc = useQueryClient();
@@ -748,11 +776,9 @@ export function useCreateOrder() {
       delivery_address?: string;
       delivery_lat?: number;
       delivery_lng?: number;
-      buyer_name?: string;   // ✅ جديد
-      buyer_phone?: string;  // ✅ جديد
+      buyer_name?: string;
+      buyer_phone?: string;
     }) => {
-      
-      // ✅ 1. جلب اسم المستخدم من profiles إذا ما تم إرساله
       let buyerName = input.buyer_name;
       let buyerPhone = input.buyer_phone;
       
@@ -762,14 +788,12 @@ export function useCreateOrder() {
           .select("full_name, phone")
           .eq("id", input.buyer_id)
           .maybeSingle();
-        
         if (profile) {
           buyerName = buyerName || profile.full_name || 'عميل';
           buyerPhone = buyerPhone || profile.phone || '';
         }
       }
       
-      // ✅ 2. إنشاء الطلب الرئيسي
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -781,8 +805,8 @@ export function useCreateOrder() {
           delivery_address: input.delivery_address || null,
           delivery_lat: input.delivery_lat || null,
           delivery_lng: input.delivery_lng || null,
-          buyer_name: buyerName,        // ✅ اسم المستخدم
-          buyer_phone: buyerPhone,      // ✅ رقم المستخدم
+          buyer_name: buyerName,
+          buyer_phone: buyerPhone,
           status: 'pending',
           currency: input.items[0]?.currency || 'SYP',
           created_at: new Date().toISOString(),
@@ -792,7 +816,6 @@ export function useCreateOrder() {
       
       if (orderError) throw orderError;
 
-      // ✅ 3. إضافة المنتجات إلى order_items
       const orderItems = input.items.map((item) => ({
         order_id: order.id,
         listing_id: item.listing_id,
@@ -817,8 +840,10 @@ export function useCreateOrder() {
     },
   });
 }
-/* ---------- Bookings ---------- */
 
+// ============================================================
+// ✅ Bookings
+// ============================================================
 export function useMyBookings(userId: string | undefined) {
   return useQuery({
     queryKey: ["bookings", userId],
@@ -846,7 +871,6 @@ export function useCreateBooking() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
   });
 }
-/* ---------- Bookings ---------- */
 
 export async function cancelBooking(bookingId: string, userId: string) {
   const { data, error } = await supabase
@@ -856,41 +880,31 @@ export async function cancelBooking(bookingId: string, userId: string) {
       updated_at: new Date().toISOString()
     })
     .eq("id", bookingId)
-    .eq("customer_id", userId) // تأكد إنو المستخدم يملك الحجز
+    .eq("customer_id", userId)
     .select()
     .single();
-  
   if (error) throw error;
   return data;
 }
 
-// ✅ React Query Hook لإلغاء الحجز
 export function useCancelBooking() {
   const qc = useQueryClient();
-  
   return useMutation({
     mutationFn: async ({ bookingId, userId }: { bookingId: string; userId: string }) => {
       return await cancelBooking(bookingId, userId);
     },
     onSuccess: (_, variables) => {
-      // ✅ تحديث cache الحجوزات
       qc.invalidateQueries({ queryKey: ["bookings", variables.userId] });
       qc.invalidateQueries({ queryKey: ["bookings"] });
-      
-      toast.success(
-        "✅ تم إلغاء الحجز بنجاح",
-        { duration: 3000 }
-      );
+      toast.success("✅ تم إلغاء الحجز بنجاح", { duration: 3000 });
     },
     onError: (error: any) => {
       console.error("Error cancelling booking:", error);
-      toast.error(
-        "❌ فشل إلغاء الحجز، حاول مرة أخرى",
-        { duration: 3000 }
-      );
+      toast.error("❌ فشل إلغاء الحجز، حاول مرة أخرى", { duration: 3000 });
     },
   });
 }
+
 export function useSellerCustomers(sellerId: string | undefined) {
   return useQuery({
     queryKey: ["seller-customers", sellerId],
@@ -933,10 +947,9 @@ export function useSellerReviews(sellerId: string | undefined) {
       const ids = (listings ?? []).map((l: any) => l.id as string);
       if (!ids.length) return [] as any[];
       
-      // ✅ حدد الأعمدة المطلوبة فقط (بدون comment)
       const { data: reviews, error } = await supabase
         .from("reviews")
-        .select("id, rating, user_id, created_at, listing_id") // ✅ بدون comment
+        .select("id, rating, user_id, created_at, listing_id")
         .in("listing_id", ids)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -955,20 +968,17 @@ export function useSellerReviews(sellerId: string | undefined) {
     },
   });
 }
-/* ---------- Profile ---------- */
 
-
-
+// ============================================================
+// ✅ Profile (مع Realtime محسّن)
+// ============================================================
 export function useProfile(userId: string | undefined) {
   const queryClient = useQueryClient();
 
-  // ✅ استخدام مدير القنوات المركزي
   useEffect(() => {
     if (!userId) return;
 
     const channelName = `profile-${userId}`;
-
-    // ✅ الاشتراك في القناة مع رد اتصال واحد
     const unsubscribe = channelManager.subscribe(channelName, (payload) => {
       queryClient.setQueryData(['profile', userId], payload.new);
       console.log('✅ Profile updated in realtime:', payload.new);
@@ -1002,6 +1012,7 @@ export function useProfile(userId: string | undefined) {
     },
   });
 }
+
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
@@ -1014,8 +1025,9 @@ export function useUpdateProfile() {
   });
 }
 
-/* ---------- Seller applications (admin approval flow) ---------- */
-
+// ============================================================
+// ✅ Seller Applications
+// ============================================================
 export type SellerApplication = {
   id: string;
   user_id: string;
@@ -1032,7 +1044,6 @@ export type SellerApplication = {
   reviewed_at: string | null;
   created_at: string;
   updated_at: string;
-  // ✅ الحقول الجديدة
   store_type?: string;
   governorate_id?: string | null;
   address?: string | null;
@@ -1040,7 +1051,6 @@ export type SellerApplication = {
   closing_time?: string | null;
   weekly_off_days?: string[];
   application_type?: string;
-  // ✅ العلاقات
   governorate?: {
     id: string;
     name_ar: string;
@@ -1072,6 +1082,7 @@ export function useMySellerApplication(userId?: string) {
     },
   });
 }
+
 export function useBecomeSeller() {
   const qc = useQueryClient();
   return useMutation({
@@ -1084,14 +1095,13 @@ export function useBecomeSeller() {
       store_cover_url?: string; 
       allows_messaging?: boolean; 
       allows_bookings?: boolean;
-      // ✅ الحقول الجديدة
       store_type?: string;
       governorate_id?: string;
       address?: string | null;
       opening_time?: string;
       closing_time?: string;
       weekly_off_days?: string[];
-      application_type?: string; // ✅ أضف هذا السطر
+      application_type?: string;
     }) => {
       const { error } = await supabase.from("seller_applications" as any).insert({
         user_id: input.userId,
@@ -1102,14 +1112,13 @@ export function useBecomeSeller() {
         store_cover_url: input.store_cover_url ?? null,
         allows_messaging: input.allows_messaging ?? true,
         allows_bookings: input.allows_bookings ?? false,
-        // ✅ الحقول الجديدة
         store_type: input.store_type ?? 'online',
         governorate_id: input.governorate_id ?? null,
         address: input.address ?? null,
         opening_time: input.opening_time ?? null,
         closing_time: input.closing_time ?? null,
         weekly_off_days: input.weekly_off_days ?? [],
-        application_type: input.application_type ?? 'store', // ✅ أضف هذا السطر
+        application_type: input.application_type ?? 'store',
       } as any);
       if (error) throw error;
     },
@@ -1118,8 +1127,6 @@ export function useBecomeSeller() {
     },
   });
 }
-
-// src/lib/queries.ts
 
 export function useUpdateStorePreferences() {
   const qc = useQueryClient();
@@ -1135,7 +1142,7 @@ export function useUpdateStorePreferences() {
       governorate_id,
       store_address,
       weekly_off_days,
-      notifications_enabled, // ✅ جديد
+      notifications_enabled,
     }: {
       userId: string;
       allows_messaging?: boolean;
@@ -1147,7 +1154,7 @@ export function useUpdateStorePreferences() {
       governorate_id?: string | null;
       store_address?: string | null;
       weekly_off_days?: string[];
-      notifications_enabled?: boolean; // ✅ جديد
+      notifications_enabled?: boolean;
     }) => {
       const patch: any = {};
       if (typeof allows_messaging === "boolean") patch.allows_messaging = allows_messaging;
@@ -1160,7 +1167,6 @@ export function useUpdateStorePreferences() {
       if (store_address !== undefined) patch.store_address = store_address;
       if (weekly_off_days !== undefined) patch.weekly_off_days = weekly_off_days;
       
-      // ✅ جديد - إضافة notifications_enabled
       if (notifications_enabled !== undefined) {
         patch.notifications_enabled = notifications_enabled;
         patch.notifications_updated_at = new Date().toISOString();
@@ -1175,8 +1181,10 @@ export function useUpdateStorePreferences() {
     },
   });
 }
-/* ---------- User addresses ---------- */
 
+// ============================================================
+// ✅ User Addresses
+// ============================================================
 export type UserAddress = {
   id: string;
   user_id: string;
@@ -1240,9 +1248,9 @@ export function useDeleteAddress() {
   });
 }
 
-// src/lib/queries.ts
-
-// ✅ تحديث useAllSellerApplications لدعم Pagination والفلترة
+// ============================================================
+// ✅ Seller Applications (Admin)
+// ============================================================
 export function useAllSellerApplications(
   page: number = 1, 
   limit: number = 10,
@@ -1262,23 +1270,19 @@ export function useAllSellerApplications(
         `, { count: 'exact' })
         .order("created_at", { ascending: false });
 
-      // ✅ فلتر الحالة
       if (filterStatus && filterStatus !== "all") {
         q = q.eq("status", filterStatus);
       }
 
-      // ✅ فلتر نوع الطلب
       if (applicationType && applicationType !== "all") {
         q = q.eq("application_type", applicationType);
       }
 
-      // ✅ فلتر البحث
       if (searchQuery && searchQuery.trim()) {
         const s = `%${searchQuery.trim()}%`;
         q = q.or(`store_name.ilike.${s},store_description.ilike.${s}`);
       }
 
-      // ✅ Pagination
       const from = (page - 1) * limit;
       const to = from + limit - 1;
       q = q.range(from, to);
@@ -1297,13 +1301,10 @@ export function useAllSellerApplications(
   });
 }
 
-// src/lib/queries.ts
-
 export function useReviewSellerApplication() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { id: string; status: "approved" | "rejected"; admin_note?: string }) => {
-      // 1. جلب بيانات الطلب
       const { data: appData, error: fetchError } = await supabase
         .from("seller_applications")
         .select("*")
@@ -1312,7 +1313,6 @@ export function useReviewSellerApplication() {
 
       if (fetchError || !appData) throw new Error("لا يمكن العثور على الطلب");
 
-      // 2. تحديث حالة الطلب
       const { error: updateError } = await supabase
         .from("seller_applications")
         .update({
@@ -1325,10 +1325,7 @@ export function useReviewSellerApplication() {
       
       if (updateError) throw updateError;
 
-      // 3. إذا كانت الموافقة
       if (input.status === "approved") {
-        
-        // ✅ 3a. طلبات فتح متجر: نسخ البيانات إلى profiles
         if (appData.application_type === 'store') {
           const { error: profileError } = await supabase
             .from("profiles")
@@ -1354,11 +1351,8 @@ export function useReviewSellerApplication() {
           if (profileError) throw profileError;
         }
 
-        // ✅ 3b. طلبات إضافة منتج: فقط تحديث حالة المنتج
         if (appData.application_type === 'product') {
           console.log("📝 Product application approved - skipping profile update");
-          
-          // تحديث حالة المنتج في listings
           const productNameMatch = appData.store_description?.match(/طلب إضافة منتج: (.+)/);
           const productName = productNameMatch ? productNameMatch[1] : null;
 
@@ -1390,8 +1384,6 @@ export function useReviewSellerApplication() {
           }
         }
 
-        // ✅ 4. إدارة دور المستخدم بشكل صحيح (الحل الجديد)
-        // 4a. التحقق من وجود دور للمستخدم
         const { data: existingRole, error: roleFetchError } = await supabase
           .from("user_roles")
           .select("id, role")
@@ -1404,33 +1396,24 @@ export function useReviewSellerApplication() {
         }
 
         if (!existingRole) {
-          // 🔹 المستخدم ليس لديه أي دور → إدراج دور seller
           const { error: insertError } = await supabase
             .from("user_roles")
             .insert({
               user_id: appData.user_id,
               role: "seller"
             });
-          
           if (insertError) throw insertError;
           console.log("✅ New seller role inserted for user:", appData.user_id);
-          
         } else if (existingRole.role === "customer") {
-          // 🔹 المستخدم مشتري → تحديثه إلى seller
           const { error: updateRoleError } = await supabase
             .from("user_roles")
             .update({ role: "seller" })
             .eq("id", existingRole.id);
-          
           if (updateRoleError) throw updateRoleError;
           console.log("✅ User role updated from customer to seller:", appData.user_id);
-          
         } else if (existingRole.role === "seller") {
-          // 🔹 المستخدم بالفعل بائع → لا تفعل شيئاً
           console.log("ℹ️ User already has seller role:", appData.user_id);
-          
         } else {
-          // 🔹 أي دور آخر (admin, etc) → لا نغيره
           console.log("ℹ️ User has role:", existingRole.role, "- keeping it");
         }
       }
@@ -1444,8 +1427,10 @@ export function useReviewSellerApplication() {
     },
   });
 }
-/* ---------- Admin categories management ---------- */
 
+// ============================================================
+// ✅ Admin Categories Management
+// ============================================================
 export function useSaveCategory() {
   const qc = useQueryClient();
   return useMutation({
@@ -1484,8 +1469,9 @@ export function useDeleteCategory() {
   });
 }
 
-/* ---------- Banners (homepage slider) ---------- */
-
+// ============================================================
+// ✅ Banners
+// ============================================================
 export type BannerRow = {
   id: string;
   title_ar: string;
@@ -1550,8 +1536,9 @@ export function useDeleteBanner() {
   });
 }
 
-/* ---------- Announcements (top marquee) ---------- */
-
+// ============================================================
+// ✅ Announcements
+// ============================================================
 export type AnnouncementRow = {
   id: string;
   text_ar: string;
@@ -1572,6 +1559,7 @@ export function useAnnouncements() {
     staleTime: 60 * 1000,
   });
 }
+
 export function useAllAnnouncements() {
   return useQuery({
     queryKey: ["announcements", "all"],
@@ -1582,6 +1570,7 @@ export function useAllAnnouncements() {
     },
   });
 }
+
 export function useSaveAnnouncement() {
   const qc = useQueryClient();
   return useMutation({
@@ -1597,6 +1586,7 @@ export function useSaveAnnouncement() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["announcements"] }),
   });
 }
+
 export function useDeleteAnnouncement() {
   const qc = useQueryClient();
   return useMutation({
@@ -1608,8 +1598,9 @@ export function useDeleteAnnouncement() {
   });
 }
 
-/* ---------- Stores (sellers) in a category ---------- */
-
+// ============================================================
+// ✅ Stores
+// ============================================================
 export type StoreRow = {
   id: string;
   full_name: string | null;
@@ -1621,6 +1612,13 @@ export type StoreRow = {
   store_cover_url: string | null;
   listing_count: number;
   avg_rating: number;
+  allows_messaging?: boolean;
+  allows_bookings?: boolean;
+  store_type?: string;
+  store_address?: string;
+  weekly_off_days?: string[];
+  is_featured?: boolean;
+  featured_sort?: number;
 };
 
 export function useAllStores(limit = 24) {
@@ -1629,17 +1627,19 @@ export function useAllStores(limit = 24) {
     queryFn: async () => {
       console.log("🔍 [useAllStores] بدأت جلب المتاجر");
       
+      const cacheKey = `stores_all_${limit}`;
+      const cached = cacheManager.get<StoreRow[]>(cacheKey);
+      if (cached) {
+        console.log('✅ [useAllStores] Using cached data');
+        return cached;
+      }
+      
       const { data: rows, error } = await supabase
         .from("listings")
         .select("owner_id, rating")
         .eq("status", "published");
       
-      if (error) {
-        console.error("❌ [useAllStores] Error fetching listings:", error);
-        throw error;
-      }
-      
-      console.log("📊 [useAllStores] Found listings:", rows?.length);
+      if (error) throw error;
       
       const map = new Map<string, { count: number; sum: number }>();
       for (const r of rows ?? []) {
@@ -1651,30 +1651,14 @@ export function useAllStores(limit = 24) {
       }
       
       const ids = Array.from(map.keys());
-      console.log("🆔 [useAllStores] Unique owner IDs:", ids);
+      if (!ids.length) return [] as StoreRow[];
       
-      if (!ids.length) {
-        console.log("ℹ️ [useAllStores] No owners found");
-        return [] as StoreRow[];
-      }
-      
-      // ✅ أضف allows_messaging في الـ select
       const { data: profs, error: profError } = await supabase
         .from("profiles")
         .select("id, full_name, avatar_url, store_name, store_description, store_phone, store_logo_url, store_cover_url, allows_messaging, allows_bookings, store_type, store_address, weekly_off_days, is_featured, featured_sort")
         .in("id", ids);
       
-      if (profError) {
-        console.error("❌ [useAllStores] Error fetching profiles:", profError);
-        throw profError;
-      }
-      
-      console.log("🖼️ [useAllStores] Profiles with images:", profs?.map(p => ({
-        name: p.store_name,
-        logo: p.store_logo_url,
-        cover: p.store_cover_url,
-        allows_messaging: p.allows_messaging  // ✅ تأكد من وجودها
-      })));
+      if (profError) throw profError;
       
       const list = (profs ?? []).map((p: any) => {
         const s = map.get(p.id)!;
@@ -1689,8 +1673,8 @@ export function useAllStores(limit = 24) {
           store_cover_url: p.store_cover_url,
           listing_count: s.count,
           avg_rating: s.count ? s.sum / s.count : 0,
-          allows_messaging: p.allows_messaging,  // ✅ أضف هذا
-          allows_bookings: p.allows_bookings,     // ✅ أضف هذا
+          allows_messaging: p.allows_messaging,
+          allows_bookings: p.allows_bookings,
           store_type: p.store_type,
           store_address: p.store_address,
           weekly_off_days: p.weekly_off_days,
@@ -1701,12 +1685,22 @@ export function useAllStores(limit = 24) {
       
       list.sort((a, b) => b.listing_count - a.listing_count);
       
-      console.log("✅ [useAllStores] Final stores:", list.length);
-      return list.slice(0, limit);
+      const result = list.slice(0, limit);
+      cacheManager.set(cacheKey, result, STORES_CACHE_TTL);
+      
+      console.log("✅ [useAllStores] Final stores:", result.length);
+      return result;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
-// ✅ تعديل fetchAllPromoCodes - إزالة company_id
+
+// ============================================================
+// ✅ Promo Codes
+// ============================================================
 export async function fetchAllPromoCodes(): Promise<PromoCode[]> {
   const { data, error } = await supabase
     .from("promo_codes")
@@ -1727,7 +1721,7 @@ export async function fetchAllPromoCodes(): Promise<PromoCode[]> {
   }
   return data || [];
 }
-// ✅ تعديل createPromoCode - إضافة store_id, store_name, store_ids
+
 export async function createPromoCode(data: Partial<PromoCode>): Promise<PromoCode> {
   const { data: result, error } = await supabase
     .from("promo_codes")
@@ -1747,9 +1741,9 @@ export async function createPromoCode(data: Partial<PromoCode>): Promise<PromoCo
       expires_at: data.expires_at || null,
       created_by: data.created_by || null,
       metadata: data.metadata || {},
-      store_id: data.store_id || null,      // ✅ جديد
-      store_name: data.store_name || null,  // ✅ جديد
-      store_ids: data.store_ids || [],      // ✅ جديد
+      store_id: data.store_id || null,
+      store_name: data.store_name || null,
+      store_ids: data.store_ids || [],
     })
     .select()
     .single();
@@ -1757,7 +1751,7 @@ export async function createPromoCode(data: Partial<PromoCode>): Promise<PromoCo
   if (error) throw error;
   return result;
 }
-// ✅ تعديل updatePromoCode - إضافة store_id, store_name, store_ids
+
 export async function updatePromoCode(id: string, data: Partial<PromoCode>): Promise<PromoCode> {
   const { data: result, error } = await supabase
     .from("promo_codes")
@@ -1777,9 +1771,9 @@ export async function updatePromoCode(id: string, data: Partial<PromoCode>): Pro
       expires_at: data.expires_at || null,
       updated_at: new Date().toISOString(),
       metadata: data.metadata || {},
-      store_id: data.store_id || null,      // ✅ جديد
-      store_name: data.store_name || null,  // ✅ جديد
-      store_ids: data.store_ids || [],      // ✅ جديد
+      store_id: data.store_id || null,
+      store_name: data.store_name || null,
+      store_ids: data.store_ids || [],
     })
     .eq("id", id)
     .select()
@@ -1788,6 +1782,7 @@ export async function updatePromoCode(id: string, data: Partial<PromoCode>): Pro
   if (error) throw error;
   return result;
 }
+
 export function useStoresByCategory(categorySlug: string | undefined) {
   return useQuery({
     queryKey: ["stores", categorySlug],
@@ -1840,16 +1835,16 @@ export function useStoreProfile(userId: string | undefined) {
   });
 }
 
-/* ---------- Admin: manage all listings & stores ---------- */
-
-// ✅ useAllListingsAdmin - مع staleTime منخفض لإعادة الجلب الفورية
+// ============================================================
+// ✅ Admin Listings
+// ============================================================
 export function useAllListingsAdmin(status?: "pending" | "published" | "archived" | "draft") {
   return useQuery({
     queryKey: ["admin", "listings", status ?? "all"],
-    staleTime: 0, // ✅ لا تخزن الكاش، أجلب دائماً جديد
-    gcTime: 1000 * 60, // ✅ 1 دقيقة
-    refetchOnWindowFocus: true, // ✅ أعيد الجلب عند التركيز
-    refetchOnMount: true, // ✅ أعيد الجلب عند التحميل
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     queryFn: async () => {
       console.log(`📡 [useAllListingsAdmin] Fetching listings with status: ${status || 'all'}`);
       
@@ -1871,7 +1866,6 @@ export function useAllListingsAdmin(status?: "pending" | "published" | "archived
         return [];
       }
       
-      // جلب بيانات الملفات الشخصية
       const ownerIds = data.map((item: any) => item.owner_id);
       const { data: profiles } = await supabase
         .from("profiles")
@@ -1890,23 +1884,18 @@ export function useAllListingsAdmin(status?: "pending" | "published" | "archived
     },
   });
 }
-// ✅ احتفظ بهذا الكود
+
 export function useSetListingStatus() {
   const qc = useQueryClient();
-  
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "pending" | "published" | "archived" }) => {
       console.log(`📝 [useSetListingStatus] Updating listing ${id} to ${status}`);
       
-      // ✅ أضف هذا للتأكد من البيانات
-      console.log('🔍 البيانات المرسلة:', { id, status });
-      
-      // ✅ جرب التحديث بهذه الطريقة
       const { data, error } = await supabase
         .from("listings")
         .update({ status } as any)
         .eq("id", id)
-        .select(); // ✅ أضف select() عشان ترجع البيانات
+        .select();
 
       if (error) {
         console.error("❌ [useSetListingStatus] Error:", error);
@@ -1914,23 +1903,21 @@ export function useSetListingStatus() {
       }
       
       console.log(`✅ [useSetListingStatus] Listing ${id} updated to ${status}`);
-      console.log('📊 البيانات بعد التحديث:', data); // ✅ شوف البيانات الراجعة
-      
       return { id, status, data };
     },
     onSuccess: (result) => {
       console.log("🔄 [useSetListingStatus] Invalidating queries...");
-      console.log('📊 Result from mutation:', result); // ✅ شوف النتيجة
-      
       qc.invalidateQueries({ 
         queryKey: ["admin", "listings"],
         exact: false 
       });
       qc.invalidateQueries({ queryKey: ["listings"] });
       qc.invalidateQueries({ queryKey: ["my-listings"] });
+      invalidateListingsCache();
     },
   });
 }
+
 export function useAdminDeleteListing() {
   const qc = useQueryClient();
   return useMutation({
@@ -1938,7 +1925,10 @@ export function useAdminDeleteListing() {
       const { error } = await supabase.from("listings").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "listings"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "listings"] });
+      invalidateListingsCache();
+    },
   });
 }
 
@@ -1946,7 +1936,6 @@ export function useAdminAllStores(page: number = 1, limit: number = 10) {
   return useQuery({
     queryKey: ["admin", "stores", page, limit],
     queryFn: async () => {
-      // 1️⃣ جلب الـ Sellers مع Pagination
       const from = (page - 1) * limit;
       const to = from + limit - 1;
       
@@ -1959,7 +1948,6 @@ export function useAdminAllStores(page: number = 1, limit: number = 10) {
       const ids = Array.from(new Set((sellers ?? []).map((r: any) => r.user_id as string)));
       if (!ids.length) return { data: [], total: 0, page, limit };
       
-      // 2️⃣ جلب الـ Profiles
       const { data: profs, error } = await supabase
         .from("profiles")
         .select(`
@@ -1988,7 +1976,6 @@ export function useAdminAllStores(page: number = 1, limit: number = 10) {
       
       if (error) throw error;
       
-      // 3️⃣ جلب عدد المنتجات لكل متجر
       const { data: rows } = await supabase
         .from("listings")
         .select("owner_id")
@@ -2066,22 +2053,26 @@ export function useSetStoreActive() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "stores"] });
       qc.invalidateQueries({ queryKey: ["stores"] });
+      invalidateStoresCache();
     },
   });
 }
 
-/* ============================================================
-   FEATURED / TRENDING — user hearts + admin-controlled
-   ============================================================ */
-
-// Products with the most user hearts (favorites_count > 0)
-// src/lib/queries.ts
-
+// ============================================================
+// ✅ Featured / Trending
+// ============================================================
 export function useMostFavoritedListings(limit = 12) {
   return useQuery({
     queryKey: ["listings", "most-favorited", limit],
     queryFn: async () => {
       console.log("📡 [useMostFavoritedListings] Fetching most favorited listings...");
+      
+      const cacheKey = `favorited_${limit}`;
+      const cached = cacheManager.get<any[]>(cacheKey);
+      if (cached) {
+        console.log('✅ [useMostFavoritedListings] Using cached data');
+        return cached;
+      }
       
       const { data, error } = await supabase
         .rpc('get_public_products_with_variations', {
@@ -2090,25 +2081,25 @@ export function useMostFavoritedListings(limit = 12) {
           p_sort: 'popular',
           p_is_offer: null,
           p_category_id: null,
-          p_is_featured: null // 👈 إضافة المعامل السادس المفقود لتتطابق تماماً مع الدالة في قاعدة البيانات
+          p_is_featured: null
         });
       
-      if (error) {
-        console.error("❌ [useMostFavoritedListings] RPC Error:", error);
-        throw error;
-      }
+      if (error) throw error;
       
       const listings = Array.isArray(data) ? data : [];
-      console.log(`✅ [useMostFavoritedListings] Found ${listings.length} listings`);
-      
-      // ✅ فلترة المنتجات التي لها favorites_count > 0
       const filtered = listings.filter((item: any) => (item.favorites_count || 0) > 0);
       
+      cacheManager.set(cacheKey, filtered, FAVORITED_CACHE_TTL);
+      console.log(`✅ [useMostFavoritedListings] Found ${filtered.length} listings`);
       return filtered;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
-// Stores whose products accumulate the most user hearts
+
 export function useMostFavoritedStores(limit = 12) {
   return useQuery({
     queryKey: ["stores", "most-favorited", limit],
@@ -2149,49 +2140,44 @@ export function useMostFavoritedStores(limit = 12) {
   });
 }
 
-// Admin-picked trending listings (is_featured=true)
-// src/lib/queries.ts
-
-// src/lib/queries.ts
-
-// src/lib/queries.ts
-
-// src/lib/queries.ts
-
 export function useTrendingListings(limit = 12) {
   return useQuery({
     queryKey: ["listings", "trending", limit],
     queryFn: async () => {
       console.log("📡 [useTrendingListings] Fetching trending listings...");
       
+      const cacheKey = `trending_${limit}`;
+      const cached = cacheManager.get<any[]>(cacheKey);
+      if (cached) {
+        console.log('✅ [useTrendingListings] Using cached data');
+        return cached;
+      }
+      
       const { data, error } = await supabase
         .rpc('get_public_products_with_variations', {
           p_limit: limit,
           p_offset: 0,
-          p_sort: 'featured',  // ✅ ترتيب المميزين
+          p_sort: 'featured',
           p_is_offer: null,
           p_category_id: null,
-          p_is_featured: true  // ✅ فلتر المميزين فقط
+          p_is_featured: true
         });
       
-      if (error) {
-        console.error("❌ [useTrendingListings] RPC Error:", error);
-        throw error;
-      }
+      if (error) throw error;
       
       const listings = Array.isArray(data) ? data : [];
+      
+      cacheManager.set(cacheKey, listings, TRENDING_CACHE_TTL);
       console.log(`✅ [useTrendingListings] Found ${listings.length} trending listings`);
-      
-      if (listings.length > 0) {
-        console.log("🔍 [useTrendingListings] First item:", listings[0]);
-        console.log("🔍 [useTrendingListings] Variations:", listings[0]?.variations?.length || 0);
-      }
-      
       return listings;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
-// Admin-picked trending stores (profiles.is_featured=true)
+
 export function useTrendingStores(limit = 12) {
   return useQuery({
     queryKey: ["stores", "trending", limit],
@@ -2226,13 +2212,10 @@ export function useTrendingStores(limit = 12) {
     },
   });
 }
-/* ============================================================
-   FEATURED / TRENDING — user hearts + admin-controlled
-   ============================================================ */
 
-// ... دوال useMostFavoritedListings, useMostFavoritedStores, useTrendingListings, useTrendingStores
-
-// Admin toggle featured on a listing
+// ============================================================
+// ✅ Featured Toggle
+// ============================================================
 export function useSetListingFeatured() {
   const qc = useQueryClient();
   return useMutation({
@@ -2245,11 +2228,11 @@ export function useSetListingFeatured() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["listings"] });
       qc.invalidateQueries({ queryKey: ["admin", "listings"] });
+      invalidateListingsCache();
     },
   });
 }
 
-// Admin toggle featured on a store profile
 export function useSetStoreFeatured() {
   const qc = useQueryClient();
   return useMutation({
@@ -2262,16 +2245,14 @@ export function useSetStoreFeatured() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stores"] });
       qc.invalidateQueries({ queryKey: ["admin", "stores"] });
+      invalidateStoresCache();
     },
   });
 }
-/* ============================================================
-   NOTIFICATIONS — real-time notification system
-   ============================================================ */
 
-/**
- * جلب إشعارات المستخدم من قاعدة البيانات
- */
+// ============================================================
+// ✅ NOTIFICATIONS
+// ============================================================
 export function useNotifications(userId: string | undefined) {
   return useQuery({
     queryKey: ["notifications", userId],
@@ -2292,9 +2273,6 @@ export function useNotifications(userId: string | undefined) {
   });
 }
 
-/**
- * تحديث إشعار واحد كمقروء
- */
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -2311,9 +2289,6 @@ export function useMarkNotificationRead() {
   });
 }
 
-/**
- * تحديث كل الإشعارات كمقروءة لمستخدم معين
- */
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -2331,19 +2306,6 @@ export function useMarkAllNotificationsRead() {
   });
 }
 
-/**
- * إرسال إشعار جديد (يستخدم الدالة المخزنة في PostgreSQL)
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * Mutation function to update a store profile's featured status and sort order.
- *
- * @param {id: string; is_featured: boolean; sort?: number} params - store profile id, featured status and sort order
- * @returns {Promise<void>} - promise resolving to void
- * @throws {Error} - error thrown if supabase update fails
- */
-
-// src/lib/queries.ts
-
 export function useSendNotification() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -2354,8 +2316,8 @@ export function useSendNotification() {
       bodyAr,
       referenceId,
       metadata,
-      linkUrl,        // ✅ جديد
-      imageUrl,       // ✅ جديد
+      linkUrl,
+      imageUrl,
     }: {
       userId: string;
       type: string;
@@ -2363,10 +2325,9 @@ export function useSendNotification() {
       bodyAr: string;
       referenceId?: string;
       metadata?: Record<string, any>;
-      linkUrl?: string;   // ✅ جديد
-      imageUrl?: string;  // ✅ جديد
+      linkUrl?: string;
+      imageUrl?: string;
     }) => {
-      // ✅ 1. حفظ الإشعار في قاعدة البيانات (In-App)
       const { data, error } = await supabase
         .from("notifications")
         .insert({
@@ -2386,9 +2347,7 @@ export function useSendNotification() {
       
       if (error) throw error;
 
-      // ✅ 2. ✅ ✅ ✅ إرسال Push Notification (من فوق الشاشة)
       try {
-        // جلب الـ Push Subscriptions للمستخدم
         const { data: subscriptions, error: subError } = await supabase
           .from('push_subscriptions')
           .select('subscription')
@@ -2399,14 +2358,10 @@ export function useSendNotification() {
         }
 
         if (subscriptions && subscriptions.length > 0) {
-          // ✅ إرسال Push لكل Subscription
           for (const sub of subscriptions) {
             try {
-              // ✅ محاولة إرسال عبر Service Worker (إذا كان نشط)
               if ('serviceWorker' in navigator) {
                 const registration = await navigator.serviceWorker.ready;
-                
-                // ✅ طريقة 1: عبر showNotification مباشرة
                 registration.showNotification(titleAr, {
                   body: bodyAr,
                   icon: imageUrl || '/logo-192.png',
@@ -2425,7 +2380,6 @@ export function useSendNotification() {
                 });
               }
 
-              // ✅ طريقة 2: عبر API (إذا كان موجود)
               try {
                 await fetch('/api/send-push', {
                   method: 'POST',
@@ -2442,7 +2396,6 @@ export function useSendNotification() {
                   }),
                 });
               } catch (apiError) {
-                // API مش موجود، نتجاهل
                 console.log('ℹ️ Push API not available, using Service Worker directly');
               }
 
@@ -2454,7 +2407,6 @@ export function useSendNotification() {
         }
       } catch (pushError) {
         console.error('❌ Error in push flow:', pushError);
-        // لا نرمي خطأ عشان الإشعار ينحفظ على الأقل
       }
 
       return data;
@@ -2466,35 +2418,29 @@ export function useSendNotification() {
     },
   });
 }
-/* ============================================================
-   NOTIFICATIONS — real-time notification system
-   ============================================================ */
 
-// ... دوال useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead, useSendNotification
-
-/* ============================================================
-   REALTIME NOTIFICATIONS — تحديث لحظي داخل التطبيق
-   ============================================================ */
-
-// src/lib/queries.ts
-
+// ============================================================
+// ✅ REALTIME NOTIFICATIONS - مع منع التكرار
+// ============================================================
 export function useRealtimeNotifications(userId: string | undefined) {
   const queryClient = useQueryClient();
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
   
   useEffect(() => {
     if (!userId) return;
+    if (isSubscribedRef.current) {
+      console.log('📡 [Realtime] Already subscribed, skipping...');
+      return;
+    }
     
-    // ✅ إلغاء القناة السابقة إذا وجدت
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
     }
     
-    // ✅ إنشاء القناة
-    const channel = supabase.channel('notifications-realtime');
+    const channel = supabase.channel(`notifications-${userId}`);
     channelRef.current = channel;
     
-    // ✅ إضافة الـ on
     channel.on(
       'postgres_changes',
       {
@@ -2531,20 +2477,26 @@ export function useRealtimeNotifications(userId: string | undefined) {
       }
     );
     
-    // ✅ الـ subscribe
     channel.subscribe((status) => {
       console.log(`📡 Realtime notifications status: ${status}`);
+      if (status === 'SUBSCRIBED') {
+        isSubscribedRef.current = true;
+      }
+      if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        isSubscribedRef.current = false;
+      }
     });
       
-    // ✅ التنظيف
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
   }, [userId, queryClient]);
 }
+
 export function useUnreadNotificationsCount(userId: string | undefined) {
   return useQuery({
     queryKey: ["notifications", "unread", userId],
@@ -2580,18 +2532,15 @@ export function useDeleteNotification() {
     },
   });
 }
-// src/lib/queries.ts
 
-// ====== CONVERSATIONS ======
-
-// src/lib/queries.ts - استبدل دالة useConversations بهذه
-
+// ============================================================
+// ✅ CONVERSATIONS
+// ============================================================
 export function useConversations(userId: string | undefined) {
   return useQuery({
     queryKey: ["conversations", userId],
     enabled: !!userId,
     queryFn: async () => {
-      // 1. جلب المحادثات أولاً
       const { data: conversations, error: convError } = await supabase
         .from("conversations")
         .select("*")
@@ -2601,7 +2550,6 @@ export function useConversations(userId: string | undefined) {
       if (convError) throw convError;
       if (!conversations || conversations.length === 0) return [];
 
-      // 2. جلب بيانات المشاركين بشكل منفصل
       const userIds = new Set<string>();
       conversations.forEach((conv: any) => {
         userIds.add(conv.participant1_id);
@@ -2615,7 +2563,6 @@ export function useConversations(userId: string | undefined) {
 
       if (profilesError) throw profilesError;
 
-      // 3. دمج البيانات
       const profilesMap = new Map();
       profiles?.forEach((profile: any) => {
         profilesMap.set(profile.id, profile);
@@ -2660,7 +2607,6 @@ export function useSendMessage() {
       receiverId: string; 
       content: string;
     }) => {
-      // 1. إرسال الرسالة
       const { data, error } = await supabase
         .from("messages")
         .insert({
@@ -2673,7 +2619,6 @@ export function useSendMessage() {
 
       if (error) throw error;
 
-      // 2. تحديث last_message في المحادثة
       const { error: updateError } = await supabase
         .from("conversations")
         .update({
@@ -2715,7 +2660,6 @@ export function useMarkConversationAsRead() {
       conversationId: string; 
       userId: string; 
     }) => {
-      // تحديث عدد الرسائل غير المقروءة
       const { error } = await supabase
         .from("conversations")
         .update({
@@ -2726,7 +2670,6 @@ export function useMarkConversationAsRead() {
 
       if (error) throw error;
 
-      // تحديث كل الرسائل كمقروءة
       const { error: messagesError } = await supabase
         .from("messages")
         .update({ read_at: new Date().toISOString() })
@@ -2782,7 +2725,6 @@ export function useDeleteConversation() {
       conversationId: string; 
       userId: string; 
     }) => {
-      // حذف كل الرسائل أولاً
       const { error: messagesError } = await supabase
         .from("messages")
         .delete()
@@ -2790,7 +2732,6 @@ export function useDeleteConversation() {
 
       if (messagesError) throw messagesError;
 
-      // حذف المحادثة
       const { error } = await supabase
         .from("conversations")
         .delete()
@@ -2808,11 +2749,10 @@ export function useDeleteConversation() {
     },
   });
 }
-/* ============================================================
-   PRODUCT OPTIONS — خيارات المنتج (الألوان، المقاسات، إلخ)
-   ============================================================ */
 
-// ✅ جلب خيارات منتج معين
+// ============================================================
+// ✅ PRODUCT OPTIONS
+// ============================================================
 export async function getProductOptions(listingId: string) {
   const { data, error } = await supabase
     .from("product_options")
@@ -2824,7 +2764,6 @@ export async function getProductOptions(listingId: string) {
   return data as ProductOption[];
 }
 
-// ✅ جلب تركيبات منتج معين
 export async function getProductVariations(listingId: string) {
   const { data, error } = await supabase
     .from("product_variations")
@@ -2836,7 +2775,6 @@ export async function getProductVariations(listingId: string) {
   return data as ProductVariation[];
 }
 
-// ✅ إضافة خيار جديد
 export async function addProductOption(option: Omit<ProductOption, 'id' | 'created_at' | 'updated_at'>) {
   const { data, error } = await supabase
     .from("product_options")
@@ -2848,7 +2786,6 @@ export async function addProductOption(option: Omit<ProductOption, 'id' | 'creat
   return data as ProductOption;
 }
 
-// ✅ حذف خيار
 export async function deleteProductOption(optionId: string) {
   const { error } = await supabase
     .from("product_options")
@@ -2859,7 +2796,6 @@ export async function deleteProductOption(optionId: string) {
   return true;
 }
 
-// ✅ حذف جميع خيارات منتج
 export async function deleteAllProductOptions(listingId: string) {
   const { error } = await supabase
     .from("product_options")
@@ -2870,12 +2806,9 @@ export async function deleteAllProductOptions(listingId: string) {
   return true;
 }
 
-// ✅ توليد التركيبات تلقائياً من الخيارات
 export async function generateVariations(listingId: string) {
-  // 1. جلب جميع الخيارات
   const options = await getProductOptions(listingId);
   
-  // 2. تجميع الخيارات حسب النوع
   const grouped: Record<string, string[]> = {};
   options.forEach((opt) => {
     if (!grouped[opt.option_type]) {
@@ -2884,13 +2817,11 @@ export async function generateVariations(listingId: string) {
     grouped[opt.option_type].push(opt.option_value);
   });
   
-  // 3. حذف التركيبات القديمة
   await supabase
     .from("product_variations")
     .delete()
     .eq("listing_id", listingId);
   
-  // 4. إنشاء تركيبات جديدة
   const combinations = generateCombinations(grouped);
   const variations = combinations.map((combo, index) => ({
     listing_id: listingId,
@@ -2911,7 +2842,6 @@ export async function generateVariations(listingId: string) {
   return data as ProductVariation[];
 }
 
-// ✅ دالة مساعدة لتوليد التركيبات (Cartesian Product)
 function generateCombinations(grouped: Record<string, string[]>): Record<string, string>[] {
   const keys = Object.keys(grouped);
   if (keys.length === 0) return [];
@@ -2934,7 +2864,6 @@ function generateCombinations(grouped: Record<string, string[]>): Record<string,
   return results;
 }
 
-// ✅ React Query Hooks
 export function useProductOptions(listingId: string) {
   return useQuery({
     queryKey: ["product-options", listingId],
@@ -2953,7 +2882,6 @@ export function useProductVariations(listingId: string) {
 
 export function useAddProductOption() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: addProductOption,
     onSuccess: (_, variables) => {
@@ -2965,7 +2893,6 @@ export function useAddProductOption() {
 
 export function useDeleteProductOption() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: deleteProductOption,
     onSuccess: () => {
@@ -2976,7 +2903,6 @@ export function useDeleteProductOption() {
 
 export function useGenerateVariations() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: generateVariations,
     onSuccess: (_, listingId) => {
@@ -2984,11 +2910,10 @@ export function useGenerateVariations() {
     },
   });
 }
-/* ============================================================
-   PRODUCT COLORS — ألوان المنتج مع الصور (مثل نظام نون)
-   ============================================================ */
 
-// ✅ جلب ألوان منتج معين
+// ============================================================
+// ✅ PRODUCT COLORS
+// ============================================================
 export async function getProductColors(listingId: string) {
   const { data, error } = await supabase
     .from("product_colors")
@@ -3000,7 +2925,6 @@ export async function getProductColors(listingId: string) {
   return data as ProductColor[];
 }
 
-// ✅ جلب تركيبات الألوان والمقاسات
 export async function getProductColorVariations(listingId: string) {
   const { data, error } = await supabase
     .from("product_variations")
@@ -3021,7 +2945,6 @@ export async function getProductColorVariations(listingId: string) {
   return data as ProductColorVariation[];
 }
 
-// ✅ إضافة لون جديد مع صورة
 export async function addProductColor(color: Omit<ProductColor, 'id' | 'created_at' | 'updated_at'>) {
   const { data, error } = await supabase
     .from("product_colors")
@@ -3033,7 +2956,6 @@ export async function addProductColor(color: Omit<ProductColor, 'id' | 'created_
   return data as ProductColor;
 }
 
-// ✅ حذف لون
 export async function deleteProductColor(colorId: string) {
   const { error } = await supabase
     .from("product_colors")
@@ -3044,7 +2966,6 @@ export async function deleteProductColor(colorId: string) {
   return true;
 }
 
-// ✅ تحديث صورة اللون
 export async function updateColorImage(colorId: string, imageUrl: string) {
   const { error } = await supabase
     .from("product_colors")
@@ -3058,19 +2979,15 @@ export async function updateColorImage(colorId: string, imageUrl: string) {
   return true;
 }
 
-// ✅ توليد التركيبات من الألوان والمقاسات
 export async function generateVariationsFromColors(listingId: string, sizes: string[]) {
-  // 1. جلب جميع الألوان
   const colors = await getProductColors(listingId);
   if (colors.length === 0) return [];
 
-  // 2. حذف التركيبات القديمة
   await supabase
     .from("product_variations")
     .delete()
     .eq("listing_id", listingId);
 
-  // 3. إنشاء تركيبات جديدة لكل لون × كل مقاس
   const variations = [];
   colors.forEach(color => {
     sizes.forEach(size => {
@@ -3095,8 +3012,6 @@ export async function generateVariationsFromColors(listingId: string, sizes: str
   return data as ProductColorVariation[];
 }
 
-// ===== React Query Hooks =====
-
 export function useProductColors(listingId: string) {
   return useQuery({
     queryKey: ["product-colors", listingId],
@@ -3115,7 +3030,6 @@ export function useProductColorVariations(listingId: string) {
 
 export function useAddProductColor() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: addProductColor,
     onSuccess: (_, variables) => {
@@ -3127,7 +3041,6 @@ export function useAddProductColor() {
 
 export function useDeleteProductColor() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: deleteProductColor,
     onSuccess: () => {
@@ -3139,7 +3052,6 @@ export function useDeleteProductColor() {
 
 export function useUpdateColorImage() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: ({ colorId, imageUrl }: { colorId: string; imageUrl: string }) => 
       updateColorImage(colorId, imageUrl),
@@ -3151,7 +3063,6 @@ export function useUpdateColorImage() {
 
 export function useGenerateVariationsFromColors() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: ({ listingId, sizes }: { listingId: string; sizes: string[] }) =>
       generateVariationsFromColors(listingId, sizes),
@@ -3160,28 +3071,16 @@ export function useGenerateVariationsFromColors() {
     },
   });
 }
-// src/lib/queries.ts
 
 // ============================================================
+// ✅ USER ROLES & APPLICATIONS
 // ============================================================
-// 🔥 🔥 🔥 دوال التحقق من حالة المستخدم (جديدة)
-// ============================================================
-// ============================================================
-
-// ✅ هذه الدوال تتحقق من إمكانية تقديم طلب متجر جديد
-// ✅ وتجلب الطلبات السابقة للمستخدم
-
-/**
- * التحقق من إمكانية تقديم طلب جديد
- * ✅ لا يتحقق من اسم المتجر (يمكن تكراره)
- */
 export async function canSubmitStoreApplication(userId: string): Promise<{
   canSubmit: boolean;
   reason?: string;
   existingApplication?: any;
   existingStore?: any;
 }> {
-  // ✅ 1. هل المستخدم لديه متجر مفعل؟
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("id, store_name, store_active")
@@ -3199,7 +3098,6 @@ export async function canSubmitStoreApplication(userId: string): Promise<{
     };
   }
 
-  // ✅ 2. جلب الطلب الحالي (غير مرفوض)
   const { data: existing, error: existingError } = await supabase
     .from("seller_applications")
     .select("id, store_name, status, created_at, admin_note")
@@ -3225,15 +3123,11 @@ export async function canSubmitStoreApplication(userId: string): Promise<{
     };
   }
 
-  // ✅ 3. لا يوجد طلب سابق (أو مرفوض فقط)
   return {
     canSubmit: true
   };
 }
 
-/**
- * جلب آخر طلب للمستخدم (بما في ذلك المرفوض)
- */
 export async function getLatestApplication(userId: string) {
   const { data, error } = await supabase
     .from("seller_applications")
@@ -3254,9 +3148,6 @@ export async function getLatestApplication(userId: string) {
   return data;
 }
 
-/**
- * جلب الطلب المرفوض الأخير (إن وجد)
- */
 export async function getLastRejectedApplication(userId: string) {
   const { data, error } = await supabase
     .from("seller_applications")
@@ -3278,11 +3169,6 @@ export async function getLastRejectedApplication(userId: string) {
   return data;
 }
 
-// ====== React Query Hooks ======
-
-/**
- * Hook: هل يمكن للمستخدم تقديم طلب؟
- */
 export function useCanSubmitApplication(userId: string | undefined) {
   return useQuery({
     queryKey: ["can_submit_application", userId],
@@ -3295,9 +3181,6 @@ export function useCanSubmitApplication(userId: string | undefined) {
   });
 }
 
-/**
- * Hook: جلب آخر طلب للمستخدم
- */
 export function useLatestApplication(userId: string | undefined) {
   return useQuery({
     queryKey: ["latest_application", userId],
@@ -3309,9 +3192,6 @@ export function useLatestApplication(userId: string | undefined) {
   });
 }
 
-/**
- * Hook: جلب الطلب المرفوض الأخير
- */
 export function useLastRejectedApplication(userId: string | undefined) {
   return useQuery({
     queryKey: ["last_rejected_application", userId],
@@ -3322,13 +3202,10 @@ export function useLastRejectedApplication(userId: string | undefined) {
     },
   });
 }
-/* ============================================================
-   ADMIN NOTIFICATIONS — إدارة الإشعارات من لوحة الأدمن
-   ============================================================ */
 
-/**
- * جلب جميع الإشعارات للإدارة
- */
+// ============================================================
+// ✅ ADMIN NOTIFICATIONS
+// ============================================================
 export function useAdminNotifications() {
   return useQuery({
     queryKey: ['admin-notifications'],
@@ -3343,9 +3220,6 @@ export function useAdminNotifications() {
   });
 }
 
-/**
- * إرسال إشعار من الأدمن (مع دعم الإرسال الجماعي)
- */
 export function useSendAdminNotification() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -3382,9 +3256,6 @@ export function useSendAdminNotification() {
   });
 }
 
-/**
- * إرسال إشعار جماعي لعدة مستخدمين
- */
 export function useSendBulkAdminNotifications() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -3423,9 +3294,6 @@ export function useSendBulkAdminNotifications() {
   });
 }
 
-/**
- * تحديث حالة الإشعار (مقروء/غير مقروء)
- */
 export function useUpdateNotificationStatus() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -3445,9 +3313,6 @@ export function useUpdateNotificationStatus() {
   });
 }
 
-/**
- * حذف إشعار (للأدمن)
- */
 export function useDeleteAdminNotification() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -3465,34 +3330,27 @@ export function useDeleteAdminNotification() {
   });
 }
 
-/**
- * جلب إحصائيات الإشعارات
- */
 export function useNotificationsStats() {
   return useQuery({
     queryKey: ['notifications-stats'],
     queryFn: async () => {
-      // إجمالي الإشعارات
       const { count: total, error: totalError } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true });
       if (totalError) throw totalError;
 
-      // الإشعارات المقروءة
       const { count: read, error: readError } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('is_read', true);
       if (readError) throw readError;
 
-      // الإشعارات غير المقروءة
       const { count: unread, error: unreadError } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('is_read', false);
       if (unreadError) throw unreadError;
 
-      // الإشعارات حسب النوع
       const { data: byType, error: typeError } = await supabase
         .from('notifications')
         .select('type, count:type', { count: 'exact' })
@@ -3508,14 +3366,10 @@ export function useNotificationsStats() {
     },
   });
 }
-// ============================================================
-// ✅ NOTIFICATIONS V2 - نظام إشعارات متطور (مثل نون)
-// ============================================================
 
-
-/**
- * جلب إشعارات المستخدم مع فلترة (V2)
- */
+// ============================================================
+// ✅ NOTIFICATIONS V2
+// ============================================================
 export function useUserNotifications(userId: string | undefined, options?: {
   limit?: number;
   offset?: number;
@@ -3554,13 +3408,6 @@ export function useUserNotifications(userId: string | undefined, options?: {
     },
   });
 }
-
-/**
- * إرسال إشعار جديد (V2)
- */
-// src/lib/queries.ts
-
-// src/lib/queries.ts - useSendNotificationV2
 
 export function useSendNotificationV2() {
   const queryClient = useQueryClient();
@@ -3602,7 +3449,6 @@ export function useSendNotificationV2() {
         sent_at: params.scheduledFor ? null : new Date().toISOString(),
       };
 
-      // ✅ 1. حفظ الإشعار في قاعدة البيانات
       const { data, error } = await supabase
         .from('notifications')
         .insert(notification)
@@ -3611,21 +3457,17 @@ export function useSendNotificationV2() {
 
       if (error) throw error;
 
-      // ✅ 2. إرسال Push Notification (من فوق الشاشة)
       try {
         if ('serviceWorker' in navigator) {
           const registration = await navigator.serviceWorker.ready;
           
-          // ✅ ✅ ✅ إرسال الإشعار مع تصميم احترافي
           await registration.showNotification(
             params.titleAr,
             {
               body: params.bodyAr,
               icon: params.imageUrl || '/logo-192.png',
               badge: '/badge.png',
-              // ✅ ✅ ✅ ألوان السستم
               color: '#2a655f',
-              // ✅ ✅ ✅ صورة كبيرة (اختياري)
               image: params.imageUrl || null,
               data: {
                 url: params.linkUrl || '/dashboard',
@@ -3638,7 +3480,6 @@ export function useSendNotificationV2() {
               tag: `notification-${data.id}`,
               requireInteraction: true,
               vibrate: [200, 100, 200, 100, 200],
-              // ✅ ✅ ✅ الاتجاه واللغة
               dir: 'rtl',
               lang: 'ar',
               timestamp: Date.now(),
@@ -3660,12 +3501,6 @@ export function useSendNotificationV2() {
     },
   });
 }
-/**
- * إرسال إشعار جماعي (V2)
- */
-// src/lib/queries.ts
-
-// src/lib/queries.ts
 
 export function useSendBulkNotificationsV2() {
   const queryClient = useQueryClient();
@@ -3686,7 +3521,6 @@ export function useSendBulkNotificationsV2() {
     }) => {
       const config = NOTIFICATION_CONFIG_V2[params.type];
 
-      // ✅ حفظ الإشعارات في قاعدة البيانات
       const notifications = params.userIds.map((userId) => ({
         user_id: userId,
         type: params.type,
@@ -3714,11 +3548,8 @@ export function useSendBulkNotificationsV2() {
 
       if (error) throw error;
 
-      // ✅ ✅ ✅ إرسال Push Notification (من فوق الشاشة)
       try {
-        // ✅ تحقق من الصلاحية
         if (Notification.permission === 'granted') {
-          // ✅ ✅ ✅ استخدم new Notification مباشرة
           new Notification(params.titleAr, {
             body: params.bodyAr,
             icon: params.imageUrl || '/images/logo-192.png',
@@ -3748,9 +3579,6 @@ export function useSendBulkNotificationsV2() {
   });
 }
 
-/**
- * تحديث إشعار واحد كمقروء (V2)
- */
 export function useMarkNotificationReadV2() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -3776,9 +3604,6 @@ export function useMarkNotificationReadV2() {
   });
 }
 
-/**
- * تحديث كل الإشعارات كمقروءة (V2)
- */
 export function useMarkAllNotificationsReadV2() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -3803,9 +3628,6 @@ export function useMarkAllNotificationsReadV2() {
   });
 }
 
-/**
- * عدد الإشعارات غير المقروءة (V2)
- */
 export function useUnreadNotificationsCountV2(userId: string | undefined) {
   return useQuery({
     queryKey: ['notifications', 'unread', 'v2', userId],
@@ -3823,9 +3645,6 @@ export function useUnreadNotificationsCountV2(userId: string | undefined) {
   });
 }
 
-/**
- * حذف إشعار (V2)
- */
 export function useDeleteNotificationV2() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -3845,15 +3664,11 @@ export function useDeleteNotificationV2() {
   });
 }
 
-/**
- * جلب إحصائيات الإشعارات للمستخدم (V2)
- */
 export function useUserNotificationsStats(userId: string | undefined) {
   return useQuery({
     queryKey: ['notifications', 'stats', userId],
     enabled: !!userId,
     queryFn: async () => {
-      // إجمالي الإشعارات
       const { count: total, error: totalError } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
@@ -3861,7 +3676,6 @@ export function useUserNotificationsStats(userId: string | undefined) {
 
       if (totalError) throw totalError;
 
-      // الإشعارات المقروءة
       const { count: read, error: readError } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
@@ -3870,7 +3684,6 @@ export function useUserNotificationsStats(userId: string | undefined) {
 
       if (readError) throw readError;
 
-      // الإشعارات غير المقروءة
       const { count: unread, error: unreadError } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
@@ -3887,12 +3700,9 @@ export function useUserNotificationsStats(userId: string | undefined) {
     },
   });
 }
-// ============================================================
-// 🚚 DELIVERY COMPANIES & DISTRIBUTORS
-// ============================================================
 
 // ============================================================
-// 📦 GET: شركات التوصيل
+// 🚚 DELIVERY COMPANIES & DISTRIBUTORS
 // ============================================================
 export function useDeliveryCompanies(options?: { 
   featured?: boolean; 
@@ -3927,8 +3737,6 @@ export function useDeliveryCompanies(options?: {
       }
       
       console.log("✅ [useDeliveryCompanies] Found companies:", data?.length || 0);
-      console.log("📦 [useDeliveryCompanies] Data:", data);
-      
       return data as DeliveryCompany[];
     },
   });
@@ -3954,16 +3762,11 @@ export function useDeliveryCompaniesByGovernorate(governorateName?: string) {
       }
       
       console.log("✅ [useDeliveryCompaniesByGovernorate] Found companies:", data?.length || 0);
-      console.log("📦 [useDeliveryCompaniesByGovernorate] Data:", data);
-      
       return data as DeliveryCompany[];
     },
   });
 }
 
-// ============================================================
-// 📦 GET: شركة توصيل واحدة
-// ============================================================
 export function useDeliveryCompany(slug: string) {
   return useQuery({
     queryKey: ["delivery-company", slug],
@@ -3981,12 +3784,6 @@ export function useDeliveryCompany(slug: string) {
   });
 }
 
-// ============================================================
-// 📦 GET: الموزعين
-// ============================================================
-// ============================================================
-// 📦 GET: الموزعين (معدلة لدعم companyId)
-// ============================================================
 export function useDistributors(options?: {
   companyId?: string;
   governorateId?: string;
@@ -4016,27 +3813,22 @@ export function useDistributors(options?: {
           )
         `);
 
-      // ✅ فلتر حسب الشركة (الأهم)
       if (options?.companyId) {
         query = query.eq("delivery_company_id", options.companyId);
       }
 
-      // ✅ فلتر حسب المحافظة
       if (options?.governorateId) {
         query = query.eq("governorate_id", options.governorateId);
       }
 
-      // ✅ فلتر حسب التوفر
       if (options?.isAvailable !== undefined) {
         query = query.eq("is_available", options.isAvailable);
       }
 
-      // ✅ فلتر حسب النشاط
       if (options?.active !== undefined) {
         query = query.eq("is_active", options.active);
       }
 
-      // ✅ ترتيب حسب التوفر أولاً ثم حسب الاسم
       query = query.order("is_available", { ascending: false });
       query = query.order("full_name_ar", { ascending: true });
 
@@ -4048,20 +3840,13 @@ export function useDistributors(options?: {
       }
       
       console.log("✅ [useDistributors] Found:", data?.length || 0, "distributors");
-      console.log("📦 [useDistributors] Data:", data);
-      
       return data || [];
     },
     enabled: true,
-    staleTime: 30 * 1000, // 30 ثانية
+    staleTime: 30 * 1000,
   });
 }
-// ============================================================
-// 📦 GET: طلبات التوصيل
-// ============================================================
-// src/lib/queries.ts - ابحث عن هذا الكود واستبدله
 
-// ✅ useDeliveryOrders - نسخة معدلة بالكامل
 export function useDeliveryOrders(userId?: string) {
   return useQuery({
     queryKey: ["delivery-orders", userId],
@@ -4072,7 +3857,6 @@ export function useDeliveryOrders(userId?: string) {
       if (!userId) return [];
       
       try {
-        // ✅ 1️⃣ جلب دور المستخدم
         const { data: roles } = await supabase
           .from("user_roles")
           .select("role")
@@ -4086,9 +3870,7 @@ export function useDeliveryOrders(userId?: string) {
         let companyId: string | null = null;
         let distributorId: string | null = null;
         
-        // ✅ 2️⃣ إذا كان شركة توصيل → جلب company_id
         if (isDeliveryCompany) {
-          // ✅ مالك شركة
           const { data: company } = await supabase
             .from("delivery_companies")
             .select("id")
@@ -4099,7 +3881,6 @@ export function useDeliveryOrders(userId?: string) {
             companyId = company.id;
             console.log("✅ [useDeliveryOrders] Found company (owner):", companyId);
           } else {
-            // ✅ مدير شركة (من delivery_company_admins)
             const { data: adminCompany } = await supabase
               .from("delivery_company_admins")
               .select("company_id")
@@ -4113,7 +3894,6 @@ export function useDeliveryOrders(userId?: string) {
           }
         }
         
-        // ✅ 3️⃣ إذا كان موزع → جلب distributor_id
         if (isDistributor) {
           const { data: distributor } = await supabase
             .from("distributors")
@@ -4127,7 +3907,6 @@ export function useDeliveryOrders(userId?: string) {
           }
         }
         
-        // ✅ 4️⃣ بناء الاستعلام
         let query = supabase.from("delivery_orders").select(`
           *,
           delivery_company:delivery_company_id (
@@ -4145,23 +3924,17 @@ export function useDeliveryOrders(userId?: string) {
           )
         `);
         
-        // ✅ إذا كان شركة توصيل → طلبات الشركة
         if (companyId) {
           query = query.eq("delivery_company_id", companyId);
           console.log("📡 [useDeliveryOrders] Filtering by company:", companyId);
-        } 
-        // ✅ إذا كان موزع → طلباته
-        else if (distributorId) {
+        } else if (distributorId) {
           query = query.eq("distributor_id", distributorId);
           console.log("📡 [useDeliveryOrders] Filtering by distributor:", distributorId);
-        } 
-        // ❌ إذا لا شركة ولا موزع
-        else {
+        } else {
           console.log("ℹ️ [useDeliveryOrders] No company or distributor found");
           return [];
         }
         
-        // ✅ ترتيب حسب الأحدث
         const { data, error } = await query.order("created_at", { ascending: false });
         
         if (error) throw error;
@@ -4176,9 +3949,7 @@ export function useDeliveryOrders(userId?: string) {
     },
   });
 }
-// ============================================================
-// 📦 MUTATION: إنشاء طلب توصيل
-// ============================================================
+
 export function useCreateDeliveryOrder() {
   const queryClient = useQueryClient();
 
@@ -4199,14 +3970,6 @@ export function useCreateDeliveryOrder() {
   });
 }
 
-// ============================================================
-// 📦 MUTATION: تحديث حالة طلب التوصيل
-// ============================================================
-
-
-// ============================================================
-// 📦 MUTATION: تتبع الموزع
-// ============================================================
 export function useTrackDistributor() {
   return useMutation({
     mutationFn: async ({
@@ -4243,26 +4006,14 @@ export function useTrackDistributor() {
   });
 }
 
-// ============================================================
-// 📦 UTILITY: حساب تكلفة التوصيل
-// ============================================================
 export function useCalculateDeliveryFee() {
   return (company: DeliveryCompany, distance: number, orderTotal: number) => {
     return calculateDeliveryFee(company, distance, orderTotal);
   };
 }
 
-// ============================================================
-// 📦 GET: شركات التوصيل التي تغطي محافظة معينة
-// ============================================================
-
-
-// ============================================================
-// 📦 MUTATION: إدارة شركات التوصيل (للداشبورد)
-// ============================================================
 export function useCreateDeliveryCompany() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async (input: Partial<DeliveryCompany> & { name_ar: string; name_en: string; slug: string }) => {
       const { data, error } = await supabase
@@ -4282,7 +4033,6 @@ export function useCreateDeliveryCompany() {
 
 export function useUpdateDeliveryCompany() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<DeliveryCompany> }) => {
       const { data, error } = await supabase
@@ -4303,7 +4053,6 @@ export function useUpdateDeliveryCompany() {
 
 export function useDeleteDeliveryCompany() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -4319,18 +4068,6 @@ export function useDeleteDeliveryCompany() {
   });
 }
 
-// ============================================================
-// 📦 MUTATION: إدارة الموزعين (للداشبورد)
-// ============================================================
-// src/lib/queries.ts
-
-// src/lib/queries.ts
-// src/lib/queries.ts
-
-// src/lib/queries.ts - ابحث عن هذا الكود واستبدله
-
-// src/lib/queries.ts
-
 export function useMyDeliveryCompany(userId: string | undefined) {
   return useQuery({
     queryKey: ["my-delivery-company", userId],
@@ -4343,7 +4080,6 @@ export function useMyDeliveryCompany(userId: string | undefined) {
       console.log("🔍 [useMyDeliveryCompany] Searching for userId:", userId);
       
       try {
-        // ✅ 1️⃣ أولاً: جلب الموزع من جدول distributors
         const { data: distributor, error: distError } = await supabase
           .from("distributors")
           .select(`
@@ -4384,13 +4120,11 @@ export function useMyDeliveryCompany(userId: string | undefined) {
           return null;
         }
 
-        // ✅ 2️⃣ إذا وجدنا موزع ولديه شركة
         if (distributor?.delivery_companies) {
           console.log("✅ [useMyDeliveryCompany] Company found via distributor:", distributor.delivery_companies.name_ar);
           return distributor.delivery_companies;
         }
 
-        // ✅ 3️⃣ إذا كان المستخدم أدمن شركة (جلب من delivery_company_admins)
         const { data: adminRecord, error: adminError } = await supabase
           .from("delivery_company_admins")
           .select(`
@@ -4434,7 +4168,6 @@ export function useMyDeliveryCompany(userId: string | undefined) {
           return adminRecord.delivery_companies;
         }
 
-        // ✅ 4️⃣ أخيراً: البحث في profiles
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select(`
@@ -4475,13 +4208,11 @@ export function useMyDeliveryCompany(userId: string | undefined) {
           return null;
         }
 
-        // ✅ التحقق من delivery_companies في profile
         if (profile?.delivery_companies) {
           console.log("✅ [useMyDeliveryCompany] Company found via profile.delivery_companies:", profile.delivery_companies.name_ar);
           return profile.delivery_companies;
         }
 
-        // ✅ التحقق من company_id في profile
         if (profile?.company_id) {
           const { data: company, error: companyError } = await supabase
             .from("delivery_companies")
@@ -4510,15 +4241,15 @@ export function useMyDeliveryCompany(userId: string | undefined) {
     },
   });
 }
+
 export function useCreateDistributor() {
   const queryClient = useQueryClient();
-  
   return useMutation({
    mutationFn: async (input: any) => {
   const payload = {
     ...input,
     user_id: input.user_id || null,
-    delivery_company_id: input.delivery_company_id || null,  // ✅ أضف هذا
+    delivery_company_id: input.delivery_company_id || null,
     governorate_id: input.governorate_id || null,
   };
   
@@ -4536,9 +4267,9 @@ export function useCreateDistributor() {
     },
   });
 }
+
 export function useUpdateDistributor() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Distributor> }) => {
       const { data, error } = await supabase
@@ -4559,7 +4290,6 @@ export function useUpdateDistributor() {
 
 export function useDeleteDistributor() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -4574,8 +4304,9 @@ export function useDeleteDistributor() {
     },
   });
 }
+
 // ============================================================
-// 📦 جلب صلاحيات المستخدم (الرولات)
+// ✅ USER ROLES
 // ============================================================
 export function useUserRoles(userId: string | undefined) {
   return useQuery({
@@ -4602,13 +4333,10 @@ export function useUserRoles(userId: string | undefined) {
     },
   });
 }
-// src/lib/queries.ts
 
 // ============================================================
-// ✅ الشكاوى (Complaints)
+// ✅ COMPLAINTS
 // ============================================================
-
-// ✅ جلب شكاوى المستخدم
 export function useMyComplaints(userId: string | undefined) {
   return useQuery({
     queryKey: ["complaints", userId],
@@ -4626,7 +4354,6 @@ export function useMyComplaints(userId: string | undefined) {
   });
 }
 
-// ✅ إضافة شكوى جديدة
 export function useCreateComplaint() {
   const qc = useQueryClient();
   return useMutation({
@@ -4652,10 +4379,6 @@ export function useCreateComplaint() {
   });
 }
 
-// ✅ جلب شكاوى الأدمن
-// src/lib/queries.ts
-
-// ✅ جلب شكاوى الأدمن - محسّن
 export function useAllComplaints() {
   return useQuery({
     queryKey: ["complaints", "all"],
@@ -4672,14 +4395,14 @@ export function useAllComplaints() {
       if (error) throw error;
       return data ?? [];
     },
-    staleTime: 1000 * 60 * 5,   // ✅ 5 دقائق
-    gcTime: 1000 * 60 * 10,    // ✅ 10 دقائق
-    refetchOnWindowFocus: false, // ✅ لا تعيد الجلب عند التركيز
-    refetchOnMount: false,      // ✅ لا تعيد الجلب عند التحميل
-    retry: 1,                   // ✅ حاول مرة واحدة
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 1,
   });
 }
-// ✅ تحديث حالة الشكوى (للأدمن)
+
 export function useUpdateComplaint() {
   const qc = useQueryClient();
   return useMutation({
@@ -4715,29 +4438,10 @@ export function useUpdateComplaint() {
     },
   });
 }
-// ============================================================
-// 🚚 نهاية دوال التوصيل والموزعين
-// ============================================================
-// ============================================================
-// ✅ نهاية دوال الإشعارات V2
-// ============================================================
-// ============================================================
-// ✅ نهاية الكود الجديد
-// ============================================================
-// ====== 🔥 NEW: Get or Create Conversation ======
 
 // ============================================================
-// 🚚 DELIVERY ORDERS - قبول ورفض من شركة التوصيل
+// 🚚 DELIVERY ORDERS - Accept & Reject
 // ============================================================
-
-// ✅ قبول طلب توصيل مع تعيين موزع
-// src/lib/queries.ts
-
-// ============================================================
-// 🚚 DELIVERY ORDERS - قبول ورفض من شركة التوصيل
-// ============================================================
-
-// ✅ قبول طلب توصيل مع تعيين موزع ووقت متوقع
 export function useAcceptDeliveryOrder() {
   const queryClient = useQueryClient();
   
@@ -4756,14 +4460,7 @@ export function useAcceptDeliveryOrder() {
       estimatedPickupAt?: string;
     }) => {
       console.log("🚀 [useAcceptDeliveryOrder] START");
-      console.log("📦 deliveryOrderId:", deliveryOrderId);
-      console.log("👤 distributorId:", distributorId);
-      console.log("🆔 orderId:", orderId);
-      console.log("⏰ estimatedDeliveryAt:", estimatedDeliveryAt);
-      console.log("⏰ estimatedPickupAt:", estimatedPickupAt);
 
-      // 1. جلب بيانات الطلب للإشعارات
-      console.log("📡 [1] Fetching order data...");
       const { data: order, error: orderFetchError } = await supabase
         .from("orders")
         .select(`
@@ -4782,12 +4479,7 @@ export function useAcceptDeliveryOrder() {
         console.error("❌ [1] Order fetch error:", orderFetchError);
         throw orderFetchError;
       }
-      console.log("✅ [1] Order fetched:", order);
-      console.log("📦 [1] Order listings:", order?.listings);
-      console.log("👤 [1] Order buyer_id:", order?.buyer_id);
 
-      // 2. تحديث delivery_order
-      console.log("📡 [2] Updating delivery_order...");
       const updateData: any = {
         status: 'assigned',
         distributor_id: distributorId,
@@ -4798,7 +4490,6 @@ export function useAcceptDeliveryOrder() {
       if (estimatedPickupAt) {
         updateData.estimated_pickup_at = estimatedPickupAt;
       }
-      console.log("📝 [2] Update data:", updateData);
 
       const { data: deliveryOrder, error: deliveryError } = await supabase
         .from("delivery_orders")
@@ -4811,10 +4502,7 @@ export function useAcceptDeliveryOrder() {
         console.error("❌ [2] Delivery order update error:", deliveryError);
         throw deliveryError;
       }
-      console.log("✅ [2] Delivery order updated:", deliveryOrder);
 
-      // 3. تحديث order الرئيسي
-      console.log("📡 [3] Updating main order...");
       const { error: orderError } = await supabase
         .from("orders")
         .update({
@@ -4830,35 +4518,21 @@ export function useAcceptDeliveryOrder() {
         console.error("❌ [3] Order update error:", orderError);
         throw orderError;
       }
-      console.log("✅ [3] Main order updated");
 
-      // 4. جلب بيانات الموزع للإشعار
-      console.log("📡 [4] Fetching distributor data...");
       const { data: distributor, error: distError } = await supabase
         .from("distributors")
         .select("full_name_ar, full_name_en, user_id, phone")
         .eq("id", distributorId)
         .single();
 
-      if (distError) {
-        console.error("❌ [4] Distributor fetch error:", distError);
-      } else {
-        console.log("✅ [4] Distributor fetched:", distributor);
-        console.log("👤 [4] Distributor user_id:", distributor?.user_id);
-      }
-
-      // ✅ 5. إشعار للموزع (تم تعيينه)
-      console.log("📡 [5] Sending notification to distributor...");
       if (distributor?.user_id) {
-        console.log("✅ [5] Distributor has user_id:", distributor.user_id);
         const deliveryDate = new Date(estimatedDeliveryAt);
         const formattedDate = deliveryDate.toLocaleDateString(
           'ar-SA',
           { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
         );
-        console.log("📅 [5] Formatted date:", formattedDate);
 
-        const { error: notifyDistError } = await supabase
+        await supabase
           .from("notifications")
           .insert({
             user_id: distributor.user_id,
@@ -4877,27 +4551,16 @@ export function useAcceptDeliveryOrder() {
               customer_address: order.delivery_address,
             }
           });
-
-        if (notifyDistError) {
-          console.error("❌ [5] Error sending notification to distributor:", notifyDistError);
-        } else {
-          console.log("✅ [5] Notification sent to distributor:", distributor.user_id);
-        }
-      } else {
-        console.warn("⚠️ [5] No distributor user_id found, skipping notification");
       }
 
-      // ✅ 6. إشعار للمشتري (العميل) مع الوقت المتوقع
-      console.log("📡 [6] Sending notification to buyer...");
       if (order?.buyer_id) {
-        console.log("✅ [6] Buyer has id:", order.buyer_id);
         const deliveryDate = new Date(estimatedDeliveryAt);
         const formattedDate = deliveryDate.toLocaleDateString(
           'ar-SA',
           { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
         );
 
-        const { error: notifyBuyerError } = await supabase
+        await supabase
           .from("notifications")
           .insert({
             user_id: order.buyer_id,
@@ -4914,21 +4577,10 @@ export function useAcceptDeliveryOrder() {
               distributor_phone: distributor?.phone,
             }
           });
-
-        if (notifyBuyerError) {
-          console.error("❌ [6] Error sending notification to buyer:", notifyBuyerError);
-        } else {
-          console.log("✅ [6] Notification sent to buyer:", order.buyer_id);
-        }
-      } else {
-        console.warn("⚠️ [6] No buyer_id found, skipping notification");
       }
 
-      // ✅ 7. إشعار للبائع (صاحب المتجر)
-      console.log("📡 [7] Sending notification to seller...");
       if (order?.listings?.owner_id) {
-        console.log("✅ [7] Seller has id:", order.listings.owner_id);
-        const { error: notifySellerError } = await supabase
+        await supabase
           .from("notifications")
           .insert({
             user_id: order.listings.owner_id,
@@ -4942,17 +4594,8 @@ export function useAcceptDeliveryOrder() {
               estimated_delivery_at: estimatedDeliveryAt,
             }
           });
-
-        if (notifySellerError) {
-          console.error("❌ [7] Error sending notification to seller:", notifySellerError);
-        } else {
-          console.log("✅ [7] Notification sent to seller:", order.listings.owner_id);
-        }
-      } else {
-        console.warn("⚠️ [7] No seller owner_id found, skipping notification");
       }
 
-      console.log("🎉 [useAcceptDeliveryOrder] COMPLETED SUCCESSFULLY");
       return deliveryOrder;
     },
     onSuccess: () => {
@@ -4967,7 +4610,6 @@ export function useAcceptDeliveryOrder() {
   });
 }
 
-// ✅ رفض طلب توصيل مع سبب
 export function useRejectDeliveryOrder() {
   const queryClient = useQueryClient();
   
@@ -4981,7 +4623,6 @@ export function useRejectDeliveryOrder() {
       orderId: string;
       reason: string;
     }) => {
-      // 1. جلب بيانات الطلب للإشعارات
       const { data: order, error: orderFetchError } = await supabase
         .from("orders")
         .select(`
@@ -4997,7 +4638,6 @@ export function useRejectDeliveryOrder() {
 
       if (orderFetchError) throw orderFetchError;
 
-      // 2. تحديث delivery_order
       const { data: deliveryOrder, error: deliveryError } = await supabase
         .from("delivery_orders")
         .update({
@@ -5013,7 +4653,6 @@ export function useRejectDeliveryOrder() {
 
       if (deliveryError) throw deliveryError;
 
-      // 3. تحديث order الرئيسي
       const { error: orderError } = await supabase
         .from("orders")
         .update({
@@ -5025,7 +4664,6 @@ export function useRejectDeliveryOrder() {
 
       if (orderError) throw orderError;
 
-      // 4. إشعار للبائع
       if (order?.listings?.owner_id) {
         await supabase
           .from("notifications")
@@ -5042,7 +4680,6 @@ export function useRejectDeliveryOrder() {
           });
       }
 
-      // 5. إشعار للمشتري
       if (order?.buyer_id) {
         await supabase
           .from("notifications")
@@ -5069,7 +4706,9 @@ export function useRejectDeliveryOrder() {
   });
 }
 
-
+// ============================================================
+// ✅ DELETE STORE
+// ============================================================
 export function useDeleteStore() {
   const queryClient = useQueryClient();
 
@@ -5079,7 +4718,6 @@ export function useDeleteStore() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        // ✅ تحديث الكاش بعد الحذف
         queryClient.invalidateQueries({ queryKey: ["profile"] });
         queryClient.invalidateQueries({ queryKey: ["myListings"] });
         queryClient.invalidateQueries({ queryKey: ["mySellerApplication"] });
@@ -5088,6 +4726,7 @@ export function useDeleteStore() {
         queryClient.invalidateQueries({ queryKey: ["favorites"] });
         queryClient.invalidateQueries({ queryKey: ["stores"] });
         queryClient.invalidateQueries({ queryKey: ["admin", "stores"] });
+        invalidateAllCaches();
 
         toast.success(
           "🗑️ تم حذف المتجر وجميع بياناته بنجاح",
@@ -5104,9 +4743,6 @@ export function useDeleteStore() {
   });
 }
 
-/**
- * ✅ Hook: التحقق من وجود بيانات مرتبطة بالمتجر
- */
 export function useStoreDependencies(userId: string | undefined) {
   return useQuery({
     queryKey: ["store-dependencies", userId],
@@ -5115,14 +4751,11 @@ export function useStoreDependencies(userId: string | undefined) {
       if (!userId) return null;
       return StoreService.checkStoreDependencies(userId);
     },
-    staleTime: 1000 * 30, // 30 ثانية
-    gcTime: 1000 * 60 * 5, // 5 دقائق
+    staleTime: 1000 * 30,
+    gcTime: 1000 * 60 * 5,
   });
 }
 
-/**
- * ✅ Hook: التحقق من وجود طلبات نشطة
- */
 export function useHasActiveOrders(userId: string | undefined) {
   return useQuery({
     queryKey: ["has-active-orders", userId],
@@ -5136,9 +4769,6 @@ export function useHasActiveOrders(userId: string | undefined) {
   });
 }
 
-/**
- * ✅ Hook: التحقق من وجود شكاوى نشطة
- */
 export function useHasActiveComplaints(userId: string | undefined) {
   return useQuery({
     queryKey: ["has-active-complaints", userId],
@@ -5151,8 +4781,7 @@ export function useHasActiveComplaints(userId: string | undefined) {
     gcTime: 1000 * 60 * 5,
   });
 }
-// ✅ تحديث حالة طلب التوصيل (للاستخدامات الأخرى)
-// ✅ احتفظ بهذا التعريف (الأول)
+
 export function useUpdateDeliveryOrderStatus() {
   const queryClient = useQueryClient();
 
@@ -5189,14 +4818,11 @@ export function useUpdateDeliveryOrderStatus() {
   });
 }
 
-
-// ✅ جلب الموزعين الأقرب للعميل
 export function useNearestDistributors(orderId: string) {
   return useQuery({
     queryKey: ["nearest-distributors", orderId],
     enabled: !!orderId,
     queryFn: async () => {
-      // 1. جلب بيانات الطلب (العنوان والإحداثيات)
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .select("delivery_lat, delivery_lng, delivery_address, governorate_id")
@@ -5205,7 +4831,6 @@ export function useNearestDistributors(orderId: string) {
 
       if (orderError) throw orderError;
 
-      // 2. جلب الموزعين المتاحين في نفس المحافظة
       const { data: distributors, error: distError } = await supabase
         .from("distributors")
         .select(`
@@ -5228,7 +4853,6 @@ export function useNearestDistributors(orderId: string) {
 
       if (distError) throw distError;
 
-      // 3. حساب المسافة لكل موزع
       const distributorsWithDistance = distributors.map((dist: any) => {
         let distance = Infinity;
         let distanceText = "غير محدد";
@@ -5250,7 +4874,6 @@ export function useNearestDistributors(orderId: string) {
         };
       });
 
-      // 4. ترتيب حسب الأقرب
       return distributorsWithDistance
         .sort((a: any, b: any) => a.distance - b.distance)
         .slice(0, 20);
@@ -5258,7 +4881,6 @@ export function useNearestDistributors(orderId: string) {
   });
 }
 
-// ✅ دالة حساب المسافة (هافرسين)
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -5270,13 +4892,10 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
 }
-// ============================================================
-// 🎁 PRODUCT OFFERS - جلب العروض الترويجية للعرض العام
-// ============================================================
 
-/**
- * جلب العروض الترويجية مع فلترة (للعرض العام)
- */
+// ============================================================
+// 🎁 PRODUCT OFFERS - محسّن مع Cache متقدم
+// ============================================================
 export async function getProductOffers(options?: {
   storeId?: string;
   listingId?: string;
@@ -5313,38 +4932,31 @@ export async function getProductOffers(options?: {
     .order("featured_sort", { ascending: true })
     .order("created_at", { ascending: false });
 
-  // ✅ فلتر حسب النشاط
   if (options?.isActive !== undefined) {
     query = query.eq("is_active", options.isActive);
   } else {
     query = query.eq("is_active", true);
   }
 
-  // ✅ فلتر حسب المتجر
   if (options?.storeId) {
     query = query.eq("store_id", options.storeId);
   }
 
-  // ✅ فلتر حسب التصنيف
   if (options?.categoryId) {
     query = query.eq("category_id", options.categoryId);
   }
 
-  // ✅ فلتر حسب نوع العرض
   if (options?.offerType) {
     query = query.eq("offer_type", options.offerType);
   }
 
-  // ✅ فلتر المميزين
   if (options?.featured !== undefined) {
     query = query.eq("is_featured", options.featured);
   }
 
-  // ✅ فلتر الصلاحية
   const now = new Date().toISOString();
   query = query.or(`expires_at.is.null,expires_at.gt.${now}`);
 
-  // ✅ Pagination
   if (options?.limit) {
     query = query.limit(options.limit);
   }
@@ -5368,14 +4980,8 @@ export async function getProductOffers(options?: {
 
   console.log(`📊 [getProductOffers] Found ${data.length} offers`);
 
-  // ✅ ✅ ✅ جلب جميع البيانات لكل عرض
   const offersWithFullData = await Promise.all(
     data.map(async (offer: any) => {
-      console.log(`🔄 Processing offer ${offer.id}: ${offer.offer_type}`);
-
-      // ============================================================
-      // 1️⃣ جلب المنتج الرئيسي (listing_id) مع كل علاقاته
-      // ============================================================
       const { data: mainProduct, error: mainError } = await supabase
         .from("listings")
         .select(`
@@ -5409,9 +5015,6 @@ export async function getProductOffers(options?: {
         console.error(`❌ Error fetching main product:`, mainError);
       }
 
-      // ============================================================
-      // 2️⃣ جلب المنتج الهدية (free_listing_id) إن وجد
-      // ============================================================
       let freeProduct = null;
       if (offer.free_listing_id) {
         const { data: freeData, error: freeError } = await supabase
@@ -5446,9 +5049,6 @@ export async function getProductOffers(options?: {
         }
       }
 
-      // ============================================================
-      // 3️⃣ جلب المنتجات المطلوبة (required_product_ids) للـ Bundle
-      // ============================================================
       let requiredProducts = [];
       if (offer.required_product_ids && offer.required_product_ids.length > 0) {
         const { data: requiredData, error: requiredError } = await supabase
@@ -5482,11 +5082,6 @@ export async function getProductOffers(options?: {
         }
       }
 
-      // ============================================================
-      // 4️⃣ فلترة الفيرنتات حسب الـ IDs المحددة
-      // ============================================================
-      
-      // ✅ فيرنتات المنتج الرئيسي (variation_ids)
       let mainVariations = mainProduct?.variations || [];
       if (offer.variation_ids && offer.variation_ids.length > 0) {
         mainVariations = mainVariations.filter((v: any) => 
@@ -5494,7 +5089,6 @@ export async function getProductOffers(options?: {
         );
       }
 
-      // ✅ فيرنتات المنتج الهدية (result_variation_ids)
       let freeVariations = freeProduct?.variations || [];
       if (offer.result_variation_ids && offer.result_variation_ids.length > 0) {
         freeVariations = freeVariations.filter((v: any) => 
@@ -5502,7 +5096,6 @@ export async function getProductOffers(options?: {
         );
       }
 
-      // ✅ فيرنتات المنتجات المطلوبة (required_variations)
       let requiredVariations = [];
       if (offer.required_variations && offer.required_variations.length > 0) {
         requiredVariations = offer.required_variations.map((rv: any) => {
@@ -5518,35 +5111,20 @@ export async function getProductOffers(options?: {
         });
       }
 
-      // ============================================================
-      // 5️⃣ بناء الكائن النهائي
-      // ============================================================
       return {
         ...offer,
-        
-        // ✅ المنتج الرئيسي
         main_product: mainProduct || null,
         main_variations: mainVariations,
-        
-        // ✅ المنتج الهدية (للـ BOGO و Cross-sell)
         free_product: freeProduct,
         free_variations: freeVariations,
-        
-        // ✅ المنتجات المطلوبة (للـ Bundle)
         required_products: requiredProducts,
         required_variations: requiredVariations,
-        
-        // ✅ ✅ ✅ منتجات موحدة (للعرض في الـ UI)
         products: mainProduct ? [mainProduct] : [],
-        
-        // ✅ ✅ ✅ كل الفيرنتات المتاحة في العرض
         all_variations: {
           main: mainVariations,
           free: freeVariations,
           required: requiredVariations
         },
-        
-        // ✅ ✅ ✅ تفاصيل العرض بالعربية والإنجليزية
         display: {
           ar: offer.display_text_ar || mainProduct?.title_ar || "عرض ترويجي",
           en: offer.display_text_en || mainProduct?.title_en || "Promo Offer"
@@ -5556,18 +5134,12 @@ export async function getProductOffers(options?: {
   );
 
   console.log(`✅ [getProductOffers] Completed: ${offersWithFullData.length} offers processed`);
-  console.log("📊 [getProductOffers] Sample:", offersWithFullData?.[0]);
-  console.log("🔍 [getProductOffers] ===== END =====");
-  
   return offersWithFullData;
 }
-// ============================================================
-// 🎁 HOOK: useProductOffers (للعرض العام)
-// ============================================================
 
-// في src/lib/queries.ts
-
-// 🔥 استبدل دالة useProductOffers الحالية بهذه:
+// ============================================================
+// 🎁 HOOK: useProductOffers (محسّن بالكامل)
+// ============================================================
 export function useProductOffers(options?: {
   storeId?: string;
   listingId?: string;
@@ -5578,21 +5150,48 @@ export function useProductOffers(options?: {
   featured?: boolean;
   categoryId?: string;
 }) {
-  console.log("🎯 [useProductOffers] Hook called with options:", options);
+  // ✅ تثبيت الـ options باستخدام useMemo
+  const stableOptions = useMemo(() => ({
+    storeId: options?.storeId || null,
+    listingId: options?.listingId || null,
+    isActive: options?.isActive !== undefined ? options.isActive : true,
+    limit: options?.limit || 30,
+    offset: options?.offset || 0,
+    offerType: options?.offerType || null,
+    featured: options?.featured !== undefined ? options.featured : null,
+    categoryId: options?.categoryId || null,
+  }), [
+    options?.storeId,
+    options?.listingId,
+    options?.isActive,
+    options?.limit,
+    options?.offset,
+    options?.offerType,
+    options?.featured,
+    options?.categoryId,
+  ]);
+
+  console.log("🎯 [useProductOffers] Hook called with stable options:", stableOptions);
   
   return useQuery({
-    queryKey: ["product-offers", options],
+    queryKey: ["product-offers", stableOptions],
     queryFn: async () => {
       console.log("🔄 [useProductOffers] queryFn executing...");
       
-      // ✅ ✅ ✅ استخدم RPC مباشرة
+      const cacheKey = `product_offers_${JSON.stringify(stableOptions)}`;
+      const cached = cacheManager.get<any[]>(cacheKey);
+      if (cached) {
+        console.log('✅ [useProductOffers] Using cached data');
+        return cached;
+      }
+      
       const { data, error } = await supabase
         .rpc('get_product_offers_with_details', {
-          p_limit: options?.limit || 30,
-          p_offset: options?.offset || 0,
-          p_store_id: options?.storeId || null,
-          p_category_id: options?.categoryId || null,
-          p_is_active: options?.isActive !== undefined ? options.isActive : true
+          p_limit: stableOptions.limit,
+          p_offset: stableOptions.offset,
+          p_store_id: stableOptions.storeId,
+          p_category_id: stableOptions.categoryId,
+          p_is_active: stableOptions.isActive
         });
 
       if (error) {
@@ -5600,21 +5199,24 @@ export function useProductOffers(options?: {
         return [];
       }
 
-      console.log(`📊 [useProductOffers] Found ${data?.length || 0} offers`);
-      console.log("📊 [useProductOffers] Sample:", data?.[0]);
+      const result = data || [];
+      cacheManager.set(cacheKey, result, PRODUCT_OFFERS_CACHE_TTL);
       
-      return data || [];
+      console.log(`📊 [useProductOffers] Found ${result.length} offers (cached)`);
+      return result;
     },
-    staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
     retry: 1,
   });
 }
 
-
-
-
+// ============================================================
+// ✅ GET OR CREATE CONVERSATION
+// ============================================================
 export function useGetOrCreateConversation() {
   const queryClient = useQueryClient();
   
@@ -5626,7 +5228,6 @@ export function useGetOrCreateConversation() {
       userId: string; 
       otherUserId: string; 
     }) => {
-      // 1. جلب كل محادثات المستخدم
       const { data: conversations, error: fetchError } = await supabase
         .from("conversations")
         .select("*")
@@ -5634,7 +5235,6 @@ export function useGetOrCreateConversation() {
 
       if (fetchError) throw fetchError;
 
-      // 2. البحث عن محادثة مع المستخدم الآخر
       const existing = conversations?.find((conv: any) => 
         (conv.participant1_id === otherUserId && conv.participant2_id === userId) ||
         (conv.participant1_id === userId && conv.participant2_id === otherUserId)
@@ -5644,7 +5244,6 @@ export function useGetOrCreateConversation() {
         return existing;
       }
 
-      // 3. إنشاء محادثة جديدة
       const { data, error } = await supabase
         .from("conversations")
         .insert({

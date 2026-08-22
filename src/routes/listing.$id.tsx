@@ -1,7 +1,7 @@
 // src/routes/listing/$id.tsx
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import {
   Star, MapPin, Heart, ShoppingBag, MessageCircle, Phone, Share2,
   ChevronLeft, ChevronRight, Store, Truck, Shield, Clock, Award,
@@ -22,6 +22,7 @@ import { translateOptionType } from "@/lib/utils/constants";
 import { ClientOnly } from "@/components/ClientOnly";
 import { useCart, useAddToCart, useClearCart } from "@/lib/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import {
   Dialog,
   DialogContent,
@@ -142,18 +143,10 @@ const isInCart = useMemo(() => {
   if (!cart?.items || !listing) return false;
   
   return cart.items.some((item: any) => {
-    // نفس المنتج
     if (item.listing_id !== listing.id) return false;
-    
-    // نفس اللون (إذا تم اختيار لون)
     if (selectedColor && item.selected_color !== selectedColor) return false;
-    
-    // نفس المقاس (إذا تم اختيار مقاس)
     if (selectedSize && item.selected_size !== selectedSize) return false;
-    
-    // نفس الفيرنت (إذا تم اختيار فيرنت)
     if (selectedVariation?.id && item.selected_variation_id !== selectedVariation.id) return false;
-    
     return true;
   });
 }, [cart, listing, selectedColor, selectedSize, selectedVariation]);
@@ -591,6 +584,7 @@ const handleAddToCart = useCallback(async () => {
     );
   }
 }, [app.user, listing, isVariationSelected, getVariationErrorMessage, selectedColor, selectedSize, selectedVariation, quantity, addToCartMutation, navigate, app.lang]);
+
   const handleConfirmClearCart = useCallback(async () => {
     if (!app.user || !pendingAddData) return;
     
@@ -746,20 +740,30 @@ const handleAddToCart = useCallback(async () => {
                 onClick={() => setIsZoomed(!isZoomed)}
               >
                 {mainImage ? (
-                  <img
+                  <OptimizedImage
                     src={mainImage}
                     alt={listing.title_ar}
+                    width={800}
+                    height={800}
+                    quality={85}
+                    priority={true}
+                    objectFit="cover"
                     className={cn(
-                      "w-full h-full object-cover transition-all duration-700",
+                      "w-full h-full transition-all duration-700",
                       isZoomed ? "scale-150 cursor-zoom-out" : "hover:scale-105"
                     )}
                   />
                 ) : images.length > 0 ? (
-                  <img
+                  <OptimizedImage
                     src={images[activeImage]}
                     alt={listing.title_ar}
+                    width={800}
+                    height={800}
+                    quality={85}
+                    priority={true}
+                    objectFit="cover"
                     className={cn(
-                      "w-full h-full object-cover transition-all duration-700",
+                      "w-full h-full transition-all duration-700",
                       isZoomed ? "scale-150 cursor-zoom-out" : "hover:scale-105"
                     )}
                   />
@@ -840,7 +844,15 @@ const handleAddToCart = useCallback(async () => {
                           : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
                       )}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <OptimizedImage
+                        src={img}
+                        alt=""
+                        width={96}
+                        height={96}
+                        quality={80}
+                        objectFit="cover"
+                        className="w-full h-full"
+                      />
                     </button>
                   ))}
                 </div>
@@ -953,13 +965,14 @@ const handleAddToCart = useCallback(async () => {
 >
   <div className="h-14 w-14 rounded-2xl overflow-hidden border-2 border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0 bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a]">
     {storeLogo ? (
-      <img 
-        src={storeLogo} 
+      <OptimizedImage
+        src={storeLogo}
         alt={storeName}
-        className="h-full w-full object-cover"
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = '/placeholder-store.png';
-        }}
+        width={56}
+        height={56}
+        quality={85}
+        objectFit="cover"
+        className="h-full w-full"
       />
     ) : (
       <div className="h-full w-full flex items-center justify-center text-white font-bold text-2xl">
@@ -1092,13 +1105,14 @@ const handleAddToCart = useCallback(async () => {
                             ? "border-[#0d2e2a] ring-2 ring-[#0d2e2a]/30 scale-110 shadow-md shadow-[#0d2e2a]/20" 
                             : "border-slate-200/50 hover:border-[#4a9f95] group-hover:scale-105"
                         )}>
-                          <img 
-                            src={color.image_url} 
+                          <OptimizedImage
+                            src={color.image_url}
                             alt={color.color_name_ar}
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/placeholder-color.png';
-                            }}
+                            width={56}
+                            height={56}
+                            quality={85}
+                            objectFit="cover"
+                            className="h-full w-full"
                           />
                           {selectedColor === color.color_name_ar && (
                             <div className="absolute inset-0 bg-[#0d2e2a]/10 flex items-center justify-center">
@@ -1119,9 +1133,13 @@ const handleAddToCart = useCallback(async () => {
                   </div>
                   {selectedColor && (
                     <div className="mt-3 p-3 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/10 flex items-center gap-3">
-                      <img 
-                        src={mainImage} 
+                      <OptimizedImage
+                        src={mainImage}
                         alt={selectedColor}
+                        width={48}
+                        height={48}
+                        quality={80}
+                        objectFit="cover"
                         className="h-12 w-12 rounded-lg object-cover border border-slate-200/50"
                       />
                       <div>
@@ -1588,10 +1606,14 @@ const handleAddToCart = useCallback(async () => {
                     <div className="rounded-2xl overflow-hidden bg-card border border-border/30 hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
                       <div className="aspect-square overflow-hidden bg-muted/30 relative">
                         {item.cover_url ? (
-                          <img 
-                            src={item.cover_url} 
-                            alt={item.title_ar} 
-                            className="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
+                          <OptimizedImage
+                            src={item.cover_url}
+                            alt={item.title_ar}
+                            width={400}
+                            height={400}
+                            quality={85}
+                            objectFit="cover"
+                            className="w-full h-full group-hover:scale-110 transition duration-500"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground">

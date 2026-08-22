@@ -17,6 +17,7 @@ import {
   TrendingUp, Award, Star, Gem, Rocket, Crown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 // ============================================================
 // ✅ مكون بطاقة البنر - احترافي
@@ -32,10 +33,14 @@ const BannerCard = React.memo(({
       
       {/* ===== الصورة ===== */}
       <div className="relative h-48 overflow-hidden">
-        <img 
-          src={banner.image_url} 
-          alt={banner.title_ar} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+        <OptimizedImage
+          src={banner.image_url}
+          alt={banner.title_ar}
+          width={600}
+          height={300}
+          quality={85}
+          objectFit="cover"
+          className="w-full h-full group-hover:scale-105 transition-transform duration-700"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         
@@ -527,9 +532,13 @@ export function BannersAdminPage() {
               </p>
               {bannerToDelete?.image_url && (
                 <div className="mt-3 rounded-lg overflow-hidden border border-red-200/30 dark:border-red-800/30">
-                  <img
+                  <OptimizedImage
                     src={bannerToDelete.image_url}
                     alt={bannerToDelete.title_ar}
+                    width={400}
+                    height={100}
+                    quality={80}
+                    objectFit="cover"
                     className="w-full h-24 object-cover"
                   />
                 </div>

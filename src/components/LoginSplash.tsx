@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { Heart, Shield, Award, Truck } from "lucide-react";
 import { useApp } from "@/lib/i18n";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 // ============================================================
 // 🎨 الأنماط والحركات - مطابقة للهيدر
@@ -134,11 +135,15 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
       
       {/* ✅ خلفية متجاوبة تمنع قص الصورة نهائياً على الموبايل */}
       <div className="absolute inset-0 flex items-center justify-center bg-black">
-        <img 
-          src="/images/delivery-man.png" 
+        <OptimizedImage
+          src="/images/delivery-man.png"
           alt="Delivery Background"
+          width={1920}
+          height={1080}
+          quality={85}
+          priority={true}
+          objectFit="cover"
           className="h-full w-full object-contain md:object-cover opacity-85"
-          loading="eager"
         />
         {/* طبقة تدرج لضمان وضوح النصوص فوق الصورة */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/90" />
@@ -164,11 +169,15 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
             
             {/* الشعار مع حركة float */}
             <div className="relative w-20 h-20 sm:w-32 sm:h-32 md:w-40 md:h-40 mx-auto animate-float-logo">
-              <img 
-                src="/images/Logo.png" 
+              <OptimizedImage
+                src="/images/Logo.png"
                 alt="السوق لعندك"
+                width={200}
+                height={200}
+                quality={90}
+                priority={true}
+                objectFit="contain"
                 className="w-full h-full object-contain drop-shadow-2xl relative z-10 animate-pulse-glow"
-                loading="eager"
               />
               
               {/* نقاط متحركة حول الشعار (مثل الهيدر) */}

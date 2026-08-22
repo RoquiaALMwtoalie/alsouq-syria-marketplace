@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useEffect } from "react";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 export const Route = createFileRoute("/categories")({
   component: CategoriesPage,
@@ -87,11 +88,15 @@ function CategoriesPage() {
         {/* ✅ البنر الخلفي بوضوح كامل (opacity 90%) وبدون أي ضبابية */}
         {bannerCategories.length > 0 && currentBannerCat && (
           <div className="absolute inset-0 z-0 overflow-hidden">
-            <img 
-              key={currentBannerCat.id}
-              src={currentBannerCat.image_url} 
-              alt="" 
-              className="h-full w-full object-cover animate-fade-in transition-all duration-1000 scale-100 opacity-90" 
+            <OptimizedImage
+              src={currentBannerCat.image_url}
+              alt={currentBannerCat.name_ar || "Category Banner"}
+              width={1920}
+              height={400}
+              quality={85}
+              priority={true}
+              objectFit="cover"
+              className="h-full w-full animate-fade-in transition-all duration-1000 scale-100 opacity-90"
             />
             {/* تدرج خفيف جداً من الأطراف فقط لضمان قراءة النص مع إبقاء الصورة واضحة تماماً */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/75 backdrop-blur-[0.5px]" />
@@ -235,7 +240,15 @@ function CategoriesPage() {
                         <div className="relative z-10 mt-1">
                           <div className="h-12 w-12 rounded-xl overflow-hidden bg-gradient-to-br from-pink-400/20 to-rose-400/30 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-500 shadow-inner border-2 border-pink-300/50">
                             {hasImage ? (
-                              <img src={cat.image_url} alt="" className="h-full w-full object-cover" />
+                              <OptimizedImage
+                                src={cat.image_url}
+                                alt={app.lang === "ar" ? cat.name_ar : cat.name_en}
+                                width={80}
+                                height={80}
+                                quality={80}
+                                objectFit="cover"
+                                className="h-full w-full object-cover"
+                              />
                             ) : (
                               <Icon className="h-6 w-6 text-pink-500 dark:text-pink-400" />
                             )}
@@ -313,7 +326,15 @@ function CategoriesPage() {
                         <div className="relative z-10 mt-1">
                           <div className="h-10 w-10 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-500 border-2 border-pink-300/40">
                             {hasImage ? (
-                              <img src={cat.image_url} alt="" className="h-full w-full object-cover" />
+                              <OptimizedImage
+                                src={cat.image_url}
+                                alt={app.lang === "ar" ? cat.name_ar : cat.name_en}
+                                width={60}
+                                height={60}
+                                quality={80}
+                                objectFit="cover"
+                                className="h-full w-full object-cover"
+                              />
                             ) : (
                               <Icon className="h-5 w-5 text-pink-500 dark:text-pink-400" />
                             )}

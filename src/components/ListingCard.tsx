@@ -1,4 +1,4 @@
-// src/components/ListingCard.tsx - الكود الكامل المصحح (مع جلب اسم المتجر للعروض الترويجية)
+// src/components/ListingCard.tsx - الكود الكامل المصحح مع OptimizedImage
 
 import { Link, useNavigate } from "@tanstack/react-router";
 import { 
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { useState, memo, useCallback, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 interface ListingCardProps {
   item: any;
@@ -426,27 +427,31 @@ export const ListingCard = memo(function ListingCard({
     app.toggleFavorite(item.id);
   }, [app, item.id]);
 
-  const renderImage = useCallback(() => {
-    if (cover) {
-      return (
-        <img
-          src={cover}
-          alt={title}
-          loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          onError={(e) => {
-            e.currentTarget.src = '/placeholder-image.jpg';
-          }}
-        />
-      );
-    }
+  // ✅ ✅ ✅ renderImage مع OptimizedImage
+// ✅ ✅ ✅ renderImage مع OptimizedImage + console.log
+const renderImage = useCallback(() => {
+  console.log('🔍 [ListingCard] renderImage called, cover:', cover);
+  if (cover) {
+    console.log('✅ [ListingCard] Rendering OptimizedImage with src:', cover);
     return (
-      <div className="h-full w-full grid place-items-center">
-        <ImageIcon className="h-12 w-12 text-[#2a655f]/30" />
-      </div>
+      <OptimizedImage
+        src={cover}
+        alt={title}
+        width={400}
+        height={400}
+        quality={85}
+        objectFit="cover"
+        className="w-full h-full transition-transform duration-700 group-hover:scale-110"
+      />
     );
-  }, [cover, title]);
-
+  }
+  console.log('❌ [ListingCard] No cover image');
+  return (
+    <div className="h-full w-full grid place-items-center">
+      <ImageIcon className="h-12 w-12 text-[#2a655f]/30" />
+    </div>
+  );
+}, [cover, title]);
   const renderPrice = useCallback(() => {
     if (isDiscountOffer && oldPrice) {
       return (
@@ -669,12 +674,15 @@ export const ListingCard = memo(function ListingCard({
                 >
                   <div className="h-7 w-7 rounded-full border border-white/40 shadow-inner overflow-hidden bg-white flex-shrink-0 grid place-items-center">
                     {storeCover ? (
-                      <img 
-                        src={storeCover} 
-                        alt={storeName || "Store"} 
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                        decoding="async"
+                      // ✅ ✅ ✅ استبدال img بـ OptimizedImage
+                      <OptimizedImage
+                        src={storeCover}
+                        alt={storeName || "Store"}
+                        width={56}
+                        height={56}
+                        quality={80}
+                        objectFit="cover"
+                        className="h-full w-full"
                       />
                     ) : (
                       <Store className="h-3.5 w-3.5 text-[#2a655f]" />
@@ -812,12 +820,15 @@ export const ListingCard = memo(function ListingCard({
               >
                 <div className="h-7 w-7 rounded-full border border-white/40 shadow-inner overflow-hidden bg-white flex-shrink-0 grid place-items-center">
                   {storeCover ? (
-                    <img 
-                      src={storeCover} 
-                      alt={storeName || "Store"} 
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                      decoding="async"
+                    // ✅ ✅ ✅ استبدال img بـ OptimizedImage
+                    <OptimizedImage
+                      src={storeCover}
+                      alt={storeName || "Store"}
+                      width={56}
+                      height={56}
+                      quality={80}
+                      objectFit="cover"
+                      className="h-full w-full"
                     />
                   ) : (
                     <Store className="h-3.5 w-3.5 text-[#2a655f]" />

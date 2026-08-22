@@ -1,7 +1,7 @@
 // src/routes/offers.tsx
 
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, lazy, Suspense } from "react";
 import { 
   Filter, Search, MapPin, Flame, Sparkles, Tag, 
   Grid3X3, List, ArrowUpDown, Star, ChevronDown, Check,
@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { useGovernorates, useListings, useProductOffers, useCategories } from "@/lib/queries";
-import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,6 +18,10 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/s
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { OptimizedImage } from "@/components/OptimizedImage";
+
+// ✅ ✅ ✅ Lazy Loading لـ ListingCard
+const ListingCard = lazy(() => import("@/components/ListingCard"));
 
 export const Route = createFileRoute("/offers")({
   component: OffersPage,
@@ -498,13 +501,15 @@ function OffersPage() {
         <div className="absolute inset-0 z-0">
           {categoryImage ? (
             <>
-              <img 
-                src={categoryImage} 
+              <OptimizedImage
+                src={categoryImage}
                 alt={categoryName}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
+                width={1200}
+                height={400}
+                quality={85}
+                priority={true}
+                objectFit="cover"
+                className="h-full w-full"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/80 via-transparent to-transparent" />
@@ -758,7 +763,9 @@ function OffersPage() {
                       style={{ animationDelay: `${(index % 9) * 60}ms` }}
                     >
                       {offerBadge}
-                      <ListingCard item={i} viewMode={viewMode} />
+                      <Suspense fallback={<ProductSkeleton />}>
+                        <ListingCard item={i} variant={viewMode} />
+                      </Suspense>
                     </div>
                   );
                 })}
@@ -854,6 +861,23 @@ function OffersPage() {
         }
         .animate-spin-slow { animation: spin-slow 8s linear infinite; }
       `}</style>
+    </div>
+  );
+}
+
+// ============================================================
+// Product Skeleton
+// ============================================================
+function ProductSkeleton() {
+  return (
+    <div className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 p-4 animate-pulse border border-pink-300/20">
+      <div className="aspect-square rounded-xl bg-pink-500/10" />
+      <div className="h-4 bg-pink-500/10 rounded mt-3 w-3/4" />
+      <div className="h-3 bg-pink-500/10 rounded mt-2 w-1/2" />
+      <div className="flex items-center gap-2 mt-3">
+        <div className="h-4 bg-pink-500/10 rounded w-1/3" />
+        <div className="h-4 bg-pink-500/10 rounded w-1/4" />
+      </div>
     </div>
   );
 }

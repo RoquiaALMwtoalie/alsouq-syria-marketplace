@@ -105,6 +105,13 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 };
 
 // ============================================================
+// ✅ متغيرات لمنع التكرار (خارج الدالة)
+// ============================================================
+let isRealtimeSetup = false;
+let setupTimeout: NodeJS.Timeout | null = null;
+let currentUserId: string | null = null;
+
+// ============================================================
 // 🔥 HOOK: حالة المستخدم مع Realtime (محدثة لحظياً) ✅ NEW
 // ============================================================
 export function useRealtimeUserStatus(userId: string | undefined) {
@@ -206,6 +213,8 @@ export function useRealtimeConversations(userId: string | undefined) {
       }
     });
     channelsRef.current = {};
+    isRealtimeSetup = false;
+    currentUserId = null;
   }, []);
 
   // طلب إذن الإشعارات مرة واحدة عند التحميل
@@ -225,192 +234,255 @@ export function useRealtimeConversations(userId: string | undefined) {
       return;
     }
 
-    // إذا كانت القنوات مفعلة مسبقاً لنفس المستخدم، لا داعي لإعادة إنشائها
-    if (channelsRef.current.messages) {
+    // ✅ إذا تم الإعداد مسبقاً لنفس المستخدم، لا تفعل شيئاً
+    if (isRealtimeSetup && currentUserId === userId) {
+      console.log('⏳ [useRealtimeConversations] Already setup for user:', userId);
       return;
+    }
+
+    // ✅ إذا كان هناك مستخدم مختلف، قم بتنظيف القنوات القديمة
+    if (currentUserId && currentUserId !== userId) {
+      console.log('🔄 [useRealtimeConversations] User changed, cleaning up old channels...');
+      cleanupChannels();
+      isRealtimeSetup = false;
+    }
+
+    // ✅ منع التكرار أثناء الإعداد
+    if (setupTimeout) {
+      clearTimeout(setupTimeout);
+      setupTimeout = null;
     }
 
     console.log("🔄 Setting up Realtime channels for user:", userId);
 
-    // 1️⃣ قناة الرسائل الجديدة
-    const messagesChannel = supabase
-      .channel(`messages-${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `receiver_id=eq.${userId}`,
-        },
-        async (payload) => {
-          const newMessage = payload.new as any;
-          console.log("📩 New message received:", newMessage);
+    // ✅ تأخير الإعداد 3 ثواني لتجنب التصارع
+    setupTimeout = setTimeout(() => {
+      if (!userId) return;
+      
+      // ✅ إذا كانت القنوات مفعلة مسبقاً، لا داعي لإعادة إنشائها
+      if (channelsRef.current.messages && isRealtimeSetup) {
+        console.log('⏳ [useRealtimeConversations] Channels already exist, skipping...');
+        return;
+      }
 
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.messages(newMessage.conversation_id),
-          });
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.conversations(userId),
-          });
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.unreadCount(userId),
-          });
+      // ✅ تحديث الحالة
+      isRealtimeSetup = true;
+      currentUserId = userId;
 
-          const store = useConversationStore.getState();
-          store.addMessage(newMessage.conversation_id, newMessage);
+      // 1️⃣ قناة الرسائل الجديدة
+      const messagesChannel = supabase
+        .channel(`messages-${userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `receiver_id=eq.${userId}`,
+          },
+          async (payload) => {
+            const newMessage = payload.new as any;
+            console.log("📩 New message received:", newMessage);
 
-          store.updateConversation({
-            id: newMessage.conversation_id,
-            last_message: newMessage.content,
-            last_message_at: newMessage.created_at,
-            last_message_sender_id: newMessage.sender_id,
-          } as any);
+            queryClient.invalidateQueries({
+              queryKey: QUERY_KEYS.messages(newMessage.conversation_id),
+            });
+            queryClient.invalidateQueries({
+              queryKey: QUERY_KEYS.conversations(userId),
+            });
+            queryClient.invalidateQueries({
+              queryKey: QUERY_KEYS.unreadCount(userId),
+            });
 
-          const isActive = store.activeConversationId === newMessage.conversation_id;
-          
-          if (!isActive) {
-            const isAr = langRef.current === "ar";
-            toast.info(
-              isAr ? "📩 رسالة جديدة" : "📩 New message",
-              {
-                description: newMessage.content?.substring(0, 60) || (isAr ? "رسالة جديدة" : "New message"),
-                duration: 6000,
-                position: "top-right",
-                action: {
-                  label: isAr ? "عرض" : "View",
-                  onClick: () => {
-                    window.location.href = `/messages/${newMessage.sender_id}?cid=${newMessage.conversation_id}`;
+            const store = useConversationStore.getState();
+            store.addMessage(newMessage.conversation_id, newMessage);
+
+            store.updateConversation({
+              id: newMessage.conversation_id,
+              last_message: newMessage.content,
+              last_message_at: newMessage.created_at,
+              last_message_sender_id: newMessage.sender_id,
+            } as any);
+
+            const isActive = store.activeConversationId === newMessage.conversation_id;
+            
+            if (!isActive) {
+              const isAr = langRef.current === "ar";
+              toast.info(
+                isAr ? "📩 رسالة جديدة" : "📩 New message",
+                {
+                  description: newMessage.content?.substring(0, 60) || (isAr ? "رسالة جديدة" : "New message"),
+                  duration: 6000,
+                  position: "top-right",
+                  action: {
+                    label: isAr ? "عرض" : "View",
+                    onClick: () => {
+                      window.location.href = `/messages/${newMessage.sender_id}?cid=${newMessage.conversation_id}`;
+                    },
                   },
-                },
+                }
+              );
+
+              playNotificationSound();
+
+              sendBrowserNotification(
+                isAr ? "📩 رسالة جديدة" : "📩 New Message",
+                newMessage.content?.substring(0, 80) || (isAr ? "لديك رسالة جديدة" : "You have a new message"),
+                '/favicon.ico'
+              );
+
+              const { conversations } = useConversationStore.getState();
+              const unreadCount = conversations.reduce(
+                (total, conv) => total + (conv.unread_count_participant1 || 0) + (conv.unread_count_participant2 || 0),
+                0
+              );
+              if (unreadCount > 0) {
+                document.title = `(${unreadCount}) السوق اليك`;
               }
-            );
-
-            playNotificationSound();
-
-            sendBrowserNotification(
-              isAr ? "📩 رسالة جديدة" : "📩 New Message",
-              newMessage.content?.substring(0, 80) || (isAr ? "لديك رسالة جديدة" : "You have a new message"),
-              '/favicon.ico'
-            );
-
-            const { conversations } = useConversationStore.getState();
-            const unreadCount = conversations.reduce(
-              (total, conv) => total + (conv.unread_count_participant1 || 0) + (conv.unread_count_participant2 || 0),
-              0
-            );
-            if (unreadCount > 0) {
-              document.title = `(${unreadCount}) السوق اليك`;
             }
           }
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "messages",
-          filter: `receiver_id=eq.${userId}`,
-        },
-        (payload) => {
-          const updated = payload.new as any;
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.messages(updated.conversation_id),
-          });
-        }
-      )
-      .subscribe();
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "messages",
+            filter: `receiver_id=eq.${userId}`,
+          },
+          (payload) => {
+            const updated = payload.new as any;
+            queryClient.invalidateQueries({
+              queryKey: QUERY_KEYS.messages(updated.conversation_id),
+            });
+          }
+        )
+        .subscribe((status) => {
+          console.log(`📡 Messages channel status: ${status}`);
+        });
 
-    // 2️⃣ قناة تحديثات المحادثات
-    const conversationsChannel = supabase
-      .channel(`conversations-${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "conversations",
-          filter: `participant1_id=eq.${userId}`,
-        },
-        (payload) => {
-          const updated = payload.new as any;
-          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
-          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.unreadCount(userId) });
-          useConversationStore.getState().updateConversation(updated);
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "conversations",
-          filter: `participant2_id=eq.${userId}`,
-        },
-        (payload) => {
-          const updated = payload.new as any;
-          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
-          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.unreadCount(userId) });
-          useConversationStore.getState().updateConversation(updated);
-        }
-      )
-      .subscribe();
+      // 2️⃣ قناة تحديثات المحادثات
+      const conversationsChannel = supabase
+        .channel(`conversations-${userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "conversations",
+            filter: `participant1_id=eq.${userId}`,
+          },
+          (payload) => {
+            const updated = payload.new as any;
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.unreadCount(userId) });
+            useConversationStore.getState().updateConversation(updated);
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "conversations",
+            filter: `participant2_id=eq.${userId}`,
+          },
+          (payload) => {
+            const updated = payload.new as any;
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.unreadCount(userId) });
+            useConversationStore.getState().updateConversation(updated);
+          }
+        )
+        .subscribe((status) => {
+          console.log(`📡 Conversations channel status: ${status}`);
+        });
 
-    // 3️⃣ قناة حالة المستخدمين (Online/Offline)
-    const presenceChannel = supabase
-      .channel(`presence-${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "profiles",
-        },
-        (payload) => {
-          const updated = payload.new as any;
-          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.onlineStatus(updated.id) });
-          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
-        }
-      )
-      .subscribe();
+      // 3️⃣ قناة حالة المستخدمين (Online/Offline)
+      const presenceChannel = supabase
+        .channel(`presence-${userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "profiles",
+          },
+          (payload) => {
+            const updated = payload.new as any;
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.onlineStatus(updated.id) });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
+          }
+        )
+        .subscribe((status) => {
+          console.log(`📡 Presence channel status: ${status}`);
+        });
 
-    // 4️⃣ قناة مؤشر الكتابة (Typing)
-    const typingChannel = supabase
-      .channel(`typing-${userId}`)
-      .on("broadcast", { event: "typing" }, (payload) => {
-        const { userId: typingUserId, conversationId, isTyping } = payload.payload;
-        if (typingUserId === userId) return;
-        useConversationStore.getState().setTyping(conversationId, typingUserId, isTyping);
-      })
-      .subscribe();
+      // 4️⃣ قناة مؤشر الكتابة (Typing)
+      const typingChannel = supabase
+        .channel(`typing-${userId}`)
+        .on("broadcast", { event: "typing" }, (payload) => {
+          const { userId: typingUserId, conversationId, isTyping } = payload.payload;
+          if (typingUserId === userId) return;
+          useConversationStore.getState().setTyping(conversationId, typingUserId, isTyping);
+        })
+        .subscribe((status) => {
+          console.log(`📡 Typing channel status: ${status}`);
+        });
 
-    channelsRef.current = {
-      messages: messagesChannel,
-      conversations: conversationsChannel,
-      presence: presenceChannel,
-      typing: typingChannel,
-    };
+      channelsRef.current = {
+        messages: messagesChannel,
+        conversations: conversationsChannel,
+        presence: presenceChannel,
+        typing: typingChannel,
+      };
 
-    // 5️⃣ تحديث عنوان الصفحة ديناميكياً
-    const updateTitle = () => {
-      const { conversations } = useConversationStore.getState();
-      const unreadCount = conversations.reduce(
-        (total, conv) => total + (conv.unread_count_participant1 || 0) + (conv.unread_count_participant2 || 0),
-        0
-      );
-      document.title = unreadCount > 0 ? `(${unreadCount}) السوق اليك` : "السوق اليك";
-    };
+      // 5️⃣ تحديث عنوان الصفحة ديناميكياً
+      const updateTitle = () => {
+        const { conversations } = useConversationStore.getState();
+        const unreadCount = conversations.reduce(
+          (total, conv) => total + (conv.unread_count_participant1 || 0) + (conv.unread_count_participant2 || 0),
+          0
+        );
+        document.title = unreadCount > 0 ? `(${unreadCount}) السوق اليك` : "السوق اليك";
+      };
 
-    const unsubscribeStore = useConversationStore.subscribe(updateTitle);
+      const unsubscribeStore = useConversationStore.subscribe(updateTitle);
+
+      // ✅ تنظيف timeout بعد الانتهاء
+      setupTimeout = null;
+
+      // ✅ دالة التنظيف النهائية
+      const cleanup = () => {
+        console.log("🧹 Cleaning up Realtime channels");
+        cleanupChannels();
+        unsubscribeStore();
+        document.title = "السوق اليك";
+        isRealtimeSetup = false;
+        currentUserId = null;
+      };
+
+      // ✅ إرجاع دالة التنظيف للـ useEffect
+      return cleanup;
+      
+    }, 3000); // ✅ تأخير 3 ثواني
 
     return () => {
-      console.log("🧹 Cleaning up Realtime channels");
-      cleanupChannels();
-      unsubscribeStore();
-      document.title = "السوق اليك";
+      if (setupTimeout) {
+        clearTimeout(setupTimeout);
+        setupTimeout = null;
+      }
     };
-  }, [userId, queryClient, cleanupChannels]);
+  }, [userId]); // ✅ إزالة queryClient و cleanupChannels من dependencies
+
+  // إرجاع دالة لإعادة تعيين الحالة عند الحاجة
+  return {
+    reset: () => {
+      cleanupChannels();
+      isRealtimeSetup = false;
+      currentUserId = null;
+    }
+  };
 }
 
 // ============================================================

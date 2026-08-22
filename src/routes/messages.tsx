@@ -25,6 +25,7 @@ import {
 } from "@/lib/hooks/useConversation";
 import { useConversationStore } from "@/lib/stores/conversationStore";
 import { toast } from "sonner";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 export const Route = createFileRoute("/messages")({
   component: MessagesPage,
@@ -281,7 +282,15 @@ function MessagesPage() {
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       <Avatar className="h-14 w-14 ring-2 ring-[#2a655f]/30 group-hover:ring-[#2a655f] transition duration-300 shadow-sm">
-                        <img src={avatar} alt={name} className="object-cover" />
+                        <OptimizedImage
+                          src={avatar}
+                          alt={name}
+                          width={56}
+                          height={56}
+                          quality={85}
+                          objectFit="cover"
+                          className="h-full w-full object-cover"
+                        />
                         <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-sm font-bold">
                           {name.charAt(0).toUpperCase()}
                         </AvatarFallback>

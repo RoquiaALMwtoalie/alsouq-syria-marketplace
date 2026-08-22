@@ -7,7 +7,6 @@ import { toast } from "sonner";
 // ============================================================
 // ✅ أنواع البيانات
 // ============================================================
-// src/lib/hooks/useCart.ts
 
 export interface CartItem {
   id: string;
@@ -24,6 +23,28 @@ export interface CartItem {
   variation_snapshot?: any;
   subtotal: number;
   subtotal_usd?: number;
+  listings?: {
+    id: string;
+    title_ar: string;
+    title_en: string;
+    cover_url: string;
+    owner_id: string;
+    price: number;
+    price_usd?: number;
+    is_offer?: boolean;
+    discount_percent?: number;
+    old_price?: number;
+    profile?: {
+      id: string;
+      store_name: string;
+      store_logo_url: string;
+      store_cover_url: string;
+      full_name: string;
+      avatar_url: string;
+    };
+    colors?: any[];
+    variations?: any[];
+  };
   listing?: {
     id: string;
     title_ar: string;
@@ -32,7 +53,6 @@ export interface CartItem {
     owner_id: string;
     price: number;
     price_usd?: number;
-    // ✅ ✅ ✅ أضف profile هنا
     profile?: {
       id: string;
       store_name: string;
@@ -67,9 +87,8 @@ export interface Cart {
 }
 
 // ============================================================
-// ✅ 1. جلب السلة (محسّن)
+// ✅ 1. جلب السلة (محسّن بالكامل)
 // ============================================================
-// src/lib/hooks/useCart.ts
 
 export function useCart(userId: string | undefined) {
   return useQuery({
@@ -107,29 +126,103 @@ export function useCart(userId: string | undefined) {
         return null;
       }
       
-      // ✅ جلب عناصر السلة (بدون colors و variations)
+      // ✅ ✅ ✅ جلب عناصر السلة مع بيانات المنتج الكاملة (بما فيها الـ variations و colors)
       const { data: items, error: itemsError } = await supabase
         .from("cart_items")
         .select(`
           *,
-          listing:listing_id (
+          listings:listing_id (
             id,
             title_ar,
             title_en,
+            description_ar,
+            description_en,
             cover_url,
             owner_id,
             price,
             price_usd,
+            old_price,
+            currency,
             is_offer,
             discount_percent,
-            old_price,
+            is_available,
+            is_featured,
+            rating,
+            views,
+            favorites_count,
+            kind,
+            status,
+            delivery_method,
+            delivery_note,
+            payment_method,
+            metadata,
+            governorate_id,
+            category_id,
+            created_at,
+            updated_at,
             profile:profiles!owner_id (
               id,
+              full_name,
+              phone,
+              avatar_url,
+              bio,
               store_name,
               store_logo_url,
               store_cover_url,
-              full_name,
-              avatar_url
+              allows_messaging,
+              allows_bookings,
+              store_online,
+              store_opens_at,
+              store_closes_at
+            ),
+            governorates:governorate_id (
+              id,
+              name_ar,
+              name_en,
+              slug
+            ),
+            categories:category_id (
+              id,
+              name_ar,
+              name_en,
+              slug,
+              icon,
+              image_url
+            ),
+            colors:product_colors (
+              id,
+              color_name_ar,
+              color_name_en,
+              color_hex,
+              image_url,
+              sort_order
+            ),
+            variations:product_variations (
+              id,
+              sku,
+              combination,
+              price,
+              old_price,
+              stock_quantity,
+              reserved_quantity,
+              image_url,
+              is_active,
+              color_id,
+              created_at,
+              updated_at
+            ),
+            options:product_options (
+              id,
+              option_type,
+              option_value,
+              option_label_ar,
+              option_label_en,
+              sort_order
+            ),
+            listing_images (
+              id,
+              url,
+              sort_order
             )
           )
         `)
@@ -143,69 +236,28 @@ export function useCart(userId: string | undefined) {
       
       console.log(`✅ [useCart] Cart loaded: ${items?.length || 0} items`);
       
-      // ✅ حساب الـ subtotal لكل عنصر
-      let itemsWithSubtotal = items?.map(item => ({
-        ...item,
-        subtotal: Number(item.price) * item.quantity,
-        subtotal_usd: item.price_usd ? Number(item.price_usd) * item.quantity : null,
-      })) || [];
+      // ✅ حساب الـ subtotal لكل عنصر مع عرض بيانات debug
+      const itemsWithSubtotal = items?.map((item: any) => {
+        const listing = item.listings || item.listing || null;
+        
+        // ✅ ✅ ✅ عرض بيانات الفيرنتات للـ debug
+        if (listing?.variations && listing.variations.length > 0) {
+          console.log(`🔍 [useCart] Listing ${listing.id} has ${listing.variations.length} variations`);
+          console.log(`🔍 [useCart] First variation:`, listing.variations[0]);
+        }
+        
+        return {
+          ...item,
+          subtotal: Number(item.price) * item.quantity,
+          subtotal_usd: item.price_usd ? Number(item.price_usd) * item.quantity : null,
+          listings: listing, // ✅ تأكد من إرجاع listings مع البيانات الكاملة
+        };
+      }) || [];
       
-      // ✅ ✅ ✅ جلب الألوان والفيرنتات لكل منتج (بشكل منفصل)
-     // ✅ ✅ ✅ جلب الألوان والفيرنتات لكل منتج
-// ✅ ✅ ✅ جلب الألوان والفيرنتات لكل منتج
-const itemsWithDetails = await Promise.all(
-  itemsWithSubtotal.map(async (item) => {
-    const listing = item.listing;
-    if (!listing) return item;
-    
-    // ✅ جلب الألوان من product_colors
-    const { data: colors, error: colorsError } = await supabase
-      .from("product_colors")
-      .select("*")
-      .eq("listing_id", listing.id)
-      .order("sort_order", { ascending: true });
-    
-    if (colorsError) {
-      console.error("❌ [useCart] Colors error:", colorsError);
-    }
-    
-    // ✅ جلب الفيرنتات
-    const { data: variations, error: variationsError } = await supabase
-      .from("product_variations")
-      .select("*")
-      .eq("listing_id", listing.id)
-      .eq("is_active", true);
-    
-    if (variationsError) {
-      console.error("❌ [useCart] Variations error:", variationsError);
-    }
-    
-    // ✅ ربط الفيرنتات بالألوان يدوياً
-    const variationsWithColors = variations?.map(variation => {
-      const color = colors?.find(c => c.id === variation.color_id);
-      return {
-        ...variation,
-        color: color || null,
-      };
-    }) || [];
-    
-    console.log("🎨 [useCart] Colors found:", colors?.length || 0);
-    console.log("🖼️ [useCart] Variations found:", variations?.length || 0);
-    
-    return {
-      ...item,
-      listing: {
-        ...listing,
-        colors: colors || [],
-        variations: variationsWithColors,
-      }
-    };
-  })
-);
-      
+      // ✅ إرجاع كائن السلة مع العناصر
       return {
         ...cart,
-        items: itemsWithDetails,
+        items: itemsWithSubtotal,
       } as Cart;
     },
     
@@ -218,12 +270,11 @@ const itemsWithDetails = await Promise.all(
     retryDelay: 1000,
   });
 }
+
 // ============================================================
 // ✅ 2. التحقق من توافق المنتج مع السلة
 // ============================================================
-// ============================================================
-// ✅ 2. التحقق من توافق المنتج مع السلة (محدث ومضمون 100%)
-// ============================================================
+
 export function useCheckCartCompatibility() {
   return useMutation({
     mutationFn: async ({ 
@@ -254,7 +305,7 @@ export function useCheckCartCompatibility() {
         .from("cart_items")
         .select(`
           id,
-          listing:listing_id (
+          listings:listing_id (
             owner_id
           )
         `)
@@ -269,7 +320,7 @@ export function useCheckCartCompatibility() {
       }
       
       // 3. مقارنة صاحب المنتج الموجود في السلة مع صاحب المنتج الجديد المراد إضافته
-      const currentStoreId = (existingItems[0]?.listing as any)?.owner_id;
+      const currentStoreId = (existingItems[0] as any)?.listings?.owner_id;
       
       if (currentStoreId && currentStoreId !== newOwnerId) {
         return { 
@@ -289,7 +340,7 @@ export function useCheckCartCompatibility() {
 // ============================================================
 // ✅ 3. إضافة للسلة (محسّن مع دعم التركيبات)
 // ============================================================
-// ✅ إضافة للسلة (محسّن مع دعم التركيبات)
+
 export function useAddToCart() {
   const queryClient = useQueryClient();
   const checkCompatibility = useCheckCartCompatibility();
@@ -344,7 +395,7 @@ export function useAddToCart() {
       if (selectedVariationId) {
         const { data: variation, error: variationError } = await supabase
           .from("product_variations")
-          .select("image_url, price, combination, old_price")
+          .select("image_url, price, combination, old_price, color_id")
           .eq("id", selectedVariationId)
           .single();
         
@@ -352,6 +403,20 @@ export function useAddToCart() {
           variationImageUrl = variation.image_url;
           variationData = variation;
           console.log("✅ [useAddToCart] Variation found:", variation);
+          
+          // ✅ جلب صورة اللون إذا وجدت
+          if (variation.color_id) {
+            const { data: color, error: colorError } = await supabase
+              .from("product_colors")
+              .select("image_url")
+              .eq("id", variation.color_id)
+              .single();
+            
+            if (!colorError && color?.image_url) {
+              variationImageUrl = color.image_url;
+              console.log("✅ [useAddToCart] Using color image:", variationImageUrl);
+            }
+          }
         }
       }
       
@@ -497,6 +562,7 @@ export function useAddToCart() {
             quantity: 1,
             price: 0,
             currency: 'SYP',
+            is_free: true,
             variation_snapshot: {
               title_ar: giftData.title_ar,
               title_en: giftData.title_en,
@@ -549,12 +615,11 @@ export function useAddToCart() {
     },
   });
 }
+
 // ============================================================
-// ✅ 4. تحديث عنصر في السلة (المهم)
+// ✅ 4. تحديث عنصر في السلة
 // ============================================================
-// ============================================================
-// ✅ 4. تحديث عنصر في السلة (مصحح)
-// ============================================================
+
 export function useUpdateCartItem() {
   const queryClient = useQueryClient();
   
@@ -570,12 +635,12 @@ export function useUpdateCartItem() {
     }) => {
       console.log(`🔄 [useUpdateCartItem] Updating item ${itemId} to ${quantity}`);
       
-      // ✅ جلب معلومات العنصر (باستخدام maybeSingle)
+      // ✅ جلب معلومات العنصر
       const { data: cartItem, error: fetchError } = await supabase
         .from("cart_items")
         .select("cart_id, quantity, price, price_usd")
         .eq("id", itemId)
-        .maybeSingle();  // ✅ بدل single()
+        .maybeSingle();
       
       // ✅ تحقق من وجود العنصر
       if (fetchError || !cartItem) {
@@ -594,9 +659,6 @@ export function useUpdateCartItem() {
           console.error("❌ [useUpdateCartItem] Delete error:", deleteError);
           throw deleteError;
         }
-        
-        // ✅ تسجيل النشاط
-        await logCartActivity(cartItem.cart_id, userId, 'remove', itemId, cartItem.quantity, 0);
         
         // ✅ تحديث الإجماليات
         await updateCartTotals(cartItem.cart_id);
@@ -619,9 +681,6 @@ export function useUpdateCartItem() {
         throw updateError;
       }
       
-      // ✅ تسجيل النشاط
-      await logCartActivity(cartItem.cart_id, userId, 'update', itemId, cartItem.quantity, quantity);
-      
       // ✅ تحديث الإجماليات
       await updateCartTotals(cartItem.cart_id);
       
@@ -629,20 +688,16 @@ export function useUpdateCartItem() {
       return { action: 'updated', quantity, itemId, cartId: cartItem.cart_id };
     },
     
-    // ✅ استراتيجية التحديث
     onSuccess: (data, variables) => {
-      // ✅ تحديث الكاش
       queryClient.invalidateQueries({ 
         queryKey: ["cart", variables.userId] 
       });
       
-      // ✅ رسائل النجاح
       if (data.action === 'deleted') {
         toast.success("🗑️ تم حذف المنتج من السلة");
       } else if (data.action === 'updated') {
         toast.success(`🛒 تم تحديث الكمية إلى ${data.quantity}`);
       } else if (data.action === 'not_found') {
-        // ✅ العنصر غير موجود، نحدث الكاش فقط
         console.log("ℹ️ [useUpdateCartItem] Item not found, cache invalidated");
       }
     },
@@ -655,9 +710,11 @@ export function useUpdateCartItem() {
     retry: 1,
   });
 }
+
 // ============================================================
 // ✅ 5. تفريغ السلة
 // ============================================================
+
 export function useClearCart() {
   const queryClient = useQueryClient();
   
@@ -686,9 +743,6 @@ export function useClearCart() {
         .eq("cart_id", cart.id);
       
       if (deleteError) throw deleteError;
-      
-      // ✅ تسجيل النشاط
-      await logCartActivity(cart.id, userId, 'clear', null, 0, 0);
       
       // ✅ تحديث السلة
       await supabase
@@ -750,33 +804,5 @@ async function updateCartTotals(cartId: string) {
     
   } catch (error) {
     console.error("❌ [updateCartTotals] Error:", error);
-  }
-}
-
-// ✅ تسجيل نشاط السلة
-async function logCartActivity(
-  cartId: string, 
-  userId: string, 
-  action: string, 
-  itemId: string | null, 
-  oldQuantity: number, 
-  newQuantity: number
-) {
-  try {
-    await supabase
-      .from("cart_activity")
-      .insert({
-        cart_id: cartId,
-        user_id: userId,
-        action: action,
-        item_id: itemId,
-        old_quantity: oldQuantity,
-        new_quantity: newQuantity,
-        metadata: {
-          timestamp: new Date().toISOString(),
-        }
-      });
-  } catch (error) {
-    console.error("❌ [logCartActivity] Error:", error);
   }
 }

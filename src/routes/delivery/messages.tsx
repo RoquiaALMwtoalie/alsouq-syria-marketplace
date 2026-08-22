@@ -1,7 +1,7 @@
 // src/routes/delivery/messages.tsx
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from "react";
 import { 
   MessageCircle, Search, Truck, Store, ChevronRight, 
   MoreVertical, Trash2, Users, Package,
@@ -40,6 +40,7 @@ import { useMyDeliveryCompany, useUserRoles, useDistributors } from "@/lib/queri
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 export const Route = createFileRoute("/delivery/messages")({
   component: DeliveryMessagesPage,
@@ -656,10 +657,14 @@ function DeliveryMessagesPage() {
                           onClick={() => startCompanyAdminChat(admin)}
                         >
                           <Avatar className="h-10 w-10">
-                            <img 
-                              src={admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.full_name || 'A')}&background=0d2e2a&color=fff`} 
+                            <OptimizedImage
+                              src={admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.full_name || 'A')}&background=0d2e2a&color=fff`}
                               alt={admin.full_name || 'Admin'}
-                              className="object-cover"
+                              width={40}
+                              height={40}
+                              quality={80}
+                              objectFit="cover"
+                              className="h-full w-full object-cover"
                             />
                             <AvatarFallback className="bg-[#0d2e2a] text-white">
                               {(admin.full_name || 'A').charAt(0).toUpperCase()}
@@ -759,10 +764,14 @@ function DeliveryMessagesPage() {
                             onClick={() => dist.user_id && startDistributorChat(dist)}
                           >
                             <Avatar className="h-10 w-10">
-                              <img 
-                                src={dist.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(dist.full_name_ar || dist.full_name_en || 'D')}&background=0d2e2a&color=fff`} 
+                              <OptimizedImage
+                                src={dist.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(dist.full_name_ar || dist.full_name_en || 'D')}&background=0d2e2a&color=fff`}
                                 alt={dist.full_name_ar || dist.full_name_en || 'Distributor'}
-                                className="object-cover"
+                                width={40}
+                                height={40}
+                                quality={80}
+                                objectFit="cover"
+                                className="h-full w-full object-cover"
                               />
                               <AvatarFallback className="bg-[#0d2e2a] text-white">
                                 {(dist.full_name_ar || dist.full_name_en || 'D').charAt(0).toUpperCase()}
@@ -943,7 +952,15 @@ function DeliveryMessagesPage() {
                     <div className="flex items-center gap-4">
                       <div className="relative">
                         <Avatar className="h-14 w-14 ring-2 ring-slate-200 dark:ring-slate-700 group-hover:ring-[#0d2e2a] transition">
-                          <img src={avatar} alt={name} className="object-cover" />
+                          <OptimizedImage
+                            src={avatar}
+                            alt={name}
+                            width={56}
+                            height={56}
+                            quality={80}
+                            objectFit="cover"
+                            className="h-full w-full object-cover"
+                          />
                           <AvatarFallback className="bg-gradient-to-br from-[#0d2e2a] to-[#2a655f] text-white text-sm font-bold">
                             {name.charAt(0).toUpperCase()}
                           </AvatarFallback>

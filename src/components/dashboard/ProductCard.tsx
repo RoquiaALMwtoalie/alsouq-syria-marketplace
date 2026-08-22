@@ -1,4 +1,4 @@
-// src/components/dashboard/ProductCard.tsx - الكود الكامل المصحح (زر الحذف يظهر دائماً)
+// src/components/dashboard/ProductCard.tsx - الكود الكامل المصحح مع OptimizedImage
 
 import { 
   Package, Gift, Clock, Edit2, Trash2, Eye, MoreVertical, 
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 interface ProductCardProps {
   product: any;
@@ -221,7 +222,15 @@ export function ProductCard({
         <div className="group bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-200/50 dark:border-slate-800/50 hover:border-[#2a655f]/50 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all duration-300 flex flex-col sm:flex-row min-h-[180px]">
           <div className="sm:w-48 h-48 sm:h-auto flex-shrink-0 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 relative overflow-hidden">
             {product.cover_url ? (
-              <img src={product.cover_url} alt={product.title_ar} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <OptimizedImage
+                src={product.cover_url}
+                alt={product.title_ar}
+                width={400}
+                height={400}
+                quality={85}
+                objectFit="cover"
+                className="h-full w-full transition-transform duration-500 group-hover:scale-110"
+              />
             ) : (
               <div className="flex h-full w-full items-center justify-center"><Package className="h-16 w-16 text-muted-foreground/20" /></div>
             )}
@@ -298,13 +307,14 @@ export function ProductCard({
                         key={color.id} 
                         className="w-5 h-5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm overflow-hidden ring-2 ring-white/50 dark:ring-slate-800/50"
                       >
-                        <img 
-                          src={color.image_url} 
+                        <OptimizedImage
+                          src={color.image_url}
                           alt={color.color_name_ar}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/placeholder-color.png';
-                          }}
+                          width={40}
+                          height={40}
+                          quality={80}
+                          objectFit="cover"
+                          className="w-full h-full"
                         />
                       </div>
                     ))}
@@ -606,10 +616,14 @@ export function ProductCard({
         
         <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 cursor-pointer flex-shrink-0">
           {product.cover_url ? (
-            <img 
-              src={product.cover_url} 
-              alt={product.title_ar} 
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" 
+            <OptimizedImage
+              src={product.cover_url}
+              alt={product.title_ar}
+              width={400}
+              height={400}
+              quality={85}
+              objectFit="cover"
+              className="h-full w-full transition-transform duration-700 group-hover:scale-110"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
@@ -726,13 +740,14 @@ export function ProductCard({
                     key={color.id} 
                     className="w-5 h-5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm overflow-hidden ring-2 ring-white/50 dark:ring-slate-800/50 group-hover:ring-[#2a655f]/30 transition-all duration-300"
                   >
-                    <img 
-                      src={color.image_url} 
+                    <OptimizedImage
+                      src={color.image_url}
                       alt={color.color_name_ar}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder-color.png';
-                      }}
+                      width={40}
+                      height={40}
+                      quality={80}
+                      objectFit="cover"
+                      className="w-full h-full group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
                 ))}

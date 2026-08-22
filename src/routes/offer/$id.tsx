@@ -1,7 +1,7 @@
 // src/routes/offer/$id.tsx
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from "react";
 import { useApp, formatPrice } from "@/lib/i18n";
 import { useProductOfferByIdV2 } from "@/lib/hooks/useProductOffers";
 import { useAddToCart, useClearCart } from "@/lib/hooks/useCart";
@@ -27,6 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useListings } from "@/lib/queries";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 export const Route = createFileRoute("/offer/$id")({
   component: OfferDetailPage,
@@ -560,6 +561,7 @@ toast.success(
     );
   }
 }, [app.user, app.lang, offer, isVariationSelected, mainProduct, mainVariations, selectedVariations, selectedGiftVariation, giftVariations, freeProduct, quantity, addToCartMutation, navigate, mainImage]);
+
   const handleConfirmClearCart = useCallback(async () => {
     if (!app.user || !pendingAddData) return;
     
@@ -660,16 +662,26 @@ toast.success(
           <div className="space-y-4">
             <div className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-950/30 dark:to-indigo-950/30 border-2 border-purple-200/50 dark:border-purple-800/30 shadow-xl">
               {mainImage ? (
-                <img
+                <OptimizedImage
                   src={mainImage}
                   alt={offer.display_text_ar || "Promo offer"}
-                  className="w-full h-full object-cover transition-all duration-700 hover:scale-105"
+                  width={800}
+                  height={800}
+                  quality={85}
+                  priority={true}
+                  objectFit="cover"
+                  className="w-full h-full transition-all duration-700 hover:scale-105"
                 />
               ) : mainProduct?.cover_url ? (
-                <img
+                <OptimizedImage
                   src={mainProduct.cover_url}
                   alt={offer.display_text_ar || "Promo offer"}
-                  className="w-full h-full object-cover transition-all duration-700 hover:scale-105"
+                  width={800}
+                  height={800}
+                  quality={85}
+                  priority={true}
+                  objectFit="cover"
+                  className="w-full h-full transition-all duration-700 hover:scale-105"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -764,13 +776,14 @@ toast.success(
               >
                 <div className="h-14 w-14 rounded-2xl overflow-hidden border-2 border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0 bg-gradient-to-br from-purple-600 to-indigo-600">
                   {offerStoreLogo ? (
-                    <img 
-                      src={offerStoreLogo} 
+                    <OptimizedImage
+                      src={offerStoreLogo}
                       alt={offerStoreName}
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder-store.png';
-                      }}
+                      width={56}
+                      height={56}
+                      quality={85}
+                      objectFit="cover"
+                      className="h-full w-full"
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center text-white font-bold text-2xl">
@@ -1021,9 +1034,13 @@ toast.success(
                 <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
                   <div className="flex items-center gap-3">
                     {freeProduct.cover_url ? (
-                      <img 
-                        src={freeProduct.cover_url} 
+                      <OptimizedImage
+                        src={freeProduct.cover_url}
                         alt={freeProduct.title_ar}
+                        width={48}
+                        height={48}
+                        quality={80}
+                        objectFit="cover"
                         className="h-12 w-12 rounded-lg object-cover"
                       />
                     ) : (

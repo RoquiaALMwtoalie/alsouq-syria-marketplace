@@ -1,4 +1,4 @@
-// src/routes/cart.tsx - الكود المُصحّح بالكامل مع دعم العروض الترويجية وصور الفيرنتات
+// src/routes/cart.tsx - الكود المُصحّح بالكامل مع OptimizedImage
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { 
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCart, useUpdateCartItem, useClearCart } from "@/lib/hooks/useCart";
 import { AddressPicker, type PickedLocation } from "@/components/AddressPicker";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import {
   Dialog,
   DialogContent,
@@ -114,10 +115,9 @@ function CartPage() {
       const subtotal = price * quantity;
       const subtotal_usd = item.price_usd ? Number(item.price_usd) * quantity : null;
       
-      const listing = item.listing || null;
+     const listing = item.listings || item.listing || null;
       
       // ✅ ✅ ✅ حساب displayImage (صورة الفيرنت المختار)
-// ✅ ✅ ✅ حساب displayImage (صورة الفيرنت المختار)
 let displayImage = listing?.cover_url || '/placeholder.png';
 
 console.log("🔍 [Cart] item.selected_variation_id:", item.selected_variation_id);
@@ -155,7 +155,7 @@ console.log("📸 [Cart] Final displayImage:", displayImage);
         subtotal,
         subtotal_usd,
         listing: listing,
-        displayImage: displayImage, // ✅ أضف هذا السطر
+        displayImage: displayImage,
         // ✅ ✅ ✅ تحديد نوع العنصر
         isPromoOffer: item.is_promo_offer === true,
         isDiscountOffer: item.listing?.is_offer === true && item.is_promo_offer !== true,
@@ -1179,14 +1179,14 @@ const checkout = useCallback(async () => {
             <div className="mt-2 flex items-center gap-3 p-2.5 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10 hover:border-[#2a655f]/30 transition-all duration-300 max-w-md">
               <div className="h-9 w-9 rounded-lg overflow-hidden border-2 border-[#2a655f]/20 flex-shrink-0 bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a]">
                 {storeInfo.logo ? (
-                  <img 
-                    src={storeInfo.logo} 
+                  <OptimizedImage
+                    src={storeInfo.logo}
                     alt={storeInfo.name}
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '';
-                      e.target.style.display = 'none';
-                    }}
+                    width={36}
+                    height={36}
+                    quality={80}
+                    objectFit="cover"
+                    className="h-full w-full"
                   />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-white font-bold text-sm">
@@ -1335,13 +1335,14 @@ const checkout = useCallback(async () => {
                 >
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative h-28 w-28 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 mx-auto sm:mx-0">
-                      <img 
+                      <OptimizedImage
                         src={item.displayImage || '/placeholder.png'}
                         alt={app.lang === "ar" ? listing.title_ar : listing.title_en || listing.title_ar}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.png';
-                        }}
+                        width={112}
+                        height={112}
+                        quality={80}
+                        objectFit="cover"
+                        className="h-full w-full group-hover:scale-105 transition-transform duration-500"
                       />
                       {/* ✅ شارة نوع العنصر على الصورة */}
                       {isPromoOffer && (
@@ -1909,11 +1910,14 @@ const checkout = useCallback(async () => {
               const listing = item.listing || item;
               return (
                 <div key={item.id} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                  <img 
+                  <OptimizedImage
                     src={item.displayImage || '/placeholder.png'}
                     alt={listing.title_ar}
+                    width={40}
+                    height={40}
+                    quality={80}
+                    objectFit="cover"
                     className="h-10 w-10 rounded-lg object-cover"
-                    onError={(e) => (e.target as HTMLImageElement).src = '/placeholder.png'}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium line-clamp-1">
