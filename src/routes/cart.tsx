@@ -1428,22 +1428,35 @@ const checkout = useCallback(async () => {
                             </div>
                           )}
                           
-                          {/* ✅ السعر */}
-                          <div className="mt-2 flex items-center gap-3 flex-wrap">
-                            <span className="text-xl font-bold text-[#2a655f] dark:text-[#3a8a82]">
-                              {formatPrice(Number(item.price || listing.price), app.currency, app.lang)}
-                            </span>
-                            {listing.old_price && listing.old_price > 0 && (
-                              <span className="text-xs text-muted-foreground line-through">
-                                {formatPrice(Number(listing.old_price), app.currency, app.lang)}
-                              </span>
-                            )}
-                            {isPromoOffer && (
-                              <Badge className="bg-emerald-500/90 text-white border-0 text-[9px]">
-                                ✅ {app.lang === "ar" ? "عرض" : "Offer"}
-                              </Badge>
-                            )}
-                          </div>
+                        {/* ✅ السعر مع دعم الهدية */}
+<div className="mt-2 flex items-center gap-3 flex-wrap">
+  {item.variation_snapshot?.is_gift ? (
+    // ✅ هدية مجانية
+    <div className="flex flex-col">
+      <span className="text-xl font-bold text-emerald-500">0 {app.currency}</span>
+      <span className="text-xs line-through text-muted-foreground">
+        {formatPrice(Number(listing.price || 0), app.currency, app.lang)}
+      </span>
+      <Badge className="bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 text-[9px] mt-0.5 w-fit">
+        🎁 {app.lang === "ar" ? "هدية مجانية" : "Free Gift"}
+      </Badge>
+    </div>
+  ) : (
+    <span className="text-xl font-bold text-[#2a655f] dark:text-[#3a8a82]">
+      {formatPrice(Number(item.price || listing.price), app.currency, app.lang)}
+    </span>
+  )}
+  {listing.old_price && listing.old_price > 0 && !item.variation_snapshot?.is_gift && (
+    <span className="text-xs text-muted-foreground line-through">
+      {formatPrice(Number(listing.old_price), app.currency, app.lang)}
+    </span>
+  )}
+  {item.variation_snapshot?.is_gift && (
+    <Badge className="bg-emerald-500/90 text-white border-0 text-[9px]">
+      ✅ {app.lang === "ar" ? "مجاناً" : "FREE"}
+    </Badge>
+  )}
+</div>
                         </div>
 
                         <div className="flex items-center gap-2">

@@ -63,15 +63,17 @@ export async function getAuthRedirect(user: User): Promise<RedirectResult> {
   }
 
   if (role === "seller") {
+    // ✅ ✅ ✅ تعديل: بدلاً من /auth/complete → روح للصفحة الرئيسية
     if (!hasName || !hasPhone || !hasAddress) {
-      return { url: "/auth/complete", needsCompletion: true, role };
+      return { url: "/", needsCompletion: false, role };  // ✅ روح للرئيسية
     }
     return { url: "/dashboard", needsCompletion: false, role };
   }
 
   // ✅ customer أو أي دور آخر
+  // ✅ ✅ ✅ تعديل: بدلاً من /auth/complete → روح للصفحة الرئيسية
   if (!hasName || !hasPhone || !hasAddress) {
-    return { url: "/auth/complete", needsCompletion: true, role };
+    return { url: "/", needsCompletion: false, role };  // ✅ روح للرئيسية
   }
   return { url: "/", needsCompletion: false, role };
 }

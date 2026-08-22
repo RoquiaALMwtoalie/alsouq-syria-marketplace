@@ -59,13 +59,15 @@ export function AddBogoOfferDialog({
     // ✅ جلب التصنيفات
     const { data: categories = [] } = useCategories();
     
-    // ✅ جلب منتجات المتجر
+    // ✅ جلب منتجات المتجر - فقط المنتجات العادية (ليست عروض تخفيضية)
     const ownerId = app.user?.id;
     const { data: listingsData, isLoading: listingsLoading } = useListings({ 
         limit: 1000,
         ...(ownerId && { ownerId })
     });
-    const listings = listingsData?.data || [];
+    
+    // ✅ ✅ ✅ تصفية المنتجات: فقط المنتجات العادية (is_offer !== true)
+    const listings = (listingsData?.data || []).filter((l: any) => !l.is_offer);
 
     // ============================================================
     // ✅ STATE
@@ -164,81 +166,77 @@ export function AddBogoOfferDialog({
     };
 
     // ✅ ✅ ✅ دالة توليد اسم العرض بشكل احترافي
-    // ✅ ✅ ✅ دالة توليد اسم العرض (مثل نون وأمازون - مختصر وواضح)
-const generateProfessionalDisplayText = () => {
-    const isArabic = app.lang === "ar";
-    const mainProduct = listings.find((l: any) => l.id === requirements[0]?.listing_id);
-    const productName = mainProduct?.title_ar || (isArabic ? "المنتج" : "Product");
-    
-    const buyQty = requirements.reduce((sum, r) => sum + r.quantity, 0);
-    const getQty = result.quantity;
-    const giftProduct = listings.find((l: any) => l.id === result.listing_id);
-    const giftName = giftProduct?.title_ar || (isArabic ? "منتج آخر" : "another product");
+    const generateProfessionalDisplayText = () => {
+        const isArabic = app.lang === "ar";
+        const mainProduct = listings.find((l: any) => l.id === requirements[0]?.listing_id);
+        const productName = mainProduct?.title_ar || (isArabic ? "المنتج" : "Product");
+        
+        const buyQty = requirements.reduce((sum, r) => sum + r.quantity, 0);
+        const getQty = result.quantity;
+        const giftProduct = listings.find((l: any) => l.id === result.listing_id);
+        const giftName = giftProduct?.title_ar || (isArabic ? "منتج آخر" : "another product");
 
-    // ✅ حساب نسبة الخصم
-    const discountPercent = Math.round((getQty / (buyQty + getQty)) * 100);
+        // ✅ حساب نسبة الخصم
+        const discountPercent = Math.round((getQty / (buyQty + getQty)) * 100);
 
-    // ============================================================
-    // ✅ BOGO (نفس المنتج) - مثل نون وأمازون
-    // ============================================================
-    if (offerType === 'bogo') {
-        // ✅ إذا كان المنتج له اسم، نضيفه
-        if (mainProduct && productName !== (isArabic ? "المنتج" : "Product")) {
+        // ============================================================
+        // ✅ BOGO (نفس المنتج) - مثل نون وأمازون
+        // ============================================================
+        if (offerType === 'bogo') {
+            if (mainProduct && productName !== (isArabic ? "المنتج" : "Product")) {
+                return isArabic 
+                    ? `اشتري ${buyQty} من ${productName} + ${getQty} مجاناً`
+                    : `Buy ${buyQty} ${productName} + ${getQty} Free`;
+            }
             return isArabic 
-                ? `اشتري ${buyQty} من ${productName} + ${getQty} مجاناً`
-                : `Buy ${buyQty} ${productName} + ${getQty} Free`;
+                ? `اشتري ${buyQty} واحصل على ${getQty} مجاناً`
+                : `Buy ${buyQty} Get ${getQty} Free`;
         }
-        
-        // ✅ بدون اسم منتج (عام)
-        return isArabic 
-            ? `اشتري ${buyQty} واحصل على ${getQty} مجاناً`
-            : `Buy ${buyQty} Get ${getQty} Free`;
-    }
 
-    // ============================================================
-    // ✅ Cross-sell (منتج مختلف) - مثل نون وأمازون
-    // ============================================================
-    if (offerType === 'cross_sell') {
-        if (mainProduct && giftProduct) {
+        // ============================================================
+        // ✅ Cross-sell (منتج مختلف) - مثل نون وأمازون
+        // ============================================================
+        if (offerType === 'cross_sell') {
+            if (mainProduct && giftProduct) {
+                return isArabic 
+                    ? `اشتري ${productName} واحصل على ${giftName} مجاناً`
+                    : `Buy ${productName} & Get ${giftName} Free`;
+            }
             return isArabic 
-                ? `اشتري ${productName} واحصل على ${giftName} مجاناً`
-                : `Buy ${productName} & Get ${giftName} Free`;
+                ? `اشتري منتج واحصل على منتج آخر مجاناً`
+                : `Buy One Get One Free`;
         }
-        return isArabic 
-            ? `اشتري منتج واحصل على منتج آخر مجاناً`
-            : `Buy One Get One Free`;
-    }
 
-    // ============================================================
-    // ✅ Bundle (باقة) - مثل نون وأمازون
-    // ============================================================
-    if (offerType === 'bundle') {
-        const productNames = requirements
-            .map((r) => {
-                const p = listings.find((l: any) => l.id === r.listing_id);
-                return p?.title_ar || (isArabic ? "منتج" : "Product");
-            })
-            .slice(0, 2) // ✅ خذ أول منتجين فقط عشان الاسم ما يطول
-            .join(isArabic ? " + " : " + ");
-        
-        const extraCount = requirements.length - 2;
-        let bundleText = productNames;
-        if (extraCount > 0) {
-            bundleText += isArabic ? ` + ${extraCount} أخرى` : ` + ${extraCount} more`;
+        // ============================================================
+        // ✅ Bundle (باقة) - مثل نون وأمازون
+        // ============================================================
+        if (offerType === 'bundle') {
+            const productNames = requirements
+                .map((r) => {
+                    const p = listings.find((l: any) => l.id === r.listing_id);
+                    return p?.title_ar || (isArabic ? "منتج" : "Product");
+                })
+                .slice(0, 2)
+                .join(isArabic ? " + " : " + ");
+            
+            const extraCount = requirements.length - 2;
+            let bundleText = productNames;
+            if (extraCount > 0) {
+                bundleText += isArabic ? ` + ${extraCount} أخرى` : ` + ${extraCount} more`;
+            }
+            
+            return isArabic 
+                ? `باقة ${bundleText} + ${getQty} مجاناً`
+                : `Bundle ${bundleText} + ${getQty} Free`;
         }
-        
-        return isArabic 
-            ? `باقة ${bundleText} + ${getQty} مجاناً`
-            : `Bundle ${bundleText} + ${getQty} Free`;
-    }
 
-    // ============================================================
-    // ✅ Fallback (افتراضي)
-    // ============================================================
-    return isArabic 
-        ? `عرض خاص: ${buyQty} + ${getQty} مجاناً`
-        : `Special Offer: ${buyQty} + ${getQty} Free`;
-};
+        // ============================================================
+        // ✅ Fallback (افتراضي)
+        // ============================================================
+        return isArabic 
+            ? `عرض خاص: ${buyQty} + ${getQty} مجاناً`
+            : `Special Offer: ${buyQty} + ${getQty} Free`;
+    };
 
     // ============================================================
     // ✅ معاينة العرض
@@ -401,9 +399,6 @@ const generateProfessionalDisplayText = () => {
     // ============================================================
     // ✅ التحميل المسبق للبيانات (للتعديل)
     // ============================================================
-   // ============================================================
-// ✅ التحميل المسبق للبيانات (للتعديل)
-// ============================================================
 useEffect(() => {
     if (existingOffer) {
         setOfferType(existingOffer.offer_type || 'bogo');
@@ -433,11 +428,10 @@ useEffect(() => {
         }
         
         // ✅ ✅ ✅ حل مشكلة الهدية في التعديل
-        // ✅ في BOGO، الهدية هي نفس المنتج الأساسي
         const isBogo = existingOffer.offer_type === 'bogo';
         const giftListingId = isBogo 
-            ? existingOffer.listing_id  // ✅ في BOGO، استخدم listing_id (نفس المنتج)
-            : existingOffer.free_listing_id; // ✅ في Cross-sell/Bundle، استخدم free_listing_id
+            ? existingOffer.listing_id
+            : existingOffer.free_listing_id;
         
         console.log("🟢 [Edit] isBogo:", isBogo);
         console.log("🟢 [Edit] giftListingId:", giftListingId);
@@ -447,11 +441,9 @@ useEffect(() => {
         if (giftListingId) {
             let variations = { mode: 'all' as const, ids: [] as string[] };
             
-            // ✅ جلب فيرنتات الهدية من existingOffer
             if (existingOffer.result_variation_ids && existingOffer.result_variation_ids.length > 0) {
                 variations = { mode: 'selected', ids: existingOffer.result_variation_ids };
             } else {
-                // ✅ إذا كان المنتج الهدية فيه فيرنتات، نضبطها على 'selected' إجبارياً
                 const giftHasVars = hasVariations(giftListingId);
                 if (giftHasVars) {
                     variations = { mode: 'selected', ids: [] };
@@ -471,7 +463,6 @@ useEffect(() => {
                 isBogo: isBogo
             });
         } else {
-            // ✅ إذا لم يوجد giftListingId، نضبط النتيجة افتراضياً على نفس المنتج
             console.warn("⚠️ [Edit] No giftListingId found, using listing_id as fallback");
             const fallbackListingId = existingOffer.listing_id;
             if (fallbackListingId) {
@@ -513,6 +504,7 @@ useEffect(() => {
         setSelectedVariationPrice(null);
     }
 }, [open, existingOffer, initialProduct, offerType, categories, isArabic]);
+
     // ============================================================
     // ✅ RENDER
     // ============================================================

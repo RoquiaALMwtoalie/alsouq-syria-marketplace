@@ -304,6 +304,7 @@ export function useAddToCart() {
       selectedVariationId,
       variationPrice,
       variationCombination,
+      extraData,  
       onStoreConflict,
     }: {
       userId: string;
@@ -314,6 +315,7 @@ export function useAddToCart() {
       selectedVariationId?: string;
       variationPrice?: number;
       variationCombination?: Record<string, string>;
+      extraData?: any;
       onStoreConflict?: (data: any) => void;
     }) => {
       console.log("🛒 [useAddToCart] START - userId:", userId, "listingId:", listingId);
@@ -353,7 +355,7 @@ export function useAddToCart() {
         }
       }
       
-      const finalPrice = variationPrice || listing?.price || 0;
+      const finalPrice = variationPrice ?? listing?.price ?? 0;
       
       const compatibility = await checkCompatibility.mutateAsync({
         userId,
@@ -447,15 +449,14 @@ export function useAddToCart() {
           price: finalPrice,
           price_usd: listing.price_usd,
           currency: listing.currency || 'SYP',
-          // ✅ ✅ ✅ حفظ صورة الفيرنت في الـ snapshot
           variation_snapshot: {
             title_ar: listing.title_ar,
             title_en: listing.title_en,
-            cover_url: variationImageUrl || listing.cover_url,  // ✅ صورة الفيرنت أو الأساسية
+            cover_url: variationImageUrl || listing.cover_url,
             price: finalPrice,
             price_usd: listing.price_usd,
-            variation_image: variationImageUrl,  // ✅ حفظ صورة الفيرنت بشكل منفصل
-            variation_data: variationData,  // ✅ حفظ بيانات الفيرنت كاملة
+            variation_image: variationImageUrl,
+            variation_data: variationData,
           },
         };
 
@@ -484,6 +485,46 @@ export function useAddToCart() {
         }
         
         console.log("✅ [useAddToCart] New item added:", newItem.id);
+
+        // ✅✅✅ إضافة الهدية للسلة إذا وجدت
+        if (extraData?.gift_data) {
+          const giftData = extraData.gift_data;
+          console.log("🎁 [useAddToCart] Adding gift:", giftData.title_ar);
+          
+          const giftInsertData: any = {
+            cart_id: cartId,
+            listing_id: giftData.id,
+            quantity: 1,
+            price: 0,
+            currency: 'SYP',
+            variation_snapshot: {
+              title_ar: giftData.title_ar,
+              title_en: giftData.title_en,
+              cover_url: giftData.cover_url,
+              price: 0,
+              is_gift: true,
+              gift_data: giftData,
+            },
+          };
+
+          if (giftData.variation_id) {
+            giftInsertData.selected_variation_id = giftData.variation_id;
+          }
+          if (giftData.variation_data?.combination) {
+            giftInsertData.variation_combination = giftData.variation_data.combination;
+          }
+
+          const { error: giftError } = await supabase
+            .from("cart_items")
+            .insert(giftInsertData);
+
+          if (giftError) {
+            console.error("❌ [useAddToCart] Error adding gift:", giftError);
+          } else {
+            console.log("✅ [useAddToCart] Gift added successfully!");
+          }
+        }
+
         return { action: 'added', item: newItem };
       }
     },

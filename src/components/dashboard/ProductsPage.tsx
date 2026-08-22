@@ -11,7 +11,8 @@ import {
   Share2, Heart, Bookmark, Star, ZoomIn, ZoomOut,
   MessageCircle, ThumbsUp, ThumbsDown, ChevronDown,
   Sparkles, Zap, TrendingUp, Award, Target, Rocket,
-  Play, Pause, ShoppingCart, Percent, Tags
+  Play, Pause, ShoppingCart, Percent, Tags,
+  ChevronsLeft, ChevronsRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,10 +66,8 @@ export const ProductsPage = React.memo(function ProductsPage() {
   } = useMyListings(app.user?.id);
   
   // ✅ جلب العروض الترويجية للبائع
-  // بعد جلب sellerOffers
-const { data: sellerOffers = [], refetch: refetchSellerOffers } = useSellerOffers(app.user?.id);
+  const { data: sellerOffers = [], refetch: refetchSellerOffers } = useSellerOffers(app.user?.id);
 
-console.log("🟢 [ProductsPage] sellerOffers from API:", sellerOffers);
   const create = useCreateListing();
   const update = useUpdateListing();
   const del = useDeleteListing();
@@ -83,15 +82,13 @@ console.log("🟢 [ProductsPage] sellerOffers from API:", sellerOffers);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "pending" | "published" | "archived">("all");
   const [filterType, setFilterType] = useState<"all" | "product" | "offer" | "promo">("all");
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(12);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(6); // ✅ الافتراضي 6
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  // ✅ أضف هذه الـ State مع باقي الـ State
-const [detailCurrentImage, setDetailCurrentImage] = useState<string>("");
-const [detailSelectedColor, setDetailSelectedColor] = useState<any>(null);
-  // ✅ Slider State
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isAutoPlay, setIsAutoPlay] = useState(true);
+  
+  // ✅ State للتفاصيل
+  const [detailCurrentImage, setDetailCurrentImage] = useState<string>("");
+  const [detailSelectedColor, setDetailSelectedColor] = useState<any>(null);
   
   // Dialogs
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -131,24 +128,20 @@ const [detailSelectedColor, setDetailSelectedColor] = useState<any>(null);
   const [selectedPromoProduct, setSelectedPromoProduct] = useState<any>(null);
 
   // ✅ ✅ ✅ ربط العروض الترويجية بالمنتجات
-const productsWithPromo = useMemo(() => {
-  if (!myListings.length || !sellerOffers.length) return myListings;
-  
-  console.log("🟢 [ProductsPage] 🔥 productsWithPromo - sellerOffers:", sellerOffers);
-  
-  const mapped = myListings.map((product: any) => {
-    const promoOffer = sellerOffers.find((offer: any) => offer.listing_id === product.id);
-    console.log(`🟢 [ProductsPage] product: ${product.title_ar}, has promo:`, !!promoOffer);
-    return {
-      ...product,
-      promo_offer: promoOffer || null,
-      has_promo: !!promoOffer,
-    };
-  });
-  
-  console.log("🟢 [ProductsPage] productsWithPromo result:", mapped);
-  return mapped;
-}, [myListings, sellerOffers]);
+  const productsWithPromo = useMemo(() => {
+    if (!myListings.length || !sellerOffers.length) return myListings;
+    
+    const mapped = myListings.map((product: any) => {
+      const promoOffer = sellerOffers.find((offer: any) => offer.listing_id === product.id);
+      return {
+        ...product,
+        promo_offer: promoOffer || null,
+        has_promo: !!promoOffer,
+      };
+    });
+    
+    return mapped;
+  }, [myListings, sellerOffers]);
 
   // ✅ تعريف filteredProducts مع دعم العروض الترويجية
   const filteredProducts = useMemo(() => {
@@ -159,7 +152,7 @@ const productsWithPromo = useMemo(() => {
       result = result.filter((p: any) => p.status === filterStatus);
     }
     
-    // ✅ فلتر النوع (منتج / عرض تخفيض / عرض ترويجي)
+    // ✅ فلتر النوع
     if (filterType === "product") {
       result = result.filter((p: any) => p.is_offer !== true && !p.has_promo);
     } else if (filterType === "offer") {
@@ -180,35 +173,38 @@ const productsWithPromo = useMemo(() => {
     return result;
   }, [productsWithPromo, searchQuery, filterStatus, filterType]);
 
-  // ✅ تعريف itemsPerSlide
-  const itemsPerSlide = filteredProducts.length || 4;
+  // ✅ حساب عدد الصفحات
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
 
-  const totalPages = Math.ceil(filteredProducts.length / limit);
+  // ✅ المنتجات المعروضة في الصفحة الحالية
   const paginatedProducts = useMemo(() => {
-    const start = (page - 1) * limit;
-    return filteredProducts.slice(start, start + limit);
-  }, [filteredProducts, page, limit]);
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredProducts.slice(start, start + itemsPerPage);
+  }, [filteredProducts, currentPage, itemsPerPage]);
 
-  // ✅ حساب عدد السلايدات
-  const totalSlides = Math.ceil(filteredProducts.length / itemsPerSlide);
-
-  // ✅ Auto-play slider
+  // ✅ Reset عند تغيير الفلاتر أو عدد المنتجات
   useEffect(() => {
-    if (!isAutoPlay || filteredProducts.length === 0 || filteredProducts.length <= itemsPerSlide) return;
-    
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % totalSlides);
-    }, 4000);
-    
-    return () => clearInterval(interval);
-  }, [isAutoPlay, filteredProducts.length, totalSlides, itemsPerSlide]);
+    setCurrentPage(1);
+  }, [searchQuery, filterStatus, filterType, itemsPerPage]);
 
-  // ✅ Reset slide when filter changes
-  useEffect(() => {
-    setCurrentSlide(0);
-  }, [searchQuery, filterStatus, filterType]);
+  // ✅ التنقل بين الصفحات
+  const goToPage = useCallback((page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  }, [totalPages]);
 
-  // ✅ إحصائيات مع دعم العروض الترويجية
+  const nextPage = useCallback(() => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  }, [currentPage, totalPages]);
+
+  const prevPage = useCallback(() => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  }, [currentPage]);
+
+  // ✅ إحصائيات
   const stats = useMemo(() => {
     const promoCount = productsWithPromo.filter((p: any) => p.has_promo).length;
     
@@ -280,16 +276,7 @@ const productsWithPromo = useMemo(() => {
 
   // ===== دالة إرسال إشعار للأدمن =====
   const notifyAdmin = useCallback(async (productTitle: string, actionType: string, userId: string, listingId: string) => {
-    console.log("🔍 [STEP 1] notifyAdmin called with:", { 
-      productTitle, 
-      actionType, 
-      userId, 
-      listingId 
-    });
-
     try {
-      console.log("🔍 [STEP 2] Fetching admin from user_roles...");
-      
       const { data: adminRole, error: roleError } = await supabase
         .from("user_roles")
         .select("user_id")
@@ -297,102 +284,33 @@ const productsWithPromo = useMemo(() => {
         .limit(1)
         .maybeSingle();
 
-      console.log("🔍 [STEP 3] Admin fetch result:", { 
-        adminRole, 
-        roleError,
-        hasAdmin: !!adminRole,
-        hasUserId: !!adminRole?.user_id 
-      });
+      if (roleError || !adminRole) return;
 
-      if (roleError) {
-        console.error("❌ [STEP 4] Error fetching admin:", roleError);
-        return;
-      }
-
-      if (!adminRole) {
-        console.error("❌ [STEP 5] No admin found in user_roles table!");
-        const { data: allRoles, error: rolesError } = await supabase
-          .from("user_roles")
-          .select("*");
-        
-        console.log("📊 [STEP 5] All user_roles:", allRoles);
-        console.log("📊 [STEP 5] Roles error:", rolesError);
-        return;
-      }
-
-      if (!adminRole.user_id) {
-        console.error("❌ [STEP 6] Admin user_id is null!", { adminRole });
-        return;
-      }
-
-      console.log("✅ [STEP 7] Admin found successfully:", adminRole.user_id);
-
-      console.log("🔍 [STEP 8] Fetching user profile...");
-      
-      const { data: userProfile, error: profileError } = await supabase
+      const { data: userProfile } = await supabase
         .from("profiles")
         .select("full_name, store_name")
         .eq("id", userId)
         .maybeSingle();
 
-      console.log("🔍 [STEP 9] User profile result:", { 
-        userProfile, 
-        profileError,
-        hasProfile: !!userProfile 
-      });
-
       const userName = userProfile?.full_name || userProfile?.store_name || userId || 'مستخدم';
-      console.log("✅ [STEP 10] User name:", userName);
-
-      console.log("🔍 [STEP 11] Preparing notification data...");
       
       let tabTarget = "";
       if (actionType === "إضافة" || actionType === "تعديل" || actionType === "إعادة نشر") {
         tabTarget = "listings";
       }
 
-      const notificationData = {
+      await supabase.from("notifications").insert({
         user_id: adminRole.user_id,
         type: "product_pending",
-        title_ar: `📦 طلب ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} منتج`,
-        body_ar: `قام ${userName} بـ ${actionType === "إضافة" ? "إضافة" : actionType === "تعديل" ? "تعديل" : "إعادة نشر"} المنتج "${productTitle}"، بحاجة للمراجعة`,
+        title_ar: `📦 طلب ${actionType} منتج`,
+        body_ar: `قام ${userName} بـ ${actionType} المنتج "${productTitle}"، بحاجة للمراجعة`,
         link_url: `/admin?tab=${tabTarget}`,
-        metadata: {
-          product_id: listingId,
-          action: actionType,
-          user_name: userName,
-          user_id: userId,
-          tab: tabTarget,
-        },
+        metadata: { product_id: listingId, action: actionType, user_name: userName },
         created_at: new Date().toISOString(),
         is_read: false,
-      };
-
-      console.log("✅ [STEP 12] Notification data ready:", notificationData);
-
-      console.log("🔍 [STEP 13] Sending notification to Supabase...");
-      
-      const { error: notifError } = await supabase
-        .from("notifications")
-        .insert(notificationData);
-
-      if (notifError) {
-        console.error("❌ [STEP 14] Error sending notification:", notifError);
-        console.error("❌ [STEP 14] Error details:", {
-          code: notifError.code,
-          message: notifError.message,
-          details: notifError.details,
-          hint: notifError.hint,
-        });
-      } else {
-        console.log(`✅ [STEP 15] Admin notified successfully!`);
-        console.log(`✅ [STEP 15] Product: ${productTitle}, Admin: ${adminRole.user_id}`);
-        console.log(`✅ [STEP 15] Link: /admin?tab=${tabTarget}`);
-      }
-
+      });
     } catch (error) {
-      console.error("❌ [STEP 16] Unexpected error in notifyAdmin:", error);
-      console.error("❌ [STEP 16] Error stack:", error instanceof Error ? error.stack : 'No stack');
+      console.error("❌ Error notifying admin:", error);
     }
   }, []);
 
@@ -409,9 +327,7 @@ const productsWithPromo = useMemo(() => {
           : app.lang === "ar" ? "✅ تم إرسال المنتج للمراجعة" : "✅ Product sent for review"
     );
 
-    setTimeout(() => {
-      setDialogProduct(null);
-    }, 100);
+    setTimeout(() => setDialogProduct(null), 100);
 
     try {
       setIsSaving(true);
@@ -444,10 +360,8 @@ const productsWithPromo = useMemo(() => {
             updated_at: new Date().toISOString(),
           }
         });
-
         listingId = currentDialogProduct.id;
         await ProductService.deleteProductData(listingId);
-
       } else {
         const result = await create.mutateAsync({
           owner_id: app.user!.id,
@@ -468,18 +382,8 @@ const productsWithPromo = useMemo(() => {
           image_urls: [data.cover_url, ...(data.image_urls || [])].filter(Boolean),
           status: "pending",
         } as any);
-
         listingId = result.id;
       }
-
-      console.log("🔍🔍🔍 [ProductsPage] ===== BEFORE SAVE ALL DATA =====");
-      console.log("🔍🔍🔍 [ProductsPage] data.options:", data.options);
-      console.log("🔍🔍🔍 [ProductsPage] data.options.sizes:", data.options.sizes);
-      console.log("🔍🔍🔍 [ProductsPage] data.options keys:", Object.keys(data.options || {}));
-      console.log("🔍🔍🔍 [ProductsPage] ===== BEFORE SAVE ALL DATA END =====");
-      
-      console.log("🔍🔍🔍 [ProductsPage] data.options.sizes:", data.options.sizes);
-      console.log("🔍🔍🔍 [ProductsPage] data.options:", data.options);
 
       await ProductService.saveAllProductData(listingId, {
         options: data.options || {},
@@ -489,18 +393,11 @@ const productsWithPromo = useMemo(() => {
       });
 
       const actionType = isEditing ? "تعديل" : "إضافة";
-
       notifyAdmin(productTitle, actionType, app.user!.id, listingId).catch(console.error);
       
-      queryClient.invalidateQueries({ 
-        queryKey: ["listings", "my", app.user?.id] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ["listings"] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ["listing", listingId] 
-      });
+      queryClient.invalidateQueries({ queryKey: ["listings", "my", app.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
       
       await refetchMyListings();
 
@@ -548,7 +445,7 @@ const productsWithPromo = useMemo(() => {
     }
   }, [productToDelete, del, refetchMyListings, app.lang]);
 
-  // ===== ✅ تحويل المنتج إلى عرض تخفيض =====
+  // ===== تحويل المنتج إلى عرض =====
   const handleConvertToOffer = useCallback(async (productId: string, newPrice: number) => {
     try {
       setIsConverting(true);
@@ -580,7 +477,6 @@ const productsWithPromo = useMemo(() => {
           price: newPrice,
           old_price: v.price,
         }));
-        
         await ProductService.saveVariations(productId, updatedVariations);
       }
 
@@ -593,27 +489,17 @@ const productsWithPromo = useMemo(() => {
       setConvertDialogOpen(false);
       setProductToConvert(null);
       await refetchMyListings();
-
-      await notifyAdmin(
-        product.title_ar,
-        "تحويل إلى عرض",
-        app.user!.id,
-        productId
-      );
+      await notifyAdmin(product.title_ar, "تحويل إلى عرض", app.user!.id, productId);
 
     } catch (error) {
       console.error("❌ Error converting to offer:", error);
-      toast.error(
-        app.lang === "ar"
-          ? "❌ حدث خطأ أثناء تحويل المنتج إلى عرض تخفيض"
-          : "❌ Error converting product to discount offer"
-      );
+      toast.error(app.lang === "ar" ? "❌ حدث خطأ أثناء تحويل المنتج" : "❌ Error converting product");
     } finally {
       setIsConverting(false);
     }
   }, [myListings, update, refetchMyListings, notifyAdmin, app.user, app.lang]);
 
-  // ===== ✅ إعادة نشر المنتج (للمسودات) =====
+  // ===== إعادة نشر المنتج =====
   const handleRepublish = useCallback(async (product: any) => {
     try {
       setIsSaving(true);
@@ -626,59 +512,36 @@ const productsWithPromo = useMemo(() => {
         }
       });
       
-      toast.success(
-        app.lang === "ar" 
-          ? "📤 تم إرسال طلب إعادة النشر للمراجعة" 
-          : "📤 Republish request sent for review"
-      );
+      toast.success(app.lang === "ar" ? "📤 تم إرسال طلب إعادة النشر للمراجعة" : "📤 Republish request sent for review");
+      await notifyAdmin(product.title_ar, "إعادة نشر", app.user!.id, product.id);
       
-      await notifyAdmin(
-        product.title_ar,
-        "إعادة نشر",
-        app.user!.id,
-        product.id
-      );
-      
-      queryClient.invalidateQueries({ 
-        queryKey: ["listings", "my", app.user?.id] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ["listings"] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ["listing", product.id] 
-      });
+      queryClient.invalidateQueries({ queryKey: ["listings", "my", app.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["listing", product.id] });
       
       await refetchMyListings();
       
     } catch (error) {
       console.error("❌ Error republishing product:", error);
-      toast.error(
-        app.lang === "ar" 
-          ? "❌ فشل إرسال طلب إعادة النشر" 
-          : "❌ Failed to send republish request"
-      );
+      toast.error(app.lang === "ar" ? "❌ فشل إرسال طلب إعادة النشر" : "❌ Failed to send republish request");
     } finally {
       setIsSaving(false);
     }
   }, [update, app.user, app.lang, notifyAdmin, refetchMyListings, queryClient]);
 
-  // ===== ✅ فتح نافذة التحويل =====
+  // ===== دوال العروض الترويجية =====
   const openConvertDialog = useCallback((product: any) => {
     setProductToConvert(product);
     setConvertDialogOpen(true);
   }, []);
 
-  // ===== ✅ ✅ ✅ دوال العروض الترويجية =====
   const handleAddPromoOffer = useCallback((product: any) => {
-    console.log("🟢 [ProductsPage] handleAddPromoOffer called with:", product);
     setSelectedOfferProduct(product);
     setEditingOffer(null);
     setOfferDialogOpen(true);
   }, []);
 
   const handleEditPromoOffer = useCallback((offer: any) => {
-    console.log("🟢 [ProductsPage] handleEditPromoOffer called with:", offer);
     setSelectedOfferProduct(null);
     setEditingOffer(offer);
     setOfferDialogOpen(true);
@@ -698,91 +561,55 @@ const productsWithPromo = useMemo(() => {
     }
   }, [deletePromoOffer, refetchMyListings, refetchSellerOffers, app.lang]);
 
-const handleViewPromoOffer = useCallback((offer: any) => {
-  console.log("🟢 [ProductsPage] 🔥🔥🔥 handleViewPromoOffer CALLED! 🔥🔥🔥");
-  console.log("🟢 [ProductsPage] offer:", offer);
-  setSelectedPromoOffer(offer);
-  const product = myListings.find((p: any) => p.id === offer.listing_id);
-  console.log("🟢 [ProductsPage] found product:", product);
-  setSelectedPromoProduct(product || null);
-  setPromoDetailDialogOpen(true);  // ✅ هذا يفتح نافذة التفاصيل
-}, [myListings]);
+  const handleViewPromoOffer = useCallback((offer: any) => {
+    setSelectedPromoOffer(offer);
+    const product = myListings.find((p: any) => p.id === offer.listing_id);
+    setSelectedPromoProduct(product || null);
+    setPromoDetailDialogOpen(true);
+  }, [myListings]);
 
   // ===== فتح نافذة الإضافة =====
   const openAddDialog = useCallback((type: "product" | "offer") => {
-    console.log("🟢 [openAddDialog] 🔥🔥🔥 BUTTON CLICKED! 🔥🔥🔥");
-    console.log("🟢 [openAddDialog] Type:", type);
-    console.log("🟢 [openAddDialog] Setting dialogOpen to true");
-    
     setDialogType(type);
     setDialogProduct(null);
     setDialogOpen(true);
-    
-    console.log("🟢 [openAddDialog] dialogOpen is now:", true);
   }, []);
 
   // ===== فتح نافذة التعديل =====
   const openEditDialog = useCallback((product: any) => {
-    if (isOpeningDialog.current) {
-      console.log("⚠️ [openEditDialog] Already opening, skipping...");
-      return;
-    }
-    
+    if (isOpeningDialog.current) return;
     isOpeningDialog.current = true;
-    
-    console.log("🔍🔍🔍 [ProductsPage] openEditDialog - product:", {
-      id: product.id,
-      title: product.title_ar,
-      optionsCount: product.options?.length || 0,
-      colorsCount: product.colors?.length || 0,
-      variationsCount: product.variations?.length || 0,
-      hasMetadata: !!product.metadata,
-    });
     
     setDialogProduct(product);
     setDialogType(product.is_offer ? "offer" : "product");
     setDialogOpen(true);
     
-    setTimeout(() => {
-      isOpeningDialog.current = false;
-    }, 500);
+    setTimeout(() => { isOpeningDialog.current = false; }, 500);
   }, []);
 
   // ===== فتح تفاصيل المنتج =====
-const openProductDetail = useCallback((product: any) => {
-  setSelectedVariation(null);
-  setSelectedProduct(product);
-  setCurrentImageIndex(0);
-  setIsZoomed(false);
-  
-  // ✅ ✅ ✅ تعيين الصورة الرئيسية
-  setDetailCurrentImage(product?.cover_url || '');
-  setDetailSelectedColor(null);
-  
-  setDetailDialogOpen(true);
-}, []);
-// ✅ ✅ ✅ دالة تغيير اللون في التفاصيل
-const handleDetailColorSelect = useCallback((color: any) => {
-  setDetailSelectedColor(color);
-  
-  // ✅ تغيير الصورة إلى صورة اللون
-  if (color?.image_url) {
-    setDetailCurrentImage(color.image_url);
-  } else {
-    // إذا لم توجد صورة للون، ارجع للصورة الرئيسية
-    setDetailCurrentImage(selectedProduct?.cover_url || '');
-  }
-  
-  // ✅ إعادة تعيين الفيرنت المختار
-  setSelectedVariation(null);
-}, [selectedProduct]);
-  // ===== ✅ إضافة المنتج للسلة من صفحة التفاصيل =====
+  const openProductDetail = useCallback((product: any) => {
+    setSelectedVariation(null);
+    setSelectedProduct(product);
+    setCurrentImageIndex(0);
+    setIsZoomed(false);
+    setDetailCurrentImage(product?.cover_url || '');
+    setDetailSelectedColor(null);
+    setDetailDialogOpen(true);
+  }, []);
+
+  const handleDetailColorSelect = useCallback((color: any) => {
+    setDetailSelectedColor(color);
+    setDetailCurrentImage(color?.image_url || selectedProduct?.cover_url || '');
+    setSelectedVariation(null);
+  }, [selectedProduct]);
+
+  // ===== إضافة المنتج للسلة =====
   const handleAddToCartFromDetail = useCallback(async () => {
     if (!app.user) {
       toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
       return;
     }
-    
     if (!selectedProduct) return;
     
     const hasVariations = selectedProduct.variations && selectedProduct.variations.length > 0;
@@ -802,7 +629,6 @@ const handleDetailColorSelect = useCallback((color: any) => {
         variationPrice: selectedVariation?.price || selectedProduct.price,
         variationCombination: selectedVariation?.combination || undefined,
       });
-      
       toast.success(app.lang === "ar" ? "✅ تم إضافة المنتج للسلة 🛒" : "✅ Product added to cart 🛒");
     } catch (error) {
       console.error("❌ Error adding to cart:", error);
@@ -810,22 +636,7 @@ const handleDetailColorSelect = useCallback((color: any) => {
     }
   }, [app.user, selectedProduct, selectedVariation, addToCart, app.lang]);
 
-  // ===== تغيير السلايد =====
-  const goToSlide = useCallback((index: number) => {
-    setCurrentSlide(index);
-    setIsAutoPlay(false);
-    setTimeout(() => setIsAutoPlay(true), 5000);
-  }, []);
-
-  const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % totalSlides);
-  }, [totalSlides]);
-
-  const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
-  }, [totalSlides]);
-
-  // ✅ عرض حالة التحميل المحسنة
+  // ✅ عرض حالة التحميل
   if (isLoading || isFetching) {
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-6">
@@ -836,7 +647,6 @@ const handleDetailColorSelect = useCallback((color: any) => {
           </div>
           <div className="absolute -inset-4 rounded-full border-2 border-[#2a655f]/10 animate-ping" />
         </div>
-        
         <div className="text-center space-y-2">
           <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 animate-pulse">
             {app.lang === "ar" ? "⏳ جاري تحميل منتجاتك..." : "⏳ Loading your products..."}
@@ -845,7 +655,6 @@ const handleDetailColorSelect = useCallback((color: any) => {
             {app.lang === "ar" ? "قد يستغرق هذا بضع ثوانٍ" : "This may take a few seconds"}
           </p>
         </div>
-        
         <div className="w-64 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
           <div className="h-full w-1/2 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] rounded-full animate-slide" />
         </div>
@@ -857,18 +666,10 @@ const handleDetailColorSelect = useCallback((color: any) => {
   if (isError) {
     return (
       <div className="rounded-3xl border-2 border-red-200/50 dark:border-red-800/30 p-20 text-center bg-red-50/50 dark:bg-red-950/20">
-        <div className="relative inline-block">
-          <AlertTriangle className="h-20 w-20 text-red-500/60 mx-auto animate-pulse" />
-          <div className="absolute -inset-4 rounded-full bg-red-500/10 animate-ping" />
-        </div>
+        <AlertTriangle className="h-20 w-20 text-red-500/60 mx-auto animate-pulse" />
         <h3 className="text-xl font-semibold text-red-600 dark:text-red-400 mt-4">
           {app.lang === "ar" ? "❌ حدث خطأ في تحميل المنتجات" : "❌ Error loading products"}
         </h3>
-        <p className="text-sm text-red-500/70 dark:text-red-400/70 mt-2 max-w-md mx-auto">
-          {app.lang === "ar" 
-            ? "حدث خطأ أثناء تحميل منتجاتك. يرجى المحاولة مرة أخرى." 
-            : "An error occurred while loading your products. Please try again."}
-        </p>
         <Button 
           variant="outline" 
           className="mt-6 rounded-xl border-red-300/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-300 hover:scale-105"
@@ -930,7 +731,6 @@ const handleDetailColorSelect = useCallback((color: any) => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* ✅ زر أضف منتج */}
           <Button 
             size="sm" 
             className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 hover:scale-105 transition-all duration-300 group"
@@ -940,7 +740,6 @@ const handleDetailColorSelect = useCallback((color: any) => {
             {app.lang === "ar" ? "أضف منتج" : "Add Product"}
           </Button>
           
-          {/* ✅ زر أضف عرض تخفيض */}
           <Button 
             size="sm" 
             className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:scale-105 transition-all duration-300 group"
@@ -950,7 +749,6 @@ const handleDetailColorSelect = useCallback((color: any) => {
             {app.lang === "ar" ? "عرض تخفيض" : "Discount Offer"}
           </Button>
 
-          {/* ✅ زر عرض ترويجي (BOGO/Cross-sell/Bundle) */}
           <Button 
             size="sm" 
             className="rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 hover:scale-105 transition-all duration-300 group"
@@ -1032,7 +830,7 @@ const handleDetailColorSelect = useCallback((color: any) => {
           <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors duration-300" />
           <Input 
             value={searchQuery} 
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }} 
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
             placeholder={app.lang === "ar" ? "🔍 ابحث في منتجاتك..." : "🔍 Search your products..."} 
             className="ps-9 h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300" 
           />
@@ -1043,7 +841,7 @@ const handleDetailColorSelect = useCallback((color: any) => {
           )}
         </div>
         
-        <Select value={filterStatus} onValueChange={(v: any) => { setFilterStatus(v); setPage(1); }}>
+        <Select value={filterStatus} onValueChange={(v: any) => { setFilterStatus(v); setCurrentPage(1); }}>
           <SelectTrigger className="w-[150px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 transition-all duration-300">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
@@ -1058,7 +856,7 @@ const handleDetailColorSelect = useCallback((color: any) => {
           </SelectContent>
         </Select>
         
-        <Select value={filterType} onValueChange={(v: any) => { setFilterType(v); setPage(1); }}>
+        <Select value={filterType} onValueChange={(v: any) => { setFilterType(v); setCurrentPage(1); }}>
           <SelectTrigger className="w-[170px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 transition-all duration-300">
             <div className="flex items-center gap-2">
               <Tags className="h-4 w-4 text-slate-400" />
@@ -1070,18 +868,6 @@ const handleDetailColorSelect = useCallback((color: any) => {
             <SelectItem value="product" className="hover:bg-[#2a655f]/10">📦 {app.lang === "ar" ? "منتج" : "Product"}</SelectItem>
             <SelectItem value="offer" className="hover:bg-[#2a655f]/10">🏷️ {app.lang === "ar" ? "عرض تخفيض" : "Discount"}</SelectItem>
             <SelectItem value="promo" className="hover:bg-[#2a655f]/10">✨ {app.lang === "ar" ? "عرض ترويجي" : "Promo"}</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 transition-all duration-300">
-            <SelectValue placeholder="12" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#2a655f]/20">
-            <SelectItem value="6">6</SelectItem>
-            <SelectItem value="12">12</SelectItem>
-            <SelectItem value="24">24</SelectItem>
-            <SelectItem value="48">48</SelectItem>
           </SelectContent>
         </Select>
         
@@ -1115,7 +901,7 @@ const handleDetailColorSelect = useCallback((color: any) => {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setPage(1); }} 
+          onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setCurrentPage(1); }} 
           className="h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 group"
         >
           <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
@@ -1123,7 +909,9 @@ const handleDetailColorSelect = useCallback((color: any) => {
         </Button>
       </div>
 
-      {/* ===== PRODUCTS DISPLAY ===== */}
+      {/* ============================================================ */}
+      {/* 🚀 PRODUCTS DISPLAY - صفحة عادية مع Pagination */}
+      {/* ============================================================ */}
       {myListings.length === 0 ? (
         <div className="relative rounded-3xl border-2 border-dashed border-[#2a655f]/30 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-transparent group hover:border-[#2a655f]/50 transition-all duration-500">
           <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -1199,183 +987,160 @@ const handleDetailColorSelect = useCallback((color: any) => {
         </div>
       ) : (
         <>
-          {filteredProducts.length <= 12 ? (
-            <div className="relative">
-              <div className="absolute -top-4 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f]/30 to-transparent" />
-              <div className="overflow-hidden rounded-2xl">
-                <div 
-                  className="flex gap-4 transition-transform duration-700 ease-in-out"
-                  style={{ transform: `translateX(-${currentSlide * (100 / itemsPerSlide)}%)` }}
-                >
-                  {filteredProducts.map((product) => (
-                    <div key={product.id} className="flex-shrink-0" style={{ width: `${100 / itemsPerSlide}%` }}>
-                      <div className="p-1">
-                        <ProductCard
-                          product={product}
-                          onEdit={() => openEditDialog(product)}
-                          onDelete={() => {
-                            setProductToDelete(product);
-                            setDeleteDialogOpen(true);
-                          }}
-                          onView={() => openProductDetail(product)}
-                          onConvertToOffer={openConvertDialog}
-                          onRepublish={handleRepublish}
-                          onAddBogoOffer={handleAddPromoOffer}
-                          onRemoveBogoOffer={handleRemovePromoOffer}
-                          onEditPromoOffer={handleEditPromoOffer}
-                          onViewPromoOffer={handleViewPromoOffer}
-                          lang={app.lang}
-                          currency={app.currency}
-                          formatPrice={formatPrice}
-                          viewMode={viewMode}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+         {/* ===== GRID - 6 منتجات بجنب بعض ===== */}
+<div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {paginatedProducts.map((product: any) => (
+              <div key={product.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.random() * 0.2}s` }}>
+                <ProductCard
+                  product={product}
+                  onEdit={() => openEditDialog(product)}
+                  onDelete={() => {
+                    setProductToDelete(product);
+                    setDeleteDialogOpen(true);
+                  }}
+                  onView={() => openProductDetail(product)}
+                  onConvertToOffer={openConvertDialog}
+                  onRepublish={handleRepublish}
+                  onAddBogoOffer={handleAddPromoOffer}
+                  onRemoveBogoOffer={handleRemovePromoOffer}
+                  onEditPromoOffer={handleEditPromoOffer}
+                  onViewPromoOffer={handleViewPromoOffer}
+                  lang={app.lang}
+                  currency={app.currency}
+                  formatPrice={formatPrice}
+                  viewMode={viewMode}
+                />
               </div>
+            ))}
+          </div>
 
-              {totalSlides > 1 && (
-                <>
-                  <button onClick={prevSlide} className="absolute left-2 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/95 dark:bg-slate-900/95 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl flex items-center justify-center hover:bg-white dark:hover:bg-slate-900 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-110 z-10 group">
-                    <ChevronLeft className="h-6 w-6 text-[#2a655f] group-hover:scale-110 transition-transform" />
-                  </button>
-                  <button onClick={nextSlide} className="absolute right-2 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/95 dark:bg-slate-900/95 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl flex items-center justify-center hover:bg-white dark:hover:bg-slate-900 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-110 z-10 group">
-                    <ChevronRight className="h-6 w-6 text-[#2a655f] group-hover:scale-110 transition-transform" />
-                  </button>
-                  <button onClick={() => setIsAutoPlay(!isAutoPlay)} className="absolute bottom-16 right-4 h-10 w-10 rounded-full bg-[#2a655f]/90 hover:bg-[#2a655f] text-white shadow-lg shadow-[#2a655f]/30 flex items-center justify-center transition-all duration-300 hover:scale-110 z-10">
-                    {isAutoPlay ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </button>
-                </>
-              )}
-
-              {totalSlides > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6">
-                  {Array.from({ length: totalSlides }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => goToSlide(i)}
-                      className={cn(
-                        "h-2 rounded-full transition-all duration-300 hover:scale-110",
-                        i === currentSlide 
-                          ? "w-8 bg-[#2a655f] shadow-md shadow-[#2a655f]/30" 
-                          : "w-2 bg-slate-300 dark:bg-slate-600 hover:bg-[#2a655f]/50"
-                      )}
-                    />
-                  ))}
-                  <span className="text-xs text-muted-foreground ml-2">
-                    {currentSlide + 1} / {totalSlides}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
-                <span className="text-xs text-slate-500 flex items-center gap-2">
-                  <TrendingUp className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
-                  {app.lang === "ar" 
-                    ? `عرض ${filteredProducts.length} منتج` 
-                    : `Showing ${filteredProducts.length} products`}
-                  {isAutoPlay && (
-                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px] animate-pulse">
-                      ▶ {app.lang === "ar" ? "تشغيل تلقائي" : "Auto-play"}
-                    </Badge>
-                  )}
+          {/* ============================================================ */}
+          {/* 📄 PAGINATION - تحت الصفحة */}
+          {/* ============================================================ */}
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-5 mt-5 border-t border-slate-200/50 dark:border-slate-800/50">
+            {/* ✅ معلومات الصفحة + عدد المنتجات */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-muted-foreground">
+                {app.lang === "ar" 
+                  ? `صفحة ${currentPage} من ${totalPages}` 
+                  : `Page ${currentPage} of ${totalPages}`}
+              </span>
+              <Badge variant="outline" className="border-[#2a655f]/20 text-[#2a655f] text-[10px]">
+                {filteredProducts.length} {app.lang === "ar" ? "منتج" : "products"}
+              </Badge>
+              
+              {/* ✅ اختيار عدد المنتجات في الصفحة */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {app.lang === "ar" ? "عرض:" : "Show:"}
                 </span>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="outline" className="border-[#2a655f]/20 text-[#2a655f]">
-                    {app.lang === "ar" ? "سلايدر" : "Slider"}
-                  </Badge>
-                </div>
+                <Select 
+                  value={String(itemsPerPage)} 
+                  onValueChange={(v) => { 
+                    setItemsPerPage(Number(v)); 
+                    setCurrentPage(1); 
+                  }}
+                >
+                  <SelectTrigger className="w-[70px] h-8 rounded-lg border-slate-200/50 dark:border-slate-700/50 text-xs">
+                    <SelectValue placeholder="6" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-lg border-[#2a655f]/20">
+                    <SelectItem value="6" className="text-xs">6</SelectItem>
+                    <SelectItem value="10" className="text-xs">10</SelectItem>
+                    <SelectItem value="20" className="text-xs">20</SelectItem>
+                    <SelectItem value="30" className="text-xs">30</SelectItem>
+                    <SelectItem value="50" className="text-xs">50</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-muted-foreground">
+                  {app.lang === "ar" ? "لكل صفحة" : "per page"}
+                </span>
               </div>
             </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {paginatedProducts.map((product) => (
-                  <div key={product.id} className="group animate-fade-in-up" style={{ animationDelay: `${Math.random() * 0.3}s` }}>
-                    <ProductCard
-                      product={product}
-                      onEdit={() => openEditDialog(product)}
-                      onDelete={() => {
-                        setProductToDelete(product);
-                        setDeleteDialogOpen(true);
-                      }}
-                      onView={() => openProductDetail(product)}
-                      onConvertToOffer={openConvertDialog}
-                      onRepublish={handleRepublish}
-                      onAddBogoOffer={handleAddPromoOffer}
-                      onRemoveBogoOffer={handleRemovePromoOffer}
-                      onEditPromoOffer={handleEditPromoOffer}
-                      onViewPromoOffer={handleViewPromoOffer}
-                      lang={app.lang}
-                      currency={app.currency}
-                      formatPrice={formatPrice}
-                      viewMode={viewMode}
-                    />
-                  </div>
-                ))}
+
+            {/* ✅ أزرار التنقل */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(1)}
+                disabled={currentPage === 1}
+                className="h-9 w-9 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-40"
+              >
+                <ChevronsLeft className="h-4 w-4 text-[#2a655f]" />
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={prevPage}
+                disabled={currentPage === 1}
+                className="h-9 w-9 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4 text-[#2a655f]" />
+              </Button>
+
+              <div className="flex items-center gap-1 px-2">
+                {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 7) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 4) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 3) {
+                    pageNum = totalPages - 6 + i;
+                  } else {
+                    pageNum = currentPage - 3 + i;
+                  }
+                  
+                  if (i === 0 && pageNum > 1 && currentPage > 4) {
+                    return <span key="dots-start" className="px-1 text-muted-foreground">…</span>;
+                  }
+                  
+                  if (i === 6 && pageNum < totalPages - 1 && currentPage < totalPages - 3) {
+                    return <span key="dots-end" className="px-1 text-muted-foreground">…</span>;
+                  }
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={pageNum === currentPage ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => goToPage(pageNum)}
+                      className={cn(
+                        "h-9 min-w-[36px] px-2.5 rounded-xl text-sm font-medium transition-all duration-300",
+                        pageNum === currentPage 
+                          ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-md shadow-[#2a655f]/25" 
+                          : "hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
+                      )}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
               </div>
 
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
-                  <span className="text-xs text-slate-500 flex items-center gap-2">
-                    <TrendingUp className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
-                    {app.lang === "ar" ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Button variant="outline" size="sm" onClick={() => setPage(1)} disabled={page === 1} className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50">
-                      <span className="text-xs font-bold text-[#2a655f]">«</span>
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setPage(page - 1)} disabled={page === 1} className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50">
-                      <ChevronLeft className="h-4 w-4 text-[#2a655f]" />
-                    </Button>
-                    
-                    <div className="flex items-center gap-1 px-3">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const p = i + 1;
-                        return (
-                          <Button
-                            key={p}
-                            variant={p === page ? "default" : "ghost"}
-                            size="sm"
-                            onClick={() => setPage(p)}
-                            className={cn(
-                              "h-8 w-8 p-0 rounded-xl text-xs font-medium transition-all duration-300",
-                              p === page 
-                                ? "bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md shadow-[#2a655f]/25" 
-                                : "hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
-                            )}
-                          >
-                            {p}
-                          </Button>
-                        );
-                      })}
-                      {totalPages > 5 && page < totalPages - 2 && (
-                        <>
-                          <span className="text-xs text-muted-foreground">...</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setPage(totalPages)}
-                            className="h-8 w-8 p-0 rounded-xl text-xs font-medium hover:bg-[#2a655f]/10 hover:text-[#2a655f] transition-all duration-300"
-                          >
-                            {totalPages}
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                    
-                    <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page === totalPages} className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50">
-                      <ChevronRight className="h-4 w-4 text-[#2a655f]" />
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setPage(totalPages)} disabled={page === totalPages} className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50">
-                      <span className="text-xs font-bold text-[#2a655f]">»</span>
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={nextPage}
+                disabled={currentPage === totalPages}
+                className="h-9 w-9 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-40"
+              >
+                <ChevronRight className="h-4 w-4 text-[#2a655f]" />
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="h-9 w-9 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-40"
+              >
+                <ChevronsRight className="h-4 w-4 text-[#2a655f]" />
+              </Button>
+            </div>
+          </div>
         </>
       )}
 
@@ -1440,14 +1205,14 @@ const handleDetailColorSelect = useCallback((color: any) => {
                     return (
                       <>
                       <img
-  src={detailCurrentImage || selectedProduct?.cover_url || '/placeholder.png'}
-  alt={selectedProduct?.title_ar}
-  className={cn(
-    "max-h-full max-w-full object-contain rounded-xl transition-all duration-500 cursor-pointer",
-    isZoomed && "scale-150 cursor-zoom-out"
-  )}
-  onClick={() => setIsZoomed(!isZoomed)}
-/>
+                        src={detailCurrentImage || selectedProduct?.cover_url || '/placeholder.png'}
+                        alt={selectedProduct?.title_ar}
+                        className={cn(
+                          "max-h-full max-w-full object-contain rounded-xl transition-all duration-500 cursor-pointer",
+                          isZoomed && "scale-150 cursor-zoom-out"
+                        )}
+                        onClick={() => setIsZoomed(!isZoomed)}
+                      />
                         
                         {images.length > 1 && (
                           <>

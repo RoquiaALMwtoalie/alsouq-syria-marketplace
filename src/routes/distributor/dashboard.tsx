@@ -1251,16 +1251,20 @@ function DistributorDashboardPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {paginatedHistoryOrders.map((order: any) => (
-                <HistoryOrderCard 
-                  key={order.id} 
-                  order={order} 
-                  isArabic={isArabic}
-                  app={app}
-                  getStatusLabel={getStatusLabel}
-                  getStatusColor={getStatusColor}
-                />
-              ))}
+           {paginatedHistoryOrders.map((order: any) => (
+  <HistoryOrderCard 
+    key={order.id} 
+    order={order} 
+    isArabic={isArabic}
+    app={app}
+    getStatusLabel={getStatusLabel}
+    getStatusColor={getStatusColor}
+    onViewDetails={(order) => {
+      setSelectedOrderForDetails(order);
+      setShowOrderDetails(true);
+    }}
+  />
+))}
               {totalHistoryPages > 1 && (
                 <div className="flex items-center justify-between pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
                   <span className="text-xs text-muted-foreground">
@@ -1919,19 +1923,25 @@ function OrderCard({
 // ============================================================
 // 📦 HistoryOrderCard Component
 // ============================================================
+// ============================================================
+// 📦 HistoryOrderCard Component
+// ============================================================
 function HistoryOrderCard({ 
   order, 
   isArabic,
   app,
   getStatusLabel,
-  getStatusColor
+  getStatusColor,
+  onViewDetails
 }: { 
   order: any; 
   isArabic: boolean;
   app: any;
   getStatusLabel: (status: string) => string;
   getStatusColor: (status: string) => string;
+  onViewDetails?: (order: any) => void;
 }) {
+  const navigate = useNavigate();
   const address = order.delivery_address || order.pickup_address;
   
   const statusColors: Record<string, string> = {
@@ -1991,9 +2001,13 @@ function HistoryOrderCard({
             size="sm" 
             className="h-7 px-2 rounded-lg hover:bg-[#0d2e2a]/10 transition-all duration-300 text-xs"
             onClick={() => {
-              const trackingId = order.tracking_number || order.id;
-              if (trackingId) {
-                navigate({ to: `/tracking/${trackingId}` });
+              if (onViewDetails) {
+                onViewDetails(order);
+              } else {
+                const trackingId = order.tracking_number || order.id;
+                if (trackingId) {
+                  navigate({ to: `/tracking/${trackingId}` });
+                }
               }
             }}
           >

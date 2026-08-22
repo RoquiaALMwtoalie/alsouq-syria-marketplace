@@ -50,35 +50,8 @@ function Home() {
   const LIMIT = 12;
 
   // ✅ التحقق من اكتمال الملف الشخصي
-  const checkProfile = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    
-    const [{ data: profile }, { data: addressRows }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("full_name, phone, address_text")
-        .eq("id", session.user.id)
-        .maybeSingle(),
-      supabase
-        .from("user_addresses")
-        .select("address_text")
-        .eq("user_id", session.user.id)
-        .eq("is_default", true)
-        .maybeSingle(),
-    ]);
-    
-    const hasAddress = Boolean(profile?.address_text?.trim() || addressRows?.address_text?.trim());
-    const isMissing = !profile?.full_name?.trim() || !profile?.phone?.trim() || !hasAddress;
-    
-    if (isMissing && window.location.pathname !== "/auth/complete") {
-      window.location.replace("/auth/complete");
-    }
-  }, []);
 
-  useEffect(() => {
-    checkProfile();
-  }, [checkProfile]);
+
 
   // ====== البيانات مع Pagination ======
   const { data: banners = [] } = useBanners();

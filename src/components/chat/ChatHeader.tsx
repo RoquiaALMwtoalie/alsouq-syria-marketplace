@@ -89,8 +89,6 @@ interface ChatHeaderProps {
   onArchive?: () => void;
   onDelete?: () => void;
   onSearch?: () => void;
-  onCall?: () => void;
-  onVideoCall?: () => void;
   onViewProfile?: () => void;
   onViewStore?: () => void;
   onBlock?: () => void;
@@ -209,8 +207,6 @@ export function ChatHeader({
   onArchive,
   onDelete,
   onSearch,
-  onCall,
-  onVideoCall,
   onViewProfile,
   onViewStore,
   onBlock,
@@ -285,10 +281,8 @@ export function ChatHeader({
                     )}
                     onClick={handleBack}
                   >
-                    {/* ✅ خلفية متوهجة */}
                     <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#2a655f]/5 to-[#3a8a82]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     
-                    {/* ✅ السهم مع حركة عكس الاتجاه */}
                     <span className="relative z-10">
                       {isRtl ? (
                         <ArrowRight className={cn(
@@ -303,7 +297,6 @@ export function ChatHeader({
                       )}
                     </span>
                     
-                    {/* ✅ نقاط تموج */}
                     <span className="absolute -inset-1 rounded-2xl border-2 border-[#2a655f]/0 group-hover:border-[#2a655f]/20 transition-all duration-500 animate-pulse-slow" />
                   </Button>
                 </TooltipTrigger>
@@ -325,7 +318,7 @@ export function ChatHeader({
           </div>
         </div>
 
-        {/* ✅ الجانب الأيمن - أزرار */}
+        {/* ✅ الجانب الأيمن - أزرار (بدون مكالمات) */}
         {showActions && (
           <div className="flex items-center gap-0.5 shrink-0">
             {onSearch && (
@@ -343,46 +336,6 @@ export function ChatHeader({
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-0">
                     <p>{app.lang === "ar" ? "بحث" : "Search"}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-            {onCall && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-colors text-[#2a655f] hover:text-[#3a8a82] border border-transparent hover:border-[#2a655f]/20"
-                      onClick={onCall}
-                    >
-                      <Phone className="h-4.5 w-4.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-0">
-                    <p>{app.lang === "ar" ? "اتصال صوتي" : "Voice call"}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-            {onVideoCall && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-colors text-[#2a655f] hover:text-[#3a8a82] border border-transparent hover:border-[#2a655f]/20"
-                      onClick={onVideoCall}
-                    >
-                      <Video className="h-4.5 w-4.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-0">
-                    <p>{app.lang === "ar" ? "مكالمة فيديو" : "Video call"}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -567,8 +520,6 @@ export function ChatHeaderWithCallStatus({
   onArchive,
   onDelete,
   onSearch,
-  onCall,
-  onVideoCall,
   onViewProfile,
   onViewStore,
   onBlock,
@@ -601,8 +552,6 @@ export function ChatHeaderWithCallStatus({
         onArchive={onArchive}
         onDelete={onDelete}
         onSearch={onSearch}
-        onCall={onCall}
-        onVideoCall={onVideoCall}
         onViewProfile={onViewProfile}
         onViewStore={onViewStore}
         onBlock={onBlock}

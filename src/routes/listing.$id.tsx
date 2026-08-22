@@ -869,122 +869,153 @@ const handleAddToCart = useCallback(async () => {
                 </div>
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-bold leading-tight">
-                {app.lang === "ar" ? listing.title_ar : (listing.title_en || listing.title_ar)}
-              </h1>
+        <h1 className="text-3xl md:text-4xl font-bold leading-tight">
+  {app.lang === "ar" ? listing.title_ar : (listing.title_en || listing.title_ar)}
+</h1>
 
-              <Link 
-                to="/store/$id" 
-                params={{ id: listing.owner_id }}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 transition-all border border-primary/10 group"
-              >
-                <div className="h-14 w-14 rounded-2xl overflow-hidden border-2 border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0 bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a]">
-                  {storeLogo ? (
-                    <img 
-                      src={storeLogo} 
-                      alt={storeName}
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder-store.png';
-                      }}
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-white font-bold text-2xl">
-                      {storeName.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex-1">
-                  <div className="font-bold text-lg group-hover:text-primary transition">{storeName}</div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-green-500" />
-                    {app.lang === "ar" ? "متجر موثوق" : "Trusted Store"}
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" className="group-hover:bg-primary/10 group-hover:scale-105 transition">
-                  {app.lang === "ar" ? "زيارة المتجر" : "Visit Store"} <ArrowRight className="h-4 w-4 ms-1" />
-                </Button>
-              </Link>
+{/* ✅✅✅ عرض ترويجي - رابط للعرض (يظهر فقط إذا كان المنتج مشمولاً بعرض ترويجي) */}
+{promoOffer && promoOffer.is_active && (
+  <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 rounded-2xl border-2 border-purple-300/50 dark:border-purple-700/30 shadow-md shadow-purple-500/10">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded-xl bg-purple-500/20 flex-shrink-0">
+          <Gift className="h-5 w-5 text-purple-500" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-purple-700 dark:text-purple-300 flex items-center gap-2">
+            🎁 {app.lang === "ar" ? "هذا المنتج مشمول بعرض ترويجي!" : "This product is included in a promo offer!"}
+          </p>
+          <p className="text-xs text-purple-600/80 dark:text-purple-400/80 mt-0.5">
+            {app.lang === "ar" 
+              ? `💰 اشتري ${promoOffer.buy_quantity || 1} واحصل على ${promoOffer.get_quantity || 1} مجاناً`
+              : `💰 Buy ${promoOffer.buy_quantity || 1} get ${promoOffer.get_quantity || 1} free`
+            }
+            {promoOffer.offer_type === 'bogo' && ` (${app.lang === "ar" ? "نفس المنتج" : "Same product"})`}
+            {promoOffer.offer_type === 'cross_sell' && ` (${app.lang === "ar" ? "منتج مختلف" : "Different product"})`}
+            {promoOffer.offer_type === 'bundle' && ` (${app.lang === "ar" ? "باقة منتجات" : "Bundle"})`}
+          </p>
+        </div>
+      </div>
+      <Link to="/offer/$id" params={{ id: promoOffer.id }}>
+        <Button 
+          size="sm"
+          className="rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:scale-105 whitespace-nowrap"
+        >
+          <Gift className="h-4 w-4 mr-2" />
+          {app.lang === "ar" ? "عرض التفاصيل" : "View Offer"}
+          <ArrowRight className="h-4 w-4 ml-2" />
+        </Button>
+      </Link>
+    </div>
+    
+    {/* ✅ تفاصيل سريعة عن العرض */}
+    <div className="mt-3 pt-3 border-t border-purple-200/50 dark:border-purple-700/30 flex flex-wrap items-center gap-3 text-xs text-purple-600/70 dark:text-purple-400/70">
+      <span className="flex items-center gap-1">
+        <Tag className="h-3.5 w-3.5" />
+        {app.lang === "ar" ? "نوع العرض:" : "Offer type:"}
+        <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-0 text-[9px]">
+          {promoOffer.offer_type === 'bogo' && (app.lang === "ar" ? "نفس المنتج" : "Same Product")}
+          {promoOffer.offer_type === 'cross_sell' && (app.lang === "ar" ? "منتج مختلف" : "Different Product")}
+          {promoOffer.offer_type === 'bundle' && (app.lang === "ar" ? "باقة" : "Bundle")}
+        </Badge>
+      </span>
+      <span className="text-purple-300/50">|</span>
+      <span className="flex items-center gap-1">
+        <Percent className="h-3.5 w-3.5" />
+        {app.lang === "ar" ? "التوفير:" : "Savings:"}
+        <span className="font-bold text-emerald-600 dark:text-emerald-400">
+          {formatPrice(promoSavings || 0, app.currency, app.lang)}
+        </span>
+      </span>
+      {!promoOffer.expires_at ? (
+        <span className="flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5 text-emerald-500" />
+          <span className="text-emerald-600 dark:text-emerald-400">
+            {app.lang === "ar" ? "🔓 دائم" : "🔓 Permanent"}
+          </span>
+        </span>
+      ) : (
+        <span className="flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5 text-amber-500" />
+          <span className="text-amber-600 dark:text-amber-400">
+            {app.lang === "ar" ? "ينتهي" : "Expires"}: {new Date(promoOffer.expires_at).toLocaleDateString(app.lang === "ar" ? "ar-SY" : "en-US")}
+          </span>
+        </span>
+      )}
+    </div>
+  </div>
+)}
 
-              {/* ===== السعر ===== */}
-              <div className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-2xl border border-primary/10">
-                <div className="flex flex-col gap-3">
-                  {/* ✅ عرض تخفيضي */}
-                  {listing.is_offer && listing.old_price && (
-                    <div className="flex items-center gap-4 flex-wrap">
-                      {listing.old_price && (
-                        <span className="text-lg text-red-500 line-through font-medium">
-                          {formatPrice(Number(listing.old_price), app.currency, app.lang)}
-                        </span>
-                      )}
-                      {listing.old_price && listing.price && (
-                        <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-md shadow-red-500/20">
-                          🎯 -{Math.round(((Number(listing.old_price) - Number(listing.price)) / Number(listing.old_price)) * 100)}%
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* ✅ ✅ ✅ عرض ترويجي - تفاصيل */}
-                  {promoOffer && promoOffer.is_active && (
-                    <div className="flex flex-wrap items-center gap-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-xl border border-purple-200/50 dark:border-purple-800/30">
-                      <div className="flex items-center gap-2">
-                        {promoType && (
-                          <Badge className={cn(
-                            "border-0 text-[10px] font-bold px-2 py-0.5",
-                            promoType.color
-                          )}>
-                            {promoType.icon && <promoType.icon className="h-3 w-3 inline mr-1" />}
-                            {promoType.label}
-                          </Badge>
-                        )}
-                        <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 text-[10px] px-2 py-0.5">
-                          <Gift className="h-3 w-3 inline mr-1" />
-                          {app.lang === "ar" ? "اشتري" : "Buy"} {promoOffer.buy_quantity || 2} 
-                          {app.lang === "ar" ? " واحصل على" : " get"} {promoOffer.get_quantity || 1} 
-                          {app.lang === "ar" ? " مجاناً" : " free"}
-                        </Badge>
-                      </div>
-                      
-                      {promoDiscountPercent > 0 && (
-                        <Badge className="bg-gradient-to-r from-purple-600 to-rose-500 text-white border-0 text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-md shadow-purple-500/20 animate-pulse">
-                          🎁 {promoDiscountPercent}% OFF
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                  
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-end gap-4 flex-wrap">
-                      <span className="text-4xl md:text-5xl font-black text-primary">
-                        {formatPrice(Number(listing.price), app.currency, app.lang)}
-                      </span>
-                      
-                      {/* ✅ ✅ ✅ قيمة التوفير للعرض الترويجي */}
-                      {promoOffer && promoOffer.is_active && promoSavings > 0 && (
-                        <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-full border border-emerald-200/50">
-                          <Gift className="h-4 w-4 text-emerald-500" />
-                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                            {app.lang === "ar" ? "وفر" : "Save"} {formatPrice(promoSavings, app.currency, app.lang)}
-                          </span>
-                          <Badge className="bg-emerald-500/90 text-white border-0 text-[9px] px-1.5 py-0.5">
-                            {app.lang === "ar" ? "مجاناً" : "FREE"}
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
-                      <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/50 px-3 py-1 rounded-full">
-                        <span className="text-base">🇸🇾</span>
-                        <span className="font-medium">{app.lang === "ar" ? "سوري" : "SYP"}</span>
-                        <span className="text-foreground font-semibold">{formatPrice(Number(listing.price), app.currency, app.lang)}</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+<Link 
+  to="/store/$id" 
+  params={{ id: listing.owner_id }}
+  className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 transition-all border border-primary/10 group"
+>
+  <div className="h-14 w-14 rounded-2xl overflow-hidden border-2 border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0 bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a]">
+    {storeLogo ? (
+      <img 
+        src={storeLogo} 
+        alt={storeName}
+        className="h-full w-full object-cover"
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = '/placeholder-store.png';
+        }}
+      />
+    ) : (
+      <div className="h-full w-full flex items-center justify-center text-white font-bold text-2xl">
+        {storeName.charAt(0).toUpperCase()}
+      </div>
+    )}
+  </div>
+  
+  <div className="flex-1">
+    <div className="font-bold text-lg group-hover:text-primary transition">{storeName}</div>
+    <div className="text-sm text-muted-foreground flex items-center gap-2">
+      <Shield className="h-4 w-4 text-green-500" />
+      {app.lang === "ar" ? "متجر موثوق" : "Trusted Store"}
+    </div>
+  </div>
+  <Button variant="ghost" size="sm" className="group-hover:bg-primary/10 group-hover:scale-105 transition">
+    {app.lang === "ar" ? "زيارة المتجر" : "Visit Store"} <ArrowRight className="h-4 w-4 ms-1" />
+  </Button>
+</Link>
+
+          {/* ===== السعر ===== */}
+<div className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-2xl border border-primary/10">
+  <div className="flex flex-col gap-3">
+    {/* ✅ عرض تخفيضي */}
+    {listing.is_offer && listing.old_price && (
+      <div className="flex items-center gap-4 flex-wrap">
+        {listing.old_price && (
+          <span className="text-lg text-red-500 line-through font-medium">
+            {formatPrice(Number(listing.old_price), app.currency, app.lang)}
+          </span>
+        )}
+        {listing.old_price && listing.price && (
+          <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-md shadow-red-500/20">
+            🎯 -{Math.round(((Number(listing.old_price) - Number(listing.price)) / Number(listing.old_price)) * 100)}%
+          </Badge>
+        )}
+      </div>
+    )}
+    
+    <div className="flex flex-col gap-1">
+      <div className="flex items-end gap-4 flex-wrap">
+        <span className="text-4xl md:text-5xl font-black text-primary">
+          {formatPrice(Number(listing.price), app.currency, app.lang)}
+        </span>
+      </div>
+      
+      <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
+        <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/50 px-3 py-1 rounded-full">
+          <span className="text-base">🇸🇾</span>
+          <span className="font-medium">{app.lang === "ar" ? "سوري" : "SYP"}</span>
+          <span className="text-foreground font-semibold">{formatPrice(Number(listing.price), app.currency, app.lang)}</span>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
 
               {/* ===== ✅ تنبيه اختيار الفيرنتات ===== */}
               {(colors.length > 0 || sizes.length > 0 || variations.length > 0) && !isVariationSelected && (

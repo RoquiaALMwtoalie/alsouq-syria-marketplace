@@ -48,6 +48,7 @@ function OfferDetailPage() {
   const [currentStoreName, setCurrentStoreName] = useState("");
   const [newStoreName, setNewStoreName] = useState("");
   const [pendingAddData, setPendingAddData] = useState<any>(null);
+  const [mainImage, setMainImage] = useState<string>("");
 
   // ========== ✅ ثانياً: Queries (useQuery) ==========
   const { data: rawOffer, isLoading, isError } = useProductOfferByIdV2(id);
@@ -195,12 +196,11 @@ function OfferDetailPage() {
     return 0;
   }, [offer, mainProduct, mainVariations, selectedVariations, quantity, requiredProducts]);
 
-  // ✅ التحقق من اختيار الفيرنتات (تم تعديلها لإزالة شرط الهدية لأنها محددة مسبقاً)
+  // ✅ التحقق من اختيار الفيرنتات
   const isVariationSelected = useMemo(() => {
     if (!offer) return false;
     
     if (offer.offer_type === 'bogo' || offer.offer_type === 'cross_sell') {
-      // ✅ فقط تحقق من فيرنت المنتج الرئيسي
       if (mainVariations.length > 0 && !selectedVariations[offer.listing_id]) return false;
       return true;
     }
@@ -218,7 +218,7 @@ function OfferDetailPage() {
     return true;
   }, [offer, mainVariations, selectedVariations, requiredProducts]);
 
-  // ✅ ✅ ✅ اختيار أول فيرنت هدية تلقائياً (لأنها محددة مسبقاً)
+  // ✅ ✅ ✅ اختيار أول فيرنت هدية تلقائياً
   useEffect(() => {
     if (offer && giftVariations.length > 0 && !selectedGiftVariation) {
       setSelectedGiftVariation(giftVariations[0].id);
@@ -226,23 +226,28 @@ function OfferDetailPage() {
     }
   }, [offer, giftVariations, selectedGiftVariation]);
 
+  // ✅ تعيين الصورة الأولية عند تحميل العرض
+  useEffect(() => {
+    if (mainProduct?.cover_url) {
+      setMainImage(mainProduct.cover_url);
+    }
+  }, [mainProduct]);
+
   // ✅ هل هو عرض Bundle؟
   const isBundle = useMemo(() => {
     return offer?.offer_type === 'bundle';
   }, [offer]);
 
-  // ✅ ✅ ✅ استخراج بيانات المتجر للعرض (مصحح)
+  // ✅ ✅ ✅ استخراج بيانات المتجر للعرض
   const storeId = useMemo(() => {
     return offer?.store_id || mainProduct?.owner_id || null;
   }, [offer, mainProduct]);
 
-  // ✅ ✅ ✅ اسم المتجر (من offer.store أولاً)
+  // ✅ ✅ ✅ اسم المتجر
   const offerStoreName = useMemo(() => {
-    // ✅ من offer.store (RPC)
     if (offer?.store?.store_name) return offer.store.store_name;
     if (offer?.store?.full_name) return offer.store.full_name;
     
-    // ✅ من mainProduct
     if (mainProduct?.profiles?.store_name) return mainProduct.profiles.store_name;
     if (mainProduct?.profiles?.full_name) return mainProduct.profiles.full_name;
     if (mainProduct?.profile?.store_name) return mainProduct.profile.store_name;
@@ -253,13 +258,11 @@ function OfferDetailPage() {
     return app.lang === "ar" ? "متجر" : "Store";
   }, [offer, mainProduct, app.lang]);
 
-  // ✅ ✅ ✅ شعار المتجر (من offer.store أولاً)
+  // ✅ ✅ ✅ شعار المتجر
   const offerStoreLogo = useMemo(() => {
-    // ✅ من offer.store (RPC)
     if (offer?.store?.store_logo_url) return offer.store.store_logo_url;
     if (offer?.store?.avatar_url) return offer.store.avatar_url;
     
-    // ✅ من mainProduct
     if (mainProduct?.profiles?.store_logo_url) return mainProduct.profiles.store_logo_url;
     if (mainProduct?.profiles?.avatar_url) return mainProduct.profiles.avatar_url;
     if (mainProduct?.profile?.store_logo_url) return mainProduct.profile.store_logo_url;
@@ -271,152 +274,292 @@ function OfferDetailPage() {
   }, [offer, mainProduct]);
 
   // ========== ✅ خامساً: الـ useCallback (دوال) ==========
-  const handleVariationSelect = useCallback((productId: string, variationId: string) => {
-    setSelectedVariations(prev => {
-      const current = prev[productId];
-      if (current === variationId) {
-        const newState = { ...prev };
-        delete newState[productId];
-        return newState;
+  
+  // ✅✅✅ دالة اختيار الفيرنت مع تغيير الصورة
+ const handleVariationSelect = useCallback((productId: string, variationId: string) => {
+  setSelectedVariations(prev => {
+    const current = prev[productId];
+    if (current === variationId) {
+      const newState = { ...prev };
+      delete newState[productId];
+      return newState;
+    }
+    return { ...prev, [productId]: variationId };
+  });
+
+  // ✅✅✅ تغيير الصورة الرئيسية عند اختيار الفيرنت
+  const variation = mainVariations.find((v: any) => v.id === variationId);
+  if (variation) {
+    console.log("🔍 [Offer] Variation selected:", variation);
+    console.log("🔍 [Offer] Combination:", variation.combination);
+    
+    // ✅ 1. البحث عن قيمة اللون في الفيرنت
+    const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+    let colorValue = null;
+    
+    for (const key of colorKeys) {
+      if (variation.combination?.[key]) {
+        colorValue = variation.combination[key];
+        break;
       }
-      return { ...prev, [productId]: variationId };
-    });
-  }, []);
-
-  const handleAddToCart = useCallback(async () => {
-    if (!app.user) {
-      toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
-      navigate({ to: "/auth/$mode", params: { mode: "login" } });
-      return;
     }
-
-    if (!offer) {
-      toast.error(app.lang === "ar" ? "العرض غير موجود" : "Offer not found");
-      return;
-    }
-
-    if (!isVariationSelected) {
-      toast.warning(app.lang === "ar" ? "⚠️ الرجاء اختيار الفيرنتات أولاً" : "⚠️ Please select variations first");
-      return;
-    }
-
-    // ✅ ✅ ✅ منع المستخدم من إضافة عروض متجره الخاص
-    if (offer.store_id === app.user.id) {
-      toast.error(
-        app.lang === "ar" 
-          ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
-          : "❌ You cannot add offers from your own store to cart"
-      );
-      return;
-    }
-
-    if (mainProduct?.owner_id === app.user.id) {
-      toast.error(
-        app.lang === "ar" 
-          ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
-          : "❌ You cannot add offers from your own store to cart"
-      );
-      return;
-    }
-
-    if (mainProduct?.profile?.id === app.user.id || mainProduct?.profiles?.id === app.user.id) {
-      toast.error(
-        app.lang === "ar" 
-          ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
-          : "❌ You cannot add offers from your own store to cart"
-      );
-      return;
-    }
-
-    try {
-      await addToCartMutation.mutateAsync({
-        userId: app.user.id,
-        listingId: offer.listing_id,
-        quantity: quantity,
-        selectedVariationId: selectedVariations[offer.listing_id] || undefined,
-        extraData: {
-          is_promo_offer: true,
-          offer_id: offer.id,
-          selected_gift_variation: selectedGiftVariation,
-          selected_variations: selectedVariations,
-          offer_data: {
-            offer_type: offer.offer_type,
-            buy_quantity: offer.buy_quantity,
-            get_quantity: offer.get_quantity,
-            required_product_ids: offer.required_product_ids,
-            free_listing_id: offer.free_listing_id,
-            required_variations: offer.required_variations,
-            result_variation_ids: offer.result_variation_ids,
-          }
-        },
-        onStoreConflict: async (data: any) => {
-          const { data: currentStore } = await supabase
-            .from("profiles")
-            .select("store_name")
-            .eq("id", data.currentStoreId)
-            .maybeSingle();
-          
-          const { data: newStore } = await supabase
-            .from("profiles")
-            .select("store_name")
-            .eq("id", data.newStoreId)
-            .maybeSingle();
-          
-          setCurrentStoreName(currentStore?.store_name || "متجر");
-          setNewStoreName(newStore?.store_name || "متجر");
-          setPendingAddData({ 
-            listingId: offer.listing_id, 
-            quantity, 
-            selectedVariations,
-            selectedGiftVariation,
-          });
-          setShowStoreConflict(true);
-        },
+    
+    console.log("🎨 [Offer] Color value from variation:", colorValue);
+    
+    // ✅ 2. إذا وجد لون، ابحث عن صورته في product_colors
+    if (colorValue) {
+      const productColors = mainProduct?.colors || [];
+      console.log("🎨 [Offer] Available colors:", productColors.map((c: any) => c.color_name_ar));
+      
+      // ✅✅✅ مقارنة محسّنة (تجاهل المسافات وحالة الأحرف)
+      const searchValue = String(colorValue).trim().toLowerCase();
+      
+      const color = productColors.find((c: any) => {
+        const nameAr = (c.color_name_ar || "").trim().toLowerCase();
+        const nameEn = (c.color_name_en || "").trim().toLowerCase();
+        
+        // ✅ مقارنة دقيقة مع تجاهل المسافات
+        return nameAr === searchValue || nameEn === searchValue;
       });
+      
+      console.log("🎨 [Offer] Found color:", color);
+      
+      if (color?.image_url) {
+        setMainImage(color.image_url);
+        console.log("✅ [Offer] Changed main image to color image:", color.image_url);
+      } else {
+        console.log("⚠️ [Offer] No color found for value:", colorValue);
+        console.log("⚠️ [Offer] Available colors:", productColors.map((c: any) => ({
+          name_ar: c.color_name_ar,
+          name_en: c.color_name_en,
+          image_url: c.image_url
+        })));
+      }
+    }
+    
+    // ✅ 3. إذا كان للفيرنت صورة خاصة، استخدمها
+    if (variation.image_url) {
+      setMainImage(variation.image_url);
+      console.log("🖼️ [Offer] Changed main image to variation image:", variation.image_url);
+    }
+  }
+}, [mainVariations, mainProduct]);
 
-      // ✅ Toast مع زر "عرض السلة"
-      toast.success(
-        app.lang === "ar" 
-          ? `🛒 تم إضافة العرض للسلة (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`
-          : `🛒 Added offer to cart (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`,
-        { 
-          duration: 4000,
-          icon: '🛒',
-          style: {
-            background: '#0d2e2a',
-            color: 'white',
-            borderRadius: '16px',
-            border: '2px solid #2a655f',
-            boxShadow: '0 20px 60px rgba(13, 46, 42, 0.4)',
-          },
-          className: 'font-bold',
-          action: {
-            label: app.lang === "ar" ? "🛒 عرض السلة 🛒" : "🛒 View Cart 🛒",
-            onClick: () => {
-              navigate({ to: "/cart" });
-              toast.dismiss();
-            }
-          },
-          actionButtonStyle: {
-            background: '#2a655f',
-            color: 'white',
-            borderRadius: '12px',
-            padding: '6px 16px',
-            fontWeight: 'bold',
+  // ============================================================
+  // ✅✅✅ دالة إضافة العرض للسلة (المصححة)
+  // ============================================================
+ const handleAddToCart = useCallback(async () => {
+  if (!app.user) {
+    toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
+    navigate({ to: "/auth/$mode", params: { mode: "login" } });
+    return;
+  }
+
+  if (!offer) {
+    toast.error(app.lang === "ar" ? "العرض غير موجود" : "Offer not found");
+    return;
+  }
+
+  if (!isVariationSelected) {
+    toast.warning(app.lang === "ar" ? "⚠️ الرجاء اختيار الفيرنتات أولاً" : "⚠️ Please select variations first");
+    return;
+  }
+
+  // ✅ منع المستخدم من إضافة عروض متجره الخاص
+  if (offer.store_id === app.user.id) {
+    toast.error(
+      app.lang === "ar" 
+        ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
+        : "❌ You cannot add offers from your own store to cart"
+    );
+    return;
+  }
+
+  if (mainProduct?.owner_id === app.user.id) {
+    toast.error(
+      app.lang === "ar" 
+        ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
+        : "❌ You cannot add offers from your own store to cart"
+    );
+    return;
+  }
+
+  if (mainProduct?.profile?.id === app.user.id || mainProduct?.profiles?.id === app.user.id) {
+    toast.error(
+      app.lang === "ar" 
+        ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
+        : "❌ You cannot add offers from your own store to cart"
+    );
+    return;
+  }
+
+  // ✅✅✅ جلب الفيرنت المختار مع سعره وصورته
+  const selectedVariationId = selectedVariations[offer.listing_id];
+  let selectedVariation = null;
+  let variationPrice = mainProduct?.price || 0;
+  let variationImage = mainImage || mainProduct?.cover_url || null;
+
+  if (selectedVariationId && mainVariations.length > 0) {
+    selectedVariation = mainVariations.find((v: any) => v.id === selectedVariationId);
+    if (selectedVariation) {
+      // ✅✅✅ السعر من الفيرنت (وليس من المنتج الأساسي)
+      variationPrice = selectedVariation.price || selectedVariation.old_price || mainProduct?.price || 0;
+      console.log("💰 [Offer] Variation price:", variationPrice);
+      
+      // ✅✅✅ صورة الفيرنت
+      if (selectedVariation.image_url) {
+        variationImage = selectedVariation.image_url;
+      } else {
+        // حاول إيجاد صورة اللون
+        const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+        let colorValue = null;
+        for (const key of colorKeys) {
+          if (selectedVariation.combination?.[key]) {
+            colorValue = selectedVariation.combination[key];
+            break;
           }
         }
-      );
-
-    } catch (error: any) {
-      console.error("❌ Error adding offer to cart:", error);
-      toast.error(
-        app.lang === "ar" 
-          ? `❌ فشل إضافة العرض للسلة: ${error.message || 'خطأ غير معروف'}`
-          : `❌ Failed to add offer to cart: ${error.message || 'Unknown error'}`
-      );
+        if (colorValue) {
+          const productColors = mainProduct?.colors || [];
+          const color = productColors.find((c: any) => 
+            c.color_name_ar === colorValue || c.color_name_en === colorValue
+          );
+          if (color?.image_url) {
+            variationImage = color.image_url;
+          }
+        }
+      }
     }
-  }, [app.user, app.lang, offer, isVariationSelected, mainProduct, selectedVariations, selectedGiftVariation, quantity, addToCartMutation, navigate]);
+  }
 
+  // ✅✅✅ جلب فيرنت الهدية
+  const giftVariationId = selectedGiftVariation;
+  let giftVariation = null;
+  let giftImage = freeProduct?.cover_url || null;
+
+  if (giftVariationId && giftVariations.length > 0) {
+    giftVariation = giftVariations.find((v: any) => v.id === giftVariationId);
+    if (giftVariation) {
+      giftImage = giftVariation.image_url || freeProduct?.cover_url || null;
+    }
+  }
+
+  try {
+    await addToCartMutation.mutateAsync({
+      userId: app.user.id,
+      listingId: offer.listing_id,
+      quantity: quantity,
+      selectedVariationId: selectedVariationId,
+      // ✅✅✅ أضف هذين السطرين (مهم جداً)
+      variationPrice: variationPrice,  // ✅ سعر الفيرنت
+      variationCombination: selectedVariation?.combination || undefined,  // ✅ تركيبة الفيرنت
+      extraData: {
+        is_promo_offer: true,
+        offer_id: offer.id,
+        selected_gift_variation: selectedGiftVariation,
+        selected_variations: selectedVariations,
+        // ✅✅✅ بيانات الفيرنت المختار مع السعر الصحيح
+        selected_variation_data: selectedVariation ? {
+          id: selectedVariation.id,
+          price: variationPrice,  // ✅ سعر الفيرنت
+          image_url: variationImage,
+          combination: selectedVariation.combination || {},
+        } : null,
+        // ✅✅✅ بيانات الهدية للسلة (بسعر 0 وكلمة مجاناً)
+        gift_data: freeProduct ? {
+          id: freeProduct.id,
+          title_ar: freeProduct.title_ar,
+          title_en: freeProduct.title_en,
+          price: 0,  // ✅ مجاناً
+          cover_url: giftImage,
+          variation_id: giftVariationId,
+          variation_data: giftVariation ? {
+            id: giftVariation.id,
+            combination: giftVariation.combination || {},
+            image_url: giftImage,
+          } : null,
+          is_free: true,  // ✅ علم بأنها هدية
+        } : null,
+        offer_data: {
+          offer_type: offer.offer_type,
+          buy_quantity: offer.buy_quantity,
+          get_quantity: offer.get_quantity,
+          required_product_ids: offer.required_product_ids,
+          free_listing_id: offer.free_listing_id,
+          required_variations: offer.required_variations,
+          result_variation_ids: offer.result_variation_ids,
+        }
+      },
+      onStoreConflict: async (data: any) => {
+        const { data: currentStore } = await supabase
+          .from("profiles")
+          .select("store_name")
+          .eq("id", data.currentStoreId)
+          .maybeSingle();
+        
+        const { data: newStore } = await supabase
+          .from("profiles")
+          .select("store_name")
+          .eq("id", data.newStoreId)
+          .maybeSingle();
+        
+        setCurrentStoreName(currentStore?.store_name || "متجر");
+        setNewStoreName(newStore?.store_name || "متجر");
+        setPendingAddData({ 
+          listingId: offer.listing_id, 
+          quantity, 
+          selectedVariations,
+          selectedGiftVariation,
+        });
+        setShowStoreConflict(true);
+      },
+    });
+
+    // ✅ Toast مع زر "عرض السلة" - تصميم زهر
+toast.success(
+  app.lang === "ar" 
+    ? `🛒 تم إضافة العرض للسلة (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`
+    : `🛒 Added offer to cart (${quantity} × ${mainProduct?.title_ar || offer.display_text_ar})`,
+  { 
+    duration: 4000,
+    icon: '🛒',
+    style: {
+      background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',  // ✅ زهر خفيف
+      color: '#831843',  // ✅ زهر غامق للنص
+      borderRadius: '16px',
+      border: '1px solid #f9a8d4',
+      boxShadow: '0 20px 60px rgba(236, 72, 153, 0.25)',
+    },
+    className: 'font-bold',
+    action: {
+      label: app.lang === "ar" ? "🛒 عرض السلة 🛒" : "🛒 View Cart 🛒",
+      onClick: () => {
+        navigate({ to: "/cart" });
+        toast.dismiss();
+      }
+    },
+    actionButtonStyle: {
+      background: 'linear-gradient(135deg, #f472b6, #ec4899, #db2777)',  // ✅ زهر
+      color: 'white',
+      fontWeight: 'bold',
+      borderRadius: '12px',
+      padding: '8px 24px',
+      boxShadow: '0 8px 30px rgba(236, 72, 153, 0.4)',
+      border: 'none',
+      fontSize: '14px',
+    }
+  }
+);
+
+  } catch (error: any) {
+    console.error("❌ Error adding offer to cart:", error);
+    toast.error(
+      app.lang === "ar" 
+        ? `❌ فشل إضافة العرض للسلة: ${error.message || 'خطأ غير معروف'}`
+        : `❌ Failed to add offer to cart: ${error.message || 'Unknown error'}`
+    );
+  }
+}, [app.user, app.lang, offer, isVariationSelected, mainProduct, mainVariations, selectedVariations, selectedGiftVariation, giftVariations, freeProduct, quantity, addToCartMutation, navigate, mainImage]);
   const handleConfirmClearCart = useCallback(async () => {
     if (!app.user || !pendingAddData) return;
     
@@ -516,7 +659,13 @@ function OfferDetailPage() {
           {/* ===== LEFT - قسم الصور ===== */}
           <div className="space-y-4">
             <div className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-950/30 dark:to-indigo-950/30 border-2 border-purple-200/50 dark:border-purple-800/30 shadow-xl">
-              {mainProduct?.cover_url ? (
+              {mainImage ? (
+                <img
+                  src={mainImage}
+                  alt={offer.display_text_ar || "Promo offer"}
+                  className="w-full h-full object-cover transition-all duration-700 hover:scale-105"
+                />
+              ) : mainProduct?.cover_url ? (
                 <img
                   src={mainProduct.cover_url}
                   alt={offer.display_text_ar || "Promo offer"}
@@ -525,6 +674,41 @@ function OfferDetailPage() {
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                   <GiftIcon className="h-20 w-20 text-purple-300" />
+                </div>
+              )}
+              
+              {/* ✅ عرض ألوان المنتج أسفل الصورة (مثل صفحة المنتج) */}
+              {mainProduct?.colors && mainProduct.colors.length > 0 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/50 backdrop-blur px-3 py-1.5 rounded-full">
+                  {mainProduct.colors.map((color: any) => {
+                    // البحث عن فيرنت لهذا اللون
+                    const matchingVariation = mainVariations.find((v: any) => {
+                      const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+                      for (const key of colorKeys) {
+                        if (v.combination?.[key] === color.color_name_ar) return true;
+                      }
+                      return false;
+                    });
+                    
+                    return (
+                      <button
+                        key={color.id}
+                        onClick={() => {
+                          if (matchingVariation) {
+                            handleVariationSelect(offer.listing_id, matchingVariation.id);
+                          }
+                        }}
+                        className={cn(
+                          "w-6 h-6 rounded-full border-2 transition-all",
+                          mainImage === color.image_url 
+                            ? "border-white ring-2 ring-purple-500 scale-110" 
+                            : "border-white/50 hover:scale-110"
+                        )}
+                        style={{ backgroundColor: color.color_hex || '#ccc' }}
+                        title={color.color_name_ar}
+                      />
+                    );
+                  })}
                 </div>
               )}
               
@@ -698,7 +882,7 @@ function OfferDetailPage() {
                             : "bg-amber-100 text-amber-700"
                         )}>
                           {isSelected || variations.length === 0
-                            ? `✅ ${app.lang === "ar" ? "مختار" : "Selected"}`
+                            ? `✅ ${app.lang === "ar" ? "مختار" : "Selected"}` 
                             : `⚠️ ${app.lang === "ar" ? "مطلوب" : "Required"}`}
                         </Badge>
                       </div>

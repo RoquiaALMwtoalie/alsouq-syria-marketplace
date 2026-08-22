@@ -20,7 +20,8 @@ import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Footer } from "@/components/layout/Footer";
 
-
+// ===== ✅ استيراد subscribeToPush =====
+import { isPushSupported, subscribeToPush } from '@/lib/pushNotifications';
 // ===== إضافة Imports الإشعارات =====
 import { Bell, BellOff, Check, Clock, ShoppingBag, Calendar as CalendarIcon, Settings, Gift, Shield, MoreVertical, Trash2, X, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,8 +47,6 @@ import { toast } from "sonner";
 // ===== ✅ استيراد LoginSplash بدلاً من DeliverySplash =====
 import { LoginSplash } from "@/components/LoginSplash";
 
-// ===== ✅ إضافة استيراد isPushSupported =====
-import { isPushSupported } from '@/lib/pushNotifications';
 // بعد الـ imports الموجودة
 import { ClientOnly } from "@/components/ClientOnly";
 // ===== ✅ إضافة استيراد جميع Hooks Realtime =====
@@ -822,9 +821,7 @@ function RouteGuard() {
     clearCacheIfUserChanged();
   }, [app.user, clearCacheIfUserChanged]);
 
-  // ✅ دوال التحقق من الصلاحيات (محسّنة للسرعة)
- // ✅ دوال التحقق من الصلاحيات (محسّنة للسرعة)
-// ✅ دوال التحقق من الصلاحيات - تجبر جلب الأدوار من الـ DB
+  // ✅ دوال التحقق من الصلاحيات - تجبر جلب الأدوار من الـ DB
 const checkAuthorization = useCallback(async () => {
   // ✅ إذا لم يكن هناك مستخدم، السماح بالوصول (لصفحات التسجيل والدخول)
   if (!app.user) {
@@ -857,6 +854,24 @@ const checkAuthorization = useCallback(async () => {
 
     console.log("🔍 [RouteGuard] Path:", pathname);
     console.log("🔍 [RouteGuard] Roles:", { isAdmin, isDeliveryCompany, isDistributor });
+
+    // ============================================================
+    // ❌ منع الوصول لـ /dashboard لجميع الأدوار عدا البائع
+    // ============================================================
+    if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
+      // ✅ إذا كان المستخدم بائع (seller) → يسمح له
+      if (roles.includes("seller")) {
+        console.log('✅ [RouteGuard] Seller → access granted to /dashboard');
+        setLoading(false);
+        setIsAuthorized(true);
+        return;
+      }
+      
+      // ❌ أي دور آخر (موزع، شركة توصيل، أدمن، مستخدم عادي) → يمنع
+      console.log('🚫 [RouteGuard] Blocked: /dashboard for role:', roles);
+      redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
+      return;
+    }
 
     // ============================================================
     // ✅ 1. تعريف المسارات المسموحة لكل دور
@@ -950,13 +965,67 @@ const checkAuthorization = useCallback(async () => {
     ];
 
     // ============================================================
-    // ✅ 2. التحقق من الوصول
+    // ✅ 2. التحقق من الوصول مع توجيه الأدوار للصفحة الرئيسية
     // ============================================================
 
     // ✅ 2.1 التحقق من المسارات العامة
     const isPublicPath = publicPaths.some(path => 
       pathname === path || pathname.startsWith(path + '/')
     );
+
+    // ✅ ✅ ✅ 2.1.1 إذا كان المسار هو الصفحة الرئيسية، نوجه حسب الدور
+    if (pathname === "/") {
+      // ✅ إذا كان المستخدم مسجل
+      if (app.user) {
+        // ✅ موزع → Dashboard الموزع
+        if (roles.includes('distributor')) {
+          console.log('🔄 [RouteGuard] Distributor → Redirecting to /distributor/dashboard');
+          setLoading(false);
+          setIsAuthorized(false);
+          navigate({ to: '/distributor/dashboard', replace: true });
+          return;
+        }
+        
+        // ✅ شركة توصيل → Dashboard التوصيل
+        if (roles.includes('delivery_company')) {
+          console.log('🔄 [RouteGuard] Delivery Company → Redirecting to /delivery/dashboard');
+          setLoading(false);
+          setIsAuthorized(false);
+          navigate({ to: '/delivery/dashboard', replace: true });
+          return;
+        }
+        
+        // ✅ مسؤول → Dashboard الإدارة
+        if (roles.includes('admin')) {
+          console.log('🔄 [RouteGuard] Admin → Redirecting to /admin/dashboard');
+          setLoading(false);
+          setIsAuthorized(false);
+          navigate({ to: '/admin/dashboard', replace: true });
+          return;
+        }
+        
+        // ✅ بائع → Dashboard البائع
+        if (roles.includes('seller')) {
+          console.log('🔄 [RouteGuard] Seller → Redirecting to /dashboard');
+          setLoading(false);
+          setIsAuthorized(false);
+          navigate({ to: '/dashboard', replace: true });
+          return;
+        }
+        
+        // ✅ مستخدم عادي → يبقى في الصفحة الرئيسية
+        console.log('✅ [RouteGuard] Regular user → Access granted to /');
+        setLoading(false);
+        setIsAuthorized(true);
+        return;
+      }
+      
+      // ✅ إذا كان المستخدم غير مسجل → يبقى في الصفحة الرئيسية
+      console.log('✅ [RouteGuard] Guest → Access granted to /');
+      setLoading(false);
+      setIsAuthorized(true);
+      return;
+    }
 
     if (isPublicPath) {
       console.log('✅ [RouteGuard] Public path, access granted:', pathname);
@@ -967,7 +1036,7 @@ const checkAuthorization = useCallback(async () => {
 
     // ✅ 2.2 إذا كان المستخدم مسؤول (Admin)
     if (isAdmin) {
-      // ✅ المسؤول يسمح له بكل شيء
+      // ✅ المسؤول يسمح له بكل شيء عدا /dashboard (تم منعها أعلاه)
       console.log('✅ [RouteGuard] Admin, access granted:', pathname);
       setLoading(false);
       setIsAuthorized(true);
@@ -1170,7 +1239,6 @@ function RootComponent() {
     pathname.startsWith("/reset-password") ||
     pathname.startsWith("/delivery/dashboard") ||
     pathname.startsWith("/delivery/complete") ||
-    pathname.startsWith("/distributor/complete") ||
     pathname.startsWith("/delivery/orders/new") ||
     pathname.startsWith("/delivery/orders/") ||
     pathname.startsWith("/delivery/messages") ||
@@ -1183,7 +1251,7 @@ function RootComponent() {
     pathname.startsWith("/delivery/distributors") ||
     pathname.startsWith("/distributor/settings") ||
     pathname.startsWith("/distributor/review") ||
-    pathname.startsWith("/messages") || 
+    pathname.startsWith("/messages") ||
     pathname.startsWith("/messages_") ||
     pathname.startsWith("/tracking");
   return (
@@ -1215,6 +1283,25 @@ function RootContent({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [showSplash, setShowSplash] = useState(false);
+
+  // ============================================================
+  // 🔔 Push Notifications - تفعيل الإشعارات المنبثقة
+  // ============================================================
+  useEffect(() => {
+    if (app.user) {
+      const timer = setTimeout(() => {
+        subscribeToPush(app.user.id).then((success) => {
+          if (success) {
+            console.log('✅ Push Notifications activated for user:', app.user.id);
+          } else {
+            console.log('⚠️ Push Notifications not activated for user:', app.user.id);
+          }
+        });
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [app.user]);
 
   // ✅ ✅ ✅ إضافة Realtime للإشعارات
   useEffect(() => {
@@ -1321,8 +1408,7 @@ function RootContent({
       </ClientOnly>
       
       <Toaster position="top-center" richColors />
-      
-
+    
     </>
   );
 }

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useApp } from "@/lib/i18n";
 import { ChatMessages } from "@/components/chat/ChatMessages";
 import { 
-  Loader2, ArrowLeft, Phone, MoreVertical, Video, User, Building2, Truck, Crown, Store, ChevronRight
+  Loader2, ArrowLeft, MoreVertical, User, Building2, Truck, Crown, Store, ChevronRight
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useConversationStore } from "@/lib/stores/conversationStore";
@@ -253,14 +253,8 @@ function ConversationPage() {
           </div>
         </div>
 
-        {/* الجهة اليمنى: أزرار المكالمة */}
+        {/* ✅ الجهة اليمنى: زر القائمة فقط (بدون مكالمات) */}
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-          <button className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2">
-            <Phone className="h-4 w-4 sm:h-5 sm:w-5" />
-          </button>
-          <button className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2">
-            <Video className="h-4 w-4 sm:h-5 sm:w-5" />
-          </button>
           <button className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2">
             <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
