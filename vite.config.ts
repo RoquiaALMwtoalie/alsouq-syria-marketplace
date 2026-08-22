@@ -10,12 +10,13 @@ export default defineConfig({
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            // ✅ فصل المكتبات الكبيرة
-            'vendor': ['react', 'react-dom', 'lucide-react'],
-            'ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-            'supabase': ['@supabase/supabase-js'],
-          },
+       manualChunks: {
+  // ✅ فصل المكتبات الكبيرة
+  'vendor': ['react', 'react-dom'],
+  'lucide': ['lucide-react'], // ← فصل lucide-react لحالها
+  'ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+  'supabase': ['@supabase/supabase-js'],
+},
         },
       },
       // ✅ تصغير الحجم
