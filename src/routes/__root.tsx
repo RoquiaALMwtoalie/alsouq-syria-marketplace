@@ -1015,7 +1015,7 @@ function RouteGuard() {
         "/distributor/orders",
         "/distributor/earnings",
         "/distributor/profile",
-        "/distributor/complete",
+
       ];
 
       // ============================================================

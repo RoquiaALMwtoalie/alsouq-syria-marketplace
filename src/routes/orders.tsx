@@ -1,4 +1,4 @@
-// src/routes/orders.tsx
+// src/routes/orders.tsx - الكود المصحح بالكامل مع دعم صور الفيرنتات
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, lazy, Suspense } from "react";
@@ -29,6 +29,85 @@ export const Route = createFileRoute("/orders")({
   component: OrdersPage,
   head: () => ({ meta: [{ title: "طلباتي — السوق لعندك" }] }),
 });
+
+// ✅ ✅ ✅ دالة الحصول على صورة المنتج الصحيحة (مع دعم الفيرنتات من metadata)
+function getProductImage(item: any) {
+  const listing = item.listings || item;
+  
+  // ✅ 1. الأولوية الأولى: metadata.variation_image (من order_items)
+  if (item.metadata?.variation_image) {
+    return item.metadata.variation_image;
+  }
+  
+  // ✅ 2. الثاني: metadata.product_cover
+  if (item.metadata?.product_cover) {
+    return item.metadata.product_cover;
+  }
+  
+  // ✅ 3. الثالث: selected_options.variation_image
+  if (item.selected_options?.variation_image) {
+    return item.selected_options.variation_image;
+  }
+  
+  // ✅ 4. الرابع: variation_snapshot.image_url
+  if (item.variation_snapshot?.image_url) {
+    return item.variation_snapshot.image_url;
+  }
+  
+  // ✅ 5. الخامس: من selected_options.selected_variation_id
+  if (item.selected_options?.selected_variation_id) {
+    const variations = listing?.variations || [];
+    const variation = variations.find((v: any) => v.id === item.selected_options.selected_variation_id);
+    if (variation?.image_url) return variation.image_url;
+    if (variation?.color_id) {
+      const colors = listing?.colors || [];
+      const color = colors.find((c: any) => c.id === variation.color_id);
+      if (color?.image_url) return color.image_url;
+    }
+  }
+  
+  // ✅ 6. السادس: selected_variation_id القديم
+  if (item.selected_variation_id) {
+    const variations = listing?.variations || [];
+    const variation = variations.find((v: any) => v.id === item.selected_variation_id);
+    if (variation?.image_url) return variation.image_url;
+    if (variation?.color_id) {
+      const colors = listing?.colors || [];
+      const color = colors.find((c: any) => c.id === variation.color_id);
+      if (color?.image_url) return color.image_url;
+    }
+    if (variation?.combination) {
+      const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+      let colorValue = null;
+      for (const key of colorKeys) {
+        if (variation.combination[key]) {
+          colorValue = variation.combination[key];
+          break;
+        }
+      }
+      if (colorValue) {
+        const colors = listing?.colors || [];
+        const color = colors.find((c: any) => 
+          c.color_name_ar === colorValue || c.color_name_en === colorValue
+        );
+        if (color?.image_url) return color.image_url;
+      }
+    }
+  }
+  
+  // ✅ 7. السابع: من variation_combination
+  if (item.variation_combination?.colors) {
+    const colorName = item.variation_combination.colors;
+    const colors = listing?.colors || [];
+    const color = colors.find((c: any) => 
+      c.color_name_ar === colorName || c.color_name_en === colorName
+    );
+    if (color?.image_url) return color.image_url;
+  }
+  
+  // ✅ 8. أخيراً: cover_url
+  return listing?.cover_url || null;
+}
 
 function OrdersPage() {
   const app = useApp();
@@ -155,6 +234,13 @@ const groupedOrders = useMemo(() => {
           status: order.status,
           created_at: order.created_at,
           order_id: order.id,
+          // ✅ ✅ ✅ الاحتفاظ ببيانات الفيرنتات المختارة (مهم لصورة الفيرنت)
+          selected_variation_id: item.selected_options?.selected_variation_id || item.selected_variation_id || order.selected_variation_id || null,
+          variation_snapshot: item.variation_snapshot || order.variation_snapshot || null,
+          // ✅ ✅ ✅ إضافة metadata و selected_options
+          metadata: item.metadata || null,
+          selected_options: item.selected_options || null,
+          variation_combination: item.variation_combination || null,
         }));
       } else {
         // ✅ للتوافق مع الطلبات القديمة (بدون order_items)
@@ -162,6 +248,11 @@ const groupedOrders = useMemo(() => {
           ...order,
           listings: order.listings || null,
           order_id: order.id,
+          selected_variation_id: order.selected_options?.selected_variation_id || order.selected_variation_id || null,
+          variation_snapshot: order.variation_snapshot || null,
+          metadata: order.metadata || null,
+          selected_options: order.selected_options || null,
+          variation_combination: order.variation_combination || null,
         }];
       }
       
@@ -699,17 +790,30 @@ const groupedOrders = useMemo(() => {
                             // ✅ ✅ ✅ جلب الـ listings من item مباشرة (من order_items)
                             const listing = item.listings || item;
                             
+                            // ✅ ✅ ✅ الحصول على الصورة الصحيحة (مع دعم الفيرنتات)
+                            const imageUrl = getProductImage(item);
+                            
+                            // ✅ ✅ ✅ LOG لتأكيد الصورة
+                            console.log("📸 [Orders] Item image:", {
+                              id: item.id,
+                              title: listing?.title_ar,
+                              imageUrl: imageUrl,
+                              metadata_variation_image: item.metadata?.variation_image,
+                              selected_options: item.selected_options,
+                              selected_variation_id: item.selected_variation_id
+                            });
+                            
                             return (
                               <div 
                                 key={item.id || item.listing_id}
                                 className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
                               >
                                 <div className="flex items-center gap-4">
-                                  {/* صورة المنتج */}
+                                  {/* ✅ صورة المنتج (مع دعم الفيرنتات) */}
                                   <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-                                    {listing?.cover_url ? (
+                                    {imageUrl ? (
                                       <OptimizedImage
-                                        src={listing.cover_url}
+                                        src={imageUrl}
                                         alt=""
                                         width={48}
                                         height={48}
@@ -749,6 +853,22 @@ const groupedOrders = useMemo(() => {
                                       )}>
                                         {getOrderStatus(item.status || group.status).label}
                                       </Badge>
+                                      {/* ✅ ✅ ✅ عرض معلومات الفيرنت المختار */}
+                                      {item.selected_variation_id && (
+                                        <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                                          <Layers className="h-2.5 w-2.5" />
+                                          {item.variation_snapshot?.combination 
+                                            ? Object.values(item.variation_snapshot.combination).join(' • ')
+                                            : (item.selected_variation_id.slice(0, 8))}
+                                        </span>
+                                      )}
+                                      {/* ✅ ✅ ✅ عرض معلومات الفيرنت من metadata */}
+                                      {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && (
+                                        <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                                          <Layers className="h-2.5 w-2.5" />
+                                          {Object.values(item.metadata.variation_combination).join(' • ')}
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                   

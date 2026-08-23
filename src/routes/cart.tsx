@@ -1,4 +1,4 @@
-// src/routes/cart.tsx - الكود المُصحّح بالكامل مع OptimizedImage
+// src/routes/cart.tsx - الكود المُصحّح بالكامل مع حفظ بيانات الفيرنتات
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { 
@@ -865,6 +865,7 @@ const applyPromoCode = useCallback(async () => {
     console.log("🔍 [PROMO] ===== END APPLYING PROMO CODE =====");
   }
 }, [promoCode, promoApplied, items, deliveryFee, app.lang, app.currency, app.user?.id]);
+  
   // ✅ تحديث الكمية
   const handleUpdateQuantity = useCallback(async (itemId: string, newQuantity: number) => {
     if (!app.user) {
@@ -1022,6 +1023,7 @@ const checkout = useCallback(async () => {
 
         console.log(`✅ [Checkout] Order created with ID: ${order.id}`);
 
+        // ✅ ✅ ✅ هذا هو الجزء المهم - حفظ بيانات الفيرنتات في order_items
         const orderItems = itemsList.map((item: any) => ({
           order_id: order.id,
           listing_id: item.listing_id,
@@ -1029,6 +1031,22 @@ const checkout = useCallback(async () => {
           price: Number(item.price),
           currency: item.currency || 'SYP',
           variation_combination: item.variation_combination || null,
+          
+          // ✅ ✅ ✅ حفظ جميع بيانات الفيرنت في الأعمدة الموجودة
+          selected_options: {
+            selected_variation_id: item.selected_variation_id || null,
+            selected_color: item.selected_color || null,
+            selected_size: item.selected_size || null,
+          },
+          metadata: {
+            variation_image: item.displayImage || null,
+            variation_price: Number(item.price),
+            variation_combination: item.variation_combination || {},
+            product_title: item.listing?.title_ar || null,
+            product_cover: item.listing?.cover_url || null,
+            is_promo_offer: item.isPromoOffer || false,
+            is_discount_offer: item.isDiscountOffer || false,
+          },
         }));
 
         const { error: itemsError } = await supabase
@@ -1077,7 +1095,7 @@ const checkout = useCallback(async () => {
             body_ar: `لديك طلب جديد من ${buyerName} (${itemsList.length} منتجات)${promoApplied ? ` 🔥 تم استخدام كود خصم` : ''}`,
             title_en: "📦 New Order",
             body_en: `You have a new order from ${buyerName} (${itemsList.length} products)${promoApplied ? ` 🔥 Promo code used` : ''}`,
-           link_url: `/dashboard`,
+            link_url: `/dashboard`,
             metadata: {
               order_id: order.id,
               buyer_id: app.user.id,
@@ -1113,6 +1131,7 @@ const checkout = useCallback(async () => {
       );
     }
   }, [app.user, items, clearCart, promoApplied, removePromoCode, navigate, app.lang, selectedAddress, storeInfo.name, promoData, promoDiscount, totals, deliveryFee, freeItems]);
+  
   if (isLoading || isLoadingAddresses) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">

@@ -597,16 +597,25 @@ export function useDeleteListing() {
 // ============================================================
 // ✅ Favorites
 // ============================================================
-export function useFavorites(userId: string | undefined) {
+// ✅ تأكد من وجود p_limit و p_offset
+export function useFavorites(
+  userId: string | undefined, 
+  page: number = 1, 
+  limit: number = 20
+) {
   return useQuery({
-    queryKey: ["favorites", userId],
+    queryKey: ["favorites", userId, page, limit],
     enabled: !!userId,
     queryFn: async () => {
+      const offset = (page - 1) * limit;
+      
       console.log("📡 [useFavorites] Using RPC function...");
       
       const { data, error } = await supabase
         .rpc('get_user_favorites', { 
-          p_user_id: userId 
+          p_user_id: userId,
+          p_limit: limit,
+          p_offset: offset
         });
       
       if (error) {
@@ -615,14 +624,19 @@ export function useFavorites(userId: string | undefined) {
       }
       
       console.log(`✅ [useFavorites] Found ${data?.length || 0} favorites`);
-      return data ?? [];
+      return {
+        data: data ?? [],
+        total: data?.[0]?.total_count || 0,
+        page,
+        limit,
+        totalPages: Math.ceil((data?.[0]?.total_count || 0) / limit),
+      };
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }
-
 export function useToggleFavorite() {
   const qc = useQueryClient();
   return useMutation({
@@ -697,9 +711,13 @@ export function useCreateReview() {
 // ============================================================
 export function useMyOrders(userId: string | undefined) {
   return useQuery({
-    queryKey: ["orders", userId],
+    queryKey: ["my-orders", userId], // ✅ استخدم نفس الـ key القديم
     enabled: !!userId,
     queryFn: async () => {
+      if (!userId) return [];
+      
+      console.log("📦 [useMyOrders] Fetching orders for user:", userId);
+      
       const { data, error } = await supabase
         .from("orders")
         .select(`
@@ -711,6 +729,9 @@ export function useMyOrders(userId: string | undefined) {
             price,
             currency,
             variation_combination,
+            metadata,
+            selected_options,
+            created_at,
             listings (
               id,
               title_ar,
@@ -740,10 +761,16 @@ export function useMyOrders(userId: string | undefined) {
             )
           )
         `)
-        .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+        .eq("buyer_id", userId)  // ✅ استخدم eq بدل or عشان نجيب طلبات المشتري بس
         .order("created_at", { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("❌ [useMyOrders] Error:", error);
+        throw error;
+      }
+      
+      console.log("📦 [useMyOrders] Raw data:", data);
+      console.log("📦 [useMyOrders] First order items:", data?.[0]?.order_items);
       
       const transformedData = data?.map((order: any) => {
         const totalWithDelivery = order.total_with_delivery ?? 
@@ -764,6 +791,8 @@ export function useMyOrders(userId: string | undefined) {
           total_with_delivery: totalWithDelivery,
         };
       });
+      
+      console.log("📦 [useMyOrders] Transformed data:", transformedData);
       return transformedData ?? [];
     },
   });
