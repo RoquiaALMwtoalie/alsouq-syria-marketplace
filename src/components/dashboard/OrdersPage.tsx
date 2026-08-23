@@ -16,13 +16,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useApp, formatPrice } from "@/lib/i18n";
-import { useMyOrders } from "@/lib/queries";
+import { useStoreOrders } from "@/lib/queries";  // ✅ تغيير: استخدم useStoreOrders بدل useMyOrders
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import * as XLSX from 'xlsx';
 import pkg from 'file-saver';
 import { supabase } from "@/integrations/supabase/client";
-import { notifyDeliveryCompanyAdmins } from "@/lib/delivery-notifications";
 import { Link } from "@tanstack/react-router";
 const { saveAs } = pkg;
 
@@ -36,7 +35,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
   // ===== STATES =====
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [filterType, setFilterType] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -46,32 +44,26 @@ export const OrdersPage = React.memo(function OrdersPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
 
-  // ===== API =====
+  // ===== API - استخدم useStoreOrders (طلبات المتجر فقط) =====
   const { 
     data: allOrders = [], 
     isLoading, 
     isError,
     refetch: refetchOrders,
     isFetching 
-  } = useMyOrders(app.user?.id);
+  } = useStoreOrders(app.user?.id);  // ✅ تغيير: useStoreOrders
 
-  // ===== FILTER ORDERS BY SELLER =====
+  // ===== FILTER ORDERS BY SELLER (للتأكد) =====
   const storeOrders = useMemo(() => {
     return allOrders.filter((order: any) => order.seller_id === app.user?.id);
   }, [allOrders, app.user?.id]);
 
-  // ===== APPLY FILTERS =====
+  // ===== APPLY FILTERS (بدون فلتر نوع) =====
   const filteredOrders = useMemo(() => {
     let result = storeOrders;
 
     if (filterStatus !== "all") {
       result = result.filter((order: any) => order.status === filterStatus);
-    }
-
-    if (filterType === "booking") {
-      result = result.filter((order: any) => order.is_booking === true || order.type === "booking");
-    } else if (filterType === "order") {
-      result = result.filter((order: any) => !order.is_booking && order.type !== "booking");
     }
 
     if (searchQuery.trim()) {
@@ -89,10 +81,24 @@ export const OrdersPage = React.memo(function OrdersPage() {
       });
     }
 
-    return result.sort((a: any, b: any) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-  }, [storeOrders, searchQuery, filterStatus, filterType]);
+    // ✅ ✅ ✅ ترتيب الطلبات: قيد المراجعة بالأعلى، ثم الأحدث
+    const statusOrder: Record<string, number> = {
+      pending: 0,
+      accepted: 1,
+      processing: 2,
+      shipped: 3,
+      delivered: 4,
+      completed: 5,
+      rejected: 6,
+      cancelled: 7,
+    };
+
+    return result.sort((a: any, b: any) => {
+      const statusDiff = (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
+      if (statusDiff !== 0) return statusDiff;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [storeOrders, searchQuery, filterStatus]);
 
   // ===== ✅ PAGINATION =====
   const totalItems = filteredOrders.length;
@@ -114,7 +120,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
     shipped: storeOrders.filter((o: any) => o.status === "shipped").length,
     delivered: storeOrders.filter((o: any) => o.status === "delivered").length,
     cancelled: storeOrders.filter((o: any) => o.status === "cancelled").length,
-    bookings: storeOrders.filter((o: any) => o.is_booking === true || o.type === "booking").length,
   }), [storeOrders]);
 
   const totalRevenue = useMemo(() => {
@@ -167,261 +172,217 @@ export const OrdersPage = React.memo(function OrdersPage() {
   };
 
   // ===== ACCEPT ORDER =====
-// src/components/dashboard/OrdersPage.tsx
+  const handleAcceptOrder = useCallback(async (orderId: string) => {
+    try {
+      console.log("🚀 Starting order acceptance for:", orderId);
 
-// ===== ACCEPT ORDER (معدل - يرسل اسم المتجر) =====
-// ===== ACCEPT ORDER (معدل - يرسل اسم المتجر + تحديث الكود) =====
-// ✅ ✅ ✅ الكود الصحيح - ياخذ شركة التوصيل من المتجر
-// ===== ACCEPT ORDER - النسخة النهائية مع إصلاحات الصلاحيات =====
-const handleAcceptOrder = useCallback(async (orderId: string) => {
-  try {
-    console.log("🚀 Starting order acceptance for:", orderId);
+      // ✅ 1️⃣ جلب بيانات الطلب
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select(`
+          id,
+          seller_id,
+          buyer_id,
+          delivery_address,
+          delivery_lat,
+          delivery_lng,
+          total,
+          buyer_name,
+          buyer_phone,
+          notes
+        `)
+        .eq("id", orderId)
+        .single();
 
-    // ✅ 1️⃣ جلب بيانات الطلب
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select(`
-        id,
-        seller_id,
-        buyer_id,
-        delivery_address,
-        delivery_lat,
-        delivery_lng,
-        total,
-        buyer_name,
-        buyer_phone,
-        notes
-      `)
-      .eq("id", orderId)
-      .single();
+      if (orderError) {
+        console.error("❌ Order fetch error:", orderError);
+        toast.error(app.lang === "ar" ? "❌ لم نتمكن من جلب الطلب" : "❌ Could not fetch order");
+        return;
+      }
 
-    if (orderError) {
-      console.error("❌ Order fetch error:", orderError);
-      toast.error(app.lang === "ar" ? "❌ لم نتمكن من جلب الطلب" : "❌ Could not fetch order");
-      return;
-    }
+      if (!order) {
+        toast.error(app.lang === "ar" ? "❌ الطلب غير موجود" : "❌ Order not found");
+        return;
+      }
 
-    if (!order) {
-      toast.error(app.lang === "ar" ? "❌ الطلب غير موجود" : "❌ Order not found");
-      return;
-    }
+      console.log("📦 Order data:", order);
 
-    console.log("📦 Order data:", order);
+      // ✅ 2️⃣ جلب بيانات المتجر
+      const { data: storeData, error: storeError } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          store_name,
+          delivery_company_id,
+          store_address,
+          lat,
+          lng
+        `)
+        .eq("id", order.seller_id)
+        .single();
 
-    // ✅ 2️⃣ جلب بيانات المتجر
-    const { data: storeData, error: storeError } = await supabase
-      .from("profiles")
-      .select(`
-        id,
-        store_name,
-        delivery_company_id,
-        store_address,
-        lat,
-        lng
-      `)
-      .eq("id", order.seller_id)
-      .single();
+      if (storeError) {
+        console.error("❌ Store fetch error:", storeError);
+        toast.error(app.lang === "ar" ? "❌ لم نتمكن من جلب بيانات المتجر" : "❌ Could not fetch store data");
+        return;
+      }
 
-    if (storeError) {
-      console.error("❌ Store fetch error:", storeError);
-      toast.error(app.lang === "ar" ? "❌ لم نتمكن من جلب بيانات المتجر" : "❌ Could not fetch store data");
-      return;
-    }
+      console.log("🏪 Store data:", storeData);
 
-    console.log("🏪 Store data:", storeData);
+      // ✅ 3️⃣ استخراج شركة التوصيل
+      let deliveryCompanyId = storeData?.delivery_company_id;
 
-    // ✅ 3️⃣ استخراج شركة التوصيل
-    let deliveryCompanyId = storeData?.delivery_company_id;
+      console.log(`🏢 Delivery company from store: ${deliveryCompanyId}`);
 
-    console.log(`🏢 Delivery company from store: ${deliveryCompanyId}`);
+      if (!deliveryCompanyId) {
+        console.warn(`⚠️ Store ${storeData.id} (${storeData.store_name}) has no delivery company`);
+        
+        const { data: fallbackCompany } = await supabase
+          .from("delivery_companies")
+          .select("id, name_ar")
+          .eq("is_active", true)
+          .limit(1)
+          .maybeSingle();
 
-    if (!deliveryCompanyId) {
-      console.warn(`⚠️ Store ${storeData.id} (${storeData.store_name}) has no delivery company`);
-      
-      const { data: fallbackCompany } = await supabase
-        .from("delivery_companies")
-        .select("id, name_ar")
-        .eq("is_active", true)
-        .limit(1)
+        if (fallbackCompany) {
+          deliveryCompanyId = fallbackCompany.id;
+          console.log(`🔄 Using fallback company: ${fallbackCompany.name_ar} (${fallbackCompany.id})`);
+        }
+      }
+
+      if (!deliveryCompanyId) {
+        toast.error(app.lang === "ar" ? "❌ لا توجد شركة توصيل متاحة" : "❌ No delivery company available");
+        return;
+      }
+
+      console.log(`✅ Final delivery company: ${deliveryCompanyId}`);
+
+      // ✅ 4️⃣ تحديث الطلب
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({ 
+          status: 'accepted',
+          accepted_at: new Date().toISOString(),
+          delivery_company_id: deliveryCompanyId,
+        })
+        .eq("id", orderId);
+
+      if (updateError) {
+        console.error("❌ Update error:", updateError);
+        throw updateError;
+      }
+
+      console.log("✅ Order updated successfully");
+
+      // ✅ 5️⃣ التحقق من وجود delivery_order مسبقاً
+      const { data: existingDelivery, error: checkError } = await supabase
+        .from("delivery_orders")
+        .select("id")
+        .eq("order_id", orderId)
         .maybeSingle();
 
-      if (fallbackCompany) {
-        deliveryCompanyId = fallbackCompany.id;
-        console.log(`🔄 Using fallback company: ${fallbackCompany.name_ar} (${fallbackCompany.id})`);
+      if (checkError) {
+        console.error("❌ Check delivery order error:", checkError);
       }
-    }
 
-    if (!deliveryCompanyId) {
-      toast.error(app.lang === "ar" ? "❌ لا توجد شركة توصيل متاحة" : "❌ No delivery company available");
-      return;
-    }
+      // ✅ 6️⃣ إنشاء طلب توصيل (إذا لم يكن موجوداً)
+      if (!existingDelivery) {
+        const { error: deliveryError } = await supabase
+          .from("delivery_orders")
+          .insert({
+            order_id: orderId,
+            delivery_company_id: deliveryCompanyId,
+            pickup_address: storeData?.store_address || "عنوان المتجر",
+            pickup_latitude: storeData?.lat || 0,
+            pickup_longitude: storeData?.lng || 0,
+            delivery_address: order.delivery_address || "عنوان التوصيل",
+            delivery_latitude: order.delivery_lat || 0,
+            delivery_longitude: order.delivery_lng || 0,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            estimated_pickup_at: new Date(Date.now() + 3600000).toISOString(),
+            estimated_delivery_at: new Date(Date.now() + 7200000).toISOString(),
+          });
 
-    console.log(`✅ Final delivery company: ${deliveryCompanyId}`);
-
-    // ✅ 4️⃣ تحديث الطلب
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({ 
-        status: 'accepted',
-        accepted_at: new Date().toISOString(),
-        delivery_company_id: deliveryCompanyId,
-      })
-      .eq("id", orderId);
-
-    if (updateError) {
-      console.error("❌ Update error:", updateError);
-      throw updateError;
-    }
-
-    console.log("✅ Order updated successfully");
-
-    // ✅ 5️⃣ التحقق من وجود delivery_order مسبقاً
-    const { data: existingDelivery, error: checkError } = await supabase
-      .from("delivery_orders")
-      .select("id")
-      .eq("order_id", orderId)
-      .maybeSingle();
-
-    if (checkError) {
-      console.error("❌ Check delivery order error:", checkError);
-    }
-
-    // ✅ 6️⃣ إنشاء طلب توصيل (إذا لم يكن موجوداً)
-    if (!existingDelivery) {
-      const { error: deliveryError } = await supabase
-        .from("delivery_orders")
-        .insert({
-          order_id: orderId,
-          delivery_company_id: deliveryCompanyId,
-          pickup_address: storeData?.store_address || "عنوان المتجر",
-          pickup_latitude: storeData?.lat || 0,
-          pickup_longitude: storeData?.lng || 0,
-          delivery_address: order.delivery_address || "عنوان التوصيل",
-          delivery_latitude: order.delivery_lat || 0,
-          delivery_longitude: order.delivery_lng || 0,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          estimated_pickup_at: new Date(Date.now() + 3600000).toISOString(),
-          estimated_delivery_at: new Date(Date.now() + 7200000).toISOString(),
-        });
-
-      if (deliveryError) {
-        console.error("❌ Delivery order creation error:", deliveryError);
-        toast.warning(app.lang === "ar" 
-          ? "⚠️ تم قبول الطلب لكن حدث خطأ في إنشاء طلب التوصيل (تحقق من الصلاحيات)" 
-          : "⚠️ Order accepted but delivery order creation failed (check permissions)");
+        if (deliveryError) {
+          console.error("❌ Delivery order creation error:", deliveryError);
+          toast.warning(app.lang === "ar" 
+            ? "⚠️ تم قبول الطلب لكن حدث خطأ في إنشاء طلب التوصيل (تحقق من الصلاحيات)" 
+            : "⚠️ Order accepted but delivery order creation failed (check permissions)");
+        } else {
+          console.log("✅ Delivery order created successfully");
+        }
       } else {
-        console.log("✅ Delivery order created successfully");
+        console.log("ℹ️ Delivery order already exists, skipping creation");
       }
-    } else {
-      console.log("ℹ️ Delivery order already exists, skipping creation");
-    }
 
-    // ✅ 7️⃣ إرسال إشعار لمسؤولي شركة التوصيل
-    const storeName = storeData?.store_name || 'المتجر';
-    
-    // ✅ جلب مسؤولي الشركة
-    const { data: companyAdmins, error: adminsError } = await supabase
-      .from("delivery_company_admins")
-      .select("user_id")
-      .eq("company_id", deliveryCompanyId);
-
-    if (adminsError) {
-      console.error("❌ Error fetching company admins:", adminsError);
-    } else if (companyAdmins && companyAdmins.length > 0) {
-      console.log(`📨 Sending notifications to ${companyAdmins.length} admins`);
-      
-      for (const admin of companyAdmins) {
-        const { error: notifyError } = await supabase
+      // ✅ 7️⃣ إشعار للمشتري
+      if (order.buyer_id) {
+        const storeName = storeData?.store_name || 'المتجر';
+        const { error: buyerNotifyError } = await supabase
           .from("notifications")
           .insert({
-            user_id: admin.user_id,
-            type: "new_delivery",
-            title_ar: `🚚 طلب توصيل جديد من "${storeName}"`,
-            body_ar: `لديك طلب توصيل جديد بقيمة ${order.total?.toLocaleString() || 0} SYP`,
-            title_en: `🚚 New delivery order from "${storeName}"`,
-            body_en: `You have a new delivery order for ${order.total?.toLocaleString() || 0} SYP`,
-            link_url: `/delivery/orders/${orderId}`,
+            user_id: order.buyer_id,
+            type: "order_accepted",
+            title_ar: `✅ تم قبول طلبك من "${storeName}"`,
+            body_ar: `تم قبول طلبك بقيمة ${order.total?.toLocaleString() || 0} SYP وسيتم توصيله قريباً`,
+            title_en: `✅ Your order from "${storeName}" was accepted`,
+            body_en: `Your order for ${order.total?.toLocaleString() || 0} SYP was accepted and will be delivered soon`,
+            link_url: `/orders`,
             metadata: {
               order_id: orderId,
-              company_id: deliveryCompanyId,
               store_name: storeName,
               total: order.total || 0,
-              buyer_name: order.buyer_name,
-              buyer_phone: order.buyer_phone,
-              delivery_address: order.delivery_address,
             },
             created_at: new Date().toISOString(),
           });
 
-        if (notifyError) {
-          console.error(`❌ Notification error for admin ${admin.user_id}:`, notifyError);
+        if (buyerNotifyError) {
+          console.error("❌ Buyer notification error:", buyerNotifyError);
         } else {
-          console.log(`✅ Notification sent to admin ${admin.user_id}`);
+          console.log("✅ Buyer notification sent");
         }
       }
-    } else {
-      console.warn(`⚠️ No admins found for company ${deliveryCompanyId}`);
+
+      toast.success(app.lang === "ar" 
+        ? `✅ تم قبول الطلب وإرساله لشركة التوصيل` 
+        : `✅ Order accepted and sent to delivery company`);
+
+      refetchOrders();
+      setDetailDialogOpen(false);
+      setSelectedOrder(null);
+
+    } catch (error) {
+      console.error("❌ Error accepting order:", error);
+      toast.error(app.lang === "ar" ? "❌ حدث خطأ في قبول الطلب" : "❌ Error accepting order");
     }
-
-    // ✅ 8️⃣ إشعار للمشتري
-    if (order.buyer_id) {
-      const { error: buyerNotifyError } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: order.buyer_id,
-          type: "order_accepted",
-          title_ar: `✅ تم قبول طلبك من "${storeName}"`,
-          body_ar: `تم قبول طلبك بقيمة ${order.total?.toLocaleString() || 0} SYP وسيتم توصيله قريباً`,
-          title_en: `✅ Your order from "${storeName}" was accepted`,
-          body_en: `Your order for ${order.total?.toLocaleString() || 0} SYP was accepted and will be delivered soon`,
-         link_url: `/orders`,
-          metadata: {
-            order_id: orderId,
-            store_name: storeName,
-            total: order.total || 0,
-          },
-          created_at: new Date().toISOString(),
-        });
-
-      if (buyerNotifyError) {
-        console.error("❌ Buyer notification error:", buyerNotifyError);
-      } else {
-        console.log("✅ Buyer notification sent");
-      }
-    }
-
-    toast.success(app.lang === "ar" 
-      ? `✅ تم قبول الطلب وإرساله لشركة التوصيل` 
-      : `✅ Order accepted and sent to delivery company`);
-
-    refetchOrders();
-    setDetailDialogOpen(false);
-    setSelectedOrder(null);
-
-  } catch (error) {
-    console.error("❌ Error accepting order:", error);
-    toast.error(app.lang === "ar" ? "❌ حدث خطأ في قبول الطلب" : "❌ Error accepting order");
-  }
-}, [app.lang, refetchOrders, setDetailDialogOpen, setSelectedOrder]);
+  }, [app.lang, refetchOrders]);
 
   // ===== REJECT ORDER =====
-// ===== REJECT ORDER (معدل - يرسل اسم المتجر) =====
-const handleRejectOrder = useCallback(async (orderId: string, reason: string) => {
-  if (!reason.trim()) {
-    toast.error(app.lang === "ar" ? "❌ الرجاء إدخال سبب الرفض" : "❌ Please enter a rejection reason");
-    return;
-  }
+  const handleRejectOrder = useCallback(async (orderId: string, reason: string) => {
+    if (!reason.trim()) {
+      toast.error(app.lang === "ar" ? "❌ الرجاء إدخال سبب الرفض" : "❌ Please enter a rejection reason");
+      return;
+    }
 
-  setIsRejecting(true);
+    setIsRejecting(true);
 
-  try {
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select(`
-        buyer_id,
-        order_items (
-          listings (
+    try {
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select(`
+          buyer_id,
+          order_items (
+            listings (
+              title_ar,
+              title_en,
+              profiles:owner_id (
+                store_name,
+                full_name
+              )
+            )
+          ),
+          listings:listing_id (
             title_ar,
             title_en,
             profiles:owner_id (
@@ -429,88 +390,79 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
               full_name
             )
           )
-        ),
-        listings:listing_id (
-          title_ar,
-          title_en,
-          profiles:owner_id (
-            store_name,
-            full_name
-          )
-        )
-      `)
-      .eq("id", orderId)
-      .single();
+        `)
+        .eq("id", orderId)
+        .single();
 
-    if (orderError) throw orderError;
+      if (orderError) throw orderError;
 
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({ 
-        status: 'rejected',
-        rejected_at: new Date().toISOString(),
-        rejected_by: app.user?.id,
-        rejection_reason: reason.trim()
-      })
-      .eq("id", orderId);
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({ 
+          status: 'rejected',
+          rejected_at: new Date().toISOString(),
+          rejected_by: app.user?.id,
+          rejection_reason: reason.trim()
+        })
+        .eq("id", orderId);
 
-    if (updateError) throw updateError;
+      if (updateError) throw updateError;
 
-    // ✅ ✅ ✅ استخراج اسم المتجر
-    let storeName = '';
-    
-    if (order.order_items && order.order_items.length > 0) {
-      const firstItem = order.order_items[0];
-      const listing = firstItem?.listings;
-      if (listing?.profiles) {
+      // ✅ استخراج اسم المتجر
+      let storeName = '';
+      
+      if (order.order_items && order.order_items.length > 0) {
+        const firstItem = order.order_items[0];
+        const listing = firstItem?.listings;
+        if (listing?.profiles) {
+          storeName = app.lang === "ar" 
+            ? (listing.profiles.store_name || listing.profiles.full_name || 'المتجر')
+            : (listing.profiles.store_name || listing.profiles.full_name || 'Store');
+        }
+      } else if (order.listings?.profiles) {
         storeName = app.lang === "ar" 
-          ? (listing.profiles.store_name || listing.profiles.full_name || 'المتجر')
-          : (listing.profiles.store_name || listing.profiles.full_name || 'Store');
+          ? (order.listings.profiles.store_name || order.listings.profiles.full_name || 'المتجر')
+          : (order.listings.profiles.store_name || order.listings.profiles.full_name || 'Store');
       }
-    } else if (order.listings?.profiles) {
-      storeName = app.lang === "ar" 
-        ? (order.listings.profiles.store_name || order.listings.profiles.full_name || 'المتجر')
-        : (order.listings.profiles.store_name || order.listings.profiles.full_name || 'Store');
+      
+      if (!storeName) {
+        storeName = app.lang === "ar" ? "المتجر" : "Store";
+      }
+
+      const itemsCount = order.order_items?.length || 1;
+
+      if (order.buyer_id) {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: order.buyer_id,
+            type: "order_rejected",
+            title_ar: "❌ تم رفض طلبك",
+            body_ar: `تم رفض طلبك من متجر "${storeName}" (${itemsCount} منتج${itemsCount > 1 ? 'ات' : ''}). السبب: ${reason.trim()}`,
+            title_en: "❌ Your order was rejected",
+            body_en: `Your order from "${storeName}" (${itemsCount} item${itemsCount > 1 ? 's' : ''}) was rejected. Reason: ${reason.trim()}`,
+            link_url: `/orders`,
+            metadata: {
+              rejection_reason: reason.trim(),
+              order_id: orderId,
+              store_name: storeName,
+            }
+          });
+      }
+
+      toast.success(app.lang === "ar" ? "✅ تم رفض الطلب مع إرسال السبب" : "✅ Order rejected with reason");
+      refetchOrders();
+      setRejectDialogOpen(false);
+      setRejectOrderId(null);
+      setRejectReason("");
+
+    } catch (error) {
+      console.error("❌ Error rejecting order:", error);
+      toast.error(app.lang === "ar" ? "❌ حدث خطأ في رفض الطلب" : "❌ Error rejecting order");
+    } finally {
+      setIsRejecting(false);
     }
-    
-    if (!storeName) {
-      storeName = app.lang === "ar" ? "المتجر" : "Store";
-    }
-
-    const itemsCount = order.order_items?.length || 1;
-
-    if (order.buyer_id) {
-      await supabase
-        .from("notifications")
-        .insert({
-          user_id: order.buyer_id,
-          type: "order_rejected",
-          title_ar: "❌ تم رفض طلبك",
-          body_ar: `تم رفض طلبك من متجر "${storeName}" (${itemsCount} منتج${itemsCount > 1 ? 'ات' : ''}). السبب: ${reason.trim()}`,
-          title_en: "❌ Your order was rejected",
-          body_en: `Your order from "${storeName}" (${itemsCount} item${itemsCount > 1 ? 's' : ''}) was rejected. Reason: ${reason.trim()}`,
-         link_url: `/orders`,
-          metadata: {
-            rejection_reason: reason.trim(),
-            order_id: orderId,
-            store_name: storeName,
-          }
-        });
-    }
-
-    toast.success(app.lang === "ar" ? "✅ تم رفض الطلب مع إرسال السبب" : "✅ Order rejected with reason");
-    refetchOrders();
-    setRejectDialogOpen(false);
-    setRejectOrderId(null);
-    setRejectReason("");
-
-  } catch (error) {
-    console.error("❌ Error rejecting order:", error);
-    toast.error(app.lang === "ar" ? "❌ حدث خطأ في رفض الطلب" : "❌ Error rejecting order");
-  } finally {
-    setIsRejecting(false);
-  }
-}, [app.lang, app.user?.id, refetchOrders]);
+  }, [app.lang, app.user?.id, refetchOrders]);
 
   // ===== EXPORTS =====
   const exportToExcel = useCallback(() => {
@@ -719,7 +671,7 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
         ))}
       </div>
 
-      {/* ===== SEARCH & FILTERS ===== */}
+      {/* ===== SEARCH & FILTERS (تم إزالة فلتر النوع) ===== */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400" />
@@ -740,7 +692,7 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
         </div>
         
         <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
+          <SelectTrigger className="w-[160px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
               <SelectValue placeholder={app.lang === "ar" ? "الحالة" : "Status"} />
@@ -755,20 +707,6 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
             <SelectItem value="shipped">🚚 {app.lang === "ar" ? "تم الشحن" : "Shipped"}</SelectItem>
             <SelectItem value="delivered">✅ {app.lang === "ar" ? "تم التوصيل" : "Delivered"}</SelectItem>
             <SelectItem value="cancelled">❌ {app.lang === "ar" ? "ملغي" : "Cancelled"}</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <Select value={filterType} onValueChange={(v) => { setFilterType(v); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
-            <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-slate-400" />
-              <SelectValue placeholder={app.lang === "ar" ? "النوع" : "Type"} />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#2a655f]/20">
-            <SelectItem value="all">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
-            <SelectItem value="order">📦 {app.lang === "ar" ? "طلبات" : "Orders"}</SelectItem>
-            <SelectItem value="booking">📅 {app.lang === "ar" ? "حجوزات" : "Bookings"}</SelectItem>
           </SelectContent>
         </Select>
         
@@ -787,7 +725,7 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setItemsPerPage(10); setCurrentPage(1); }} 
+          onClick={() => { setSearchQuery(""); setFilterStatus("all"); setItemsPerPage(10); setCurrentPage(1); }} 
           className="h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5"
         >
           <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
@@ -819,7 +757,7 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
           <Button 
             variant="outline" 
             className="mt-4 rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
-            onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setCurrentPage(1); }}
+            onClick={() => { setSearchQuery(""); setFilterStatus("all"); setCurrentPage(1); }}
           >
             <X className="h-4 w-4 mr-2" />
             {app.lang === "ar" ? "مسح الفلاتر" : "Clear filters"}
@@ -1170,9 +1108,7 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
                 </div>
                 
                 <div className="space-y-3">
-                  {/* ✅ إذا كان عندنا order_items */}
                   {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
-                    // ✅ عرض كل منتج على حدة من order_items
                     selectedOrder.order_items.map((item: any, index: number) => {
                       const listing = item.listings || item;
                       return (
@@ -1210,7 +1146,6 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
                                   {formatPrice(Number(item.price) * (item.quantity || 1), app.currency, app.lang)}
                                 </span>
                               </div>
-                              {/* ✅ عرض التركيبة (لون، مقاس) إن وجدت */}
                               {item.variation_combination && Object.keys(item.variation_combination).length > 0 && (
                                 <div className="flex items-center gap-2 mt-1">
                                   {Object.entries(item.variation_combination).map(([key, value]) => (
@@ -1231,7 +1166,6 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
                       );
                     })
                   ) : (
-                    // ✅ إذا كان طلباً قديماً (بدون order_items) - عرض منتج واحد
                     <div className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                       <div className="flex items-center gap-4">
                         {selectedOrder.listings?.cover_url ? (
@@ -1296,83 +1230,84 @@ const handleRejectOrder = useCallback(async (orderId: string, reason: string) =>
                 </div>
               )}
 
-           {/* ✅ ✅ ✅ إجمالي الطلب (معدل - يشمل التوصيل والخصم) */}
-<div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
-  
-  {/* المجموع الفرعي */}
-  <div className="flex items-center justify-between">
-    <span className="text-sm font-medium text-muted-foreground">
-      {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
-    </span>
-    <span className="text-lg font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
-      {formatPrice(Number(selectedOrder.total) || 0, app.currency, app.lang)}
-    </span>
-  </div>
-  
-{/* ✅ سعر التوصيل - يظهر دائماً (حتى لو 0) مع كلمة مجاني */}
-{selectedOrder.delivery_fee !== undefined && (
-  <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
-    <span className="text-sm text-muted-foreground">
-      {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
-    </span>
-    <span className={cn(
-      "text-sm font-medium",
-      Number(selectedOrder.delivery_fee) === 0 
-        ? "text-emerald-500 font-bold" 
-        : "text-[#0d2e2a] dark:text-[#3a8a82]"
-    )}>
-      {Number(selectedOrder.delivery_fee) === 0 
-        ? (app.lang === "ar" ? "🆓 مجاني" : "🆓 Free")
-        : formatPrice(Number(selectedOrder.delivery_fee), app.currency, app.lang)
-      }
-    </span>
-  </div>
-)}
-  {/* ✅ ✅ ✅ الخصم - معدل */}
-  {(() => {
-    const discount = Number(selectedOrder.promo_discount) || 0;
-    if (discount > 0) {
-      return (
-        <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
-          <span className="text-sm">
-            {app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}
-          </span>
-          <span className="text-sm font-bold">
-            -{formatPrice(discount, app.currency, app.lang)}
-          </span>
-        </div>
-      );
-    }
-    return null;
-  })()}
-  
-  {/* ✅ الإجمالي الكامل - من قاعدة البيانات */}
-  <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
-    <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
-      {app.lang === "ar" ? "الإجمالي الكامل" : "Total"}
-    </span>
-    <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
-      {formatPrice(
-        Number(selectedOrder.total_with_delivery) || 
-        (Number(selectedOrder.total || 0) + Number(selectedOrder.delivery_fee || 0) - (Number(selectedOrder.promo_discount) || 0)), 
-        app.currency, 
-        app.lang
-      )}
-    </span>
-  </div>
-  
-  <div className="flex items-center justify-between mt-1">
-    <span className="text-xs text-muted-foreground">
-      {selectedOrder.order_items?.length || 1} {app.lang === "ar" ? "منتج" : "items"}
-    </span>
-    <span className="text-xs text-muted-foreground">
-      {new Date(selectedOrder.created_at).toLocaleString(
-        app.lang === "ar" ? "ar-SA" : "en-US",
-        { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
-      )}
-    </span>
-  </div>
-</div>
+              {/* ✅ ✅ ✅ إجمالي الطلب */}
+              <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                
+                {/* المجموع الفرعي */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
+                  </span>
+                  <span className="text-lg font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                    {formatPrice(Number(selectedOrder.total) || 0, app.currency, app.lang)}
+                  </span>
+                </div>
+                
+                {/* ✅ سعر التوصيل */}
+                {selectedOrder.delivery_fee !== undefined && (
+                  <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
+                    <span className="text-sm text-muted-foreground">
+                      {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
+                    </span>
+                    <span className={cn(
+                      "text-sm font-medium",
+                      Number(selectedOrder.delivery_fee) === 0 
+                        ? "text-emerald-500 font-bold" 
+                        : "text-[#0d2e2a] dark:text-[#3a8a82]"
+                    )}>
+                      {Number(selectedOrder.delivery_fee) === 0 
+                        ? (app.lang === "ar" ? "🆓 مجاني" : "🆓 Free")
+                        : formatPrice(Number(selectedOrder.delivery_fee), app.currency, app.lang)
+                      }
+                    </span>
+                  </div>
+                )}
+                
+                {/* ✅ الخصم */}
+                {(() => {
+                  const discount = Number(selectedOrder.promo_discount) || 0;
+                  if (discount > 0) {
+                    return (
+                      <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
+                        <span className="text-sm">
+                          {app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}
+                        </span>
+                        <span className="text-sm font-bold">
+                          -{formatPrice(discount, app.currency, app.lang)}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                
+                {/* ✅ الإجمالي الكامل */}
+                <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
+                  <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
+                    {app.lang === "ar" ? "الإجمالي الكامل" : "Total"}
+                  </span>
+                  <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                    {formatPrice(
+                      Number(selectedOrder.total_with_delivery) || 
+                      (Number(selectedOrder.total || 0) + Number(selectedOrder.delivery_fee || 0) - (Number(selectedOrder.promo_discount) || 0)), 
+                      app.currency, 
+                      app.lang
+                    )}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {selectedOrder.order_items?.length || 1} {app.lang === "ar" ? "منتج" : "items"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(selectedOrder.created_at).toLocaleString(
+                      app.lang === "ar" ? "ar-SA" : "en-US",
+                      { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+                    )}
+                  </span>
+                </div>
+              </div>
 
               <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex justify-end">
                 <Button

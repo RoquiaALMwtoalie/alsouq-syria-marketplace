@@ -260,10 +260,34 @@ export const ListingCard = memo(function ListingCard({
 
   const price = useMemo(() => Number(item.price), [item.price]);
   
-  const hasVariations = useMemo(() => 
-    item.variations && item.variations.length > 0,
-    [item.variations]
-  );
+// ✅ ✅ ✅ التحقق من وجود فيرنتات/خيارات من كل المصادر
+const hasVariations = useMemo(() => {
+  // 1. من item.variations
+  if (item.variations?.length > 0) return true;
+  
+  // 2. من item.variation_ids (للعروض الترويجية)
+  if (item.variation_ids?.length > 0) return true;
+  
+  // 3. من item.product_variations
+  if (item.product_variations?.length > 0) return true;
+  
+  // 4. من item.product_options (الألوان والخيارات)
+  if (item.product_options?.length > 0) return true;
+  
+  // 5. من item.options (الألوان والخيارات)
+  if (item.options?.length > 0) return true;
+  
+  // 6. من item.product_colors (الألوان)
+  if (item.product_colors?.length > 0) return true;
+  
+  // 7. من promoOffer (للعروض الترويجية)
+  if (isPromoOffer && promoOffer?.variation_ids?.length > 0) return true;
+  
+  // 8. من metadata
+  if (item.metadata?.variations && Object.keys(item.metadata.variations).length > 0) return true;
+  
+  return false;
+}, [item, isPromoOffer, promoOffer]);
   
   const discountPercent = useMemo(() => 
     isDiscountOffer ? (item.discount_percent || 0) : 0,

@@ -709,59 +709,35 @@ export function useCreateReview() {
 // ============================================================
 // ✅ Orders
 // ============================================================
+// ============================================================
+// ✅ 1. للطلبات اللي المستخدم مشتري فيها (صفحة /orders)
+// ============================================================
 export function useMyOrders(userId: string | undefined) {
   return useQuery({
-    queryKey: ["my-orders", userId], // ✅ استخدم نفس الـ key القديم
+    queryKey: ["my-orders", userId],
     enabled: !!userId,
     queryFn: async () => {
       if (!userId) return [];
       
-      console.log("📦 [useMyOrders] Fetching orders for user:", userId);
+      console.log("📦 [useMyOrders] Fetching buyer orders for user:", userId);
       
       const { data, error } = await supabase
         .from("orders")
         .select(`
           *,
           order_items (
-            id,
-            listing_id,
-            quantity,
-            price,
-            currency,
-            variation_combination,
-            metadata,
-            selected_options,
-            created_at,
+            *,
             listings (
-              id,
-              title_ar,
-              title_en,
-              cover_url,
-              owner_id,
-              profile:profiles!owner_id (
-                id,
-                store_name,
-                full_name,
-                store_logo_url,
-                store_phone
-              )
+              *,
+              profile:profiles!owner_id (*)
             )
           ),
           listings (
-            id,
-            title_ar,
-            title_en,
-            cover_url,
-            profile:profiles!owner_id (
-              id,
-              store_name,
-              full_name,
-              store_logo_url,
-              store_phone
-            )
+            *,
+            profile:profiles!owner_id (*)
           )
         `)
-        .eq("buyer_id", userId)  // ✅ استخدم eq بدل or عشان نجيب طلبات المشتري بس
+        .eq("buyer_id", userId)  // ✅ مشتري فقط
         .order("created_at", { ascending: false });
       
       if (error) {
@@ -769,35 +745,49 @@ export function useMyOrders(userId: string | undefined) {
         throw error;
       }
       
-      console.log("📦 [useMyOrders] Raw data:", data);
-      console.log("📦 [useMyOrders] First order items:", data?.[0]?.order_items);
-      
-      const transformedData = data?.map((order: any) => {
-        const totalWithDelivery = order.total_with_delivery ?? 
-          (Number(order.total || 0) + Number(order.delivery_fee || 0) - Number(order.promo_discount || 0));
-        
-        if (order.order_items && order.order_items.length > 0) {
-          return {
-            ...order,
-            total_with_delivery: totalWithDelivery,
-            listing_id: order.order_items[0]?.listing_id,
-            quantity: order.order_items.reduce((sum: number, item: any) => sum + item.quantity, 0),
-            total: order.order_items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0),
-            listings: order.order_items[0]?.listings || order.listings,
-          };
-        }
-        return {
-          ...order,
-          total_with_delivery: totalWithDelivery,
-        };
-      });
-      
-      console.log("📦 [useMyOrders] Transformed data:", transformedData);
-      return transformedData ?? [];
+      console.log("📦 [useMyOrders] Found:", data?.length, "orders");
+      return data || [];
     },
   });
 }
 
+// ============================================================
+// ✅ 2. للطلبات اللي المستخدم بائع فيها (صفحة /dashboard)
+// ============================================================
+export function useStoreOrders(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["store-orders", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return [];
+      
+      console.log("📦 [useStoreOrders] Fetching seller orders for user:", userId);
+      
+      const { data, error } = await supabase
+        .from("orders")
+        .select(`
+          *,
+          order_items (
+            *,
+            listings (
+              *,
+              profile:profiles!owner_id (*)
+            )
+          )
+        `)
+        .eq("seller_id", userId)  // ✅ بائع فقط
+        .order("created_at", { ascending: false });
+      
+      if (error) {
+        console.error("❌ [useStoreOrders] Error:", error);
+        throw error;
+      }
+      
+      console.log("📦 [useStoreOrders] Found:", data?.length, "orders");
+      return data || [];
+    },
+  });
+}
 export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({

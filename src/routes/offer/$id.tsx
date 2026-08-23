@@ -1127,35 +1127,35 @@ toast.success(
 
             {/* ✅ زر إضافة للسلة */}
             <Button 
-              size="lg" 
-              className={cn(
-                "w-full h-14 rounded-2xl text-white shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] text-lg font-bold",
-                "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700",
-                !isVariationSelected && "opacity-60 cursor-not-allowed hover:scale-100 hover:shadow-xl"
-              )}
-              onClick={handleAddToCart}
-              disabled={addToCartMutation.isPending || !isVariationSelected}
-            >
-              {addToCartMutation.isPending ? (
-                <div className="flex items-center gap-3">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  {app.lang === "ar" ? "جاري الإضافة..." : "Adding..."}
-                </div>
-              ) : !isVariationSelected ? (
-                <>
-                  <AlertTriangle className="h-5 w-5 me-3" />
-                  {app.lang === "ar" ? "⚠️ اختر الخيارات أولاً" : "⚠️ Select options first"}
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="h-5 w-5 me-3" />
-                  {app.lang === "ar" ? "أضف العرض للسلة" : "Add Offer to Cart"}
-                  <Badge className="bg-white/20 text-white border-0 ms-3">
-                    {quantity}
-                  </Badge>
-                </>
-              )}
-            </Button>
+  size="lg" 
+  className={cn(
+    "w-full h-14 rounded-2xl text-white shadow-xl shadow-[#2a655f]/30 hover:shadow-2xl hover:shadow-[#2a655f]/40 transition-all hover:scale-[1.02] active:scale-[0.98] text-lg font-bold",
+    "bg-[#2a655f] hover:bg-[#1a4f4a]",
+    !isVariationSelected && "opacity-60 cursor-not-allowed hover:scale-100 hover:shadow-xl"
+  )}
+  onClick={handleAddToCart}
+  disabled={addToCartMutation.isPending || !isVariationSelected}
+>
+  {addToCartMutation.isPending ? (
+    <div className="flex items-center gap-3">
+      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+      {app.lang === "ar" ? "جاري الإضافة..." : "Adding..."}
+    </div>
+  ) : !isVariationSelected ? (
+    <>
+      <AlertTriangle className="h-5 w-5 me-3" />
+      {app.lang === "ar" ? "⚠️ اختر الخيارات أولاً" : "⚠️ Select options first"}
+    </>
+  ) : (
+    <>
+      <ShoppingCart className="h-5 w-5 me-3" />
+      {app.lang === "ar" ? "أضف العرض للسلة" : "Add Offer to Cart"}
+      <Badge className="bg-white/20 text-white border-0 ms-3">
+        {quantity}
+      </Badge>
+    </>
+  )}
+</Button>
 
             {/* ✅ مميزات */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t">
