@@ -53,6 +53,11 @@ export function AddBogoOfferDialog({
 }: AddOfferDialogProps) {
     const app = useApp();
     const isArabic = app.lang === "ar";
+    console.log("🔍 [AddBogoOfferDialog] ===== DIALOG MOUNTED =====");
+    console.log("🔍 [AddBogoOfferDialog] open:", open);
+    console.log("🔍 [AddBogoOfferDialog] isArabic:", isArabic);
+    console.log("🔍 [AddBogoOfferDialog] initialProduct:", initialProduct);
+    console.log("🔍 [AddBogoOfferDialog] existingOffer:", existingOffer);
     const createOffer = useCreateProductOffer();
     const updateOffer = useUpdateProductOffer();
     
@@ -101,6 +106,10 @@ export function AddBogoOfferDialog({
 
     // ✅ السعر الفعلي للفيرنت المحدد
     const [selectedVariationPrice, setSelectedVariationPrice] = useState<number | null>(null);
+
+    // ✅ ✅ ✅ استخدام useRef لمنع التحديثات المتكررة
+    const isInitialRender = useRef(true);
+    const isUpdatingFromExisting = useRef(false);
 
     // ============================================================
     // ✅ فلتر التصنيفات حسب البحث
@@ -397,113 +406,170 @@ export function AddBogoOfferDialog({
     };
 
     // ============================================================
-    // ✅ التحميل المسبق للبيانات (للتعديل)
+    // ✅ ✅ ✅ التحميل المسبق للبيانات (للتعديل) - تم إصلاح Infinite Loop
     // ============================================================
-useEffect(() => {
-    if (existingOffer) {
-        setOfferType(existingOffer.offer_type || 'bogo');
-        setSelectedCategoryId(existingOffer.category_id || '');
-        setCategorySearch(
-            categories.find((c: any) => c.id === existingOffer.category_id)?.[isArabic ? 'name_ar' : 'name_en'] || ''
-        );
-        
-        if (existingOffer.required_product_ids && existingOffer.required_product_ids.length > 0) {
-            const requirementsData = existingOffer.required_product_ids.map((productId: string, index: number) => {
+    useEffect(() => {
+        // ✅ ✅ ✅ تخطي أول رندر
+        if (isInitialRender.current) {
+            isInitialRender.current = false;
+            console.log("🔍 [AddBogoOfferDialog] Skipping initial render");
+            return;
+        }
+
+        // ✅ ✅ ✅ إذا كان الفورم مغلق، لا تفعل شي
+        if (!open) {
+            console.log("🔍 [AddBogoOfferDialog] Dialog is closed, skipping");
+            return;
+        }
+
+        console.log("🔍 [AddBogoOfferDialog] ===== USE EFFECT TRIGGERED =====");
+        console.log("🔍 [AddBogoOfferDialog] open:", open);
+        console.log("🔍 [AddBogoOfferDialog] existingOffer:", existingOffer);
+        console.log("🔍 [AddBogoOfferDialog] offerType before:", offerType);
+
+        // ✅ ✅ ✅ حالة التعديل (edit)
+        if (existingOffer) {
+            console.log("🔍 [AddBogoOfferDialog] Editing existing offer, type:", existingOffer.offer_type);
+            isUpdatingFromExisting.current = true;
+            
+            setOfferType(existingOffer.offer_type || 'bogo');
+            setSelectedCategoryId(existingOffer.category_id || '');
+            setCategorySearch(
+                categories.find((c: any) => c.id === existingOffer.category_id)?.[isArabic ? 'name_ar' : 'name_en'] || ''
+            );
+            
+            if (existingOffer.required_product_ids && existingOffer.required_product_ids.length > 0) {
+                const requirementsData = existingOffer.required_product_ids.map((productId: string, index: number) => {
+                    let variations = { mode: 'all' as const, ids: [] as string[] };
+                    
+                    if (existingOffer.required_variations && existingOffer.required_variations[index]) {
+                        const reqVar = existingOffer.required_variations[index];
+                        if (reqVar.variation_ids && reqVar.variation_ids.length > 0) {
+                            variations = { mode: 'selected', ids: reqVar.variation_ids };
+                        }
+                    }
+                    
+                    return {
+                        listing_id: productId,
+                        variations: variations,
+                        quantity: existingOffer.buy_quantity || 1
+                    };
+                });
+                setRequirements(requirementsData);
+            }
+            
+            // ✅ ✅ ✅ حل مشكلة الهدية في التعديل
+            const isBogo = existingOffer.offer_type === 'bogo';
+            const giftListingId = isBogo 
+                ? existingOffer.listing_id
+                : existingOffer.free_listing_id;
+            
+            console.log("🟢 [Edit] isBogo:", isBogo);
+            console.log("🟢 [Edit] giftListingId:", giftListingId);
+            console.log("🟢 [Edit] existingOffer.listing_id:", existingOffer.listing_id);
+            console.log("🟢 [Edit] existingOffer.free_listing_id:", existingOffer.free_listing_id);
+            
+            if (giftListingId) {
                 let variations = { mode: 'all' as const, ids: [] as string[] };
                 
-                if (existingOffer.required_variations && existingOffer.required_variations[index]) {
-                    const reqVar = existingOffer.required_variations[index];
-                    if (reqVar.variation_ids && reqVar.variation_ids.length > 0) {
-                        variations = { mode: 'selected', ids: reqVar.variation_ids };
+                if (existingOffer.result_variation_ids && existingOffer.result_variation_ids.length > 0) {
+                    variations = { mode: 'selected', ids: existingOffer.result_variation_ids };
+                } else {
+                    const giftHasVars = hasVariations(giftListingId);
+                    if (giftHasVars) {
+                        variations = { mode: 'selected', ids: [] };
                     }
                 }
                 
-                return {
-                    listing_id: productId,
+                setResult({
+                    listing_id: giftListingId,
                     variations: variations,
-                    quantity: existingOffer.buy_quantity || 1
-                };
-            });
-            setRequirements(requirementsData);
-        }
-        
-        // ✅ ✅ ✅ حل مشكلة الهدية في التعديل
-        const isBogo = existingOffer.offer_type === 'bogo';
-        const giftListingId = isBogo 
-            ? existingOffer.listing_id
-            : existingOffer.free_listing_id;
-        
-        console.log("🟢 [Edit] isBogo:", isBogo);
-        console.log("🟢 [Edit] giftListingId:", giftListingId);
-        console.log("🟢 [Edit] existingOffer.listing_id:", existingOffer.listing_id);
-        console.log("🟢 [Edit] existingOffer.free_listing_id:", existingOffer.free_listing_id);
-        
-        if (giftListingId) {
-            let variations = { mode: 'all' as const, ids: [] as string[] };
-            
-            if (existingOffer.result_variation_ids && existingOffer.result_variation_ids.length > 0) {
-                variations = { mode: 'selected', ids: existingOffer.result_variation_ids };
+                    quantity: existingOffer.get_quantity || 1
+                });
+                
+                console.log("✅ [Edit] Result set to:", {
+                    listing_id: giftListingId,
+                    variations: variations,
+                    quantity: existingOffer.get_quantity || 1,
+                    isBogo: isBogo
+                });
             } else {
-                const giftHasVars = hasVariations(giftListingId);
-                if (giftHasVars) {
-                    variations = { mode: 'selected', ids: [] };
+                console.warn("⚠️ [Edit] No giftListingId found, using listing_id as fallback");
+                const fallbackListingId = existingOffer.listing_id;
+                if (fallbackListingId) {
+                    setResult({
+                        listing_id: fallbackListingId,
+                        variations: { mode: 'all', ids: [] },
+                        quantity: existingOffer.get_quantity || 1
+                    });
                 }
             }
             
-            setResult({
-                listing_id: giftListingId,
-                variations: variations,
-                quantity: existingOffer.get_quantity || 1
-            });
-            
-            console.log("✅ [Edit] Result set to:", {
-                listing_id: giftListingId,
-                variations: variations,
-                quantity: existingOffer.get_quantity || 1,
-                isBogo: isBogo
-            });
-        } else {
-            console.warn("⚠️ [Edit] No giftListingId found, using listing_id as fallback");
-            const fallbackListingId = existingOffer.listing_id;
-            if (fallbackListingId) {
-                setResult({
-                    listing_id: fallbackListingId,
-                    variations: { mode: 'all', ids: [] },
-                    quantity: existingOffer.get_quantity || 1
-                });
+            if (existingOffer.expires_at) {
+                setIsPermanent(false);
+                setExpiresAt(existingOffer.expires_at);
+            } else {
+                setIsPermanent(true);
             }
+            
+            isUpdatingFromExisting.current = false;
+            return;
         }
-        
-        if (existingOffer.expires_at) {
-            setIsPermanent(false);
-            setExpiresAt(existingOffer.expires_at);
-        } else {
+
+        // ✅ ✅ ✅ حالة الإضافة (create new) - فقط إذا كان initialProduct موجود
+        if (open && !existingOffer && initialProduct) {
+            console.log("🔍 [AddBogoOfferDialog] Creating new offer from product:", initialProduct.id);
+            
+            setSelectedCategoryId('');
+            setCategorySearch('');
+            setRequirements([{ 
+                listing_id: initialProduct.id, 
+                variations: { mode: 'all', ids: [] }, 
+                quantity: 1 
+            }]);
+            
+            const hasGiftVars = hasVariations(initialProduct.id);
+            setResult({ 
+                listing_id: offerType === 'bogo' ? initialProduct.id : '',
+                variations: hasGiftVars ? { mode: 'selected', ids: [] } : { mode: 'all', ids: [] },
+                quantity: 1 
+            });
+            setExpiresAt("");
             setIsPermanent(true);
+            setError(null);
+            setSelectedVariationPrice(null);
+            return;
         }
-    }
-    
-    if (open && !existingOffer) {
-        setOfferType('bogo');
-        setSelectedCategoryId('');
-        setCategorySearch('');
-        setRequirements([{ 
-            listing_id: initialProduct?.id || '', 
-            variations: { mode: 'all', ids: [] }, 
-            quantity: 1 
-        }]);
-        
-        const hasGiftVars = initialProduct ? hasVariations(initialProduct.id) : false;
-        setResult({ 
-            listing_id: offerType === 'bogo' ? initialProduct?.id || '' : '',
-            variations: hasGiftVars ? { mode: 'selected', ids: [] } : { mode: 'all', ids: [] },
-            quantity: 1 
-        });
-        setExpiresAt("");
-        setIsPermanent(true);
-        setError(null);
-        setSelectedVariationPrice(null);
-    }
-}, [open, existingOffer, initialProduct, offerType, categories, isArabic]);
+
+        // ✅ ✅ ✅ حالة الإضافة الجديدة (بدون منتج)
+        if (open && !existingOffer && !initialProduct) {
+            console.log("🔍 [AddBogoOfferDialog] Creating new offer (empty)");
+            
+            // ✅ لا تغير offerType إذا كانت القيمة نفسها
+            if (offerType !== 'bogo') {
+                setOfferType('bogo');
+            }
+            setSelectedCategoryId('');
+            setCategorySearch('');
+            setRequirements([{ 
+                listing_id: '', 
+                variations: { mode: 'all', ids: [] }, 
+                quantity: 1 
+            }]);
+            setResult({ 
+                listing_id: '', 
+                variations: { mode: 'all', ids: [] }, 
+                quantity: 1 
+            });
+            setExpiresAt("");
+            setIsPermanent(true);
+            setError(null);
+            setSelectedVariationPrice(null);
+            return;
+        }
+
+    }, [open, existingOffer, initialProduct, categories, isArabic]); 
+    // ✅ ✅ ✅ تم إزالة offerType من dependencies لحل Infinite Loop
 
     // ============================================================
     // ✅ RENDER
@@ -631,7 +697,7 @@ useEffect(() => {
                                 type="button"
                                 onClick={() => setOfferType('bogo')}
                                 className={cn(
-                                    "p-3 rounded-xl border-2 text-sm font-medium transition-all duration-300 text-center",
+                                    "p-3 rounded-xl border-2 text-sm font-medium transition-all duration-300 text-center cursor-pointer",
                                     offerType === 'bogo'
                                         ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f] shadow-sm"
                                         : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-[#2a655f]/5"
@@ -641,9 +707,12 @@ useEffect(() => {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setOfferType('cross_sell')}
+                                onClick={() => {
+                                    console.log("🔄 [AddBogoOfferDialog] Clicked cross_sell");
+                                    setOfferType('cross_sell');
+                                }}
                                 className={cn(
-                                    "p-3 rounded-xl border-2 text-sm font-medium transition-all duration-300 text-center",
+                                    "p-3 rounded-xl border-2 text-sm font-medium transition-all duration-300 text-center cursor-pointer",
                                     offerType === 'cross_sell'
                                         ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f] shadow-sm"
                                         : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-[#2a655f]/5"
@@ -653,9 +722,12 @@ useEffect(() => {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setOfferType('bundle')}
+                                onClick={() => {
+                                    console.log("📦 [AddBogoOfferDialog] Clicked bundle");
+                                    setOfferType('bundle');
+                                }}
                                 className={cn(
-                                    "p-3 rounded-xl border-2 text-sm font-medium transition-all duration-300 text-center",
+                                    "p-3 rounded-xl border-2 text-sm font-medium transition-all duration-300 text-center cursor-pointer",
                                     offerType === 'bundle'
                                         ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f] shadow-sm"
                                         : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-[#2a655f]/5"
@@ -1058,7 +1130,7 @@ useEffect(() => {
                                 type="button"
                                 onClick={() => { setIsPermanent(true); setError(null); }}
                                 className={cn(
-                                    "px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-300 flex-1",
+                                    "px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-300 flex-1 cursor-pointer",
                                     isPermanent
                                         ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f] shadow-sm"
                                         : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-[#2a655f]/5"
@@ -1072,7 +1144,7 @@ useEffect(() => {
                                 type="button"
                                 onClick={() => { setIsPermanent(false); setError(null); }}
                                 className={cn(
-                                    "px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-300 flex-1",
+                                    "px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-300 flex-1 cursor-pointer",
                                     !isPermanent
                                         ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f] shadow-sm"
                                         : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-[#2a655f]/5"
