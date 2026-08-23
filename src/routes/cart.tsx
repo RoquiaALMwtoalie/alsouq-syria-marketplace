@@ -5,7 +5,7 @@ import {
   ShoppingBag, Trash2, Plus, Minus, ArrowRight, Store, Shield, 
   Truck, Clock, Award, Sparkles, Tag, X, Loader2, Gift, CheckCircle2,
   MapPin, Edit2, PlusCircle, Navigation, Home, Building2, AlertCircle,
-  Percent, Package
+  Percent, Package, Layers
 } from "lucide-react";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useApp, formatPrice } from "@/lib/i18n";
@@ -62,6 +62,14 @@ function CartPage() {
   const updateCartItem = useUpdateCartItem();
   const clearCart = useClearCart();
   
+  // ✅ جلب السلة - في الأعلى مع باقي الـ Hooks
+  const { 
+    data: cart, 
+    isLoading, 
+    isError,
+    refetch: refetchCart 
+  } = useCart(app.user?.id);
+  
   // ✅ State
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
@@ -96,16 +104,8 @@ function CartPage() {
   const isFirstRender = useRef(true);
   const deliveryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previousCartState = useRef<string>("");
-
-  // ✅ جلب السلة
-  const { 
-    data: cart, 
-    isLoading, 
-    isError,
-    refetch: refetchCart 
-  } = useCart(app.user?.id);
   
-  // ✅✅✅ تعريف items (أولاً)
+  // ✅✅✅ تعريف items مع دعم الفيرنتات بشكل كامل
   const items = useMemo(() => {
     if (!cart?.items) return [];
     
@@ -115,55 +115,105 @@ function CartPage() {
       const subtotal = price * quantity;
       const subtotal_usd = item.price_usd ? Number(item.price_usd) * quantity : null;
       
-     const listing = item.listings || item.listing || null;
+      const listing = item.listings || item.listing || null;
       
-      // ✅ ✅ ✅ حساب displayImage (صورة الفيرنت المختار)
-let displayImage = listing?.cover_url || '/placeholder.png';
-
-console.log("🔍 [Cart] item.selected_variation_id:", item.selected_variation_id);
-console.log("🔍 [Cart] listing?.variations:", listing?.variations);
-
-// إذا كان في selected_variation_id
-if (item.selected_variation_id && listing?.variations) {
-  const selectedVariation = listing.variations.find((v: any) => v.id === item.selected_variation_id);
-  
-  console.log("🔍 [Cart] selectedVariation:", selectedVariation);
-  
-  if (selectedVariation) {
-    // ✅ 1. إذا الفيرنت عنده color_id → جيب صورة اللون
-    if (selectedVariation.color_id && listing.colors) {
-      const color = listing.colors.find((c: any) => c.id === selectedVariation.color_id);
-      console.log("🎨 [Cart] Found color:", color);
-      if (color?.image_url) {
-        displayImage = color.image_url;
-        console.log("✅ [Cart] Using color image:", displayImage);
+      // ✅ ✅ ✅ حساب displayImage من مصادر متعددة
+      let displayImage = listing?.cover_url || '/placeholder.png';
+      
+      // ✅ 1. من variation_snapshot.image_url (المخزن عند إضافة للسلة)
+      if (item.variation_snapshot?.image_url) {
+        displayImage = item.variation_snapshot.image_url;
       }
-    }
-    // ✅ 2. إذا الفيرنت عنده image_url خاصة
-    if (!displayImage || displayImage === listing?.cover_url) {
-      if (selectedVariation.image_url) {
-        displayImage = selectedVariation.image_url;
-        console.log("✅ [Cart] Using variation image:", displayImage);
+      
+      // ✅ 2. من selected_options (إذا كان في selected_variation_id)
+      if (item.selected_options?.selected_variation_id && listing?.variations) {
+        const selectedVariation = listing.variations.find(
+          (v: any) => v.id === item.selected_options.selected_variation_id
+        );
+        if (selectedVariation) {
+          if (selectedVariation.image_url) {
+            displayImage = selectedVariation.image_url;
+          }
+          if (selectedVariation.color_id && listing.colors) {
+            const color = listing.colors.find((c: any) => c.id === selectedVariation.color_id);
+            if (color?.image_url) {
+              displayImage = color.image_url;
+            }
+          }
+        }
       }
-    }
-  }
-}
-
-console.log("📸 [Cart] Final displayImage:", displayImage);
+      
+      // ✅ 3. من selected_variation_id (الطريقة القديمة)
+      if (item.selected_variation_id && listing?.variations) {
+        const selectedVariation = listing.variations.find(
+          (v: any) => v.id === item.selected_variation_id
+        );
+        if (selectedVariation) {
+          if (selectedVariation.image_url) {
+            displayImage = selectedVariation.image_url;
+          }
+          if (selectedVariation.color_id && listing.colors) {
+            const color = listing.colors.find((c: any) => c.id === selectedVariation.color_id);
+            if (color?.image_url) {
+              displayImage = color.image_url;
+            }
+          }
+        }
+      }
+      
+      // ✅ 4. من variation_combination (في حالة عدم وجود variation_snapshot)
+      if (item.variation_combination?.colors) {
+        const colorName = item.variation_combination.colors;
+        if (listing?.colors) {
+          const color = listing.colors.find((c: any) => 
+            c.color_name_ar === colorName || c.color_name_en === colorName
+          );
+          if (color?.image_url) {
+            displayImage = color.image_url;
+          }
+        }
+      }
+      
+      // ✅ 5. استخراج اسم الفيرنت للعرض (دالة عادية، بدون useMemo)
+      const getVariationName = () => {
+        // من variation_snapshot.combination
+        if (item.variation_snapshot?.combination) {
+          return Object.values(item.variation_snapshot.combination).join(' • ');
+        }
+        // من selected_options.combination
+        if (item.selected_options?.combination) {
+          return Object.values(item.selected_options.combination).join(' • ');
+        }
+        // من variation_combination
+        if (item.variation_combination && Object.keys(item.variation_combination).length > 0) {
+          return Object.values(item.variation_combination).join(' • ');
+        }
+        // من selected_color و selected_size
+        if (item.selected_color || item.selected_size) {
+          const parts = [];
+          if (item.selected_color) parts.push(item.selected_color);
+          if (item.selected_size) parts.push(item.selected_size);
+          return parts.join(' • ');
+        }
+        return '';
+      };
+      
+      const variationName = getVariationName();
+      
       return {
         ...item,
         subtotal,
         subtotal_usd,
         listing: listing,
         displayImage: displayImage,
-        // ✅ ✅ ✅ تحديد نوع العنصر
+        variationName: variationName,
         isPromoOffer: item.is_promo_offer === true,
         isDiscountOffer: item.listing?.is_offer === true && item.is_promo_offer !== true,
       };
     });
   }, [cart?.items]);
 
-  // ✅✅✅ جب storeId من أول منتج في السلة (ثانياً - بعد تعريف items)
+  // ✅✅✅ جب storeId من أول منتج في السلة
   const storeIdFromCart = useMemo(() => {
     if (!items || items.length === 0) return undefined;
     const firstItem = items[0];
@@ -171,7 +221,7 @@ console.log("📸 [Cart] Final displayImage:", displayImage);
     return listing.owner_id || firstItem.listing_id;
   }, [items]);
 
-  // ✅✅✅ حساب قيمة السلة (ثالثاً - بعد storeIdFromCart)
+  // ✅✅✅ حساب قيمة السلة (بعد storeIdFromCart)
   const cartTotal = useCartTotal(app.user?.id, storeIdFromCart);
   
   // ✅ جلب عناوين المستخدم
@@ -642,7 +692,7 @@ const applyPromoCode = useCallback(async () => {
             : `❌ This code is only for store "${data.store_name}"`
         );
         setIsApplyingPromo(false);
-        return; // ❌ يوقف التنفيذ فوراً
+        return;
       }
       console.log("✅ [PROMO] All products belong to the correct store");
     } else {
@@ -666,7 +716,7 @@ const applyPromoCode = useCallback(async () => {
       return;
     }
 
-    // ✅ ✅ ✅ الخطوة 3: تحذير عدد الاستخدامات المتبقية (يظهر فقط بعد التأكد من أن الكود للمتجر الصحيح)
+    // ✅ ✅ ✅ الخطوة 3: تحذير عدد الاستخدامات المتبقية
     if (data.usage_limit) {
       const remaining = data.usage_limit - data.used_count;
       console.log(`📌 [PROMO] Remaining uses: ${remaining}`);
@@ -1023,7 +1073,7 @@ const checkout = useCallback(async () => {
 
         console.log(`✅ [Checkout] Order created with ID: ${order.id}`);
 
-        // ✅ ✅ ✅ هذا هو الجزء المهم - حفظ بيانات الفيرنتات في order_items
+        // ✅ ✅ ✅ حفظ بيانات الفيرنتات في order_items
         const orderItems = itemsList.map((item: any) => ({
           order_id: order.id,
           listing_id: item.listing_id,
@@ -1406,7 +1456,15 @@ const checkout = useCallback(async () => {
                             {app.lang === "ar" ? listing.title_ar : (listing.title_en || listing.title_ar)}
                           </h3>
                           
-                          {/* ✅ عرض التركيبة المختارة */}
+                          {/* ✅ عرض اسم الفيرنت المختار */}
+                          {item.variationName && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Layers className="h-3 w-3 text-[#2a655f]" />
+                              {item.variationName}
+                            </p>
+                          )}
+                          
+                          {/* ✅ عرض التركيبة المختارة (كـ Badges) */}
                           <div className="flex flex-wrap items-center gap-2 mt-1">
                             {item.variation_combination && Object.keys(item.variation_combination).length > 0 ? (
                               <>
@@ -1451,7 +1509,6 @@ const checkout = useCallback(async () => {
                         {/* ✅ السعر مع دعم الهدية */}
 <div className="mt-2 flex items-center gap-3 flex-wrap">
   {item.variation_snapshot?.is_gift ? (
-    // ✅ هدية مجانية
     <div className="flex flex-col">
       <span className="text-xl font-bold text-emerald-500">0 {app.currency}</span>
       <span className="text-xs line-through text-muted-foreground">
