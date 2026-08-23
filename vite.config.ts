@@ -10,13 +10,32 @@ export default defineConfig({
     build: {
       rollupOptions: {
         output: {
-       manualChunks: {
-  // ✅ فصل المكتبات الكبيرة
-  'vendor': ['react', 'react-dom'],
-  'lucide': ['lucide-react'], // ← فصل lucide-react لحالها
-  'ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-  'supabase': ['@supabase/supabase-js'],
-},
+          // ✅ ✅ ✅ تحويل manualChunks من Object إلى Function
+          manualChunks(id: string) {
+            // ✅ فصل المكتبات الكبيرة
+            if (id.includes('node_modules')) {
+              // ✅ React + React DOM
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'vendor';
+              }
+              // ✅ Lucide React
+              if (id.includes('lucide-react')) {
+                return 'lucide';
+              }
+              // ✅ Radix UI
+              if (id.includes('@radix-ui')) {
+                return 'ui';
+              }
+              // ✅ Supabase
+              if (id.includes('@supabase/supabase-js')) {
+                return 'supabase';
+              }
+              // ✅ باقي الـ node_modules
+              return 'vendor';
+            }
+            // ✅ إذا كان الملف مش من node_modules
+            return null;
+          },
         },
       },
       // ✅ تصغير الحجم
