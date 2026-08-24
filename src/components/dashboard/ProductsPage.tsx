@@ -128,21 +128,54 @@ export const ProductsPage = React.memo(function ProductsPage() {
   const [selectedPromoProduct, setSelectedPromoProduct] = useState<any>(null);
 
   // ✅ ✅ ✅ ربط العروض الترويجية بالمنتجات
-  const productsWithPromo = useMemo(() => {
-    if (!myListings.length || !sellerOffers.length) return myListings;
+// ✅ الكود الجديد - العروض الترويجية كمنتجات مستقلة
+const productsWithPromo = useMemo(() => {
+    const products: any[] = [];
     
-    const mapped = myListings.map((product: any) => {
-      const promoOffer = sellerOffers.find((offer: any) => offer.listing_id === product.id);
-      return {
-        ...product,
-        promo_offer: promoOffer || null,
-        has_promo: !!promoOffer,
-      };
+    // 1️⃣ إضافة المنتجات العادية وعروض التخفيض
+    myListings.forEach((product: any) => {
+        products.push({
+            ...product,
+            is_promo_offer: false,
+            product_type: product.is_offer ? 'discount' : 'regular',
+        });
     });
     
-    return mapped;
-  }, [myListings, sellerOffers]);
-
+    // 2️⃣ ✅ إضافة العروض الترويجية كمنتجات مستقلة (بدون دمج)
+    sellerOffers.forEach((offer: any) => {
+        const listing = myListings.find((l: any) => l.id === offer.listing_id);
+        if (listing) {
+            products.push({
+                id: `promo-${offer.id}`,
+                title_ar: offer.display_text_ar || `🎁 ${listing.title_ar}`,
+                title_en: offer.display_text_en || `🎁 ${listing.title_en || listing.title_ar}`,
+                price: listing.price || 0,
+                cover_url: listing.cover_url || '',
+                status: offer.is_active ? 'published' : 'archived',
+                is_available: offer.is_active,
+                is_offer: false,
+                is_promo_offer: true,  // ✅ ✅ ✅ هذا هو المفتاح
+                product_type: 'promo',
+                promo_offer: offer,
+                created_at: offer.created_at,
+                category_id: offer.category_id || listing.category_id,
+                colors: listing.colors || [],
+                variations: listing.variations || [],
+                avg_rating: listing.rating || 0,
+                reviews_count: 0,
+                buy_quantity: offer.buy_quantity,
+                get_quantity: offer.get_quantity,
+                offer_type: offer.offer_type,
+                // ✅ معلومات الهدية
+                free_listing: myListings.find((l: any) => l.id === offer.free_listing_id) || null,
+                // ✅ المنتج الأصلي (للرجوع إليه)
+                original_listing: listing,
+            });
+        }
+    });
+    
+    return products;
+}, [myListings, sellerOffers]);
   // ✅ تعريف filteredProducts مع دعم العروض الترويجية
   const filteredProducts = useMemo(() => {
     let result = productsWithPromo;
@@ -153,13 +186,14 @@ export const ProductsPage = React.memo(function ProductsPage() {
     }
     
     // ✅ فلتر النوع
-    if (filterType === "product") {
-      result = result.filter((p: any) => p.is_offer !== true && !p.has_promo);
-    } else if (filterType === "offer") {
-      result = result.filter((p: any) => p.is_offer === true);
-    } else if (filterType === "promo") {
-      result = result.filter((p: any) => p.has_promo === true);
-    }
+    // ✅ استبدل الفلتر بهذا
+if (filterType === "product") {
+    result = result.filter((p: any) => p.product_type === 'regular');
+} else if (filterType === "offer") {
+    result = result.filter((p: any) => p.product_type === 'discount');
+} else if (filterType === "promo") {
+    result = result.filter((p: any) => p.product_type === 'promo');
+}
     
     // ✅ فلتر البحث
     if (searchQuery.trim()) {

@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Truck, Package, Users, Clock, CheckCircle, XCircle,
   TrendingUp, DollarSign, MapPin, Phone, Mail,
-  Calendar, ArrowRight, ChevronLeft, Plus,
+  Calendar, ArrowRight, ChevronLeft, ChevronRight, Plus,  // ✅ أضف ChevronRight هنا
   Search, Filter, MoreVertical, Eye, Edit, Trash2,
   AlertCircle, RefreshCw, UserCheck, UserX,
   BarChart3, PieChart, Activity, Star,
@@ -32,7 +32,7 @@ import {
   LayoutDashboard, Users as UsersIcon, TrendingUp as TrendingUpIcon,
   Edit3, Map, Info, FileText, Check, Power, PowerOff,
   Download, FileSpreadsheet, Printer, FileDown, Table2, ClipboardCopy,
-  Loader2  // ✅✅✅ أضف هذا
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -193,9 +193,143 @@ function DeliveryDashboardPage() {
   const hasRedirected = useRef(false);
 
   // ✅ State للـ Pagination
+    // ✅ State للـ Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  
+
+  // ============================================================
+  // ✅ Realtime للإشعارات - مخصص لشركة التوصيل
+  // ============================================================
+  const notificationChannelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
+
+  useEffect(() => {
+    if (!app.user) {
+      console.log('⏳ [Delivery] No user, skipping notification setup');
+      return;
+    }
+
+    if (isSubscribedRef.current) {
+      console.log('📡 [Delivery] Already subscribed to notifications');
+      return;
+    }
+
+    console.log('📡 [Delivery] Setting up REAL-TIME notifications for user:', app.user.id);
+
+    const channel = supabase
+      .channel(`delivery-notifications-${app.user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${app.user.id}`,
+        },
+        (payload) => {
+          const notification = payload.new as any;
+          
+          console.log('📬 [Delivery] 🔔 NEW NOTIFICATION RECEIVED:', notification);
+          console.log('📬 [Delivery] Title:', notification.title_ar || notification.title_en);
+          console.log('📬 [Delivery] Body:', notification.body_ar || notification.body_en);
+          
+          // ✅ 1️⃣ تحديث قائمة الإشعارات
+          refetchNotifications();
+          
+          // ✅ 2️⃣ عرض Toast في منتصف الشاشة
+          toast.success(
+            isArabic 
+              ? `🔔 ${notification.title_ar || 'إشعار جديد'}`
+              : `🔔 ${notification.title_en || 'New notification'}`,
+            {
+              duration: 15000,
+              position: 'top-center',
+              icon: '🔔',
+              description: isArabic 
+                ? (notification.body_ar || '')
+                : (notification.body_en || ''),
+              action: {
+                label: isArabic ? '📋 عرض' : '📋 View',
+                onClick: () => {
+                  if (notification.link_url) {
+                    navigate({ to: notification.link_url });
+                  }
+                }
+              }
+            }
+          );
+
+          // ✅ 3️⃣ تشغيل الصوت
+          try {
+            const audio = new Audio('/notification.mp3');
+            audio.volume = 0.7;
+            audio.play().catch(() => console.log('🔇 Audio play failed'));
+          } catch (e) {
+            console.log('🔇 Audio error:', e);
+          }
+
+          // ✅ 4️⃣ إظهار إشعار المتصفح
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              const browserNotification = new Notification(
+                isArabic ? notification.title_ar || 'إشعار جديد' : notification.title_en || 'New notification',
+                {
+                  body: isArabic ? notification.body_ar : notification.body_en,
+                  icon: '/images/Logo.png',
+                  vibrate: [200, 100, 200],
+                }
+              );
+              
+              browserNotification.onclick = () => {
+                window.focus();
+                if (notification.link_url) {
+                  navigate({ to: notification.link_url });
+                }
+              };
+              
+              setTimeout(() => browserNotification.close(), 30000);
+            } catch (e) {
+              console.log('🔔 Browser notification error:', e);
+            }
+          }
+
+          // ✅ 5️⃣ تحديث عدد الإشعارات غير المقروءة
+          setUnreadNotificationsCount(prev => prev + 1);
+        }
+      )
+      .subscribe((status) => {
+        console.log(`📡 [Delivery] Realtime status: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+          toast.success(
+            isArabic ? '🔔 الإشعارات الفورية مفعلة ✅' : '🔔 Real-time notifications enabled ✅',
+            {
+              duration: 3000,
+              position: 'top-center',
+              icon: '✅',
+            }
+          );
+        }
+        if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          isSubscribedRef.current = false;
+        }
+      });
+
+    notificationChannelRef.current = channel;
+
+    return () => {
+      if (notificationChannelRef.current) {
+        console.log('🧹 [Delivery] Cleaning up notifications channel');
+        supabase.removeChannel(notificationChannelRef.current);
+        notificationChannelRef.current = null;
+        isSubscribedRef.current = false;
+      }
+    };
+  }, [app.user?.id, isArabic, navigate, refetchNotifications]);
+
+  // ============================================================
+  // ✅✅✅ جلب البيانات - الترتيب الصحيح ✅✅✅
+  // ============================================================
   // ============================================================
   // ✅✅✅ جلب البيانات - الترتيب الصحيح ✅✅✅
   // ============================================================
@@ -1159,112 +1293,282 @@ function DeliveryDashboardPage() {
   </div>
 </div>
 
-      <div className="flex items-center gap-1 flex-wrap flex-shrink-0">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div>
-              <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
-                  >
-                    <Bell className="h-4 w-4 md:h-5 md:w-5" />
-                    {unreadNotificationsCount > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
-                        {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
-                      </span>
-                    )}
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-            <p>{isArabic ? "الإشعارات" : "Notifications"}</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
-              onClick={handleMessages}
-            >
-              <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-            <p>{isArabic ? "الرسائل" : "Messages"}</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
-              onClick={toggleLanguage}
-            >
-              <Languages className="h-4 w-4 md:h-5 md:w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-            <p>{isArabic ? "تبديل اللغة" : "Switch Language"}</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <div className="w-px h-6 bg-white/10 mx-0.5" />
-
-        <DeliveryAccountMenu
-          userData={{
-            id: app.user?.id || '',
-            full_name: company?.name_ar || app.user?.name || (isArabic ? 'مدير شركة' : 'Company Manager'),
-            phone: company?.phone || app.user?.phone || '',
-            avatar_url: company?.logo_url || '',
-            role: 'delivery_company'
-          }}
-          companyName={company?.name_ar}
-          isArabic={isArabic}
-          companyId={company?.id}
-          onCompanyUpdated={refetchCompany}
-        />
-
-        <div className="w-px h-6 bg-white/10 mx-0.5" />
-
-        {currentDistributor && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
-                <DialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
-                  >
-                    <UserCircle className="h-4 w-4 md:h-5 md:w-5" />
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-              <p>{isArabic ? "حساب الموزع" : "Distributor Account"}</p>
-            </TooltipContent>
-          </Tooltip>
+{/* ✅ ✅ ✅ الجزء المُصحح: أزرار الإشعارات والرسائل واللغة */}
+<div className="flex items-center gap-1 flex-wrap flex-shrink-0">
+  
+  {/* ✅ زر الإشعارات - Dialog خارج الـ Tooltip */}
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
+        onClick={() => setNotificationsOpen(true)}
+      >
+        <Bell className="h-4 w-4 md:h-5 md:w-5" />
+        {unreadNotificationsCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
+            {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+          </span>
         )}
-      </div>
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+      <p>{isArabic ? "الإشعارات" : "Notifications"}</p>
+    </TooltipContent>
+  </Tooltip>
+
+  {/* ✅ زر الرسائل */}
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
+        onClick={handleMessages}
+      >
+        <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+      <p>{isArabic ? "الرسائل" : "Messages"}</p>
+    </TooltipContent>
+  </Tooltip>
+
+  {/* ✅ زر اللغة */}
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
+        onClick={toggleLanguage}
+      >
+        <Languages className="h-4 w-4 md:h-5 md:w-5" />
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+      <p>{isArabic ? "تبديل اللغة" : "Switch Language"}</p>
+    </TooltipContent>
+  </Tooltip>
+
+  <div className="w-px h-6 bg-white/10 mx-0.5" />
+
+  {/* ✅ DeliveryAccountMenu */}
+  <DeliveryAccountMenu
+    userData={{
+      id: app.user?.id || '',
+      full_name: company?.name_ar || app.user?.name || (isArabic ? 'مدير شركة' : 'Company Manager'),
+      phone: company?.phone || app.user?.phone || '',
+      avatar_url: company?.logo_url || '',
+      role: 'delivery_company'
+    }}
+    companyName={company?.name_ar}
+    isArabic={isArabic}
+    companyId={company?.id}
+    onCompanyUpdated={refetchCompany}
+  />
+
+  <div className="w-px h-6 bg-white/10 mx-0.5" />
+
+  {/* ✅ زر حساب الموزع */}
+  {currentDistributor && (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
+          onClick={() => setShowDistributorDialog(true)}
+        >
+          <UserCircle className="h-4 w-4 md:h-5 md:w-5" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+        <p>{isArabic ? "حساب الموزع" : "Distributor Account"}</p>
+      </TooltipContent>
+    </Tooltip>
+  )}
+</div>
+
     </div>
   </div>
 </div>
+
+{/* ✅✅✅ DIALOG: الإشعارات (خارج الـ Tooltip) */}
+<Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+  <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 shadow-2xl">
+    <DialogHeader>
+      <div className="flex items-center justify-between">
+        <DialogTitle className="flex items-center gap-2 text-[#0d2e2a] dark:text-white">
+          <Bell className="h-5 w-5 text-[#2a655f]" />
+          {isArabic ? "الإشعارات" : "Notifications"}
+          {unreadNotificationsCount > 0 && (
+            <Badge className="bg-red-500 text-white border-0 text-[10px]">
+              {unreadNotificationsCount}
+            </Badge>
+          )}
+        </DialogTitle>
+        {unreadNotificationsCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleMarkAllAsRead}
+            className="text-xs text-[#2a655f] hover:bg-[#2a655f]/10 rounded-xl"
+          >
+            {isArabic ? "تحديد الكل كمقروء" : "Mark all as read"}
+          </Button>
+        )}
+      </div>
+    </DialogHeader>
+    
+    <div className="max-h-[60vh] overflow-y-auto space-y-2">
+      {notifications.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <BellOff className="h-12 w-12 mx-auto mb-2 text-muted-foreground/30" />
+          <p>{isArabic ? "لا توجد إشعارات" : "No notifications"}</p>
+        </div>
+      ) : (
+        notifications.map((notification: any) => {
+          const config = getNotificationConfig(notification.type);
+          const Icon = config?.icon ? ICON_MAP[config.icon] || Bell : Bell;
+          const isRead = notification.is_read;
+          
+          return (
+            <div
+              key={notification.id}
+              onClick={() => handleNotificationClick(notification)}
+              className={cn(
+                "p-3 rounded-xl border cursor-pointer transition-all duration-200 hover:shadow-md",
+                isRead 
+                  ? "bg-white dark:bg-slate-900 border-slate-200/50 dark:border-slate-700/50" 
+                  : "bg-[#2a655f]/5 border-[#2a655f]/30 hover:bg-[#2a655f]/10"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <div className={cn(
+                  "h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                  isRead ? "bg-slate-100 dark:bg-slate-800" : "bg-[#2a655f]/20"
+                )}>
+                  <Icon className="h-4 w-4 text-[#2a655f]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={cn(
+                    "text-sm font-semibold",
+                    isRead ? "text-slate-700 dark:text-slate-300" : "text-[#0d2e2a] dark:text-white"
+                  )}>
+                    {isArabic ? notification.title_ar : notification.title_en || notification.title_ar}
+                  </p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {isArabic ? notification.body_ar : notification.body_en || notification.body_ar}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    {formatTime(notification.created_at)}
+                  </p>
+                </div>
+                {!isRead && (
+                  <div className="h-2 w-2 rounded-full bg-[#2a655f] animate-pulse flex-shrink-0 mt-1" />
+                )}
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+    
+    <DialogFooter>
+      <Button 
+        variant="outline" 
+        onClick={() => setNotificationsOpen(false)} 
+        className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10"
+      >
+        {isArabic ? "إغلاق" : "Close"}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
+{/* ✅✅✅ DIALOG: حساب الموزع (خارج الـ Tooltip) */}
+<Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
+  <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 shadow-2xl">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-[#0d2e2a] dark:text-white">
+        <UserCircle className="h-5 w-5 text-[#2a655f]" />
+        {isArabic ? "حساب الموزع" : "Distributor Account"}
+      </DialogTitle>
+      <DialogDescription>
+        {isArabic ? "معلومات حساب الموزع الحالي" : "Current distributor account information"}
+      </DialogDescription>
+    </DialogHeader>
+    
+    <div className="space-y-4 py-4">
+      {currentDistributor && (
+        <>
+          <div className="flex items-center gap-4 p-3 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
+            <div className="h-12 w-12 rounded-full bg-[#2a655f]/10 flex items-center justify-center overflow-hidden">
+              {currentDistributor.avatar_url ? (
+                <img 
+                  src={currentDistributor.avatar_url} 
+                  alt={currentDistributor.full_name_ar}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <User className="h-6 w-6 text-[#2a655f]" />
+              )}
+            </div>
+            <div>
+              <p className="font-bold text-[#0d2e2a] dark:text-white">
+                {currentDistributor.full_name_ar || currentDistributor.full_name_en}
+              </p>
+              <p className="text-xs text-muted-foreground" dir="ltr">
+                {currentDistributor.phone}
+              </p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+              <p className="text-xs text-muted-foreground">{isArabic ? "الحالة" : "Status"}</p>
+              <p className="font-semibold text-[#0d2e2a] dark:text-white">
+                {currentDistributor.is_available 
+                  ? (isArabic ? "🟢 متاح" : "🟢 Available") 
+                  : (isArabic ? "🔴 غير متاح" : "🔴 Unavailable")}
+              </p>
+            </div>
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+              <p className="text-xs text-muted-foreground">{isArabic ? "التقييم" : "Rating"}</p>
+              <p className="font-semibold text-[#0d2e2a] dark:text-white flex items-center gap-1">
+                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                {currentDistributor.rating || 0}
+              </p>
+            </div>
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl col-span-2">
+              <p className="text-xs text-muted-foreground">{isArabic ? "العنوان" : "Address"}</p>
+              <p className="font-semibold text-[#0d2e2a] dark:text-white text-sm">
+                {currentDistributor.address_ar || currentDistributor.address_en || (isArabic ? "غير محدد" : "Not specified")}
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+    
+    <DialogFooter>
+      <Button 
+        variant="outline" 
+        onClick={() => setShowDistributorDialog(false)} 
+        className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10"
+      >
+        {isArabic ? "إغلاق" : "Close"}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 
         {/* ===== STATS ===== */}
         <div className="mx-auto max-w-7xl px-4 py-6">
@@ -1333,10 +1637,11 @@ function DeliveryDashboardPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 whitespace-nowrap ${activeTab === tab.id
+                className={`flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 whitespace-nowrap ${
+                  activeTab === tab.id
                     ? "border-[#0d2e2a] text-[#0d2e2a] dark:text-[#4a9f95]"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-[#0d2e2a]/30"
-                  }`}
+                }`}
               >
                 <tab.icon className="h-4 w-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300" />
                 {tab.label}
@@ -2754,10 +3059,7 @@ function ModernStatCard({
 }
 
 // ============================================================
-// 📦 OrderCard
-// ============================================================
-// ============================================================
-// 📦 OrderCard (معدل)
+// 📦 OrderCard (معدل مع وقت الوصول)
 // ============================================================
 function OrderCard({ 
   order, 
@@ -2771,6 +3073,7 @@ function OrderCard({
   onReject: () => void;
 }) {
   const app = useApp();
+  const navigate = useNavigate()
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
@@ -2798,6 +3101,27 @@ function OrderCard({
     
     fetchOrderDetails();
   }, [order.order_id]);
+
+  // ✅ ✅ ✅ دالة تنسيق الوقت
+  const formatTime = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleTimeString(isArabic ? 'ar-SA' : 'en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // ✅ ✅ ✅ دالة تنسيق التاريخ
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString(isArabic ? 'ar-SA' : 'en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
 
   const statusColors: Record<string, string> = {
     pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -2843,9 +3167,16 @@ function OrderCard({
                 {order.delivery_address?.substring(0, 30) || (isArabic ? "عنوان غير محدد" : "No address")}
               </span>
               <span className="text-muted-foreground/30">|</span>
-              <span className="flex items-center gap-1">
+              
+              {/* ✅ ✅ ✅ عرض وقت وصول الطلب لشركة التوصيل */}
+              <span className="flex items-center gap-1 text-[#2a655f] dark:text-[#4a9f95]">
                 <Clock className="h-3 w-3" />
-                {new Date(order.created_at).toLocaleDateString(isArabic ? "ar-SA" : "en-US")}
+                {formatTime(order.created_at)}
+              </span>
+              <span className="text-muted-foreground/30">|</span>
+              <span className="flex items-center gap-1 text-muted-foreground/80">
+                <Calendar className="h-3 w-3" />
+                {formatDate(order.created_at)}
               </span>
               
               {/* ✅ عرض المجموع الفرعي + التوصيل + الإجمالي */}
@@ -2923,7 +3254,7 @@ function OrderCard({
             variant="ghost"
             size="sm"
             className="h-8 px-3 rounded-xl hover:bg-[#0d2e2a]/10 transition-all duration-300 group-hover:scale-110"
-            onClick={() => window.location.href = `/delivery/orders/${order.id}`}
+            onClick={() => navigate({ to: `/delivery/orders/${order.id}` })}
           >
             <Eye className="h-4 w-4" />
           </Button>
@@ -2934,6 +3265,7 @@ function OrderCard({
     </div>
   );
 }
+
 // ============================================================
 // 📦 DistributorCard
 // ============================================================
@@ -3044,7 +3376,7 @@ function DistributorCard({
   );
 }
 
-// ✅ دالة formatTime
+// ✅ دالة formatTime (للاستخدام العام)
 function formatTime(date: string): string {
   const now = new Date();
   const then = new Date(date);
