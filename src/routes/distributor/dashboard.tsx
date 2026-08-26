@@ -24,7 +24,10 @@ import {
   Anchor, Compass as CompassIcon, 
   Globe, Map, Pin, Flag, Truck as TruckIcon,
   X, Maximize2, FileText, Loader2, ArrowLeft,
-  Download, FileSpreadsheet, Printer, FileDown, Table2, ClipboardCopy
+  Download, FileSpreadsheet, Printer, FileDown, Table2, ClipboardCopy,
+  Megaphone,
+  BadgeCheck,
+  BellOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
