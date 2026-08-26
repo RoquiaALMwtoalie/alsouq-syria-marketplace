@@ -429,11 +429,15 @@ export function useAddToCart() {
       console.log("🛒 [useAddToCart] cartId:", cartId);
 
       // ============================================================
-      // ✅ ✅ ✅ البحث عن عرض ترويجي مسبق باستخدام offer_id
+      // ✅ ✅ ✅ التحقق من العرض الترويجي
       // ============================================================
       const offerId = extraData?.offer_id;
-      
-      if (offerId) {
+      const isPromoOffer = extraData?.is_promo_offer === true;
+
+      // ============================================================
+      // ✅ ✅ ✅ إذا كان عرضاً ترويجياً
+      // ============================================================
+      if (offerId && isPromoOffer) {
         const { data: existingPromo, error: promoError } = await supabase
           .from("cart_items")
           .select("id, quantity, variation_snapshot, offer_id, price")
@@ -586,11 +590,175 @@ export function useAddToCart() {
             console.log(`✅ [useAddToCart] Promo offer updated, new quantity: ${newQuantity}`);
             return { action: 'updated', item: existingPromo, quantity: newQuantity };
           } else {
-            // ✅ الخيارات مختلفة → إضافة عنصر جديد
+            // ✅ الخيارات مختلفة → إضافة عنصر جديد (عرض ترويجي جديد)
             console.log("🔄 [useAddToCart] Same offer but different variations, adding new item...");
             // ✅ نستمر في الكود لإضافة عنصر جديد
           }
         }
+      }
+
+      // ============================================================
+      // ✅ ✅ ✅ المنتج العادي (ليس عرضاً ترويجياً)
+      // ============================================================
+      if (!isPromoOffer) {
+        console.log("🔄 [useAddToCart] Adding regular product...");
+        
+        // ✅ ✅ ✅ جلب صورة الفيرنت إذا كان موجوداً
+        let variationImageUrl = null;
+        let variationData = null;
+        let variationCombinationData = variationCombination || {};
+        let variationPriceData = variationPrice || null;
+        
+        if (selectedVariationId) {
+          try {
+            const { data: variation, error: variationError } = await supabase
+              .from("product_variations")
+              .select("image_url, price, combination, old_price, color_id")
+              .eq("id", selectedVariationId)
+              .single();
+            
+            if (!variationError && variation) {
+              variationImageUrl = variation.image_url;
+              variationData = variation;
+              variationPriceData = variation.price || variationPriceData;
+              variationCombinationData = variation.combination || {};
+              
+              // ✅ جلب صورة اللون إذا وجدت
+              if (variation.color_id) {
+                const { data: color, error: colorError } = await supabase
+                  .from("product_colors")
+                  .select("image_url, color_name_ar, color_name_en")
+                  .eq("id", variation.color_id)
+                  .single();
+                
+                if (!colorError && color?.image_url) {
+                  variationImageUrl = color.image_url;
+                }
+              }
+            }
+          } catch (err) {
+            console.warn("⚠️ [useAddToCart] Could not fetch variation details:", err);
+          }
+        }
+        
+        // ✅ بناء insertData للمنتج العادي مع حفظ صورة الفيرنت
+        const insertData: any = {
+          cart_id: cartId,
+          listing_id: listingId,
+          quantity: quantity,
+          price: variationPriceData || finalPrice,
+          price_usd: listing.price_usd,
+          currency: listing.currency || 'SYP',
+          is_free: false,
+          selected_variation_id: selectedVariationId || null,
+          variation_snapshot: {
+            title_ar: listing.title_ar,
+            title_en: listing.title_en || listing.title_ar,
+            cover_url: variationImageUrl || listing.cover_url,
+            price: variationPriceData || finalPrice,
+            image_url: variationImageUrl,
+            variation_image: variationImageUrl,
+            variation_data: variationData,
+            combination: variationCombinationData,
+            selected_variation_id: selectedVariationId,
+            selected_color: selectedColor,
+            selected_size: selectedSize,
+            created_at: new Date().toISOString(),
+          },
+        };
+
+        // ✅ إضافة الخيارات المختارة
+        if (selectedColor) {
+          insertData.selected_color = selectedColor;
+        }
+        if (selectedSize) {
+          insertData.selected_size = selectedSize;
+        }
+        if (variationCombinationData && Object.keys(variationCombinationData).length > 0) {
+          insertData.variation_combination = variationCombinationData;
+        }
+
+        // ✅ البحث عن عنصر موجود بنفس التركيبة
+        let query = supabase
+          .from("cart_items")
+          .select("id, quantity, variation_snapshot")
+          .eq("cart_id", cartId)
+          .eq("listing_id", listingId);
+
+        if (selectedVariationId) {
+          query = query.eq("selected_variation_id", selectedVariationId);
+        }
+        if (selectedColor) {
+          query = query.eq("selected_color", selectedColor);
+        }
+        if (selectedSize) {
+          query = query.eq("selected_size", selectedSize);
+        }
+
+        const { data: existingItems, error: checkError } = await query;
+        
+        if (checkError) {
+          console.error("❌ [useAddToCart] Error checking existing items:", checkError);
+          throw checkError;
+        }
+
+        // ✅ إذا كان العنصر موجوداً، قم بتحديث الكمية
+        if (existingItems && existingItems.length > 0) {
+          let totalQuantity = existingItems.reduce((sum, item) => sum + item.quantity, 0);
+          const firstItemId = existingItems[0].id;
+          
+          // ✅ حذف العناصر المكررة
+          if (existingItems.length > 1) {
+            const idsToDelete = existingItems.slice(1).map(item => item.id);
+            for (const id of idsToDelete) {
+              await supabase.from("cart_items").delete().eq("id", id);
+            }
+          }
+          
+          const newQuantity = totalQuantity + quantity;
+          
+          // ✅ ✅ ✅ تحديث مع الحفاظ على variation_snapshot
+          const existingSnapshot = existingItems[0]?.variation_snapshot || {};
+          const updatedSnapshot = {
+            ...existingSnapshot,
+            ...insertData.variation_snapshot,
+            quantity: newQuantity,
+            updated_at: new Date().toISOString(),
+          };
+          
+          const { error: updateError } = await supabase
+            .from("cart_items")
+            .update({ 
+              quantity: newQuantity,
+              variation_snapshot: updatedSnapshot,
+              price: (variationPriceData || finalPrice) * newQuantity,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", firstItemId);
+          
+          if (updateError) {
+            console.error("❌ [useAddToCart] Error updating quantity:", updateError);
+            throw updateError;
+          }
+          
+          console.log(`✅ [useAddToCart] Regular product updated, new quantity: ${newQuantity}`);
+          return { action: 'updated', quantity: newQuantity, item: existingItems[0] };
+        }
+
+        // ✅ إضافة عنصر جديد
+        const { data: newItem, error: insertError } = await supabase
+          .from("cart_items")
+          .insert(insertData)
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error("❌ [useAddToCart] Error inserting item:", insertError);
+          throw insertError;
+        }
+        
+        console.log("✅ [useAddToCart] Regular product added with variation image:", variationImageUrl || 'none');
+        return { action: 'added', item: newItem };
       }
 
       // ============================================================
@@ -719,7 +887,11 @@ export function useAddToCart() {
       if (data.action === 'updated') {
         toast.success(`🛒 تم تحديث الكمية إلى ${data.quantity || 1}`);
       } else if (data.action === 'added') {
-        toast.success("🛒 تم إضافة العرض الترويجي للسلة");
+        if (data.item?.offer_id) {
+          toast.success("🎁 تم إضافة العرض الترويجي للسلة");
+        } else {
+          toast.success("🛒 تم إضافة المنتج للسلة");
+        }
       }
     },
     onError: (error: any) => {
@@ -728,7 +900,7 @@ export function useAddToCart() {
       if (error.message?.includes("لا يمكنك إضافة منتجات من متجرك الخاص")) {
         toast.error("❌ لا يمكنك إضافة منتجات من متجرك الخاص إلى السلة");
       } else {
-        toast.error("❌ فشل إضافة العرض للسلة");
+        toast.error("❌ فشل إضافة المنتج للسلة");
       }
     },
   });
