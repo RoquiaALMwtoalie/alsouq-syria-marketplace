@@ -1055,56 +1055,96 @@ const openEditDialog = useCallback((code: PromoCode) => {
               />
             </div>
 
-            {/* النوع والقيمة والحد الأدنى */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "النوع *" : "Type *"}
-                </Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) => setFormData({ ...formData, type: value })}
-                >
-                  <SelectTrigger className="rounded-xl border-[#0d2e2a]/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="percentage">{isArabic ? "📊 نسبة مئوية" : "📊 Percentage"}</SelectItem>
-                    <SelectItem value="fixed">{isArabic ? "💰 قيمة ثابتة" : "💰 Fixed"}</SelectItem>
-                    <SelectItem value="free_shipping">{isArabic ? "🚚 توصيل مجاني" : "🚚 Free Shipping"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* النوع والقيمة والحد الأدنى */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div className="space-y-2">
+    <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+      {isArabic ? "النوع *" : "Type *"}
+    </Label>
+    <Select
+      value={formData.type}
+      onValueChange={(value) => {
+        setFormData({ 
+          ...formData, 
+          type: value,
+          // ✅ إذا كان النوع توصيل مجاني، امسح قيمة الخصم
+          value: value === "free_shipping" ? "0" : formData.value
+        });
+      }}
+    >
+      <SelectTrigger className="rounded-xl border-[#0d2e2a]/20">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="percentage">{isArabic ? "📊 نسبة مئوية" : "📊 Percentage"}</SelectItem>
+        <SelectItem value="fixed">{isArabic ? "💰 قيمة ثابتة" : "💰 Fixed"}</SelectItem>
+        <SelectItem value="free_shipping">{isArabic ? "🚚 توصيل مجاني" : "🚚 Free Shipping"}</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
 
-              <div className="space-y-2">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "القيمة *" : "Value *"}
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.value}
-                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                  placeholder={formData.type === "percentage" ? "10" : "10.00"}
-                  required
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
-                />
-              </div>
+  {/* ✅ حقل القيمة - يظهر فقط إذا لم يكن النوع توصيل مجاني */}
+  {formData.type !== "free_shipping" && (
+    <div className="space-y-2">
+      <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+        {isArabic ? "القيمة *" : "Value *"}
+      </Label>
+      <Input
+        type="number"
+        step="0.01"
+        value={formData.value}
+        onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+        placeholder={formData.type === "percentage" ? "10" : "10.00"}
+        required
+        className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
+      />
+      {formData.type === "percentage" && (
+        <p className="text-xs text-muted-foreground">
+          {isArabic ? "📊 نسبة مئوية من إجمالي الطلب" : "📊 Percentage of order total"}
+        </p>
+      )}
+      {formData.type === "fixed" && (
+        <p className="text-xs text-muted-foreground">
+          {isArabic ? "💰 قيمة ثابتة للخصم" : "💰 Fixed discount amount"}
+        </p>
+      )}
+    </div>
+  )}
 
-              <div className="space-y-2">
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "الحد الأدنى للطلب" : "Min Order"}
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.min_order}
-                  onChange={(e) => setFormData({ ...formData, min_order: e.target.value })}
-                  placeholder="0"
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
-                />
-              </div>
-            </div>
+  {/* ✅ إذا كان النوع توصيل مجاني، عرض رسالة توضيحية */}
+  {formData.type === "free_shipping" && (
+    <div className="space-y-2">
+      <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+        {isArabic ? "القيمة" : "Value"}
+      </Label>
+      <div className="p-3 bg-[#2d6b63]/10 rounded-xl border border-[#2d6b63]/20 text-[#2d6b63] text-sm flex items-center gap-2 h-11">
+        <Truck className="h-4 w-4" />
+        <span>
+          {isArabic 
+            ? "🆓 تُحسب تلقائياً حسب رسوم التوصيل" 
+            : "🆓 Calculated automatically based on delivery fee"}
+        </span>
+      </div>
+    </div>
+  )}
+
+  <div className="space-y-2">
+    <Label className="text-[#0d2e2a] dark:text-white font-semibold">
+      {isArabic ? "الحد الأدنى للطلب" : "Min Order"}
+    </Label>
+    <Input
+      type="number"
+      step="0.01"
+      value={formData.min_order}
+      onChange={(e) => setFormData({ ...formData, min_order: e.target.value })}
+      placeholder="0"
+      className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
+    />
+    <p className="text-xs text-muted-foreground">
+      {isArabic ? "📋 الحد الأدنى لقيمة الطلب لتفعيل الخصم" : "📋 Minimum order value to activate discount"}
+    </p>
+  </div>
+</div>
 
             {/* الحد الأقصى وحد الاستخدامات */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

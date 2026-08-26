@@ -732,54 +732,72 @@ function CartPage() {
       }
 
       // ✅ تحذير عدد الاستخدامات المتبقية
-      if (data.usage_limit) {
-        const remaining = data.usage_limit - data.used_count;
-        console.log(`📌 [PROMO] Remaining uses: ${remaining}`);
-        if (remaining <= 2) {
-          toast.warning(
-            app.lang === "ar" 
-              ? `⚠️ تبقى ${remaining} استخدام${remaining > 1 ? 'ات' : ''} فقط لهذا الكود` 
-              : `⚠️ Only ${remaining} use${remaining > 1 ? 's' : ''} remaining for this code`
-          );
-        }
-      }
+    // ✅ الحل الموصى به
+if (data.usage_limit) {
+  const remaining = data.usage_limit - data.used_count;
+  console.log(`📌 [PROMO] Remaining uses: ${remaining}`);
+  
+  // ✅ فقط إذا كان المستخدم لم يستخدم الكود من قبل و remaining صغير
+  if (remaining <= 2 && data.used_count === 0) {
+    toast.warning(
+      app.lang === "ar" 
+        ? `⚠️ تبقى ${remaining} استخدام${remaining > 1 ? 'ات' : ''} فقط لهذا الكود` 
+        : `⚠️ Only ${remaining} use${remaining > 1 ? 's' : ''} remaining for this code`
+    );
+  }
+}
       console.log("✅ [PROMO] Usage limit check passed");
 
       // ✅ التحقق من استخدام الكود في طلب معلق
-      const { data: existingUsage, error: usageCheckError } = await supabase
-        .from("promo_code_usage")
-        .select(`
-          id,
-          order_id,
-          status,
-          orders:order_id (
-            id,
-            status
-          )
-        `)
-        .eq("promo_code_id", data.id)
-        .eq("user_id", app.user.id)
-        .eq("status", 'pending')
-        .maybeSingle();
+      // ✅ التحقق من استخدام الكود في طلب معلق (بدون status)
+const { data: existingUsage, error: usageCheckError } = await supabase
+  .from("promo_code_usage")
+  .select(`
+    id,
+    order_id,
+    used_at,
+    orders:order_id (
+      id,
+      status,
+      delivery_status
+    )
+  `)
+  .eq("promo_code_id", data.id)
+  .eq("user_id", app.user.id)
+  .order("used_at", { ascending: false })
+  .limit(1)
+  .maybeSingle();
 
-      if (!usageCheckError && existingUsage) {
-        console.log("❌ [PROMO] Code is already in use with a pending order");
-        
-        const orderId = existingUsage.order_id;
-        
-        setPromoMessage(
-          app.lang === "ar" 
-            ? `⚠️ هذا الكود قيد الاستخدام في طلب آخر (#${String(orderId).slice(0, 8)})، انتظر حتى يتم قبوله أو رفضه` 
-            : `⚠️ This code is already used in another pending order (#${String(orderId).slice(0, 8)}), wait until it's accepted or rejected`
-        );
-        toast.warning(
-          app.lang === "ar" 
-            ? `⚠️ هذا الكود قيد الاستخدام في طلب آخر، انتظر حتى يتم قبوله أو رفضه` 
-            : `⚠️ This code is already used in another pending order`
-        );
-        setIsApplyingPromo(false);
-        return;
-      }
+// ✅ التحقق من حالة الطلب
+if (!usageCheckError && existingUsage && existingUsage.orders) {
+  const orderStatus = existingUsage.orders.status;
+  const deliveryStatus = existingUsage.orders.delivery_status;
+  
+  // ✅ الحالات التي تعني أن الطلب لا يزال قيد المعالجة
+  const isPending = orderStatus === 'pending' || 
+                    orderStatus === 'processing' || 
+                    orderStatus === 'accepted' ||
+                    deliveryStatus === 'pending' ||
+                    deliveryStatus === 'assigned' ||
+                    deliveryStatus === 'picked_up' ||
+                    deliveryStatus === 'in_transit';
+  
+  if (isPending) {
+    // ❌ منع استخدام الكود
+    setPromoMessage(
+      app.lang === "ar" 
+        ? `⚠️ هذا الكود قيد الاستخدام في طلب جاري، انتظر حتى يتم تسليمه أو إلغاؤه` 
+        : `⚠️ This code is already used in a pending order`
+    );
+    toast.warning(
+      app.lang === "ar" 
+        ? `⚠️ هذا الكود قيد الاستخدام في طلب جاري` 
+        : `⚠️ This code is already used in a pending order`
+    );
+    setIsApplyingPromo(false);
+    return;
+  }
+}
       console.log("✅ [PROMO] No pending usage found");
 
       console.log("🔍 [PROMO] Step 7: Calculating subtotal and checking min order...");
@@ -1114,36 +1132,58 @@ function CartPage() {
 
         if (itemsError) throw itemsError;
 
-        if (promoApplied && promoData && order) {
-          try {
-            const { error: usageError } = await supabase
-              .from("promo_code_usage")
-              .insert({
-                promo_code_id: promoData.id,
-                user_id: app.user.id,
-                order_id: order.id,
-                discount_amount: promoDiscount,
-                used_at: new Date().toISOString(),
-                status: 'pending',
-                metadata: {
-                  subtotal: totals.subtotal,
-                  delivery_fee: deliveryFee,
-                  total: totals.total,
-                  free_items: freeItems,
-                }
-              });
-            
-            if (usageError) {
-              console.error("❌ Error recording promo usage:", usageError);
-            } else {
-              console.log(`✅ Promo code ${promoData.code} usage recorded for order ${order.id} (pending)`);
-            }
-            
-          } catch (error) {
-            console.error("❌ Error in promo code recording:", error);
-          }
+       if (promoApplied && promoData && order) {
+  try {
+    // ✅ 1. تسجيل استخدام الكود
+    const { error: usageError } = await supabase
+      .from("promo_code_usage")
+      .insert({
+        promo_code_id: promoData.id,
+        user_id: app.user.id,
+        order_id: order.id,
+        discount_amount: promoDiscount,
+        used_at: new Date().toISOString(),
+        store_id: promoData.store_id || null,
+        metadata: {
+          subtotal: totals.subtotal,
+          delivery_fee: deliveryFee,
+          total: totals.total,
+          free_items: freeItems,
+          order_status: 'pending',
         }
-
+      });
+    
+    if (usageError) {
+      console.error("❌ Error recording promo usage:", usageError);
+    } else {
+      console.log(`✅ Promo code ${promoData.code} usage recorded`);
+      
+      // ✅ ✅ ✅ 2. زيادة used_count
+      const { data: currentCode, error: fetchError } = await supabase
+        .from("promo_codes")
+        .select("used_count")
+        .eq("id", promoData.id)
+        .single();
+      
+      if (!fetchError && currentCode) {
+        const newCount = (currentCode.used_count || 0) + 1;
+        const { error: updateError } = await supabase
+          .from("promo_codes")
+          .update({ used_count: newCount })
+          .eq("id", promoData.id);
+        
+        if (updateError) {
+          console.error("❌ Error updating used_count:", updateError);
+        } else {
+          console.log(`✅ Promo code ${promoData.code} used_count: ${newCount}`);
+        }
+      }
+    }
+    
+  } catch (error) {
+    console.error("❌ Error in promo code recording:", error);
+  }
+}
         // ✅ إشعار للبائع
         await supabase
           .from("notifications")

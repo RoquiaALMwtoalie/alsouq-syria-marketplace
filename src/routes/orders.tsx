@@ -331,39 +331,162 @@ const groupedOrders = useMemo(() => {
   // ============================================================
   // ✅ ✅ ✅ دالة إلغاء الطلب كامل (وليس كل منتج على حدة)
   // ============================================================
-  const handleCancelOrder = async (orderId: string) => {
-    if (!app.user) return;
+// ============================================================
+// ✅ دالة إلغاء الطلب كامل (مع إشعار للمتجر ونقصان used_count)
+// ============================================================
+const handleCancelOrder = async (orderId: string) => {
+  if (!app.user) return;
+  
+  if (!confirm(app.lang === "ar" 
+    ? "⚠️ هل أنت متأكد من رغبتك في إلغاء هذا الطلب بالكامل؟ هذا الإجراء لا يمكن التراجع عنه."
+    : "⚠️ Are you sure you want to cancel this entire order? This action cannot be undone."
+  )) return;
+  
+  setIsCancelling(orderId);
+  
+  try {
+    // ✅ 1️⃣ جلب بيانات الطلب (بما فيها seller_id و promo_code_id)
+    const { data: order, error: fetchError } = await supabase
+      .from("orders")
+      .select(`
+        id,
+        seller_id,
+        promo_code_id,
+        total,
+        buyer_name,
+        buyer_phone,
+        order_items (
+          listings (
+            title_ar,
+            title_en,
+            profile:owner_id (
+              store_name,
+              full_name
+            )
+          )
+        )
+      `)
+      .eq("id", orderId)
+      .eq("buyer_id", app.user.id)
+      .single();
     
-    if (!confirm(app.lang === "ar" 
-      ? "⚠️ هل أنت متأكد من رغبتك في إلغاء هذا الطلب بالكامل؟ هذا الإجراء لا يمكن التراجع عنه."
-      : "⚠️ Are you sure you want to cancel this entire order? This action cannot be undone."
-    )) return;
-    
-    setIsCancelling(orderId);
-    
-    try {
-      // ✅ تحديث حالة الطلب إلى cancelled
-      const { error } = await supabase
-        .from("orders")
-        .update({ 
-          status: 'cancelled',
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", orderId)
-        .eq("buyer_id", app.user.id);
-      
-      if (error) throw error;
-      
-      toast.success(app.lang === "ar" ? "✅ تم إلغاء الطلب بالكامل بنجاح" : "✅ Order cancelled successfully");
-      refetch();
-      
-    } catch (error) {
-      console.error("Error cancelling order:", error);
-      toast.error(app.lang === "ar" ? "❌ فشل إلغاء الطلب" : "❌ Failed to cancel order");
-    } finally {
-      setIsCancelling(null);
+    if (fetchError) {
+      console.error("❌ Error fetching order:", fetchError);
+      // ✅ نكمل تحديث الحالة حتى لو فشل جلب البيانات
     }
-  };
+    
+    // ✅ 2️⃣ تحديث حالة الطلب إلى cancelled
+    const { error } = await supabase
+      .from("orders")
+      .update({ 
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", orderId)
+      .eq("buyer_id", app.user.id);
+    
+    if (error) throw error;
+    
+    // ✅ ✅ ✅ 3️⃣ إرسال إشعار للمتجر
+    if (order && order.seller_id) {
+      // ✅ استخراج اسم المتجر
+      let storeName = '';
+      
+      if (order.order_items && order.order_items.length > 0) {
+        const firstItem = order.order_items[0];
+        const listing = firstItem?.listings;
+        if (listing?.profile) {
+          storeName = listing.profile.store_name || 
+                      listing.profile.full_name || 
+                      (app.lang === "ar" ? "المتجر" : "Store");
+        }
+      }
+      
+      if (!storeName) {
+        storeName = app.lang === "ar" ? "المتجر" : "Store";
+      }
+      
+      const itemsCount = order.order_items?.length || 1;
+      const buyerName = order.buyer_name || (app.lang === "ar" ? "عميل" : "Customer");
+      const buyerPhone = order.buyer_phone || '';
+      
+      // ✅ إشعار للمتجر (seller)
+      const { error: notifyError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: order.seller_id,
+          type: "order_cancelled",
+          title_ar: "🚫 تم إلغاء طلب",
+          body_ar: `قام العميل ${buyerName} بإلغاء طلبه (${itemsCount} منتج${itemsCount > 1 ? 'ات' : ''}) من متجر "${storeName}".`,
+          title_en: "🚫 Order cancelled",
+          body_en: `Customer ${buyerName} cancelled their order (${itemsCount} items) from "${storeName}".`,
+          link_url: `/dashboard/orders`,
+          metadata: {
+            order_id: orderId,
+            buyer_name: buyerName,
+            buyer_phone: buyerPhone,
+            items_count: itemsCount,
+            store_name: storeName,
+            cancelled_by: 'customer',
+          }
+        });
+      
+      if (notifyError) {
+        console.error("❌ Error sending seller notification:", notifyError);
+      } else {
+        console.log(`✅ Seller notification sent for order ${orderId}`);
+      }
+    }
+    
+    // ✅ ✅ ✅ 4️⃣ نقصان used_count إذا كان الطلب يستخدم كود خصم
+    if (order?.promo_code_id) {
+      console.log(`🔄 [Cancel Order] Decreasing used_count for promo code: ${order.promo_code_id}`);
+      
+      const { data: promoCode, error: fetchCountError } = await supabase
+        .from("promo_codes")
+        .select("used_count")
+        .eq("id", order.promo_code_id)
+        .single();
+      
+      if (!fetchCountError && promoCode) {
+        const newCount = Math.max(0, (promoCode.used_count || 0) - 1);
+        
+        const { error: updateCountError } = await supabase
+          .from("promo_codes")
+          .update({ used_count: newCount })
+          .eq("id", order.promo_code_id);
+        
+        if (updateCountError) {
+          console.error("❌ Error decreasing used_count:", updateCountError);
+        } else {
+          console.log(`✅ Promo code used_count decreased to ${newCount}`);
+        }
+      }
+      
+      // ✅ حذف سجل الاستخدام من promo_code_usage
+      const { error: deleteUsageError } = await supabase
+        .from("promo_code_usage")
+        .delete()
+        .eq("order_id", orderId);
+      
+      if (deleteUsageError) {
+        console.error("❌ Error deleting promo usage record:", deleteUsageError);
+      } else {
+        console.log(`✅ Promo usage record deleted for order ${orderId}`);
+      }
+    }
+    
+    toast.success(app.lang === "ar" ? "✅ تم إلغاء الطلب بالكامل بنجاح" : "✅ Order cancelled successfully");
+    refetch();
+    
+  } catch (error) {
+    console.error("❌ Error cancelling order:", error);
+    toast.error(app.lang === "ar" ? "❌ فشل إلغاء الطلب" : "❌ Failed to cancel order");
+  } finally {
+    setIsCancelling(null);
+  }
+};
 
   // ============================================================
   // ✅ دالة تقييم المنتج

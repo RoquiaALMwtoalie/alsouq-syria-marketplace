@@ -412,30 +412,25 @@ if (deliveryCompanyId) {
   }
 }, [app.lang, refetchOrders]);
   // ===== REJECT ORDER =====
-  const handleRejectOrder = useCallback(async (orderId: string, reason: string) => {
-    if (!reason.trim()) {
-      toast.error(app.lang === "ar" ? "❌ الرجاء إدخال سبب الرفض" : "❌ Please enter a rejection reason");
-      return;
-    }
+  // ===== REJECT ORDER =====
+const handleRejectOrder = useCallback(async (orderId: string, reason: string) => {
+  if (!reason.trim()) {
+    toast.error(app.lang === "ar" ? "❌ الرجاء إدخال سبب الرفض" : "❌ Please enter a rejection reason");
+    return;
+  }
 
-    setIsRejecting(true);
+  setIsRejecting(true);
 
-    try {
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .select(`
-          buyer_id,
-          order_items (
-            listings (
-              title_ar,
-              title_en,
-              profiles:owner_id (
-                store_name,
-                full_name
-              )
-            )
-          ),
-          listings:listing_id (
+  try {
+    // ✅ 1️⃣ جلب بيانات الطلب (بما فيها promo_code_id)
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select(`
+        id,
+        buyer_id,
+        promo_code_id,
+        order_items (
+          listings (
             title_ar,
             title_en,
             profiles:owner_id (
@@ -443,80 +438,127 @@ if (deliveryCompanyId) {
               full_name
             )
           )
-        `)
-        .eq("id", orderId)
+        ),
+        listings:listing_id (
+          title_ar,
+          title_en,
+          profiles:owner_id (
+            store_name,
+            full_name
+          )
+        )
+      `)
+      .eq("id", orderId)
+      .single();
+
+    if (orderError) throw orderError;
+
+    // ✅ 2️⃣ تحديث حالة الطلب إلى rejected
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update({ 
+        status: 'rejected',
+        rejected_at: new Date().toISOString(),
+        rejected_by: app.user?.id,
+        rejection_reason: reason.trim()
+      })
+      .eq("id", orderId);
+
+    if (updateError) throw updateError;
+
+    // ✅ ✅ ✅ 3️⃣ نقصان used_count إذا كان الطلب يستخدم كود خصم
+    if (order.promo_code_id) {
+      console.log(`🔄 [Reject Order] Decreasing used_count for promo code: ${order.promo_code_id}`);
+      
+      // ✅ جلب القيمة الحالية
+      const { data: promoCode, error: fetchError } = await supabase
+        .from("promo_codes")
+        .select("used_count")
+        .eq("id", order.promo_code_id)
         .single();
-
-      if (orderError) throw orderError;
-
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({ 
-          status: 'rejected',
-          rejected_at: new Date().toISOString(),
-          rejected_by: app.user?.id,
-          rejection_reason: reason.trim()
-        })
-        .eq("id", orderId);
-
-      if (updateError) throw updateError;
-
-      // ✅ استخراج اسم المتجر
-      let storeName = '';
       
-      if (order.order_items && order.order_items.length > 0) {
-        const firstItem = order.order_items[0];
-        const listing = firstItem?.listings;
-        if (listing?.profiles) {
-          storeName = app.lang === "ar" 
-            ? (listing.profiles.store_name || listing.profiles.full_name || 'المتجر')
-            : (listing.profiles.store_name || listing.profiles.full_name || 'Store');
+      if (!fetchError && promoCode) {
+        const newCount = Math.max(0, (promoCode.used_count || 0) - 1);
+        
+        const { error: updateCountError } = await supabase
+          .from("promo_codes")
+          .update({ used_count: newCount })
+          .eq("id", order.promo_code_id);
+        
+        if (updateCountError) {
+          console.error("❌ Error decreasing used_count:", updateCountError);
+        } else {
+          console.log(`✅ Promo code used_count decreased to ${newCount}`);
         }
-      } else if (order.listings?.profiles) {
-        storeName = app.lang === "ar" 
-          ? (order.listings.profiles.store_name || order.listings.profiles.full_name || 'المتجر')
-          : (order.listings.profiles.store_name || order.listings.profiles.full_name || 'Store');
       }
       
-      if (!storeName) {
-        storeName = app.lang === "ar" ? "المتجر" : "Store";
+      // ✅ ✅ ✅ حذف سجل الاستخدام من promo_code_usage
+      const { error: deleteUsageError } = await supabase
+        .from("promo_code_usage")
+        .delete()
+        .eq("order_id", orderId);
+      
+      if (deleteUsageError) {
+        console.error("❌ Error deleting promo usage record:", deleteUsageError);
+      } else {
+        console.log(`✅ Promo usage record deleted for order ${orderId}`);
       }
-
-      const itemsCount = order.order_items?.length || 1;
-
-      if (order.buyer_id) {
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: order.buyer_id,
-            type: "order_rejected",
-            title_ar: "❌ تم رفض طلبك",
-            body_ar: `تم رفض طلبك من متجر "${storeName}" (${itemsCount} منتج${itemsCount > 1 ? 'ات' : ''}). السبب: ${reason.trim()}`,
-            title_en: "❌ Your order was rejected",
-            body_en: `Your order from "${storeName}" (${itemsCount} item${itemsCount > 1 ? 's' : ''}) was rejected. Reason: ${reason.trim()}`,
-            link_url: `/orders`,
-            metadata: {
-              rejection_reason: reason.trim(),
-              order_id: orderId,
-              store_name: storeName,
-            }
-          });
-      }
-
-      toast.success(app.lang === "ar" ? "✅ تم رفض الطلب مع إرسال السبب" : "✅ Order rejected with reason");
-      refetchOrders();
-      setRejectDialogOpen(false);
-      setRejectOrderId(null);
-      setRejectReason("");
-
-    } catch (error) {
-      console.error("❌ Error rejecting order:", error);
-      toast.error(app.lang === "ar" ? "❌ حدث خطأ في رفض الطلب" : "❌ Error rejecting order");
-    } finally {
-      setIsRejecting(false);
     }
-  }, [app.lang, app.user?.id, refetchOrders]);
 
+    // ✅ 4️⃣ إشعار للمشتري
+    let storeName = '';
+    if (order.order_items && order.order_items.length > 0) {
+      const firstItem = order.order_items[0];
+      const listing = firstItem?.listings;
+      if (listing?.profiles) {
+        storeName = app.lang === "ar" 
+          ? (listing.profiles.store_name || listing.profiles.full_name || 'المتجر')
+          : (listing.profiles.store_name || listing.profiles.full_name || 'Store');
+      }
+    } else if (order.listings?.profiles) {
+      storeName = app.lang === "ar" 
+        ? (order.listings.profiles.store_name || order.listings.profiles.full_name || 'المتجر')
+        : (order.listings.profiles.store_name || order.listings.profiles.full_name || 'Store');
+    }
+    
+    if (!storeName) {
+      storeName = app.lang === "ar" ? "المتجر" : "Store";
+    }
+
+    const itemsCount = order.order_items?.length || 1;
+
+    if (order.buyer_id) {
+      await supabase
+        .from("notifications")
+        .insert({
+          user_id: order.buyer_id,
+          type: "order_rejected",
+          title_ar: "❌ تم رفض طلبك",
+          body_ar: `تم رفض طلبك من متجر "${storeName}" (${itemsCount} منتج${itemsCount > 1 ? 'ات' : ''}). السبب: ${reason.trim()}`,
+          title_en: "❌ Your order was rejected",
+          body_en: `Your order from "${storeName}" (${itemsCount} item${itemsCount > 1 ? 's' : ''}) was rejected. Reason: ${reason.trim()}`,
+          link_url: `/orders`,
+          metadata: {
+            rejection_reason: reason.trim(),
+            order_id: orderId,
+            store_name: storeName,
+          }
+        });
+    }
+
+    toast.success(app.lang === "ar" ? "✅ تم رفض الطلب مع إرسال السبب" : "✅ Order rejected with reason");
+    refetchOrders();
+    setRejectDialogOpen(false);
+    setRejectOrderId(null);
+    setRejectReason("");
+
+  } catch (error) {
+    console.error("❌ Error rejecting order:", error);
+    toast.error(app.lang === "ar" ? "❌ حدث خطأ في رفض الطلب" : "❌ Error rejecting order");
+  } finally {
+    setIsRejecting(false);
+  }
+}, [app.lang, app.user?.id, refetchOrders]);
   // ===== EXPORTS =====
   const exportToExcel = useCallback(() => {
     const exportData = filteredOrders.map((order: any) => ({
