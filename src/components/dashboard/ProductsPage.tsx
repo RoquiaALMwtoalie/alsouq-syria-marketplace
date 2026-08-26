@@ -83,7 +83,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
   const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "pending" | "published" | "archived">("all");
   const [filterType, setFilterType] = useState<"all" | "product" | "offer" | "promo">("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(6); // ✅ الافتراضي 6
+  const [itemsPerPage, setItemsPerPage] = useState(6);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   
   // ✅ State للتفاصيل
@@ -127,9 +127,12 @@ export const ProductsPage = React.memo(function ProductsPage() {
   const [selectedPromoOffer, setSelectedPromoOffer] = useState<any>(null);
   const [selectedPromoProduct, setSelectedPromoProduct] = useState<any>(null);
 
+  // ✅ ✅ ✅ State لـ Dialog تأكيد حذف العرض الترويجي
+  const [confirmDeleteOfferOpen, setConfirmDeleteOfferOpen] = useState(false);
+  const [offerToDelete, setOfferToDelete] = useState<string | null>(null);
+
   // ✅ ✅ ✅ ربط العروض الترويجية بالمنتجات
-// ✅ الكود الجديد - العروض الترويجية كمنتجات مستقلة
-const productsWithPromo = useMemo(() => {
+  const productsWithPromo = useMemo(() => {
     const products: any[] = [];
     
     // 1️⃣ إضافة المنتجات العادية وعروض التخفيض
@@ -154,7 +157,7 @@ const productsWithPromo = useMemo(() => {
                 status: offer.is_active ? 'published' : 'archived',
                 is_available: offer.is_active,
                 is_offer: false,
-                is_promo_offer: true,  // ✅ ✅ ✅ هذا هو المفتاح
+                is_promo_offer: true,
                 product_type: 'promo',
                 promo_offer: offer,
                 created_at: offer.created_at,
@@ -166,36 +169,31 @@ const productsWithPromo = useMemo(() => {
                 buy_quantity: offer.buy_quantity,
                 get_quantity: offer.get_quantity,
                 offer_type: offer.offer_type,
-                // ✅ معلومات الهدية
                 free_listing: myListings.find((l: any) => l.id === offer.free_listing_id) || null,
-                // ✅ المنتج الأصلي (للرجوع إليه)
                 original_listing: listing,
             });
         }
     });
     
     return products;
-}, [myListings, sellerOffers]);
+  }, [myListings, sellerOffers]);
+
   // ✅ تعريف filteredProducts مع دعم العروض الترويجية
   const filteredProducts = useMemo(() => {
     let result = productsWithPromo;
     
-    // ✅ فلتر الحالة
     if (filterStatus !== "all") {
       result = result.filter((p: any) => p.status === filterStatus);
     }
     
-    // ✅ فلتر النوع
-    // ✅ استبدل الفلتر بهذا
-if (filterType === "product") {
-    result = result.filter((p: any) => p.product_type === 'regular');
-} else if (filterType === "offer") {
-    result = result.filter((p: any) => p.product_type === 'discount');
-} else if (filterType === "promo") {
-    result = result.filter((p: any) => p.product_type === 'promo');
-}
+    if (filterType === "product") {
+      result = result.filter((p: any) => p.product_type === 'regular');
+    } else if (filterType === "offer") {
+      result = result.filter((p: any) => p.product_type === 'discount');
+    } else if (filterType === "promo") {
+      result = result.filter((p: any) => p.product_type === 'promo');
+    }
     
-    // ✅ فلتر البحث
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((p: any) => {
@@ -581,27 +579,143 @@ if (filterType === "product") {
     setOfferDialogOpen(true);
   }, []);
 
-  const handleRemovePromoOffer = useCallback(async (offerId: string) => {
-    if (confirm(app.lang === "ar" ? "هل تريد إزالة العرض الترويجي من هذا المنتج؟" : "Remove this promo offer from this product?")) {
-      try {
-        await deletePromoOffer.mutateAsync(offerId);
+  // ============================================================
+  // ✅✅✅ دالة فتح Dialog التأكيد (بدلاً من confirm())
+  // ============================================================
+const handleRemovePromoOffer = useCallback((offerId: string) => {
+    console.log("🔴🔴🔴 [handleRemovePromoOffer] ===== START =====");
+    console.log("🔴🔴🔴 [handleRemovePromoOffer] offerId:", offerId);
+    
+    // ✅ فتح الـ Dialog المخصص بدلاً من confirm()
+    setOfferToDelete(offerId);
+    setConfirmDeleteOfferOpen(true);
+    
+    console.log("🔴🔴🔴 [handleRemovePromoOffer] ===== END (Dialog opened) =====");
+}, []);
+
+  // ============================================================
+  // ✅✅✅ دالة تأكيد الحذف الفعلية
+  // ============================================================
+const handleConfirmDeleteOffer = useCallback(async () => {
+    if (!offerToDelete) return;
+    
+    console.log("✅ [handleConfirmDeleteOffer] Confirmed deletion for:", offerToDelete);
+    
+    try {
+        await deletePromoOffer.mutateAsync(offerToDelete);
         await refetchMyListings();
         await refetchSellerOffers();
         toast.success(app.lang === "ar" ? "✅ تم إزالة العرض الترويجي بنجاح" : "✅ Promo offer removed successfully");
-      } catch (error) {
-        console.error("Error removing promo offer:", error);
-        toast.error(app.lang === "ar" ? "❌ فشل إزالة العرض الترويجي" : "❌ Failed to remove promo offer");
-      }
+        
+        setConfirmDeleteOfferOpen(false);
+        setOfferToDelete(null);
+        
+      
+        
+    } catch (error: any) {
+        console.error("❌ [handleConfirmDeleteOffer] Error:", error);
+        let errorMessage = "❌ فشل إزالة العرض الترويجي";
+        if (error?.message) {
+            errorMessage = error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        }
+        toast.error(errorMessage);
     }
-  }, [deletePromoOffer, refetchMyListings, refetchSellerOffers, app.lang]);
-
-  const handleViewPromoOffer = useCallback((offer: any) => {
-    setSelectedPromoOffer(offer);
+}, [offerToDelete, deletePromoOffer, refetchMyListings, refetchSellerOffers, app.lang]);
+// ============================================================
+// ✅✅✅ دالة فتح تفاصيل العرض الترويجي - المُصححة بالكامل
+// ============================================================
+const handleViewPromoOffer = useCallback((offer: any) => {
+    console.log("🔍 [handleViewPromoOffer] ===== START =====");
+    console.log("🔍 [handleViewPromoOffer] offer:", offer);
+    
+    // ✅ 1. المنتج الأساسي
     const product = myListings.find((p: any) => p.id === offer.listing_id);
     setSelectedPromoProduct(product || null);
+    
+    // ✅ 2. ✅✅✅ جلب المنتجات المطلوبة (لـ Bundle)
+    let bundleProducts: any[] = [];
+    let allProducts: any[] = [];
+    
+    if (offer.offer_type === 'bundle' && offer.required_product_ids) {
+        console.log("📦 [handleViewPromoOffer] Bundle detected, fetching products...");
+        
+        bundleProducts = offer.required_product_ids.map((id: string) => {
+            const found = myListings.find((p: any) => p.id === id);
+            if (found) {
+                // ✅ جلب الفيرنتات المطلوبة لهذا المنتج
+                const reqVar = offer.required_variations?.find(
+                    (rv: any) => rv.product_id === id
+                );
+                console.log(`📦 [handleViewPromoOffer] Product found: ${found.title_ar}, quantity: ${reqVar?.quantity || 1}`);
+                return {
+                    ...found,
+                    required_variations: reqVar?.variation_ids || [],
+                    required_quantity: reqVar?.quantity || 1,
+                };
+            } else {
+                console.warn(`⚠️ [handleViewPromoOffer] Product not found: ${id}`);
+                // ✅ إذا المنتج مش موجود، نرجع كائن مؤقت
+                return {
+                    id: id,
+                    title_ar: `منتج ${id.slice(0, 8)}`,
+                    title_en: `Product ${id.slice(0, 8)}`,
+                    price: 0,
+                    variations: [],
+                    required_variations: [],
+                    required_quantity: 1,
+                };
+            }
+        }).filter(Boolean);
+        
+        // ✅ حفظ كل المنتجات في مصفوفة للبحث
+        allProducts = bundleProducts;
+    }
+    
+    // ✅ 3. ✅✅✅ جلب المنتج المجاني (الهدية)
+    let freeProduct = null;
+    if (offer.free_listing_id) {
+        console.log("🎁 [handleViewPromoOffer] Fetching free product:", offer.free_listing_id);
+        freeProduct = myListings.find((p: any) => p.id === offer.free_listing_id);
+        if (freeProduct) {
+            freeProduct = {
+                ...freeProduct,
+                selected_variations: offer.result_variation_ids || [],
+            };
+            allProducts.push(freeProduct);
+            console.log("🎁 [handleViewPromoOffer] Free product found:", freeProduct.title_ar);
+        } else {
+            console.warn("⚠️ [handleViewPromoOffer] Free product not found:", offer.free_listing_id);
+            freeProduct = {
+                id: offer.free_listing_id,
+                title_ar: `منتج ${offer.free_listing_id.slice(0, 8)}`,
+                title_en: `Product ${offer.free_listing_id.slice(0, 8)}`,
+                price: 0,
+                variations: [],
+                selected_variations: offer.result_variation_ids || [],
+            };
+            allProducts.push(freeProduct);
+        }
+    }
+    
+    // ✅ 4. ✅✅✅ دمج كل البيانات في offer واحد
+    const enrichedOffer = {
+        ...offer,
+        bundle_products: bundleProducts,      // ✅ منتجات الباقة مع تفاصيلها
+        _products: allProducts,               // ✅ جميع المنتجات للبحث
+        free_product: freeProduct,            // ✅ المنتج المجاني
+        product_details: product,             // ✅ المنتج الأساسي
+    };
+    
+    console.log("✅ [handleViewPromoOffer] Enriched offer:", enrichedOffer);
+    console.log("✅ [handleViewPromoOffer] bundle_products:", bundleProducts);
+    console.log("✅ [handleViewPromoOffer] _products:", allProducts);
+    
+    setSelectedPromoOffer(enrichedOffer);
     setPromoDetailDialogOpen(true);
-  }, [myListings]);
-
+    
+}, [myListings]);
   // ===== فتح نافذة الإضافة =====
   const openAddDialog = useCallback((type: "product" | "offer") => {
     setDialogType(type);
@@ -669,6 +783,45 @@ if (filterType === "product") {
       toast.error(app.lang === "ar" ? "❌ حدث خطأ في الإضافة" : "❌ Error adding to cart");
     }
   }, [app.user, selectedProduct, selectedVariation, addToCart, app.lang]);
+
+  // ✅ ✅ ✅ استخدم useMemo هنا (في أعلى مستوى، قبل أي return)
+const memoizedAddBogoOfferDialog = useMemo(() => (
+    <AddBogoOfferDialog
+        key="add-bogo-offer-dialog"
+        open={offerDialogOpen}
+        onOpenChange={setOfferDialogOpen}
+        product={selectedOfferProduct}
+        existingOffer={editingOffer}
+        onSuccess={() => {
+            refetchMyListings();
+            refetchSellerOffers();
+            toast.success(app.lang === "ar" ? "✅ تم إضافة العرض الترويجي بنجاح" : "✅ Promo offer added successfully");
+        }}
+    />
+), [offerDialogOpen, selectedOfferProduct, editingOffer, refetchMyListings, refetchSellerOffers, app.lang]);
+
+const memoizedPromoOfferDetailDialog = useMemo(() => (
+    <PromoOfferDetailDialog
+        key="promo-offer-detail-dialog"
+        open={promoDetailDialogOpen}
+        onOpenChange={setPromoDetailDialogOpen}
+        offer={selectedPromoOffer}
+        product={selectedPromoProduct}
+        lang={app.lang}
+        currency={app.currency}
+        formatPrice={formatPrice}
+        onEdit={() => {
+            if (selectedPromoOffer) {
+                handleEditPromoOffer(selectedPromoOffer);
+            }
+        }}
+        onDelete={() => {
+            if (selectedPromoOffer) {
+                handleRemovePromoOffer(selectedPromoOffer.id);
+            }
+        }}
+    />
+), [promoDetailDialogOpen, selectedPromoOffer, selectedPromoProduct, app.lang, app.currency, formatPrice, handleEditPromoOffer, handleRemovePromoOffer]);
 
   // ✅ عرض حالة التحميل
   if (isLoading || isFetching) {
@@ -1021,8 +1174,8 @@ if (filterType === "product") {
         </div>
       ) : (
         <>
-         {/* ===== GRID - 6 منتجات بجنب بعض ===== */}
-<div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {/* ===== GRID ===== */}
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {paginatedProducts.map((product: any) => (
               <div key={product.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.random() * 0.2}s` }}>
                 <ProductCard
@@ -1036,7 +1189,7 @@ if (filterType === "product") {
                   onConvertToOffer={openConvertDialog}
                   onRepublish={handleRepublish}
                   onAddBogoOffer={handleAddPromoOffer}
-                  onRemoveBogoOffer={handleRemovePromoOffer}
+                  onRemovePromoOffer={handleRemovePromoOffer}
                   onEditPromoOffer={handleEditPromoOffer}
                   onViewPromoOffer={handleViewPromoOffer}
                   lang={app.lang}
@@ -1048,11 +1201,8 @@ if (filterType === "product") {
             ))}
           </div>
 
-          {/* ============================================================ */}
-          {/* 📄 PAGINATION - تحت الصفحة */}
-          {/* ============================================================ */}
+          {/* ===== PAGINATION ===== */}
           <div className="flex flex-wrap items-center justify-between gap-4 pt-5 mt-5 border-t border-slate-200/50 dark:border-slate-800/50">
-            {/* ✅ معلومات الصفحة + عدد المنتجات */}
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-sm text-muted-foreground">
                 {app.lang === "ar" 
@@ -1063,7 +1213,6 @@ if (filterType === "product") {
                 {filteredProducts.length} {app.lang === "ar" ? "منتج" : "products"}
               </Badge>
               
-              {/* ✅ اختيار عدد المنتجات في الصفحة */}
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">
                   {app.lang === "ar" ? "عرض:" : "Show:"}
@@ -1092,7 +1241,6 @@ if (filterType === "product") {
               </div>
             </div>
 
-            {/* ✅ أزرار التنقل */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <Button
                 variant="outline"
@@ -1196,8 +1344,6 @@ if (filterType === "product") {
 
           {selectedProduct && (
             <div className="flex flex-col lg:flex-row h-[95vh]">
-              
-              {/* ===== القسم الأيسر: الصور ===== */}
               <div className="lg:w-1/2 bg-gradient-to-br from-[#2a655f]/5 via-slate-50 to-[#2a655f]/5 dark:from-[#2a655f]/20 dark:via-slate-800 dark:to-[#2a655f]/20 flex flex-col h-full relative">
                 <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-transparent animate-pulse" />
                 
@@ -1238,15 +1384,15 @@ if (filterType === "product") {
                     
                     return (
                       <>
-                      <img
-                        src={detailCurrentImage || selectedProduct?.cover_url || '/placeholder.png'}
-                        alt={selectedProduct?.title_ar}
-                        className={cn(
-                          "max-h-full max-w-full object-contain rounded-xl transition-all duration-500 cursor-pointer",
-                          isZoomed && "scale-150 cursor-zoom-out"
-                        )}
-                        onClick={() => setIsZoomed(!isZoomed)}
-                      />
+                        <img
+                          src={detailCurrentImage || selectedProduct?.cover_url || '/placeholder.png'}
+                          alt={selectedProduct?.title_ar}
+                          className={cn(
+                            "max-h-full max-w-full object-contain rounded-xl transition-all duration-500 cursor-pointer",
+                            isZoomed && "scale-150 cursor-zoom-out"
+                          )}
+                          onClick={() => setIsZoomed(!isZoomed)}
+                        />
                         
                         {images.length > 1 && (
                           <>
@@ -1338,7 +1484,6 @@ if (filterType === "product") {
                 })()}
               </div>
 
-              {/* ===== القسم الأيمن: المعلومات ===== */}
               <div className="lg:w-1/2 p-6 md:p-8 overflow-y-auto bg-white dark:bg-slate-900 h-full relative">
                 <div className="absolute top-0 right-0 w-0.5 h-full bg-gradient-to-b from-transparent via-[#2a655f]/10 to-transparent" />
                 
@@ -1367,7 +1512,6 @@ if (filterType === "product") {
                   </span>
                 </div>
 
-                {/* ===== السعر ===== */}
                 <div className="mt-4 p-4 bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
                   <div className="flex items-end gap-4">
                     <div>
@@ -1388,66 +1532,64 @@ if (filterType === "product") {
                   </div>
                 </div>
 
-              {/* ===== الألوان في التفاصيل ===== */}
-{selectedProduct?.colors && selectedProduct.colors.length > 0 && (
-  <div className="mt-4">
-    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-      <Palette className="h-4 w-4 text-[#2a655f]" />
-      {app.lang === "ar" ? "اللون" : "Color"}
-      <span className="text-xs text-muted-foreground/60 ms-1">
-        ({selectedProduct.colors.length} {app.lang === "ar" ? "خيار" : "options"})
-      </span>
-    </p>
-    <div className="flex flex-wrap gap-3 mt-2">
-      {selectedProduct.colors.map((color: any) => {
-        const isSelected = detailSelectedColor?.id === color.id;
-        return (
-          <div 
-            key={color.id} 
-            className="flex flex-col items-center gap-1 group cursor-pointer"
-            onClick={() => handleDetailColorSelect(color)}
-          >
-            <div className={cn(
-              "relative h-14 w-14 rounded-xl overflow-hidden border-2 transition-all duration-300 shadow-sm",
-              isSelected 
-                ? "border-[#2a655f] ring-2 ring-[#2a655f]/30 scale-110 shadow-md shadow-[#2a655f]/20" 
-                : "border-slate-200/50 group-hover:border-[#2a655f] group-hover:scale-105"
-            )}>
-              <img 
-                src={color.image_url} 
-                alt={color.color_name_ar}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder-color.png';
-                }}
-              />
-              {isSelected && (
-                <div className="absolute inset-0 bg-[#2a655f]/20 flex items-center justify-center">
-                  <CheckCircle2 className="h-6 w-6 text-[#2a655f] drop-shadow-lg" />
-                </div>
-              )}
-            </div>
-            <span className={cn(
-              "text-[10px] transition-colors duration-300 font-medium",
-              isSelected ? "text-[#2a655f] font-bold" : "text-muted-foreground group-hover:text-[#2a655f]"
-            )}>
-              {color.color_name_ar}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-    {detailSelectedColor && (
-      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-        {app.lang === "ar" ? "اللون المختار:" : "Selected color:"} 
-        <span className="font-bold text-[#2a655f]">{detailSelectedColor.color_name_ar}</span>
-      </p>
-    )}
-  </div>
-)}
+                {selectedProduct?.colors && selectedProduct.colors.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Palette className="h-4 w-4 text-[#2a655f]" />
+                      {app.lang === "ar" ? "اللون" : "Color"}
+                      <span className="text-xs text-muted-foreground/60 ms-1">
+                        ({selectedProduct.colors.length} {app.lang === "ar" ? "خيار" : "options"})
+                      </span>
+                    </p>
+                    <div className="flex flex-wrap gap-3 mt-2">
+                      {selectedProduct.colors.map((color: any) => {
+                        const isSelected = detailSelectedColor?.id === color.id;
+                        return (
+                          <div 
+                            key={color.id} 
+                            className="flex flex-col items-center gap-1 group cursor-pointer"
+                            onClick={() => handleDetailColorSelect(color)}
+                          >
+                            <div className={cn(
+                              "relative h-14 w-14 rounded-xl overflow-hidden border-2 transition-all duration-300 shadow-sm",
+                              isSelected 
+                                ? "border-[#2a655f] ring-2 ring-[#2a655f]/30 scale-110 shadow-md shadow-[#2a655f]/20" 
+                                : "border-slate-200/50 group-hover:border-[#2a655f] group-hover:scale-105"
+                            )}>
+                              <img 
+                                src={color.image_url} 
+                                alt={color.color_name_ar}
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = '/placeholder-color.png';
+                                }}
+                              />
+                              {isSelected && (
+                                <div className="absolute inset-0 bg-[#2a655f]/20 flex items-center justify-center">
+                                  <CheckCircle2 className="h-6 w-6 text-[#2a655f] drop-shadow-lg" />
+                                </div>
+                              )}
+                            </div>
+                            <span className={cn(
+                              "text-[10px] transition-colors duration-300 font-medium",
+                              isSelected ? "text-[#2a655f] font-bold" : "text-muted-foreground group-hover:text-[#2a655f]"
+                            )}>
+                              {color.color_name_ar}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {detailSelectedColor && (
+                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                        {app.lang === "ar" ? "اللون المختار:" : "Selected color:"} 
+                        <span className="font-bold text-[#2a655f]">{detailSelectedColor.color_name_ar}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
 
-                {/* ===== ✅ التركيبات مع إمكانية الاختيار ===== */}
                 {selectedProduct?.variations && selectedProduct.variations.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -1482,7 +1624,6 @@ if (filterType === "product") {
                                 )}
                               </div>
                               
-                              {/* ✅ عرض السعرين (القديم والجديد) للعروض */}
                               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                 <span className="text-xs font-bold text-[#2a655f]">
                                   {formatPrice(variation.price || selectedProduct.price, app.currency, app.lang)}
@@ -1507,7 +1648,7 @@ if (filterType === "product") {
                     </div>
                   </div>
                 )}
-                {/* ===== المقاسات ===== */}
+                
                 {selectedProduct.sizes && selectedProduct.sizes.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -1527,7 +1668,6 @@ if (filterType === "product") {
                   </div>
                 )}
 
-                {/* ===== الوصف ===== */}
                 {selectedProduct.description_ar && (
                   <div className="mt-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                     <p className="text-sm text-muted-foreground leading-relaxed">
@@ -1569,7 +1709,6 @@ if (filterType === "product") {
                   </span>
                 </div>
 
-                {/* ===== أزرار الإجراءات ===== */}
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   <Button
                     variant="outline"
@@ -1611,7 +1750,7 @@ if (filterType === "product") {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DELETE DIALOG ===== */}
+      {/* ===== DELETE PRODUCT DIALOG ===== */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 p-0 overflow-hidden shadow-2xl shadow-[#2a655f]/10">
           <Button
@@ -1683,6 +1822,92 @@ if (filterType === "product") {
         </DialogContent>
       </Dialog>
 
+      {/* ===== ✅✅✅ Dialog تأكيد حذف العرض الترويجي ===== */}
+      <Dialog open={confirmDeleteOfferOpen} onOpenChange={(open) => {
+        setConfirmDeleteOfferOpen(open);
+        if (!open) setOfferToDelete(null);
+      }}>
+        <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 p-0 overflow-hidden shadow-2xl shadow-[#2a655f]/10">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 z-20 transition-all duration-300 hover:rotate-90"
+            onClick={() => {
+              setConfirmDeleteOfferOpen(false);
+              setOfferToDelete(null);
+            }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center animate-pulse">
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold tracking-tight">
+                  {app.lang === "ar" ? "حذف العرض الترويجي" : "Delete Promo Offer"}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {app.lang === "ar" ? "هذا الإجراء لا يمكن التراجع عنه" : "This action cannot be undone"}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-red-50/50 dark:bg-red-950/20 rounded-xl p-4 border border-red-200/50 dark:border-red-800/30 mb-4">
+              <p className="text-sm text-red-700 dark:text-red-300">
+                {app.lang === "ar"
+                  ? `هل أنت متأكد من حذف العرض الترويجي؟`
+                  : `Are you sure you want to delete this promo offer?`}
+              </p>
+              {offerToDelete && (
+                <p className="text-xs text-red-600/70 dark:text-red-400/70 mt-1">
+                  {app.lang === "ar" ? "العرض: " : "Offer: "}
+                  <span className="font-medium">
+                    {(() => {
+                      // ✅ جلب اسم العرض من sellerOffers
+                      const offer = sellerOffers.find((o: any) => o.id === offerToDelete);
+                      return offer?.display_text_ar || offer?.display_text_en || offerToDelete;
+                    })()}
+                  </span>
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setConfirmDeleteOfferOpen(false);
+                  setOfferToDelete(null);
+                }}
+                className="flex-1 rounded-xl border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300"
+              >
+                {app.lang === "ar" ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                onClick={handleConfirmDeleteOffer}
+                disabled={deletePromoOffer.isPending}
+                className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-600/25 hover:shadow-red-600/40 hover:scale-[1.02] transition-all duration-300 group"
+              >
+                {deletePromoOffer.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                    {app.lang === "ar" ? "جاري الحذف..." : "Deleting..."}
+                  </span>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 me-2 group-hover:scale-110 transition-transform duration-300" />
+                    {app.lang === "ar" ? "تأكيد الحذف" : "Confirm Delete"}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ✅ ProductFormDialog */}
       <ProductFormDialog
         open={dialogOpen}
@@ -1706,39 +1931,11 @@ if (filterType === "product") {
         formatPrice={formatPrice}
       />
 
-      {/* ✅ ✅ ✅ نافذة العرض الترويجي (BOGO/Cross-sell/Bundle) */}
-      <AddBogoOfferDialog
-        open={offerDialogOpen}
-        onOpenChange={setOfferDialogOpen}
-        product={selectedOfferProduct}
-        existingOffer={editingOffer}
-        onSuccess={() => {
-          refetchMyListings();
-          refetchSellerOffers();
-          toast.success(app.lang === "ar" ? "✅ تم إضافة العرض الترويجي بنجاح" : "✅ Promo offer added successfully");
-        }}
-      />
+      {/* ✅ ✅ ✅ نافذة العرض الترويجي (BOGO/Cross-sell/Bundle) - استخدام useMemo */}
+      {memoizedAddBogoOfferDialog}
 
-    {/* ✅ ✅ ✅ نافذة تفاصيل العرض الترويجي */}
-<PromoOfferDetailDialog
-  open={promoDetailDialogOpen}
-  onOpenChange={setPromoDetailDialogOpen}
-  offer={selectedPromoOffer}
-  product={selectedPromoProduct}
-  lang={app.lang}
-  currency={app.currency}
-  formatPrice={formatPrice}
-  onEdit={() => {
-    if (selectedPromoOffer) {
-      handleEditPromoOffer(selectedPromoOffer);
-    }
-  }}
-  onDelete={() => {
-    if (selectedPromoOffer) {
-      handleRemovePromoOffer(selectedPromoOffer.id);
-    }
-  }}
-/>
+      {/* ✅ ✅ ✅ نافذة تفاصيل العرض الترويجي - استخدام useMemo */}
+      {memoizedPromoOfferDetailDialog}
     </div>
   );
 });

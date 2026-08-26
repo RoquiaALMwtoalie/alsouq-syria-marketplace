@@ -62,13 +62,50 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DistributorAccountMenu } from "@/components/distributor/DistributorAccountMenu";
 import { DistributorNotifications } from "@/components/distributor/DistributorNotifications";
 import { OrderTrackingMap } from "@/components/distributor/OrderTrackingMap";
 import { useUnreadCount } from "@/lib/hooks/useConversation";
+import {
+  useUserNotifications,
+  useMarkNotificationReadV2,
+  useMarkAllNotificationsReadV2
+} from "@/lib/queries";
+import { NOTIFICATION_CONFIG, NOTIFICATION_TYPES, NotificationType } from "@/types/notificationTypes";
+
+const ICON_MAP: Record<string, any> = {
+  'clock': Clock,
+  'check-circle': CheckCircle,
+  'x-circle': XCircle,
+  'store': Store,
+  'package': Package,
+  'sparkles': Sparkles,
+  'megaphone': Megaphone,
+  'gift': Gift,
+  'trending-up': TrendingUp,
+  'calendar': Calendar,
+  'globe': Globe,
+  'settings': Settings,
+  'shopping-bag': ShoppingBag,
+  'shield': Shield,
+  'bell': Bell,
+  'rocket': Rocket,
+  'gem': Gem,
+  'crown': Crown,
+  'flame': Flame,
+  'compass': Compass,
+  'target': Target,
+  'zap': Zap,
+  'award': Award,
+  'badge-check': BadgeCheck,
+};
+
+const getNotificationConfig = (type: string) => {
+  return NOTIFICATION_CONFIG[type as NotificationType] || NOTIFICATION_CONFIG[NOTIFICATION_TYPES.SYSTEM];
+};
 
 export const Route = createFileRoute("/distributor/dashboard")({
   component: DistributorDashboardPage,
@@ -107,13 +144,207 @@ function DistributorDashboardPage() {
   const [allOrders, setAllOrders] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [distributors, setDistributors] = useState<any[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
 
   // ✅ State لصورة الموزع
   const [showAvatarDialog, setShowAvatarDialog] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  // ============================================================
+  // ✅✅✅ تعريف isArabic أولاً ✅✅✅
+  // ============================================================
+  const isArabic = app.lang === "ar";
+
+  // ============================================================
+  // ✅✅✅ جلب الإشعارات - قبل useEffect ✅✅✅
+  // ============================================================
+  const { data: notifications = [], refetch: refetchNotifications } = useUserNotifications(app.user?.id, { limit: 50 });
+
+  // ✅ Mutations للإشعارات
+  const markRead = useMarkNotificationReadV2();
+  const markAllRead = useMarkAllNotificationsReadV2();
+
+  // ✅ State لعدد الإشعارات غير المقروءة
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+
+  // ✅ تحديث unreadNotificationsCount من notifications
+  useEffect(() => {
+    const count = notifications.filter((n: any) => !n.is_read).length;
+    setUnreadNotificationsCount(count);
+  }, [notifications]);
+
+  // ============================================================
+  // ✅ Realtime للإشعارات - مخصص للموزع (نفس طريقة شركة التوصيل)
+  // ============================================================
+  const notificationChannelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
+
+  useEffect(() => {
+    if (!app.user) {
+      console.log('⏳ [Distributor] No user, skipping notification setup');
+      return;
+    }
+
+    if (isSubscribedRef.current) {
+      console.log('📡 [Distributor] Already subscribed to notifications');
+      return;
+    }
+
+    console.log('📡 [Distributor] Setting up REAL-TIME notifications for user:', app.user.id);
+
+    const channel = supabase
+      .channel(`distributor-notifications-${app.user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${app.user.id}`,
+        },
+        (payload) => {
+          const notification = payload.new as any;
+          
+          console.log('📬 [Distributor] 🔔 NEW NOTIFICATION RECEIVED:', notification);
+          console.log('📬 [Distributor] Title:', notification.title_ar || notification.title_en);
+          console.log('📬 [Distributor] Body:', notification.body_ar || notification.body_en);
+          
+          // ✅ 1️⃣ تحديث قائمة الإشعارات
+          refetchNotifications();
+          
+          // ✅ 2️⃣ عرض Toast في منتصف الشاشة
+          toast.success(
+            isArabic 
+              ? `🔔 ${notification.title_ar || 'إشعار جديد'}`
+              : `🔔 ${notification.title_en || 'New notification'}`,
+            {
+              duration: 15000,
+              position: 'top-center',
+              icon: '🔔',
+              description: isArabic 
+                ? (notification.body_ar || '')
+                : (notification.body_en || ''),
+              action: {
+                label: isArabic ? '📋 عرض' : '📋 View',
+                onClick: () => {
+                  if (notification.link_url) {
+                    navigate({ to: notification.link_url });
+                  }
+                }
+              }
+            }
+          );
+
+          // ✅ 3️⃣ تشغيل الصوت
+          try {
+            const audio = new Audio('/notification.mp3');
+            audio.volume = 0.7;
+            audio.play().catch(() => console.log('🔇 Audio play failed'));
+          } catch (e) {
+            console.log('🔇 Audio error:', e);
+          }
+
+          // ✅ 4️⃣ إظهار إشعار المتصفح
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              const browserNotification = new Notification(
+                isArabic ? notification.title_ar || 'إشعار جديد' : notification.title_en || 'New notification',
+                {
+                  body: isArabic ? notification.body_ar : notification.body_en,
+                  icon: '/images/Logo.png',
+                  vibrate: [200, 100, 200],
+                }
+              );
+              
+              browserNotification.onclick = () => {
+                window.focus();
+                if (notification.link_url) {
+                  navigate({ to: notification.link_url });
+                }
+              };
+              
+              setTimeout(() => browserNotification.close(), 30000);
+            } catch (e) {
+              console.log('🔔 Browser notification error:', e);
+            }
+          }
+
+          // ✅ 5️⃣ تحديث عدد الإشعارات غير المقروءة
+          setUnreadNotificationsCount(prev => prev + 1);
+        }
+      )
+      .subscribe((status) => {
+        console.log(`📡 [Distributor] Realtime status: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+          // ✅ تم إزالة toast.success لتجنب الرسالة المتكررة
+        }
+        if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          isSubscribedRef.current = false;
+        }
+      });
+
+    notificationChannelRef.current = channel;
+
+    return () => {
+      if (notificationChannelRef.current) {
+        console.log('🧹 [Distributor] Cleaning up notifications channel');
+        supabase.removeChannel(notificationChannelRef.current);
+        notificationChannelRef.current = null;
+        isSubscribedRef.current = false;
+      }
+    };
+  }, [app.user?.id, isArabic, navigate, refetchNotifications]);
+
+  // ============================================================
+  // ✅ دوال الإشعارات (نفس طريقة شركة التوصيل)
+  // ============================================================
+  const handleNotificationClick = useCallback(async (notification: any) => {
+    if (!notification.is_read) {
+      try {
+        await markRead.mutateAsync({
+          notificationId: notification.id,
+          userId: app.user!.id
+        });
+        await refetchNotifications();
+      } catch (error) {
+        console.error("Error marking notification as read:", error);
+      }
+    }
+    if (notification.link_url) {
+      window.location.href = notification.link_url;
+      setNotificationsOpen(false);
+    }
+  }, [markRead, app.user, refetchNotifications]);
+
+  const handleMarkAsRead = useCallback(async (notificationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await markRead.mutateAsync({
+        notificationId: notificationId,
+        userId: app.user!.id
+      });
+      await refetchNotifications();
+      toast.success(isArabic ? "تم تحديد الإشعار كمقروء" : "Notification marked as read");
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      toast.error(isArabic ? "حدث خطأ" : "An error occurred");
+    }
+  }, [markRead, app.user, isArabic, refetchNotifications]);
+
+  const handleMarkAllAsRead = useCallback(async () => {
+    try {
+      await markAllRead.mutateAsync({
+        userId: app.user!.id
+      });
+      await refetchNotifications();
+      toast.success(isArabic ? "تم تحديد الكل كمقروء" : "All notifications marked as read");
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+      toast.error(isArabic ? "حدث خطأ" : "An error occurred");
+    }
+  }, [markAllRead, app.user, isArabic, refetchNotifications]);
 
   // ============================================================
   // ✅ دوال التصدير والطباعة
@@ -372,20 +603,6 @@ function DistributorDashboardPage() {
     fetchOrders();
   }, [app.user?.id]);
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!app.user?.id) return;
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", app.user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (!error) setNotifications(data || []);
-    };
-    fetchNotifications();
-  }, [app.user?.id]);
-
   const refetchOrders = useCallback(async () => {
     if (!app.user?.id) return;
     try {
@@ -425,7 +642,6 @@ function DistributorDashboardPage() {
     if (!error) setDistributors(data || []);
   }, [app.user?.id]);
 
-  const unreadNotificationsCount = notifications.filter((n: any) => !n.is_read).length;
   const { data: unreadCount = 0 } = useUnreadCount();
 
   const currentDistributor = useMemo(() => {
@@ -858,15 +1074,12 @@ function DistributorDashboardPage() {
     return colors[status] || "bg-slate-500/10 text-slate-500";
   };
 
-  const isArabic = app.lang === "ar";
-
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-to-br from-[#0d2e2a]/5 via-white to-[#2a655f]/5 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#0d2e2a]/10">
         
-        {/* HEADER - نفس الكود مع ألوان متطابقة */}
+        {/* HEADER */}
         <div className="relative bg-gradient-to-r from-[#0d2e2a]/90 via-[#1a4f4a]/85 to-[#2a655f]/80 backdrop-blur-md text-white overflow-hidden shadow-2xl shadow-[#0d2e2a]/20 border-b border-white/10 sticky top-0 z-50">
-          {/* باقي الهيدر كما هو */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
             <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
@@ -934,7 +1147,28 @@ function DistributorDashboardPage() {
                 </div>
               </div>
               <div className="flex items-center gap-1 flex-wrap flex-shrink-0">
-                <DistributorNotifications userId={app.user?.id} isArabic={isArabic} />
+                {/* ✅ ✅ ✅ زر الإشعارات - نفس طريقة شركة التوصيل */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
+                      onClick={() => setNotificationsOpen(true)}
+                    >
+                      <Bell className="h-4 w-4 md:h-5 md:w-5" />
+                      {unreadNotificationsCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
+                          {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                        </span>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
+                    <p>{isArabic ? "الإشعارات" : "Notifications"}</p>
+                  </TooltipContent>
+                </Tooltip>
+
                 <Link to="/distributor/messages" className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative flex items-center justify-center">
                   <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
                   {unreadCount > 0 && (
@@ -978,7 +1212,100 @@ function DistributorDashboardPage() {
           </div>
         </div>
 
-        {/* STATS CARDS - بألوان الزيتي الجذابة */}
+        {/* ✅✅✅ DIALOG: الإشعارات - نفس طريقة شركة التوصيل ✅✅✅ */}
+        <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+          <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 shadow-2xl">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <DialogTitle className="flex items-center gap-2 text-[#0d2e2a] dark:text-white">
+                  <Bell className="h-5 w-5 text-[#2a655f]" />
+                  {isArabic ? "الإشعارات" : "Notifications"}
+                  {unreadNotificationsCount > 0 && (
+                    <Badge className="bg-red-500 text-white border-0 text-[10px]">
+                      {unreadNotificationsCount}
+                    </Badge>
+                  )}
+                </DialogTitle>
+                {unreadNotificationsCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleMarkAllAsRead}
+                    className="text-xs text-[#2a655f] hover:bg-[#2a655f]/10 rounded-xl"
+                  >
+                    {isArabic ? "تحديد الكل كمقروء" : "Mark all as read"}
+                  </Button>
+                )}
+              </div>
+            </DialogHeader>
+            
+            <div className="max-h-[60vh] overflow-y-auto space-y-2">
+              {notifications.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <BellOff className="h-12 w-12 mx-auto mb-2 text-muted-foreground/30" />
+                  <p>{isArabic ? "لا توجد إشعارات" : "No notifications"}</p>
+                </div>
+              ) : (
+                notifications.map((notification: any) => {
+                  const config = getNotificationConfig(notification.type);
+                  const Icon = config?.icon ? ICON_MAP[config.icon] || Bell : Bell;
+                  const isRead = notification.is_read;
+                  
+                  return (
+                    <div
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={cn(
+                        "p-3 rounded-xl border cursor-pointer transition-all duration-200 hover:shadow-md",
+                        isRead 
+                          ? "bg-white dark:bg-slate-900 border-slate-200/50 dark:border-slate-700/50" 
+                          : "bg-[#2a655f]/5 border-[#2a655f]/30 hover:bg-[#2a655f]/10"
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          "h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                          isRead ? "bg-slate-100 dark:bg-slate-800" : "bg-[#2a655f]/20"
+                        )}>
+                          <Icon className="h-4 w-4 text-[#2a655f]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            "text-sm font-semibold",
+                            isRead ? "text-slate-700 dark:text-slate-300" : "text-[#0d2e2a] dark:text-white"
+                          )}>
+                            {isArabic ? notification.title_ar : notification.title_en || notification.title_ar}
+                          </p>
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {isArabic ? notification.body_ar : notification.body_en || notification.body_ar}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground/60 mt-1">
+                            {formatTime(notification.created_at)}
+                          </p>
+                        </div>
+                        {!isRead && (
+                          <div className="h-2 w-2 rounded-full bg-[#2a655f] animate-pulse flex-shrink-0 mt-1" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setNotificationsOpen(false)} 
+                className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10"
+              >
+                {isArabic ? "إغلاق" : "Close"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* STATS CARDS */}
         <div className="mx-auto max-w-7xl px-4 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <StatCard icon={ClipboardList} label={isArabic ? "الطلبات" : "Orders"} value={stats.total} color="teal" />
@@ -990,7 +1317,7 @@ function DistributorDashboardPage() {
           </div>
         </div>
 
-        {/* ORDERS TAB - مع Pagination */}
+        {/* ORDERS TAB */}
         <div className="mx-auto max-w-7xl px-4 pb-6">
           <div className="flex items-center justify-between gap-2 border-b border-[#2a655f]/20 mb-6 flex-wrap">
             <button className="flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 border-[#2a655f] text-[#2a655f] dark:text-[#4a9f95] hover:scale-105">
@@ -1004,7 +1331,6 @@ function DistributorDashboardPage() {
             </button>
 
             <div className="flex items-center gap-2 pb-2">
-              {/* عدد العناصر في الصفحة */}
               <select
                 value={activeLimit}
                 onChange={(e) => { setActiveLimit(Number(e.target.value)); setActivePage(1); }}
@@ -1138,7 +1464,6 @@ function DistributorDashboardPage() {
                   ))}
                 </div>
 
-                {/* ✅ Pagination للطلبات النشطة */}
                 {totalActivePages > 1 && (
                   <div className="flex items-center justify-between pt-4 mt-4 border-t border-[#2a655f]/20 flex-wrap gap-3">
                     <span className="text-xs text-muted-foreground flex items-center gap-2">
@@ -1225,7 +1550,7 @@ function DistributorDashboardPage() {
           </div>
         </div>
 
-        {/* HISTORY - مع Pagination */}
+        {/* HISTORY */}
         <div className="mx-auto max-w-7xl px-4 pb-12">
           <div className="flex items-center justify-between gap-2 border-b border-[#2a655f]/20 mb-6 flex-wrap">
             <button className="flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 border-[#2a655f] text-[#2a655f] dark:text-[#4a9f95] hover:scale-105">
@@ -1385,7 +1710,7 @@ function DistributorDashboardPage() {
           )}
         </div>
 
-        {/* STATUS UPDATE DIALOG - نفس الكود */}
+        {/* STATUS UPDATE DIALOG */}
         {isStatusDialogOpen && selectedOrder && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full mx-4 shadow-2xl border-4 border-[#2a655f] max-h-[90vh] overflow-y-auto">
@@ -1445,7 +1770,7 @@ function DistributorDashboardPage() {
           </div>
         )}
 
-        {/* ORDER DETAILS DIALOG - نفس الكود مع ألوان متطابقة */}
+        {/* ORDER DETAILS DIALOG */}
         <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
           <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto border-[#2a655f]/20 shadow-2xl">
             <DialogHeader>
@@ -1538,7 +1863,7 @@ function DistributorDashboardPage() {
           </DialogContent>
         </Dialog>
 
-        {/* ديالوج رفع صورة الموزع - نفس الكود */}
+        {/* ديالوج رفع صورة الموزع */}
         {currentDistributor && !currentDistributor.avatar_url && (
           <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
             <DialogContent className="w-[95vw] max-w-md rounded-2xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-slate-900 border-[#2a655f]/30">
@@ -1743,7 +2068,7 @@ function DistributorDashboardPage() {
 }
 
 // ============================================================
-// 📦 StatCard Component - بألوان زيتية
+// 📦 StatCard Component
 // ============================================================
 function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: string; }) {
   const colors: Record<string, string> = {
@@ -1767,7 +2092,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
 }
 
 // ============================================================
-// 📦 OrderCard Component - مع ألوان زيتية
+// 📦 OrderCard Component
 // ============================================================
 const OrderCard = React.memo(function OrderCard({ 
   order, 
@@ -1873,7 +2198,6 @@ const OrderCard = React.memo(function OrderCard({
                 </span>
                 <span className="text-muted-foreground/30">|</span>
                 
-                {/* ✅ سعر التوصيل */}
                 <span className="flex items-center gap-1">
                   <Truck className="h-3 w-3 text-[#2a655f]" />
                   <span className="font-medium">{isArabic ? "توصيل:" : "Delivery:"}</span>
@@ -1883,14 +2207,13 @@ const OrderCard = React.memo(function OrderCard({
                 </span>
                 <span className="text-muted-foreground/30">|</span>
                 
-                {/* ✅ الإجمالي الكامل */}
-               <span className="flex items-center gap-1">
-  <Wallet className="h-3 w-3 text-[#2a655f]" />  // ✅ أيقونة محفظة بدل $
-  <span className="font-medium">{isArabic ? "الإجمالي:" : "Total:"}</span>
-  <span className="font-bold text-[#2a655f]">
-    {Number(order.orders?.total_with_delivery || order.cod_amount || order.orders?.total || 0).toLocaleString()} {app.currency}
-  </span>
-</span>
+                <span className="flex items-center gap-1">
+                  <Wallet className="h-3 w-3 text-[#2a655f]" />
+                  <span className="font-medium">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                  <span className="font-bold text-[#2a655f]">
+                    {Number(order.orders?.total_with_delivery || order.cod_amount || order.orders?.total || 0).toLocaleString()} {app.currency}
+                  </span>
+                </span>
                 <span className="text-muted-foreground/30">|</span>
                 
                 <span className="flex items-center gap-1">
@@ -2049,7 +2372,7 @@ const OrderCard = React.memo(function OrderCard({
 });
 
 // ============================================================
-// 📦 HistoryOrderCard Component - بألوان زيتية
+// 📦 HistoryOrderCard Component
 // ============================================================
 function HistoryOrderCard({ 
   order, 
@@ -2115,7 +2438,6 @@ function HistoryOrderCard({
               </span>
               <span className="text-muted-foreground/30">|</span>
               
-              {/* ✅ سعر التوصيل في History */}
               <span className="flex items-center gap-1">
                 <Truck className="h-3 w-3 text-[#2a655f]" />
                 <span className="font-medium">{isArabic ? "توصيل:" : "Delivery:"}</span>
@@ -2125,14 +2447,13 @@ function HistoryOrderCard({
               </span>
               <span className="text-muted-foreground/30">|</span>
               
-              {/* ✅ الإجمالي الكامل في History */}
-                <span className="flex items-center gap-1">
-          <Wallet className="h-3 w-3 text-[#2a655f]" />  
-          <span className="font-medium">{isArabic ? "الإجمالي:" : "Total:"}</span>
-          <span className="font-bold text-[#2a655f]">
-            {Number(order.orders?.total_with_delivery || order.cod_amount || order.orders?.total || 0).toLocaleString()} {app.currency}
-          </span>
-        </span>
+              <span className="flex items-center gap-1">
+                <Wallet className="h-3 w-3 text-[#2a655f]" />
+                <span className="font-medium">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                <span className="font-bold text-[#2a655f]">
+                  {Number(order.orders?.total_with_delivery || order.cod_amount || order.orders?.total || 0).toLocaleString()} {app.currency}
+                </span>
+              </span>
               <span className="text-muted-foreground/30">|</span>
               
               <span className="flex items-center gap-1">
@@ -2165,4 +2486,30 @@ function HistoryOrderCard({
       </div>
     </div>
   );
+}
+
+// ✅ دالة formatTime (للاستخدام العام)
+function formatTime(date: string): string {
+  const now = new Date();
+  const then = new Date(date);
+  const diffMs = now.getTime() - then.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  const isArabic = document.documentElement.dir === 'rtl';
+
+  if (isArabic) {
+    if (diffMins < 1) return "الآن";
+    if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
+    if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+    if (diffDays < 7) return `منذ ${diffDays} يوم`;
+    return then.toLocaleDateString("ar-SA", { day: "numeric", month: "short" });
+  } else {
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return then.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+  }
 }

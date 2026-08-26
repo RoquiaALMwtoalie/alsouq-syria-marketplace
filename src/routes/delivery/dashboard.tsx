@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Truck, Package, Users, Clock, CheckCircle, XCircle,
   TrendingUp, DollarSign, MapPin, Phone, Mail,
-  Calendar, ArrowRight, ChevronLeft, ChevronRight, Plus,  // ✅ أضف ChevronRight هنا
+  Calendar, ArrowRight, ChevronLeft, ChevronRight, Plus,
   Search, Filter, MoreVertical, Eye, Edit, Trash2,
   AlertCircle, RefreshCw, UserCheck, UserX,
   BarChart3, PieChart, Activity, Star,
@@ -193,12 +193,56 @@ function DeliveryDashboardPage() {
   const hasRedirected = useRef(false);
 
   // ✅ State للـ Pagination
-    // ✅ State للـ Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // ✅ تعريف isArabic هنا
+  const isArabic = app.lang === "ar";
+
   // ============================================================
-  // ✅ Realtime للإشعارات - مخصص لشركة التوصيل
+  // ✅✅✅ جلب البيانات - الترتيب الصحيح ✅✅✅
+  // ============================================================
+
+  // 1️⃣ جلب الشركة أولاً (لأن الموزعين يعتمدون عليها)
+  const { data: company, isLoading: companyLoading, refetch: refetchCompany } = useMyDeliveryCompany(app.user?.id);
+
+  // 2️⃣ جلب الموزعين (يعتمد على company.id)
+  const { 
+    data: allDistributors = [], 
+    isLoading: distributorsLoading,
+    refetch: refetchDistributors 
+  } = useDistributors({
+    companyId: company?.id,
+    isAvailable: true,
+    active: true,
+  });
+
+  // 3️⃣ باقي البيانات (لا تعتمد على company)
+  const { data: orders = [], isLoading: ordersLoading, refetch: refetchOrders } = useDeliveryOrders(app.user?.id);
+  const { data: governorates = [] } = useGovernorates();
+  const { data: allCompanies } = useDeliveryCompanies({ active: true });
+  const { data: userRoles = [], refetch: refetchUserRoles } = useUserRoles(app.user?.id);
+  const { data: conversations = [] } = useConversations();
+  const { data: unreadCount = 0 } = useUnreadCount();
+  
+  // ✅✅✅ مهم: تعريف notifications و refetchNotifications قبل useEffect للإشعارات
+  const { data: notifications = [], refetch: refetchNotifications } = useUserNotifications(app.user?.id, { limit: 50 });
+
+  // ✅ Mutations
+  const getOrCreateConversation = useGetOrCreateConversation();
+  const updateCompanyMutation = useUpdateDeliveryCompany();
+  const updateDistributorMutation = useUpdateDistributor();
+  const markRead = useMarkNotificationReadV2();
+  const markAllRead = useMarkAllNotificationsReadV2();
+
+  // ✅ Mutations جديدة للقبول والرفض
+  const acceptOrderMutation = useAcceptDeliveryOrder();
+  const rejectOrderMutation = useRejectDeliveryOrder();
+
+  const unreadNotificationsCount = notifications.filter((n: any) => !n.is_read).length;
+
+  // ============================================================
+  // ✅ Realtime للإشعارات - بعد تعريف refetchNotifications
   // ============================================================
   const notificationChannelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
@@ -297,23 +341,16 @@ function DeliveryDashboardPage() {
           setUnreadNotificationsCount(prev => prev + 1);
         }
       )
-      .subscribe((status) => {
-        console.log(`📡 [Delivery] Realtime status: ${status}`);
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
-          toast.success(
-            isArabic ? '🔔 الإشعارات الفورية مفعلة ✅' : '🔔 Real-time notifications enabled ✅',
-            {
-              duration: 3000,
-              position: 'top-center',
-              icon: '✅',
-            }
-          );
-        }
-        if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          isSubscribedRef.current = false;
-        }
-      });
+     .subscribe((status) => {
+  console.log(`📡 [Delivery] Realtime status: ${status}`);
+  if (status === 'SUBSCRIBED') {
+    isSubscribedRef.current = true;
+    // ✅ تم إزالة toast.success
+  }
+  if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+    isSubscribedRef.current = false;
+  }
+});
 
     notificationChannelRef.current = channel;
 
@@ -326,50 +363,6 @@ function DeliveryDashboardPage() {
       }
     };
   }, [app.user?.id, isArabic, navigate, refetchNotifications]);
-
-  // ============================================================
-  // ✅✅✅ جلب البيانات - الترتيب الصحيح ✅✅✅
-  // ============================================================
-  // ============================================================
-  // ✅✅✅ جلب البيانات - الترتيب الصحيح ✅✅✅
-  // ============================================================
-
-  // 1️⃣ جلب الشركة أولاً (لأن الموزعين يعتمدون عليها)
-  const { data: company, isLoading: companyLoading, refetch: refetchCompany } = useMyDeliveryCompany(app.user?.id);
-
-  // 2️⃣ جلب الموزعين (يعتمد على company.id)
-  const { 
-    data: allDistributors = [], 
-    isLoading: distributorsLoading,
-    refetch: refetchDistributors 
-  } = useDistributors({
-    companyId: company?.id,
-    isAvailable: true,
-    active: true,
-  });
-
-  // 3️⃣ باقي البيانات (لا تعتمد على company)
-  const { data: orders = [], isLoading: ordersLoading, refetch: refetchOrders } = useDeliveryOrders(app.user?.id);
-  const { data: governorates = [] } = useGovernorates();
-  const { data: allCompanies } = useDeliveryCompanies({ active: true });
-  const { data: userRoles = [], refetch: refetchUserRoles } = useUserRoles(app.user?.id);
-  const { data: conversations = [] } = useConversations();
-  const { data: unreadCount = 0 } = useUnreadCount();
-  const { data: notifications = [], refetch: refetchNotifications } = useUserNotifications(app.user?.id, { limit: 50 });
-
-  // ✅ Mutations
-  const getOrCreateConversation = useGetOrCreateConversation();
-  const updateCompanyMutation = useUpdateDeliveryCompany();
-  const updateDistributorMutation = useUpdateDistributor();
-  const markRead = useMarkNotificationReadV2();
-  const markAllRead = useMarkAllNotificationsReadV2();
-
-  // ✅ Mutations جديدة للقبول والرفض
-  const acceptOrderMutation = useAcceptDeliveryOrder();
-  const rejectOrderMutation = useRejectDeliveryOrder();
-
-  const unreadNotificationsCount = notifications.filter((n: any) => !n.is_read).length;
-  const isArabic = app.lang === "ar";
 
   // ============================================================
   // ✅ دوال التصدير والطباعة
@@ -1858,24 +1851,24 @@ function DeliveryDashboardPage() {
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={itemsPerPage}
-                          onChange={(e) => {
-                            setItemsPerPage(Number(e.target.value));
-                            setCurrentPage(1);
-                          }}
-                          className="h-9 px-2 rounded-xl border border-slate-200/50 dark:border-slate-800/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#0d2e2a]/20"
-                        >
-                          <option value="5">5</option>
-                          <option value="10" selected>10</option>
-                          <option value="25">25</option>
-                          <option value="50">50</option>
-                        </select>
-                        <span className="text-xs text-muted-foreground">
-                          {isArabic ? "لكل صفحة" : "per page"}
-                        </span>
-                      </div>
+                   <div className="flex items-center gap-2">
+  <select
+    value={itemsPerPage}
+    onChange={(e) => {
+      setItemsPerPage(Number(e.target.value));
+      setCurrentPage(1);
+    }}
+    className="h-9 px-2 rounded-xl border border-slate-200/50 dark:border-slate-800/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#0d2e2a]/20"
+  >
+    <option value="5">5</option>
+    <option value="10">10</option>  
+    <option value="25">25</option>
+    <option value="50">50</option>
+  </select>
+  <span className="text-xs text-muted-foreground">
+    {isArabic ? "لكل صفحة" : "per page"}
+  </span>
+</div>
                     </div>
                   )}
                 </>

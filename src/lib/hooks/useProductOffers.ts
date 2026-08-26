@@ -277,6 +277,7 @@ export function useCreateProductOffer() {
                     display_text_ar: data.display_text_ar || null,
                     display_text_en: data.display_text_en || null,
                     category_id: data.category_id || null,
+                    metadata: data.metadata || {}
                 })
                 .select()
                 .single();
@@ -298,25 +299,112 @@ export function useCreateProductOffer() {
 // ============================================================
 // 📦 حذف عرض
 // ============================================================
+// ============================================================
+// 📦 حذف عرض - ✅✅✅ النسخة المحسّنة مع logs
+// ============================================================
 export function useDeleteProductOffer() {
     const queryClient = useQueryClient();
     
     return useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase
-                .from("product_offers")
-                .delete()
-                .eq("id", id);
+            console.log("🔴 [useDeleteProductOffer.mutationFn] ===== START =====");
+            console.log("🔴 [useDeleteProductOffer.mutationFn] offerId:", id);
+            console.log("🔴 [useDeleteProductOffer.mutationFn] typeof id:", typeof id);
+            
+            // ✅ التحقق من صحة الـ ID
+            if (!id) {
+                console.error("❌ [useDeleteProductOffer.mutationFn] ID is empty or null");
+                throw new Error("Offer ID is required");
+            }
+            
+            if (id.length < 10) {
+                console.error("❌ [useDeleteProductOffer.mutationFn] ID seems invalid (too short):", id);
+                throw new Error("Invalid offer ID");
+            }
+            
+            console.log("🔄 [useDeleteProductOffer.mutationFn] Calling supabase delete...");
+            console.log("🔄 [useDeleteProductOffer.mutationFn] Query:", `product_offers.delete().eq('id', '${id}')`);
+            
+            try {
+                const { data, error } = await supabase
+                    .from("product_offers")
+                    .delete()
+                    .eq("id", id)
+                    .select(); // ✅ إضافة .select() لمعرفة ما تم حذفه
 
-            if (error) throw error;
+                console.log("📦 [useDeleteProductOffer.mutationFn] Supabase response received");
+                console.log("📦 [useDeleteProductOffer.mutationFn] data:", data);
+                console.log("📦 [useDeleteProductOffer.mutationFn] error:", error);
+                
+                if (error) {
+                    console.error("❌ [useDeleteProductOffer.mutationFn] Supabase error:", error);
+                    console.error("❌ [useDeleteProductOffer.mutationFn] Error code:", error.code);
+                    console.error("❌ [useDeleteProductOffer.mutationFn] Error message:", error.message);
+                    console.error("❌ [useDeleteProductOffer.mutationFn] Error details:", error.details);
+                    console.error("❌ [useDeleteProductOffer.mutationFn] Error hint:", error.hint);
+                    
+                    // ✅ رمي الخطأ مع رسالة واضحة
+                    throw new Error(`Supabase delete error: ${error.message} (code: ${error.code})`);
+                }
+                
+                // ✅ التحقق من أن شيئاً ما تم حذفه
+                if (!data || data.length === 0) {
+                    console.warn("⚠️ [useDeleteProductOffer.mutationFn] No rows were deleted");
+                    console.warn("⚠️ [useDeleteProductOffer.mutationFn] This might mean the offer doesn't exist or you don't have permission");
+                    
+                    // ✅ حاول التحقق من وجود العرض أولاً
+                    console.log("🔍 [useDeleteProductOffer.mutationFn] Checking if offer exists...");
+                    const { data: checkData, error: checkError } = await supabase
+                        .from("product_offers")
+                        .select("id, store_id")
+                        .eq("id", id)
+                        .maybeSingle();
+                    
+                    console.log("🔍 [useDeleteProductOffer.mutationFn] Check result:", checkData);
+                    console.log("🔍 [useDeleteProductOffer.mutationFn] Check error:", checkError);
+                    
+                    if (!checkData) {
+                        throw new Error(`Offer with ID ${id} not found in database`);
+                    }
+                    
+                    console.warn("⚠️ [useDeleteProductOffer.mutationFn] Offer exists but delete returned no rows. Check RLS policies.");
+                } else {
+                    console.log("✅ [useDeleteProductOffer.mutationFn] Successfully deleted offer:", data[0]?.id);
+                }
+                
+                console.log("✅ [useDeleteProductOffer.mutationFn] ===== SUCCESS =====");
+                return { success: true, deleted: data };
+                
+            } catch (error: any) {
+                console.error("❌ [useDeleteProductOffer.mutationFn] ===== ERROR IN MUTATION =====");
+                console.error("❌ [useDeleteProductOffer.mutationFn] Error:", error);
+                console.error("❌ [useDeleteProductOffer.mutationFn] Error message:", error?.message);
+                console.error("❌ [useDeleteProductOffer.mutationFn] Error stack:", error?.stack);
+                throw error; // ✅ إعادة رمي الخطأ
+            }
         },
-        onSuccess: () => {
+        onSuccess: (data, variables) => {
+            console.log("✅ [useDeleteProductOffer.onSuccess] Offer deleted successfully:", variables);
+            console.log("✅ [useDeleteProductOffer.onSuccess] Deleted data:", data);
+            
             queryClient.invalidateQueries({ queryKey: ["product-offer"] });
             queryClient.invalidateQueries({ queryKey: ["seller-offers"] });
-            toast.success("✅ تم حذف العرض الترويجي بنجاح");
+            queryClient.invalidateQueries({ queryKey: ["listings"] });
+            
+            // ✅ ✅ ✅ إزالة الـ toast من هنا لمنع التكرار
+            // toast.success("✅ تم حذف العرض الترويجي بنجاح");
         },
-        onError: (error: any) => {
-            toast.error(`❌ فشل حذف العرض: ${error.message}`);
+        onError: (error: any, variables) => {
+            console.error("❌ [useDeleteProductOffer.onError] ===== MUTATION ERROR =====");
+            console.error("❌ [useDeleteProductOffer.onError] variables:", variables);
+            console.error("❌ [useDeleteProductOffer.onError] error:", error);
+            console.error("❌ [useDeleteProductOffer.onError] error type:", typeof error);
+            console.error("❌ [useDeleteProductOffer.onError] error message:", error?.message);
+            console.error("❌ [useDeleteProductOffer.onError] error stack:", error?.stack);
+            
+            // ✅ عرض رسالة خطأ للمستخدم
+            const errorMessage = error?.message || "فشل حذف العرض الترويجي";
+            toast.error(`❌ ${errorMessage}`);
         },
     });
 }
@@ -347,6 +435,7 @@ export function useUpdateProductOffer() {
                     display_text_en: data.display_text_en || null,
                     category_id: data.category_id || null,
                     updated_at: new Date().toISOString(),
+                    metadata: data.metadata || {}
                 })
                 .eq("id", id)
                 .select()

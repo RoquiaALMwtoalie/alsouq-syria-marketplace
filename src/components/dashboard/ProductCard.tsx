@@ -50,6 +50,13 @@ export function ProductCard({
   formatPrice, 
   viewMode = "grid" 
 }: ProductCardProps) {
+    console.log("🔴🔴🔴 [ProductCard] ===== RENDER =====");
+  console.log("🔴🔴🔴 [ProductCard] product.id:", product.id);
+  console.log("🔴🔴🔴 [ProductCard] product.is_promo_offer:", product.is_promo_offer);
+  console.log("🔴🔴🔴 [ProductCard] product.promo_offer:", product.promo_offer);
+  console.log("🔴🔴🔴 [ProductCard] product.promo_offer?.id:", product.promo_offer?.id);
+  console.log("🔴🔴🔴 [ProductCard] onRemovePromoOffer exists?", !!onRemovePromoOffer);
+  console.log("🔴🔴🔴 [ProductCard] onRemovePromoOffer type:", typeof onRemovePromoOffer);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [oldPrice, setOldPrice] = useState<number>(product.price || 0);
   const [isConverting, setIsConverting] = useState(false);
@@ -65,58 +72,63 @@ export function ProductCard({
 
   const fullStars = Math.round(avgRating);
 
-  const handleConvertToOffer = async () => {
+ const handleConvertToOffer = async () => {
     if (!oldPrice || oldPrice <= product.price) {
-      toast.error(
-        lang === "ar" 
-          ? "⚠️ السعر القديم يجب أن يكون أكبر من السعر الحالي" 
-          : "⚠️ Old price must be greater than current price"
-      );
-      return;
+        toast.error(
+            lang === "ar" 
+                ? "⚠️ السعر القديم يجب أن يكون أكبر من السعر الحالي" 
+                : "⚠️ Old price must be greater than current price"
+        );
+        return;
     }
 
     setIsConverting(true);
     try {
-      const discountPercent = Math.round(((oldPrice - product.price) / oldPrice) * 100);
-      
-      const { error } = await supabase
-        .from("listings")
-        .update({
-          is_offer: true,
-          old_price: oldPrice,
-          discount_percent: discountPercent,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", product.id);
+        const discountPercent = Math.round(((oldPrice - product.price) / oldPrice) * 100);
+        
+        const { error } = await supabase
+            .from("listings")
+            .update({
+                is_offer: true,
+                old_price: oldPrice,
+                discount_percent: discountPercent,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", product.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast.success(
-        lang === "ar" 
-          ? `✅ تم تحويل المنتج إلى عرض بخصم ${discountPercent}%!` 
-          : `✅ Product converted to offer with ${discountPercent}% discount!`
-      );
-      
-      setShowConvertDialog(false);
-      
-      if (onConvertToOffer) {
-        const updatedProduct = { ...product, is_offer: true, old_price: oldPrice, discount_percent: discountPercent };
-        onConvertToOffer(updatedProduct);
-      } else {
-        window.location.reload();
-      }
-      
+        toast.success(
+            lang === "ar" 
+                ? `✅ تم تحويل المنتج إلى عرض بخصم ${discountPercent}%!` 
+                : `✅ Product converted to offer with ${discountPercent}% discount!`
+        );
+        
+        setShowConvertDialog(false);
+        
+        // ✅ ✅ ✅ استخدم onConvertToOffer بدلاً من reload
+        if (onConvertToOffer) {
+            const updatedProduct = { 
+                ...product, 
+                is_offer: true, 
+                old_price: oldPrice, 
+                discount_percent: discountPercent 
+            };
+            onConvertToOffer(updatedProduct);
+        }
+        // ❌ لا تستخدم else مع reload
+        
     } catch (error) {
-      console.error("❌ Error converting to offer:", error);
-      toast.error(
-        lang === "ar" 
-          ? "❌ فشل تحويل المنتج إلى عرض" 
-          : "❌ Failed to convert product to offer"
-      );
+        console.error("❌ Error converting to offer:", error);
+        toast.error(
+            lang === "ar" 
+                ? "❌ فشل تحويل المنتج إلى عرض" 
+                : "❌ Failed to convert product to offer"
+        );
     } finally {
-      setIsConverting(false);
+        setIsConverting(false);
     }
-  };
+};
 
   const openConvertDialog = () => {
     if (onConvertToOffer) {
@@ -852,20 +864,28 @@ export function ProductCard({
             )}
             
             {/* ✅ ✅ ✅ زر الحذف - دائم الظهور */}
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              className="text-red-500 hover:text-red-600 hover:bg-red-50/50 rounded-xl h-7 w-7 p-0 group hover:scale-110 transition-all duration-300 relative z-10 flex-shrink-0" 
-              onClick={() => {
-                if (hasPromoOffer && onRemovePromoOffer) {
-                  onRemovePromoOffer(promoOffer.id);
-                } else {
-                  onDelete();
-                }
-              }}
-            >
-              <Trash2 className="h-3.5 w-3.5 group-hover:scale-110 transition-transform duration-300" />
-            </Button>
+           {/* ✅ زر الحذف - دائم الظهور */}
+<Button 
+    size="sm" 
+    variant="ghost" 
+    className="text-red-500 hover:text-red-600 hover:bg-red-50/50 rounded-xl h-7 w-7 p-0 group hover:scale-110 transition-all duration-300 relative z-10 flex-shrink-0" 
+    onClick={() => {
+        console.log("🔴🔴🔴 [ProductCard] ===== DELETE BUTTON CLICKED =====");
+        console.log("🔴🔴🔴 [ProductCard] hasPromoOffer:", hasPromoOffer);
+        console.log("🔴🔴🔴 [ProductCard] promoOffer:", promoOffer);
+        console.log("🔴🔴🔴 [ProductCard] onRemovePromoOffer exists?", !!onRemovePromoOffer);
+        
+        if (hasPromoOffer && onRemovePromoOffer) {
+            console.log("🔴🔴🔴 [ProductCard] Calling onRemovePromoOffer with:", promoOffer.id);
+            onRemovePromoOffer(promoOffer.id);
+        } else {
+            console.log("🔴🔴🔴 [ProductCard] Calling onDelete (regular product)");
+            onDelete();
+        }
+    }}
+>
+    <Trash2 className="h-3.5 w-3.5 group-hover:scale-110 transition-transform duration-300" />
+</Button>
             
             {/* ✅ زر العين - قائمة منسدلة */}
             <DropdownMenu>

@@ -1,3 +1,4 @@
+
 // src/components/dashboard/PromoOfferDetailDialog.tsx
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Gift, Sparkles, Package, Tag, X, Calendar, Clock, 
   ShoppingBag, Percent, Layers, CheckCircle2, AlertCircle,
-  Edit2, Trash2, Eye, Zap, Star, Users, ShoppingCart
+  Edit2, Trash2, Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/i18n";
@@ -35,7 +36,7 @@ export function PromoOfferDetailDialog({
   onDelete,
 }: PromoOfferDetailDialogProps) {
 
-  if (!offer || !product) return null;
+  if (!offer) return null;
 
   const isArabic = lang === "ar";
 
@@ -43,13 +44,13 @@ export function PromoOfferDetailDialog({
   const getOfferTypeLabel = (type: string) => {
     const types: Record<string, { label: string; icon: any; color: string; bg: string }> = {
       bogo: {
-        label: isArabic ? "اشتر 1 واحصل على 1" : "Buy 1 Get 1",
+        label: isArabic ? "نفس المنتج" : "Same Product",
         icon: Gift,
         color: "text-purple-600",
         bg: "bg-purple-100 dark:bg-purple-900/30",
       },
       cross_sell: {
-        label: isArabic ? "شراء منتج والحصول على آخر" : "Buy Product Get Another",
+        label: isArabic ? "منتج مختلف" : "Different Product",
         icon: Tag,
         color: "text-blue-600",
         bg: "bg-blue-100 dark:bg-blue-900/30",
@@ -103,55 +104,75 @@ export function PromoOfferDetailDialog({
   const typeInfo = getOfferTypeLabel(offer.offer_type);
   const TypeIcon = typeInfo.icon;
 
-  // ✅ الحصول على اسم التصنيف
-  const getCategoryName = () => {
-    if (offer.category_id && offer.category) {
-      return isArabic ? offer.category.name_ar : offer.category.name_en;
+  // ✅ ✅ ✅ دالة لجلب اسم المنتج
+  const getProductName = (productId: string) => {
+    // 1. من product الرئيسي
+    if (product?.id === productId) {
+      return product?.title_ar || (isArabic ? "منتج" : "Product");
     }
-    return isArabic ? "غير محدد" : "Not specified";
-  };
-
-  // ✅ تنسيق التاريخ
-  const formatDate = (date: string) => {
-    if (!date) return isArabic ? "غير محدد" : "Not set";
-    return new Date(date).toLocaleDateString(
-      isArabic ? "ar-SA" : "en-US",
-      { year: "numeric", month: "long", day: "numeric" }
-    );
-  };
-
-  // ✅ الحصول على اسم المنتج المجاني
-  const getFreeProductName = () => {
-    if (offer.offer_type === "bogo") {
-      return product?.title_ar || "";
+    
+    // 2. من offer.products
+    if (offer.products && Array.isArray(offer.products)) {
+      const found = offer.products.find((p: any) => p.id === productId);
+      if (found) return found.title_ar || (isArabic ? "منتج" : "Product");
     }
-    return offer.free_listing?.title_ar || offer.free_listing_id || "";
-  };
-
-  // ✅ الحصول على فيرنتات الهدية
-  const getResultVariations = () => {
-    if (!offer.result_variation_ids || offer.result_variation_ids.length === 0) {
-      return isArabic ? "كل الفيرنتات" : "All variations";
+    
+    // 3. من offer._products (اللي بنضيفها في handleViewPromoOffer)
+    if (offer._products && Array.isArray(offer._products)) {
+      const found = offer._products.find((p: any) => p.id === productId);
+      if (found) return found.title_ar || (isArabic ? "منتج" : "Product");
     }
-    return `${offer.result_variation_ids.length} ${isArabic ? "فيرنتات محددة" : "specific variations"}`;
-  };
-
-  // ✅ الحصول على فيرنتات المنتج الأساسي
-  const getProductVariations = () => {
-    if (!offer.variation_ids || offer.variation_ids.length === 0) {
-      return isArabic ? "كل الفيرنتات" : "All variations";
+    
+    // 4. من offer.bundle_products
+    if (offer.bundle_products && Array.isArray(offer.bundle_products)) {
+      const found = offer.bundle_products.find((p: any) => p.id === productId);
+      if (found) return found.title_ar || (isArabic ? "منتج" : "Product");
     }
-    return `${offer.variation_ids.length} ${isArabic ? "فيرنتات محددة" : "specific variations"}`;
+    
+    // 5. من offer.free_product
+    if (offer.free_product?.id === productId) {
+      return offer.free_product.title_ar || (isArabic ? "منتج" : "Product");
+    }
+    
+    return isArabic ? `منتج ${productId.slice(0, 8)}` : `Product ${productId.slice(0, 8)}`;
   };
 
-  // ✅ نص العرض المخصص
-  const getDisplayText = () => {
-    return offer.display_text_ar || offer.display_text_en || "";
+  // ✅ ✅ ✅ دالة لجلب سعر المنتج
+  const getProductPrice = (productId: string) => {
+    if (product?.id === productId) return product?.price || 0;
+    if (offer._products && Array.isArray(offer._products)) {
+      const found = offer._products.find((p: any) => p.id === productId);
+      if (found) return found.price || 0;
+    }
+    if (offer.free_product?.id === productId) return offer.free_product.price || 0;
+    return 0;
+  };
+
+  // ✅ ✅ ✅ دالة لجلب فيرنتات منتج معين
+  const getProductVariations = (productId: string) => {
+    if (product?.id === productId && product?.variations) return product.variations;
+    if (offer._products && Array.isArray(offer._products)) {
+      const found = offer._products.find((p: any) => p.id === productId);
+      if (found && found.variations) return found.variations;
+    }
+    if (offer.free_product?.id === productId && offer.free_product?.variations) {
+      return offer.free_product.variations;
+    }
+    return [];
   };
 
   // ✅ ✅ ✅ عرض تفاصيل الفيرنتات
-  const renderVariationDetails = (variationIds: string[], variations: any[], title: string) => {
-    if (!variationIds || variationIds.length === 0 || !variations || variations.length === 0) {
+  const renderVariationDetails = (variationIds: string[], productId: string) => {
+    if (!variationIds || variationIds.length === 0) {
+      return (
+        <p className="text-[10px] text-emerald-500/60 mt-1">
+          ✅ {isArabic ? "جميع الفيرنتات مشمولة" : "All variations included"}
+        </p>
+      );
+    }
+
+    const variations = getProductVariations(productId);
+    if (!variations || variations.length === 0) {
       return null;
     }
 
@@ -179,6 +200,91 @@ export function PromoOfferDetailDialog({
       </div>
     );
   };
+
+  // ✅ الحصول على اسم التصنيف
+  const getCategoryName = () => {
+    if (offer.category_id && offer.category) {
+      return isArabic ? offer.category.name_ar : offer.category.name_en;
+    }
+    return isArabic ? "غير محدد" : "Not specified";
+  };
+
+  // ✅ تنسيق التاريخ
+  const formatDate = (date: string) => {
+    if (!date) return isArabic ? "غير محدد" : "Not set";
+    return new Date(date).toLocaleDateString(
+      isArabic ? "ar-SA" : "en-US",
+      { year: "numeric", month: "long", day: "numeric" }
+    );
+  };
+
+  // ✅ نص العرض المخصص
+  const getDisplayText = () => {
+    return offer.display_text_ar || offer.display_text_en || "";
+  };
+
+  // ✅ الحصول على اسم الهدية
+  const getGiftName = () => {
+    if (offer.offer_type === "bogo") {
+      return product?.title_ar || (isArabic ? "نفس المنتج" : "Same product");
+    }
+    if (offer.free_product?.title_ar) return offer.free_product.title_ar;
+    if (offer.free_listing?.title_ar) return offer.free_listing.title_ar;
+    return offer.free_listing_id || (isArabic ? "منتج مجاني" : "Free product");
+  };
+
+  // ✅ الحصول على سعر الهدية
+  const getGiftPrice = () => {
+    if (offer.free_product?.price) return offer.free_product.price;
+    if (offer.free_listing?.price) return offer.free_listing.price;
+    return 0;
+  };
+
+  // ✅ الحصول على فيرنتات الهدية
+  const getGiftVariationIds = () => offer.result_variation_ids || [];
+
+  // ✅ الحصول على فيرنتات المنتج الأساسي
+  const getBaseVariationIds = () => offer.variation_ids || [];
+
+  // ✅ الحصول على اسم المنتج الأساسي
+  const getBaseProductName = () => {
+    return product?.title_ar || offer.listing_id || (isArabic ? "منتج" : "Product");
+  };
+
+  // ✅ الحصول على سعر المنتج الأساسي
+  const getBaseProductPrice = () => product?.price || 0;
+
+  // ✅ جلب المنتجات المطلوبة للباقة
+  const getBundleProducts = () => {
+    const bundleProducts: any[] = [];
+    
+    if (offer.required_product_ids && offer.required_product_ids.length > 0) {
+      offer.required_product_ids.forEach((id: string, index: number) => {
+        let productData = {
+          id: id,
+          title_ar: getProductName(id),
+          price: getProductPrice(id),
+          variations: getProductVariations(id),
+          quantity: 1,
+          variation_ids: [] as string[],
+        };
+        
+        if (offer.required_variations && offer.required_variations[index]) {
+          const reqVar = offer.required_variations[index];
+          productData.quantity = reqVar.quantity || 1;
+          productData.variation_ids = reqVar.variation_ids || [];
+        }
+        
+        bundleProducts.push(productData);
+      });
+    }
+    
+    return bundleProducts;
+  };
+
+  const bundleProducts = getBundleProducts();
+  const baseVariationIds = getBaseVariationIds();
+  const giftVariationIds = getGiftVariationIds();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -209,7 +315,7 @@ export function PromoOfferDetailDialog({
                   {typeInfo.label}
                   <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
                   <span className="text-[#2a655f] dark:text-[#3a8a82] font-medium">
-                    {product?.title_ar || ""}
+                    {getBaseProductName()}
                   </span>
                   {offer.is_featured && (
                     <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-[10px]">
@@ -270,36 +376,117 @@ export function PromoOfferDetailDialog({
             </p>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                {product?.title_ar || ""}
+                {getBaseProductName()}
               </span>
               <Badge variant="outline" className="text-[10px] border-slate-200/50">
-                {getProductVariations()}
+                {baseVariationIds.length > 0 
+                  ? `${baseVariationIds.length} ${isArabic ? "فيرنتات محددة" : "specific variations"}`
+                  : (isArabic ? "كل الفيرنتات" : "All variations")}
               </Badge>
               <span className="text-xs font-bold text-[#2a655f]">
-                {formatPrice(Number(product?.price || 0), currency, lang)}
+                {formatPrice(Number(getBaseProductPrice()), currency, lang)}
               </span>
             </div>
             {/* ✅ عرض فيرنتات المنتج الأساسي */}
-            {offer.variation_ids && offer.variation_ids.length > 0 && product?.variations && (
+            {baseVariationIds.length > 0 && product?.variations && (
               <div className="mt-2">
                 <p className="text-[10px] text-muted-foreground mb-1">
                   {isArabic ? "الفيرنتات المحددة:" : "Specific variations:"}
                 </p>
-                {renderVariationDetails(offer.variation_ids, product.variations, "base")}
+                {renderVariationDetails(baseVariationIds, offer.listing_id)}
               </div>
+            )}
+            {baseVariationIds.length === 0 && product?.variations && product.variations.length > 0 && (
+              <p className="text-[10px] text-emerald-500/60 mt-1">
+                ✅ {isArabic ? "جميع الفيرنتات مشمولة" : "All variations included"}
+              </p>
             )}
           </div>
 
-          {/* ===== الكمية المطلوبة ===== */}
+          {/* ===== الكمية المطلوبة للشراء ===== */}
           <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-all duration-300">
             <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <ShoppingCart className="h-3.5 w-3.5 text-[#2a655f]" />
+              <ShoppingBag className="h-3.5 w-3.5 text-[#2a655f]" />
               {isArabic ? "الكمية المطلوبة للشراء" : "Required Purchase Quantity"}
             </p>
             <p className="text-2xl font-bold text-[#2a655f] dark:text-[#3a8a82] mt-1">
               {offer.buy_quantity || 1}
             </p>
           </div>
+
+          {/* ===== المنتجات المطلوبة (للباقة) ===== */}
+          {offer.offer_type === 'bundle' && bundleProducts.length > 0 && (
+            <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Package className="h-3.5 w-3.5 text-[#2a655f]" />
+                {isArabic ? "المنتجات المطلوبة (باقة)" : "Required Products (Bundle)"}
+              </p>
+              <div className="space-y-2 mt-1.5">
+                {bundleProducts.map((item: any, index: number) => (
+                  <div key={item.id || index} className="p-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-medium text-slate-900 dark:text-white">
+                          {index + 1}. {item.title_ar}
+                        </span>
+                        {item.price > 0 && (
+                          <span className="text-xs text-muted-foreground mr-2">
+                            ({formatPrice(Number(item.price), currency, lang)})
+                          </span>
+                        )}
+                      </div>
+                      <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                        {isArabic ? `الكمية: ${item.quantity}` : `Qty: ${item.quantity}`}
+                      </Badge>
+                    </div>
+                    
+                    {/* ✅ عرض فيرنتات هذا المنتج */}
+                    {item.variation_ids.length > 0 && item.variations && item.variations.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-[10px] text-muted-foreground mb-1">
+                          {isArabic ? "الفيرنتات المحددة:" : "Specific variations:"}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.variation_ids.map((vid: string) => {
+                            const variation = item.variations.find((v: any) => v.id === vid);
+                            if (!variation) return null;
+                            const combo = variation.combination || {};
+                            const comboText = Object.entries(combo)
+                              .map(([key, value]) => `${key}: ${value}`)
+                              .join(' • ');
+                            return (
+                              <Badge key={vid} variant="outline" className="text-[9px] border-purple-200/50 dark:border-purple-800/30 text-purple-600 dark:text-purple-300">
+                                {comboText || vid.slice(0, 6)}
+                                {variation.price && (
+                                  <span className="ml-1 text-[8px] text-emerald-500">
+                                    {formatPrice(Number(variation.price), currency, lang)}
+                                  </span>
+                                )}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* ✅ إذا كان "كل الفيرنتات" */}
+                    {item.variation_ids.length === 0 && item.variations && item.variations.length > 0 && (
+                      <p className="text-[10px] text-emerald-500/60 mt-1">
+                        ✅ {isArabic ? "جميع الفيرنتات مشمولة" : "All variations included"}
+                      </p>
+                    )}
+                    
+                    {/* ✅ إذا كان مافي فيرنتات */}
+                    {(!item.variations || item.variations.length === 0) && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {isArabic ? "لا يوجد فيرنتات" : "No variations"}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ===== الهدية ===== */}
           <div className="p-4 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
@@ -309,17 +496,14 @@ export function PromoOfferDetailDialog({
             </p>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                {offer.offer_type === "bogo" 
-                  ? (isArabic ? "نفس المنتج" : "Same product")
-                  : (offer.free_listing?.title_ar || offer.free_listing_id || (isArabic ? "منتج مجاني" : "Free product"))
-                }
+                {getGiftName()}
               </span>
-              {offer.result_variation_ids && offer.result_variation_ids.length > 0 && (
+              {giftVariationIds.length > 0 && (
                 <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-0 text-[10px]">
-                  {getResultVariations()}
+                  {giftVariationIds.length} {isArabic ? "فيرنتات محددة" : "specific variations"}
                 </Badge>
               )}
-              {(!offer.result_variation_ids || offer.result_variation_ids.length === 0) && (
+              {giftVariationIds.length === 0 && (
                 <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-0 text-[10px]">
                   {isArabic ? "كل الفيرنتات" : "All variations"}
                 </Badge>
@@ -327,62 +511,48 @@ export function PromoOfferDetailDialog({
               <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                 ×{offer.get_quantity || 1}
               </span>
+              {getGiftPrice() > 0 && (
+                <span className="text-xs text-muted-foreground line-through">
+                  {formatPrice(Number(getGiftPrice()), currency, lang)}
+                </span>
+              )}
             </div>
+            
             {/* ✅ عرض فيرنتات الهدية */}
-            {offer.result_variation_ids && offer.result_variation_ids.length > 0 && offer.free_listing?.variations && (
+            {giftVariationIds.length > 0 && (
               <div className="mt-2">
                 <p className="text-[10px] text-muted-foreground mb-1">
                   {isArabic ? "فيرنتات الهدية المحددة:" : "Specific gift variations:"}
                 </p>
-                {renderVariationDetails(offer.result_variation_ids, offer.free_listing.variations, "gift")}
+                <div className="flex flex-wrap gap-1.5">
+                  {giftVariationIds.map((vid: string) => {
+                    const giftProduct = offer.free_product || offer.free_listing;
+                    const variation = giftProduct?.variations?.find((v: any) => v.id === vid);
+                    if (!variation) return null;
+                    const combo = variation.combination || {};
+                    const comboText = Object.entries(combo)
+                      .map(([key, value]) => `${key}: ${value}`)
+                      .join(' • ');
+                    return (
+                      <Badge key={vid} variant="outline" className="text-[9px] border-emerald-200/50 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-300">
+                        {comboText || vid.slice(0, 6)}
+                        {variation.price && (
+                          <span className="ml-1 text-[8px] text-emerald-500">
+                            {formatPrice(Number(variation.price), currency, lang)}
+                          </span>
+                        )}
+                      </Badge>
+                    );
+                  })}
+                </div>
               </div>
             )}
+            {giftVariationIds.length === 0 && (
+              <p className="text-[10px] text-emerald-500/60 mt-1">
+                ✅ {isArabic ? "جميع الفيرنتات مشمولة" : "All variations included"}
+              </p>
+            )}
           </div>
-
-          {/* ===== المنتجات المطلوبة (للباقة) ===== */}
-          {offer.offer_type === 'bundle' && offer.required_product_ids && offer.required_product_ids.length > 0 && (
-            <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <Package className="h-3.5 w-3.5 text-[#2a655f]" />
-                {isArabic ? "المنتجات المطلوبة (باقة)" : "Required Products (Bundle)"}
-              </p>
-              <div className="flex flex-wrap gap-2 mt-1.5">
-                {offer.required_product_ids.map((id: string, index: number) => {
-                  // ✅ جلب اسم المنتج من listings أو من offer
-                  const productName = offer.listings?.title_ar || 
-                                     (offer.products && offer.products[index]?.title_ar) || 
-                                     (isArabic ? `منتج ${index + 1}` : `Product ${index + 1}`);
-                  return (
-                    <Badge key={id} variant="outline" className="text-[10px] border-slate-200/50">
-                      {productName}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ===== فيرنتات المنتجات المطلوبة (JSONB) ===== */}
-          {offer.required_variations && Array.isArray(offer.required_variations) && offer.required_variations.length > 0 && (
-            <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <Layers className="h-3.5 w-3.5 text-[#2a655f]" />
-                {isArabic ? "فيرنتات المنتجات المطلوبة" : "Required Product Variations"}
-              </p>
-              <div className="flex flex-wrap gap-2 mt-1.5">
-                {offer.required_variations.map((req: any, index: number) => (
-                  <Badge key={index} variant="outline" className="text-[10px] border-purple-200/50 dark:border-purple-800/30">
-                    {req.product_id ? (isArabic ? `منتج ${index + 1}` : `Product ${index + 1}`) : (isArabic ? `فيرنتات ${index + 1}` : `Variations ${index + 1}`)}
-                    {req.variation_ids && req.variation_ids.length > 0 && (
-                      <span className="ml-1 text-[8px] text-purple-500">
-                        ({req.variation_ids.length})
-                      </span>
-                    )}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* ===== المدة ===== */}
           <div className="grid grid-cols-2 gap-4">
