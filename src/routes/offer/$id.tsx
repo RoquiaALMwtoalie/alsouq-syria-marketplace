@@ -215,34 +215,71 @@ function OfferDetailPage() {
   }, [mainProduct, mainVariations, offer?.buy_quantity, selectedVariations, isBundle]);
 
   // ✅ حساب السعر النهائي
-  const finalPrice = useMemo(() => {
-    if (!offer) return 0;
+// ✅ حساب السعر النهائي (مثل صفحة المنتج تماماً)
+const finalPrice = useMemo(() => {
+  if (!offer) return 0;
+  
+  // ✅ BOGO و Cross-sell
+  if (offer.offer_type === 'bogo' || offer.offer_type === 'cross_sell') {
+    if (!mainProduct) return 0;
     
-    if (offer.offer_type === 'bogo' || offer.offer_type === 'cross_sell') {
-      if (!mainProduct) return 0;
-      return mainProduct.price * quantity;
+    const productId = mainProduct.id;
+    const selectedMap = selectedVariations[productId] || {};
+    const selectedVariationIds = Object.keys(selectedMap).filter(id => selectedMap[id] > 0);
+    
+    // ✅ ✅ ✅ نفس منطق صفحة المنتج: استخدم سعر الفيرنت المختار
+    if (selectedVariationIds.length > 0) {
+      let totalPrice = 0;
+      let totalQty = 0;
+      
+      for (const variationId of selectedVariationIds) {
+        const qty = selectedMap[variationId] || 0;
+        if (qty > 0) {
+          const variation = mainProduct.variations?.find((v: any) => v.id === variationId);
+          const price = variation?.price || mainProduct.price;
+          totalPrice += price * qty;
+          totalQty += qty;
+        }
+      }
+      
+      if (totalQty > 0) {
+        const avgPrice = totalPrice / totalQty;
+        return avgPrice * quantity; // ✅ ✅ ✅ مضروب في الكمية
+      }
     }
     
-    if (offer.offer_type === 'bundle') {
-      let total = 0;
+    return mainProduct.price * quantity;
+  }
+  
+  // ✅ Bundle
+  if (offer.offer_type === 'bundle') {
+    let total = 0;
+    let totalQty = 0;
+    
+    for (const req of requiredProducts) {
+      const product = req.product;
+      const selectedMap = selectedVariations[product.id] || {};
       
-      requiredProducts.forEach((item: any) => {
-        const product = item.product;
-        const selectedMap = selectedVariations[product.id] || {};
-        
-        Object.entries(selectedMap).forEach(([variationId, qty]) => {
+      for (const [variationId, qty] of Object.entries(selectedMap)) {
+        if (qty > 0) {
           const variation = product.variations?.find((v: any) => v.id === variationId);
           const price = variation?.price || product.price;
-          total += price * qty * quantity;
-        });
-      });
-      
-      return total;
+          total += price * qty;
+          totalQty += qty;
+        }
+      }
     }
     
-    return 0;
-  }, [offer, mainProduct, requiredProducts, selectedVariations, quantity]);
-
+    if (totalQty > 0) {
+      const avgPrice = total / totalQty;
+      return avgPrice * quantity;
+    }
+    
+    return total * quantity;
+  }
+  
+  return 0;
+}, [offer, mainProduct, requiredProducts, selectedVariations, quantity]);
   // ✅ إحصائيات تقدم المنتجات المطلوبة (لجميع أنواع العروض)
   const selectionStats = useMemo(() => {
     let items: any[] = [];

@@ -338,7 +338,7 @@ export function useCheckCartCompatibility() {
 }
 
 // ============================================================
-// ✅ 3. إضافة للسلة (محسّن مع دعم التركيبات)
+// ✅ 3. إضافة للسلة (محسّن مع دعم التركيبات والصور)
 // ============================================================
 
 export function useAddToCart() {
@@ -603,36 +603,72 @@ export function useAddToCart() {
       if (!isPromoOffer) {
         console.log("🔄 [useAddToCart] Adding regular product...");
         
-        // ✅ ✅ ✅ جلب صورة الفيرنت إذا كان موجوداً
+        // ✅ ✅ ✅ جلب صورة الفيرنت مع دعم جميع المصادر
         let variationImageUrl = null;
         let variationData = null;
         let variationCombinationData = variationCombination || {};
         let variationPriceData = variationPrice || null;
-        
+        let variationColorName = selectedColor || null;
+
         if (selectedVariationId) {
           try {
+            // ✅ جلب بيانات الفيرنت
             const { data: variation, error: variationError } = await supabase
               .from("product_variations")
-              .select("image_url, price, combination, old_price, color_id")
+              .select("image_url, price, combination, old_price, color_id, sku")
               .eq("id", selectedVariationId)
               .single();
             
             if (!variationError && variation) {
-              variationImageUrl = variation.image_url;
               variationData = variation;
               variationPriceData = variation.price || variationPriceData;
               variationCombinationData = variation.combination || {};
+              variationImageUrl = variation.image_url || null;
               
-              // ✅ جلب صورة اللون إذا وجدت
+              // ✅ 1. جلب صورة اللون من color_id (الأولوية القصوى)
               if (variation.color_id) {
                 const { data: color, error: colorError } = await supabase
                   .from("product_colors")
-                  .select("image_url, color_name_ar, color_name_en")
+                  .select("image_url, color_name_ar, color_name_en, color_hex")
                   .eq("id", variation.color_id)
                   .single();
                 
-                if (!colorError && color?.image_url) {
-                  variationImageUrl = color.image_url;
+                if (!colorError && color) {
+                  // ✅ صورة اللون لها الأولوية على صورة الفيرنت
+                  if (color.image_url) {
+                    variationImageUrl = color.image_url;
+                  }
+                  if (color.color_name_ar) {
+                    variationColorName = color.color_name_ar;
+                  }
+                }
+              }
+              
+              // ✅ 2. إذا لم توجد صورة، حاول استخراج اللون من الـ combination
+              if (!variationImageUrl) {
+                const combo = variation.combination || {};
+                const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+                let colorValue = null;
+                for (const key of colorKeys) {
+                  if (combo[key]) {
+                    colorValue = combo[key];
+                    break;
+                  }
+                }
+                
+                if (colorValue) {
+                  // ✅ البحث عن اللون في product_colors
+                  const { data: colorFromCombo, error: colorComboError } = await supabase
+                    .from("product_colors")
+                    .select("image_url, color_name_ar")
+                    .eq("listing_id", listingId)
+                    .ilike("color_name_ar", `%${colorValue}%`)
+                    .maybeSingle();
+                  
+                  if (!colorComboError && colorFromCombo?.image_url) {
+                    variationImageUrl = colorFromCombo.image_url;
+                    variationColorName = colorFromCombo.color_name_ar;
+                  }
                 }
               }
             }
@@ -640,7 +676,28 @@ export function useAddToCart() {
             console.warn("⚠️ [useAddToCart] Could not fetch variation details:", err);
           }
         }
-        
+
+        // ✅ ✅ ✅ إذا كان هناك selectedColor ولم يتم العثور على صورة، جرب من الألوان
+        if (!variationImageUrl && selectedColor) {
+          try {
+            const { data: colorFromName, error: colorNameError } = await supabase
+              .from("product_colors")
+              .select("image_url, color_name_ar")
+              .eq("listing_id", listingId)
+              .ilike("color_name_ar", `%${selectedColor}%`)
+              .maybeSingle();
+            
+            if (!colorNameError && colorFromName?.image_url) {
+              variationImageUrl = colorFromName.image_url;
+            }
+          } catch (err) {
+            console.warn("⚠️ [useAddToCart] Could not fetch color by name:", err);
+          }
+        }
+
+        // ✅ ✅ ✅ سجل الصورة النهائية للـ debug
+        console.log(`🖼️ [useAddToCart] Final variation image: ${variationImageUrl || 'none'}`);
+
         // ✅ بناء insertData للمنتج العادي مع حفظ صورة الفيرنت
         const insertData: any = {
           cart_id: cartId,
@@ -661,7 +718,7 @@ export function useAddToCart() {
             variation_data: variationData,
             combination: variationCombinationData,
             selected_variation_id: selectedVariationId,
-            selected_color: selectedColor,
+            selected_color: variationColorName || selectedColor,
             selected_size: selectedSize,
             created_at: new Date().toISOString(),
           },
@@ -905,6 +962,7 @@ export function useAddToCart() {
     },
   });
 }
+
 // ============================================================
 // ✅ 4. تحديث عنصر في السلة
 // ============================================================

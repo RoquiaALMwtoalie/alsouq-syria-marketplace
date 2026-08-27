@@ -106,128 +106,153 @@ function CartPage() {
   const previousCartState = useRef<string>("");
   
   // ✅ تعريف items مع دعم الفيرنتات بشكل كامل
-  const items = useMemo(() => {
-    if (!cart?.items) return [];
+// ✅ تعريف items مع دعم الفيرنتات والعروض التخفيضية
+const items = useMemo(() => {
+  if (!cart?.items) return [];
+  
+  return cart.items.map((item: any) => {
+    const price = Number(item.price);
+    const quantity = Number(item.quantity);
+    const subtotal = price * quantity;
+    const subtotal_usd = item.price_usd ? Number(item.price_usd) * quantity : null;
     
-    return cart.items.map((item: any) => {
-      const price = Number(item.price);
-      const quantity = Number(item.quantity);
-      const subtotal = price * quantity;
-      const subtotal_usd = item.price_usd ? Number(item.price_usd) * quantity : null;
-      
-      const listing = item.listings || item.listing || null;
-      
-      // ✅ التحقق مما إذا كان هذا العنصر هدية
-      const isGift = item.is_free === true || item.variation_snapshot?.is_gift === true;
-      
-      // ✅ حساب displayImage
-      let displayImage = listing?.cover_url || '/placeholder.png';
-      
-      if (item.variation_snapshot) {
-        if (item.variation_snapshot.variation_image) {
-          displayImage = item.variation_snapshot.variation_image;
-        } else if (item.variation_snapshot.cover_url) {
-          displayImage = item.variation_snapshot.cover_url;
-        } else if (item.variation_snapshot.image_url) {
-          displayImage = item.variation_snapshot.image_url;
-        }
+    const listing = item.listings || item.listing || null;
+    
+    // ✅ التحقق مما إذا كان هذا العنصر هدية
+    const isGift = item.is_free === true || item.variation_snapshot?.is_gift === true;
+    
+    // ============================================================
+    // ✅✅✅ حساب displayImage مع دعم العروض التخفيضية والفيرنتات ✅✅✅
+    // ============================================================
+    let displayImage = listing?.cover_url || '/placeholder.png';
+    
+    // ✅ 1. جلب صورة الفيرنت من variation_snapshot
+    if (item.variation_snapshot) {
+      if (item.variation_snapshot.variation_image) {
+        displayImage = item.variation_snapshot.variation_image;
+      } else if (item.variation_snapshot.cover_url) {
+        displayImage = item.variation_snapshot.cover_url;
+      } else if (item.variation_snapshot.image_url) {
+        displayImage = item.variation_snapshot.image_url;
       }
+    }
+    
+    // ✅ 2. التحقق من selected_variation_id (العروض التخفيضية والمنتجات العادية)
+    if (!displayImage || displayImage === '/placeholder.png') {
+      const variationId = item.selected_variation_id || 
+                          item.selected_options?.selected_variation_id;
       
-      if (!displayImage || displayImage === '/placeholder.png') {
-        if (item.selected_options?.selected_variation_id && listing?.variations) {
-          const selectedVariation = listing.variations.find(
-            (v: any) => v.id === item.selected_options.selected_variation_id
-          );
-          if (selectedVariation) {
-            if (selectedVariation.image_url) {
-              displayImage = selectedVariation.image_url;
-            }
-            if (selectedVariation.color_id && listing.colors) {
-              const color = listing.colors.find((c: any) => c.id === selectedVariation.color_id);
-              if (color?.image_url) {
-                displayImage = color.image_url;
-              }
-            }
+      if (variationId && listing?.variations) {
+        const selectedVariation = listing.variations.find(
+          (v: any) => v.id === variationId
+        );
+        if (selectedVariation) {
+          if (selectedVariation.image_url) {
+            displayImage = selectedVariation.image_url;
           }
-        }
-      }
-      
-      if (!displayImage || displayImage === '/placeholder.png') {
-        if (item.selected_variation_id && listing?.variations) {
-          const selectedVariation = listing.variations.find(
-            (v: any) => v.id === item.selected_variation_id
-          );
-          if (selectedVariation) {
-            if (selectedVariation.image_url) {
-              displayImage = selectedVariation.image_url;
-            }
-            if (selectedVariation.color_id && listing.colors) {
-              const color = listing.colors.find((c: any) => c.id === selectedVariation.color_id);
-              if (color?.image_url) {
-                displayImage = color.image_url;
-              }
-            }
-          }
-        }
-      }
-      
-      if (!displayImage || displayImage === '/placeholder.png') {
-        if (item.variation_combination?.colors) {
-          const colorName = item.variation_combination.colors;
-          if (listing?.colors) {
-            const color = listing.colors.find((c: any) => 
-              c.color_name_ar === colorName || c.color_name_en === colorName
-            );
+          if (selectedVariation.color_id && listing.colors) {
+            const color = listing.colors.find((c: any) => c.id === selectedVariation.color_id);
             if (color?.image_url) {
               displayImage = color.image_url;
             }
           }
         }
       }
+    }
+    
+    // ✅ 3. التحقق من variation_combination (استخراج اللون)
+    if (!displayImage || displayImage === '/placeholder.png') {
+      const combination = item.variation_combination || 
+                          item.selected_options?.combination || 
+                          {};
       
-      const getVariationName = () => {
-        if (item.variation_snapshot?.variation_data?.combination) {
-          return Object.values(item.variation_snapshot.variation_data.combination).join(' • ');
+      const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+      let colorValue = null;
+      for (const key of colorKeys) {
+        if (combination[key]) {
+          colorValue = combination[key];
+          break;
         }
-        if (item.variation_snapshot?.combination) {
-          return Object.values(item.variation_snapshot.combination).join(' • ');
-        }
-        if (item.selected_options?.combination) {
-          return Object.values(item.selected_options.combination).join(' • ');
-        }
-        if (item.variation_combination && Object.keys(item.variation_combination).length > 0) {
-          return Object.values(item.variation_combination).join(' • ');
-        }
-        if (item.selected_color || item.selected_size) {
-          const parts = [];
-          if (item.selected_color) parts.push(item.selected_color);
-          if (item.selected_size) parts.push(item.selected_size);
-          return parts.join(' • ');
-        }
-        return '';
-      };
-      
-      const variationName = getVariationName();
-      
-      let displayTitle = app.lang === "ar" ? listing?.title_ar : (listing?.title_en || listing?.title_ar);
-      if (isGift && item.variation_snapshot?.title_ar) {
-        displayTitle = item.variation_snapshot.title_ar;
       }
       
-      return {
-        ...item,
-        subtotal,
-        subtotal_usd,
-        listing: listing,
-        displayImage: displayImage,
-        variationName: variationName,
-        displayTitle: displayTitle,
-        isGift: isGift,
-        isPromoOffer: item.is_promo_offer === true || item.offer_id !== null,
-        isDiscountOffer: item.listing?.is_offer === true && item.is_promo_offer !== true,
-      };
-    });
-  }, [cart?.items]);
+      if (colorValue && listing?.colors) {
+        const color = listing.colors.find((c: any) => 
+          String(c.color_name_ar || "").trim().toLowerCase() === String(colorValue).trim().toLowerCase() ||
+          String(c.color_name_en || "").trim().toLowerCase() === String(colorValue).trim().toLowerCase()
+        );
+        if (color?.image_url) {
+          displayImage = color.image_url;
+        }
+      }
+    }
+    
+    // ✅ 4. التحقق من selected_color (fallback)
+    if (!displayImage || displayImage === '/placeholder.png') {
+      const colorName = item.selected_color || 
+                        item.selected_options?.selected_color;
+      
+      if (colorName && listing?.colors) {
+        const color = listing.colors.find((c: any) => 
+          String(c.color_name_ar || "").trim().toLowerCase() === String(colorName).trim().toLowerCase() ||
+          String(c.color_name_en || "").trim().toLowerCase() === String(colorName).trim().toLowerCase()
+        );
+        if (color?.image_url) {
+          displayImage = color.image_url;
+        }
+      }
+    }
+    
+    // ✅ 5. fallback أخير: استخدم cover_url
+    if (!displayImage || displayImage === '/placeholder.png') {
+      if (listing?.cover_url) {
+        displayImage = listing.cover_url;
+      }
+    }
+    
+    // ✅ استخراج اسم الفيرنت
+    const getVariationName = () => {
+      if (item.variation_snapshot?.variation_data?.combination) {
+        return Object.values(item.variation_snapshot.variation_data.combination).join(' • ');
+      }
+      if (item.variation_snapshot?.combination) {
+        return Object.values(item.variation_snapshot.combination).join(' • ');
+      }
+      if (item.selected_options?.combination) {
+        return Object.values(item.selected_options.combination).join(' • ');
+      }
+      if (item.variation_combination && Object.keys(item.variation_combination).length > 0) {
+        return Object.values(item.variation_combination).join(' • ');
+      }
+      if (item.selected_color || item.selected_size) {
+        const parts = [];
+        if (item.selected_color) parts.push(item.selected_color);
+        if (item.selected_size) parts.push(item.selected_size);
+        return parts.join(' • ');
+      }
+      return '';
+    };
+    
+    const variationName = getVariationName();
+    
+    let displayTitle = app.lang === "ar" ? listing?.title_ar : (listing?.title_en || listing?.title_ar);
+    if (isGift && item.variation_snapshot?.title_ar) {
+      displayTitle = item.variation_snapshot.title_ar;
+    }
+    
+    return {
+      ...item,
+      subtotal,
+      subtotal_usd,
+      listing: listing,
+      displayImage: displayImage,
+      variationName: variationName,
+      displayTitle: displayTitle,
+      isGift: isGift,
+      isPromoOffer: item.is_promo_offer === true || item.offer_id !== null,
+      isDiscountOffer: listing?.is_offer === true && item.is_promo_offer !== true,
+    };
+  });
+}, [cart?.items, app.lang]);
 
   // ✅ جب storeId من أول منتج في السلة
   const storeIdFromCart = useMemo(() => {
@@ -732,73 +757,146 @@ function CartPage() {
       }
 
       // ✅ تحذير عدد الاستخدامات المتبقية
-    // ✅ الحل الموصى به
-if (data.usage_limit) {
-  const remaining = data.usage_limit - data.used_count;
-  console.log(`📌 [PROMO] Remaining uses: ${remaining}`);
-  
-  // ✅ فقط إذا كان المستخدم لم يستخدم الكود من قبل و remaining صغير
-  if (remaining <= 2 && data.used_count === 0) {
-    toast.warning(
-      app.lang === "ar" 
-        ? `⚠️ تبقى ${remaining} استخدام${remaining > 1 ? 'ات' : ''} فقط لهذا الكود` 
-        : `⚠️ Only ${remaining} use${remaining > 1 ? 's' : ''} remaining for this code`
-    );
-  }
-}
+      if (data.usage_limit) {
+        const remaining = data.usage_limit - data.used_count;
+        console.log(`📌 [PROMO] Remaining uses: ${remaining}`);
+        
+        if (remaining <= 2 && data.used_count === 0) {
+          toast.warning(
+            app.lang === "ar" 
+              ? `⚠️ تبقى ${remaining} استخدام${remaining > 1 ? 'ات' : ''} فقط لهذا الكود` 
+              : `⚠️ Only ${remaining} use${remaining > 1 ? 's' : ''} remaining for this code`
+          );
+        }
+      }
       console.log("✅ [PROMO] Usage limit check passed");
 
-      // ✅ التحقق من استخدام الكود في طلب معلق
-      // ✅ التحقق من استخدام الكود في طلب معلق (بدون status)
-const { data: existingUsage, error: usageCheckError } = await supabase
-  .from("promo_code_usage")
-  .select(`
-    id,
-    order_id,
-    used_at,
-    orders:order_id (
-      id,
-      status,
-      delivery_status
-    )
-  `)
-  .eq("promo_code_id", data.id)
-  .eq("user_id", app.user.id)
-  .order("used_at", { ascending: false })
-  .limit(1)
-  .maybeSingle();
+      // ✅ التحقق من استخدام الكود من قبل هذا المستخدم
+      const { data: existingUsage, error: usageCheckError } = await supabase
+        .from("promo_code_usage")
+        .select(`
+          id,
+          order_id,
+          used_at,
+          discount_amount,
+          orders:order_id (
+            id,
+            status,
+            delivery_status,
+            created_at
+          )
+        `)
+        .eq("promo_code_id", data.id)
+        .eq("user_id", app.user.id)
+        .order("used_at", { ascending: false });
 
-// ✅ التحقق من حالة الطلب
-if (!usageCheckError && existingUsage && existingUsage.orders) {
-  const orderStatus = existingUsage.orders.status;
-  const deliveryStatus = existingUsage.orders.delivery_status;
-  
-  // ✅ الحالات التي تعني أن الطلب لا يزال قيد المعالجة
-  const isPending = orderStatus === 'pending' || 
-                    orderStatus === 'processing' || 
-                    orderStatus === 'accepted' ||
-                    deliveryStatus === 'pending' ||
-                    deliveryStatus === 'assigned' ||
-                    deliveryStatus === 'picked_up' ||
-                    deliveryStatus === 'in_transit';
-  
-  if (isPending) {
-    // ❌ منع استخدام الكود
-    setPromoMessage(
-      app.lang === "ar" 
-        ? `⚠️ هذا الكود قيد الاستخدام في طلب جاري، انتظر حتى يتم تسليمه أو إلغاؤه` 
-        : `⚠️ This code is already used in a pending order`
-    );
-    toast.warning(
-      app.lang === "ar" 
-        ? `⚠️ هذا الكود قيد الاستخدام في طلب جاري` 
-        : `⚠️ This code is already used in a pending order`
-    );
-    setIsApplyingPromo(false);
-    return;
-  }
-}
-      console.log("✅ [PROMO] No pending usage found");
+      if (!usageCheckError && existingUsage && existingUsage.length > 0) {
+        console.log(`📌 [PROMO] Total usage records: ${existingUsage.length}`);
+        
+        // ✅ 1. تصنيف الاستخدامات
+        const completedUses = existingUsage.filter((usage: any) => {
+          const order = usage.orders;
+          if (!order) return false;
+          const isCompleted = order.status === 'completed' || 
+                              order.status === 'delivered' ||
+                              order.status === 'done' ||
+                              order.delivery_status === 'delivered' ||
+                              order.delivery_status === 'completed';
+          return isCompleted;
+        });
+        
+        const pendingUses = existingUsage.filter((usage: any) => {
+          const order = usage.orders;
+          if (!order) return false;
+          const isPending = order.status === 'pending' || 
+                            order.status === 'processing' || 
+                            order.status === 'accepted' ||
+                            order.delivery_status === 'pending' ||
+                            order.delivery_status === 'assigned' ||
+                            order.delivery_status === 'picked_up' ||
+                            order.delivery_status === 'in_transit';
+          return isPending;
+        });
+        
+        const cancelledUses = existingUsage.filter((usage: any) => {
+          const order = usage.orders;
+          if (!order) return false;
+          const isCancelled = order.status === 'cancelled' || 
+                              order.status === 'canceled' ||
+                              order.status === 'rejected' ||
+                              order.delivery_status === 'cancelled';
+          return isCancelled;
+        });
+        
+        const userUsageLimit = data.metadata?.user_usage_limit || 1;
+        const completedCount = completedUses.length;
+        const pendingCount = pendingUses.length;
+        
+        console.log(`📌 [PROMO] Completed: ${completedCount}, Pending: ${pendingCount}, Limit: ${userUsageLimit}`);
+        
+        // ✅ 2. الأولوية القصوى: التحقق من الوصول للحد المسموح
+        if (completedCount >= userUsageLimit) {
+          // ❌ منع الاستخدام - وصل للحد المسموح
+          let message = "";
+          if (userUsageLimit === 1) {
+            message = app.lang === "ar" 
+              ? `✅ لقد استفدت من هذا الكود مسبقاً (${completedCount} مرة)، لا يمكن استخدامه مجدداً` 
+              : `✅ You have already used this code (${completedCount} time), cannot use it again`;
+          } else {
+            message = app.lang === "ar" 
+              ? `✅ لقد استفدت من هذا الكود مسبقاً (${completedCount}/${userUsageLimit} مرة)، لا يمكن استخدامه مجدداً` 
+              : `✅ You have already used this code (${completedCount}/${userUsageLimit} times), cannot use it again`;
+          }
+          
+          setPromoMessage(message);
+          toast.info(
+            app.lang === "ar" 
+              ? `✅ لقد استفدت من هذا الكود مسبقاً (${completedCount} مرة)` 
+              : `✅ You have already used this code (${completedCount} times)`
+          );
+          setIsApplyingPromo(false);
+          return;
+        }
+        
+        // ✅ 3. التحقق من وجود طلب جاري (بعد التأكد من عدم الوصول للحد)
+        if (pendingCount > 0) {
+          // ⚠️ تحذير: يوجد طلب جاري، ولكن ما زال مسموح بالاستخدام (لأنه لم يصل للحد)
+          const remainingUses = userUsageLimit - completedCount;
+          const pendingOrder = pendingUses[0];
+          const orderId = pendingOrder.order_id?.slice(0, 8) || '';
+          
+          console.log(`⚠️ [PROMO] User has pending order but hasn't reached limit (${completedCount}/${userUsageLimit})`);
+          
+          // عرض تحذير مع السماح بالاستخدام
+          setPromoMessage(
+            app.lang === "ar" 
+              ? `⚠️ لديك طلب جاري بهذا الكود (رقم: #${orderId})، ولكن يمكنك استخدامه ${remainingUses} مرة${remainingUses > 1 ? 'ات' : ''} متبقية` 
+              : `⚠️ You have a pending order with this code (ID: #${orderId}), but you have ${remainingUses} more use${remainingUses > 1 ? 's' : ''} remaining`
+          );
+          
+          toast.warning(
+            app.lang === "ar" 
+              ? `⚠️ لديك طلب جاري بهذا الكود، ولكن يمكنك استخدامه مرة أخرى (${remainingUses} متبقية)` 
+              : `⚠️ You have a pending order with this code, but you can use it again (${remainingUses} remaining)`
+          );
+          
+          // ✅ السماح بالاستخدام (طالما لم يصل للحد)
+          // نكمل تطبيق الكود...
+        }
+        
+        // ✅ 4. تنبيه بعدد الاستخدامات المتبقية (فقط إذا لم يصل للحد)
+        const remainingUses = userUsageLimit - completedCount;
+        if (remainingUses > 0 && remainingUses <= 2 && pendingCount === 0) {
+          // ✅ فقط إذا لم يكن هناك طلب جاري (لتجنب تكرار الرسائل)
+          setTimeout(() => {
+            toast.info(
+              app.lang === "ar" 
+                ? `ℹ️ يمكنك استخدام هذا الكود ${remainingUses} مرة${remainingUses > 1 ? 'ات' : ''} متبقية` 
+                : `ℹ️ You have ${remainingUses} more use${remainingUses > 1 ? 's' : ''} remaining`
+            );
+          }, 500);
+        }
+      }
 
       console.log("🔍 [PROMO] Step 7: Calculating subtotal and checking min order...");
       const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);

@@ -28,7 +28,8 @@ import {
   Megaphone,
   BadgeCheck,
   BellOff,
-  Layers
+  Layers,
+  Percent  
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -476,7 +477,7 @@ function DistributorDashboardPage() {
           
           if (header === 'status') {
             const statusLabels: Record<string, string> = {
-              pending: isArabic ? 'قيد المراجعة' : 'Pending',
+
               assigned: isArabic ? 'تم التعيين' : 'Assigned',
               picked_up: isArabic ? 'تم الاستلام' : 'Picked up',
               in_transit: isArabic ? 'قيد التوصيل' : 'In Transit',
@@ -839,27 +840,32 @@ function DistributorDashboardPage() {
     );
   }, [orders]);
 
-  const historyOrders = useMemo(() => {
-    let result = orders;
-    if (historyFilter !== "all") {
-      result = result.filter((o: any) => o.status === historyFilter);
-    }
-    if (historySearch.trim()) {
-      const q = historySearch.toLowerCase().trim();
-      result = result.filter((o: any) => {
-        return o.tracking_number?.toLowerCase().includes(q) ||
-               o.id?.toLowerCase().includes(q) ||
-               o.delivery_name?.toLowerCase().includes(q) ||
-               o.pickup_name?.toLowerCase().includes(q) ||
-               o.delivery_address?.toLowerCase().includes(q) ||
-               o.orders?.buyer_name?.toLowerCase().includes(q) ||
-               o.orders?.buyer_phone?.toLowerCase().includes(q) ||
-               o.orders?.notes?.toLowerCase().includes(q);
-      });
-    }
-    return result;
-  }, [orders, historyFilter, historySearch]);
-
+const historyOrders = useMemo(() => {
+  // ✅ فقط الطلبات المكتملة أو الملغية
+  let result = orders.filter((o: any) => 
+    o.status === "delivered" || o.status === "cancelled"
+  );
+  
+  if (historyFilter !== "all") {
+    result = result.filter((o: any) => o.status === historyFilter);
+  }
+  
+  if (historySearch.trim()) {
+    const q = historySearch.toLowerCase().trim();
+    result = result.filter((o: any) => {
+      return o.tracking_number?.toLowerCase().includes(q) ||
+             o.id?.toLowerCase().includes(q) ||
+             o.delivery_name?.toLowerCase().includes(q) ||
+             o.pickup_name?.toLowerCase().includes(q) ||
+             o.delivery_address?.toLowerCase().includes(q) ||
+             o.orders?.buyer_name?.toLowerCase().includes(q) ||
+             o.orders?.buyer_phone?.toLowerCase().includes(q) ||
+             o.orders?.notes?.toLowerCase().includes(q);
+    });
+  }
+  
+  return result;
+}, [orders, historyFilter, historySearch]);
   const totalHistoryPages = Math.ceil(historyOrders.length / historyLimit);
   const paginatedHistoryOrders = useMemo(() => {
     const start = (historyPage - 1) * historyLimit;
@@ -997,7 +1003,7 @@ function DistributorDashboardPage() {
           body_ar: `طلبك "${mainOrder.order_items?.[0]?.listings?.title_ar || mainOrder.listings?.title_ar || 'طلب رقم ' + mainOrder.id.substring(0,8)}" - ${statusLabels[newStatus] || newStatus}${statusNotes ? `\n📝 ملاحظات: ${statusNotes}` : ''}`,
           title_en: `${statusEmojis[newStatus] || '📬'} ${statusLabels[newStatus] || newStatus}`,
           body_en: `Your order "${mainOrder.order_items?.[0]?.listings?.title_en || mainOrder.listings?.title_en || 'Order ' + mainOrder.id.substring(0,8)}" - ${statusLabels[newStatus] || newStatus}${statusNotes ? `\n📝 Notes: ${statusNotes}` : ''}`,
-          link_url: `/orders/${mainOrder.id}`,
+          link_url: `/orders`,
           metadata: {
             order_id: mainOrder.id,
             delivery_order_id: orderId,
@@ -1081,7 +1087,7 @@ function DistributorDashboardPage() {
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      pending: isArabic ? "قيد المراجعة" : "Pending",
+    
       assigned: isArabic ? "تم التعيين" : "Assigned",
       picked_up: isArabic ? "تم الاستلام" : "Picked up",
       in_transit: isArabic ? "قيد التوصيل" : "In Transit",
@@ -1542,17 +1548,18 @@ function DistributorDashboardPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-[#2a655f] animate-pulse" />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="h-10 px-3 rounded-xl border border-[#2a655f]/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/40"
-                >
-                  <option value="all">{isArabic ? "جميع الحالات" : "All status"}</option>
-                  <option value="pending">{isArabic ? "قيد المراجعة" : "Pending"}</option>
-                  <option value="assigned">{isArabic ? "تم التعيين" : "Assigned"}</option>
-                  <option value="picked_up">{isArabic ? "تم الاستلام" : "Picked up"}</option>
-                  <option value="in_transit">{isArabic ? "قيد التوصيل" : "In transit"}</option>
-                </select>
+             <select
+  value={statusFilter}
+  onChange={(e) => setStatusFilter(e.target.value)}
+  className="h-10 px-3 rounded-xl border border-[#2a655f]/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/40"
+>
+  <option value="all">{isArabic ? "جميع الحالات" : "All status"}</option>
+  <option value="pending">{isArabic ? "قيد المراجعة" : "Pending"}</option>
+  <option value="assigned">{isArabic ? "تم التعيين" : "Assigned"}</option>
+  <option value="picked_up">{isArabic ? "تم الاستلام" : "Picked up"}</option>
+  <option value="in_transit">{isArabic ? "قيد التوصيل" : "In transit"}</option>
+  <option value="delivered">{isArabic ? "تم التوصيل" : "Delivered"}</option>  {/* ✅ أضف هذا */}
+</select>
               </div>
             </div>
 
@@ -1761,19 +1768,15 @@ function DistributorDashboardPage() {
                 className="ps-9 h-10 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20 transition-all duration-300"
               />
             </div>
-            <select
-              value={historyFilter}
-              onChange={(e) => { setHistoryFilter(e.target.value); setHistoryPage(1); }}
-              className="h-10 px-3 rounded-xl border border-[#2a655f]/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300"
-            >
-              <option value="all">{isArabic ? "جميع الحالات" : "All status"}</option>
-              <option value="pending">{isArabic ? "قيد المراجعة" : "Pending"}</option>
-              <option value="assigned">{isArabic ? "تم التعيين" : "Assigned"}</option>
-              <option value="picked_up">{isArabic ? "تم الاستلام" : "Picked up"}</option>
-              <option value="in_transit">{isArabic ? "قيد التوصيل" : "In transit"}</option>
-              <option value="delivered">{isArabic ? "تم التوصيل" : "Delivered"}</option>
-              <option value="cancelled">{isArabic ? "ملغي" : "Cancelled"}</option>
-            </select>
+         <select
+  value={historyFilter}
+  onChange={(e) => { setHistoryFilter(e.target.value); setHistoryPage(1); }}
+  className="h-10 px-3 rounded-xl border border-[#2a655f]/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300"
+>
+  <option value="all">{isArabic ? "جميع الحالات" : "All status"}</option>
+  <option value="delivered">{isArabic ? "تم التوصيل" : "Delivered"}</option>
+  <option value="cancelled">{isArabic ? "ملغي" : "Cancelled"}</option>
+</select>
             <select
               value={historyLimit}
               onChange={(e) => { setHistoryLimit(Number(e.target.value)); setHistoryPage(1); }}
@@ -1926,249 +1929,484 @@ function DistributorDashboardPage() {
           </div>
         )}
 
-        {/* ✅✅✅ ORDER DETAILS DIALOG - مع تفاصيل مطابقة لطلباتي باستخدام RPC */}
-        <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-          <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto border-[#2a655f]/20 shadow-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-3">
-                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center">
-                  <ShoppingBag className="h-4 w-4 text-white" />
-                </div>
-                {isArabic ? "تفاصيل الطلب" : "Order Details"}
-              </DialogTitle>
-              <DialogDescription>
-                {isArabic ? `الطلب #${selectedOrderForDetails?.tracking_number || selectedOrderForDetails?.id?.substring(0, 8)}` : `Order #${selectedOrderForDetails?.tracking_number || selectedOrderForDetails?.id?.substring(0, 8)}`}
-              </DialogDescription>
-            </DialogHeader>
-            
-            {loadingDetails ? (
-              <div className="py-8 text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2a655f]" />
-                <p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p>
-              </div>
-            ) : selectedOrderForDetails ? (
-              <div className="space-y-4">
-                {/* معلومات الطلب الأساسية */}
-                <div className="grid grid-cols-3 gap-3 p-4 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
-                  <div>
-                    <p className="text-xs text-muted-foreground">{isArabic ? "رقم الطلب" : "Order ID"}</p>
-                    <p className="font-semibold text-sm">{selectedOrderForDetails.id.substring(0, 8)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{isArabic ? "الحالة" : "Status"}</p>
-                    <Badge className={cn("border-0", getStatusColor(selectedOrderForDetails.status))}>
-                      {getStatusLabel(selectedOrderForDetails.status)}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{isArabic ? "رسوم التوصيل" : "Delivery Fee"}</p>
-                    <p className="font-semibold text-sm text-[#2a655f]">
-                      {Number(selectedOrderForDetails.delivery_fee || 0).toLocaleString()} {app.currency}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{isArabic ? "تاريخ الطلب" : "Date"}</p>
-                    <p className="font-semibold text-sm">{new Date(selectedOrderForDetails.created_at).toLocaleDateString(isArabic ? "ar-SA" : "en-US")}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground">{isArabic ? "المجموع الكلي" : "Total Amount"}</p>
-                    <p className="text-lg font-bold text-[#2a655f]">
-                      {Number(orderData?.total_with_delivery || selectedOrderForDetails.cod_amount || orderData?.total || 0).toLocaleString()} {app.currency}
-                    </p>
-                  </div>
-                </div>
-                
-                {/* عنوان التوصيل */}
-                <div className="p-4 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
-                  <p className="text-xs text-muted-foreground flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-[#2a655f]" />
-                    {isArabic ? "عنوان التوصيل" : "Delivery Address"}
-                  </p>
-                  <p className="font-medium text-sm mt-1">
-                    {orderData?.delivery_address || selectedOrderForDetails.pickup_address || (isArabic ? "غير محدد" : "Not specified")}
-                  </p>
-                </div>
-                
-                {/* معلومات العميل */}
-                <div className="p-4 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
-                  <p className="text-xs text-muted-foreground flex items-center gap-2">
-                    <User className="h-4 w-4 text-[#2a655f]" />
-                    {isArabic ? "معلومات العميل" : "Customer Info"}
-                  </p>
-                  <div className="mt-1 space-y-1">
-                    <p className="text-sm font-medium">
-                      {orderData?.buyer_name || (isArabic ? "غير معروف" : "Unknown")}
-                    </p>
-                    {orderData?.buyer_phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-3.5 w-3.5 text-[#2a655f]" />
-                        <span className="text-sm font-mono" dir="ltr">{orderData.buyer_phone}</span>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-7 px-2 rounded-lg bg-[#2a655f]/10 hover:bg-[#2a655f]/20 text-[#2a655f] transition-all duration-300" 
-                          onClick={() => window.location.href = `tel:${orderData.buyer_phone}`}
-                        >
-                          <Phone className="h-3.5 w-3.5" />
-                          <span className="text-xs mr-1">{isArabic ? "اتصل" : "Call"}</span>
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* ✅✅✅ المنتجات - نفس طريقة orders.tsx باستخدام orderItems من RPC */}
-                <div className="border-t border-[#2a655f]/20 pt-4">
-                  <h4 className="font-bold text-sm flex items-center gap-2 mb-3">
-                    <Package className="h-4 w-4 text-[#2a655f]" />
-                    {isArabic ? "المنتجات" : "Products"}
-                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
-                      {orderItems.length}
-                    </Badge>
-                  </h4>
-                  
-                  {orderItems.length > 0 ? (
-                    <div className="space-y-3">
-                      {orderItems.map((item: any, index: number) => {
-                        const listing = item.listings || item;
-                        const imageUrl = getProductImage(item);
-                        
-                        // سعر المنتج
-                        const itemPrice = Number(item.price) || 0;
-                        const itemQuantity = item.quantity || 1;
-                        const totalPrice = itemPrice * itemQuantity;
-                        
-                        // الفيرنتات
-                        const variationCombination = getVariationCombination(item);
-                        const hasVariation = !!(variationCombination && Object.keys(variationCombination).length > 0);
-                        const variationDisplay = getVariationDisplay(variationCombination);
-                        
-                        return (
-                          <div 
-                            key={item.id || index} 
-                            className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
-                          >
-                            <div className="flex items-center gap-4">
-                              {/* صورة المنتج */}
-                              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-                                {imageUrl ? (
-                                  <img src={imageUrl} alt="" className="h-full w-full object-cover" />
-                                ) : (
-                                  <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                                    <Package className="h-6 w-6 text-slate-400" />
-                                  </div>
-                                )}
-                              </div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm text-slate-800 dark:text-white">
-                                  {isArabic 
-                                    ? listing?.title_ar || 'منتج'
-                                    : listing?.title_en || listing?.title_ar || 'Product'}
-                                </p>
-                                
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
-                                  {/* الكمية */}
-                                  <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
-                                    <span className="font-medium text-slate-600 dark:text-slate-400">{isArabic ? "الكمية:" : "Qty:"}</span>
-                                    <span className="font-bold text-slate-800 dark:text-white">{itemQuantity}</span>
-                                  </span>
-                                  
-                                  <span className="text-muted-foreground/30">•</span>
-                                  
-                                  {/* سعر الوحدة */}
-                                  <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
-                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "سعر الوحدة:" : "Unit:"}</span>
-                                    <span className="font-bold text-emerald-700 dark:text-emerald-300">
-                                      {formatPrice(itemPrice, app.currency, app.lang)}
-                                    </span>
-                                  </span>
-                                  
-                                  {/* الإجمالي (إذا كان أكثر من 1) */}
-                                  {itemQuantity > 1 && (
-                                    <>
-                                      <span className="text-muted-foreground/30">|</span>
-                                      <span className="flex items-center gap-1 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 px-2 py-0.5 rounded-full border border-[#2a655f]/20 dark:border-[#2a655f]/30">
-                                        <span className="font-medium text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "الإجمالي:" : "Total:"}</span>
-                                        <span className="font-bold text-[#2a655f] dark:text-[#3a8a82]">
-                                          {formatPrice(totalPrice, app.currency, app.lang)}
-                                        </span>
-                                      </span>
-                                    </>
-                                  )}
-                                  
-                                  {/* ✅ عرض الفيرنتات - نفس orders.tsx */}
-                                  {hasVariation && variationDisplay && (
-                                    <>
-                                      <span className="text-muted-foreground/30">•</span>
-                                      <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
-                                        <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
-                                        {variationDisplay}
-                                        {imageUrl && (
-                                          <img 
-                                            src={imageUrl} 
-                                            alt="" 
-                                            className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
-                                          />
-                                        )}
-                                      </span>
-                                    </>
-                                  )}
-                                  
-                                  {/* ✅ عرض الفيرنت من metadata - احتياطي */}
-                                  {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
-                                    <>
-                                      <span className="text-muted-foreground/30">•</span>
-                                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                                        <Layers className="h-2.5 w-2.5" />
-                                        {Object.values(item.metadata.variation_combination).join(' • ')}
-                                      </span>
-                                    </>
-                                  )}
-                                  
-                                  {/* ✅ عرض selected_options */}
-                                  {item.selected_options?.selected_color && (
-                                    <>
-                                      <span className="text-muted-foreground/30">•</span>
-                                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full">
-                                        <span className="font-medium text-[#2a655f]">🎨</span>
-                                        {item.selected_options.selected_color}
-                                        {item.selected_options.selected_size && ` (${item.selected_options.selected_size})`}
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                              
-                             
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                      <p className="text-sm">{isArabic ? "لا توجد منتجات في هذا الطلب" : "No products in this order"}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2a655f]" />
-                <p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p>
+{/* ✅✅✅ ORDER DETAILS DIALOG - مع تفاصيل مطابقة لطلباتي باستخدام RPC */}
+<Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
+  <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto border-[#2a655f]/20 shadow-2xl">
+    <DialogHeader>
+      <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-3">
+        <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center">
+          <ShoppingBag className="h-4 w-4 text-white" />
+        </div>
+        {isArabic ? "تفاصيل الطلب" : "Order Details"}
+      </DialogTitle>
+      <DialogDescription>
+        {isArabic ? `الطلب #${selectedOrderForDetails?.tracking_number || selectedOrderForDetails?.id?.substring(0, 8)}` : `Order #${selectedOrderForDetails?.tracking_number || selectedOrderForDetails?.id?.substring(0, 8)}`}
+      </DialogDescription>
+    </DialogHeader>
+    
+    {loadingDetails ? (
+      <div className="py-8 text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2a655f]" />
+        <p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p>
+      </div>
+    ) : selectedOrderForDetails ? (
+      <div className="space-y-4">
+        {/* معلومات الطلب الأساسية */}
+        <div className="grid grid-cols-3 gap-3 p-4 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
+          <div>
+            <p className="text-xs text-muted-foreground">{isArabic ? "رقم الطلب" : "Order ID"}</p>
+            <p className="font-semibold text-sm">{selectedOrderForDetails.id.substring(0, 8)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{isArabic ? "الحالة" : "Status"}</p>
+            <Badge className={cn("border-0", getStatusColor(selectedOrderForDetails.status))}>
+              {getStatusLabel(selectedOrderForDetails.status)}
+            </Badge>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{isArabic ? "رسوم التوصيل" : "Delivery Fee"}</p>
+            <p className="font-semibold text-sm text-[#2a655f]">
+              {Number(selectedOrderForDetails.delivery_fee || 0).toLocaleString()} {app.currency}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{isArabic ? "تاريخ الطلب" : "Date"}</p>
+            <p className="font-semibold text-sm">{new Date(selectedOrderForDetails.created_at).toLocaleDateString(isArabic ? "ar-SA" : "en-US")}</p>
+          </div>
+          <div className="col-span-2">
+            <p className="text-xs text-muted-foreground">{isArabic ? "المجموع الكلي" : "Total Amount"}</p>
+            <p className="text-lg font-bold text-[#2a655f]">
+              {Number(orderData?.total_with_delivery || selectedOrderForDetails.cod_amount || orderData?.total || 0).toLocaleString()} {app.currency}
+            </p>
+          </div>
+        </div>
+        
+        {/* عنوان التوصيل */}
+        <div className="p-4 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
+          <p className="text-xs text-muted-foreground flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-[#2a655f]" />
+            {isArabic ? "عنوان التوصيل" : "Delivery Address"}
+          </p>
+          <p className="font-medium text-sm mt-1">
+            {orderData?.delivery_address || selectedOrderForDetails.pickup_address || (isArabic ? "غير محدد" : "Not specified")}
+          </p>
+        </div>
+        
+        {/* معلومات العميل */}
+        <div className="p-4 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
+          <p className="text-xs text-muted-foreground flex items-center gap-2">
+            <User className="h-4 w-4 text-[#2a655f]" />
+            {isArabic ? "معلومات العميل" : "Customer Info"}
+          </p>
+          <div className="mt-1 space-y-1">
+            <p className="text-sm font-medium">
+              {orderData?.buyer_name || (isArabic ? "غير معروف" : "Unknown")}
+            </p>
+            {orderData?.buyer_phone && (
+              <div className="flex items-center gap-2">
+                <Phone className="h-3.5 w-3.5 text-[#2a655f]" />
+                <span className="text-sm font-mono" dir="ltr">{orderData.buyer_phone}</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 px-2 rounded-lg bg-[#2a655f]/10 hover:bg-[#2a655f]/20 text-[#2a655f] transition-all duration-300" 
+                  onClick={() => window.location.href = `tel:${orderData.buyer_phone}`}
+                >
+                  <Phone className="h-3.5 w-3.5" />
+                  <span className="text-xs mr-1">{isArabic ? "اتصل" : "Call"}</span>
+                </Button>
               </div>
             )}
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowOrderDetails(false)} className="rounded-xl border-[#2a655f]/20 hover:bg-[#2a655f]/10">
-                <X className="h-4 w-4 mr-1" />
-                {isArabic ? "إغلاق" : "Close"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </div>
+        </div>
+        
+        {/* ✅✅✅ المنتجات - نفس طريقة delivery/dashboard.tsx */}
+        <div className="border-t border-[#2a655f]/20 pt-4">
+          <h4 className="font-bold text-sm flex items-center gap-2 mb-3">
+            <Package className="h-4 w-4 text-[#2a655f]" />
+            {isArabic ? "المنتجات" : "Products"}
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+              {orderItems.length}
+            </Badge>
+          </h4>
+          
+          {orderItems.length > 0 ? (
+            <div className="space-y-3">
+              {orderItems.map((item: any, index: number) => {
+                const listing = item.listings || item;
+                const imageUrl = getProductImage(item);
+                
+                const itemPrice = Number(item.price) || 0;
+                const itemQuantity = item.quantity || 1;
+                const totalPrice = itemPrice * itemQuantity;
+                
+                const variationCombination = getVariationCombination(item);
+                const hasVariation = !!(variationCombination && Object.keys(variationCombination).length > 0);
+                const variationDisplay = getVariationDisplay(variationCombination);
+                
+                return (
+                  <div 
+                    key={item.id || index} 
+                    className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                        {imageUrl ? (
+                          <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                            <Package className="h-6 w-6 text-slate-400" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                          {isArabic 
+                            ? listing?.title_ar || 'منتج'
+                            : listing?.title_en || listing?.title_ar || 'Product'}
+                        </p>
+                        
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
+                          {/* الكمية */}
+                          <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
+                            <span className="font-medium text-slate-600 dark:text-slate-400">{isArabic ? "الكمية:" : "Qty:"}</span>
+                            <span className="font-bold text-slate-800 dark:text-white">{itemQuantity}</span>
+                          </span>
+                          
+                          <span className="text-muted-foreground/30">•</span>
+                          
+                          {/* سعر الوحدة */}
+                          <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
+                            <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "سعر الوحدة:" : "Unit:"}</span>
+                            <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                              {formatPrice(itemPrice, app.currency, app.lang)}
+                            </span>
+                          </span>
+                          
+                          {itemQuantity > 1 && (
+                            <>
+                              <span className="text-muted-foreground/30">|</span>
+                              <span className="flex items-center gap-1 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 px-2 py-0.5 rounded-full border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                                <span className="font-medium text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                                <span className="font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                                  {formatPrice(totalPrice, app.currency, app.lang)}
+                                </span>
+                              </span>
+                            </>
+                          )}
+                          
+                          {hasVariation && variationDisplay && (
+                            <>
+                              <span className="text-muted-foreground/30">•</span>
+                              <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                                <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
+                                {variationDisplay}
+                                {imageUrl && (
+                                  <img 
+                                    src={imageUrl} 
+                                    alt="" 
+                                    className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
+                                  />
+                                )}
+                              </span>
+                            </>
+                          )}
+                          
+                          {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
+                            <>
+                              <span className="text-muted-foreground/30">•</span>
+                              <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                                <Layers className="h-2.5 w-2.5" />
+                                {Object.values(item.metadata.variation_combination).join(' • ')}
+                              </span>
+                            </>
+                          )}
+                          
+                          {item.selected_options?.selected_color && (
+                            <>
+                              <span className="text-muted-foreground/30">•</span>
+                              <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full">
+                                <span className="font-medium text-[#2a655f]">🎨</span>
+                                {item.selected_options.selected_color}
+                                {item.selected_options.selected_size && ` (${item.selected_options.selected_size})`}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            // حالة عدم وجود order_items
+            (() => {
+              const oldOrder = orderData?.order || orderData?.orders || null;
+              const oldListing = oldOrder?.listings || orderData?.listings || null;
+              
+              if (oldListing) {
+                const oldQuantity = oldOrder?.quantity || 1;
+                const oldTotal = oldOrder?.total || 0;
+                
+                const oldImageUrl = oldOrder?.metadata?.variation_image || 
+                                   oldOrder?.metadata?.product_cover ||
+                                   oldListing?.cover_url || null;
+                
+                const oldVariationCombination = oldOrder?.metadata?.variation_combination ||
+                                               oldOrder?.variation_combination ||
+                                               null;
+                
+                const oldHasVariation = !!(oldVariationCombination && Object.keys(oldVariationCombination).length > 0);
+                const oldVariationDisplay = getVariationDisplay(oldVariationCombination);
+                
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4 p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300">
+                      <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                        {oldImageUrl ? (
+                          <img src={oldImageUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                            <Package className="h-6 w-6 text-slate-400" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                          {isArabic ? oldListing?.title_ar || 'منتج' : oldListing?.title_en || oldListing?.title_ar || 'Product'}
+                        </p>
+                        
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                          <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
+                            <span className="font-medium">{isArabic ? "الكمية:" : "Qty:"}</span>
+                            <span className="font-bold text-slate-800 dark:text-white">{oldQuantity}</span>
+                          </span>
+                          <span className="text-muted-foreground/30">•</span>
+                          <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
+                            <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                            <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                              {formatPrice(oldTotal, app.currency, app.lang)}
+                            </span>
+                          </span>
+                          
+                          {oldHasVariation && oldVariationDisplay && (
+                            <>
+                              <span className="text-muted-foreground/30">•</span>
+                              <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                                <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
+                                {oldVariationDisplay}
+                                {oldImageUrl && (
+                                  <img src={oldImageUrl} alt="" className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5" />
+                                )}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              } else {
+                return (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">{isArabic ? "لا توجد منتجات في هذا الطلب" : "No products in this order"}</p>
+                  </div>
+                );
+              }
+            })()
+          )}
+        </div>
+        
+        {/* ===== ملاحظات الطلب - استخدم orderData بدلاً من orderObj ===== */}
+        {orderData?.notes && (
+          <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200/50 dark:border-yellow-800/30">
+            <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
+              <MessageCircle className="h-3.5 w-3.5" />
+              {isArabic ? "ملاحظات العميل" : "Customer Notes"}
+            </p>
+            <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{orderData.notes}</p>
+          </div>
+        )}
+        
+        {/* ===== سبب الرفض ===== */}
+        {selectedOrderForDetails.status === "rejected" && selectedOrderForDetails.rejection_reason && (
+          <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-800/30">
+            <p className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
+              <XCircle className="h-3.5 w-3.5" />
+              {isArabic ? "سبب الرفض" : "Rejection Reason"}
+            </p>
+            <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{selectedOrderForDetails.rejection_reason}</p>
+          </div>
+        )}
+        
+        {/* ===== ✅✅✅ إجمالي الطلب مع الخصم - استخدم orderData بدلاً من orderObj ===== */}
+        {(() => {
+          const subtotal = orderData?.total || orderData?.totals?.subtotal || 0;
+          const deliveryFee = orderData?.delivery_fee || orderData?.totals?.delivery_fee || 0;
+          const promoDiscount = orderData?.promo_discount || orderData?.totals?.promo_discount || 0;
+          const totalWithDelivery = orderData?.total_with_delivery || orderData?.totals?.total_with_delivery || (subtotal + deliveryFee - promoDiscount);
+          const currency = orderData?.currency || orderData?.totals?.currency || app.currency || 'SYP';
+          const totalItems = orderItems.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 1;
+          
+          const hasDiscount = promoDiscount > 0;
+          const isFreeDelivery = deliveryFee === 0;
+          
+          return (
+            <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+              {/* المجموع الفرعي */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {isArabic ? "المجموع الفرعي" : "Subtotal"}
+                </span>
+                <span className="text-lg font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                  {formatPrice(subtotal, currency, app.lang)}
+                </span>
+              </div>
+              
+              {/* سعر التوصيل - مع تمييز المجاني */}
+              <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
+                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  {isFreeDelivery ? (
+                    <>
+                      <Gift className="h-4 w-4 text-emerald-500" />
+                      <span className="font-medium text-emerald-600">{isArabic ? "التوصيل" : "Delivery"}</span>
+                    </>
+                  ) : (
+                    isArabic ? "سعر التوصيل" : "Delivery Fee"
+                  )}
+                  {isFreeDelivery && (
+                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px] animate-pulse">
+                      🎁 {isArabic ? "مجاني" : "Free"}
+                    </Badge>
+                  )}
+                </span>
+                <span className={cn(
+                  "text-sm font-medium",
+                  isFreeDelivery 
+                    ? "text-emerald-500 font-bold" 
+                    : "text-[#0d2e2a] dark:text-[#3a8a82]"
+                )}>
+                  {isFreeDelivery 
+                    ? "🆓 مجاني"
+                    : formatPrice(deliveryFee, currency, app.lang)
+                  }
+                </span>
+              </div>
+              
+              {/* ✅ الخصم العادي */}
+              {hasDiscount && (
+                <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
+                  <span className="text-sm flex items-center gap-1.5">
+                    <Percent className="h-4 w-4 text-emerald-500" />
+                    {isArabic ? "💚 الخصم (كود خصم)" : "💚 Discount (Promo Code)"}
+                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px]">
+                      -{Math.round((promoDiscount / (subtotal + deliveryFee)) * 100)}%
+                    </Badge>
+                  </span>
+                  <span className="text-sm font-bold">
+                    -{formatPrice(promoDiscount, currency, app.lang)}
+                  </span>
+                </div>
+              )}
+              
+              {/* توصيل مجاني + خصم معاً */}
+              {hasDiscount && isFreeDelivery && (
+                <div className="flex items-center gap-2 mt-2 p-2.5 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30 animate-in fade-in slide-in-from-top-3 duration-300">
+                  <Sparkles className="h-4 w-4 text-emerald-500 animate-pulse" />
+                  <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                    {isArabic 
+                      ? "🎉 تم تطبيق كود الخصم + التوصيل المجاني!"
+                      : "🎉 Promo code applied + Free delivery!"}
+                  </span>
+                </div>
+              )}
+              
+              {/* فقط توصيل مجاني بدون خصم */}
+              {isFreeDelivery && !hasDiscount && (
+                <div className="flex items-center gap-2 mt-2 p-2.5 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-200/50 dark:border-blue-800/30 animate-in fade-in slide-in-from-top-3 duration-300">
+                  <Gift className="h-4 w-4 text-blue-500 animate-pulse" />
+                  <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                    {isArabic 
+                      ? "🎁 التوصيل مجاني لهذا الطلب!"
+                      : "🎁 Free delivery for this order!"}
+                  </span>
+                </div>
+              )}
+              
+              {/* فقط خصم بدون توصيل مجاني */}
+              {hasDiscount && !isFreeDelivery && (
+                <div className="flex items-center gap-2 mt-2 p-2.5 bg-purple-50/50 dark:bg-purple-950/20 rounded-lg border border-purple-200/50 dark:border-purple-800/30 animate-in fade-in slide-in-from-top-3 duration-300">
+                  <Percent className="h-4 w-4 text-purple-500 animate-pulse" />
+                  <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                    {isArabic 
+                      ? `💚 تم تطبيق خصم ${Math.round((promoDiscount / (subtotal + deliveryFee)) * 100)}% على الطلب!`
+                      : `💚 ${Math.round((promoDiscount / (subtotal + deliveryFee)) * 100)}% discount applied!`}
+                  </span>
+                </div>
+              )}
+              
+              {/* الإجمالي الكامل */}
+              <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
+                <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white flex items-center gap-1.5">
+                  {isFreeDelivery && <Gift className="h-4 w-4 text-emerald-500" />}
+                  {isArabic ? "الإجمالي الكامل" : "Total"}
+                </span>
+                <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                  {formatPrice(totalWithDelivery, currency, app.lang)}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xs text-muted-foreground">
+                  {totalItems} {isArabic ? "منتج" : "items"}
+                  {hasDiscount && (
+                    <span className="ml-2 text-emerald-500">💚 {isArabic ? "خصم" : "discount"}</span>
+                  )}
+                  {isFreeDelivery && (
+                    <span className="ml-2 text-emerald-500">🎁 {isArabic ? "توصيل مجاني" : "free delivery"}</span>
+                  )}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(selectedOrderForDetails.created_at || Date.now()).toLocaleString(
+                    isArabic ? "ar-SA" : "en-US",
+                    { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+                  )}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+        
+        {/* أزرار الإجراءات */}
+        <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex flex-wrap items-center justify-between gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setShowOrderDetails(false)}
+            className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10"
+          >
+            {isArabic ? "إغلاق" : "Close"}
+          </Button>
+        </div>
+      </div>
+    ) : (
+      <div className="py-8 text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2a655f]" />
+        <p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p>
+      </div>
+    )}
+    
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setShowOrderDetails(false)} className="rounded-xl border-[#2a655f]/20 hover:bg-[#2a655f]/10">
+        <X className="h-4 w-4 mr-1" />
+        {isArabic ? "إغلاق" : "Close"}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 
         {/* ديالوج رفع صورة الموزع */}
         {currentDistributor && !currentDistributor.avatar_url && (
@@ -2515,7 +2753,7 @@ const OrderCard = React.memo(function OrderCard({
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      pending: isArabic ? "قيد المراجعة" : "Pending",
+
       assigned: isArabic ? "تم التعيين" : "Assigned",
       picked_up: isArabic ? "تم الاستلام" : "Picked up",
       in_transit: isArabic ? "قيد التوصيل" : "In Transit",
@@ -2535,7 +2773,7 @@ const OrderCard = React.memo(function OrderCard({
   };
 
   const statusLabels: Record<string, string> = {
-    pending: isArabic ? "قيد المراجعة" : "Pending",
+
     assigned: isArabic ? "تم التعيين" : "Assigned",
     picked_up: isArabic ? "تم الاستلام" : "Picked up",
     in_transit: isArabic ? "قيد التوصيل" : "In Transit",
@@ -2642,17 +2880,16 @@ const OrderCard = React.memo(function OrderCard({
           </div>
           
           <div className="flex items-center gap-1.5 flex-wrap">
-            {/* ✅ زر التحديث */}
-            {canUpdate && order.status !== 'picked_up' && order.status !== 'in_transit' && order.status !== 'delivered' && (
-              <Button 
-                size="sm" 
-                className="h-8 px-3 rounded-xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white transition-all duration-300 hover:scale-105 text-xs shadow-lg shadow-[#0d2e2a]/20"
-                onClick={onStatusUpdate}
-              >
-                <RefreshCw className="h-3.5 w-3.5 mr-1 group-hover:rotate-180 transition-all duration-500" />
-                {isArabic ? "تحديث" : "Update"}
-              </Button>
-            )}
+          {canUpdate && (
+  <Button 
+    size="sm" 
+    className="h-8 px-3 rounded-xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white transition-all duration-300 hover:scale-105 text-xs shadow-lg shadow-[#0d2e2a]/20"
+    onClick={onStatusUpdate}
+  >
+    <RefreshCw className="h-3.5 w-3.5 mr-1 group-hover:rotate-180 transition-all duration-500" />
+    {isArabic ? "تحديث" : "Update"}
+  </Button>
+)}
             
             <Button 
               variant="outline" 
@@ -2843,7 +3080,7 @@ function HistoryOrderCard({
   };
 
   const statusLabels: Record<string, string> = {
-    pending: isArabic ? "قيد المراجعة" : "Pending",
+
     assigned: isArabic ? "تم التعيين" : "Assigned",
     picked_up: isArabic ? "تم الاستلام" : "Picked up",
     in_transit: isArabic ? "قيد التوصيل" : "In Transit",
