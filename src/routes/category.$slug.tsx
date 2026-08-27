@@ -13,7 +13,7 @@ import {
   LayoutGrid
 } from "lucide-react";
 import { useApp, useT, formatPrice } from "@/lib/i18n";
-import { useGovernorates, useListings, useStoresByCategory, useCategories } from "@/lib/queries";
+import { useGovernorates, useListings, useStoresByCategory, useCategories, useProductOffers } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -178,6 +178,49 @@ const AnimatedBadge = ({ count, label, icon: Icon, color }: any) => (
 );
 
 // ============================================================
+// ✅ Offer Type Filter Buttons
+// ============================================================
+function OfferTypeButtons({ 
+  value, 
+  onChange, 
+  lang 
+}: { 
+  value: 'all' | 'promotional' | 'discount'; 
+  onChange: (val: 'all' | 'promotional' | 'discount') => void;
+  lang: string;
+}) {
+  const buttons = [
+    { id: 'all' as const, label: lang === 'ar' ? 'الكل' : 'All', icon: LayoutGrid, color: 'from-pink-500 to-rose-500' },
+    { id: 'promotional' as const, label: lang === 'ar' ? '🎁 ترويجية' : '🎁 Promotional', icon: Gift, color: 'from-purple-500 to-violet-500' },
+    { id: 'discount' as const, label: lang === 'ar' ? '🔥 تخفيضية' : '🔥 Discount', icon: Flame, color: 'from-orange-500 to-amber-500' },
+  ];
+
+  return (
+    <div className="flex items-center gap-1 bg-pink-500/5 dark:bg-pink-500/10 rounded-xl p-1 border border-pink-300/20">
+      {buttons.map((btn) => {
+        const Icon = btn.icon;
+        const isActive = value === btn.id;
+        return (
+          <button
+            key={btn.id}
+            onClick={() => onChange(btn.id)}
+            className={cn(
+              "px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5",
+              isActive 
+                ? `bg-gradient-to-r ${btn.color} text-white shadow-lg shadow-${btn.color.split(' ')[1]?.split('-')[1] || 'pink'}-500/30` 
+                : "text-[#0d2e2a] dark:text-white/60 hover:bg-pink-500/10 hover:text-pink-600"
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {btn.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
 // ✅ Category Page
 // ============================================================
 function CategoryPage() {
@@ -200,12 +243,13 @@ function CategoryPage() {
   // ✅ State
   const [tab, setTab] = useState<"products" | "stores">("products");
   const [productFilter, setProductFilter] = useState<'all' | 'products' | 'offers'>('all');
+  const [offerType, setOfferType] = useState<'all' | 'promotional' | 'discount'>('all');
   const [gov, setGov] = useState<string>(searchParams?.gov ?? "all");
   const [sort, setSort] = useState<"popularity" | "newest" | "price_low" | "price_high" | "discount" | "rating">("popularity");
   const [rating, setRating] = useState(0);
   const [search, setSearch] = useState(searchParams?.q ?? "");
   
-  // ✅ ✅ ✅ نطاق السعر - باستخدام Inputs بدلاً من Slider
+  // ✅ نطاق السعر - باستخدام Inputs بدلاً من Slider
   const [minPrice, setMinPrice] = useState<number>(0);
   const [maxPrice, setMaxPrice] = useState<number>(10000000);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
@@ -222,6 +266,82 @@ function CategoryPage() {
     setSearch(searchParams?.q ?? "");
     setGov(searchParams?.gov ?? "all");
   }, [searchParams?.q, searchParams?.gov]);
+
+  // ✅ ✅ ✅ جلب العروض الترويجية - مثل index.tsx
+  // ✅ جلب governorate_id من slug
+let governorateId = null;
+if (gov !== "all" && gov) {
+  const selectedGov = govs.find((g: any) => g.slug === gov);
+  if (selectedGov) {
+    governorateId = selectedGov.id;
+  }
+}
+
+// ✅ جلب العروض الترويجية مع governorateId
+const offerOptions = useMemo(() => ({ 
+  isActive: true,
+  limit: 50,
+  categoryId: category?.id || undefined,
+  governorateId: governorateId || undefined,  // ✅ أضف هذا
+}), [category?.id, governorateId]);
+
+const { data: promoOffers = [], isLoading: promoLoading } = useProductOffers(offerOptions);
+
+  // ✅ ✅ ✅ تحويل العروض الترويجية لنفس شكل listings - مثل index.tsx
+  const promoOffersAsListings = useMemo(() => {
+    if (!promoOffers || promoOffers.length === 0) return [];
+    
+    return promoOffers.map((offer: any) => {
+      let mainProduct = null;
+      if (Array.isArray(offer.products) && offer.products.length > 0) {
+        mainProduct = offer.products.find((p: any) => p.id === offer.listing_id) || offer.products[0];
+      } else if (offer.products && typeof offer.products === 'object' && !Array.isArray(offer.products)) {
+        mainProduct = offer.products;
+      }
+      
+      return {
+        ...mainProduct,
+        id: offer.id,
+        listing_id: offer.listing_id,
+        title_ar: offer.display_text_ar || mainProduct?.title_ar || (app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"),
+        title_en: offer.display_text_en || mainProduct?.title_en || (app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"),
+        description_ar: offer.display_text_ar || mainProduct?.description_ar || "",
+        description_en: offer.display_text_en || mainProduct?.description_en || "",
+        price: mainProduct?.price || 0,
+        old_price: mainProduct?.old_price || null,
+        discount_percent: mainProduct?.discount_percent || null,
+        is_offer: false,
+        is_promo_offer: true,
+        cover_url: mainProduct?.cover_url || null,
+        status: "published",
+        is_available: true,
+        owner_id: offer.store_id,
+        created_at: offer.created_at,
+        updated_at: offer.updated_at,
+        promo_offer: offer,
+        offer_type: offer.offer_type,
+        buy_quantity: offer.buy_quantity,
+        get_quantity: offer.get_quantity,
+        free_listing_id: offer.free_listing_id,
+        required_product_ids: offer.required_product_ids || [],
+        variation_ids: offer.variation_ids || [],
+        result_variation_ids: offer.result_variation_ids || [],
+        expires_at: offer.expires_at,
+        is_featured: offer.is_featured,
+        products: offer.products || [],
+        colors: mainProduct?.colors || [],
+        variations: mainProduct?.variations || [],
+        listing_images: mainProduct?.listing_images || [],
+        governorates: mainProduct?.governorates || null,
+        profile: mainProduct?.profile || null,
+        categories: mainProduct?.categories || null,
+        rating: mainProduct?.rating || 0,
+        reviews_count: mainProduct?.reviews_count || 0,
+        governorate_id: mainProduct?.governorate_id || null,
+        category_id: mainProduct?.category_id || null,
+      };
+    });
+  }, [promoOffers, app.lang]);
 
   // ✅ جلب المنتجات من listings
   const { 
@@ -240,6 +360,7 @@ function CategoryPage() {
     search: search || undefined,
     page: page,
     limit: limit,
+    offerType: productFilter === 'offers' ? (offerType === 'all' ? null : offerType) : null,
   });
 
   const rows = listingsData.data || [];
@@ -248,14 +369,16 @@ function CategoryPage() {
   
   const { data: stores = [], isLoading: storesLoading } = useStoresByCategory(slug);
 
-  // ✅ دمج كل العناصر
+  // ✅ دمج كل العناصر (المنتجات + العروض الترويجية)
   const allItems = useMemo(() => {
     const listingsItems = rows.map((item: any) => ({
       ...item,
       is_offer: item.is_offer || false,
+      has_promotional_offer: item.product_offers && Array.isArray(item.product_offers) && item.product_offers.length > 0,
     }));
 
-    let all = [...listingsItems];
+    // ✅ دمج مع العروض الترويجية
+    let all = [...listingsItems, ...promoOffersAsListings];
 
     if (sort === 'price_low') {
       all.sort((a, b) => (a.price || 0) - (b.price || 0));
@@ -274,26 +397,59 @@ function CategoryPage() {
     }
 
     return all;
-  }, [rows, sort]);
+  }, [rows, sort, promoOffersAsListings]);
 
   // ✅ فلترة العناصر حسب النوع
   const filteredByType = useMemo(() => {
     if (productFilter === 'all') return allItems;
     
     if (productFilter === 'products') {
-      return allItems.filter((item: any) => !item.is_offer);
+      return allItems.filter((item: any) => !item.is_offer && !item.is_promo_offer);
     }
     
     if (productFilter === 'offers') {
-      return allItems.filter((item: any) => item.is_offer === true);
+      return allItems.filter((item: any) => {
+        // ✅ العروض التخفيضية
+        if (item.is_offer === true) return true;
+        
+        // ✅ العروض الترويجية
+        if (item.is_promo_offer === true) return true;
+        
+        // ✅ العروض الترويجية من product_offers
+        if (item.product_offers && Array.isArray(item.product_offers) && item.product_offers.length > 0) {
+          return true;
+        }
+        
+        return false;
+      });
     }
     
     return allItems;
   }, [allItems, productFilter]);
 
+  // ✅ فلترة العروض حسب النوع (ترويجية / تخفيضية)
+  const filteredByOfferType = useMemo(() => {
+    if (productFilter !== 'offers') return filteredByType;
+    
+    if (offerType === 'all') return filteredByType;
+    
+    if (offerType === 'promotional') {
+      return filteredByType.filter((item: any) => 
+        item.is_promo_offer === true || 
+        (item.product_offers && Array.isArray(item.product_offers) && item.product_offers.length > 0)
+      );
+    }
+    
+    if (offerType === 'discount') {
+      return filteredByType.filter((item: any) => (item.discount_percent || 0) > 0);
+    }
+    
+    return filteredByType;
+  }, [filteredByType, offerType, productFilter]);
+
   // ✅ فلترة متقدمة (السعر، التقييم، التوفر، البحث)
   const items = useMemo(() => {
-    let filtered = filteredByType;
+    let filtered = filteredByOfferType;
     
     // ✅ فلتر البحث الذكي
     if (search && search.trim()) {
@@ -316,8 +472,7 @@ function CategoryPage() {
       filtered = filtered.filter((r: any) => Number(r.rating) >= rating);
     }
     
-    // ✅ ✅ ✅ فلتر السعر باستخدام minPrice و maxPrice
-    // تحويل minPrice و maxPrice إلى أرقام صالحة
+    // ✅ فلتر السعر باستخدام minPrice و maxPrice
     const min = Number(minPrice) || 0;
     const max = Number(maxPrice) || 10000000;
     
@@ -332,18 +487,22 @@ function CategoryPage() {
     }
     
     return filtered;
-  }, [filteredByType, search, rating, minPrice, maxPrice, showAvailableOnly]);
+  }, [filteredByOfferType, search, rating, minPrice, maxPrice, showAvailableOnly]);
 
   // ✅ إحصائيات
   const stats = useMemo(() => {
     const all = allItems.length;
-    const products = allItems.filter((i: any) => !i.is_offer).length;
-    const offers = allItems.filter((i: any) => i.is_offer === true).length;
+    const products = allItems.filter((i: any) => !i.is_offer && !i.is_promo_offer).length;
+    const offers = allItems.filter((i: any) => i.is_offer === true || i.is_promo_offer === true || (i.product_offers && i.product_offers.length > 0)).length;
+    const promotionalOffers = allItems.filter((i: any) => i.is_promo_offer === true || (i.product_offers && i.product_offers.length > 0)).length;
+    const discountOffers = allItems.filter((i: any) => (i.discount_percent || 0) > 0).length;
     
     return {
       total: all,
       products,
       offers,
+      promotionalOffers,
+      discountOffers,
       stores: stores.length,
       filtered: items.length,
     };
@@ -352,7 +511,7 @@ function CategoryPage() {
   // ✅ إعادة تعيين الصفحة
   useEffect(() => {
     setPage(1);
-  }, [search, sort, gov, rating, minPrice, maxPrice, showAvailableOnly, productFilter]);
+  }, [search, sort, gov, rating, minPrice, maxPrice, showAvailableOnly, productFilter, offerType]);
 
   // ✅ Pagination
   const goToPage = (newPage: number) => {
@@ -365,6 +524,7 @@ function CategoryPage() {
   // ✅ عرض الكل
   const showAll = () => {
     setProductFilter('all');
+    setOfferType('all');
     setGov("all");
     setRating(0);
     setSearch("");
@@ -411,7 +571,7 @@ function CategoryPage() {
         </Select>
       </div>
 
-  {/* ✅ ✅ ✅ نطاق السعر - Inputs بدون "من" و "إلى" داخل الحقول */}
+      {/* نطاق السعر - Inputs بدون "من" و "إلى" داخل الحقول */}
 <div>
   <div className="font-semibold mb-2 text-sm text-pink-600 dark:text-pink-400 flex items-center gap-2">
     <Tag className="h-4 w-4" />
@@ -612,6 +772,8 @@ function CategoryPage() {
                   <div className="flex items-center gap-3 mt-2 flex-wrap">
                     <AnimatedBadge count={stats.total} label={isArabic ? "منتج" : "products"} icon={Package} color="text-pink-300" />
                     <AnimatedBadge count={stats.offers} label={isArabic ? "عرض" : "offers"} icon={Flame} color="text-orange-300" />
+                    <AnimatedBadge count={stats.promotionalOffers} label={isArabic ? "ترويجي" : "promo"} icon={Gift} color="text-purple-300" />
+                    <AnimatedBadge count={stats.discountOffers} label={isArabic ? "تخفيض" : "discount"} icon={BadgePercent} color="text-orange-300" />
                     <AnimatedBadge count={stats.stores} label={isArabic ? "متجر" : "stores"} icon={Store} color="text-pink-300" />
                   </div>
                 </div>
@@ -714,6 +876,15 @@ function CategoryPage() {
                     products: stats.products,
                     offers: stats.offers,
                   }}
+                  lang={app.lang}
+                />
+              )}
+              
+              {/* ✅ Offer Type Filter Buttons - تظهر فقط عند اختيار "عروض" */}
+              {tab === "products" && productFilter === "offers" && (
+                <OfferTypeButtons
+                  value={offerType}
+                  onChange={setOfferType}
                   lang={app.lang}
                 />
               )}

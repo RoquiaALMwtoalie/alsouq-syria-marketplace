@@ -364,6 +364,17 @@ export function useListings(filter: ListingsFilter = {}) {
         categoryId = category?.id || null;
       }
       
+      // ✅ ✅ ✅ جلب governorate_id من slug
+      let governorateId = null;
+      if (filter.governorateSlug) {
+        const { data: gov } = await supabase
+          .from("governorates")
+          .select("id")
+          .eq("slug", filter.governorateSlug)
+          .maybeSingle();
+        governorateId = gov?.id || null;
+      }
+      
       const { data, error } = await supabase
         .rpc('get_public_products_with_variations', {
           p_limit: filter.limit || 12,
@@ -371,7 +382,8 @@ export function useListings(filter: ListingsFilter = {}) {
           p_sort: filter.sort || 'recent',
           p_is_offer: filter.isOffer || null,
           p_category_id: categoryId,
-          p_is_featured: filter.isFeatured || null
+          p_is_featured: filter.isFeatured || null,
+          p_governorate_id: governorateId  // ✅✅✅ هذا السطر الجديد
         });
       
       if (error) throw error;
@@ -5255,6 +5267,7 @@ export function useProductOffers(options?: {
   offerType?: 'bogo' | 'cross_sell' | 'bundle';
   featured?: boolean;
   categoryId?: string;
+  governorateId?: string;  // ✅ أضف هذا
 }) {
   // ✅ تثبيت الـ options باستخدام useMemo
   const stableOptions = useMemo(() => ({
@@ -5266,6 +5279,7 @@ export function useProductOffers(options?: {
     offerType: options?.offerType || null,
     featured: options?.featured !== undefined ? options.featured : null,
     categoryId: options?.categoryId || null,
+    governorateId: options?.governorateId || null,  // ✅ أضف هذا
   }), [
     options?.storeId,
     options?.listingId,
@@ -5275,6 +5289,7 @@ export function useProductOffers(options?: {
     options?.offerType,
     options?.featured,
     options?.categoryId,
+    options?.governorateId,  // ✅ أضف هذا
   ]);
 
   console.log("🎯 [useProductOffers] Hook called with stable options:", stableOptions);
@@ -5297,7 +5312,8 @@ export function useProductOffers(options?: {
           p_offset: stableOptions.offset,
           p_store_id: stableOptions.storeId,
           p_category_id: stableOptions.categoryId,
-          p_is_active: stableOptions.isActive
+          p_is_active: stableOptions.isActive,
+          p_governorate_id: stableOptions.governorateId  // ✅ أضف هذا
         });
 
       if (error) {
