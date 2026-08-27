@@ -3858,8 +3858,102 @@ export function useDistributors(options?: {
     staleTime: 30 * 1000,
   });
 }
+// ============================================================
+// 🚚 DELIVERY ORDER DETAILS WITH PRODUCTS & VARIATIONS
+// ============================================================
 
-export function useDeliveryOrders(userId?: string) {
+// ============================================================
+// 🚚 DELIVERY ORDER DETAILS WITH PRODUCTS & VARIATIONS (مصحح)
+// ============================================================
+
+export function useDeliveryOrderDetails(deliveryOrderId: string | undefined) {
+  return useQuery({
+    queryKey: ["delivery-order-details", deliveryOrderId],
+    enabled: !!deliveryOrderId && deliveryOrderId.length > 0,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 1,
+    retryDelay: 1000,
+    queryFn: async () => {
+      if (!deliveryOrderId) return null;
+
+      console.log("📡 [useDeliveryOrderDetails] START - Fetching delivery order details via RPC for:", deliveryOrderId);
+
+      try {
+        // ✅ استدعاء RPC
+        const { data, error } = await supabase
+          .rpc('get_delivery_order_details', {
+            p_delivery_order_id: deliveryOrderId
+          });
+
+        if (error) {
+          console.error("❌ [useDeliveryOrderDetails] RPC Error:", error);
+          throw error;
+        }
+
+        console.log("✅ [useDeliveryOrderDetails] RPC Result:", data);
+
+        if (!data) {
+          console.warn("⚠️ [useDeliveryOrderDetails] No data returned");
+          return null;
+        }
+
+        // ✅ بناء النتيجة النهائية
+        const result = {
+          ...data?.delivery_order,
+          order: data?.order || null,
+          order_items: data?.order?.order_items || [],
+          buyer: data?.buyer || null,
+          totals: data?.order ? {
+            subtotal: data.order.total || 0,
+            delivery_fee: data.order.delivery_fee || 0,
+            promo_discount: data.order.promo_discount || 0,
+            total_with_delivery: data.order.total_with_delivery || 
+              (Number(data.order.total || 0) + Number(data.order.delivery_fee || 0) - Number(data.order.promo_discount || 0)),
+            currency: data.order.currency || 'SYP',
+          } : {
+            subtotal: 0,
+            delivery_fee: 0,
+            promo_discount: 0,
+            total_with_delivery: 0,
+            currency: 'SYP',
+          },
+          order_status: data?.order?.status || null,
+          order_created_at: data?.order?.created_at || null,
+        };
+
+        console.log("✅ [useDeliveryOrderDetails] COMPLETED - Returning full order details");
+        console.log("📦 [useDeliveryOrderDetails] order_items count:", result.order_items?.length || 0);
+        return result;
+
+      } catch (error) {
+        console.error("❌ [useDeliveryOrderDetails] Unexpected error:", error);
+        throw error;
+      }
+    },
+  });
+}
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Fetches delivery orders for a given user ID.
+ * The function will return an empty array if the user ID is not provided.
+ * If the user ID is provided, the function will fetch delivery orders
+ * that belong to the user, whether they are a delivery company, distributor,
+ * or just a regular user.
+ * The function will also filter the results based on the user's roles.
+ * If the user is a delivery company, the function will only return orders
+ * that belong to the company.
+ * If the user is a distributor, the function will only return orders
+ * that belong to the distributor.
+ * If the user is not a delivery company or distributor, the function
+ * will return all orders that belong to the user.
+ * @param {string} [userId] - The user ID to fetch delivery orders for.
+ * @returns {Promise<Array>} - The list of delivery orders belonging to the user.
+ */
+/*******  55f61d90-04ff-46e8-8fbc-b1dba1f61bfa  *******/export function useDeliveryOrders(userId?: string) {
   return useQuery({
     queryKey: ["delivery-orders", userId],
     enabled: !!userId,
@@ -4553,7 +4647,7 @@ export function useAcceptDeliveryOrder() {
             body_ar: `تم تعيينك لتوصيل طلب "${order.listings?.title_ar || 'رقم ' + orderId.substring(0,8)}" - الوقت المتوقع للوصول: ${formattedDate}`,
             title_en: `New delivery assigned: ${order.listings?.title_en || 'Order ' + orderId.substring(0,8)}`,
             body_en: `You have been assigned to deliver order "${order.listings?.title_en || 'Order ' + orderId.substring(0,8)}" - Estimated delivery: ${deliveryDate.toLocaleString('en-US')}`,
-            link_url: `/delivery/orders/${orderId}`,
+            link_url: `/distributor/dashboard`,
             metadata: {
               delivery_order_id: deliveryOrderId,
               order_id: orderId,
@@ -4599,7 +4693,7 @@ export function useAcceptDeliveryOrder() {
             type: "order_accepted",
             title_ar: "✅ تم قبول طلب التوصيل",
             body_ar: `تم قبول طلب "${order.listings?.title_ar}" من شركة التوصيل وتعيين موزع - الوقت المتوقع للوصول: ${new Date(estimatedDeliveryAt).toLocaleDateString('ar-SA', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`,
-            link_url: `/orders/${orderId}`,
+            link_url: `/dashboard`,
             metadata: {
               order_id: orderId,
               distributor_id: distributorId,
@@ -4684,7 +4778,7 @@ export function useRejectDeliveryOrder() {
             type: "order_rejected",
             title_ar: "❌ تم رفض طلب التوصيل",
             body_ar: `تم رفض طلب "${order.listings?.title_ar}" من شركة التوصيل. السبب: ${reason.trim()}`,
-            link_url: `/orders/${orderId}`,
+            link_url: `/dashboard`,
             metadata: {
               rejection_reason: reason.trim(),
               order_id: orderId,

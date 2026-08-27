@@ -1,7 +1,7 @@
 // src/routes/delivery/dashboard.tsx
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useApp, useT } from "@/lib/i18n";
+import { useApp, useT, formatPrice } from "@/lib/i18n";
 import {
   useDeliveryOrders,
   useDistributors,
@@ -15,10 +15,11 @@ import {
   useRejectDeliveryOrder,
   useNearestDistributors,
   useUpdateDeliveryOrderStatus,
+  useDeliveryOrderDetails,
 } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Truck, Package, Users, Clock, CheckCircle, XCircle,
+  Truck, Package, Users, Clock, CheckCircle, CheckCircle2, XCircle,  // ✅ أضف CheckCircle2 هنا
   TrendingUp, DollarSign, MapPin, Phone, Mail,
   Calendar, ArrowRight, ChevronLeft, ChevronRight, Plus,
   Search, Filter, MoreVertical, Eye, Edit, Trash2,
@@ -32,7 +33,9 @@ import {
   LayoutDashboard, Users as UsersIcon, TrendingUp as TrendingUpIcon,
   Edit3, Map, Info, FileText, Check, Power, PowerOff,
   Download, FileSpreadsheet, Printer, FileDown, Table2, ClipboardCopy,
-  Loader2
+  Loader2,
+  Layers,
+  User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -196,6 +199,10 @@ function DeliveryDashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // ✅ State لتفاصيل الطلب
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<any>(null);
+
   // ✅ تعريف isArabic هنا
   const isArabic = app.lang === "ar";
 
@@ -242,6 +249,228 @@ function DeliveryDashboardPage() {
   const unreadNotificationsCount = notifications.filter((n: any) => !n.is_read).length;
 
   // ============================================================
+  // ✅ دوال الحصول على صورة الفيرنت (مطابقة لـ getProductImage في orders.tsx)
+  // ============================================================
+// ============================================================
+// ✅ دالة الحصول على صورة المنتج (محسّنة بالكامل)
+// ============================================================
+const getProductImage = (item: any) => {
+  const listing = item.listings || item;
+  
+  console.log("🖼️ [getProductImage] Input item:", {
+    id: item.id,
+    hasMetadata: !!item.metadata,
+    hasSelectedOptions: !!item.selected_options,
+    hasVariationSnapshot: !!item.variation_snapshot,
+    hasVariationCombination: !!item.variation_combination,
+    hasSelectedVariationId: !!item.selected_variation_id,
+    listingCover: listing?.cover_url,
+    variationsCount: listing?.variations?.length || 0,
+    colorsCount: listing?.colors?.length || 0,
+  });
+  
+  // ✅ 1. من metadata.variation_image
+  if (item.metadata?.variation_image) {
+    console.log("🖼️ [getProductImage] ✅ Found in metadata.variation_image:", item.metadata.variation_image);
+    return item.metadata.variation_image;
+  }
+  
+  // ✅ 2. من metadata.product_cover
+  if (item.metadata?.product_cover) {
+    console.log("🖼️ [getProductImage] ✅ Found in metadata.product_cover:", item.metadata.product_cover);
+    return item.metadata.product_cover;
+  }
+  
+  // ✅ 3. من selected_options.variation_image
+  if (item.selected_options?.variation_image) {
+    console.log("🖼️ [getProductImage] ✅ Found in selected_options.variation_image:", item.selected_options.variation_image);
+    return item.selected_options.variation_image;
+  }
+  
+  // ✅ 4. من variation_snapshot.image_url
+  if (item.variation_snapshot?.image_url) {
+    console.log("🖼️ [getProductImage] ✅ Found in variation_snapshot.image_url:", item.variation_snapshot.image_url);
+    return item.variation_snapshot.image_url;
+  }
+  
+  // ✅ 5. من selected_options.selected_variation_id
+  if (item.selected_options?.selected_variation_id) {
+    const variations = listing?.variations || [];
+    const variation = variations.find((v: any) => v.id === item.selected_options.selected_variation_id);
+    if (variation?.image_url) {
+      console.log("🖼️ [getProductImage] ✅ Found via selected_options.selected_variation_id -> variation.image_url:", variation.image_url);
+      return variation.image_url;
+    }
+    if (variation?.color_id) {
+      const colors = listing?.colors || [];
+      const color = colors.find((c: any) => c.id === variation.color_id);
+      if (color?.image_url) {
+        console.log("🖼️ [getProductImage] ✅ Found via selected_options.selected_variation_id -> color.image_url:", color.image_url);
+        return color.image_url;
+      }
+    }
+  }
+  
+  // ✅ 6. من selected_variation_id (القديم)
+  if (item.selected_variation_id) {
+    const variations = listing?.variations || [];
+    const variation = variations.find((v: any) => v.id === item.selected_variation_id);
+    if (variation?.image_url) {
+      console.log("🖼️ [getProductImage] ✅ Found via selected_variation_id -> variation.image_url:", variation.image_url);
+      return variation.image_url;
+    }
+    if (variation?.color_id) {
+      const colors = listing?.colors || [];
+      const color = colors.find((c: any) => c.id === variation.color_id);
+      if (color?.image_url) {
+        console.log("🖼️ [getProductImage] ✅ Found via selected_variation_id -> color.image_url:", color.image_url);
+        return color.image_url;
+      }
+    }
+    // محاولة استخراج اللون من combination
+    if (variation?.combination) {
+      const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+      let colorValue = null;
+      for (const key of colorKeys) {
+        if (variation.combination[key]) {
+          colorValue = variation.combination[key];
+          break;
+        }
+      }
+      if (colorValue) {
+        const colors = listing?.colors || [];
+        const color = colors.find((c: any) => 
+          c.color_name_ar === colorValue || c.color_name_en === colorValue
+        );
+        if (color?.image_url) {
+          console.log("🖼️ [getProductImage] ✅ Found via selected_variation_id -> combination -> color.image_url:", color.image_url);
+          return color.image_url;
+        }
+      }
+    }
+  }
+  
+  // ✅ 7. من variation_combination
+  if (item.variation_combination) {
+    // محاولة استخراج اللون من variation_combination
+    const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+    let colorValue = null;
+    for (const key of colorKeys) {
+      if (item.variation_combination[key]) {
+        colorValue = item.variation_combination[key];
+        break;
+      }
+    }
+    if (colorValue) {
+      const colors = listing?.colors || [];
+      const color = colors.find((c: any) => 
+        c.color_name_ar === colorValue || c.color_name_en === colorValue
+      );
+      if (color?.image_url) {
+        console.log("🖼️ [getProductImage] ✅ Found via variation_combination -> color.image_url:", color.image_url);
+        return color.image_url;
+      }
+    }
+  }
+  
+  // ✅ 8. من listing.variations (أول variation نشط)
+  if (listing?.variations && listing.variations.length > 0) {
+    const activeVariations = listing.variations.filter((v: any) => v.is_active !== false) || [];
+    const variations = activeVariations.length > 0 ? activeVariations : listing.variations;
+    const firstVariation = variations[0];
+    
+    if (firstVariation.image_url) {
+      console.log("🖼️ [getProductImage] ✅ Found in listing.variations[0].image_url:", firstVariation.image_url);
+      return firstVariation.image_url;
+    }
+    if (firstVariation.color_id) {
+      const colors = listing.colors || [];
+      const color = colors.find((c: any) => c.id === firstVariation.color_id);
+      if (color?.image_url) {
+        console.log("🖼️ [getProductImage] ✅ Found in listing.variations[0] -> color.image_url:", color.image_url);
+        return color.image_url;
+      }
+    }
+  }
+  
+  // ✅ 9. من listing.colors
+  if (listing?.colors && listing.colors.length > 0) {
+    const firstColor = listing.colors[0];
+    if (firstColor.image_url) {
+      console.log("🖼️ [getProductImage] ✅ Found in listing.colors[0].image_url:", firstColor.image_url);
+      return firstColor.image_url;
+    }
+  }
+  
+  // ✅ 10. من listing_images
+  if (listing?.listing_images && listing.listing_images.length > 0) {
+    const firstImage = listing.listing_images[0];
+    if (firstImage?.url) {
+      console.log("🖼️ [getProductImage] ✅ Found in listing_images[0].url:", firstImage.url);
+      return firstImage.url;
+    }
+  }
+  
+  // ✅ 11. أخيراً: cover_url
+  console.log("🖼️ [getProductImage] ✅ Using cover_url (fallback):", listing?.cover_url);
+  return listing?.cover_url || null;
+};
+
+  // ============================================================
+  // ✅ دالة الحصول على تركيبة الفيرنت
+  // ============================================================
+  const getVariationCombination = (item: any) => {
+    if (item.variation_snapshot?.combination) return item.variation_snapshot.combination;
+    if (item.metadata?.variation_combination) return item.metadata.variation_combination;
+    if (item.variation_combination) return item.variation_combination;
+    if (item.selected_options?.variation_combination) return item.selected_options.variation_combination;
+    return null;
+  };
+
+  // ============================================================
+  // ✅ دالة عرض اسم الفيرنت
+  // ============================================================
+  const getVariationDisplay = (combination: any) => {
+    if (!combination) return null;
+    const parts: string[] = [];
+    const order = ['colors', 'sizes', 'size', 'color', 'اللون', 'المقاس', 'colour'];
+    for (const key of order) {
+      if (combination[key]) parts.push(combination[key]);
+    }
+    for (const [key, value] of Object.entries(combination)) {
+      if (!order.includes(key) && value) parts.push(String(value));
+    }
+    return parts.length > 0 ? parts.join(' • ') : null;
+  };
+
+  // ============================================================
+  // ✅ دوال الحالة
+  // ============================================================
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      pending: isArabic ? "قيد المراجعة" : "Pending",
+      assigned: isArabic ? "تم التعيين" : "Assigned",
+      picked_up: isArabic ? "تم الاستلام" : "Picked up",
+      in_transit: isArabic ? "قيد التوصيل" : "In Transit",
+
+    };
+    return labels[status] || status;
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+      assigned: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+      picked_up: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+      in_transit: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+      delivered: "bg-green-500/10 text-green-500 border-green-500/20",
+      cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
+      failed: "bg-red-500/10 text-red-500 border-red-500/20",
+    };
+    return colors[status] || "bg-slate-500/10 text-slate-500";
+  };
+
+  // ============================================================
   // ✅ Realtime للإشعارات - بعد تعريف refetchNotifications
   // ============================================================
   const notificationChannelRef = useRef<any>(null);
@@ -277,10 +506,8 @@ function DeliveryDashboardPage() {
           console.log('📬 [Delivery] Title:', notification.title_ar || notification.title_en);
           console.log('📬 [Delivery] Body:', notification.body_ar || notification.body_en);
           
-          // ✅ 1️⃣ تحديث قائمة الإشعارات
           refetchNotifications();
           
-          // ✅ 2️⃣ عرض Toast في منتصف الشاشة
           toast.success(
             isArabic 
               ? `🔔 ${notification.title_ar || 'إشعار جديد'}`
@@ -303,7 +530,6 @@ function DeliveryDashboardPage() {
             }
           );
 
-          // ✅ 3️⃣ تشغيل الصوت
           try {
             const audio = new Audio('/notification.mp3');
             audio.volume = 0.7;
@@ -312,7 +538,6 @@ function DeliveryDashboardPage() {
             console.log('🔇 Audio error:', e);
           }
 
-          // ✅ 4️⃣ إظهار إشعار المتصفح
           if ('Notification' in window && Notification.permission === 'granted') {
             try {
               const browserNotification = new Notification(
@@ -337,7 +562,6 @@ function DeliveryDashboardPage() {
             }
           }
 
-          // ✅ 5️⃣ تحديث عدد الإشعارات غير المقروءة
           setUnreadNotificationsCount(prev => prev + 1);
         }
       )
@@ -345,7 +569,6 @@ function DeliveryDashboardPage() {
   console.log(`📡 [Delivery] Realtime status: ${status}`);
   if (status === 'SUBSCRIBED') {
     isSubscribedRef.current = true;
-    // ✅ تم إزالة toast.success
   }
   if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
     isSubscribedRef.current = false;
@@ -368,7 +591,6 @@ function DeliveryDashboardPage() {
   // ✅ دوال التصدير والطباعة
   // ============================================================
 
-  // ✅ دالة تصدير إلى Excel (CSV)
   const exportToCSV = (data: any[], filename: string) => {
     if (!data || data.length === 0) {
       toast.error(isArabic ? "❌ لا توجد بيانات للتصدير" : "❌ No data to export");
@@ -416,7 +638,6 @@ function DeliveryDashboardPage() {
     }
   };
 
-  // ✅ دالة تصدير إلى Word (HTML)
   const exportToWord = (data: any[], title: string) => {
     if (!data || data.length === 0) {
       toast.error(isArabic ? "❌ لا توجد بيانات للتصدير" : "❌ No data to export");
@@ -431,14 +652,6 @@ function DeliveryDashboardPage() {
         <head>
           <meta charset="utf-8">
           <title>${title}</title>
-          <!--[if gte mso 9]>
-          <xml>
-            <w:WordDocument>
-              <w:View>Print</w:View>
-              <w:Zoom>100</w:Zoom>
-            </w:WordDocument>
-          </xml>
-          <![endif]-->
           <style>
             body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; direction: ${isArabic ? 'rtl' : 'ltr'}; }
             h1 { color: #0d2e2a; border-bottom: 3px solid #2a655f; padding-bottom: 10px; }
@@ -510,16 +723,14 @@ function DeliveryDashboardPage() {
               picked_up: isArabic ? 'تم الاستلام' : 'Picked up',
               in_transit: isArabic ? 'قيد التوصيل' : 'In Transit',
               delivered: isArabic ? 'تم التوصيل' : 'Delivered',
-              cancelled: isArabic ? 'ملغي' : 'Cancelled',
-              failed: isArabic ? 'فشل' : 'Failed',
+              
             };
             const label = statusLabels[value] || value;
             const colorClass = `badge-${value}`;
             html += `<td><span class="badge ${colorClass}">${label}</span></td>`;
           } 
           else if (header === 'created_at' || header === 'updated_at' || header === 'delivered_at' || header === 'picked_up_at' || header === 'cancelled_at') {
-            html += `<td>${value ? new Date(value).toLocaleString(isArabic ? 'ar-SA' : 'en-US') : '-'}</td>`;
-          }
+            html += `<td>${value ? new Date(value).toLocaleString(isArabic ? 'ar-SA' : 'en-US') : '-'}</td>`;          }
           else if (header === 'delivery_fee' || header === 'total' || header === 'cod_amount') {
             html += `<td>${Number(value).toLocaleString()} SYP</td>`;
           }
@@ -564,7 +775,6 @@ function DeliveryDashboardPage() {
     }
   };
 
-  // ✅ دالة الطباعة
   const handlePrint = () => {
     window.print();
   };
@@ -1286,10 +1496,9 @@ function DeliveryDashboardPage() {
   </div>
 </div>
 
-{/* ✅ ✅ ✅ الجزء المُصحح: أزرار الإشعارات والرسائل واللغة */}
+{/* ✅ ✅ ✅ أزرار الإشعارات والرسائل واللغة */}
 <div className="flex items-center gap-1 flex-wrap flex-shrink-0">
   
-  {/* ✅ زر الإشعارات - Dialog خارج الـ Tooltip */}
   <Tooltip>
     <TooltipTrigger asChild>
       <Button
@@ -1311,7 +1520,6 @@ function DeliveryDashboardPage() {
     </TooltipContent>
   </Tooltip>
 
-  {/* ✅ زر الرسائل */}
   <Tooltip>
     <TooltipTrigger asChild>
       <Button
@@ -1333,7 +1541,6 @@ function DeliveryDashboardPage() {
     </TooltipContent>
   </Tooltip>
 
-  {/* ✅ زر اللغة */}
   <Tooltip>
     <TooltipTrigger asChild>
       <Button
@@ -1352,7 +1559,6 @@ function DeliveryDashboardPage() {
 
   <div className="w-px h-6 bg-white/10 mx-0.5" />
 
-  {/* ✅ DeliveryAccountMenu */}
   <DeliveryAccountMenu
     userData={{
       id: app.user?.id || '',
@@ -1369,7 +1575,6 @@ function DeliveryDashboardPage() {
 
   <div className="w-px h-6 bg-white/10 mx-0.5" />
 
-  {/* ✅ زر حساب الموزع */}
   {currentDistributor && (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -1393,7 +1598,7 @@ function DeliveryDashboardPage() {
   </div>
 </div>
 
-{/* ✅✅✅ DIALOG: الإشعارات (خارج الـ Tooltip) */}
+{/* ✅✅✅ DIALOG: الإشعارات */}
 <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
   <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 shadow-2xl">
     <DialogHeader>
@@ -1486,7 +1691,7 @@ function DeliveryDashboardPage() {
   </DialogContent>
 </Dialog>
 
-{/* ✅✅✅ DIALOG: حساب الموزع (خارج الـ Tooltip) */}
+{/* ✅✅✅ DIALOG: حساب الموزع */}
 <Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
   <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 shadow-2xl">
     <DialogHeader>
@@ -1668,13 +1873,10 @@ function DeliveryDashboardPage() {
                     <option value="assigned">{isArabic ? "تم التعيين" : "Assigned"}</option>
                     <option value="picked_up">{isArabic ? "تم الاستلام" : "Picked up"}</option>
                     <option value="in_transit">{isArabic ? "قيد التوصيل" : "In transit"}</option>
-                    <option value="delivered">{isArabic ? "تم التوصيل" : "Delivered"}</option>
-                    <option value="cancelled">{isArabic ? "ملغي" : "Cancelled"}</option>
-                    <option value="failed">{isArabic ? "فشل" : "Failed"}</option>
+                    
                   </select>
                 </div>
 
-                {/* ✅ أزرار التصدير والطباعة للطلبات */}
                 <div className="flex items-center gap-2 ml-auto">
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1765,6 +1967,11 @@ function DeliveryDashboardPage() {
                           setSelectedOrderId(order.order_id);
                           setRejectReason("");
                           setRejectDialogOpen(true);
+                        }}
+                        onViewDetails={(details) => {
+                          // ✅ ✅ ✅ استخدم البيانات الكاملة
+                          setSelectedOrderForDetails(details);
+                          setShowOrderDetails(true);
                         }}
                       />
                     ))}
@@ -1893,7 +2100,6 @@ function DeliveryDashboardPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* ✅ أزرار التصدير والطباعة للموزعين */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -2214,7 +2420,6 @@ function DeliveryDashboardPage() {
                   </p>
                 </div>
                 
-                {/* ✅ أزرار التصدير والطباعة للتحليلات */}
                 <div className="flex items-center gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -2891,6 +3096,646 @@ function DeliveryDashboardPage() {
           </DialogContent>
         </Dialog>
 
+ {/* ===== ORDER DETAILS DIALOG ===== */}
+<Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
+  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#2a655f]/20 bg-white dark:bg-slate-900 p-6">
+    <Button
+      variant="ghost"
+      size="icon"
+      className="absolute top-4 end-4 h-9 w-9 rounded-full bg-black/50 hover:bg-black/70 text-white z-30"
+      onClick={() => setShowOrderDetails(false)}
+    >
+      <X className="h-5 w-5" />
+    </Button>
+
+    {(() => {
+      const orderData = selectedOrderForDetails;
+      
+      if (!orderData) {
+        return (
+          <div className="py-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2a655f]" />
+            <p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p>
+          </div>
+        );
+      }
+
+      // ✅ استخراج البيانات
+     const orderItems = orderData?.order_items || [];
+  const orderObj = orderData?.order || null;
+  
+  console.log("📦 [OrderDetailsDialog] orderItems:", orderItems);
+  console.log("📦 [OrderDetailsDialog] orderItems length:", orderItems.length);
+      
+      // ✅ اسم العميل مع صورة
+      const buyerName = orderObj?.buyer_name || orderData?.buyer?.name || (isArabic ? "غير معروف" : "Unknown");
+      const buyerPhone = orderObj?.buyer_phone || orderData?.buyer?.phone || '';
+      const buyerAvatar = orderObj?.buyer_avatar || orderData?.buyer?.avatar_url || null;
+      
+      // ✅ عنوان التوصيل
+      const deliveryAddress = orderObj?.delivery_address || orderData?.delivery_address || orderData?.pickup_address || (isArabic ? "غير محدد" : "Not specified");
+      
+      // ✅ اسم المتجر (من أول منتج)
+      let storeName = '';
+      let storeLogo: string | null = null;
+      let storePhone: string | null = null;
+      
+      if (orderItems.length > 0) {
+        const firstItem = orderItems[0];
+        const listing = firstItem?.listings;
+        if (listing?.profile) {
+          storeName = listing.profile.store_name || 
+                      listing.profile.full_name || 
+                      (isArabic ? "متجر" : "Store");
+          storeLogo = listing.profile.store_logo_url || null;
+          storePhone = listing.profile.store_phone || null;
+        }
+      }
+      
+      if (!storeName && orderObj?.listings?.profile) {
+        storeName = orderObj.listings.profile.store_name || 
+                    orderObj.listings.profile.full_name || 
+                    (isArabic ? "متجر" : "Store");
+        storeLogo = orderObj.listings.profile.store_logo_url || null;
+        storePhone = orderObj.listings.profile.store_phone || null;
+      }
+      
+      if (!storeName) {
+        storeName = isArabic ? "متجر" : "Store";
+      }
+      
+      // ✅ الإجماليات
+      const subtotal = orderObj?.total || orderData?.totals?.subtotal || 0;
+      const deliveryFee = orderObj?.delivery_fee || orderData?.totals?.delivery_fee || 0;
+      const promoDiscount = orderObj?.promo_discount || orderData?.totals?.promo_discount || 0;
+      const totalWithDelivery = orderObj?.total_with_delivery || orderData?.totals?.total_with_delivery || (subtotal + deliveryFee - promoDiscount);
+      const currency = orderObj?.currency || orderData?.totals?.currency || app.currency || 'SYP';
+      
+      // ✅ حساب عدد المنتجات
+      const totalItems = orderItems.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 1;
+      
+      // ✅ حالة الطلب
+      const status = getStatusLabel(orderData.status);
+      const statusColor = getStatusColor(orderData.status);
+      const isActive = orderData.status === 'pending' || orderData.status === 'assigned' || orderData.status === 'in_transit';
+      
+      // ✅ دوال الفيرنتات (نفس الموجودة في OrdersPage)
+      const getVariationImage = (item: any) => {
+        const listing = item.listings || item;
+        
+        if (item.metadata?.variation_image) return item.metadata.variation_image;
+        if (item.metadata?.product_cover) return item.metadata.product_cover;
+        if (item.selected_options?.variation_image) return item.selected_options.variation_image;
+        if (item.variation_snapshot?.image_url) return item.variation_snapshot.image_url;
+        if (item.selected_options?.selected_variation_id) {
+          const variations = listing?.variations || [];
+          const variation = variations.find((v: any) => v.id === item.selected_options.selected_variation_id);
+          if (variation?.image_url) return variation.image_url;
+          if (variation?.color_id) {
+            const colors = listing?.colors || [];
+            const color = colors.find((c: any) => c.id === variation.color_id);
+            if (color?.image_url) return color.image_url;
+          }
+        }
+        if (item.selected_variation_id) {
+          const variations = listing?.variations || [];
+          const variation = variations.find((v: any) => v.id === item.selected_variation_id);
+          if (variation?.image_url) return variation.image_url;
+          if (variation?.color_id) {
+            const colors = listing?.colors || [];
+            const color = colors.find((c: any) => c.id === variation.color_id);
+            if (color?.image_url) return color.image_url;
+          }
+          if (variation?.combination) {
+            const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+            let colorValue = null;
+            for (const key of colorKeys) {
+              if (variation.combination[key]) {
+                colorValue = variation.combination[key];
+                break;
+              }
+            }
+            if (colorValue) {
+              const colors = listing?.colors || [];
+              const color = colors.find((c: any) => 
+                c.color_name_ar === colorValue || c.color_name_en === colorValue
+              );
+              if (color?.image_url) return color.image_url;
+            }
+          }
+        }
+        if (item.variation_combination?.colors) {
+          const colorName = item.variation_combination.colors;
+          const colors = listing?.colors || [];
+          const color = colors.find((c: any) => 
+            c.color_name_ar === colorName || c.color_name_en === colorName
+          );
+          if (color?.image_url) return color.image_url;
+        }
+        return listing?.cover_url || null;
+      };
+
+      const getVariationCombination = (item: any) => {
+        if (item.variation_snapshot?.combination) return item.variation_snapshot.combination;
+        if (item.metadata?.variation_combination) return item.metadata.variation_combination;
+        if (item.variation_combination) return item.variation_combination;
+        if (item.selected_options?.variation_combination) return item.selected_options.variation_combination;
+        return null;
+      };
+
+      const getVariationDisplay = (combination: any) => {
+        if (!combination) return null;
+        const parts: string[] = [];
+        const order = ['colors', 'sizes', 'size', 'color', 'اللون', 'المقاس', 'colour'];
+        for (const key of order) {
+          if (combination[key]) parts.push(combination[key]);
+        }
+        for (const [key, value] of Object.entries(combination)) {
+          if (!order.includes(key) && value) parts.push(String(value));
+        }
+        return parts.length > 0 ? parts.join(' • ') : null;
+      };
+
+      return (
+        <div>
+          {/* ===== HEADER ===== */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                <div className="p-2 rounded-2xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white shadow-lg shadow-[#0d2e2a]/30">
+                  <ShoppingBag className="h-5 w-5" />
+                </div>
+                {isArabic ? "تفاصيل الطلب" : "Order Details"}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
+                {isArabic ? `طلب #${orderData.id?.substring(0, 8) || 'غير معروف'}` : `Order #${orderData.id?.substring(0, 8) || 'Unknown'}`}
+              </p>
+            </div>
+            <Badge className={cn(
+              "border-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold shadow-sm",
+              statusColor,
+              isActive && "animate-pulse"
+            )}>
+              {status}
+            </Badge>
+          </div>
+
+          {/* ===== حالة الطلب مع وصف ===== */}
+          <div className={cn(
+            "p-4 rounded-xl border mb-4",
+            statusColor
+          )}>
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-white/20">
+                {orderData.status === 'pending' && <Clock className="h-4 w-4 text-yellow-500" />}
+                {orderData.status === 'assigned' && <User className="h-4 w-4 text-purple-500" />}
+                {orderData.status === 'picked_up' && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
+                {orderData.status === 'in_transit' && <Truck className="h-4 w-4 text-orange-500" />}
+                {orderData.status === 'delivered' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                {orderData.status === 'cancelled' && <XCircle className="h-4 w-4 text-red-500" />}
+              </div>
+              <div>
+                <p className="font-bold text-sm">{status}</p>
+                <p className="text-xs text-muted-foreground">
+                  {orderData.status === 'pending' && (isArabic ? "في انتظار الموافقة من شركة التوصيل" : "Awaiting delivery company approval")}
+                  {orderData.status === 'assigned' && (isArabic ? "تم تعيين موزع لتوصيل الطلب" : "Distributor assigned for delivery")}
+                  {orderData.status === 'picked_up' && (isArabic ? "تم استلام الطلب من الموزع" : "Order picked up by distributor")}
+                  {orderData.status === 'in_transit' && (isArabic ? "الطلب في طريقه إليك" : "Order is on its way")}
+                  {orderData.status === 'delivered' && (isArabic ? "تم توصيل الطلب بنجاح" : "Order delivered successfully")}
+                  {orderData.status === 'cancelled' && (isArabic ? "تم إلغاء الطلب" : "Order cancelled")}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ===== معلومات المتجر والعميل ===== */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50 mb-4">
+            {/* ✅ المتجر */}
+            <div className="flex items-center gap-3">
+              {storeLogo ? (
+                <img 
+                  src={storeLogo} 
+                  alt={storeName}
+                  className="h-12 w-12 rounded-xl object-cover border-2 border-[#2a655f]/20"
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white font-bold text-lg">
+                  {storeName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+                  <Store className="h-3 w-3 text-[#2a655f]" />
+                  {isArabic ? "المتجر" : "Store"}
+                </p>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{storeName}</p>
+                {storePhone && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    {storePhone}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* ✅ العميل */}
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+                <User className="h-3 w-3 text-[#2a655f]" />
+                {isArabic ? "العميل" : "Customer"}
+              </p>
+              <div className="mt-1 flex items-center gap-2">
+                {buyerAvatar ? (
+                  <img 
+                    src={buyerAvatar} 
+                    alt={buyerName}
+                    className="h-8 w-8 rounded-full object-cover border-2 border-[#2a655f]/20"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-[#2a655f]/10 flex items-center justify-center border-2 border-[#2a655f]/20">
+                    <User className="h-4 w-4 text-[#2a655f]" />
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{buyerName}</p>
+                  {buyerPhone && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      {buyerPhone}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ===== عنوان التوصيل ===== */}
+          <div className="p-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50 mb-4">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+              <MapPin className="h-3 w-3 text-[#2a655f]" />
+              {isArabic ? "عنوان التوصيل" : "Delivery Address"}
+            </p>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mt-1">{deliveryAddress}</p>
+          </div>
+{/* ===== المنتجات مع تفاصيل الفيرنتات (مطابق لـ orders.tsx) ===== */}
+<div className="border-t border-[#2a655f]/20 pt-4">
+  <h4 className="font-bold text-sm flex items-center gap-2 mb-3">
+    <Package className="h-4 w-4 text-[#2a655f]" />
+    {isArabic ? "المنتجات" : "Products"}
+    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+      {orderItems.length}
+    </Badge>
+  </h4>
+  
+  {orderItems.length > 0 ? (
+    <div className="space-y-3">
+      {orderItems.map((item: any, index: number) => {
+        const listing = item.listings || item;
+        
+        // ✅ استخدم الدوال المطابقة لـ orders.tsx
+        const imageUrl = getProductImage(item);
+        const variationCombination = getVariationCombination(item);
+        const hasVariation = !!(variationCombination && Object.keys(variationCombination).length > 0);
+        const variationDisplay = getVariationDisplay(variationCombination);
+        
+        const itemPrice = Number(item.price) || 0;
+        const itemQuantity = item.quantity || 1;
+        const totalPrice = itemPrice * itemQuantity;
+
+        // ✅ للتصحيح
+        console.log("📦 [OrderDetails] Item:", {
+          id: item.id,
+          title: listing?.title_ar,
+          variationCombination,
+          hasVariation,
+          variationDisplay,
+          imageUrl,
+          metadata: item.metadata,
+          selected_options: item.selected_options,
+          variation_combination: item.variation_combination
+        });
+
+        return (
+          <div 
+            key={item.id || index} 
+            className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
+          >
+            <div className="flex items-center gap-4">
+              {/* ✅ صورة المنتج */}
+              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                {imageUrl ? (
+                  <img 
+                    src={imageUrl} 
+                    alt=""
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      console.log("❌ Image failed to load:", imageUrl);
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                    <Package className="h-6 w-6 text-slate-400" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                  {isArabic ? listing?.title_ar || 'منتج' : listing?.title_en || listing?.title_ar || 'Product'}
+                </p>
+                
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
+                  {/* ✅ الكمية */}
+                  <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
+                    <span className="font-medium text-slate-600 dark:text-slate-400">{isArabic ? "الكمية:" : "Qty:"}</span>
+                    <span className="font-bold text-slate-800 dark:text-white">{itemQuantity}</span>
+                  </span>
+                  
+                  <span className="text-muted-foreground/30">•</span>
+                  
+                  {/* ✅ سعر الوحدة */}
+                  <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "سعر الوحدة:" : "Unit:"}</span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-300">{formatPrice(itemPrice, currency || app.currency, app.lang)}</span>
+                  </span>
+                  
+                  {/* ✅ الإجمالي (إذا كان أكثر من 1) */}
+                  {itemQuantity > 1 && (
+                    <>
+                      <span className="text-muted-foreground/30">|</span>
+                      <span className="flex items-center gap-1 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 px-2 py-0.5 rounded-full border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                        <span className="font-medium text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                        <span className="font-bold text-[#2a655f] dark:text-[#3a8a82]">{formatPrice(totalPrice, currency || app.currency, app.lang)}</span>
+                      </span>
+                    </>
+                  )}
+                  
+                  {/* ✅ ✅ ✅ تركيبة الفيرنت (مطابق لـ orders.tsx) */}
+                  {hasVariation && variationDisplay && (
+                    <>
+                      <span className="text-muted-foreground/30">•</span>
+                      <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                        <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
+                        {variationDisplay}
+                        {imageUrl && (
+                          <img 
+                            src={imageUrl} 
+                            alt=""
+                            className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
+                          />
+                        )}
+                      </span>
+                    </>
+                  )}
+                  
+                  {/* ✅ ✅ ✅ بيانات الفيرنت من metadata (احتياطي) */}
+                  {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
+                    <>
+                      <span className="text-muted-foreground/30">•</span>
+                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                        <Layers className="h-2.5 w-2.5" />
+                        {Object.values(item.metadata.variation_combination).join(' • ')}
+                      </span>
+                    </>
+                  )}
+                  
+                  {/* ✅ ✅ ✅ عرض selected_options (مثل orders.tsx) */}
+                  {item.selected_options?.selected_color && (
+                    <>
+                      <span className="text-muted-foreground/30">•</span>
+                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full">
+                        <span className="font-medium text-[#2a655f]">🎨</span>
+                        {item.selected_options.selected_color}
+                        {item.selected_options.selected_size && ` (${item.selected_options.selected_size})`}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+              
+            
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    // ✅ حالة عدم وجود order_items - حاول جلب من orders.listing_id (مثل orders.tsx)
+    (() => {
+      const oldOrder = orderData?.order || orderData?.orders || null;
+      const oldListing = oldOrder?.listings || orderData?.listings || null;
+      
+      if (oldListing) {
+        const oldQuantity = oldOrder?.quantity || 1;
+        const oldTotal = oldOrder?.total || 0;
+        
+        const oldImageUrl = oldOrder?.metadata?.variation_image || 
+                           oldOrder?.metadata?.product_cover ||
+                           oldListing?.cover_url || null;
+        
+        const oldVariationCombination = oldOrder?.metadata?.variation_combination ||
+                                       oldOrder?.variation_combination ||
+                                       null;
+        
+        const oldHasVariation = !!(oldVariationCombination && Object.keys(oldVariationCombination).length > 0);
+        const oldVariationDisplay = getVariationDisplay(oldVariationCombination);
+        
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-4 p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300">
+              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                {oldImageUrl ? (
+                  <img src={oldImageUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                    <Package className="h-6 w-6 text-slate-400" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                  {isArabic ? oldListing?.title_ar || 'منتج' : oldListing?.title_en || oldListing?.title_ar || 'Product'}
+                </p>
+                
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                  <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
+                    <span className="font-medium">{isArabic ? "الكمية:" : "Qty:"}</span>
+                    <span className="font-bold text-slate-800 dark:text-white">{oldQuantity}</span>
+                  </span>
+                  <span className="text-muted-foreground/30">•</span>
+                  <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                      {formatPrice(oldTotal, currency || app.currency, app.lang)}
+                    </span>
+                  </span>
+                  
+                  {oldHasVariation && oldVariationDisplay && (
+                    <>
+                      <span className="text-muted-foreground/30">•</span>
+                      <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                        <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
+                        {oldVariationDisplay}
+                        {oldImageUrl && (
+                          <img src={oldImageUrl} alt="" className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5" />
+                        )}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      } else {
+        return (
+          <div className="text-center py-8 text-muted-foreground">
+            <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">{isArabic ? "لا توجد منتجات في هذا الطلب" : "No products in this order"}</p>
+          </div>
+        );
+      }
+    })()
+  )}
+</div>
+
+          {/* ===== ملاحظات الطلب ===== */}
+          {orderObj?.notes && (
+            <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200/50 dark:border-yellow-800/30 mb-4">
+              <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
+                <MessageCircle className="h-3.5 w-3.5" />
+                {isArabic ? "ملاحظات العميل" : "Customer Notes"}
+              </p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{orderObj.notes}</p>
+            </div>
+          )}
+
+          {/* ===== سبب الرفض ===== */}
+          {orderData.status === "rejected" && orderData.rejection_reason && (
+            <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-800/30 mb-4">
+              <p className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                <XCircle className="h-3.5 w-3.5" />
+                {isArabic ? "سبب الرفض" : "Rejection Reason"}
+              </p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{orderData.rejection_reason}</p>
+            </div>
+          )}
+
+          {/* ===== إجمالي الطلب ===== */}
+          <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+            {/* المجموع الفرعي */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">
+                {isArabic ? "المجموع الفرعي" : "Subtotal"}
+              </span>
+              <span className="text-lg font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                {formatPrice(subtotal, currency || app.currency, app.lang)}
+              </span>
+            </div>
+            
+            {/* سعر التوصيل */}
+            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
+              <span className="text-sm text-muted-foreground">
+                {isArabic ? "سعر التوصيل" : "Delivery Fee"}
+              </span>
+              <span className={cn(
+                "text-sm font-medium",
+                deliveryFee === 0 
+                  ? "text-emerald-500 font-bold" 
+                  : "text-[#0d2e2a] dark:text-[#3a8a82]"
+              )}>
+                {deliveryFee === 0 
+                  ? (isArabic ? "🆓 مجاني" : "🆓 Free")
+                  : formatPrice(deliveryFee, currency || app.currency, app.lang)
+                }
+              </span>
+            </div>
+            
+            {/* الخصم */}
+            {promoDiscount > 0 && (
+              <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
+                <span className="text-sm">
+                  {isArabic ? "💚 الخصم" : "💚 Discount"}
+                </span>
+                <span className="text-sm font-bold">
+                  -{formatPrice(promoDiscount, currency || app.currency, app.lang)}
+                </span>
+              </div>
+            )}
+            
+            {/* الإجمالي الكامل */}
+            <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
+              <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
+                {isArabic ? "الإجمالي الكامل" : "Total"}
+              </span>
+              <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                {formatPrice(totalWithDelivery, currency || app.currency, app.lang)}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-xs text-muted-foreground">
+                {totalItems} {isArabic ? "منتج" : "items"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {new Date(orderData.created_at || orderData.order_created_at || Date.now()).toLocaleString(
+                  isArabic ? "ar-SA" : "en-US",
+                  { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* ===== أزرار الإجراءات ===== */}
+          <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex flex-wrap items-center justify-between gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowOrderDetails(false)}
+              className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10"
+            >
+              {isArabic ? "إغلاق" : "Close"}
+            </Button>
+            
+            {/* ✅ يمكن إضافة أزرار إضافية هنا مثل قبول/رفض الطلب إذا كانت الحالة pending */}
+            {orderData.status === "pending" && (
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 transition-all duration-300 hover:scale-105"
+                  onClick={() => {
+                    // ✅ دالة قبول الطلب
+                    setShowOrderDetails(false);
+                    // handleAcceptDelivery(orderData.id);
+                  }}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                  {isArabic ? "قبول الطلب" : "Accept Order"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-105"
+                  onClick={() => {
+                    // ✅ دالة رفض الطلب
+                    setShowOrderDetails(false);
+                    // handleRejectDelivery(orderData.id);
+                  }}
+                >
+                  <XCircle className="h-4 w-4 mr-1.5" />
+                  {isArabic ? "رفض الطلب" : "Reject Order"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    })()}
+  </DialogContent>
+</Dialog>
+
         <style>{`
           @keyframes spin-slow {
             from { transform: rotate(0deg); }
@@ -3052,50 +3897,35 @@ function ModernStatCard({
 }
 
 // ============================================================
-// 📦 OrderCard (معدل مع وقت الوصول)
+// 📦 OrderCard
+// ============================================================
+// ============================================================
+// 📦 OrderCard Component - المعدل
 // ============================================================
 function OrderCard({ 
   order, 
   isArabic,
   onAccept,
-  onReject
+  onReject,
+  onViewDetails
 }: { 
   order: any; 
   isArabic: boolean;
   onAccept: () => void;
   onReject: () => void;
+  onViewDetails: (details: any) => void;
 }) {
   const app = useApp();
-  const navigate = useNavigate()
-  const [orderDetails, setOrderDetails] = useState<any>(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
+  const navigate = useNavigate();
 
-  // ✅ جلب تفاصيل الطلب من جدول orders
-  useEffect(() => {
-    const fetchOrderDetails = async () => {
-      if (!order.order_id) return;
-      
-      setLoadingDetails(true);
-      try {
-        const { data, error } = await supabase
-          .from("orders")
-          .select("total, delivery_fee, promo_discount, total_with_delivery")
-          .eq("id", order.order_id)
-          .single();
-        
-        if (error) throw error;
-        setOrderDetails(data);
-      } catch (error) {
-        console.error("❌ Error fetching order details:", error);
-      } finally {
-        setLoadingDetails(false);
-      }
-    };
-    
-    fetchOrderDetails();
-  }, [order.order_id]);
+  // ✅ استخدام الدالة الجديدة
+  const { 
+    data: orderDetails, 
+    isLoading: loadingDetails,
+    isError: detailsError
+  } = useDeliveryOrderDetails(order.id);
 
-  // ✅ ✅ ✅ دالة تنسيق الوقت
+  // ✅ دالة تنسيق الوقت
   const formatTime = (dateString: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -3105,7 +3935,7 @@ function OrderCard({
     });
   };
 
-  // ✅ ✅ ✅ دالة تنسيق التاريخ
+  // ✅ دالة تنسيق التاريخ
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -3114,6 +3944,38 @@ function OrderCard({
       month: 'short',
       year: 'numeric',
     });
+  };
+
+  // ✅ دالة الحصول على إجمالي الطلب
+  const getTotal = () => {
+    if (orderDetails?.totals) {
+      return orderDetails.totals.total_with_delivery || 
+             orderDetails.totals.subtotal || 
+             0;
+    }
+    return order.delivery_fee || 0;
+  };
+
+  // ✅ دالة الحصول على سعر التوصيل
+  const getDeliveryFee = () => {
+    if (orderDetails?.totals) {
+      return orderDetails.totals.delivery_fee || 0;
+    }
+    return 0;
+  };
+
+  // ✅ دالة الحصول على اسم العميل
+  const getCustomerName = () => {
+    if (orderDetails?.buyer?.name) {
+      return orderDetails.buyer.name;
+    }
+    if (orderDetails?.order?.buyer_name) {
+      return orderDetails.order.buyer_name;
+    }
+    if (order?.orders?.buyer_name) {
+      return order.orders.buyer_name;
+    }
+    return isArabic ? "عميل" : "Customer";
   };
 
   const statusColors: Record<string, string> = {
@@ -3131,21 +3993,20 @@ function OrderCard({
     assigned: isArabic ? "تم التعيين" : "Assigned",
     picked_up: isArabic ? "تم الاستلام" : "Picked up",
     in_transit: isArabic ? "قيد التوصيل" : "In Transit",
-    delivered: isArabic ? "تم التوصيل" : "Delivered",
-    cancelled: isArabic ? "ملغي" : "Cancelled",
-    failed: isArabic ? "فشل" : "Failed",
+
   };
 
   const isPending = order.status === "pending";
+  const itemsCount = orderDetails?.order_items?.length || 0;
 
   return (
     <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-[#0d2e2a]/30 transition-all duration-300 hover:scale-[1.01] group">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
           <div className="h-10 w-10 rounded-xl bg-[#0d2e2a]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
             <Package className="h-5 w-5 text-[#0d2e2a] dark:text-[#4a9f95]" />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-bold text-slate-900 dark:text-white">
                 #{order.tracking_number || order.id.substring(0, 8)}
@@ -3153,15 +4014,27 @@ function OrderCard({
               <Badge className={cn("border", statusColors[order.status] || "bg-slate-500/10 text-slate-500")}>
                 {statusLabels[order.status] || order.status}
               </Badge>
+              {itemsCount > 0 && (
+                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[9px]">
+                  {itemsCount} {isArabic ? "منتج" : "items"}
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+              {/* ✅ اسم العميل */}
+              <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
+                <User className="h-3 w-3 text-[#2a655f]" />
+                {getCustomerName()}
+              </span>
+              
+              <span className="text-muted-foreground/30">|</span>
+              
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {order.delivery_address?.substring(0, 30) || (isArabic ? "عنوان غير محدد" : "No address")}
               </span>
               <span className="text-muted-foreground/30">|</span>
               
-              {/* ✅ ✅ ✅ عرض وقت وصول الطلب لشركة التوصيل */}
               <span className="flex items-center gap-1 text-[#2a655f] dark:text-[#4a9f95]">
                 <Clock className="h-3 w-3" />
                 {formatTime(order.created_at)}
@@ -3172,41 +4045,38 @@ function OrderCard({
                 {formatDate(order.created_at)}
               </span>
               
-              {/* ✅ عرض المجموع الفرعي + التوصيل + الإجمالي */}
               {loadingDetails ? (
                 <span className="flex items-center gap-1 text-[#2a655f]">
                   <Loader2 className="h-3 w-3 animate-spin" />
                 </span>
+              ) : detailsError ? (
+                <span className="text-red-500 text-[10px]">⚠️</span>
               ) : orderDetails ? (
                 <>
+                  {/* ✅ سعر التوصيل - يظهر دائماً */}
                   <span className="text-muted-foreground/30">|</span>
-                  <span className="font-medium text-[#2a655f] dark:text-[#4a9f95]">
-                    {isArabic ? "المجموع" : "Total"}: {orderDetails.total} {app.currency}
+                  <span className="font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    <Truck className="h-3 w-3" />
+                    {isArabic ? "توصيل:" : "Delivery:"}
+                    {getDeliveryFee() === 0 
+                      ? (isArabic ? "🆓 مجاني" : "🆓 Free")
+                      : formatPrice(getDeliveryFee(), app.currency, app.lang)
+                    }
                   </span>
-                  {orderDetails.delivery_fee > 0 && (
-                    <>
-                      <span className="text-muted-foreground/30">|</span>
-                      <span className="font-medium text-blue-600 dark:text-blue-400">
-                        🚚 {orderDetails.delivery_fee} {app.currency}
-                      </span>
-                    </>
-                  )}
-                  {orderDetails.promo_discount > 0 && (
-                    <>
-                      <span className="text-muted-foreground/30">|</span>
-                      <span className="font-medium text-emerald-500">
-                        💚 -{orderDetails.promo_discount} {app.currency}
-                      </span>
-                    </>
-                  )}
+                  
+                  {/* ❌ الخصم - غير موجود (مخفي تماماً) */}
+
+                  {/* ✅ الإجمالي الكامل */}
                   <span className="text-muted-foreground/30">|</span>
-                  <span className="font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
-                    {isArabic ? "الإجمالي" : "Total With Delivery"}: {orderDetails.total_with_delivery || (orderDetails.total + orderDetails.delivery_fee - orderDetails.promo_discount)} {app.currency}
+                  <span className="font-bold text-[#0d2e2a] dark:text-[#3a8a82] flex items-center gap-1">
+                    <DollarSign className="h-3 w-3" />
+                    {isArabic ? "الإجمالي:" : "Total:"}
+                    {formatPrice(getTotal(), app.currency, app.lang)}
                   </span>
                 </>
               ) : (
                 <span className="font-medium text-[#0d2e2a] dark:text-[#4a9f95]">
-                  {order.delivery_fee} {app.currency}
+                  {order.delivery_fee?.toLocaleString()} {app.currency}
                 </span>
               )}
             </div>
@@ -3247,12 +4117,12 @@ function OrderCard({
             variant="ghost"
             size="sm"
             className="h-8 px-3 rounded-xl hover:bg-[#0d2e2a]/10 transition-all duration-300 group-hover:scale-110"
-            onClick={() => navigate({ to: `/delivery/orders/${order.id}` })}
+            onClick={() => {
+              onViewDetails(orderDetails || order);
+            }}
           >
             <Eye className="h-4 w-4" />
           </Button>
-          
-          {/* ✅ ✅ ✅ تم إزالة DropdownMenu (زر النقاط الثلاث) */}
         </div>
       </div>
     </div>

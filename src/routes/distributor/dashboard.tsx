@@ -28,6 +28,7 @@ import {
   Megaphone,
   BadgeCheck,
   BellOff,
+  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,9 +76,11 @@ import { useUnreadCount } from "@/lib/hooks/useConversation";
 import {
   useUserNotifications,
   useMarkNotificationReadV2,
-  useMarkAllNotificationsReadV2
+  useMarkAllNotificationsReadV2,
+  useDeliveryOrderDetails,  // ✅✅✅ أضف هذا الاستيراد
 } from "@/lib/queries";
 import { NOTIFICATION_CONFIG, NOTIFICATION_TYPES, NotificationType } from "@/types/notificationTypes";
+import { formatPrice } from "@/lib/i18n";
 
 const ICON_MAP: Record<string, any> = {
   'clock': Clock,
@@ -178,7 +181,7 @@ function DistributorDashboardPage() {
   }, [notifications]);
 
   // ============================================================
-  // ✅ Realtime للإشعارات - مخصص للموزع (نفس طريقة شركة التوصيل)
+  // ✅ Realtime للإشعارات - مخصص للموزع
   // ============================================================
   const notificationChannelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
@@ -213,10 +216,8 @@ function DistributorDashboardPage() {
           console.log('📬 [Distributor] Title:', notification.title_ar || notification.title_en);
           console.log('📬 [Distributor] Body:', notification.body_ar || notification.body_en);
           
-          // ✅ 1️⃣ تحديث قائمة الإشعارات
           refetchNotifications();
           
-          // ✅ 2️⃣ عرض Toast في منتصف الشاشة
           toast.success(
             isArabic 
               ? `🔔 ${notification.title_ar || 'إشعار جديد'}`
@@ -239,7 +240,6 @@ function DistributorDashboardPage() {
             }
           );
 
-          // ✅ 3️⃣ تشغيل الصوت
           try {
             const audio = new Audio('/notification.mp3');
             audio.volume = 0.7;
@@ -248,7 +248,6 @@ function DistributorDashboardPage() {
             console.log('🔇 Audio error:', e);
           }
 
-          // ✅ 4️⃣ إظهار إشعار المتصفح
           if ('Notification' in window && Notification.permission === 'granted') {
             try {
               const browserNotification = new Notification(
@@ -273,7 +272,6 @@ function DistributorDashboardPage() {
             }
           }
 
-          // ✅ 5️⃣ تحديث عدد الإشعارات غير المقروءة
           setUnreadNotificationsCount(prev => prev + 1);
         }
       )
@@ -281,7 +279,6 @@ function DistributorDashboardPage() {
         console.log(`📡 [Distributor] Realtime status: ${status}`);
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
-          // ✅ تم إزالة toast.success لتجنب الرسالة المتكررة
         }
         if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           isSubscribedRef.current = false;
@@ -301,7 +298,7 @@ function DistributorDashboardPage() {
   }, [app.user?.id, isArabic, navigate, refetchNotifications]);
 
   // ============================================================
-  // ✅ دوال الإشعارات (نفس طريقة شركة التوصيل)
+  // ✅ دوال الإشعارات
   // ============================================================
   const handleNotificationClick = useCallback(async (notification: any) => {
     if (!notification.is_read) {
@@ -353,7 +350,6 @@ function DistributorDashboardPage() {
   // ✅ دوال التصدير والطباعة
   // ============================================================
 
-  // ✅ دالة تصدير إلى Excel (CSV)
   const exportToCSV = (data: any[], filename: string) => {
     if (!data || data.length === 0) {
       toast.error(isArabic ? "❌ لا توجد بيانات للتصدير" : "❌ No data to export");
@@ -401,7 +397,6 @@ function DistributorDashboardPage() {
     }
   };
 
-  // ✅ دالة تصدير إلى Word (HTML)
   const exportToWord = (data: any[], title: string) => {
     if (!data || data.length === 0) {
       toast.error(isArabic ? "❌ لا توجد بيانات للتصدير" : "❌ No data to export");
@@ -416,14 +411,6 @@ function DistributorDashboardPage() {
         <head>
           <meta charset="utf-8">
           <title>${title}</title>
-          <!--[if gte mso 9]>
-          <xml>
-            <w:WordDocument>
-              <w:View>Print</w:View>
-              <w:Zoom>100</w:Zoom>
-            </w:WordDocument>
-          </xml>
-          <![endif]-->
           <style>
             body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; direction: ${isArabic ? 'rtl' : 'ltr'}; }
             h1 { color: #0d2e2a; border-bottom: 3px solid #2a655f; padding-bottom: 10px; }
@@ -547,7 +534,6 @@ function DistributorDashboardPage() {
     }
   };
 
-  // ✅ دالة الطباعة
   const handlePrint = () => {
     window.print();
   };
@@ -564,6 +550,7 @@ function DistributorDashboardPage() {
     fetchDistributors();
   }, [app.user?.id]);
 
+  // ✅ ✅ ✅ استعلام جلب الطلبات مع order_items والفيرنتات
   useEffect(() => {
     const fetchOrders = async () => {
       if (!app.user?.id) return;
@@ -584,6 +571,16 @@ function DistributorDashboardPage() {
             *,
             orders:order_id (
               *,
+              order_items (
+                *,
+                listings:listing_id (
+                  *,
+                  profile:profiles!owner_id (*),
+                  colors:product_colors (*),
+                  variations:product_variations (*),
+                  listing_images (*)
+                )
+              ),
               listings:listing_id (
                 *,
                 profile:profiles!owner_id (*)
@@ -621,6 +618,16 @@ function DistributorDashboardPage() {
             *,
             orders:order_id (
               *,
+              order_items (
+                *,
+                listings:listing_id (
+                  *,
+                  profile:profiles!owner_id (*),
+                  colors:product_colors (*),
+                  variations:product_variations (*),
+                  listing_images (*)
+                )
+              ),
               listings:listing_id (
                 *,
                 profile:profiles!owner_id (*)
@@ -651,7 +658,6 @@ function DistributorDashboardPage() {
     return distributors.find((d: any) => d.user_id === app.user?.id);
   }, [distributors, app.user]);
 
-  // ✅ التحقق من وجود صورة للموزع عند فتح الصفحة
   useEffect(() => {
     if (currentDistributor && !currentDistributor.avatar_url) {
       const timer = setTimeout(() => {
@@ -661,7 +667,6 @@ function DistributorDashboardPage() {
     }
   }, [currentDistributor]);
 
-  // ✅ رفع صورة الموزع
   const handleUploadAvatar = async () => {
     if (!avatarFile || !currentDistributor) {
       toast.error(isArabic ? "الرجاء اختيار صورة أولاً" : "Please select an image first");
@@ -675,10 +680,6 @@ function DistributorDashboardPage() {
       const fileName = `distributors/${currentDistributor.id}-${Date.now()}.${fileExt}`;
       const filePath = fileName;
 
-      console.log("📤 [Upload] File name:", fileName);
-      console.log("📤 [Upload] File path:", filePath);
-      console.log("📤 [Upload] Bucket:", 'uploads');
-
       const { error: uploadError } = await supabase.storage
         .from('uploads')
         .upload(filePath, avatarFile, {
@@ -691,14 +692,11 @@ function DistributorDashboardPage() {
         throw uploadError;
       }
 
-      console.log("✅ [Upload] File uploaded successfully");
-
       const { data: urlData } = supabase.storage
         .from('uploads')
         .getPublicUrl(filePath);
 
       const avatarUrl = urlData.publicUrl;
-      console.log("✅ [Upload] Public URL:", avatarUrl);
 
       const { error: updateError } = await supabase
         .from('distributors')
@@ -757,7 +755,6 @@ function DistributorDashboardPage() {
 
   const [companyAdmin, setCompanyAdmin] = useState<any>(null);
 
-  // ✅ جلب أدمن الشركة يلي الموزع تابع لها
   useEffect(() => {
     const fetchCompanyAdmin = async () => {
       if (!currentDistributor?.delivery_company_id) {
@@ -767,7 +764,6 @@ function DistributorDashboardPage() {
 
       try {
         const companyId = currentDistributor.delivery_company_id;
-        console.log("🔍 جلب أدمن الشركة:", companyId);
 
         const { data: companyAdmins, error: adminsError } = await supabase
           .from("delivery_company_admins")
@@ -790,8 +786,6 @@ function DistributorDashboardPage() {
           throw adminsError;
         }
 
-        console.log("📋 أدمن الشركة:", companyAdmins);
-
         if (companyAdmins && companyAdmins.length > 0) {
           const admin = companyAdmins[0];
           setCompanyAdmin({
@@ -800,10 +794,8 @@ function DistributorDashboardPage() {
             phone: admin.profiles?.phone || "",
             avatar_url: admin.profiles?.avatar_url || "",
           });
-          console.log("✅ تم تعيين أدمن الشركة:", admin.profiles?.full_name);
         } else {
           setCompanyAdmin(null);
-          console.log("ℹ️ لا يوجد أدمن لهذه الشركة");
         }
       } catch (error) {
         console.error("❌ خطأ في جلب أدمن الشركة:", error);
@@ -819,6 +811,7 @@ function DistributorDashboardPage() {
     return allOrders.filter((order: any) => order.distributor_id === currentDistributor.id);
   }, [allOrders, currentDistributor]);
 
+  // ✅ ✅ ✅ إزالة مربع الأرباح - تم حذف Wallet من stats
   const stats = useMemo(() => {
     const total = orders.length;
     const pending = orders.filter((o: any) => o.status === "pending").length;
@@ -826,9 +819,6 @@ function DistributorDashboardPage() {
     const inTransit = orders.filter((o: any) => o.status === "in_transit").length;
     const delivered = orders.filter((o: any) => o.status === "delivered").length;
     const cancelled = orders.filter((o: any) => o.status === "cancelled").length;
-    const totalEarnings = orders
-      .filter((o: any) => o.status === "delivered")
-      .reduce((sum: number, o: any) => sum + Number(o.delivery_fee || 0), 0);
     const avgDeliveryTime = orders
       .filter((o: any) => o.delivered_at && o.created_at)
       .reduce((sum: number, o: any) => {
@@ -838,7 +828,7 @@ function DistributorDashboardPage() {
     const completionRate = total > 0 ? Math.round((delivered / total) * 100) : 0;
     return {
       total, pending, assigned, inTransit, delivered, cancelled,
-      totalEarnings, avgDeliveryTime: Math.round(avgDeliveryTime),
+      avgDeliveryTime: Math.round(avgDeliveryTime),
       completionRate, activeOrders: pending + assigned + inTransit,
     };
   }, [orders]);
@@ -858,9 +848,13 @@ function DistributorDashboardPage() {
       const q = historySearch.toLowerCase().trim();
       result = result.filter((o: any) => {
         return o.tracking_number?.toLowerCase().includes(q) ||
+               o.id?.toLowerCase().includes(q) ||
                o.delivery_name?.toLowerCase().includes(q) ||
                o.pickup_name?.toLowerCase().includes(q) ||
-               o.delivery_address?.toLowerCase().includes(q);
+               o.delivery_address?.toLowerCase().includes(q) ||
+               o.orders?.buyer_name?.toLowerCase().includes(q) ||
+               o.orders?.buyer_phone?.toLowerCase().includes(q) ||
+               o.orders?.notes?.toLowerCase().includes(q);
       });
     }
     return result;
@@ -872,7 +866,7 @@ function DistributorDashboardPage() {
     return historyOrders.slice(start, start + historyLimit);
   }, [historyOrders, historyPage, historyLimit]);
 
-  // ✅ filteredOrders - الطلبات النشطة بعد التصفية
+  // ✅ filteredOrders - الطلبات النشطة بعد التصفية مع بحث شامل
   const filteredOrders = useMemo(() => {
     let result = activeOrders;
     if (statusFilter !== "all") {
@@ -882,15 +876,18 @@ function DistributorDashboardPage() {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((o: any) => {
         return o.tracking_number?.toLowerCase().includes(q) ||
+               o.id?.toLowerCase().includes(q) ||
                o.delivery_name?.toLowerCase().includes(q) ||
                o.pickup_name?.toLowerCase().includes(q) ||
-               o.delivery_address?.toLowerCase().includes(q);
+               o.delivery_address?.toLowerCase().includes(q) ||
+               o.orders?.buyer_name?.toLowerCase().includes(q) ||
+               o.orders?.buyer_phone?.toLowerCase().includes(q) ||
+               o.orders?.notes?.toLowerCase().includes(q);
       });
     }
     return result;
   }, [activeOrders, statusFilter, searchQuery]);
 
-  // ✅ Pagination للطلبات النشطة
   const totalActivePages = Math.ceil(filteredOrders.length / activeLimit);
   const paginatedActiveOrders = useMemo(() => {
     const start = (activePage - 1) * activeLimit;
@@ -909,11 +906,23 @@ function DistributorDashboardPage() {
     }
   };
 
+  // ✅ ✅ ✅ دالة تحديث الحالة مع منع الرجوع للحالات السابقة
+  const getAvailableStatuses = (currentStatus: string) => {
+    const statusFlow: Record<string, string[]> = {
+      pending: ['assigned'],
+      assigned: ['picked_up'],
+      picked_up: ['in_transit', 'delivered'],
+      in_transit: ['delivered'],
+    };
+    return statusFlow[currentStatus] || [];
+  };
+
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     if (!currentDistributor?.id) {
       toast.error(isArabic ? "لا يوجد موزع" : "No distributor found");
       return;
     }
+
     setIsUpdating(true);
     try {
       const { data: deliveryOrder, error: orderError } = await supabase
@@ -922,6 +931,13 @@ function DistributorDashboardPage() {
           *,
           orders:order_id (
             *,
+            order_items (
+              *,
+              listings:listing_id (
+                *,
+                profile:profiles!owner_id (*)
+              )
+            ),
             listings:listing_id (
               *,
               profile:profiles!owner_id (*)
@@ -936,11 +952,13 @@ function DistributorDashboardPage() {
       if (newStatus === 'picked_up') updateData.picked_up_at = new Date().toISOString();
       else if (newStatus === 'delivered') updateData.delivered_at = new Date().toISOString();
       else if (newStatus === 'cancelled') updateData.cancelled_at = new Date().toISOString();
+      
       const { error: updateDeliveryError } = await supabase
         .from("delivery_orders")
         .update(updateData)
         .eq("id", orderId);
       if (updateDeliveryError) throw updateDeliveryError;
+
       if (mainOrder) {
         let orderStatus = 'pending';
         if (newStatus === 'delivered') orderStatus = 'delivered';
@@ -958,6 +976,7 @@ function DistributorDashboardPage() {
           .eq("id", mainOrder.id);
         if (updateOrderError) throw updateOrderError;
       }
+
       const statusLabels: Record<string, string> = {
         picked_up: isArabic ? "تم استلام الطلب" : "Order picked up",
         in_transit: isArabic ? "الطلب في الطريق" : "Order in transit",
@@ -968,14 +987,16 @@ function DistributorDashboardPage() {
       const statusEmojis: Record<string, string> = {
         picked_up: "📦", in_transit: "🚚", delivered: "✅", cancelled: "❌", assigned: "📌",
       };
+
+      // ✅ إشعار للمشتري
       if (mainOrder?.buyer_id) {
         await supabase.from("notifications").insert({
           user_id: mainOrder.buyer_id,
           type: "delivery_status_update",
           title_ar: `${statusEmojis[newStatus] || '📬'} ${statusLabels[newStatus] || newStatus}`,
-          body_ar: `طلبك "${mainOrder.listings?.title_ar || 'طلب رقم ' + mainOrder.id.substring(0,8)}" - ${statusLabels[newStatus] || newStatus}${statusNotes ? `\n📝 ملاحظات: ${statusNotes}` : ''}`,
+          body_ar: `طلبك "${mainOrder.order_items?.[0]?.listings?.title_ar || mainOrder.listings?.title_ar || 'طلب رقم ' + mainOrder.id.substring(0,8)}" - ${statusLabels[newStatus] || newStatus}${statusNotes ? `\n📝 ملاحظات: ${statusNotes}` : ''}`,
           title_en: `${statusEmojis[newStatus] || '📬'} ${statusLabels[newStatus] || newStatus}`,
-          body_en: `Your order "${mainOrder.listings?.title_en || 'Order ' + mainOrder.id.substring(0,8)}" - ${statusLabels[newStatus] || newStatus}${statusNotes ? `\n📝 Notes: ${statusNotes}` : ''}`,
+          body_en: `Your order "${mainOrder.order_items?.[0]?.listings?.title_en || mainOrder.listings?.title_en || 'Order ' + mainOrder.id.substring(0,8)}" - ${statusLabels[newStatus] || newStatus}${statusNotes ? `\n📝 Notes: ${statusNotes}` : ''}`,
           link_url: `/orders/${mainOrder.id}`,
           metadata: {
             order_id: mainOrder.id,
@@ -987,15 +1008,17 @@ function DistributorDashboardPage() {
           }
         });
       }
-      if (mainOrder?.listings?.owner_id) {
+
+      // ✅ إشعار للمتجر (البائع)
+      if (mainOrder?.seller_id) {
         await supabase.from("notifications").insert({
-          user_id: mainOrder.listings.owner_id,
+          user_id: mainOrder.seller_id,
           type: "delivery_status_update",
           title_ar: `${statusEmojis[newStatus] || '📬'} ${statusLabels[newStatus] || newStatus}`,
-          body_ar: `طلب "${mainOrder.listings?.title_ar}" - ${statusLabels[newStatus] || newStatus} بواسطة ${currentDistributor?.full_name_ar || 'الموزع'}${statusNotes ? `\n📝 ملاحظات: ${statusNotes}` : ''}`,
+          body_ar: `طلب "${mainOrder.order_items?.[0]?.listings?.title_ar || mainOrder.listings?.title_ar}" - ${statusLabels[newStatus] || newStatus} بواسطة ${currentDistributor?.full_name_ar || 'الموزع'}${statusNotes ? `\n📝 ملاحظات: ${statusNotes}` : ''}`,
           title_en: `${statusEmojis[newStatus] || '📬'} ${statusLabels[newStatus] || newStatus}`,
-          body_en: `Order "${mainOrder.listings?.title_en}" - ${statusLabels[newStatus] || newStatus} by ${currentDistributor?.full_name_en || 'distributor'}${statusNotes ? `\n📝 Notes: ${statusNotes}` : ''}`,
-          link_url: `/orders/${mainOrder.id}`,
+          body_en: `Order "${mainOrder.order_items?.[0]?.listings?.title_en || mainOrder.listings?.title_en}" - ${statusLabels[newStatus] || newStatus} by ${currentDistributor?.full_name_en || 'distributor'}${statusNotes ? `\n📝 Notes: ${statusNotes}` : ''}`,
+          link_url: `/dashboard`,
           metadata: {
             order_id: mainOrder.id,
             delivery_order_id: orderId,
@@ -1006,6 +1029,8 @@ function DistributorDashboardPage() {
           }
         });
       }
+
+      // ✅ إشعار لشركة التوصيل - الرابط ياخذ على /delivery/dashboard
       if (deliveryOrder?.delivery_company_id) {
         const { data: companyAdmins } = await supabase
           .from("delivery_company_admins")
@@ -1021,7 +1046,7 @@ function DistributorDashboardPage() {
               body_ar: `طلب #${deliveryOrder.tracking_number || orderId.substring(0,8)} - ${statusLabels[newStatus] || newStatus}${statusNotes ? `\n📝 ملاحظات: ${statusNotes}` : ''}`,
               title_en: `${statusEmojis[newStatus] || '📬'} ${statusLabels[newStatus] || newStatus}`,
               body_en: `Order #${deliveryOrder.tracking_number || orderId.substring(0,8)} - ${statusLabels[newStatus] || newStatus}${statusNotes ? `\n📝 Notes: ${statusNotes}` : ''}`,
-              link_url: `/delivery/orders/${orderId}`,
+              link_url: `/delivery/dashboard`,  // ✅ ✅ ✅ الرابط ياخذ على داشبورد شركة التوصيل
               metadata: {
                 order_id: mainOrder?.id,
                 delivery_order_id: orderId,
@@ -1034,8 +1059,9 @@ function DistributorDashboardPage() {
           );
         }
       }
+
       toast.success(
-        app.lang === "ar" 
+        isArabic 
           ? `تم تحديث حالة الطلب إلى ${getStatusLabel(newStatus)}` 
           : `Order status updated to ${getStatusLabel(newStatus)}`
       );
@@ -1046,7 +1072,7 @@ function DistributorDashboardPage() {
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error(
-        app.lang === "ar" ? "حدث خطأ في تحديث الحالة" : "Error updating status"
+        isArabic ? "حدث خطأ في تحديث الحالة" : "Error updating status"
       );
     } finally {
       setIsUpdating(false);
@@ -1055,12 +1081,12 @@ function DistributorDashboardPage() {
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      pending: app.lang === "ar" ? "قيد المراجعة" : "Pending",
-      assigned: app.lang === "ar" ? "تم التعيين" : "Assigned",
-      picked_up: app.lang === "ar" ? "تم الاستلام" : "Picked up",
-      in_transit: app.lang === "ar" ? "قيد التوصيل" : "In Transit",
-      delivered: app.lang === "ar" ? "تم التوصيل" : "Delivered",
-      cancelled: app.lang === "ar" ? "ملغي" : "Cancelled",
+      pending: isArabic ? "قيد المراجعة" : "Pending",
+      assigned: isArabic ? "تم التعيين" : "Assigned",
+      picked_up: isArabic ? "تم الاستلام" : "Picked up",
+      in_transit: isArabic ? "قيد التوصيل" : "In Transit",
+      delivered: isArabic ? "تم التوصيل" : "Delivered",
+      cancelled: isArabic ? "ملغي" : "Cancelled",
     };
     return labels[status] || status;
   };
@@ -1076,6 +1102,120 @@ function DistributorDashboardPage() {
     };
     return colors[status] || "bg-slate-500/10 text-slate-500";
   };
+
+  // ============================================================
+  // ✅ دالة الحصول على صورة الفيرنت (مطابقة لـ getProductImage)
+  // ============================================================
+  const getProductImage = (item: any) => {
+    const listing = item.listings || item;
+    
+    if (item.metadata?.variation_image) {
+      return item.metadata.variation_image;
+    }
+    if (item.metadata?.product_cover) {
+      return item.metadata.product_cover;
+    }
+    if (item.selected_options?.variation_image) {
+      return item.selected_options.variation_image;
+    }
+    if (item.variation_snapshot?.image_url) {
+      return item.variation_snapshot.image_url;
+    }
+    if (item.selected_options?.selected_variation_id) {
+      const variations = listing?.variations || [];
+      const variation = variations.find((v: any) => v.id === item.selected_options.selected_variation_id);
+      if (variation?.image_url) return variation.image_url;
+      if (variation?.color_id) {
+        const colors = listing?.colors || [];
+        const color = colors.find((c: any) => c.id === variation.color_id);
+        if (color?.image_url) return color.image_url;
+      }
+    }
+    if (item.selected_variation_id) {
+      const variations = listing?.variations || [];
+      const variation = variations.find((v: any) => v.id === item.selected_variation_id);
+      if (variation?.image_url) return variation.image_url;
+      if (variation?.color_id) {
+        const colors = listing?.colors || [];
+        const color = colors.find((c: any) => c.id === variation.color_id);
+        if (color?.image_url) return color.image_url;
+      }
+      if (variation?.combination) {
+        const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+        let colorValue = null;
+        for (const key of colorKeys) {
+          if (variation.combination[key]) {
+            colorValue = variation.combination[key];
+            break;
+          }
+        }
+        if (colorValue) {
+          const colors = listing?.colors || [];
+          const color = colors.find((c: any) => 
+            c.color_name_ar === colorValue || c.color_name_en === colorValue
+          );
+          if (color?.image_url) return color.image_url;
+        }
+      }
+    }
+    if (item.variation_combination?.colors) {
+      const colorName = item.variation_combination.colors;
+      const colors = listing?.colors || [];
+      const color = colors.find((c: any) => 
+        c.color_name_ar === colorName || c.color_name_en === colorName
+      );
+      if (color?.image_url) return color.image_url;
+    }
+    return listing?.cover_url || null;
+  };
+
+  // ============================================================
+  // ✅ دالة الحصول على تركيبة الفيرنت
+  // ============================================================
+  const getVariationCombination = (item: any) => {
+    if (item.variation_snapshot?.combination) {
+      return item.variation_snapshot.combination;
+    }
+    if (item.metadata?.variation_combination) {
+      return item.metadata.variation_combination;
+    }
+    if (item.variation_combination) {
+      return item.variation_combination;
+    }
+    if (item.selected_options?.variation_combination) {
+      return item.selected_options.variation_combination;
+    }
+    return null;
+  };
+
+  // ============================================================
+  // ✅ دالة عرض اسم الفيرنت
+  // ============================================================
+  const getVariationDisplay = (combination: any) => {
+    if (!combination) return null;
+    const parts: string[] = [];
+    const order = ['colors', 'sizes', 'size', 'color', 'اللون', 'المقاس', 'colour'];
+    for (const key of order) {
+      if (combination[key]) parts.push(combination[key]);
+    }
+    for (const [key, value] of Object.entries(combination)) {
+      if (!order.includes(key) && value) parts.push(String(value));
+    }
+    return parts.length > 0 ? parts.join(' • ') : null;
+  };
+
+  // ============================================================
+  // ✅✅✅ استخدام useDeliveryOrderDetails داخل OrderDetailsDialog
+  // ============================================================
+  // ✅ استخدم useDeliveryOrderDetails لجلب التفاصيل الكاملة
+  const { 
+    data: orderDetails, 
+    isLoading: loadingDetails 
+  } = useDeliveryOrderDetails(selectedOrderForDetails?.id);
+
+  // ✅ استخرج order_items من النتيجة
+  const orderItems = orderDetails?.order_items || [];
+  const orderData = orderDetails?.order || selectedOrderForDetails?.orders || null;
 
   return (
     <TooltipProvider>
@@ -1150,7 +1290,6 @@ function DistributorDashboardPage() {
                 </div>
               </div>
               <div className="flex items-center gap-1 flex-wrap flex-shrink-0">
-                {/* ✅ ✅ ✅ زر الإشعارات - نفس طريقة شركة التوصيل */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -1205,8 +1344,8 @@ function DistributorDashboardPage() {
                   }}
                   companyName={currentDistributor?.delivery_companies?.name_ar}
                   isArabic={isArabic}
-                  showEarnings={true}
-                  earnings={stats.totalEarnings}
+                  showEarnings={false}
+                  earnings={0}
                   ordersCount={stats.delivered}
                   rating={currentDistributor?.rating || 0}
                 />
@@ -1215,7 +1354,7 @@ function DistributorDashboardPage() {
           </div>
         </div>
 
-        {/* ✅✅✅ DIALOG: الإشعارات - نفس طريقة شركة التوصيل ✅✅✅ */}
+        {/* ✅✅✅ DIALOG: الإشعارات */}
         <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
           <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 shadow-2xl">
             <DialogHeader>
@@ -1308,15 +1447,13 @@ function DistributorDashboardPage() {
           </DialogContent>
         </Dialog>
 
-        {/* STATS CARDS */}
+        {/* STATS CARDS - تم إزالة مربع الأرباح */}
         <div className="mx-auto max-w-7xl px-4 py-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
             <StatCard icon={ClipboardList} label={isArabic ? "الطلبات" : "Orders"} value={stats.total} color="teal" />
             <StatCard icon={Clock} label={isArabic ? "نشطة" : "Active"} value={stats.activeOrders} color="teal" />
             <StatCard icon={CheckCircle} label={isArabic ? "تم التوصيل" : "Delivered"} value={stats.delivered} color="emerald" />
-            <StatCard icon={TrendingUp} label={isArabic ? "نسبة الإنجاز" : "Completion"} value={`${stats.completionRate}%`} color="teal" />
             <StatCard icon={Award} label={isArabic ? "متوسط الوقت" : "Avg Time"} value={`${stats.avgDeliveryTime} ${isArabic ? "د" : "min"}`} color="teal" />
-            <StatCard icon={Wallet} label={isArabic ? "الأرباح" : "Earnings"} value={`${stats.totalEarnings} ${app.currency}`} color="gold" />
           </div>
         </div>
 
@@ -1397,7 +1534,7 @@ function DistributorDashboardPage() {
               <div className="relative flex-1 min-w-[200px] max-w-sm group">
                 <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#2a655f] transition-all duration-300 group-focus-within:scale-110" />
                 <Input
-                  placeholder={isArabic ? "بحث عن طلب..." : "Search orders..."}
+                  placeholder={isArabic ? "🔍 بحث عن طلب (رقم، اسم، هاتف، عنوان)..." : "🔍 Search orders (ID, name, phone, address)..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="ps-9 h-10 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20 transition-all duration-300 focus:scale-[1.02]"
@@ -1460,9 +1597,11 @@ function DistributorDashboardPage() {
                         lng: currentDistributor.longitude
                       } : undefined}
                       onShowDetails={(order) => {
+                        console.log("📦 [DEBUG] Order clicked:", order);
                         setSelectedOrderForDetails(order);
                         setShowOrderDetails(true);
                       }}
+                      getAvailableStatuses={getAvailableStatuses}
                     />
                   ))}
                 </div>
@@ -1616,7 +1755,7 @@ function DistributorDashboardPage() {
             <div className="relative flex-1 min-w-[200px] max-w-sm group">
               <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#2a655f] transition-all duration-300 group-focus-within:scale-110" />
               <Input
-                placeholder={isArabic ? "بحث في تاريخ الطلبات..." : "Search order history..."}
+                placeholder={isArabic ? "🔍 بحث في التاريخ (رقم، اسم، هاتف، عنوان)..." : "🔍 Search history (ID, name, phone, address)..."}
                 value={historySearch}
                 onChange={(e) => setHistorySearch(e.target.value)}
                 className="ps-9 h-10 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20 transition-all duration-300"
@@ -1713,7 +1852,7 @@ function DistributorDashboardPage() {
           )}
         </div>
 
-        {/* STATUS UPDATE DIALOG */}
+        {/* STATUS UPDATE DIALOG - مع حالات متاحة فقط */}
         {isStatusDialogOpen && selectedOrder && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full mx-4 shadow-2xl border-4 border-[#2a655f] max-h-[90vh] overflow-y-auto">
@@ -1738,29 +1877,43 @@ function DistributorDashboardPage() {
                   dir={isArabic ? "rtl" : "ltr"}
                 />
               </div>
+              
+              {/* ✅ ✅ ✅ عرض الحالات المتاحة فقط */}
               <div className="grid grid-cols-2 gap-3 mt-4">
-                <Button variant="outline" className="h-16 flex flex-col gap-1 transition-all duration-300 hover:scale-105 hover:border-[#2a655f] hover:bg-[#2a655f]/10 border-[#2a655f]/30" onClick={() => handleStatusUpdate(selectedOrder.id, "picked_up")} disabled={isUpdating}>
-                  {isUpdating ? <RefreshCw className="h-5 w-5 animate-spin text-[#2a655f]" /> : <Package className="h-5 w-5 text-[#2a655f]" />}
-                  <span className="text-xs">{isArabic ? "تم الاستلام" : "Picked up"}</span>
-                </Button>
-                <Button variant="outline" className="h-16 flex flex-col gap-1 transition-all duration-300 hover:scale-105 hover:border-[#2a655f] hover:bg-[#2a655f]/10 border-[#2a655f]/30" onClick={() => handleStatusUpdate(selectedOrder.id, "in_transit")} disabled={isUpdating}>
-                  {isUpdating ? <RefreshCw className="h-5 w-5 animate-spin text-[#2a655f]" /> : <Truck className="h-5 w-5 text-[#2a655f]" />}
-                  <span className="text-xs">{isArabic ? "قيد التوصيل" : "In Transit"}</span>
-                </Button>
-                <Button variant="outline" className="h-16 flex flex-col gap-1 transition-all duration-300 hover:scale-105 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 border-[#2a655f]/30" onClick={() => handleStatusUpdate(selectedOrder.id, "delivered")} disabled={isUpdating}>
-                  {isUpdating ? <RefreshCw className="h-5 w-5 animate-spin text-[#2a655f]" /> : <CheckCircle className="h-5 w-5 text-emerald-500" />}
-                  <span className="text-xs">{isArabic ? "تم التوصيل" : "Delivered"}</span>
-                </Button>
-                <Button variant="outline" className="h-16 flex flex-col gap-1 transition-all duration-300 hover:scale-105 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border-[#2a655f]/30" onClick={() => handleStatusUpdate(selectedOrder.id, "cancelled")} disabled={isUpdating}>
-                  {isUpdating ? <RefreshCw className="h-5 w-5 animate-spin text-[#2a655f]" /> : <XCircle className="h-5 w-5 text-red-500" />}
-                  <span className="text-xs">{isArabic ? "إلغاء" : "Cancel"}</span>
-                </Button>
+                {getAvailableStatuses(selectedOrder.status).map((status: string) => {
+                  const statusConfig: Record<string, { icon: any, label: string, color: string }> = {
+                    assigned: { icon: User, label: isArabic ? "تم التعيين" : "Assigned", color: "border-[#2a655f]" },
+                    picked_up: { icon: Package, label: isArabic ? "تم الاستلام" : "Picked up", color: "border-[#2a655f]" },
+                    in_transit: { icon: Truck, label: isArabic ? "قيد التوصيل" : "In Transit", color: "border-[#2a655f]" },
+                    delivered: { icon: CheckCircle, label: isArabic ? "تم التوصيل" : "Delivered", color: "border-emerald-500" },
+                  };
+                  const config = statusConfig[status];
+                  if (!config) return null;
+                  const Icon = config.icon;
+                  return (
+                    <Button 
+                      key={status}
+                      variant="outline" 
+                      className={cn(
+                        "h-16 flex flex-col gap-1 transition-all duration-300 hover:scale-105 hover:bg-[#2a655f]/10",
+                        config.color,
+                        "border-[#2a655f]/30"
+                      )}
+                      onClick={() => handleStatusUpdate(selectedOrder.id, status)}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? <RefreshCw className="h-5 w-5 animate-spin text-[#2a655f]" /> : <Icon className="h-5 w-5 text-[#2a655f]" />}
+                      <span className="text-xs">{config.label}</span>
+                    </Button>
+                  );
+                })}
               </div>
+              
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
                 <p className="text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <span>
-                    {isArabic ? "سيتم إرسال إشعارات للمشتري والبائع وشركة التوصيل عند تغيير الحالة" : "Notifications will be sent to buyer, seller and delivery company when status changes"}
+                    {isArabic ? "لا يمكنك الرجوع إلى حالة سابقة. سيتم إرسال إشعارات للمشتري والبائع وشركة التوصيل" : "You cannot go back to a previous status. Notifications will be sent to buyer, seller and delivery company"}
                   </span>
                 </p>
               </div>
@@ -1773,7 +1926,7 @@ function DistributorDashboardPage() {
           </div>
         )}
 
-        {/* ORDER DETAILS DIALOG */}
+        {/* ✅✅✅ ORDER DETAILS DIALOG - مع تفاصيل مطابقة لطلباتي باستخدام RPC */}
         <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
           <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto border-[#2a655f]/20 shadow-2xl">
             <DialogHeader>
@@ -1787,8 +1940,15 @@ function DistributorDashboardPage() {
                 {isArabic ? `الطلب #${selectedOrderForDetails?.tracking_number || selectedOrderForDetails?.id?.substring(0, 8)}` : `Order #${selectedOrderForDetails?.tracking_number || selectedOrderForDetails?.id?.substring(0, 8)}`}
               </DialogDescription>
             </DialogHeader>
-            {selectedOrderForDetails ? (
+            
+            {loadingDetails ? (
+              <div className="py-8 text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2a655f]" />
+                <p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p>
+              </div>
+            ) : selectedOrderForDetails ? (
               <div className="space-y-4">
+                {/* معلومات الطلب الأساسية */}
                 <div className="grid grid-cols-3 gap-3 p-4 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
                   <div>
                     <p className="text-xs text-muted-foreground">{isArabic ? "رقم الطلب" : "Order ID"}</p>
@@ -1813,55 +1973,199 @@ function DistributorDashboardPage() {
                   <div className="col-span-2">
                     <p className="text-xs text-muted-foreground">{isArabic ? "المجموع الكلي" : "Total Amount"}</p>
                     <p className="text-lg font-bold text-[#2a655f]">
-                      {Number(selectedOrderForDetails.orders?.total_with_delivery || selectedOrderForDetails.cod_amount || selectedOrderForDetails.orders?.total || 0).toLocaleString()} {app.currency}
+                      {Number(orderData?.total_with_delivery || selectedOrderForDetails.cod_amount || orderData?.total || 0).toLocaleString()} {app.currency}
                     </p>
                   </div>
                 </div>
+                
+                {/* عنوان التوصيل */}
                 <div className="p-4 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
-                  <p className="text-xs text-muted-foreground flex items-center gap-2"><MapPin className="h-4 w-4 text-[#2a655f]" />{isArabic ? "عنوان التوصيل" : "Delivery Address"}</p>
-                  <p className="font-medium text-sm mt-1">{selectedOrderForDetails.orders?.delivery_address || selectedOrderForDetails.pickup_address || (isArabic ? "غير محدد" : "Not specified")}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-[#2a655f]" />
+                    {isArabic ? "عنوان التوصيل" : "Delivery Address"}
+                  </p>
+                  <p className="font-medium text-sm mt-1">
+                    {orderData?.delivery_address || selectedOrderForDetails.pickup_address || (isArabic ? "غير محدد" : "Not specified")}
+                  </p>
                 </div>
+                
+                {/* معلومات العميل */}
                 <div className="p-4 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
-                  <p className="text-xs text-muted-foreground flex items-center gap-2"><User className="h-4 w-4 text-[#2a655f]" />{isArabic ? "معلومات العميل" : "Customer Info"}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <User className="h-4 w-4 text-[#2a655f]" />
+                    {isArabic ? "معلومات العميل" : "Customer Info"}
+                  </p>
                   <div className="mt-1 space-y-1">
-                    <p className="text-sm font-medium">{selectedOrderForDetails.orders?.buyer_name || (isArabic ? "غير معروف" : "Unknown")}</p>
-                    {selectedOrderForDetails.orders?.buyer_phone && (
+                    <p className="text-sm font-medium">
+                      {orderData?.buyer_name || (isArabic ? "غير معروف" : "Unknown")}
+                    </p>
+                    {orderData?.buyer_phone && (
                       <div className="flex items-center gap-2">
                         <Phone className="h-3.5 w-3.5 text-[#2a655f]" />
-                        <span className="text-sm font-mono" dir="ltr">{selectedOrderForDetails.orders.buyer_phone}</span>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 rounded-lg bg-[#2a655f]/10 hover:bg-[#2a655f]/20 text-[#2a655f] transition-all duration-300" onClick={() => window.location.href = `tel:${selectedOrderForDetails.orders.buyer_phone}`}>
-                          <Phone className="h-3.5 w-3.5" /><span className="text-xs mr-1">{isArabic ? "اتصل" : "Call"}</span>
+                        <span className="text-sm font-mono" dir="ltr">{orderData.buyer_phone}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 px-2 rounded-lg bg-[#2a655f]/10 hover:bg-[#2a655f]/20 text-[#2a655f] transition-all duration-300" 
+                          onClick={() => window.location.href = `tel:${orderData.buyer_phone}`}
+                        >
+                          <Phone className="h-3.5 w-3.5" />
+                          <span className="text-xs mr-1">{isArabic ? "اتصل" : "Call"}</span>
                         </Button>
                       </div>
                     )}
                   </div>
                 </div>
+                
+                {/* ✅✅✅ المنتجات - نفس طريقة orders.tsx باستخدام orderItems من RPC */}
                 <div className="border-t border-[#2a655f]/20 pt-4">
-                  <h4 className="font-bold text-sm flex items-center gap-2 mb-3"><Package className="h-4 w-4 text-[#2a655f]" />{isArabic ? "المنتجات" : "Products"}</h4>
-                  {selectedOrderForDetails.orders?.listings ? (
+                  <h4 className="font-bold text-sm flex items-center gap-2 mb-3">
+                    <Package className="h-4 w-4 text-[#2a655f]" />
+                    {isArabic ? "المنتجات" : "Products"}
+                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                      {orderItems.length}
+                    </Badge>
+                  </h4>
+                  
+                  {orderItems.length > 0 ? (
                     <div className="space-y-3">
-                      <div className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-[#2a655f]/10">
-                        <div className="h-14 w-14 rounded-xl bg-[#2a655f]/10 flex items-center justify-center flex-shrink-0"><Package className="h-6 w-6 text-[#2a655f]" /></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm truncate">{selectedOrderForDetails.orders.listings.title_ar || selectedOrderForDetails.orders.listings.title_en || (isArabic ? "منتج" : "Product")}</p>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                            <span className="flex items-center gap-1"><span className="text-[#2a655f]">×</span>{selectedOrderForDetails.orders.quantity || 1}</span>
-                            <span className="text-muted-foreground/30">|</span>
-                            <span className="font-medium text-[#2a655f]">{selectedOrderForDetails.orders.total || selectedOrderForDetails.cod_amount || 0} {app.currency}</span>
+                      {orderItems.map((item: any, index: number) => {
+                        const listing = item.listings || item;
+                        const imageUrl = getProductImage(item);
+                        
+                        // سعر المنتج
+                        const itemPrice = Number(item.price) || 0;
+                        const itemQuantity = item.quantity || 1;
+                        const totalPrice = itemPrice * itemQuantity;
+                        
+                        // الفيرنتات
+                        const variationCombination = getVariationCombination(item);
+                        const hasVariation = !!(variationCombination && Object.keys(variationCombination).length > 0);
+                        const variationDisplay = getVariationDisplay(variationCombination);
+                        
+                        return (
+                          <div 
+                            key={item.id || index} 
+                            className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
+                          >
+                            <div className="flex items-center gap-4">
+                              {/* صورة المنتج */}
+                              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                                {imageUrl ? (
+                                  <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                                    <Package className="h-6 w-6 text-slate-400" />
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                                  {isArabic 
+                                    ? listing?.title_ar || 'منتج'
+                                    : listing?.title_en || listing?.title_ar || 'Product'}
+                                </p>
+                                
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
+                                  {/* الكمية */}
+                                  <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
+                                    <span className="font-medium text-slate-600 dark:text-slate-400">{isArabic ? "الكمية:" : "Qty:"}</span>
+                                    <span className="font-bold text-slate-800 dark:text-white">{itemQuantity}</span>
+                                  </span>
+                                  
+                                  <span className="text-muted-foreground/30">•</span>
+                                  
+                                  {/* سعر الوحدة */}
+                                  <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
+                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "سعر الوحدة:" : "Unit:"}</span>
+                                    <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                                      {formatPrice(itemPrice, app.currency, app.lang)}
+                                    </span>
+                                  </span>
+                                  
+                                  {/* الإجمالي (إذا كان أكثر من 1) */}
+                                  {itemQuantity > 1 && (
+                                    <>
+                                      <span className="text-muted-foreground/30">|</span>
+                                      <span className="flex items-center gap-1 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 px-2 py-0.5 rounded-full border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                                        <span className="font-medium text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                                        <span className="font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                                          {formatPrice(totalPrice, app.currency, app.lang)}
+                                        </span>
+                                      </span>
+                                    </>
+                                  )}
+                                  
+                                  {/* ✅ عرض الفيرنتات - نفس orders.tsx */}
+                                  {hasVariation && variationDisplay && (
+                                    <>
+                                      <span className="text-muted-foreground/30">•</span>
+                                      <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                                        <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
+                                        {variationDisplay}
+                                        {imageUrl && (
+                                          <img 
+                                            src={imageUrl} 
+                                            alt="" 
+                                            className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
+                                          />
+                                        )}
+                                      </span>
+                                    </>
+                                  )}
+                                  
+                                  {/* ✅ عرض الفيرنت من metadata - احتياطي */}
+                                  {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
+                                    <>
+                                      <span className="text-muted-foreground/30">•</span>
+                                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                                        <Layers className="h-2.5 w-2.5" />
+                                        {Object.values(item.metadata.variation_combination).join(' • ')}
+                                      </span>
+                                    </>
+                                  )}
+                                  
+                                  {/* ✅ عرض selected_options */}
+                                  {item.selected_options?.selected_color && (
+                                    <>
+                                      <span className="text-muted-foreground/30">•</span>
+                                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full">
+                                        <span className="font-medium text-[#2a655f]">🎨</span>
+                                        {item.selected_options.selected_color}
+                                        {item.selected_options.selected_size && ` (${item.selected_options.selected_size})`}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              
+                             
+                            </div>
                           </div>
-                        </div>
-                      </div>
+                        );
+                      })}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-muted-foreground"><Package className="h-8 w-8 mx-auto mb-2 opacity-30" /><p className="text-sm">{isArabic ? "لا توجد منتجات في هذا الطلب" : "No products in this order"}</p></div>
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">{isArabic ? "لا توجد منتجات في هذا الطلب" : "No products in this order"}</p>
+                    </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2a655f]" /><p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p></div>
+              <div className="py-8 text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2a655f]" />
+                <p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p>
+              </div>
             )}
+            
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowOrderDetails(false)} className="rounded-xl border-[#2a655f]/20 hover:bg-[#2a655f]/10"><X className="h-4 w-4 mr-1" />{isArabic ? "إغلاق" : "Close"}</Button>
+              <Button variant="outline" onClick={() => setShowOrderDetails(false)} className="rounded-xl border-[#2a655f]/20 hover:bg-[#2a655f]/10">
+                <X className="h-4 w-4 mr-1" />
+                {isArabic ? "إغلاق" : "Close"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -2097,13 +2401,17 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
 // ============================================================
 // 📦 OrderCard Component
 // ============================================================
+// ============================================================
+// 📦 OrderCard Component - مع جلب اسم العميل
+// ============================================================
 const OrderCard = React.memo(function OrderCard({ 
   order, 
   onStatusUpdate, 
   onToggleMap, 
   showMap,
   distributorLocation,
-  onShowDetails
+  onShowDetails,
+  getAvailableStatuses
 }: { 
   order: any; 
   onStatusUpdate: () => void;
@@ -2111,10 +2419,84 @@ const OrderCard = React.memo(function OrderCard({
   showMap: boolean;
   distributorLocation?: { lat: number; lng: number };
   onShowDetails?: (order: any) => void;
+  getAvailableStatuses?: (status: string) => string[];
 }) {
   const app = useApp();
   const navigate = useNavigate();
   const isArabic = app.lang === "ar";
+
+  // ✅✅✅ جلب تفاصيل الطلب الكاملة (بما فيها اسم العميل)
+  const { 
+    data: orderDetails, 
+    isLoading: loadingDetails 
+  } = useDeliveryOrderDetails(order.id);
+
+  // ✅ دالة الحصول على اسم العميل
+  const getCustomerName = () => {
+    // 1️⃣ من orderDetails.buyer.name
+    if (orderDetails?.buyer?.name) {
+      return orderDetails.buyer.name;
+    }
+    // 2️⃣ من orderDetails.order.buyer_name
+    if (orderDetails?.order?.buyer_name) {
+      return orderDetails.order.buyer_name;
+    }
+    // 3️⃣ من order.orders.buyer_name
+    if (order?.orders?.buyer_name) {
+      return order.orders.buyer_name;
+    }
+    // 4️⃣ من order.buyer_name (الحقل المباشر)
+    if (order?.buyer_name) {
+      return order.buyer_name;
+    }
+    // 5️⃣ من orderDetails.buyer_name
+    if (orderDetails?.buyer_name) {
+      return orderDetails.buyer_name;
+    }
+    return isArabic ? "عميل" : "Customer";
+  };
+
+  // ✅ دالة الحصول على إجمالي الطلب
+  const getTotal = () => {
+    if (orderDetails?.totals) {
+      return orderDetails.totals.total_with_delivery || 
+             orderDetails.totals.subtotal || 
+             0;
+    }
+    if (order?.orders?.total_with_delivery) {
+      return order.orders.total_with_delivery;
+    }
+    if (order?.orders?.total) {
+      return order.orders.total;
+    }
+    return order.cod_amount || 0;
+  };
+
+  // ✅ دالة الحصول على سعر التوصيل
+  const getDeliveryFee = () => {
+    if (orderDetails?.totals) {
+      return orderDetails.totals.delivery_fee || 0;
+    }
+    return order.delivery_fee || 0;
+  };
+
+  // ✅ دالة الحصول على رقم هاتف العميل
+  const getCustomerPhone = () => {
+    if (orderDetails?.buyer?.phone) {
+      return orderDetails.buyer.phone;
+    }
+    if (orderDetails?.order?.buyer_phone) {
+      return orderDetails.order.buyer_phone;
+    }
+    if (order?.orders?.buyer_phone) {
+      return order.orders.buyer_phone;
+    }
+    if (order?.buyer_phone) {
+      return order.buyer_phone;
+    }
+    return null;
+  };
+
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [fullscreenMapAddress, setFullscreenMapAddress] = useState<string | null>(null);
   const [fullscreenOrder, setFullscreenOrder] = useState<any>(null);
@@ -2163,7 +2545,7 @@ const OrderCard = React.memo(function OrderCard({
 
   const canUpdate = ["pending", "assigned", "picked_up", "in_transit"].includes(order.status);
   const address = order.delivery_address || order.pickup_address;
-  const buyerPhone = order.orders?.buyer_phone;
+  const buyerPhone = getCustomerPhone();
 
   return (
     <>
@@ -2188,6 +2570,18 @@ const OrderCard = React.memo(function OrderCard({
                 )}
               </div>
               <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                {/* ✅✅✅ اسم العميل - يظهر دائماً */}
+                <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
+                  <User className="h-3 w-3 text-[#2a655f]" />
+                  {loadingDetails ? (
+                    <span className="animate-pulse">...</span>
+                  ) : (
+                    getCustomerName()
+                  )}
+                </span>
+                
+                <span className="text-muted-foreground/30">|</span>
+                
                 <span className="flex items-center gap-1 group-hover:text-[#2a655f] transition-colors duration-300">
                   <MapPin className="h-3 w-3 group-hover:scale-110 transition-transform duration-300" />
                   <span className="truncate max-w-[150px]">
@@ -2195,26 +2589,26 @@ const OrderCard = React.memo(function OrderCard({
                   </span>
                 </span>
                 <span className="text-muted-foreground/30">|</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {new Date(order.created_at).toLocaleDateString()}
-                </span>
-                <span className="text-muted-foreground/30">|</span>
                 
+                {/* ✅ سعر التوصيل */}
                 <span className="flex items-center gap-1">
                   <Truck className="h-3 w-3 text-[#2a655f]" />
                   <span className="font-medium">{isArabic ? "توصيل:" : "Delivery:"}</span>
                   <span className="font-bold text-[#2a655f]">
-                    {Number(order.delivery_fee || 0).toLocaleString()} {app.currency}
+                    {getDeliveryFee() === 0 
+                      ? (isArabic ? "🆓 مجاني" : "🆓 Free")
+                      : Number(getDeliveryFee()).toLocaleString()
+                    } {app.currency}
                   </span>
                 </span>
                 <span className="text-muted-foreground/30">|</span>
                 
+                {/* ✅ الإجمالي الكامل */}
                 <span className="flex items-center gap-1">
                   <Wallet className="h-3 w-3 text-[#2a655f]" />
                   <span className="font-medium">{isArabic ? "الإجمالي:" : "Total:"}</span>
                   <span className="font-bold text-[#2a655f]">
-                    {Number(order.orders?.total_with_delivery || order.cod_amount || order.orders?.total || 0).toLocaleString()} {app.currency}
+                    {Number(getTotal()).toLocaleString()} {app.currency}
                   </span>
                 </span>
                 <span className="text-muted-foreground/30">|</span>
@@ -2248,7 +2642,8 @@ const OrderCard = React.memo(function OrderCard({
           </div>
           
           <div className="flex items-center gap-1.5 flex-wrap">
-            {canUpdate && (
+            {/* ✅ زر التحديث */}
+            {canUpdate && order.status !== 'picked_up' && order.status !== 'in_transit' && order.status !== 'delivered' && (
               <Button 
                 size="sm" 
                 className="h-8 px-3 rounded-xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white transition-all duration-300 hover:scale-105 text-xs shadow-lg shadow-[#0d2e2a]/20"
@@ -2322,10 +2717,10 @@ const OrderCard = React.memo(function OrderCard({
         )}
       </div>
 
+      {/* Fullscreen Map */}
       {isMapFullscreen && fullscreenMapAddress && (
         <div className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex items-center justify-center">
           <div className="relative w-full h-full max-w-7xl mx-auto p-2 md:p-4">
-            
             <button
               onClick={() => {
                 setIsMapFullscreen(false);
@@ -2339,7 +2734,6 @@ const OrderCard = React.memo(function OrderCard({
                 {isArabic ? "رجوع" : "Back"}
               </span>
             </button>
-            
             <button
               onClick={() => {
                 setIsMapFullscreen(false);
@@ -2350,14 +2744,12 @@ const OrderCard = React.memo(function OrderCard({
             >
               <X className="h-6 w-6 md:h-7 md:w-7" />
             </button>
-            
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-white/95 dark:bg-slate-900/95 rounded-2xl px-6 py-3 shadow-2xl max-w-[80%] border border-[#2a655f]/20">
               <p className="text-sm md:text-base font-medium text-slate-900 dark:text-white flex items-center gap-3">
                 <MapPin className="h-4 w-4 md:h-5 md:w-5 text-[#2a655f] flex-shrink-0" />
                 <span className="truncate font-bold">{fullscreenMapAddress}</span>
               </p>
             </div>
-            
             <div className="w-full h-full rounded-xl md:rounded-2xl overflow-hidden border-2 border-[#2a655f]/30 shadow-2xl">
               <OrderTrackingMap 
                 deliveryAddress={fullscreenMapAddress}
@@ -2373,7 +2765,6 @@ const OrderCard = React.memo(function OrderCard({
     </>
   );
 });
-
 // ============================================================
 // 📦 HistoryOrderCard Component
 // ============================================================
@@ -2395,6 +2786,53 @@ function HistoryOrderCard({
   const navigate = useNavigate();
   const address = order.delivery_address || order.pickup_address;
   
+  // ✅ جلب تفاصيل الطلب الكاملة (بما فيها اسم العميل)
+  const { 
+    data: orderDetails, 
+    isLoading: loadingDetails 
+  } = useDeliveryOrderDetails(order.id);
+
+  // ✅ دالة الحصول على اسم العميل (نفس منطق OrderCard)
+  const getCustomerName = () => {
+    // 1️⃣ من orderDetails.buyer.name
+    if (orderDetails?.buyer?.name) {
+      return orderDetails.buyer.name;
+    }
+    // 2️⃣ من orderDetails.order.buyer_name
+    if (orderDetails?.order?.buyer_name) {
+      return orderDetails.order.buyer_name;
+    }
+    // 3️⃣ من order.orders.buyer_name
+    if (order?.orders?.buyer_name) {
+      return order.orders.buyer_name;
+    }
+    // 4️⃣ من order.buyer_name (الحقل المباشر)
+    if (order?.buyer_name) {
+      return order.buyer_name;
+    }
+    // 5️⃣ من orderDetails.buyer_name
+    if (orderDetails?.buyer_name) {
+      return orderDetails.buyer_name;
+    }
+    return isArabic ? "عميل" : "Customer";
+  };
+
+  // ✅ دالة الحصول على إجمالي الطلب
+  const getTotal = () => {
+    if (orderDetails?.totals) {
+      return orderDetails.totals.total_with_delivery || 
+             orderDetails.totals.subtotal || 
+             0;
+    }
+    if (order?.orders?.total_with_delivery) {
+      return order.orders.total_with_delivery;
+    }
+    if (order?.orders?.total) {
+      return order.orders.total;
+    }
+    return order.cod_amount || 0;
+  };
+
   const statusColors: Record<string, string> = {
     pending: "bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20",
     assigned: "bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20",
@@ -2430,6 +2868,18 @@ function HistoryOrderCard({
               </Badge>
             </div>
             <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
+              {/* ✅✅✅ اسم العميل - يظهر دائماً مثل الطلبات النشطة */}
+              <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
+                <User className="h-3 w-3 text-[#2a655f]" />
+                {loadingDetails ? (
+                  <span className="animate-pulse">...</span>
+                ) : (
+                  getCustomerName()
+                )}
+              </span>
+              
+              <span className="text-muted-foreground/30">|</span>
+              
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {address?.substring(0, 25) || (isArabic ? "عنوان غير محدد" : "No address")}
@@ -2454,7 +2904,7 @@ function HistoryOrderCard({
                 <Wallet className="h-3 w-3 text-[#2a655f]" />
                 <span className="font-medium">{isArabic ? "الإجمالي:" : "Total:"}</span>
                 <span className="font-bold text-[#2a655f]">
-                  {Number(order.orders?.total_with_delivery || order.cod_amount || order.orders?.total || 0).toLocaleString()} {app.currency}
+                  {Number(getTotal()).toLocaleString()} {app.currency}
                 </span>
               </span>
               <span className="text-muted-foreground/30">|</span>
@@ -2491,7 +2941,7 @@ function HistoryOrderCard({
   );
 }
 
-// ✅ دالة formatTime (للاستخدام العام)
+// ✅ دالة formatTime
 function formatTime(date: string): string {
   const now = new Date();
   const then = new Date(date);
