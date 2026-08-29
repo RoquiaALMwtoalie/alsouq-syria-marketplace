@@ -29,7 +29,8 @@ import {
   BadgeCheck,
   BellOff,
   Layers,
-  Percent  
+  Percent,
+  Banknote   
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -852,15 +853,28 @@ const historyOrders = useMemo(() => {
   
   if (historySearch.trim()) {
     const q = historySearch.toLowerCase().trim();
+    const cleanedQ = q.replace(/^#/, ''); // ✅ إزالة الهاش من البحث
+    
     result = result.filter((o: any) => {
-      return o.tracking_number?.toLowerCase().includes(q) ||
-             o.id?.toLowerCase().includes(q) ||
-             o.delivery_name?.toLowerCase().includes(q) ||
-             o.pickup_name?.toLowerCase().includes(q) ||
-             o.delivery_address?.toLowerCase().includes(q) ||
-             o.orders?.buyer_name?.toLowerCase().includes(q) ||
-             o.orders?.buyer_phone?.toLowerCase().includes(q) ||
-             o.orders?.notes?.toLowerCase().includes(q);
+      const tracking = (o.tracking_number || '').toLowerCase();
+      const id = (o.id || '').toLowerCase();
+      const deliveryName = (o.delivery_name || '').toLowerCase();
+      const pickupName = (o.pickup_name || '').toLowerCase();
+      const deliveryAddress = (o.delivery_address || '').toLowerCase();
+      const buyerName = (o.orders?.buyer_name || '').toLowerCase();
+      const buyerPhone = (o.orders?.buyer_phone || '').toLowerCase();
+      const notes = (o.orders?.notes || '').toLowerCase();
+      
+      return tracking.includes(cleanedQ) ||
+             tracking.includes(q) || // ✅ للبحث مع الهاش
+             id.includes(cleanedQ) ||
+             id.includes(q) ||
+             deliveryName.includes(q) ||
+             pickupName.includes(q) ||
+             deliveryAddress.includes(q) ||
+             buyerName.includes(q) ||
+             buyerPhone.includes(q) ||
+             notes.includes(q);
     });
   }
   
@@ -873,27 +887,39 @@ const historyOrders = useMemo(() => {
   }, [historyOrders, historyPage, historyLimit]);
 
   // ✅ filteredOrders - الطلبات النشطة بعد التصفية مع بحث شامل
-  const filteredOrders = useMemo(() => {
-    let result = activeOrders;
-    if (statusFilter !== "all") {
-      result = result.filter((o: any) => o.status === statusFilter);
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter((o: any) => {
-        return o.tracking_number?.toLowerCase().includes(q) ||
-               o.id?.toLowerCase().includes(q) ||
-               o.delivery_name?.toLowerCase().includes(q) ||
-               o.pickup_name?.toLowerCase().includes(q) ||
-               o.delivery_address?.toLowerCase().includes(q) ||
-               o.orders?.buyer_name?.toLowerCase().includes(q) ||
-               o.orders?.buyer_phone?.toLowerCase().includes(q) ||
-               o.orders?.notes?.toLowerCase().includes(q);
-      });
-    }
-    return result;
-  }, [activeOrders, statusFilter, searchQuery]);
-
+ const filteredOrders = useMemo(() => {
+  let result = activeOrders;
+  if (statusFilter !== "all") {
+    result = result.filter((o: any) => o.status === statusFilter);
+  }
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase().trim();
+    const cleanedQ = q.replace(/^#/, ''); // ✅ إزالة الهاش من البحث
+    
+    result = result.filter((o: any) => {
+      const tracking = (o.tracking_number || '').toLowerCase();
+      const id = (o.id || '').toLowerCase();
+      const deliveryName = (o.delivery_name || '').toLowerCase();
+      const pickupName = (o.pickup_name || '').toLowerCase();
+      const deliveryAddress = (o.delivery_address || '').toLowerCase();
+      const buyerName = (o.orders?.buyer_name || '').toLowerCase();
+      const buyerPhone = (o.orders?.buyer_phone || '').toLowerCase();
+      const notes = (o.orders?.notes || '').toLowerCase();
+      
+      return tracking.includes(cleanedQ) ||
+             tracking.includes(q) || // ✅ للبحث مع الهاش
+             id.includes(cleanedQ) ||
+             id.includes(q) ||
+             deliveryName.includes(q) ||
+             pickupName.includes(q) ||
+             deliveryAddress.includes(q) ||
+             buyerName.includes(q) ||
+             buyerPhone.includes(q) ||
+             notes.includes(q);
+    });
+  }
+  return result;
+}, [activeOrders, statusFilter, searchQuery]);
   const totalActivePages = Math.ceil(filteredOrders.length / activeLimit);
   const paginatedActiveOrders = useMemo(() => {
     const start = (activePage - 1) * activeLimit;

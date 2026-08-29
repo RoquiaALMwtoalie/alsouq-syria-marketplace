@@ -173,10 +173,20 @@ function OffersPage() {
   });
 
   // ✅ جلب العروض الترويجية من product_offers (بدون Pagination لأنها قليلة)
-  const { data: promoOffersRaw = [], isLoading: promoLoading } = useProductOffers({ 
-    isActive: true,
-    limit: 100,
-  });
+// ✅ الكود المُصحّح
+// ✅ جلب governorateId من gov slug
+const governorateId = useMemo(() => {
+  if (gov === "all") return undefined;
+  const selectedGov = govs.find((g: any) => g.slug === gov);
+  return selectedGov?.id;
+}, [gov, govs]);
+
+// ✅ جلب العروض الترويجية مع فلتر المحافظة
+const { data: promoOffersRaw = [], isLoading: promoLoading } = useProductOffers({ 
+  isActive: true,
+  limit: 100,
+  governorateId: governorateId, // ✅ إضافة فلتر المحافظة
+});
 
   // ✅ ترتيب العروض الترويجية حسب الـ sort
   const promoOffers = useMemo(() => {

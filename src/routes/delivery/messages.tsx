@@ -52,7 +52,8 @@ function DeliveryMessagesPage() {
   // ✅ ✅ ✅ جميع الـ Hooks في الأعلى ✅ ✅ ✅
   // ============================================================
   
-  const app = useApp();
+ const app = useApp();
+const isArabic = app.lang === "ar"; // ✅ أضف هذا
   const navigate = useNavigate();
   
   // ====== State ======
@@ -509,26 +510,31 @@ function DeliveryMessagesPage() {
             
             {/* القسم الأيسر */}
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                {/* ✅ زر الرجوع المحسن - سهم لليسار مع خلفية مميزة */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-xl bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 text-[#0d2e2a] hover:text-[#0d2e2a] transition-all duration-300 group border border-[#0d2e2a]/10 hover:border-[#0d2e2a]/20"
-                  onClick={goBack}
-                >
-                  <ChevronLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-xl bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 text-[#0d2e2a] hover:text-[#0d2e2a] transition-all duration-300 group border border-[#0d2e2a]/10 hover:border-[#0d2e2a]/20"
-                  onClick={goBack}
-                >
-                  <LayoutDashboard className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                </Button>
-                <div className="w-px h-6 bg-[#0d2e2a]/10 mx-1" />
-              </div>
+             <div className="flex items-center gap-1">
+  {/* ✅ زر الرجوع مع دعم الاتجاه حسب اللغة */}
+  <Button
+    variant="ghost"
+    size="icon"
+    className="h-10 w-10 rounded-xl bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 text-[#0d2e2a] hover:text-[#0d2e2a] transition-all duration-300 group border border-[#0d2e2a]/10 hover:border-[#0d2e2a]/20"
+    onClick={goBack}
+  >
+    {isArabic ? (
+      <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+    ) : (
+      <ChevronLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+    )}
+  </Button>
+  
+  <Button
+    variant="ghost"
+    size="icon"
+    className="h-10 w-10 rounded-xl bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 text-[#0d2e2a] hover:text-[#0d2e2a] transition-all duration-300 group border border-[#0d2e2a]/10 hover:border-[#0d2e2a]/20"
+    onClick={goBack}
+  >
+    <LayoutDashboard className="h-4 w-4 group-hover:scale-110 transition-transform" />
+  </Button>
+  <div className="w-px h-6 bg-[#0d2e2a]/10 mx-1" />
+</div>
               
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3 text-[#0d2e2a] dark:text-white">

@@ -35,7 +35,9 @@ import {
   Download, FileSpreadsheet, Printer, FileDown, Table2, ClipboardCopy,
   Loader2,
   Layers,
-  User
+  User,
+  Coins,
+  Wallet 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -868,31 +870,42 @@ const getProductImage = (item: any) => {
   }, [orders]);
 
   // ✅ فلترة الطلبات
-  const filteredOrders = useMemo(() => {
-    let result = orders;
+// ✅ فلترة الطلبات مع دعم البحث بالهاش
+const filteredOrders = useMemo(() => {
+  let result = orders;
+  
+  if (statusFilter !== "all") {
+    result = result.filter((o: any) => o.status === statusFilter);
+  }
+  
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase().trim();
+    // ✅ إزالة الهاش (#) من البحث
+    const cleanedQ = q.replace(/^#/, '');
     
-    if (statusFilter !== "all") {
-      result = result.filter((o: any) => o.status === statusFilter);
-    }
-    
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter((o: any) => {
-        return o.tracking_number?.toLowerCase().includes(q) ||
-          o.delivery_name?.toLowerCase().includes(q) ||
-          o.pickup_name?.toLowerCase().includes(q) ||
-          o.delivery_address?.toLowerCase().includes(q) ||
-          o.id?.toLowerCase().includes(q);
-      });
-    }
-    
-    result = [...result].sort((a, b) => {
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    result = result.filter((o: any) => {
+      const tracking = (o.tracking_number || '').toLowerCase();
+      const id = (o.id || '').toLowerCase();
+      const deliveryName = (o.delivery_name || '').toLowerCase();
+      const pickupName = (o.pickup_name || '').toLowerCase();
+      const deliveryAddress = (o.delivery_address || '').toLowerCase();
+      
+      // ✅ البحث بالرقم مع وبدون الهاش
+      return tracking.includes(cleanedQ) ||
+             tracking.includes(q) ||
+             deliveryName.includes(q) ||
+             pickupName.includes(q) ||
+             deliveryAddress.includes(q) ||
+             id.includes(q);
     });
-    
-    return result;
-  }, [orders, statusFilter, searchQuery]);
-
+  }
+  
+  result = [...result].sort((a, b) => {
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+  
+  return result;
+}, [orders, statusFilter, searchQuery]);
   // ✅ حساب عدد الصفحات للـ Pagination
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = useMemo(() => {
@@ -1299,68 +1312,69 @@ const getProductImage = (item: any) => {
   }, [company, isArabic, avatarUrl, createNewDistributor]);
 
   // ✅ دالة تعطيل الموزع
-  const handleDeactivateDistributor = async () => {
-    if (!deactivatingDistributor) return;
+// ✅ دالة تعطيل الموزع (المُصحّحة)
+const handleDeactivateDistributor = async () => {
+  if (!deactivatingDistributor) return;
+  
+  setIsDeactivating(true);
+  
+  try {
+    const distributorId = deactivatingDistributor.id;
+    const distributorName = deactivatingDistributor.full_name_ar || deactivatingDistributor.full_name_en || 'الموزع';
     
-    setIsDeactivating(true);
+    // ✅ التحقق من وجود طلبات معلقة
+    const { data: pendingOrders, error: ordersError } = await supabase
+      .from("delivery_orders")
+      .select("id, status")
+      .eq("distributor_id", distributorId)
+      .in("status", ["pending", "assigned", "picked_up", "in_transit"]);
     
-    try {
-      const distributorId = deactivatingDistributor.id;
-      const distributorName = deactivatingDistributor.full_name_ar || deactivatingDistributor.full_name_en || 'الموزع';
-      
-      const { data: pendingOrders, error: ordersError } = await supabase
-        .from("delivery_orders")
-        .select("id, status")
-        .eq("distributor_id", distributorId)
-        .in("status", ["pending", "assigned", "picked_up", "in_transit"]);
-      
-      if (ordersError) throw ordersError;
-      
-      if (pendingOrders && pendingOrders.length > 0) {
-        toast.error(
-          isArabic 
-            ? `❌ لا يمكن تعطيل الموزع لديه ${pendingOrders.length} طلبات معلقة`
-            : `❌ Cannot deactivate distributor with ${pendingOrders.length} pending orders`
-        );
-        setIsDeactivating(false);
-        return;
-      }
-      
-      const { error: updateError } = await supabase
-        .from("distributors")
-        .update({
-          is_available: false,
-          is_active: false,
-          deactivated_at: new Date().toISOString(),
-          deactivated_by: app.user?.id,
-        })
-        .eq("id", distributorId);
-      
-      if (updateError) throw updateError;
-      
-      toast.success(
-        isArabic 
-          ? `✅ تم تعطيل الموزع "${distributorName}" بنجاح`
-          : `✅ Distributor "${distributorName}" deactivated successfully`
-      );
-      
-      setShowDeactivateDistributorDialog(false);
-      setDeactivatingDistributor(null);
-      setIsDeactivating(false);
-      
-      await refetchDistributors();
-      
-    } catch (error: any) {
-      console.error("❌ Error deactivating distributor:", error);
+    if (ordersError) throw ordersError;
+    
+    if (pendingOrders && pendingOrders.length > 0) {
       toast.error(
         isArabic 
-          ? `❌ فشل تعطيل الموزع: ${error.message || 'خطأ غير معروف'}`
-          : `❌ Failed to deactivate distributor: ${error.message || 'Unknown error'}`
+          ? `❌ لا يمكن تعطيل الموزع لديه ${pendingOrders.length} طلبات معلقة`
+          : `❌ Cannot deactivate distributor with ${pendingOrders.length} pending orders`
       );
       setIsDeactivating(false);
+      return;
     }
-  };
-
+    
+    // ✅ تحديث الموزع (الأعمدة الموجودة فقط)
+    const { error: updateError } = await supabase
+      .from("distributors")
+      .update({
+        is_available: false,
+        is_active: false,
+        // ✅ تم إزالة deactivated_at و deactivated_by (غير موجودين)
+      })
+      .eq("id", distributorId);
+    
+    if (updateError) throw updateError;
+    
+    toast.success(
+      isArabic 
+        ? `✅ تم تعطيل الموزع "${distributorName}" بنجاح`
+        : `✅ Distributor "${distributorName}" deactivated successfully`
+    );
+    
+    setShowDeactivateDistributorDialog(false);
+    setDeactivatingDistributor(null);
+    setIsDeactivating(false);
+    
+    await refetchDistributors();
+    
+  } catch (error: any) {
+    console.error("❌ Error deactivating distributor:", error);
+    toast.error(
+      isArabic 
+        ? `❌ فشل تعطيل الموزع: ${error.message || 'خطأ غير معروف'}`
+        : `❌ Failed to deactivate distributor: ${error.message || 'Unknown error'}`
+    );
+    setIsDeactivating(false);
+  }
+};
   // ✅ فتح ديالوج تعطيل الموزع
   const openDeactivateDistributorDialog = (distributor: any) => {
     setDeactivatingDistributor(distributor);
@@ -1806,13 +1820,13 @@ const getProductImage = (item: any) => {
               gradient="from-emerald-600 to-teal-500"
               isArabic={isArabic}
             />
-            <ModernStatCard
-              icon={DollarSign}
-              label={isArabic ? "الإيرادات" : "Revenue"}
-              value={stats.totalRevenue.toLocaleString()}
-              gradient="from-rose-600 to-pink-500"
-              isArabic={isArabic}
-            />
+           <ModernStatCard
+ icon={Coins}  // ✅ الجديد
+  label={isArabic ? "الإيرادات" : "Revenue"}
+  value={stats.totalRevenue.toLocaleString()}
+  gradient="from-rose-600 to-pink-500"
+  isArabic={isArabic}
+/>
             <ModernStatCard
               icon={TrendingUp}
               label={isArabic ? "نسبة الإنجاز" : "Completion"}
@@ -1873,7 +1887,7 @@ const getProductImage = (item: any) => {
                     <option value="assigned">{isArabic ? "تم التعيين" : "Assigned"}</option>
                     <option value="picked_up">{isArabic ? "تم الاستلام" : "Picked up"}</option>
                     <option value="in_transit">{isArabic ? "قيد التوصيل" : "In transit"}</option>
-                    
+                      <option value="delivered">{isArabic ? "تم التوصيل" : "Delivered"}</option> 
                   </select>
                 </div>
 
@@ -2497,7 +2511,7 @@ const getProductImage = (item: any) => {
                 <Card className="border-2 border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 transition-all duration-300 shadow-xl shadow-[#0d2e2a]/5">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-[#0d2e2a] dark:text-white">
-                      <DollarSign className="h-5 w-5 text-emerald-500" />
+             <Coins className="h-5 w-5 text-emerald-500" />
                       {isArabic ? "📈 الإيرادات" : "📈 Revenue"}
                     </CardTitle>
                     <CardDescription>
@@ -4068,11 +4082,12 @@ function OrderCard({
 
                   {/* ✅ الإجمالي الكامل */}
                   <span className="text-muted-foreground/30">|</span>
-                  <span className="font-bold text-[#0d2e2a] dark:text-[#3a8a82] flex items-center gap-1">
-                    <DollarSign className="h-3 w-3" />
-                    {isArabic ? "الإجمالي:" : "Total:"}
-                    {formatPrice(getTotal(), app.currency, app.lang)}
-                  </span>
+               <span className="font-bold text-[#0d2e2a] dark:text-[#3a8a82] flex items-center gap-1">
+  <Wallet className="h-3 w-3" />
+  {isArabic ? "الإجمالي:" : "Total:"}
+  {formatPrice(getTotal(), app.currency, app.lang)}
+</span>
+
                 </>
               ) : (
                 <span className="font-medium text-[#0d2e2a] dark:text-[#4a9f95]">
