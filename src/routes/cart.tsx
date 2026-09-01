@@ -1317,7 +1317,7 @@ const orderItems = itemsList.map((item: any) => {
             body_ar: `لديك طلب جديد من ${buyerName} (${itemsList.length} منتجات)${promoApplied ? ` 🔥 تم استخدام كود خصم` : ''}`,
             title_en: "📦 New Order",
             body_en: `You have a new order from ${buyerName} (${itemsList.length} products)${promoApplied ? ` 🔥 Promo code used` : ''}`,
-            link_url: `/dashboard`,
+           link_url: `/dashboard?tab=orders`,
             metadata: {
               order_id: order.id,
               buyer_id: app.user.id,

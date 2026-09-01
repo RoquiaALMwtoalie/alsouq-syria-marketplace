@@ -1,6 +1,6 @@
-// src/components/dashboard/admin/AdminDashboard.tsx - الكود المصحح بالكامل
+// src/components/dashboard/admin/AdminDashboard.tsx - الكود المصحح بالكامل مع دعم التابات كصفحات
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, Package, Store, ShieldCheck, Image as ImageIcon, Megaphone, Tags,
@@ -293,6 +293,8 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
 
 export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
   const app = useApp();
+  const navigate = useNavigate();
+  
   const [tab, setTab] = useState<
     "overview" | "listings" | "stores" | "delivery" | "promo" | "complaints" | "applications" | "banners" | "announcements" | "categories" | "notifications"
   >("overview");
@@ -300,7 +302,20 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
   const [showSearchResultsPage, setShowSearchResultsPage] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // ✅ ✅ ✅ قراءة التاب من الـ URL عند تحميل الصفحة
+  // ✅ دالة تغيير التاب مع تحديث الـ URL
+  const handleTabChange = useCallback((newTab: any) => {
+    setTab(newTab);
+    // تحديث الـ URL بدون إعادة تحميل الصفحة
+    const url = new URL(window.location.href);
+    if (newTab === 'overview') {
+      url.searchParams.delete('tab');
+    } else {
+      url.searchParams.set('tab', newTab);
+    }
+    window.history.pushState({}, '', url.toString());
+  }, []);
+
+  // ✅ قراءة التاب من الـ URL عند تحميل الصفحة
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tabFromUrl = params.get('tab');
@@ -317,6 +332,29 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
         setTab(tabFromUrl as any);
       }
     }
+  }, []);
+
+  // ✅ الاستماع لتغيرات الـ URL (عند الضغط على Back/Forward)
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabFromUrl = params.get('tab');
+      if (tabFromUrl) {
+        const validTabs = [
+          "overview", "listings", "stores", "delivery", 
+          "promo", "complaints", "applications", "banners", 
+          "announcements", "categories", "notifications"
+        ];
+        if (validTabs.includes(tabFromUrl)) {
+          setTab(tabFromUrl as any);
+        }
+      } else {
+        setTab('overview');
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   // ✅ تحديث الوقت الحقيقي
@@ -387,7 +425,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
       setShowSearchResultsPage(true);
       const bestTab = getBestTab();
       if (bestTab.count > 0) {
-        setTab(bestTab.tab as any);
+        handleTabChange(bestTab.tab);
       }
     }
   };
@@ -541,7 +579,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                   <button
                     key={item.key}
                     onClick={() => {
-                      setTab(item.key as any);
+                      handleTabChange(item.key as any);
                       setShowSearchResultsPage(false);
                     }}
                     className={cn(
@@ -621,7 +659,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                   return (
                     <button
                       key={n.id}
-                      onClick={() => setTab(n.id)}
+                      onClick={() => handleTabChange(n.id)}
                       className={`
                         group relative flex items-center gap-3 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300 whitespace-nowrap flex-1 text-center justify-center
                         ${isActive 
@@ -665,7 +703,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                     return (
                       <button
                         key={n.id}
-                        onClick={() => setTab(n.id)}
+                        onClick={() => handleTabChange(n.id)}
                         className={`
                           group flex flex-col items-center gap-1.5 p-3 rounded-xl text-xs font-medium transition-all duration-300
                           ${isActive 
@@ -701,7 +739,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
 
         {/* ===== المحتوى ===== */}
         <div className="relative z-0">
-          {tab === "overview" && <AdminOverview onGoto={setTab} searchQuery={showSearchResults ? searchQuery : ""} />}
+          {tab === "overview" && <AdminOverview onGoto={handleTabChange} searchQuery={showSearchResults ? searchQuery : ""} />}
           {tab === "listings" && <AdminListings />}
           {tab === "stores" && <AdminStores />}
           {tab === "delivery" && <AdminDeliveryCompanies />}

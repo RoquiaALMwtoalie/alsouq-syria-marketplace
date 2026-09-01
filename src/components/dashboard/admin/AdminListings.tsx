@@ -129,7 +129,7 @@ export function AdminListings() {
           type: "product_approved",
           titleAr: "✅ تمت الموافقة على منتجك",
           bodyAr: `تمت الموافقة على منتج "${product.title_ar}" وهو الآن متاح للبيع 🎉`,
-          linkUrl: `/dashboard`,
+          linkUrl: `/dashboard?tab=products`, 
           imageUrl: product.cover_url || undefined,
           actions: [
             { label_ar: "عرض المنتج", url: `/listing/${product.id}` },
@@ -191,7 +191,7 @@ export function AdminListings() {
           type: "product_rejected",
           titleAr: "❌ تم رفض منتجك",
           bodyAr: `تم رفض منتج "${productToReject.title_ar}"\nالسبب: ${rejectReason}`,
-          linkUrl: `/dashboard`,
+          linkUrl: `/dashboard?tab=products`, 
           imageUrl: productToReject.cover_url,
           actions: [
             { label_ar: "مراجعة المنتج", url: "/dashboard/products" },

@@ -214,17 +214,7 @@ const stores = storesData?.data || [];
 
   // ===== إحصائيات سريعة - كلها باللون الأخضر =====
   const quickStats = [
-    { 
-      label: app.lang === 'ar' ? 'إجمالي الإيرادات' : 'Total Revenue', 
-      value: formatPrice(totalRevenue, app.currency, app.lang),
-      icon: DollarSign,
-      change: `${growthData.isPositive ? '+' : ''}${growthData.growth}%`,
-      changeType: growthData.isPositive ? 'up' : 'down',
-      color: 'text-[#0d2e2a]',
-      bg: 'bg-[#0d2e2a]/10',
-      border: 'border-[#0d2e2a]/20',
-      gradient: 'from-[#0d2e2a] to-[#1a4f4a]',
-    },
+   
     { 
       label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', 
       value: totalOrders,

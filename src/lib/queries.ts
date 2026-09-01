@@ -4723,7 +4723,7 @@ export function useAcceptDeliveryOrder() {
             type: "order_accepted",
             title_ar: "✅ تم قبول طلب التوصيل",
             body_ar: `تم قبول طلب "${order.listings?.title_ar}" من شركة التوصيل وتعيين موزع - الوقت المتوقع للوصول: ${new Date(estimatedDeliveryAt).toLocaleDateString('ar-SA', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`,
-            link_url: `/dashboard`,
+            link_url: `/dashboard?tab=orders`,
             metadata: {
               order_id: orderId,
               distributor_id: distributorId,
@@ -4808,7 +4808,7 @@ export function useRejectDeliveryOrder() {
             type: "order_rejected",
             title_ar: "❌ تم رفض طلب التوصيل",
             body_ar: `تم رفض طلب "${order.listings?.title_ar}" من شركة التوصيل. السبب: ${reason.trim()}`,
-            link_url: `/dashboard`,
+            link_url: `/dashboard?tab=orders`,
             metadata: {
               rejection_reason: reason.trim(),
               order_id: orderId,

@@ -49,12 +49,12 @@ import { SettingsPage } from "./SettingsPage";
 // 🎨 COLORS - الألوان الزيتية الأصلية (نفس لون البنر)
 // ============================================================
 const COLORS = {
-  primary: '#0d2e2a',      // الزيتي الغامق
-  primaryLight: '#1a4f4a', // زيتي فاتح
-  primaryMedium: '#2d6b63', // زيتي متوسط
-  accent: '#4a9f95',       // الزيتي المائل للفيروزي
-  accentLight: '#6bb5aa',  // فاتح
-  accentLighter: '#8dcfc6', // أفتح
+  primary: '#0d2e2a',
+  primaryLight: '#1a4f4a',
+  primaryMedium: '#2d6b63',
+  accent: '#4a9f95',
+  accentLight: '#6bb5aa',
+  accentLighter: '#8dcfc6',
 };
 
 const CHART_COLORS = ['#0d2e2a', '#1a4f4a', '#2d6b63', '#4a9f95', '#6bb5aa', '#8dcfc6'];
@@ -64,21 +64,20 @@ const PREMIUM_COLORS = [
   '#F8C471', '#82E0AA', '#F1948A', '#85929E', '#73C6B6'
 ];
 
-// ألوان متدرجة للرادار
 const RADAR_COLORS = {
   stroke: COLORS.primary,
   fill: 'rgba(13, 46, 42, 0.15)',
   grid: '#e2e8f0'
 };
 
-interface SellerDashboardProps {
-  // notificationButton removed
-}
+interface SellerDashboardProps {}
 
 export function SellerDashboard({}: SellerDashboardProps) {
   const app = useApp();
   const t = useT();
   const navigate = useNavigate();
+  
+  // ===== State =====
   const [tab, setTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResultsPage, setShowSearchResultsPage] = useState(false);
@@ -91,7 +90,66 @@ export function SellerDashboard({}: SellerDashboardProps) {
   const [isAutoPlay, setIsAutoPlay] = useState(true);
   const totalSlides = 5;
 
-  // ===== Auto-play للسلايدر =====
+  // ============================================================
+  // ✅ دالة تغيير التاب مع تحديث الـ URL
+  // ============================================================
+  const handleTabChange = useCallback((newTab: string) => {
+    setTab(newTab);
+    // تحديث الـ URL بدون إعادة تحميل الصفحة
+    const url = new URL(window.location.href);
+    if (newTab === 'overview') {
+      url.searchParams.delete('tab');
+    } else {
+      url.searchParams.set('tab', newTab);
+    }
+    window.history.pushState({}, '', url.toString());
+  }, []);
+
+  // ============================================================
+  // ✅ قراءة التاب من الـ URL عند تحميل الصفحة
+  // ============================================================
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabFromUrl = params.get('tab');
+    
+    if (tabFromUrl) {
+      const validTabs = [
+        "overview", "products", "orders", "customers", "stats", "settings"
+      ];
+      
+      if (validTabs.includes(tabFromUrl)) {
+        console.log(`📌 [SellerDashboard] Setting tab from URL: ${tabFromUrl}`);
+        setTab(tabFromUrl);
+      }
+    }
+  }, []);
+
+  // ============================================================
+  // ✅ الاستماع لتغيرات الـ URL (عند الضغط على Back/Forward)
+  // ============================================================
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabFromUrl = params.get('tab');
+      if (tabFromUrl) {
+        const validTabs = [
+          "overview", "products", "orders", "customers", "stats", "settings"
+        ];
+        if (validTabs.includes(tabFromUrl)) {
+          setTab(tabFromUrl);
+        }
+      } else {
+        setTab('overview');
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // ============================================================
+  // ✅ Auto-play للسلايدر
+  // ============================================================
   useEffect(() => {
     if (!isAutoPlay) return;
     const interval = setInterval(() => {
@@ -100,7 +158,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
     return () => clearInterval(interval);
   }, [isAutoPlay, totalSlides]);
 
-  // ===== دوال التنقل في السلايدر =====
   const goToSlide = useCallback((index: number) => {
     setCurrentSlide(index);
     setIsAutoPlay(false);
@@ -127,7 +184,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
   const opensAt = profile?.store_opens_at ? profile.store_opens_at.slice(0, 5) : "";
   const closesAt = profile?.store_closes_at ? profile.store_closes_at.slice(0, 5) : "";
 
-  // ===== دالة التحقق من حالة المتجر =====
   const isStoreOpen = (store: any): boolean => {
     if (!store || store.store_online === false) return false;
     if (!store.store_opens_at || !store.store_closes_at) return true;
@@ -164,18 +220,15 @@ export function SellerDashboard({}: SellerDashboardProps) {
   const storeStatus = isStoreActive && isStoreOnline;
 
   // ===== جلب البيانات من API (Database) =====
-const { data: sellerOrders = [] } = useStoreOrders(app.user?.id);
+  const { data: sellerOrders = [] } = useStoreOrders(app.user?.id);
   const { data: sellerListings = [] } = useMyListings(app.user?.id);
   const { data: sellerCustomers = [] } = useSellerCustomers(app.user?.id);
   const { data: cats = [] } = useCategories();
-  
 
-
-  // ✅✅✅ حساب عدد الطلبات لكل عميل (مصحح)
+  // ✅ حساب عدد الطلبات لكل عميل
   const customerOrderCounts = useMemo(() => {
     const counts: { [key: string]: number } = {};
     sellerOrders.forEach((order: any) => {
-      // جلب ID العميل من الطلب
       const customerId = order.buyer_id || order.customer_id || order.user_id;
       if (customerId) {
         counts[customerId] = (counts[customerId] || 0) + 1;
@@ -184,13 +237,12 @@ const { data: sellerOrders = [] } = useStoreOrders(app.user?.id);
     return counts;
   }, [sellerOrders]);
 
-  // ✅✅✅ دمج بيانات العملاء مع عدد الطلبات (مصحح)
+  // ✅ دمج بيانات العملاء مع عدد الطلبات
   const customersWithOrders = useMemo(() => {
     return sellerCustomers.map((customer: any) => {
       const customerId = customer.id || customer.user_id;
       const orderCount = customerOrderCounts[customerId] || 0;
       
-      // ✅ اسم العميل
       const displayName = 
         customer.full_name || 
         customer.name || 
@@ -199,14 +251,12 @@ const { data: sellerOrders = [] } = useStoreOrders(app.user?.id);
         customer.email?.split('@')[0] ||
         (app.lang === "ar" ? "عميل" : "Customer");
       
-      // ✅ رقم الهاتف
       const phone = 
         customer.phone || 
         customer.user?.phone || 
         customer.user?.phone_number ||
         '';
       
-      // ✅ الصورة
       const avatar = 
         customer.avatar_url || 
         customer.user?.avatar_url || 
@@ -274,7 +324,7 @@ const { data: sellerOrders = [] } = useStoreOrders(app.user?.id);
       setShowSearchResultsPage(true);
       const bestTab = getBestTab();
       if (bestTab.count > 0) {
-        setTab(bestTab.tab as any);
+        handleTabChange(bestTab.tab);
       }
     }
   };
@@ -303,10 +353,9 @@ const { data: sellerOrders = [] } = useStoreOrders(app.user?.id);
   // ===== البيانات المحسوبة من الـ Database =====
   const totalRevenue = sellerOrders.reduce((sum: number, row: any) => sum + (Number(row.total) || 0), 0);
   const totalOrders = sellerOrders.length;
-  const totalCustomers = customersWithOrders.length; // ✅ استخدام العملاء مع الطلبات
+  const totalCustomers = customersWithOrders.length;
   const totalProducts = sellerListings.length;
   
-  // ===== حالات الطلبات المختلفة =====
   const completedOrders = sellerOrders.filter((o: any) => o.status === 'completed' || o.status === 'delivered').length;
   const pendingOrders = sellerOrders.filter((o: any) => o.status === 'pending').length;
   const cancelledOrders = sellerOrders.filter((o: any) => o.status === 'cancelled').length;
@@ -317,7 +366,7 @@ const { data: sellerOrders = [] } = useStoreOrders(app.user?.id);
   const completionRate = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  // ===== أحدث 5 طلبات (مع رقم طلب واضح) =====
+  // ===== أحدث 5 طلبات =====
   const recentOrders = useMemo(() => 
     sellerOrders
       .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -326,46 +375,41 @@ const { data: sellerOrders = [] } = useStoreOrders(app.user?.id);
   );
 
   // ===== أفضل 5 منتجات =====
-const topProducts = useMemo(() => {
-  // ✅ خريطة المنتجات من sellerListings
-  const productMap: { [key: string]: any } = {};
-  sellerListings.forEach((listing: any) => {
-    productMap[listing.id] = listing;
-  });
+  const topProducts = useMemo(() => {
+    const productMap: { [key: string]: any } = {};
+    sellerListings.forEach((listing: any) => {
+      productMap[listing.id] = listing;
+    });
 
-  // ✅ خريطة لترتيب المنتجات حسب الإيرادات
-  const revenueMap: { [key: string]: { id: string; name: string; quantity: number; revenue: number } } = {};
-  
-  sellerOrders.forEach((order: any) => {
-    // ✅ جلب product_id من الطلب
-    const productId = order.product_id || order.listing_id;
-    if (!productId) return;
+    const revenueMap: { [key: string]: { id: string; name: string; quantity: number; revenue: number } } = {};
     
-    // ✅ جلب المنتج من الخريطة
-    const product = productMap[productId];
-    if (!product) return;
+    sellerOrders.forEach((order: any) => {
+      const productId = order.product_id || order.listing_id;
+      if (!productId) return;
+      
+      const product = productMap[productId];
+      if (!product) return;
+      
+      const productName = product.title_ar || `منتج ${String(productId).slice(-6)}`;
+      
+      if (!revenueMap[productId]) {
+        revenueMap[productId] = {
+          id: productId,
+          name: productName,
+          quantity: 0,
+          revenue: 0,
+        };
+      }
+      
+      revenueMap[productId].quantity += Number(order.quantity) || 1;
+      revenueMap[productId].revenue += Number(order.total) || 0;
+    });
     
-    // ✅ جلب اسم المنتج (دائماً title_ar)
-    const productName = product.title_ar || `منتج ${String(productId).slice(-6)}`;
-    
-    if (!revenueMap[productId]) {
-      revenueMap[productId] = {
-        id: productId,
-        name: productName,
-        quantity: 0,
-        revenue: 0,
-      };
-    }
-    
-    revenueMap[productId].quantity += Number(order.quantity) || 1;
-    revenueMap[productId].revenue += Number(order.total) || 0;
-  });
-  
-  // ✅ ترتيب حسب الإيرادات وأخذ أول 5
-  return Object.values(revenueMap)
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 5);
-}, [sellerOrders, sellerListings]);
+    return Object.values(revenueMap)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+  }, [sellerOrders, sellerListings]);
+
   // ===== بيانات المبيعات الشهرية =====
   const monthlyData = useMemo(() => {
     const months: { [key: string]: any } = {};
@@ -515,12 +559,11 @@ const topProducts = useMemo(() => {
 
   // ===== قائمة التبويب =====
   const nav = [
-    { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", icon: LayoutDashboard, desc: app.lang === 'ar' ? 'لوحة التحكم الرئيسية' : 'Main Dashboard' },
-    { id: "products" as const, label: app.lang === 'ar' ? "المنتجات" : "Products", icon: Package, desc: app.lang === 'ar' ? 'إدارة المنتجات' : 'Manage Products' },
-    { id: "orders" as const, label: app.lang === 'ar' ? "الطلبات" : "Orders", icon: ShoppingCart, desc: app.lang === 'ar' ? 'متابعة الطلبات' : 'Track Orders' },
-    { id: "customers" as const, label: app.lang === 'ar' ? "العملاء" : "Customers", icon: Users, desc: app.lang === 'ar' ? 'قاعدة العملاء' : 'Customer Base' },
-  
-    { id: "settings" as const, label: app.lang === 'ar' ? "الإعدادات" : "Settings", icon: Settings, desc: app.lang === 'ar' ? 'تخصيص المتجر' : 'Store Settings' },
+    { id: "overview", label: app.lang === 'ar' ? "نظرة عامة" : "Overview", icon: LayoutDashboard, desc: app.lang === 'ar' ? 'لوحة التحكم الرئيسية' : 'Main Dashboard' },
+    { id: "products", label: app.lang === 'ar' ? "المنتجات" : "Products", icon: Package, desc: app.lang === 'ar' ? 'إدارة المنتجات' : 'Manage Products' },
+    { id: "orders", label: app.lang === 'ar' ? "الطلبات" : "Orders", icon: ShoppingCart, desc: app.lang === 'ar' ? 'متابعة الطلبات' : 'Track Orders' },
+    { id: "customers", label: app.lang === 'ar' ? "العملاء" : "Customers", icon: Users, desc: app.lang === 'ar' ? 'قاعدة العملاء' : 'Customer Base' },
+    { id: "settings", label: app.lang === 'ar' ? "الإعدادات" : "Settings", icon: Settings, desc: app.lang === 'ar' ? 'تخصيص المتجر' : 'Store Settings' },
   ];
 
   const statusLabels: any = {
@@ -617,7 +660,7 @@ const topProducts = useMemo(() => {
   };
 
   // ============================================================
-  // 🚀 CHARTS SECTION - الألوان الزيتية الأصلية
+  // 🚀 CHARTS SECTION
   // ============================================================
   const ChartsSection = ({ 
     showSales = true, 
@@ -633,7 +676,6 @@ const topProducts = useMemo(() => {
     showReviews?: boolean;
   }) => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-      
       {/* 1. مخطط المبيعات */}
       {showSales && (
         <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#0d2e2a]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
@@ -756,7 +798,7 @@ const topProducts = useMemo(() => {
         </div>
       )}
 
-      {/* 2. Radar Chart - الألوان الزيتية */}
+      {/* 2. Radar Chart */}
       {showSales && (
         <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#0d2e2a]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-[#FFEAA7]/20 to-[#DDA0DD]/20 rounded-full blur-3xl animate-pulse delay-700" />
@@ -1131,134 +1173,6 @@ const topProducts = useMemo(() => {
           </div>
         </div>
       )}
-
-      {/* 6. إحصائيات العملاء */}
-      {showCustomers && (
-        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#0d2e2a]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
-          <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-gradient-to-br from-[#F1948A]/20 to-[#98D8C8]/20 rounded-full blur-3xl animate-pulse delay-700" />
-          
-          <div className="flex items-center justify-between mb-4 relative">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center shadow-lg shadow-[#0d2e2a]/30">
-                  <UsersIcon className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-gray-800 dark:text-white">
-                    {app.lang === 'ar' ? '📊 إحصائيات العملاء' : '📊 Customer Insights'}
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {app.lang === 'ar' ? 'مؤشرات الأداء الرئيسية للعملاء' : 'Key customer performance indicators'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3 relative">
-            {[
-              { label: app.lang === 'ar' ? '👥 إجمالي العملاء' : '👥 Total Customers', value: totalCustomers, icon: '👥', color: 'bg-[#0d2e2a]/10' },
-              { label: app.lang === 'ar' ? '📦 متوسط الطلبات' : '📦 Avg Orders', value: totalCustomers > 0 ? (totalOrders / totalCustomers).toFixed(1) : 0, icon: '📦', color: 'bg-[#1a4f4a]/10' },
-              { label: app.lang === 'ar' ? '🎯 نسبة التحويل' : '🎯 Conversion', value: `${completionRate}%`, icon: '🎯', color: 'bg-[#2d6b63]/10' },
-              { label: app.lang === 'ar' ? '💰 قيمة العميل' : '💰 Customer Value', value: totalCustomers > 0 ? formatPrice(totalRevenue / totalCustomers, app.currency, app.lang) : formatPrice(0, app.currency, app.lang), icon: '💰', color: 'bg-[#4a9f95]/10' },
-            ].map((item, i) => (
-              <div key={i} className={`${item.color} rounded-xl p-3 text-center hover:scale-105 transition-all duration-300 border-2 border-[#0d2e2a]/20 shadow-md hover:shadow-xl`}>
-                <div className="text-2xl mb-1">{item.icon}</div>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">{item.label}</p>
-                <p className="text-sm font-bold text-gray-800 dark:text-white">{item.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 7. توزيع التقييمات */}
-      {showReviews && (
-        <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#0d2e2a]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
-          <div className="absolute -right-40 -top-40 w-80 h-80 bg-gradient-to-br from-[#FFEAA7]/20 to-[#DDA0DD]/20 rounded-full blur-3xl animate-pulse delay-300" />
-          
-          <div className="flex items-center justify-between mb-4 relative">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center shadow-lg shadow-[#0d2e2a]/30">
-                  <Star className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-gray-800 dark:text-white">
-                    {app.lang === 'ar' ? '⭐ توزيع التقييمات' : '⭐ Reviews Distribution'}
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {app.lang === 'ar' ? 'توزيع تقييمات العملاء حسب عدد النجوم' : 'Customer ratings distribution by star count'}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 text-xs font-bold text-[#0d2e2a] bg-[#0d2e2a]/10 rounded-full border border-[#0d2e2a]/20">
-                ★ {reviewData.length > 0 ? (reviewData.reduce((sum, d) => sum + d.value, 0) > 0 ?
-                  (reviewData.reduce((sum, d, i) => sum + d.value * (5 - i), 0) / reviewData.reduce((sum, d) => sum + d.value, 0)).toFixed(1) : '0.0') : '0.0'}
-              </span>
-              <span className="px-3 py-1 text-xs font-bold text-[#6bb5aa] bg-[#6bb5aa]/10 rounded-full border border-[#6bb5aa]/20">
-                {reviewData.reduce((sum, d) => sum + d.value, 0)} {app.lang === 'ar' ? 'تقييم' : 'reviews'}
-              </span>
-            </div>
-          </div>
-          
-          <div className="h-[200px] relative">
-            {reviewData.some(d => d.value > 0) ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={reviewData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
-                  <defs>
-                    {reviewData.map((_, i) => (
-                      <linearGradient key={i} id={`reviewBar_${i}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={PREMIUM_COLORS[i % PREMIUM_COLORS.length]} stopOpacity={0.9}/>
-                        <stop offset="100%" stopColor={PREMIUM_COLORS[(i + 3) % PREMIUM_COLORS.length]} stopOpacity={0.4}/>
-                      </linearGradient>
-                    ))}
-                  </defs>
-                  <CartesianGrid strokeDasharray="5 5" stroke="#e2e8f0" opacity={0.2} vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: '12px', 
-                      border: '2px solid #0d2e2a', 
-                      boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-                      background: 'rgba(255,255,255,0.98)'
-                    }}
-                    formatter={(v: any) => `${v} ${app.lang === 'ar' ? 'تقييم' : 'reviews'}`}
-                  />
-                  <Bar 
-                    dataKey="value" 
-                    radius={[6,6,0,0]} 
-                    barSize={40}
-                    animationDuration={2000}
-                    animationEasing="ease-in-out"
-                  >
-                    {reviewData.map((_, i) => (
-                      <Cell 
-                        key={i} 
-                        fill={`url(#reviewBar_${i})`}
-                        className="hover:opacity-80 transition-opacity duration-300 cursor-pointer"
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center mx-auto mb-3 animate-bounce">
-                    <Star className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <p className="text-sm text-gray-500">{app.lang === 'ar' ? '📭 لا توجد تقييمات' : '📭 No reviews'}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
     </div>
   );
 
@@ -1487,39 +1401,41 @@ const topProducts = useMemo(() => {
         {/* ===== SEARCH RESULTS ===== */}
         {showSearchResults && (
           <div className="space-y-4 mb-6">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
                 { key: 'products', label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package, color: 'text-[#0d2e2a]', bg: 'bg-[#0d2e2a]/10' },
                 { key: 'orders', label: app.lang === 'ar' ? 'الطلبات' : 'Orders', count: searchResults.orders, icon: ShoppingCart, color: 'text-[#1a4f4a]', bg: 'bg-[#1a4f4a]/10' },
                 { key: 'customers', label: app.lang === 'ar' ? 'العملاء' : 'Customers', count: searchResults.customers, icon: Users, color: 'text-[#2d6b63]', bg: 'bg-[#2d6b63]/10' },
-                { key: 'reviews', label: app.lang === 'ar' ? 'التقييمات' : 'Reviews', count: searchResults.reviews, icon: Star, color: 'text-[#4a9f95]', bg: 'bg-[#4a9f95]/10' },
-              ].map((item) => (
-                <button
-                  key={item.key}
-                  onClick={() => {
-                    setTab(item.key as any);
-                    setShowSearchResultsPage(false);
-                  }}
-                  className={`bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 p-3 text-center hover:shadow-xl transition-all duration-300 hover:scale-[1.03] group ${
-                    tab === item.key ? 'ring-2 ring-[#0d2e2a] border-[#0d2e2a] shadow-lg shadow-[#0d2e2a]/20' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <div className={`h-8 w-8 rounded-lg ${item.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                      <item.icon className={`h-4 w-4 ${item.color}`} />
+              ].map((item) => {
+                const isActive = tab === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => {
+                      handleTabChange(item.key);
+                      setShowSearchResultsPage(false);
+                    }}
+                    className={`bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 p-3 text-center hover:shadow-xl transition-all duration-300 hover:scale-[1.03] group ${
+                      isActive ? 'ring-2 ring-[#0d2e2a] border-[#0d2e2a] shadow-lg shadow-[#0d2e2a]/20' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <div className={`h-8 w-8 rounded-lg ${item.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                        <item.icon className={`h-4 w-4 ${item.color}`} />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{item.label}</p>
+                        <p className="text-lg font-bold text-[#0d2e2a] dark:text-[#4a9f95]">{item.count}</p>
+                      </div>
                     </div>
-                    <div className="text-left">
-                      <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{item.label}</p>
-                      <p className="text-lg font-bold text-[#0d2e2a] dark:text-[#4a9f95]">{item.count}</p>
-                    </div>
-                  </div>
-                  {item.count > 0 && (
-                    <div className="mt-1 text-[10px] text-[#0d2e2a] font-medium hover:underline transition-all">
-                      {app.lang === 'ar' ? 'عرض الكل' : 'View all'} →
-                    </div>
-                  )}
-                </button>
-              ))}
+                    {item.count > 0 && (
+                      <div className="mt-1 text-[10px] text-[#0d2e2a] font-medium hover:underline transition-all">
+                        {app.lang === 'ar' ? 'عرض الكل' : 'View all'} →
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {searchResults.total === 0 && (
@@ -1555,7 +1471,7 @@ const topProducts = useMemo(() => {
                   return (
                     <button
                       key={n.id}
-                      onClick={() => setTab(n.id)}
+                      onClick={() => handleTabChange(n.id)}
                       className={`
                         relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-500 whitespace-nowrap flex-1 text-center justify-center group
                         ${isActive 
@@ -1591,7 +1507,7 @@ const topProducts = useMemo(() => {
                     return (
                       <button
                         key={n.id}
-                        onClick={() => setTab(n.id)}
+                        onClick={() => handleTabChange(n.id)}
                         className={`
                           relative flex flex-col items-center gap-1 p-2.5 rounded-xl text-xs font-medium transition-all duration-500
                           ${isActive 
@@ -1628,7 +1544,6 @@ const topProducts = useMemo(() => {
                 {/* بطاقات الإحصائيات */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   {[
-                  
                     { 
                       label: app.lang === 'ar' ? "📦 إجمالي الطلبات" : "📦 Total Orders", 
                       value: totalOrders, 
@@ -1687,7 +1602,7 @@ const topProducts = useMemo(() => {
                 {/* المنتجات والطلبات والعملاء */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   
-                  {/* ===== أفضل المنتجات ===== */}
+                  {/* أفضل المنتجات */}
                   <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#0d2e2a]/30 dark:border-[#0d2e2a]/40 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#0d2e2a]/10 transition-all duration-500 hover:-translate-y-1">
                     <div className={`px-5 py-4 border-b-2 border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <div className={isRTL ? 'text-right' : ''}>
@@ -1703,7 +1618,7 @@ const topProducts = useMemo(() => {
                         variant="ghost" 
                         size="sm" 
                         className="text-xs text-[#0d2e2a] hover:text-[#1a4f4a] hover:bg-[#0d2e2a]/10 transition-all"
-                        onClick={() => setTab('products')}
+                        onClick={() => handleTabChange('products')}
                       >
                         {app.lang === 'ar' ? "عرض الكل" : "View all"} 
                         <ChevronRight className={`h-3 w-3 ${isRTL ? 'rotate-180' : ''}`} />
@@ -1735,7 +1650,7 @@ const topProducts = useMemo(() => {
                     </div>
                   </div>
 
-                  {/* ===== آخر الطلبات - رقم الطلب واضح ===== */}
+                  {/* آخر الطلبات */}
                   <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#0d2e2a]/30 dark:border-[#0d2e2a]/40 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#0d2e2a]/10 transition-all duration-500 hover:-translate-y-1">
                     <div className={`px-5 py-4 border-b-2 border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <div className={isRTL ? 'text-right' : ''}>
@@ -1751,7 +1666,7 @@ const topProducts = useMemo(() => {
                         variant="ghost" 
                         size="sm" 
                         className="text-xs text-[#1a4f4a] hover:text-[#2d6b63] hover:bg-[#1a4f4a]/10 transition-all"
-                        onClick={() => setTab('orders')}
+                        onClick={() => handleTabChange('orders')}
                       >
                         {app.lang === 'ar' ? "عرض الكل" : "View all"} 
                         <ChevronRight className={`h-3 w-3 ${isRTL ? 'rotate-180' : ''}`} />
@@ -1763,19 +1678,19 @@ const topProducts = useMemo(() => {
                           <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                               <div className="flex items-center gap-2 group">
-  <span className="text-xs font-mono text-[#0d2e2a] dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
-    #{String(order.id).slice(0, 8)}
-  </span>
-  <button
-    onClick={() => {
-      navigator.clipboard.writeText(order.id);
-      toast.success(app.lang === 'ar' ? '✅ تم نسخ رقم الطلب' : '✅ Order ID copied');
-    }}
-    className="text-[10px] text-muted-foreground hover:text-[#0d2e2a] transition-colors opacity-0 group-hover:opacity-100"
-  >
-    📋 نسخ
-  </button>
-</div>
+                                <span className="text-xs font-mono text-[#0d2e2a] dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                                  #{String(order.id).slice(0, 8)}
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(order.id);
+                                    toast.success(app.lang === 'ar' ? '✅ تم نسخ رقم الطلب' : '✅ Order ID copied');
+                                  }}
+                                  className="text-[10px] text-muted-foreground hover:text-[#0d2e2a] transition-colors opacity-0 group-hover:opacity-100"
+                                >
+                                  📋 نسخ
+                                </button>
+                              </div>
                               <div>
                                 <p className="text-sm font-medium text-slate-900 dark:text-white truncate max-w-[120px]">
                                   {order.product_name || (app.lang === 'ar' ? 'طلب' : 'Order')}
@@ -1805,7 +1720,7 @@ const topProducts = useMemo(() => {
                     </div>
                   </div>
 
-                  {/* ===== العملاء - مع عدد الطلبات الحقيقي ===== */}
+                  {/* العملاء */}
                   <div className="space-y-4">
                     <div className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#0d2e2a]/30 dark:border-[#0d2e2a]/40 p-5 shadow-lg hover:shadow-2xl hover:shadow-[#2d6b63]/10 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden">
                       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
@@ -1825,7 +1740,6 @@ const topProducts = useMemo(() => {
                       </div>
                     </div>
 
-                    {/* ✅ قائمة العملاء مع عدد الطلبات الحقيقي من قاعدة البيانات */}
                     <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#0d2e2a]/30 dark:border-[#0d2e2a]/40 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#0d2e2a]/10 transition-all duration-500 hover:-translate-y-1">
                       <div className={`px-4 py-3 border-b-2 border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                         <div className={isRTL ? 'text-right' : ''}>
@@ -1838,7 +1752,7 @@ const topProducts = useMemo(() => {
                           variant="ghost" 
                           size="sm" 
                           className="text-[10px] text-[#2d6b63] hover:text-[#4a9f95] hover:bg-[#2d6b63]/10 transition-all"
-                          onClick={() => setTab('customers')}
+                          onClick={() => handleTabChange('customers')}
                         >
                           {app.lang === 'ar' ? "عرض الكل" : "View all"} 
                           <ChevronRight className={`h-3 w-3 ${isRTL ? 'rotate-180' : ''}`} />
@@ -1848,7 +1762,6 @@ const topProducts = useMemo(() => {
                         {customersWithOrders.slice(0, 5).map((customer: any, idx: number) => (
                           <div key={idx} className={`px-4 py-3 hover:bg-[#0d2e2a]/5 dark:hover:bg-[#0d2e2a]/20 transition-colors ${isRTL ? 'text-right' : ''}`}>
                             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                              {/* صورة العميل */}
                               <Avatar className="h-10 w-10 rounded-xl ring-2 ring-[#0d2e2a]/20 group-hover:ring-[#0d2e2a]/50 transition-all duration-300">
                                 {customer.avatar_url ? (
                                   <AvatarImage src={customer.avatar_url} alt={customer.display_name} className="object-cover" />
@@ -1891,7 +1804,6 @@ const topProducts = useMemo(() => {
                               </div>
                               
                               <div className="text-right">
-                                {/* ✅ عدد الطلبات الحقيقي من قاعدة البيانات */}
                                 <p className="text-sm font-bold text-[#0d2e2a] dark:text-[#4a9f95]">
                                   {customer.total_orders || 0}
                                 </p>
@@ -1918,7 +1830,7 @@ const topProducts = useMemo(() => {
                   </div>
                 </div>
                 
-                {/* ===== CHARTS SECTION ===== */}
+                {/* CHARTS SECTION */}
                 <ChartsSection showSales={true} showCategory={true} showCustomers={true} />
               </div>
             )}
@@ -1941,14 +1853,6 @@ const topProducts = useMemo(() => {
             {tab === 'customers' && (
               <div className="space-y-6">
                 <CustomersPage />
-              </div>
-            )}
-
-            {/* ===== STATS ===== */}
-            {tab === 'stats' && (
-              <div className="space-y-6">
-                <StatsPage />
-                <ChartsSection showSales={true} showCategory={true} showOrders={true} showCustomers={true} showReviews={true} />
               </div>
             )}
 

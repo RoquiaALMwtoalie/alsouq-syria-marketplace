@@ -307,44 +307,45 @@ export const ProductsPage = React.memo(function ProductsPage() {
   }, [govs, app.lang]);
 
   // ===== دالة إرسال إشعار للأدمن =====
-  const notifyAdmin = useCallback(async (productTitle: string, actionType: string, userId: string, listingId: string) => {
-    try {
-      const { data: adminRole, error: roleError } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin")
-        .limit(1)
-        .maybeSingle();
+// ===== دالة إرسال إشعار للأدمن =====
+const notifyAdmin = useCallback(async (productTitle: string, actionType: string, userId: string, listingId: string) => {
+  try {
+    const { data: adminRole, error: roleError } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin")
+      .limit(1)
+      .maybeSingle();
 
-      if (roleError || !adminRole) return;
+    if (roleError || !adminRole) return;
 
-      const { data: userProfile } = await supabase
-        .from("profiles")
-        .select("full_name, store_name")
-        .eq("id", userId)
-        .maybeSingle();
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("full_name, store_name")
+      .eq("id", userId)
+      .maybeSingle();
 
-      const userName = userProfile?.full_name || userProfile?.store_name || userId || 'مستخدم';
-      
-      let tabTarget = "";
-      if (actionType === "إضافة" || actionType === "تعديل" || actionType === "إعادة نشر") {
-        tabTarget = "listings";
-      }
-
-      await supabase.from("notifications").insert({
-        user_id: adminRole.user_id,
-        type: "product_pending",
-        title_ar: `📦 طلب ${actionType} منتج`,
-        body_ar: `قام ${userName} بـ ${actionType} المنتج "${productTitle}"، بحاجة للمراجعة`,
-        link_url: `/admin?tab=${tabTarget}`,
-        metadata: { product_id: listingId, action: actionType, user_name: userName },
-        created_at: new Date().toISOString(),
-        is_read: false,
-      });
-    } catch (error) {
-      console.error("❌ Error notifying admin:", error);
+    const userName = userProfile?.full_name || userProfile?.store_name || userId || 'مستخدم';
+    
+    let tabTarget = "";
+    if (actionType === "إضافة" || actionType === "تعديل" || actionType === "إعادة نشر") {
+      tabTarget = "listings";
     }
-  }, []);
+
+    await supabase.from("notifications").insert({
+      user_id: adminRole.user_id,
+      type: "product_pending",
+      title_ar: `📦 طلب ${actionType} منتج`,
+      body_ar: `قام ${userName} بـ ${actionType} المنتج "${productTitle}"، بحاجة للمراجعة`,
+      link_url: `/admin?tab=${tabTarget}`,
+      metadata: { product_id: listingId, action: actionType, user_name: userName },
+      created_at: new Date().toISOString(),
+      is_read: false,
+    });
+  } catch (error) {
+    console.error("❌ Error notifying admin:", error);
+  }
+}, []);
 
   // ===== حفظ المنتج =====
   const handleSaveProduct = useCallback(async (data: any) => {

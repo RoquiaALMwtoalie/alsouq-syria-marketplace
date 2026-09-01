@@ -279,7 +279,7 @@ export function SellerApplicationsAdmin() {
           .from("delivery_companies")
           .select("id, name_ar, name_en, base_price, is_verified")
           .eq("is_active", true)
-          .eq("is_verified", true)  // ✅ ✅ ✅ فقط الموثقة
+          .eq("is_verified", true)
           .order("name_ar");
         
         if (!error && data) {
@@ -577,13 +577,13 @@ export function SellerApplicationsAdmin() {
             }
           }
 
-          // ✅ إشعار موافقة متجر (غير حرج)
+          // ✅ ✅ ✅ إشعار موافقة متجر - يفتح تبويب الإعدادات ✅ ✅ ✅
           safeSendNotification(sendNotification, {
             userId: appData.user_id,
             type: 'store_approved',
             titleAr: "✅ تمت الموافقة على طلبك",
             bodyAr: `تمت الموافقة على طلب فتح متجر "${appData.store_name}" 🎉`,
-            linkUrl: '/dashboard',
+            linkUrl: '/dashboard?tab=settings',
             imageUrl: appData.store_logo_url,
             metadata: {
               application_id: appData.id,
@@ -593,7 +593,7 @@ export function SellerApplicationsAdmin() {
               delivery_company_id: selectedDeliveryCompanyId || null,
             },
             actions: [
-              { label_ar: 'عرض متجري', url: '/dashboard/store' },
+              { label_ar: 'عرض متجري', url: '/dashboard?tab=settings' },
             ]
           }).then(success => {
             if (success) {
@@ -630,13 +630,13 @@ export function SellerApplicationsAdmin() {
             console.log(`✅ [decide] Product published: ${listing.id}`);
           }
 
-          // ✅ إشعار موافقة منتج (غير حرج)
+          // ✅ ✅ ✅ إشعار موافقة منتج - يفتح تبويب المنتجات ✅ ✅ ✅
           safeSendNotification(sendNotification, {
             userId: appData.user_id,
             type: 'product_approved',
             titleAr: "✅ تمت الموافقة على طلبك",
             bodyAr: `تمت الموافقة على إضافة المنتج، وهو الآن متاح للبيع 🛍️`,
-            linkUrl: '/dashboard',
+            linkUrl: '/dashboard?tab=products',
             imageUrl: listing?.cover_url || null,
             metadata: {
               application_id: appData.id,
@@ -646,7 +646,7 @@ export function SellerApplicationsAdmin() {
               listing_id: listing?.id || null,
             },
             actions: [
-              { label_ar: 'عرض المنتج', url: '/dashboard/products' },
+              { label_ar: 'عرض المنتج', url: '/dashboard?tab=products' },
             ]
           }).then(success => {
             if (success) {
@@ -661,12 +661,13 @@ export function SellerApplicationsAdmin() {
         
         // ❌ ===== رفض متجر =====
         if (appData.application_type === 'store') {
+          // ✅ ✅ ✅ إشعار رفض متجر - يفتح تبويب نظرة عامة ✅ ✅ ✅
           safeSendNotification(sendNotification, {
             userId: appData.user_id,
             type: 'store_rejected',
             titleAr: "❌ تم رفض طلبك",
             bodyAr: `تم رفض طلب فتح متجر "${appData.store_name}"${admin_note ? `\nالسبب: ${admin_note}` : ''}`,
-            linkUrl: '/dashboard',
+            linkUrl: '/dashboard?tab=overview',
             imageUrl: appData.store_logo_url,
             metadata: {
               application_id: appData.id,
@@ -675,7 +676,7 @@ export function SellerApplicationsAdmin() {
               application_type: 'store',
             },
             actions: [
-              { label_ar: 'مراجعة الطلب', url: '/dashboard' },
+              { label_ar: 'مراجعة الطلب', url: '/dashboard?tab=overview' },
             ]
           }).then(success => {
             if (success) {
@@ -716,13 +717,13 @@ export function SellerApplicationsAdmin() {
             console.log(`✅ [decide] Product rejected: ${listing.id}`);
           }
 
-          // ✅ إشعار رفض منتج (غير حرج)
+          // ✅ ✅ ✅ إشعار رفض منتج - يفتح تبويب المنتجات ✅ ✅ ✅
           safeSendNotification(sendNotification, {
             userId: appData.user_id,
             type: 'product_rejected',
             titleAr: "❌ تم رفض طلبك",
             bodyAr: `تم رفض طلب إضافة المنتج${admin_note ? `\nالسبب: ${admin_note}` : ''}`,
-            linkUrl: '/dashboard',
+            linkUrl: '/dashboard?tab=products',
             imageUrl: listing?.cover_url || null,
             metadata: {
               application_id: appData.id,
@@ -732,7 +733,7 @@ export function SellerApplicationsAdmin() {
               listing_id: listing?.id || null,
             },
             actions: [
-              { label_ar: 'مراجعة المنتج', url: '/dashboard/products' },
+              { label_ar: 'مراجعة المنتج', url: '/dashboard?tab=products' },
             ]
           }).then(success => {
             if (success) {

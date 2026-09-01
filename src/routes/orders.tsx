@@ -1,4 +1,4 @@
-// src/routes/orders.tsx - الكود المصحح بالكامل مع دعم صور الفيرنتات
+// src/routes/orders.tsx - الكود المصحح بالكامل مع Dialog احترافي لتأكيد الإلغاء
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, lazy, Suspense } from "react";
@@ -12,7 +12,8 @@ import {
   ChevronDown, ChevronUp, Eye,
   Calendar, CreditCard, Send, ThumbsUp, ThumbsDown,
   User, Store, Sparkles, Zap, Rocket, Shield, Award, Timer,
-  Layers, MessageCircle, Phone, Gift  
+  Layers, MessageCircle, Phone, Gift, Info, Trash2,
+  AlertCircle
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/orders")({
   head: () => ({ meta: [{ title: "طلباتي — السوق لعندك" }] }),
 });
 
-// ✅ ✅ ✅ دالة الحصول على صورة المنتج الصحيحة (مع دعم الفيرنتات من metadata)
+// ✅ دالة الحصول على صورة المنتج الصحيحة (مع دعم الفيرنتات من metadata)
 function getProductImage(item: any) {
   const listing = item.listings || item;
   
@@ -108,7 +109,9 @@ function getProductImage(item: any) {
   // ✅ 8. أخيراً: cover_url
   return listing?.cover_url || null;
 }
-// ✅ ✅ ✅ دالة استخراج بيانات العرض الترويجي من order_items
+
+// ✅ دالة استخراج بيانات العرض الترويجي من order_items
+// ✅ دالة استخراج بيانات العرض الترويجي من order_items
 function getPromoOfferData(item: any) {
   // ✅ من metadata (هذا هو المكان الذي حفظناه فيه من cart.tsx)
   if (item.metadata?.promo_offer_data) {
@@ -128,14 +131,42 @@ function getPromoOfferData(item: any) {
   return null;
 }
 
-// ✅ ✅ ✅ دالة التحقق من وجود عرض ترويجي
+// ✅ دالة التحقق من وجود عرض ترويجي (المعدلة النهائية)
 function isPromoOffer(item: any) {
-  return item.is_promo_offer === true || 
-         item.offer_id !== null ||
-         item.variation_snapshot?.is_promo_offer === true ||
-         item.metadata?.is_promo_offer === true ||
-         !!getPromoOfferData(item);
+  // ✅ طريقة 1: التحقق المباشر من is_promo_offer
+  if (item.is_promo_offer === true) {
+    return true;
+  }
+  
+  // ✅ طريقة 2: التحقق من offer_id
+  if (item.offer_id !== null && item.offer_id !== undefined) {
+    return true;
+  }
+  
+  // ✅ طريقة 3: التحقق من variation_snapshot
+  if (item.variation_snapshot?.is_promo_offer === true) {
+    return true;
+  }
+  
+  // ✅ طريقة 4: التحقق من وجود promo_offer_data الفعلي (وليس مجرد is_promo_offer)
+  if (item.metadata?.promo_offer_data) {
+    return true;
+  }
+  
+  // ✅ طريقة 5: التحقق من offer_data
+  if (item.offer_data) {
+    return true;
+  }
+  
+  // ✅ طريقة 6: أخيراً، تحقق من getPromoOfferData
+  if (!!getPromoOfferData(item)) {
+    return true;
+  }
+  
+  // ❌ إذا لم يتحقق أي شرط، فهذا ليس عرضاً ترويجياً
+  return false;
 }
+
 function OrdersPage() {
   const app = useApp();
   const navigate = useNavigate();
@@ -150,6 +181,10 @@ function OrdersPage() {
   const [isRating, setIsRating] = useState(false);
   const [isCancelling, setIsCancelling] = useState<string | null>(null);
   
+  // ✅ State لديالوغ تأكيد الإلغاء
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
+  
   // ✅ Complaint Dialog
   const [complaintDialogOpen, setComplaintDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -158,9 +193,9 @@ function OrdersPage() {
   const [isSubmittingComplaint, setIsSubmittingComplaint] = useState(false);
 
   // ============================================================
-  // ✅ ✅ ✅ تجميع الطلبات حسب معرف الطلب (order_id) مع دعم order_items
+  // ✅ تجميع الطلبات حسب معرف الطلب (order_id) مع دعم order_items
   // ============================================================
-const groupedOrders = useMemo(() => {
+  const groupedOrders = useMemo(() => {
     const groups: Record<string, {
       orderId: string;
       storeId: string;
@@ -186,12 +221,10 @@ const groupedOrders = useMemo(() => {
       const orderId = order.id;
       const storeId = order.seller_id || 'unknown';
       
-      // ✅ ✅ ✅ جلب اسم المتجر من أول عنصر في order_items أو من listings
       let storeName = '';
       let storeLogo: string | null = null;
       let storePhone: string | null = null;
       
-      // ✅ أولاً: حاول جلب من order_items
       if (order.order_items && order.order_items.length > 0) {
         const firstItem = order.order_items[0];
         const listing = firstItem?.listings;
@@ -206,7 +239,6 @@ const groupedOrders = useMemo(() => {
         }
       }
       
-      // ✅ ثانياً: إذا ما وجدنا من order_items، استخدم listings القديم
       if (!storeName && order.listings?.profile) {
         storeName = order.listings.profile.store_name || 
                     order.listings.profile.full_name || 
@@ -215,7 +247,6 @@ const groupedOrders = useMemo(() => {
         storePhone = order.listings.profile.store_phone || null;
       }
       
-      // ✅ ثالثاً: إذا ما وجدنا نهائياً
       if (!storeName) {
         storeName = app.lang === "ar" ? "متجر" : "Store";
       }
@@ -243,16 +274,12 @@ const groupedOrders = useMemo(() => {
         };
       }
 
-      // ✅ ✅ ✅ إضافة العناصر من order_items أو من order نفسه
       let itemsToAdd = [];
       
       if (order.order_items && order.order_items.length > 0) {
-        // ✅ استخدام order_items
         itemsToAdd = order.order_items.map((item: any) => ({
           ...item,
-          // ✅ التأكد من وجود listings
           listings: item.listings || null,
-          // ✅ إضافة الحقول المفقودة للتوافق
           id: item.id,
           listing_id: item.listing_id,
           quantity: item.quantity,
@@ -261,16 +288,13 @@ const groupedOrders = useMemo(() => {
           status: order.status,
           created_at: order.created_at,
           order_id: order.id,
-          // ✅ ✅ ✅ الاحتفاظ ببيانات الفيرنتات المختارة (مهم لصورة الفيرنت)
           selected_variation_id: item.selected_options?.selected_variation_id || item.selected_variation_id || order.selected_variation_id || null,
           variation_snapshot: item.variation_snapshot || order.variation_snapshot || null,
-          // ✅ ✅ ✅ إضافة metadata و selected_options
           metadata: item.metadata || null,
           selected_options: item.selected_options || null,
           variation_combination: item.variation_combination || null,
         }));
       } else {
-        // ✅ للتوافق مع الطلبات القديمة (بدون order_items)
         itemsToAdd = [{
           ...order,
           listings: order.listings || null,
@@ -283,16 +307,13 @@ const groupedOrders = useMemo(() => {
         }];
       }
       
-      // ✅ إضافة العناصر إلى المجموعة
       itemsToAdd.forEach((item: any) => {
         groups[orderId].items.push(item);
       });
       
-      // ✅ حساب الإجماليات
       groups[orderId].totalItems += itemsToAdd.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0);
       groups[orderId].totalPrice += itemsToAdd.reduce((sum: number, item: any) => sum + (Number(item.total) || Number(item.price) * (item.quantity || 1) || 0), 0);
       
-      // ✅ ✅ ✅ إضافة الإجمالي الكامل من الطلب (بما في ذلك التوصيل والخصم)
       const totalWithDelivery = order.total_with_delivery || 
         (Number(order.total || 0) + Number(order.delivery_fee || 0) - Number(order.promo_discount || 0));
       
@@ -300,19 +321,6 @@ const groupedOrders = useMemo(() => {
       groups[orderId].deliveryFee += Number(order.delivery_fee || 0);
       groups[orderId].promoDiscount += Number(order.promo_discount || 0);
 
-      // ✅ ✅ ✅ LOG 1: طباعة بيانات كل طلب
-      console.log(`📊 [Orders] Order ${orderId}:`, {
-        total: order.total,
-        delivery_fee: order.delivery_fee,
-        promo_discount: order.promo_discount,
-        total_with_delivery: order.total_with_delivery,
-        calculated: totalWithDelivery,
-        final_total: groups[orderId].totalWithDelivery,
-        final_delivery: groups[orderId].deliveryFee,
-        final_promo: groups[orderId].promoDiscount,
-      });
-      
-      // ✅ تحديث الحالة (أعلى أولوية: pending > accepted > shipped > delivered > rejected > cancelled)
       const statusPriority: Record<string, number> = {
         pending: 5,
         accepted: 4,
@@ -332,188 +340,148 @@ const groupedOrders = useMemo(() => {
       }
     });
 
-    // ✅ ✅ ✅ LOG 2: طباعة جميع المجموعات قبل الـ return
-    console.log("📊 [Orders] All grouped orders:", Object.values(groups));
-    console.log("📊 [Orders] Total orders:", Object.values(groups).length);
-
-    // ✅ تحويل إلى مصفوفة وترتيب حسب التاريخ (الأحدث أولاً)
-    const sorted = Object.values(groups).sort((a, b) => 
+    return Object.values(groups).sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-
-    // ✅ ✅ ✅ LOG 3: طباعة أول طلب بعد الترتيب
-    if (sorted.length > 0) {
-      console.log("📊 [Orders] First order after sorting:", {
-        orderId: sorted[0].orderId,
-        totalPrice: sorted[0].totalPrice,
-        deliveryFee: sorted[0].deliveryFee,
-        promoDiscount: sorted[0].promoDiscount,
-        totalWithDelivery: sorted[0].totalWithDelivery,
-      });
-    }
-
-    return sorted;
   }, [orders, app.lang]);
 
   // ============================================================
-  // ✅ ✅ ✅ دالة إلغاء الطلب كامل (وليس كل منتج على حدة)
+  // ✅ دالة فتح ديالوغ تأكيد الإلغاء
   // ============================================================
-// ============================================================
-// ✅ دالة إلغاء الطلب كامل (مع إشعار للمتجر ونقصان used_count)
-// ============================================================
-const handleCancelOrder = async (orderId: string) => {
-  if (!app.user) return;
-  
-  if (!confirm(app.lang === "ar" 
-    ? "⚠️ هل أنت متأكد من رغبتك في إلغاء هذا الطلب بالكامل؟ هذا الإجراء لا يمكن التراجع عنه."
-    : "⚠️ Are you sure you want to cancel this entire order? This action cannot be undone."
-  )) return;
-  
-  setIsCancelling(orderId);
-  
-  try {
-    // ✅ 1️⃣ جلب بيانات الطلب (بما فيها seller_id و promo_code_id)
-    const { data: order, error: fetchError } = await supabase
-      .from("orders")
-      .select(`
-        id,
-        seller_id,
-        promo_code_id,
-        total,
-        buyer_name,
-        buyer_phone,
-        order_items (
-          listings (
-            title_ar,
-            title_en,
-            profile:owner_id (
-              store_name,
-              full_name
+  const openCancelDialog = (orderId: string) => {
+    setOrderToCancel(orderId);
+    setCancelDialogOpen(true);
+  };
+
+  // ============================================================
+  // ✅ دالة إلغاء الطلب كامل (بدون confirm() من المتصفح)
+  // ============================================================
+  const handleCancelOrder = async () => {
+    if (!app.user || !orderToCancel) return;
+    
+    setIsCancelling(orderToCancel);
+    setCancelDialogOpen(false);
+    
+    try {
+      const { data: order, error: fetchError } = await supabase
+        .from("orders")
+        .select(`
+          id,
+          seller_id,
+          promo_code_id,
+          total,
+          buyer_name,
+          buyer_phone,
+          order_items (
+            listings (
+              title_ar,
+              title_en,
+              profile:owner_id (
+                store_name,
+                full_name
+              )
             )
           )
-        )
-      `)
-      .eq("id", orderId)
-      .eq("buyer_id", app.user.id)
-      .single();
-    
-    if (fetchError) {
-      console.error("❌ Error fetching order:", fetchError);
-      // ✅ نكمل تحديث الحالة حتى لو فشل جلب البيانات
-    }
-    
-    // ✅ 2️⃣ تحديث حالة الطلب إلى cancelled
-    const { error } = await supabase
-      .from("orders")
-      .update({ 
-        status: 'cancelled',
-        cancelled_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", orderId)
-      .eq("buyer_id", app.user.id);
-    
-    if (error) throw error;
-    
-    // ✅ ✅ ✅ 3️⃣ إرسال إشعار للمتجر
-    if (order && order.seller_id) {
-      // ✅ استخراج اسم المتجر
-      let storeName = '';
-      
-      if (order.order_items && order.order_items.length > 0) {
-        const firstItem = order.order_items[0];
-        const listing = firstItem?.listings;
-        if (listing?.profile) {
-          storeName = listing.profile.store_name || 
-                      listing.profile.full_name || 
-                      (app.lang === "ar" ? "المتجر" : "Store");
-        }
-      }
-      
-      if (!storeName) {
-        storeName = app.lang === "ar" ? "المتجر" : "Store";
-      }
-      
-      const itemsCount = order.order_items?.length || 1;
-      const buyerName = order.buyer_name || (app.lang === "ar" ? "عميل" : "Customer");
-      const buyerPhone = order.buyer_phone || '';
-      
-      // ✅ إشعار للمتجر (seller)
-      const { error: notifyError } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: order.seller_id,
-          type: "order_cancelled",
-          title_ar: "🚫 تم إلغاء طلب",
-          body_ar: `قام العميل ${buyerName} بإلغاء طلبه (${itemsCount} منتج${itemsCount > 1 ? 'ات' : ''}) من متجر "${storeName}".`,
-          title_en: "🚫 Order cancelled",
-          body_en: `Customer ${buyerName} cancelled their order (${itemsCount} items) from "${storeName}".`,
-          link_url: `/dashboard/orders`,
-          metadata: {
-            order_id: orderId,
-            buyer_name: buyerName,
-            buyer_phone: buyerPhone,
-            items_count: itemsCount,
-            store_name: storeName,
-            cancelled_by: 'customer',
-          }
-        });
-      
-      if (notifyError) {
-        console.error("❌ Error sending seller notification:", notifyError);
-      } else {
-        console.log(`✅ Seller notification sent for order ${orderId}`);
-      }
-    }
-    
-    // ✅ ✅ ✅ 4️⃣ نقصان used_count إذا كان الطلب يستخدم كود خصم
-    if (order?.promo_code_id) {
-      console.log(`🔄 [Cancel Order] Decreasing used_count for promo code: ${order.promo_code_id}`);
-      
-      const { data: promoCode, error: fetchCountError } = await supabase
-        .from("promo_codes")
-        .select("used_count")
-        .eq("id", order.promo_code_id)
+        `)
+        .eq("id", orderToCancel)
+        .eq("buyer_id", app.user.id)
         .single();
       
-      if (!fetchCountError && promoCode) {
-        const newCount = Math.max(0, (promoCode.used_count || 0) - 1);
+      if (fetchError) {
+        console.error("❌ Error fetching order:", fetchError);
+      }
+      
+      const { error } = await supabase
+        .from("orders")
+        .update({ 
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", orderToCancel)
+        .eq("buyer_id", app.user.id);
+      
+      if (error) throw error;
+      
+      if (order && order.seller_id) {
+        let storeName = '';
         
-        const { error: updateCountError } = await supabase
-          .from("promo_codes")
-          .update({ used_count: newCount })
-          .eq("id", order.promo_code_id);
+        if (order.order_items && order.order_items.length > 0) {
+          const firstItem = order.order_items[0];
+          const listing = firstItem?.listings;
+          if (listing?.profile) {
+            storeName = listing.profile.store_name || 
+                        listing.profile.full_name || 
+                        (app.lang === "ar" ? "المتجر" : "Store");
+          }
+        }
         
-        if (updateCountError) {
-          console.error("❌ Error decreasing used_count:", updateCountError);
+        if (!storeName) {
+          storeName = app.lang === "ar" ? "المتجر" : "Store";
+        }
+        
+        const itemsCount = order.order_items?.length || 1;
+        const buyerName = order.buyer_name || (app.lang === "ar" ? "عميل" : "Customer");
+        const buyerPhone = order.buyer_phone || '';
+        
+        const { error: notifyError } = await supabase
+          .from("notifications")
+          .insert({
+            user_id: order.seller_id,
+            type: "order_cancelled",
+            title_ar: "🚫 تم إلغاء طلب",
+            body_ar: `قام العميل ${buyerName} بإلغاء طلبه (${itemsCount} منتج${itemsCount > 1 ? 'ات' : ''}) من متجر "${storeName}".`,
+            title_en: "🚫 Order cancelled",
+            body_en: `Customer ${buyerName} cancelled their order (${itemsCount} items) from "${storeName}".`,
+            link_url: `/dashboard?tab=orders`,
+            metadata: {
+              order_id: orderToCancel,
+              buyer_name: buyerName,
+              buyer_phone: buyerPhone,
+              items_count: itemsCount,
+              store_name: storeName,
+              cancelled_by: 'customer',
+            }
+          });
+        
+        if (notifyError) {
+          console.error("❌ Error sending seller notification:", notifyError);
         } else {
-          console.log(`✅ Promo code used_count decreased to ${newCount}`);
+          console.log(`✅ Seller notification sent for order ${orderToCancel}`);
         }
       }
       
-      // ✅ حذف سجل الاستخدام من promo_code_usage
-      const { error: deleteUsageError } = await supabase
-        .from("promo_code_usage")
-        .delete()
-        .eq("order_id", orderId);
-      
-      if (deleteUsageError) {
-        console.error("❌ Error deleting promo usage record:", deleteUsageError);
-      } else {
-        console.log(`✅ Promo usage record deleted for order ${orderId}`);
+      if (order?.promo_code_id) {
+        const { data: promoCode, error: fetchCountError } = await supabase
+          .from("promo_codes")
+          .select("used_count")
+          .eq("id", order.promo_code_id)
+          .single();
+        
+        if (!fetchCountError && promoCode) {
+          const newCount = Math.max(0, (promoCode.used_count || 0) - 1);
+          await supabase
+            .from("promo_codes")
+            .update({ used_count: newCount })
+            .eq("id", order.promo_code_id);
+        }
+        
+        await supabase
+          .from("promo_code_usage")
+          .delete()
+          .eq("order_id", orderToCancel);
       }
+      
+      toast.success(app.lang === "ar" ? "✅ تم إلغاء الطلب بالكامل بنجاح" : "✅ Order cancelled successfully");
+      refetch();
+      
+    } catch (error) {
+      console.error("❌ Error cancelling order:", error);
+      toast.error(app.lang === "ar" ? "❌ فشل إلغاء الطلب" : "❌ Failed to cancel order");
+    } finally {
+      setIsCancelling(null);
+      setOrderToCancel(null);
     }
-    
-    toast.success(app.lang === "ar" ? "✅ تم إلغاء الطلب بالكامل بنجاح" : "✅ Order cancelled successfully");
-    refetch();
-    
-  } catch (error) {
-    console.error("❌ Error cancelling order:", error);
-    toast.error(app.lang === "ar" ? "❌ فشل إلغاء الطلب" : "❌ Failed to cancel order");
-  } finally {
-    setIsCancelling(null);
-  }
-};
+  };
 
   // ============================================================
   // ✅ دالة تقييم المنتج
@@ -560,7 +528,6 @@ const handleCancelOrder = async (orderId: string) => {
     setIsSubmittingComplaint(true);
     
     try {
-      // ✅ نرسل شكوى على أول منتج في الطلبية
       const firstItem = selectedOrder.items[0];
       
       await createComplaint.mutateAsync({
@@ -593,7 +560,7 @@ const handleCancelOrder = async (orderId: string) => {
         color: "text-amber-600 dark:text-amber-400",
         bg: "bg-amber-50/80 dark:bg-amber-950/30",
         border: "border-amber-200/60 dark:border-amber-800/40",
-        icon: Timer,
+        icon: Clock,
         description: app.lang === "ar" ? "في انتظار موافقة البائع" : "Waiting for seller approval"
       },
       accepted: { 
@@ -746,16 +713,9 @@ const handleCancelOrder = async (orderId: string) => {
               const isExpanded = expandedOrder === group.orderId;
               const isActive = isActiveOrder(group.status);
               
-              // ✅ هل يمكن إلغاء الطلب كامل؟ (فقط إذا كانت الحالة pending)
               const canCancelOrder = canCancel(group.status);
-              
-              // ✅ هل يمكن تقييم أي منتج في الطلبية؟
               const hasRateableItem = group.items.some((o: any) => canRate(o.status));
-              
-              // ✅ هل جميع المنتجات مرفوضة؟
               const allRejected = group.items.every((o: any) => o.status === 'rejected');
-              
-              // ✅ هل جميع المنتجات ملغية؟
               const allCancelled = group.items.every((o: any) => o.status === 'cancelled');
               
               return (
@@ -780,11 +740,7 @@ const handleCancelOrder = async (orderId: string) => {
                     onClick={() => setExpandedOrder(isExpanded ? null : group.orderId)}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-4">
-                      
-                      {/* ✅ القسم الأيسر: لوغو المتجر + اسمه + عدد المنتجات + التاريخ + السعر */}
                       <div className="flex items-center gap-4">
-                        
-                        {/* ✅ لوغو المتجر */}
                         <div className="relative h-14 w-14 rounded-2xl overflow-hidden flex-shrink-0 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-md hover:shadow-xl transition-all duration-300">
                           {group.storeLogo ? (
                             <OptimizedImage
@@ -807,8 +763,6 @@ const handleCancelOrder = async (orderId: string) => {
                             </div>
                           )}
                         </div>
-                        
-                        {/* ✅ معلومات المتجر + الطلبية */}
                         <div>
                           <div className="flex items-center gap-2">
                             <Store className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82]" />
@@ -834,31 +788,28 @@ const handleCancelOrder = async (orderId: string) => {
                               </span>
                             )}
                           </div>
-                          
-                          {/* ✅ عدد المنتجات + التاريخ + السعر الإجمالي (مع الخصم والتوصيل) */}
-<div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
-  <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
-    <Layers className="h-3 w-3 text-[#2a655f]" />
-    {group.totalItems} {app.lang === "ar" ? "منتج" : "items"}
-  </span>
-  <span className="text-muted-foreground/30">•</span>
-  <span className="flex items-center gap-1">
-    <Calendar className="h-3 w-3" />
-    {new Date(group.createdAt).toLocaleDateString(
-      app.lang === "ar" ? "ar-SA" : "en-US",
-      { day: 'numeric', month: 'short', year: 'numeric' }
-    )}
-  </span>
-  <span className="text-muted-foreground/30">•</span>
-  <span className="flex items-center gap-1 font-bold text-[#2a655f] dark:text-[#3a8a82]">
-    <CreditCard className="h-3 w-3" />
-    {formatPrice(group.totalWithDelivery, app.currency, app.lang)}
-  </span>
-</div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                            <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                              <Layers className="h-3 w-3 text-[#2a655f]" />
+                              {group.totalItems} {app.lang === "ar" ? "منتج" : "items"}
+                            </span>
+                            <span className="text-muted-foreground/30">•</span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(group.createdAt).toLocaleDateString(
+                                app.lang === "ar" ? "ar-SA" : "en-US",
+                                { day: 'numeric', month: 'short', year: 'numeric' }
+                              )}
+                            </span>
+                            <span className="text-muted-foreground/30">•</span>
+                            <span className="flex items-center gap-1 font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                              <CreditCard className="h-3 w-3" />
+                              {formatPrice(group.totalWithDelivery, app.currency, app.lang)}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* ✅ القسم الأيمن: الحالة + زر التوسيع */}
                       <div className="flex items-center gap-3">
                         <Badge className={cn(
                           "border-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold shadow-sm",
@@ -883,8 +834,6 @@ const handleCancelOrder = async (orderId: string) => {
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-2 border-t border-slate-200/50 dark:border-slate-700/50 animate-fade-up">
                       <div className="space-y-4">
-                        
-                        {/* ✅ حالة الطلب مع وصف */}
                         <div className={cn(
                           "p-4 rounded-xl border",
                           status.bg,
@@ -899,7 +848,6 @@ const handleCancelOrder = async (orderId: string) => {
                           </div>
                         </div>
 
-                        {/* ✅ معلومات العميل */}
                         <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                           <div>
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
@@ -926,265 +874,238 @@ const handleCancelOrder = async (orderId: string) => {
                           )}
                         </div>
 
-                        {/* ✅ قائمة المنتجات في هذه الطلبية */}
                         <div className="space-y-3">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-  <Package className="h-3.5 w-3.5" />
-  {app.lang === "ar" ? "المنتجات" : "Products"}
-  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
-    {group.items.length}
-  </Badge>
-</div>
+                          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                            <Package className="h-3.5 w-3.5" />
+                            {app.lang === "ar" ? "المنتجات" : "Products"}
+                            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                              {group.items.length}
+                            </Badge>
+                          </div>
                           
-                       {group.items.map((item: any) => {
-  const listing = item.listings || item;
-  const imageUrl = getProductImage(item);
-  
-  // ✅ ✅ ✅ التحقق من وجود عرض ترويجي
-  const isPromo = isPromoOffer(item);
-  const offerData = getPromoOfferData(item);
-  
-  // ✅ استخراج بيانات العرض
-  const requiredVariations = offerData?.required_products?.variations || {};
-  const giftVariations = offerData?.free_product?.variations || {};
-  const hasRequired = Object.keys(requiredVariations).length > 0;
-  const hasGift = Object.keys(giftVariations).length > 0;
-  
-  return (
-    <div 
-      key={item.id || item.listing_id}
-      className={cn(
-        "p-3 rounded-xl border transition-all duration-300",
-        isPromo 
-          ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50 hover:border-purple-400/70" 
-          : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30"
-      )}
-    >
-      {isPromo ? (
-        // ===== ✅ عرض العرض الترويجي =====
-        <div className="space-y-3">
-          {/* شارة العرض الترويجي */}
-          <div className="flex items-center gap-2">
-            <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 px-3 py-1 rounded-full text-xs font-bold">
-              <Gift className="h-3.5 w-3.5 inline mr-1.5" />
-              {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
-            </Badge>
-            <Badge variant="outline" className="border-purple-300 text-purple-600 text-[10px]">
-              {offerData?.offer_type === 'bogo' ? '🎁 نفس المنتج' : 
-               offerData?.offer_type === 'cross_sell' ? '🔄 منتج مختلف' : '📦 باقة'}
-            </Badge>
-          </div>
-
-          {/* نص العرض */}
-          {offerData?.display_text_ar && (
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              {app.lang === "ar" ? offerData.display_text_ar : offerData.display_text_en}
-            </p>
-          )}
-
-          {/* المنتجات المطلوبة */}
-          {hasRequired && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-slate-500 flex items-center gap-2">
-                <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
-                🛒 {app.lang === "ar" ? "المنتجات المطلوبة" : "Required Products"} ({Object.keys(requiredVariations).length})
-              </p>
-              {Object.entries(requiredVariations).map(([id, data]: any) => {
-                const comboText = Object.values(data.combination || {}).join(' • ');
-                const variationImage = data.image_url || 
-                                      offerData?.required_products?.main_product?.cover_url || 
-                                      null;
-                
-                return (
-                  <div key={id} className="flex items-center gap-3 p-2 bg-white/70 rounded-xl border border-purple-100/50">
-                    {variationImage ? (
-                      <img 
-                        src={variationImage} 
-                        alt={comboText} 
-                        className="w-10 h-10 rounded-lg object-cover border border-purple-100"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.png';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center text-purple-400">
-                        <Package className="h-5 w-5" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
-                      <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
-                    </div>
-                    <p className="text-sm font-bold text-[#0d2e2a] whitespace-nowrap">
-                      {(data.price * data.quantity).toLocaleString()} SYP
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* الهدية */}
-          {hasGift && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-emerald-500 flex items-center gap-2">
-                <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
-                🎁 {app.lang === "ar" ? "الهدية" : "Gift"} ({Object.keys(giftVariations).length})
-              </p>
-              {Object.entries(giftVariations).map(([id, data]: any) => {
-                const comboText = Object.values(data.combination || {}).join(' • ');
-                const giftImage = data.image_url || 
-                                 offerData?.free_product?.cover_url || 
-                                 null;
-                
-                return (
-                  <div key={id} className="flex items-center gap-3 p-2 bg-emerald-50/70 rounded-xl border border-emerald-100/50">
-                    {giftImage ? (
-                      <img 
-                        src={giftImage} 
-                        alt={comboText} 
-                        className="w-10 h-10 rounded-lg object-cover border border-emerald-100"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.png';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400">
-                        <Gift className="h-5 w-5" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
-                      <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
-                    </div>
-                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-xs font-bold px-3 py-1 rounded-full">
-                      🎁 {app.lang === "ar" ? "مجاناً" : "Free"}
-                    </Badge>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* إجمالي السعر */}
-          <div className="mt-3 pt-3 border-t border-purple-200/50">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                {app.lang === "ar" ? "إجمالي المنتجات المطلوبة" : "Total required products"}
-              </span>
-              <span className="text-lg font-bold text-[#0d2e2a]">
-                {(item.price * item.quantity).toLocaleString()} SYP
-              </span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        // ===== ✅ عرض المنتج العادي =====
-        <div className="flex items-center gap-4">
-          {/* صورة المنتج */}
-          <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-            {imageUrl ? (
-              <OptimizedImage
-                src={imageUrl}
-                alt=""
-                width={48}
-                height={48}
-                quality={80}
-                objectFit="cover"
-                className="h-full w-full"
-              />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                <Package className="h-5 w-5 text-slate-400" />
-              </div>
-            )}
-          </div>
-          
-          {/* معلومات المنتج */}
-          <div className="flex-1">
-            <p className="font-semibold text-sm text-slate-800 dark:text-white">
-              {app.lang === "ar" 
-                ? listing?.title_ar || 'منتج'
-                : listing?.title_en || listing?.title_ar || 'Product'}
-            </p>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-              <span>{app.lang === "ar" ? "الكمية:" : "Qty:"} {item.quantity || 1}</span>
-              <span className="text-muted-foreground/30">•</span>
-              <span className="font-semibold text-[#2a655f] dark:text-[#3a8a82]">
-                {formatPrice(
-                  item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
-                  app.currency, 
-                  app.lang
-                )}
-              </span>
-              <span className="text-muted-foreground/30">•</span>
-              <Badge className={cn(
-                "border-0 text-[9px] px-2 py-0.5",
-                getOrderStatus(item.status || group.status).bg,
-                getOrderStatus(item.status || group.status).color
-              )}>
-                {getOrderStatus(item.status || group.status).label}
-              </Badge>
-              {/* ✅ عرض معلومات الفيرنت المختار */}
-              {item.selected_variation_id && (
-                <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                  <Layers className="h-2.5 w-2.5" />
-                  {item.variation_snapshot?.combination 
-                    ? Object.values(item.variation_snapshot.combination).join(' • ')
-                    : (item.selected_variation_id.slice(0, 8))}
-                </span>
-              )}
-              {/* ✅ عرض معلومات الفيرنت من metadata */}
-              {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && (
-                <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                  <Layers className="h-2.5 w-2.5" />
-                  {Object.values(item.metadata.variation_combination).join(' • ')}
-                </span>
-              )}
-            </div>
-          </div>
-          
-          {/* زر عرض المنتج */}
-          <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10">
-              <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
-            </Button>
-          </Link>
-        </div>
-      )}
-      
-      {/* ✅ ✅ ✅ أزرار التقييم (لجميع المنتجات) */}
-      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
-        {canRate(item.status || group.status) && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-muted-foreground">
-              {app.lang === "ar" ? "قيم:" : "Rate:"}
-            </span>
-            <StarRating
-              rating={item.rating || 0}
-              onRatingChange={(value) => {
-                setRatingOrder(item.id || item.listing_id);
-                setRatingValue(value);
-                handleRateOrder(item.order_id || group.orderId, item.listing_id, value);
-              }}
-              readonly={isRating && ratingOrder === (item.id || item.listing_id)}
-              size="sm"
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-})}
+                          {group.items.map((item: any) => {
+                            const listing = item.listings || item;
+                            const imageUrl = getProductImage(item);
+                            const isPromo = isPromoOffer(item);
+                            const offerData = getPromoOfferData(item);
+                            const requiredVariations = offerData?.required_products?.variations || {};
+                            const giftVariations = offerData?.free_product?.variations || {};
+                            const hasRequired = Object.keys(requiredVariations).length > 0;
+                            const hasGift = Object.keys(giftVariations).length > 0;
+                            
+                            return (
+                              <div 
+                                key={item.id || item.listing_id}
+                                className={cn(
+                                  "p-3 rounded-xl border transition-all duration-300",
+                                  isPromo 
+                                    ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50 hover:border-purple-400/70" 
+                                    : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30"
+                                )}
+                              >
+                                {isPromo ? (
+                                  <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 px-3 py-1 rounded-full text-xs font-bold">
+                                        <Gift className="h-3.5 w-3.5 inline mr-1.5" />
+                                        {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
+                                      </Badge>
+                                      <Badge variant="outline" className="border-purple-300 text-purple-600 text-[10px]">
+                                        {offerData?.offer_type === 'bogo' ? '🎁 نفس المنتج' : 
+                                         offerData?.offer_type === 'cross_sell' ? '🔄 منتج مختلف' : '📦 باقة'}
+                                      </Badge>
+                                    </div>
+                                    {offerData?.display_text_ar && (
+                                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        {app.lang === "ar" ? offerData.display_text_ar : offerData.display_text_en}
+                                      </p>
+                                    )}
+                                    {hasRequired && (
+                                      <div className="space-y-2">
+                                        <p className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                          <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
+                                          🛒 {app.lang === "ar" ? "المنتجات المطلوبة" : "Required Products"} ({Object.keys(requiredVariations).length})
+                                        </p>
+                                        {Object.entries(requiredVariations).map(([id, data]: any) => {
+                                          const comboText = Object.values(data.combination || {}).join(' • ');
+                                          const variationImage = data.image_url || 
+                                                                offerData?.required_products?.main_product?.cover_url || 
+                                                                null;
+                                          return (
+                                            <div key={id} className="flex items-center gap-3 p-2 bg-white/70 rounded-xl border border-purple-100/50">
+                                              {variationImage ? (
+                                                <img 
+                                                  src={variationImage} 
+                                                  alt={comboText} 
+                                                  className="w-10 h-10 rounded-lg object-cover border border-purple-100"
+                                                  onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = '/placeholder.png';
+                                                  }}
+                                                />
+                                              ) : (
+                                                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center text-purple-400">
+                                                  <Package className="h-5 w-5" />
+                                                </div>
+                                              )}
+                                              <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                                                <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
+                                              </div>
+                                              <p className="text-sm font-bold text-[#0d2e2a] whitespace-nowrap">
+                                                {(data.price * data.quantity).toLocaleString()} SYP
+                                              </p>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                    {hasGift && (
+                                      <div className="space-y-2">
+                                        <p className="text-xs font-semibold text-emerald-500 flex items-center gap-2">
+                                          <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
+                                          🎁 {app.lang === "ar" ? "الهدية" : "Gift"} ({Object.keys(giftVariations).length})
+                                        </p>
+                                        {Object.entries(giftVariations).map(([id, data]: any) => {
+                                          const comboText = Object.values(data.combination || {}).join(' • ');
+                                          const giftImage = data.image_url || 
+                                                           offerData?.free_product?.cover_url || 
+                                                           null;
+                                          return (
+                                            <div key={id} className="flex items-center gap-3 p-2 bg-emerald-50/70 rounded-xl border border-emerald-100/50">
+                                              {giftImage ? (
+                                                <img 
+                                                  src={giftImage} 
+                                                  alt={comboText} 
+                                                  className="w-10 h-10 rounded-lg object-cover border border-emerald-100"
+                                                  onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = '/placeholder.png';
+                                                  }}
+                                                />
+                                              ) : (
+                                                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400">
+                                                  <Gift className="h-5 w-5" />
+                                                </div>
+                                              )}
+                                              <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                                                <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
+                                              </div>
+                                              <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-xs font-bold px-3 py-1 rounded-full">
+                                                🎁 {app.lang === "ar" ? "مجاناً" : "Free"}
+                                              </Badge>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                    <div className="mt-3 pt-3 border-t border-purple-200/50">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-sm text-muted-foreground">
+                                          {app.lang === "ar" ? "إجمالي المنتجات المطلوبة" : "Total required products"}
+                                        </span>
+                                        <span className="text-lg font-bold text-[#0d2e2a]">
+                                          {(item.price * item.quantity).toLocaleString()} SYP
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-4">
+                                    <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                                      {imageUrl ? (
+                                        <OptimizedImage
+                                          src={imageUrl}
+                                          alt=""
+                                          width={48}
+                                          height={48}
+                                          quality={80}
+                                          objectFit="cover"
+                                          className="h-full w-full"
+                                        />
+                                      ) : (
+                                        <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                                          <Package className="h-5 w-5 text-slate-400" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                                        {app.lang === "ar" 
+                                          ? listing?.title_ar || 'منتج'
+                                          : listing?.title_en || listing?.title_ar || 'Product'}
+                                      </p>
+                                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                                        <span>{app.lang === "ar" ? "الكمية:" : "Qty:"} {item.quantity || 1}</span>
+                                        <span className="text-muted-foreground/30">•</span>
+                                        <span className="font-semibold text-[#2a655f] dark:text-[#3a8a82]">
+                                          {formatPrice(
+                                            item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
+                                            app.currency, 
+                                            app.lang
+                                          )}
+                                        </span>
+                                        <span className="text-muted-foreground/30">•</span>
+                                        <Badge className={cn(
+                                          "border-0 text-[9px] px-2 py-0.5",
+                                          getOrderStatus(item.status || group.status).bg,
+                                          getOrderStatus(item.status || group.status).color
+                                        )}>
+                                          {getOrderStatus(item.status || group.status).label}
+                                        </Badge>
+                                        {item.selected_variation_id && (
+                                          <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                                            <Layers className="h-2.5 w-2.5" />
+                                            {item.variation_snapshot?.combination 
+                                              ? Object.values(item.variation_snapshot.combination).join(' • ')
+                                              : (item.selected_variation_id.slice(0, 8))}
+                                          </span>
+                                        )}
+                                        {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && (
+                                          <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                                            <Layers className="h-2.5 w-2.5" />
+                                            {Object.values(item.metadata.variation_combination).join(' • ')}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10">
+                                        <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                                  {canRate(item.status || group.status) && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {app.lang === "ar" ? "قيم:" : "Rate:"}
+                                      </span>
+                                      <StarRating
+                                        rating={item.rating || 0}
+                                        onRatingChange={(value) => {
+                                          setRatingOrder(item.id || item.listing_id);
+                                          setRatingValue(value);
+                                          handleRateOrder(item.order_id || group.orderId, item.listing_id, value);
+                                        }}
+                                        readonly={isRating && ratingOrder === (item.id || item.listing_id)}
+                                        size="sm"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
 
-                        {/* ✅ ✅ ✅ زر إلغاء الطلب كامل (في الأسفل) */}
+                        {/* ✅ زر إلغاء الطلب كامل - يفتح Dialog احترافي */}
                         {canCancelOrder && (
                           <Button
                             variant="destructive"
                             size="sm"
                             className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-[1.02] group"
-                            onClick={() => handleCancelOrder(group.orderId)}
+                            onClick={() => openCancelDialog(group.orderId)}
                             disabled={isCancelling === group.orderId}
                           >
                             {isCancelling === group.orderId ? (
@@ -1201,7 +1122,6 @@ const handleCancelOrder = async (orderId: string) => {
                           </Button>
                         )}
 
-                        {/* ✅ ملاحظات الطلب */}
                         {group.notes && (
                           <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200/50 dark:border-yellow-800/30">
                             <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
@@ -1212,7 +1132,6 @@ const handleCancelOrder = async (orderId: string) => {
                           </div>
                         )}
 
-                        {/* ✅ سبب الرفض (إذا كان مرفوض) */}
                         {group.rejectionReason && (
                           <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-800/30">
                             <p className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
@@ -1223,10 +1142,7 @@ const handleCancelOrder = async (orderId: string) => {
                           </div>
                         )}
 
-                        {/* ✅ ✅ ✅ إجمالي الطلبية (المجموع الفرعي + التوصيل + الخصم) */}
                         <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
-                          
-                          {/* المجموع الفرعي */}
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-muted-foreground">
                               {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
@@ -1236,27 +1152,25 @@ const handleCancelOrder = async (orderId: string) => {
                             </span>
                           </div>
                           
-                      {/* ✅ سعر التوصيل - يظهر دائماً (حتى لو 0) */}
-{group.deliveryFee !== undefined && (
-  <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
-    <span className="text-sm text-muted-foreground">
-      {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
-    </span>
-    <span className={cn(
-      "text-sm font-medium",
-      group.deliveryFee === 0 
-        ? "text-emerald-500 font-bold" 
-        : "text-[#0d2e2a] dark:text-[#3a8a82]"
-    )}>
-      {group.deliveryFee === 0 
-        ? (app.lang === "ar" ? "🆓 مجاني" : "🆓 Free")
-        : formatPrice(group.deliveryFee, app.currency, app.lang)
-      }
-    </span>
-  </div>
-)}
+                          {group.deliveryFee !== undefined && (
+                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
+                              <span className="text-sm text-muted-foreground">
+                                {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
+                              </span>
+                              <span className={cn(
+                                "text-sm font-medium",
+                                group.deliveryFee === 0 
+                                  ? "text-emerald-500 font-bold" 
+                                  : "text-[#0d2e2a] dark:text-[#3a8a82]"
+                              )}>
+                                {group.deliveryFee === 0 
+                                  ? (app.lang === "ar" ? "🆓 مجاني" : "🆓 Free")
+                                  : formatPrice(group.deliveryFee, app.currency, app.lang)
+                                }
+                              </span>
+                            </div>
+                          )}
                           
-                          {/* ✅ الخصم */}
                           {group.promoDiscount > 0 && (
                             <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
                               <span className="text-sm">
@@ -1268,7 +1182,6 @@ const handleCancelOrder = async (orderId: string) => {
                             </div>
                           )}
                           
-                          {/* ✅ الإجمالي الكامل */}
                           <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
                             <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
                               {app.lang === "ar" ? "الإجمالي الكامل" : "Total"}
@@ -1291,7 +1204,6 @@ const handleCancelOrder = async (orderId: string) => {
                           </div>
                         </div>
 
-                        {/* ✅ زر الشكوى (إذا كان أي منتج completed أو delivered) */}
                         {hasRateableItem && (
                           <Button
                             variant="outline"
@@ -1383,6 +1295,89 @@ const handleCancelOrder = async (orderId: string) => {
                 <Send className="h-4 w-4 mr-2" />
               )}
               {app.lang === "ar" ? "إرسال الشكوى" : "Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== DIALOG: تأكيد إلغاء الطلب (احترافي) ===== */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent className="max-w-md rounded-2xl border-red-200/50 dark:border-red-800/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-red-500/10 overflow-hidden">
+          <div className="bg-gradient-to-r from-red-600 to-rose-600 p-5 text-white">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold">
+                  {app.lang === "ar" ? "⚠️ تأكيد إلغاء الطلب" : "⚠️ Confirm Order Cancellation"}
+                </DialogTitle>
+                <p className="text-white/80 text-sm mt-0.5">
+                  {app.lang === "ar" 
+                    ? "هذا الإجراء لا يمكن التراجع عنه" 
+                    : "This action cannot be undone"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 space-y-4">
+            <div className="flex items-start gap-3 p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border-2 border-red-200/50 dark:border-red-800/30">
+              <div className="h-9 w-9 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-red-700 dark:text-red-300">
+                  {app.lang === "ar" ? "هل أنت متأكد؟" : "Are you sure?"}
+                </p>
+                <p className="text-sm text-red-600/80 dark:text-red-400/70">
+                  {app.lang === "ar"
+                    ? `سيتم إلغاء هذا الطلب بالكامل ولن يمكن استرجاعه`
+                    : `This order will be cancelled permanently and cannot be recovered`}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
+              <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                <Info className="h-3.5 w-3.5" />
+                {app.lang === "ar"
+                  ? "📌 سيتم إرسال إشعار للمتجر بإلغاء الطلب"
+                  : "📌 The store will be notified about the cancellation"}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancelDialogOpen(false);
+                setOrderToCancel(null);
+              }}
+              className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300"
+              disabled={isCancelling === orderToCancel}
+            >
+              <XCircle className="h-4 w-4 mr-1.5" />
+              {app.lang === "ar" ? "إلغاء" : "Cancel"}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancelOrder}
+              disabled={isCancelling === orderToCancel}
+              className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-[1.02]"
+            >
+              {isCancelling === orderToCancel ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {app.lang === "ar" ? "جاري الإلغاء..." : "Cancelling..."}
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {app.lang === "ar" ? "تأكيد الإلغاء" : "Confirm Cancel"}
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
