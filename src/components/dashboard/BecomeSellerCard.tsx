@@ -406,7 +406,7 @@ export function BecomeSellerCard() {
         type: "store_application",
         titleAr: `🏪 طلب فتح متجر جديد`,
         bodyAr: `قام ${userName} بتقديم طلب فتح متجر "${storeName}"، بحاجة للمراجعة`,
-        linkUrl: `/admin/applications`,
+        linkUrl: `/admin`,
         metadata: {
           store_name: storeName,
           user_id: userId,

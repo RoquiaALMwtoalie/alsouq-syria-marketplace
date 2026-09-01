@@ -39,12 +39,10 @@ function phoneToEmail(phone: string) {
   return `sy${digits}@souqi.local`;
 }
 
-// ✅ ✅ ✅ دالة التحقق من صيغة الرقم السوري (بدون إرسال رسائل) ✅ ✅ ✅
+// ✅ دالة التحقق من صيغة الرقم السوري
 function isValidSyrianPhoneFormat(phone: string): { valid: boolean; message?: string } {
-  // ✅ إزالة أي مسافات أو شرطات أو أقواس
   const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
   
-  // ✅ التحقق من أن الرقم يحتوي على أرقام فقط (+ مسموح)
   if (!/^[0-9+]+$/.test(cleanPhone)) {
     return {
       valid: false,
@@ -52,38 +50,27 @@ function isValidSyrianPhoneFormat(phone: string): { valid: boolean; message?: st
     };
   }
 
-  // ✅ استخراج الأرقام فقط
   const digits = cleanPhone.replace(/[^0-9]/g, "");
-
-  // ✅ الحالات الصحيحة للرقم السوري:
-  // 1. +963 + 9 أرقام (المجموع 13) - يجب أن يبدأ الرقم بعد +963 بـ 9
-  // 2. 00963 + 9 أرقام (المجموع 13) - يجب أن يبدأ الرقم بعد 00963 بـ 9
-  // 3. 0 + 9 أرقام (المجموع 10) - يجب أن يبدأ الرقم بعد 0 بـ 9
-  // 4. 9 أرقام فقط (بدون مفتاح) - يجب أن يبدأ بـ 9
 
   let isValid = false;
   let numberAfterPrefix = "";
 
   if (cleanPhone.startsWith('+963')) {
-    // +963 + 9 أرقام = 13 رقم
     if (digits.length === 13) {
-      numberAfterPrefix = digits.slice(-9); // آخر 9 أرقام
+      numberAfterPrefix = digits.slice(-9);
       isValid = numberAfterPrefix.startsWith('9');
     }
   } else if (cleanPhone.startsWith('00963')) {
-    // 00963 + 9 أرقام = 13 رقم
     if (digits.length === 13) {
-      numberAfterPrefix = digits.slice(-9); // آخر 9 أرقام
+      numberAfterPrefix = digits.slice(-9);
       isValid = numberAfterPrefix.startsWith('9');
     }
   } else if (cleanPhone.startsWith('0')) {
-    // 0 + 9 أرقام = 10 أرقام
     if (digits.length === 10) {
-      numberAfterPrefix = digits.slice(1); // بعد الـ 0
+      numberAfterPrefix = digits.slice(1);
       isValid = numberAfterPrefix.startsWith('9');
     }
   } else if (digits.length === 9) {
-    // 9 أرقام فقط (بدون مفتاح)
     numberAfterPrefix = digits;
     isValid = numberAfterPrefix.startsWith('9');
   }
@@ -98,7 +85,7 @@ function isValidSyrianPhoneFormat(phone: string): { valid: boolean; message?: st
   return { valid: true };
 }
 
-// ✅ دالة التحقق من توفر رقم الهاتف (مع التحقق من الصيغة فقط)
+// ✅ دالة التحقق من توفر رقم الهاتف
 async function isPhoneAvailableForRegister(phone: string): Promise<{
   available: boolean;
   message?: string;
@@ -110,7 +97,6 @@ async function isPhoneAvailableForRegister(phone: string): Promise<{
     };
   }
 
-  // ✅ ✅ ✅ التحقق من صيغة الرقم السوري (بدون إرسال رسائل) ✅ ✅ ✅
   const formatCheck = isValidSyrianPhoneFormat(phone);
   if (!formatCheck.valid) {
     return {
@@ -351,6 +337,7 @@ function AuthPage() {
   const [detectedGovernorate, setDetectedGovernorate] = useState<string>('');
   const [isExtractingGovernorate, setIsExtractingGovernorate] = useState(false);
 
+  // ✅ إيقاف حركة الفورم - إزالة animate-float-slow
   useEffect(() => {
     const id = setInterval(() => setSlide((s) => (s + 1) % SLIDER_IMAGES.length), 5000);
     return () => clearInterval(id);
@@ -427,26 +414,128 @@ function AuthPage() {
     nav({ to: "/reset-password" });
   }
 
+  // ✅ دالة معالجة أخطاء تسجيل الدخول مع ترجمة صحيحة
+  function getLoginErrorMessage(error: any): string {
+    const message = error?.message || String(error);
+    const lang = app.lang === "ar" ? "ar" : "en";
+    
+    // رسائل الخطأ الشائعة مع الترجمة
+    const errorMessages: Record<string, { ar: string; en: string }> = {
+      "Invalid login credentials": {
+        ar: "❌ رقم الهاتف أو كلمة المرور غير صحيحة",
+        en: "❌ Invalid phone number or password"
+      },
+      "Email not confirmed": {
+        ar: "⚠️ البريد الإلكتروني غير مؤكد. يرجى التحقق من بريدك الإلكتروني",
+        en: "⚠️ Email not confirmed. Please check your email"
+      },
+      "User not found": {
+        ar: "❌ لا يوجد حساب بهذا الرقم",
+        en: "❌ No account found with this number"
+      },
+      "Invalid password": {
+        ar: "❌ كلمة المرور غير صحيحة",
+        en: "❌ Invalid password"
+      },
+      "Too many requests": {
+        ar: "⚠️ عدد كبير من المحاولات. يرجى المحاولة لاحقاً",
+        en: "⚠️ Too many attempts. Please try again later"
+      }
+    };
+
+    // البحث عن رسالة مطابقة
+    for (const [key, value] of Object.entries(errorMessages)) {
+      if (message.toLowerCase().includes(key.toLowerCase())) {
+        return value[lang];
+      }
+    }
+
+    // رسالة افتراضية حسب اللغة
+    if (message.includes("phone") || message.includes("رقم")) {
+      return lang === "ar" ? "❌ رقم الهاتف غير صحيح" : "❌ Invalid phone number";
+    }
+
+    if (message.includes("password") || message.includes("كلمة المرور")) {
+      return lang === "ar" ? "❌ كلمة المرور غير صحيحة" : "❌ Invalid password";
+    }
+
+    // رسالة عامة
+    return lang === "ar" 
+      ? `❌ حدث خطأ: ${message}` 
+      : `❌ Error: ${message}`;
+  }
+
+  // ✅ دالة معالجة أخطاء التسجيل مع ترجمة صحيحة
+  function getRegisterErrorMessage(error: any): string {
+    const message = error?.message || String(error);
+    const lang = app.lang === "ar" ? "ar" : "en";
+    
+    const errorMessages: Record<string, { ar: string; en: string }> = {
+      "User already registered": {
+        ar: "⚠️ هذا الرقم مسجل مسبقاً. يرجى تسجيل الدخول",
+        en: "⚠️ This number is already registered. Please login"
+      },
+      "Password should be at least 6 characters": {
+        ar: "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+        en: "❌ Password must be at least 6 characters"
+      },
+      "Email already in use": {
+        ar: "⚠️ هذا الرقم مستخدم من قبل حساب آخر",
+        en: "⚠️ This number is already in use"
+      },
+      "Network error": {
+        ar: "⚠️ خطأ في الشبكة. يرجى التحقق من الاتصال بالإنترنت",
+        en: "⚠️ Network error. Please check your internet connection"
+      }
+    };
+
+    for (const [key, value] of Object.entries(errorMessages)) {
+      if (message.toLowerCase().includes(key.toLowerCase())) {
+        return value[lang];
+      }
+    }
+
+    if (message.includes("phone") || message.includes("رقم")) {
+      return lang === "ar" ? "❌ رقم الهاتف غير صحيح" : "❌ Invalid phone number";
+    }
+
+    if (message.includes("password") || message.includes("كلمة المرور")) {
+      return lang === "ar" ? "❌ كلمة المرور غير صحيحة" : "❌ Invalid password";
+    }
+
+    return lang === "ar" 
+      ? `❌ حدث خطأ: ${message}` 
+      : `❌ Error: ${message}`;
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     
     try {
       if (!phone.trim() || !password.trim()) {
-        toast.error(app.lang === "ar" ? "رقم الهاتف وكلمة المرور مطلوبة" : "Phone and password are required");
+        toast.error(app.lang === "ar" ? "❌ رقم الهاتف وكلمة المرور مطلوبة" : "❌ Phone and password are required");
+        setLoading(false);
+        return;
+      }
+
+      // ✅ التحقق من صيغة الرقم قبل تسجيل الدخول
+      const formatCheck = isValidSyrianPhoneFormat(phone);
+      if (!formatCheck.valid) {
+        toast.error(app.lang === "ar" ? "❌ صيغة الرقم غير صحيحة. استخدم +963xxxxxxxxx أو 0xxxxxxxxx" : "❌ Invalid phone format. Use +963xxxxxxxxx or 0xxxxxxxxx");
         setLoading(false);
         return;
       }
 
       const digits = phone.replace(/[^0-9]/g, "");
       
-   const possibleEmails = [
-  `sy${digits}@souqi.local`,           // ✅ المستخدمين العاديين
-  `${digits}@delivery.com`,            // ✅ مالكي الشركات (إن وجد)
-  `${digits}@distributor.sy`,          // ✅ الموزعين (إن وجد)  
-  `${digits}@company-admin.com`,       // ✅ ✅ ✅ مدراء الشركات
-  `${digits}@company.com`,             // ✅ ✅ ✅ مالكي الشركات (طريقة ثانية)
-];
+      const possibleEmails = [
+        `sy${digits}@souqi.local`,
+        `${digits}@delivery.com`,
+        `${digits}@distributor.sy`,
+        `${digits}@company-admin.com`,
+        `${digits}@company.com`,
+      ];
 
       let signInData = null;
       let signInError = null;
@@ -468,22 +557,26 @@ function AuthPage() {
       }
 
       if (!signInData && signInError) {
-        throw signInError;
+        // ✅ عرض رسالة خطأ مترجمة
+        const errorMessage = getLoginErrorMessage(signInError);
+        toast.error(errorMessage);
+        setLoading(false);
+        return;
       }
 
-    const redirect = await getAuthRedirect(signInData.user);
+      const redirect = await getAuthRedirect(signInData.user);
 
-toast.success(app.lang === "ar" ? "✅ تم تسجيل الدخول" : "✅ Signed in");
+      toast.success(app.lang === "ar" ? "✅ تم تسجيل الدخول بنجاح" : "✅ Signed in successfully");
 
-// ✅ ✅ ✅ استخدام navigate مع state بدلاً من window.location.replace
-nav({
-  to: redirect.url,
-  state: { showLoginSplash: true }
-});
+      nav({
+        to: redirect.url,
+        state: { showLoginSplash: true }
+      });
 
     } catch (err: any) {
       console.error("❌ Login error:", err);
-      toast.error(err.message || "Invalid login credentials");
+      const errorMessage = getLoginErrorMessage(err);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -493,8 +586,17 @@ nav({
     e.preventDefault();
     setLoading(true);
     try {
+      // ✅ التحقق من رقم الهاتف
       if (!phone.trim()) {
-        toast.error(app.lang === "ar" ? "رقم الهاتف مطلوب" : "Phone is required");
+        toast.error(app.lang === "ar" ? "❌ رقم الهاتف مطلوب" : "❌ Phone is required");
+        setLoading(false);
+        return;
+      }
+      
+      // ✅ التحقق من صيغة الرقم
+      const formatCheck = isValidSyrianPhoneFormat(phone);
+      if (!formatCheck.valid) {
+        toast.error(app.lang === "ar" ? "❌ صيغة الرقم غير صحيحة. استخدم +963xxxxxxxxx أو 0xxxxxxxxx" : "❌ Invalid phone format. Use +963xxxxxxxxx or 0xxxxxxxxx");
         setLoading(false);
         return;
       }
@@ -506,48 +608,53 @@ nav({
       }
       
       if (phoneAvailable === false) {
-        toast.error(app.lang === "ar" ? "هذا الرقم مستخدم من قبل" : "This phone is already in use");
+        toast.error(app.lang === "ar" ? "⚠️ هذا الرقم مستخدم من قبل" : "⚠️ This phone is already in use");
         setLoading(false);
         return;
       }
 
+      // ✅ التحقق من الاسم الكامل
       if (!fullName.trim()) {
-        toast.error(app.lang === "ar" ? "الاسم الكامل مطلوب" : "Full name is required");
+        toast.error(app.lang === "ar" ? "❌ الاسم الكامل مطلوب" : "❌ Full name is required");
         setLoading(false);
         return;
       }
+
+      // ✅ التحقق من كلمة المرور
       if (!password.trim()) {
-        toast.error(app.lang === "ar" ? "كلمة المرور مطلوبة" : "Password is required");
+        toast.error(app.lang === "ar" ? "❌ كلمة المرور مطلوبة" : "❌ Password is required");
         setLoading(false);
         return;
       }
       if (password.length < 6) {
-        toast.error(app.lang === "ar" ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
+        toast.error(app.lang === "ar" ? "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "❌ Password must be at least 6 characters");
         setLoading(false);
         return;
       }
       
+      // ✅ التحقق من الموقع
       if (!location) {
-        toast.error(app.lang === "ar" ? "الرجاء اختيار الموقع على الخريطة" : "Please select a location on the map");
+        toast.error(app.lang === "ar" ? "❌ الرجاء اختيار الموقع على الخريطة" : "❌ Please select a location on the map");
         setLoading(false);
         return;
       }
       
       if (!location.address || location.address.trim() === '') {
-        toast.error(app.lang === "ar" ? "الرجاء اختيار عنوان صحيح من الخريطة" : "Please select a valid address from the map");
+        toast.error(app.lang === "ar" ? "❌ الرجاء اختيار عنوان صحيح من الخريطة" : "❌ Please select a valid address from the map");
         setLoading(false);
         return;
       }
 
       const addressDetails = location.details?.trim() || "";
       if (!addressDetails) {
-        toast.error(app.lang === "ar" ? "الرجاء إدخال وصف تفصيلي للعنوان" : "Please enter a detailed description for the address");
+        toast.error(app.lang === "ar" ? "❌ الرجاء إدخال وصف تفصيلي للعنوان" : "❌ Please enter a detailed description for the address");
         setLoading(false);
         return;
       }
 
       const addressLabel = location.label?.trim() || (app.lang === "ar" ? "الرئيسي" : "Main");
 
+      // ✅ محاولة التسجيل
       const { data, error } = await supabase.auth.signUp({
         email: phoneToEmail(phone),
         password,
@@ -558,17 +665,36 @@ nav({
           },
         },
       });
-      if (error) throw error;
 
+      if (error) {
+        // ✅ عرض رسالة خطأ مترجمة
+        const errorMessage = getRegisterErrorMessage(error);
+        toast.error(errorMessage);
+        setLoading(false);
+        return;
+      }
+
+      // ✅ تسجيل الدخول تلقائياً بعد التسجيل
       const signInResult = await supabase.auth.signInWithPassword({
         email: phoneToEmail(phone),
         password,
       });
-      if (signInResult.error) throw signInResult.error;
+
+      if (signInResult.error) {
+        const errorMessage = getLoginErrorMessage(signInResult.error);
+        toast.error(errorMessage);
+        setLoading(false);
+        return;
+      }
 
       const uid = signInResult.data.user?.id ?? data?.user?.id;
-      if (!uid) throw new Error(app.lang === "ar" ? "فشل تسجيل الدخول بعد التسجيل" : "Failed to sign in after registration");
+      if (!uid) {
+        toast.error(app.lang === "ar" ? "❌ فشل تسجيل الدخول بعد التسجيل" : "❌ Failed to sign in after registration");
+        setLoading(false);
+        return;
+      }
 
+      // ✅ حفظ بيانات الملف الشخصي
       const profileData = {
         id: uid,
         full_name: fullName.trim(),
@@ -579,8 +705,14 @@ nav({
         .from("profiles")
         .upsert(profileData, { onConflict: "id" });
       
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Profile error:", profileError);
+        toast.error(app.lang === "ar" ? "⚠️ حدث خطأ في حفظ الملف الشخصي" : "⚠️ Error saving profile");
+        setLoading(false);
+        return;
+      }
 
+      // ✅ حفظ العنوان
       const saveResult = await saveAddressWithGovernorate(uid, location);
 
       if (!saveResult.success) {
@@ -609,15 +741,10 @@ nav({
         }, 500);
       }
       
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      
-      if (msg.includes("phone") || msg.includes("رقم")) {
-        toast.error(app.lang === "ar" ? "⚠️ رقم الهاتف مستخدم من قبل" : "⚠️ Phone number already in use");
-      } else {
-        toast.error(msg);
-      }
+    } catch (err: any) {
       console.error("Registration error:", err);
+      const errorMessage = getRegisterErrorMessage(err);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -638,16 +765,15 @@ nav({
   const isAdmin = userRoles.includes('admin');
   const isSeller = userRoles.includes('seller');
 
-  // ===== دوال الفوتر =====
   const year = new Date().getFullYear();
 
   // ============================================================
-  // ✅ ✅ ✅ UI المحسن مع تصميم احترافي ✅ ✅ ✅
+  // ✅ UI المحسن مع تصميم احترافي
   // ============================================================
   return (
     <div className="relative min-h-[calc(100vh-140px)] overflow-hidden">
       
-      {/* ===== ✅ ✅ ✅ خلفية الصور المحسنة ✅ ✅ ✅ ===== */}
+      {/* ===== خلفية الصور ===== */}
       <div className="absolute inset-0 -z-10">
         {SLIDER_IMAGES.map((src, i) => (
           <div
@@ -666,7 +792,6 @@ nav({
           </div>
         ))}
         
-        {/* ✅ تدرج محسّن وداكن أكثر */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#0d2e2a]/90 via-[#1a4f4a]/80 to-black/80 backdrop-blur-[3px]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       </div>
@@ -679,9 +804,6 @@ nav({
         @keyframes float-slow {
           0%, 100% { transform: translateY(0) scale(1); }
           50% { transform: translateY(-8px) scale(1.02); }
-        }
-        .animate-float-slow {
-          animation: float-slow 4s ease-in-out infinite;
         }
         @keyframes float-logo {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -774,7 +896,8 @@ nav({
       `}</style>
 
       <div className="min-h-[calc(100vh-140px)] grid place-items-center px-4 py-10">
-        <div className="w-full max-w-md animate-float-slow">
+        {/* ✅ ✅ ✅ إزالة animate-float-slow من هنا لإيقاف حركة الفورم ✅ ✅ ✅ */}
+        <div className="w-full max-w-md">
           
           {/* ===== الشعار ===== */}
           <div className="text-center text-white mb-6">
@@ -802,10 +925,10 @@ nav({
           {/* ===== البطاقة ===== */}
           <div className="rounded-3xl glass-card shadow-2xl p-6 md:p-8 text-white relative overflow-hidden auth-shimmer">
             
-            {/* ✅ شريط علوي متدرج */}
+            {/* شريط علوي متدرج */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400" />
             
-            {/* ✅ الرأس */}
+            {/* الرأس */}
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-black text-white">
                 {isLogin ? "تسجيل الدخول" : "إنشاء حساب جديد"}
@@ -924,7 +1047,7 @@ nav({
                     />
                   </div>
                   
-                  {/* ✅ عرض المحافظة المكتشفة */}
+                  {/* عرض المحافظة المكتشفة */}
                   {location && (
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30">
                       {isExtractingGovernorate ? (
@@ -1034,79 +1157,73 @@ nav({
                     )}
                   </>
                ) : (
-  <>
-    <div>
-      {(app.lang === "ar" ? "لديك حساب؟" : "Have an account?")}{" "}
-      <Link to="/auth/$mode" params={{ mode: "login" }} className="text-emerald-300 font-semibold hover:text-emerald-200 transition hover:underline">
-        {t("login")}
-      </Link>
-    </div>
-    
-    {/* ✅ ✅ ✅ زر التصفح كزائر - ملفت وأنيق ✅ ✅ ✅ */}
-    <div className="relative pt-2">
-      <div className="relative">
-        {/* خط فاصل متوهج */}
-        <div className="absolute -top-2 left-0 right-0 flex items-center gap-2">
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
-          <span className="text-[9px] text-emerald-400/40 font-bold tracking-widest whitespace-nowrap">
-            {app.lang === "ar" ? "أو" : "OR"}
-          </span>
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
-        </div>
-        
-        <Link
-          to="/"
-          className="group relative block w-full mt-3"
-        >
-          <Button
-            variant="outline"
-            className="w-full h-11 rounded-xl border-2 border-emerald-400/40 hover:border-emerald-400/70 bg-emerald-500/10 hover:bg-emerald-500/20 text-white font-bold text-sm transition-all duration-300 hover:scale-[1.02] active:scale-95 relative overflow-hidden shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40"
-          >
-            {/* ✨ لمعان متحرك */}
-            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-            
-            {/* ✅ أيقونات متحركة */}
-            <span className="relative flex items-center justify-center gap-2.5">
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse delay-200" />
-                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse delay-400" />
-              </span>
-              
-              <span className="text-emerald-200 font-extrabold tracking-wide">
-                {app.lang === "ar" ? "👀 تصفح كزائر" : "👀 Browse as Guest"}
-              </span>
-              
-              <span className="inline-block animate-pulse text-emerald-300">
-                →
-              </span>
-            </span>
-          </Button>
-        </Link>
-        
-        {/* ✅ نص توضيحي صغير تحت الزر */}
-        <p className="text-[10px] text-emerald-300/60 mt-1.5 flex items-center justify-center gap-1">
-          <Shield className="h-3 w-3 text-emerald-400/40" />
-          {app.lang === "ar" 
-            ? "✨ تصفح المتجر واكتشف المنتجات بدون تسجيل" 
-            : "✨ Browse the store and discover products without signing up"}
-        </p>
-      </div>
-    </div>
-    
-    {/* ❌❌❌ تم إزالة: تسجيل كشركة توصيل و تسجيل كموزع ❌❌❌ */}
-  </>
-)}
+                  <>
+                    <div>
+                      {(app.lang === "ar" ? "لديك حساب؟" : "Have an account?")}{" "}
+                      <Link to="/auth/$mode" params={{ mode: "login" }} className="text-emerald-300 font-semibold hover:text-emerald-200 transition hover:underline">
+                        {t("login")}
+                      </Link>
+                    </div>
+                    
+                    {/* ✅ زر التصفح كزائر */}
+                    <div className="relative pt-2">
+                      <div className="relative">
+                        <div className="absolute -top-2 left-0 right-0 flex items-center gap-2">
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
+                          <span className="text-[9px] text-emerald-400/40 font-bold tracking-widest whitespace-nowrap">
+                            {app.lang === "ar" ? "أو" : "OR"}
+                          </span>
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
+                        </div>
+                        
+                        <Link
+                          to="/"
+                          className="group relative block w-full mt-3"
+                        >
+                          <Button
+                            variant="outline"
+                            className="w-full h-11 rounded-xl border-2 border-emerald-400/40 hover:border-emerald-400/70 bg-emerald-500/10 hover:bg-emerald-500/20 text-white font-bold text-sm transition-all duration-300 hover:scale-[1.02] active:scale-95 relative overflow-hidden shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40"
+                          >
+                            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                            
+                            <span className="relative flex items-center justify-center gap-2.5">
+                              <span className="flex items-center gap-1">
+                                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse delay-200" />
+                                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse delay-400" />
+                              </span>
+                              
+                              <span className="text-emerald-200 font-extrabold tracking-wide">
+                                {app.lang === "ar" ? "👀 تصفح كزائر" : "👀 Browse as Guest"}
+                              </span>
+                              
+                              <span className="inline-block animate-pulse text-emerald-300">
+                                →
+                              </span>
+                            </span>
+                          </Button>
+                        </Link>
+                        
+                        <p className="text-[10px] text-emerald-300/60 mt-1.5 flex items-center justify-center gap-1">
+                          <Shield className="h-3 w-3 text-emerald-400/40" />
+                          {app.lang === "ar" 
+                            ? "✨ تصفح المتجر واكتشف المنتجات بدون تسجيل" 
+                            : "✨ Browse the store and discover products without signing up"}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </form>
           </div>
 
           {/* ============================================================ */}
-          {/* ✅ ✅ ✅ الفوتر الداخلي (رقم الهاتف + مواقع التواصل + السياسات) */}
+          {/* ✅ الفوتر الداخلي */}
           {/* ============================================================ */}
           <div className="mt-6 pt-4 border-t border-white/10">
             
-            {/* ✅ رقم الهاتف */}
+            {/* رقم الهاتف */}
             <div className="text-center mb-3">
               <a 
                 href="tel:+963110000000" 
@@ -1118,7 +1235,7 @@ nav({
               </a>
             </div>
 
-            {/* ✅ مواقع التواصل الاجتماعي */}
+            {/* مواقع التواصل الاجتماعي */}
             <div className="flex items-center justify-center gap-2 mb-3">
               {[
                 { icon: Twitter, label: "Twitter", color: "hover:text-[#1a9cd8]" },
@@ -1146,7 +1263,7 @@ nav({
               })}
             </div>
 
-            {/* ✅ روابط السياسات */}
+            {/* روابط السياسات */}
             <div className="flex flex-wrap items-center justify-center gap-3 text-[11px]">
               <Link to="/privacy" className="text-white/50 hover:text-emerald-300 transition footer-link">
                 {app.lang === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}
@@ -1165,7 +1282,7 @@ nav({
               </span>
             </div>
 
-            {/* ✅ شارة الأمان */}
+            {/* شارة الأمان */}
             <div className="mt-3 flex items-center justify-center gap-2">
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                 <span className="relative flex h-2 w-2">
@@ -1179,7 +1296,7 @@ nav({
             </div>
           </div>
 
-          {/* ✅ نقاط التنقل في السلايدر */}
+          {/* نقاط التنقل في السلايدر */}
           <div className="mt-4 flex justify-center gap-2">
             {SLIDER_IMAGES.map((_, i) => (
               <button 
@@ -1197,7 +1314,7 @@ nav({
         </div>
       </div>
 
-      {/* ✅ زر الدعم */}
+      {/* زر الدعم */}
       <SupportButton />
     </div>
   );
