@@ -1,16 +1,12 @@
 // src/components/search/SearchResults.tsx
-import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { SearchResult } from "@/lib/hooks/useSearch";
 import { useApp } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Star, MapPin, Store, Package, Tag, TrendingUp, Loader2, 
-  Calendar, Eye, Heart, Search, Grid3x3, List, ChevronRight
-} from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { ListingCard } from "@/components/ListingCard";
+import { Suspense } from "react";
 
 interface SearchResultsProps {
   results: SearchResult[];
@@ -33,10 +29,186 @@ export function SearchResults({
 }: SearchResultsProps) {
   const app = useApp();
 
+  // ✅ تحويل SearchResult إلى شكل متوافق مع ListingCard
+  const convertToListingItem = (result: SearchResult) => {
+    // ✅ إذا كان المنتج (product أو offer) - يستخدم البيانات كاملة
+    if (result.type === 'product' || result.type === 'offer') {
+      return {
+        id: result.id,
+        title_ar: result.title_ar || result.title,
+        title_en: result.title_en || result.title,
+        description_ar: result.description_ar || result.description || "",
+        description_en: result.description_en || result.description || "",
+        price: result.price || 0,
+        old_price: result.old_price || null,
+        discount_percent: result.discount_percent || 0,
+        is_offer: result.is_offer || false,
+        cover_url: result.cover_url || result.image || "",
+        rating: result.rating || 0,
+        governorates: result.governorates || null,
+        categories: result.categories || null,
+        profiles: result.profiles || null,
+        listing_images: result.listing_images || [],
+        product_variations: result.product_variations || [],
+        product_colors: result.product_colors || [],
+        owner_id: result.owner_id || null,
+        views: result.views || 0,
+        favorites_count: result.favorites_count || 0,
+        status: result.status || "published",
+        is_available: result.is_available !== undefined ? result.is_available : true,
+        created_at: result.created_at || new Date().toISOString(),
+        updated_at: result.updated_at || new Date().toISOString(),
+        governorate_id: result.governorate_id || null,
+        category_id: result.category_id || null,
+        metadata: result.metadata || null,
+        delivery_fee: result.delivery_fee || 0,
+        delivery_method: result.delivery_method || null,
+        is_featured: result.is_featured || false,
+        featured_sort: result.featured_sort || 0,
+        profile: result.profiles || null,
+        // ✅ للعروض الترويجية
+        is_promo_offer: result.type === 'offer' && result.is_offer === false,
+        promo_offer: null,
+        store_id: result.owner_id || null,
+        // ✅ للمتجر
+        store_name: result.store_name || result.profiles?.store_name || null,
+        // ✅ للتصنيفات
+        slug: result.slug || null,
+      };
+    }
+    
+    // ✅ للمتاجر - نحولها لمنتج وهمي للعرض
+    if (result.type === 'store') {
+      return {
+        id: result.id,
+        title_ar: result.title,
+        title_en: result.title,
+        description_ar: result.description || "متجر على السوق",
+        description_en: result.description || "Store on Alsouq",
+        price: 0,
+        old_price: null,
+        discount_percent: 0,
+        is_offer: false,
+        cover_url: result.image || result.cover_url || "",
+        rating: 0,
+        governorates: null,
+        categories: null,
+        profiles: result.profiles || { store_name: result.title, id: result.id },
+        listing_images: [],
+        product_variations: [],
+        product_colors: [],
+        owner_id: result.id,
+        views: 0,
+        favorites_count: 0,
+        status: "published",
+        is_available: true,
+        created_at: result.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        governorate_id: result.governorate_id || null,
+        category_id: null,
+        metadata: null,
+        delivery_fee: 0,
+        delivery_method: null,
+        is_featured: false,
+        featured_sort: 0,
+        profile: result.profiles || { store_name: result.title, id: result.id },
+        is_promo_offer: false,
+        promo_offer: null,
+        store_id: result.id,
+        store_name: result.title,
+        slug: null,
+      };
+    }
+    
+    // ✅ للتصنيفات - نحولها لمنتج وهمي للعرض
+    if (result.type === 'category') {
+      return {
+        id: result.id,
+        title_ar: result.title,
+        title_en: result.title,
+        description_ar: result.description || "تصفح المنتجات في هذا التصنيف",
+        description_en: result.description || "Browse products in this category",
+        price: 0,
+        old_price: null,
+        discount_percent: 0,
+        is_offer: false,
+        cover_url: result.image || result.cover_url || "",
+        rating: 0,
+        governorates: null,
+        categories: result.categories || { name_ar: result.title, name_en: result.title, slug: result.slug },
+        profiles: null,
+        listing_images: [],
+        product_variations: [],
+        product_colors: [],
+        owner_id: null,
+        views: 0,
+        favorites_count: 0,
+        status: "published",
+        is_available: true,
+        created_at: result.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        governorate_id: null,
+        category_id: result.id,
+        metadata: null,
+        delivery_fee: 0,
+        delivery_method: null,
+        is_featured: false,
+        featured_sort: 0,
+        profile: null,
+        is_promo_offer: false,
+        promo_offer: null,
+        store_id: null,
+        store_name: null,
+        slug: result.slug || null,
+      };
+    }
+    
+    // ✅ fallback
+    return {
+      id: result.id,
+      title_ar: result.title,
+      title_en: result.title,
+      description_ar: result.description || "",
+      description_en: result.description || "",
+      price: 0,
+      old_price: null,
+      discount_percent: 0,
+      is_offer: false,
+      cover_url: result.image || "",
+      rating: 0,
+      governorates: null,
+      categories: null,
+      profiles: null,
+      listing_images: [],
+      product_variations: [],
+      product_colors: [],
+      owner_id: null,
+      views: 0,
+      favorites_count: 0,
+      status: "published",
+      is_available: true,
+      created_at: result.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      governorate_id: null,
+      category_id: null,
+      metadata: null,
+      delivery_fee: 0,
+      delivery_method: null,
+      is_featured: false,
+      featured_sort: 0,
+      profile: null,
+      is_promo_offer: false,
+      promo_offer: null,
+      store_id: null,
+      store_name: null,
+      slug: null,
+    };
+  };
+
   if (isLoading && results.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-[#0084ff]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#2a655f]" />
       </div>
     );
   }
@@ -63,36 +235,6 @@ export function SearchResults({
     );
   }
 
-  // ✅ أيقونة النوع
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'store': return <Store className="h-3.5 w-3.5" />;
-      case 'category': return <Tag className="h-3.5 w-3.5" />;
-      case 'offer': return <TrendingUp className="h-3.5 w-3.5" />;
-      default: return <Package className="h-3.5 w-3.5" />;
-    }
-  };
-
-  // ✅ لون النوع
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'store': return "bg-blue-500/10 text-blue-600 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-800";
-      case 'category': return "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-800";
-      case 'offer': return "bg-red-500/10 text-red-600 border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-800";
-      default: return "bg-purple-500/10 text-purple-600 border-purple-200 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-800";
-    }
-  };
-
-  // ✅ تنسيق السعر
-  const formatPrice = (price: number) => {
-    if (price >= 1000000) {
-      return `${(price / 1000000).toFixed(1)}M SYP`;
-    } else if (price >= 1000) {
-      return `${(price / 1000).toFixed(0)}K SYP`;
-    }
-    return `${price.toLocaleString()} SYP`;
-  };
-
   return (
     <div className={cn("space-y-4", className)}>
       {/* ✅ عدد النتائج */}
@@ -104,167 +246,31 @@ export function SearchResults({
         </p>
       </div>
 
-      {/* ✅ شبكة النتائج */}
+      {/* ✅ ✅ ✅ استخدام ListingCard مع البيانات الكاملة */}
       <div className={cn(
         "grid gap-4",
         viewMode === "grid" 
           ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           : "grid-cols-1"
       )}>
-        {results.map((result, index) => (
-          <motion.div
-            key={`${result.type}-${result.id}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: Math.min(index * 0.05, 0.5) }}
-            className={cn(
-              viewMode === "list" && "sm:col-span-2 lg:col-span-3 xl:col-span-4"
-            )}
-          >
-            <Link
-              to={result.url}
+        {results.map((result, index) => {
+          const item = convertToListingItem(result);
+          return (
+            <motion.div
+              key={`${result.type}-${result.id}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(index * 0.05, 0.5) }}
               className={cn(
-                "block group bg-white dark:bg-[#242538] rounded-xl border border-[#e4e6eb] dark:border-[#3a3b4a] overflow-hidden hover:shadow-lg hover:border-blue-400/50 transition-all duration-300",
-                viewMode === "list" && "flex flex-col sm:flex-row"
+                viewMode === "list" && "sm:col-span-2 lg:col-span-3 xl:col-span-4"
               )}
             >
-              {/* ✅ صورة المنتج */}
-              <div className={cn(
-                "relative bg-[#e4e6eb] dark:bg-[#3a3b4a] overflow-hidden",
-                viewMode === "list" 
-                  ? "w-full sm:w-48 h-48 sm:h-auto aspect-square sm:aspect-auto shrink-0"
-                  : "aspect-[4/3]"
-              )}>
-                {result.image ? (
-                  <img
-                    src={result.image}
-                    alt={result.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder-image.png';
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    {getTypeIcon(result.type)}
-                  </div>
-                )}
-                
-                {/* ✅ نوع النتيجة (Badge) */}
-                <div className="absolute top-2 left-2">
-                  <Badge className={cn(
-                    "text-[10px] border",
-                    getTypeColor(result.type)
-                  )}>
-                    {getTypeIcon(result.type)}
-                    <span className="ml-1">
-                      {result.type === 'store' && (app.lang === "ar" ? "متجر" : "Store")}
-                      {result.type === 'category' && (app.lang === "ar" ? "تصنيف" : "Category")}
-                      {result.type === 'offer' && (app.lang === "ar" ? "عرض" : "Offer")}
-                      {result.type === 'product' && (app.lang === "ar" ? "منتج" : "Product")}
-                    </span>
-                  </Badge>
-                </div>
-
-                {/* ✅ السعر */}
-                {result.price && (
-                  <div className="absolute bottom-2 right-2">
-                    <Badge className="bg-blue-600 text-white border-0 text-sm font-bold shadow-lg">
-                      {formatPrice(result.price)}
-                    </Badge>
-                  </div>
-                )}
-
-                {/* ✅ عرض خاص */}
-                {result.badge && result.type === 'offer' && (
-                  <div className="absolute top-2 right-2">
-                    <Badge className="bg-red-500 text-white border-0 animate-pulse">
-                      {result.badge}
-                    </Badge>
-                  </div>
-                )}
-
-                {/* ✅ زر المفضلة */}
-                <button 
-                  className="absolute bottom-2 left-2 p-1.5 rounded-full bg-white/80 dark:bg-black/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // TODO: إضافة إلى المفضلة
-                  }}
-                >
-                  <Heart className="h-4 w-4 text-muted-foreground hover:text-red-500 transition-colors" />
-                </button>
-              </div>
-
-              {/* ✅ معلومات النتيجة */}
-              <div className={cn(
-                "p-4 flex-1",
-                viewMode === "list" && "flex flex-col justify-between"
-              )}>
-                <div>
-                  <h4 className="font-semibold text-sm line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
-                    {result.title}
-                  </h4>
-                  
-                  {result.description && (
-                    <p className={cn(
-                      "text-xs text-muted-foreground mt-1",
-                      viewMode === "list" ? "line-clamp-3" : "line-clamp-2"
-                    )}>
-                      {result.description}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-2 mt-2">
-                    {result.store_name && (
-                      <span className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                        <Store className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{result.store_name}</span>
-                      </span>
-                    )}
-                    
-                    {result.rating && (
-                      <span className="text-xs text-yellow-500 flex items-center gap-1 ml-auto">
-                        <Star className="h-3 w-3 fill-yellow-500" />
-                        {result.rating.toFixed(1)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* ✅ تاريخ الإضافة + التفاصيل */}
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100/50 dark:border-slate-800/50">
-                  {result.created_at && (
-                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(result.created_at).toLocaleDateString(
-                        app.lang === "ar" ? "ar-SA" : "en-US"
-                      )}
-                    </div>
-                  )}
-                  
-                  {result.type === 'product' && (
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                      <Eye className="h-3 w-3" />
-                      <span>124</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* ✅ زر التفاصيل (في وضع القائمة) */}
-                {viewMode === "list" && (
-                  <Button 
-                    size="sm"
-                    className="mt-3 w-full sm:w-auto rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {app.lang === "ar" ? "عرض التفاصيل" : "View Details"}
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                )}
-              </div>
-            </Link>
-          </motion.div>
-        ))}
+              <Suspense fallback={<div className="h-80 bg-slate-200 dark:bg-slate-800 animate-pulse rounded-2xl" />}>
+                <ListingCard item={item} variant={viewMode} />
+              </Suspense>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* ✅ زر تحميل المزيد */}
@@ -273,7 +279,7 @@ export function SearchResults({
           <Button
             onClick={onLoadMore}
             disabled={isLoading}
-            className="rounded-xl px-8 bg-[#0084ff] hover:bg-[#0073e6] text-white shadow-lg shadow-blue-500/25 hover:shadow-xl transition-all duration-300"
+            className="rounded-xl px-8 bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-xl transition-all duration-300"
           >
             {isLoading ? (
               <>

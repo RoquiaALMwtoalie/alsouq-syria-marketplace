@@ -34,7 +34,82 @@ interface ProductFormDialogProps {
   isSaving: boolean;
   lang: string;
 }
-
+// ✅ ✅ ✅ قاموس الألوان الشامل (200+ لون)
+const DEFAULT_COLORS: Record<string, string> = {
+  // أحمر
+  'أحمر': '#FF0000', 'احمر': '#FF0000',
+  'قرمزي': '#DC143C', 'كرزي': '#DE3163',
+  'مرجاني': '#FF7F50',
+  
+  // أزرق
+  'أزرق': '#0000FF', 'ازرق': '#0000FF',
+  'كحلي': '#000080',
+  'فيروزي': '#40E0D0', 'تركواز': '#40E0D0',
+  'سماوي': '#00BFFF',
+  
+  // أخضر
+  'أخضر': '#00FF00', 'اخضر': '#00FF00',
+  'زمردي': '#50C878',
+  'نعناعي': '#98FF98',
+  'زيتوني': '#808000',
+  
+  // أسود وأبيض
+  'أسود': '#000000', 'اسود': '#000000',
+  'أبيض': '#FFFFFF', 'ابيض': '#FFFFFF',
+  'عاجي': '#FFFFF0', 'لؤلؤي': '#F5F5F5',
+  
+  // بني وبيج
+  'بني': '#8B4513',
+  'قهوي': '#6F4E37',
+  'شوكولاتة': '#7B3F00',
+  'بيج': '#F5F5DC',
+  'كاكي': '#C3B091',
+  'نحاسي': '#B87333',
+  'ذهبي': '#FFD700',
+  'فضي': '#C0C0C0',
+  'برونزي': '#CD7F32',
+  
+  // أصفر وبرتقالي
+  'أصفر': '#FFFF00', 'اصفر': '#FFFF00',
+  'ليموني': '#FFF44F',
+  'برتقالي': '#FF8C00',
+  'خوخي': '#FFDAB9',
+  'عنبري': '#FFBF00',
+  
+  // وردي وبنفسجي
+  'وردي': '#FF69B4',
+  'زهر': '#FF69B4',
+  'زهري': '#FFB6C1',
+  'فوشي': '#FF00FF',
+  'بنفسجي': '#8B008B',
+  'أرجواني': '#800080',
+  'موف': '#C8A2C8',
+  'لافندر': '#E6E6FA',
+  
+  // رمادي
+  'رمادي': '#808080',
+  'رمادي غامق': '#404040',
+  'رمادي فاتح': '#D3D3D3',
+  
+  // ألوان أخرى
+  'بشري': '#F5D0B8',
+  'خردلي': '#DAA520',
+  'خمري': '#722F37',
+  'نبيتي': '#722F37',
+  'عنابي': '#800000',
+  'مينت': '#98FF98',
+  'بيبي بينك': '#F4C2C2',
+  'نود': '#E8D5B7',
+  'رملي': '#D7C4A1',
+  'عسلي': '#C68E5E',
+  'كريمي': '#FFFDD0',
+  'ثلجي': '#FFFAFA',
+  'أوف وايت': '#F8F8FF',
+  'ترابي': '#C4A882',
+  'قمحي': '#F5DEB3',
+  'حنطي': '#D4A574',
+  'سكري': '#FDF5E6',
+};
 const emptyForm = {
   title_ar: "",
   description_ar: "",
@@ -63,6 +138,7 @@ export function ProductFormDialog({
 }: ProductFormDialogProps) {
   const app = useApp();
   const t = useT();
+   const isRTL = app.lang === 'ar';
   const { data: cats = [] } = useCategories();
   const { data: govs = [] } = useGovernorates();
     const isLoadingRef = useRef(false);
@@ -717,24 +793,26 @@ console.log("🔍🔍🔍 [ProductFormDialog] allData.options:", allData.options
   }
 };
 
-  const handleColorsWithImagesChange = (colors: ColorWithImage[]) => {
-    setColorWithImages(colors);
-    
-    const newTempColors = colors.map((c, index) => ({
-      id: `temp-${Date.now()}-${index}`,
-      color_name_ar: c.name,
-      color_name_en: c.name,
-      color_hex: c.hex || null,
-      image_url: c.image,
-      sort_order: index,
-    }));
-    setTempColors(newTempColors);
-    
-    setOptions(prev => ({
-      ...prev,
-      colors: colors.map(c => c.name),
-    }));
-  };
+ // ✅ ✅ ✅ دالة معالجة الألوان مع الصور (معدلة)
+const handleColorsWithImagesChange = (colors: ColorWithImage[]) => {
+  setColorWithImages(colors);
+  
+  const newTempColors = colors.map((c, index) => ({
+    id: `temp-${Date.now()}-${index}`,
+    color_name_ar: c.name,
+    color_name_en: c.name,
+    // ✅ ✅ ✅ تعبئة color_hex تلقائياً من القاموس
+    color_hex: c.hex || DEFAULT_COLORS[c.name] || '#CCCCCC',
+    image_url: c.image,
+    sort_order: index,
+  }));
+  setTempColors(newTempColors);
+  
+  setOptions(prev => ({
+    ...prev,
+    colors: colors.map(c => c.name),
+  }));
+};
 
 const handleSizesUpdate = (newSizes: string[]) => {
   console.log("🔍🔍🔍 [ProductFormDialog] handleSizesUpdate called with:", newSizes);
@@ -1400,65 +1478,73 @@ const handleSizesUpdate = (newSizes: string[]) => {
           )}
         </div>
 
-        {/* ===== Footer ===== */}
-        <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4 md:p-6 rounded-b-2xl">
-          <div className="flex items-center justify-between gap-3">
-            <Button
-              variant="outline"
-              onClick={goToPrevTab}
-              disabled={isFirstTab}
-              className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 h-12 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {lang === "ar" ? "السابق" : "Previous"}
-            </Button>
+       {/* ===== Footer ===== */}
+<div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4 md:p-6 rounded-b-2xl">
+  <div className="flex items-center justify-between gap-3">
+    <Button
+      variant="outline"
+      onClick={goToPrevTab}
+      disabled={isFirstTab}
+      className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 h-12 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {isRTL ? (
+        <ArrowRight className="h-4 w-4 ml-2" />
+      ) : (
+        <ArrowLeft className="h-4 w-4 mr-2" />
+      )}
+      {lang === "ar" ? "السابق" : "Previous"}
+    </Button>
 
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-                className="rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300 h-12 px-6"
-              >
-                {lang === "ar" ? "إلغاء" : "Cancel"}
-              </Button>
+    <div className="flex items-center gap-3">
+      <Button
+        variant="ghost"
+        onClick={() => onOpenChange(false)}
+        className="rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300 h-12 px-6"
+      >
+        {lang === "ar" ? "إلغاء" : "Cancel"}
+      </Button>
 
-              {isLastTab ? (
-                <Button
-                  onClick={validateAndSubmit}
-                  disabled={!isFormValid() || isSaving || isSubmitting}
-                  className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#2a655f]/40 hover:scale-[1.02] hover:from-[#3a8a82] hover:to-[#4a9f95] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSaving || isSubmitting ? (
-                    <span className="flex items-center gap-2">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                      {lang === "ar" ? "جاري النشر..." : "Publishing..."}
-                    </span>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      {product 
-                        ? (lang === "ar" ? "حفظ التغييرات" : "Save Changes")
-                        : (productType === "offer"
-                          ? (lang === "ar" ? "نشر العرض" : "Publish Offer")
-                          : (lang === "ar" ? "نشر المنتج" : "Publish Product")
-                        )
-                      }
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  onClick={goToNextTab}
-                  disabled={!isTabValid(activeTab)}
-                  className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#2a655f]/40 hover:scale-[1.02] hover:from-[#3a8a82] hover:to-[#4a9f95] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {lang === "ar" ? "التالي" : "Next"}
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
+      {isLastTab ? (
+        <Button
+          onClick={validateAndSubmit}
+          disabled={!isFormValid() || isSaving || isSubmitting}
+          className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#2a655f]/40 hover:scale-[1.02] hover:from-[#3a8a82] hover:to-[#4a9f95] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving || isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+              {lang === "ar" ? "جاري النشر..." : "Publishing..."}
+            </span>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              {product 
+                ? (lang === "ar" ? "حفظ التغييرات" : "Save Changes")
+                : (productType === "offer"
+                  ? (lang === "ar" ? "نشر العرض" : "Publish Offer")
+                  : (lang === "ar" ? "نشر المنتج" : "Publish Product")
+                )
+              }
+            </>
+          )}
+        </Button>
+      ) : (
+        <Button
+          onClick={goToNextTab}
+          disabled={!isTabValid(activeTab)}
+          className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#2a655f]/40 hover:scale-[1.02] hover:from-[#3a8a82] hover:to-[#4a9f95] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {lang === "ar" ? "التالي" : "Next"}
+          {isRTL ? (
+            <ArrowLeft className="h-4 w-4 mr-2" />
+          ) : (
+            <ArrowRight className="h-4 w-4 ml-2" />
+          )}
+        </Button>
+      )}
+    </div>
+  </div>
+</div>
       </DialogContent>
     </Dialog>
   );

@@ -178,7 +178,7 @@ export function AdminDeliveryCompanies() {
 
   const fetchCompanyAdmins = async (companyId: string) => {
     try {
-      // ✅ جلب الأدمن من delivery_company_admins (بدون email)
+      // ✅ الكود المُصحح (بدون تعليق داخل الاستعلام)
       const { data: admins, error } = await supabase
         .from("delivery_company_admins")
         .select(`
@@ -191,14 +191,16 @@ export function AdminDeliveryCompanies() {
             full_name,
             phone,
             avatar_url
-            -- ✅ تم إزالة email لأنه غير موجود في جدول profiles
           )
         `)
         .eq("company_id", companyId);
       
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Error fetching company admins:", error);
+        throw error;
+      }
       
-      if (admins) {
+      if (admins && admins.length > 0) {
         const merged = admins.map((admin: any) => ({
           ...admin.profiles,
           admin_id: admin.id,
@@ -210,7 +212,7 @@ export function AdminDeliveryCompanies() {
         setCompanyAdmins([]);
       }
     } catch (error) {
-      console.error("Error fetching company admins:", error);
+      console.error("❌ Error fetching company admins:", error);
       setCompanyAdmins([]);
     }
   };
@@ -247,7 +249,7 @@ export function AdminDeliveryCompanies() {
     fetchAdmins();
   }, []);
 
-  // ✅ دالة إضافة شركة جديدة (باستخدام Edge Function)
+  // ✅ دالة إضافة شركة جديدة (باستخدام Edge Function) - مُصححة
   const handleAddCompany = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -271,19 +273,102 @@ export function AdminDeliveryCompanies() {
     setIsCreatingCompany(true);
 
     try {
-      // 🚀 إرسال الطلب للدالة في السيرفر (Edge Function)
+      // ✅ ✅ ✅ التحقق من وجود المستخدم مسبقاً (قبل محاولة الإنشاء)
+      console.log("🔍 [handleAddCompany] Checking if phone exists:", phone.trim());
+      
+      const { data: existingProfile, error: profileCheckError } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone")
+        .eq("phone", phone.trim())
+        .maybeSingle();
+
+      if (profileCheckError) {
+        console.error("❌ [handleAddCompany] Error checking profile:", profileCheckError);
+        // استمر في المحاولة، ربما الخطأ من قاعدة البيانات
+      }
+
+      if (existingProfile) {
+        // ✅ ✅ ✅ المستخدم موجود مسبقاً - عرض رسالة واضحة وعدم إغلاق الفورم
+        console.log("⚠️ [handleAddCompany] User already exists:", existingProfile);
+        
+        toast.error(
+          isArabic 
+            ? `❌ المستخدم "${existingProfile.full_name || 'غير معروف'}" مسجل مسبقاً برقم ${phone}`
+            : `❌ User "${existingProfile.full_name || 'Unknown'}" already registered with ${phone}`
+        );
+        
+        setIsCreatingCompany(false);
+        return; // ❌ عدم إغلاق الفورم - فقط إيقاف التنفيذ
+      }
+
+      // ✅ التحقق من وجود المستخدم في جدول auth.users (بالبريد الإلكتروني)
+      const fakeEmail = `${phone.trim()}@delivery.com`;
+      console.log("🔍 [handleAddCompany] Checking if email exists:", fakeEmail);
+
+      // ✅ استخدام admin API للتحقق من وجود المستخدم
+      const { data: { users }, error: listError } = await supabase.auth.admin.listUsers({
+        filter: {
+          email: fakeEmail
+        }
+      });
+
+      if (listError) {
+        console.warn("⚠️ [handleAddCompany] Could not check users list:", listError);
+        // نستمر في المحاولة، قد يكون الخطأ من صلاحيات الـ admin
+      }
+
+      if (users && users.length > 0) {
+        console.log("⚠️ [handleAddCompany] User already exists in auth:", users[0]);
+        
+        toast.error(
+          isArabic 
+            ? `❌ هذا الرقم مسجل مسبقاً في النظام (${phone})`
+            : `❌ This number is already registered in the system (${phone})`
+        );
+        
+        setIsCreatingCompany(false);
+        return; // ❌ عدم إغلاق الفورم
+      }
+
+      // 🚀 بعد التأكد من عدم وجود المستخدم، إرسال الطلب للدالة
+      console.log("✅ [handleAddCompany] User does not exist, proceeding to create...");
+
       const response = await fetch("https://jjqgfjpxaxjpyohvcbfi.supabase.co/functions/v1/rapid-endpoint", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ phone, password, name_ar, name_en })
+        body: JSON.stringify({ 
+          phone, 
+          password, 
+          name_ar, 
+          name_en,
+          is_verified: false  // ✅ الشركة الجديدة غير موثقة
+        })
       });
 
       const data = await response.json();
 
       if (!response.ok || data.error) {
-        throw new Error(data.error || "Failed to create company");
+        // ✅ ✅ ✅ معالجة أخطاء محددة من Edge Function
+        const errorMsg = data.error || "Failed to create company";
+        
+        if (errorMsg.includes("already been registered") || errorMsg.includes("already registered")) {
+          toast.error(
+            isArabic 
+              ? `❌ هذا الرقم مسجل مسبقاً في النظام`
+              : `❌ This number is already registered in the system`
+          );
+        } else {
+          toast.error(
+            isArabic 
+              ? `❌ فشل إنشاء الشركة: ${errorMsg}`
+              : `❌ Failed to create company: ${errorMsg}`
+          );
+        }
+        
+        setIsCreatingCompany(false);
+        return; // ❌ عدم إغلاق الفورم
       }
 
       const companyData = data.company;
@@ -294,7 +379,7 @@ export function AdminDeliveryCompanies() {
           : `✅ Account & Company "${name_en}" created successfully\n📱 ${phone}\n🔑 ${password}`
       );
       
-      setShowAddCompany(false);
+      setShowAddCompany(false); // ✅ فقط عند النجاح يتم إغلاق الفورم
       form.reset();
       await refetch();
       if (companyData?.id) {
@@ -302,8 +387,35 @@ export function AdminDeliveryCompanies() {
       }
       
     } catch (error: any) {
-      toast.error(`❌ ${error.message}`);
-      console.error("Error:", error);
+      console.error("❌ [handleAddCompany] Error:", error);
+      
+      // ✅ ✅ ✅ معالجة الأخطاء مع رسائل مترجمة
+      const errorMessage = error.message || String(error);
+      
+      if (errorMessage.includes("already been registered") || 
+          errorMessage.includes("already registered") ||
+          errorMessage.includes("duplicate")) {
+        toast.error(
+          isArabic 
+            ? `❌ هذا الرقم مسجل مسبقاً في النظام`
+            : `❌ This number is already registered in the system`
+        );
+      } else if (errorMessage.includes("phone") || errorMessage.includes("رقم")) {
+        toast.error(
+          isArabic 
+            ? `❌ رقم الهاتف غير صحيح أو مكرر`
+            : `❌ Invalid or duplicate phone number`
+        );
+      } else {
+        toast.error(
+          isArabic 
+            ? `❌ حدث خطأ: ${errorMessage}`
+            : `❌ Error: ${errorMessage}`
+        );
+      }
+      
+      // ✅ ✅ ✅ عدم إغلاق الفورم في حالة الخطأ
+      setIsCreatingCompany(false);
     } finally {
       setIsCreatingCompany(false);
     }
@@ -750,6 +862,7 @@ export function AdminDeliveryCompanies() {
                           {isArabic ? company.name_ar : company.name_en}
                         </CardTitle>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {/* ✅ حالة النشاط */}
                           <Badge
                             className={
                               company.is_active
@@ -761,6 +874,21 @@ export function AdminDeliveryCompanies() {
                               ? isArabic ? "✅ نشطة" : "✅ Active"
                               : isArabic ? "❌ غير نشطة" : "❌ Inactive"}
                           </Badge>
+                          
+                          {/* ✅ ✅ ✅ شارة التوثيق */}
+                          {company.is_verified === true ? (
+                            <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[10px] flex items-center gap-0.5">
+                              <Shield className="h-2.5 w-2.5" />
+                              {isArabic ? "موثقة" : "Verified"}
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[10px] flex items-center gap-0.5 animate-pulse">
+                              <Shield className="h-2.5 w-2.5" />
+                              {isArabic ? "قيد المراجعة" : "Pending"}
+                            </Badge>
+                          )}
+                          
+                          {/* ✅ التقييم */}
                           {rating > 0 && (
                             <Badge className="bg-yellow-500/10 text-yellow-600 border-0 text-[10px] flex items-center gap-0.5">
                               <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
@@ -1027,7 +1155,7 @@ export function AdminDeliveryCompanies() {
               </div>
               <div className="space-y-2">
                 <Label className="text-[#0d2e2a] dark:text-white">
-                  {isArabic ? "المحافظة" : "Governorate"}
+                  {isArabic ? "المحافظة" : "Governorate"} 
                 </Label>
                 <Input 
                   name="governorate_id" 

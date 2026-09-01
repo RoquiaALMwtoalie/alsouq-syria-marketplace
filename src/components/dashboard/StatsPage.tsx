@@ -10,7 +10,7 @@ import {
   TrendingDown, Calendar, Award, Users, Package, Clock,
   Eye, Download, BarChart3, PieChart as PieChartIcon,
   CheckCircle2, Sparkles, Rocket, Zap, Target, Crown,
-  ArrowUpRight, ArrowDownRight, Medal, Star, Gift
+  ArrowUpRight, ArrowDownRight, Medal, Star, Gift, Wallet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -339,7 +339,7 @@ export function StatsPage() {
           
           <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10">
-              <DollarSign className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
+               <Wallet className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
               <span className="text-[#2a655f] font-medium">{formatPrice(stats.totalRevenue, app.currency, app.lang)}</span>
               <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "إيرادات" : "revenue"}</span>
             </span>
@@ -397,14 +397,7 @@ export function StatsPage() {
       {/* ===== بطاقات الإحصائيات ===== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { 
-            key: 'revenue', 
-            label: app.lang === 'ar' ? 'إجمالي الإيرادات' : 'Total Revenue', 
-            value: formatPrice(stats.totalRevenue, app.currency, app.lang),
-            icon: DollarSign,
-            color: 'text-[#2a655f]',
-            bg: 'bg-[#2a655f]/10'
-          },
+          
           { 
             key: 'orders', 
             label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', 

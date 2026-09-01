@@ -1,6 +1,6 @@
 // src/components/dashboard/BecomeSellerCard.tsx
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { 
   Store, Clock, Package, MapPin, Globe, Building, Clock as ClockIcon, 
   Calendar, Shield, TrendingUp, CheckCircle, 
@@ -44,6 +44,65 @@ const WEEK_DAYS = [
   { value: 'Sunday', label: 'الأحد' },
 ];
 
+// ✅ SLIDES خارج المكون - تحسين الأداء
+const SLIDES = [
+  {
+    icon: "🏛️",
+    title_ar: "السوق لعندك",
+    title_en: "Souqi",
+    subtitle_ar: "افتح متجرك الآن",
+    subtitle_en: "Open Your Store Now",
+    desc_ar: "3 خطوات بسيطة تفصلك عن أول بيعة — ابدأ رحلة النجاح اليوم",
+    desc_en: "3 simple steps away from your first sale — start your journey today",
+    gradient: "from-[#0d2e2a] to-[#1a4f4a]",
+    image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/istockphoto-2105032127-612x612.jpg",
+  },
+  {
+    icon: "🚀",
+    title_ar: "السوق لعندك",
+    title_en: "Souqi",
+    subtitle_ar: "انطلق بسرعة",
+    subtitle_en: "Launch Fast",
+    desc_ar: "سجل بياناتك وأضف منتجاتك وابدأ البيع خلال دقائق",
+    desc_en: "Register, add your products, and start selling in minutes",
+    gradient: "from-[#1a4f4a] to-[#2a655f]",
+    image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/42430876-ai-generated-8793863_1920.jpg",
+  },
+  {
+    icon: "💎",
+    title_ar: "السوق لعندك",
+    title_en: "Souqi",
+    subtitle_ar: "متجر احترافي",
+    subtitle_en: "Professional Store",
+    desc_ar: "متجرك يظهر بشكل احترافي مع صور جذابة وتجربة مستخدم فريدة",
+    desc_en: "Your store looks professional with attractive images and unique UX",
+    gradient: "from-[#2a655f] to-[#3a8a82]",
+    image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/mohamed_hassan-systems-icons-3334262_1920.jpg",
+  },
+  {
+    icon: "🛡️",
+    title_ar: "السوق لعندك",
+    title_en: "Souqi",
+    subtitle_ar: "بيع بثقة وأمان",
+    subtitle_en: "Sell With Confidence",
+    desc_ar: "نظام حماية متكامل للبائع والمشتري مع دعم فني على مدار الساعة",
+    desc_en: "Complete protection system for sellers and buyers with 24/7 support",
+    gradient: "from-[#3a8a82] to-[#4a9f95]",
+    image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/regencygirl123-present-8440034_1920.jpg",
+  },
+  {
+    icon: "✨",
+    title_ar: "السوق لعندك",
+    title_en: "Souqi",
+    subtitle_ar: "تجربة فريدة",
+    subtitle_en: "Unique Experience",
+    desc_ar: "واجهات مستخدم حديثة ومتجاوبة مع دعم كامل للغتين العربية والإنجليزية",
+    desc_en: "Modern, responsive user interfaces with full Arabic and English language support",
+    gradient: "from-[#0d2e2a] to-[#1a4f4a]",
+    image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/gonghuimin468-happy-holidays-3040029_1920.jpg",
+  },
+];
+
 // ✅ أيقونة متحركة مع تموجات
 const AnimatedIcon = ({ 
   Icon, 
@@ -79,88 +138,30 @@ const AnimatedIcon = ({
 };
 
 // ✅ ✅ ✅ سلايدر متحرك احترافي مع صور واضحة (متل الأدمن) ✅ ✅ ✅
-const HeroSlider = ({ app }: { app: any }) => {
+const HeroSlider = React.memo(({ app }: { app: any }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  const slides = [
-    {
-      icon: "🏛️",
-      title_ar: "السوق لعندك",
-      title_en: "Souqi",
-      subtitle_ar: "افتح متجرك الآن",
-      subtitle_en: "Open Your Store Now",
-      desc_ar: "3 خطوات بسيطة تفصلك عن أول بيعة — ابدأ رحلة النجاح اليوم",
-      desc_en: "3 simple steps away from your first sale — start your journey today",
-      gradient: "from-[#0d2e2a] to-[#1a4f4a]",
-      image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/istockphoto-2105032127-612x612.jpg",
-    },
-    {
-      icon: "🚀",
-      title_ar: "السوق لعندك",
-      title_en: "Souqi",
-      subtitle_ar: "انطلق بسرعة",
-      subtitle_en: "Launch Fast",
-      desc_ar: "سجل بياناتك وأضف منتجاتك وابدأ البيع خلال دقائق",
-      desc_en: "Register, add your products, and start selling in minutes",
-      gradient: "from-[#1a4f4a] to-[#2a655f]",
-      image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/42430876-ai-generated-8793863_1920.jpg",
-    },
-    {
-      icon: "💎",
-      title_ar: "السوق لعندك",
-      title_en: "Souqi",
-      subtitle_ar: "متجر احترافي",
-      subtitle_en: "Professional Store",
-      desc_ar: "متجرك يظهر بشكل احترافي مع صور جذابة وتجربة مستخدم فريدة",
-      desc_en: "Your store looks professional with attractive images and unique UX",
-      gradient: "from-[#2a655f] to-[#3a8a82]",
-      image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/mohamed_hassan-systems-icons-3334262_1920.jpg",
-    },
-    {
-      icon: "🛡️",
-      title_ar: "السوق لعندك",
-      title_en: "Souqi",
-      subtitle_ar: "بيع بثقة وأمان",
-      subtitle_en: "Sell With Confidence",
-      desc_ar: "نظام حماية متكامل للبائع والمشتري مع دعم فني على مدار الساعة",
-      desc_en: "Complete protection system for sellers and buyers with 24/7 support",
-      gradient: "from-[#3a8a82] to-[#4a9f95]",
-      image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/regencygirl123-present-8440034_1920.jpg",
-    },
-    {
-      icon: "✨",
-      title_ar: "السوق لعندك",
-      title_en: "Souqi",
-      subtitle_ar: "تجربة فريدة",
-      subtitle_en: "Unique Experience",
-      desc_ar: "واجهات مستخدم حديثة ومتجاوبة مع دعم كامل للغتين العربية والإنجليزية",
-      desc_en: "Modern, responsive user interfaces with full Arabic and English language support",
-      gradient: "from-[#0d2e2a] to-[#1a4f4a]",
-      image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/gonghuimin468-happy-holidays-3040029_1920.jpg",
-    },
-  ];
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, []);
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
   };
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
+    setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    setCurrentSlide((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
   };
 
   const isRTL = app.lang === 'ar';
-  const current = slides[currentSlide];
+  const current = SLIDES[currentSlide];
 
   return (
     <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] shadow-2xl shadow-[#0d2e2a]/30 border border-emerald-500/20 group min-h-[280px]">
@@ -227,7 +228,7 @@ const HeroSlider = ({ app }: { app: any }) => {
           
           {/* ✅ نقاط التقدم */}
           <div className="flex items-center gap-2 mt-4 justify-center md:justify-start">
-            {slides.map((_, index) => (
+            {SLIDES.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
@@ -240,7 +241,7 @@ const HeroSlider = ({ app }: { app: any }) => {
               />
             ))}
             <span className="text-[10px] text-white/40 ml-2 font-mono">
-              {currentSlide + 1}/{slides.length}
+              {currentSlide + 1}/{SLIDES.length}
             </span>
           </div>
         </div>
@@ -253,7 +254,11 @@ const HeroSlider = ({ app }: { app: any }) => {
             size="icon"
             className="h-9 w-9 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/20 hover:border-white/30 transition-all duration-300 hover:scale-110"
           >
-            <ChevronLeft className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" />
+            {isRTL ? (
+              <ChevronRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
+            ) : (
+              <ChevronLeft className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" />
+            )}
           </Button>
           <Button
             onClick={nextSlide}
@@ -261,7 +266,11 @@ const HeroSlider = ({ app }: { app: any }) => {
             size="icon"
             className="h-9 w-9 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/20 hover:border-white/30 transition-all duration-300 hover:scale-110"
           >
-            <ChevronRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
+            {isRTL ? (
+              <ChevronLeft className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" />
+            ) : (
+              <ChevronRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
+            )}
           </Button>
         </div>
       </div>
@@ -270,7 +279,7 @@ const HeroSlider = ({ app }: { app: any }) => {
       <div className="relative h-0.5 w-full bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent animate-shimmer" />
     </div>
   );
-};
+});
 
 export function BecomeSellerCard() {
   const app = useApp();
@@ -303,6 +312,17 @@ export function BecomeSellerCard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRejected, setIsRejected] = useState(false);
   const [rejectedReason, setRejectedReason] = useState<string | null>(null);
+
+  const isRTL = app.lang === "ar";
+
+  // ✅ useMemo لقائمة المحافظات - تحسين الأداء
+  const governorateOptions = useMemo(() => 
+    governorates.map((gov: any) => ({
+      id: gov.id,
+      name: isRTL ? gov.name_ar : gov.name_en,
+    })),
+    [governorates, isRTL]
+  );
 
   useEffect(() => {
     if (lastRejected) {
@@ -403,7 +423,8 @@ export function BecomeSellerCard() {
     }
   };
 
-  async function handleBecome() {
+  // ✅ useCallback - تحسين الأداء
+  const handleBecome = useCallback(async () => {
     if (!app.user) return;
     
     if (isSubmitting) {
@@ -495,7 +516,7 @@ export function BecomeSellerCard() {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  }, [app.user, isSubmitting, canSubmitData, storeName, storeLogo, storeCover, storePhone, governorateId, storeType, address, storeDesc, allowsMessaging, openingTime, closingTime, weeklyOffDays, become, queryClient, app.lang]);
 
   // ====== ⏳ حالة التحميل ======
   if (appLoading || checkingLoading || rejectedLoading) {
@@ -943,8 +964,8 @@ export function BecomeSellerCard() {
                       </div>
                     </div>
                     
-                    {/* ✅ قائمة المحافظات */}
-                    {governorates.map((gov: any) => (
+                    {/* ✅ قائمة المحافظات - استخدام useMemo */}
+                    {governorateOptions.map((gov: any) => (
                       <SelectItem 
                         key={gov.id} 
                         value={gov.id}
@@ -952,7 +973,7 @@ export function BecomeSellerCard() {
                       >
                         <span className="flex items-center gap-2">
                           <MapPin className="h-3.5 w-3.5 text-[#2a655f]/60" />
-                          {app.lang === "ar" ? gov.name_ar : gov.name_en}
+                          {gov.name}
                         </span>
                       </SelectItem>
                     ))}
@@ -1074,7 +1095,7 @@ export function BecomeSellerCard() {
             </motion.div>
           )}
 
-          {/* Navigation Buttons */}
+          {/* ✅ Navigation Buttons - مع اتجاه الأسهم حسب اللغة */}
           <div className="flex items-center gap-3 pt-4 border-t border-[#2a655f]/20">
             {currentStep > 1 && (
               <Button
@@ -1082,7 +1103,11 @@ export function BecomeSellerCard() {
                 onClick={goToPreviousStep}
                 className="h-12 px-6 rounded-xl border-[#2a655f]/30 hover:bg-[#2a655f]/10 transition-all"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                {isRTL ? (
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                ) : (
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                )}
                 {app.lang === "ar" ? "السابق" : "Previous"}
               </Button>
             )}
@@ -1094,7 +1119,11 @@ export function BecomeSellerCard() {
                 className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white font-bold shadow-lg shadow-[#0d2e2a]/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {app.lang === "ar" ? "التالي" : "Next"}
-                <ArrowRight className="h-4 w-4 ml-2" />
+                {isRTL ? (
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                ) : (
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                )}
               </Button>
             ) : (
               <Button

@@ -4,7 +4,7 @@ import {
   Search, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, 
   RefreshCw, X, Filter, Users, User, Phone, ShoppingCart, DollarSign,
   TrendingUp, Award, Sparkles, Rocket, Crown, Star, Medal,
-  ArrowUpRight, ArrowDownRight, Target, Zap, Shield, Heart
+  ArrowUpRight, ArrowDownRight, Target, Zap, Shield, Heart, Wallet
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -240,7 +240,7 @@ export function CustomersPage() {
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/50">
-              <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                <Wallet className="h-3.5 w-3.5 text-emerald-500" />
               <span className="text-emerald-600 font-medium">{formatPrice(stats.totalSpend, app.currency, app.lang)}</span>
               <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "إنفاق" : "spend"}</span>
             </span>
@@ -285,7 +285,7 @@ export function CustomersPage() {
         {[
           { key: 'total', label: app.lang === 'ar' ? 'إجمالي العملاء' : 'Total Customers', value: stats.total, icon: Users, color: 'text-[#2a655f]', bg: 'bg-[#2a655f]/10' },
           { key: 'orders', label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', value: stats.totalOrders, icon: ShoppingCart, color: 'text-[#3a8a82]', bg: 'bg-[#3a8a82]/10' },
-          { key: 'spend', label: app.lang === 'ar' ? 'إجمالي الإنفاق' : 'Total Spend', value: formatPrice(stats.totalSpend, app.currency, app.lang), icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+          { key: 'spend', label: app.lang === 'ar' ? 'إجمالي الإنفاق' : 'Total Spend', value: formatPrice(stats.totalSpend, app.currency, app.lang), icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
           { key: 'avg', label: app.lang === 'ar' ? 'متوسط الطلبات' : 'Avg Orders', value: stats.avgOrders, icon: Award, color: 'text-yellow-600', bg: 'bg-yellow-500/10' },
         ].map((stat) => (
           <div 
@@ -329,7 +329,7 @@ export function CustomersPage() {
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
                 <span className="flex items-center gap-1">
-                  <DollarSign className="h-3 w-3 text-emerald-500" />
+                 <Wallet className="h-3 w-3 text-emerald-500" />
                   {formatPrice(stats.topCustomer.spend || 0, app.currency, app.lang)}
                 </span>
                 <span className="w-px h-3 bg-slate-300 dark:bg-slate-600" />

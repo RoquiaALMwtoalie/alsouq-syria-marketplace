@@ -203,6 +203,31 @@ const TypeBadge = ({ type }: { type: string }) => {
   );
 };
 
+// ============================================================
+// ✅ دالة مساعدة لإضافة timeout للـ Promises
+// ============================================================
+const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number = 15000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`⏱️ Request timeout after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ]);
+};
+
+// ============================================================
+// ✅ دالة إشعار آمنة (لا تعلق أبداً)
+// ============================================================
+const safeSendNotification = async (sendNotification: any, params: any): Promise<boolean> => {
+  try {
+    await withTimeout(sendNotification.mutateAsync(params), 10000);
+    return true;
+  } catch (error) {
+    console.error("❌ [Notification] Failed (non-critical):", error);
+    return false;
+  }
+};
+
 export function SellerApplicationsAdmin() {
   const app = useApp();
   const t = useT();
@@ -246,17 +271,24 @@ export function SellerApplicationsAdmin() {
   const [showDeliveryCompanyDialog, setShowDeliveryCompanyDialog] = useState(false);
   const [pendingAppId, setPendingAppId] = useState<string>("");
 
-  // ✅ ✅ ✅ جلب شركات التوصيل النشطة عند تحميل المكون
+  // ✅ ✅ ✅ جلب شركات التوصيل الموثقة والنشطة فقط
   useEffect(() => {
     const fetchDeliveryCompanies = async () => {
-      const { data, error } = await supabase
-        .from("delivery_companies")
-        .select("id, name_ar, name_en, base_price")
-        .eq("is_active", true)
-        .order("name_ar");
-      
-      if (!error && data) {
-        setDeliveryCompanies(data);
+      try {
+        const { data, error } = await supabase
+          .from("delivery_companies")
+          .select("id, name_ar, name_en, base_price, is_verified")
+          .eq("is_active", true)
+          .eq("is_verified", true)  // ✅ ✅ ✅ فقط الموثقة
+          .order("name_ar");
+        
+        if (!error && data) {
+          setDeliveryCompanies(data);
+        } else if (error) {
+          console.error("❌ Error fetching delivery companies:", error);
+        }
+      } catch (error) {
+        console.error("❌ Error in fetchDeliveryCompanies:", error);
       }
     };
     
@@ -393,30 +425,40 @@ export function SellerApplicationsAdmin() {
   };
 
   // ============================================================
-  // ✅ الموافقة أو الرفض
+  // ✅ الدالة الرئيسية - مُعاد كتابتها بالكامل وبشكل احترافي
   // ============================================================
-// ============================================================
-// ✅ الموافقة أو الرفض - مُصحح
-// ============================================================
-async function decide(id: string, status: "approved" | "rejected", admin_note?: string) {
+  async function decide(id: string, status: "approved" | "rejected", admin_note?: string) {
+    // ✅ منع التكرار
     if (isProcessing) {
       toast.warning(isRTL ? "⏳ جاري المعالجة..." : "⏳ Processing...");
       return;
     }
 
+    // ✅ التحقق من صحة الإدخال
     if (status === "rejected" && (!admin_note || admin_note.trim() === "")) {
       toast.error(isRTL ? "⚠️ يرجى كتابة سبب الرفض" : "⚠️ Please provide a reason for rejection");
       return;
     }
 
+    // ✅ تعيين حالة المعالجة
     setIsProcessing(true);
+    let applicationData: any = null;
+    let isCompleted = false;
 
     try {
-      const { data: appData, error: fetchError } = await supabase
-        .from("seller_applications")
-        .select("*")
-        .eq("id", id)
-        .single();
+      console.log(`🔍 [decide] Starting for application: ${id}, status: ${status}`);
+
+      // ============================================================
+      // 1️⃣ جلب بيانات الطلب (مع Timeout)
+      // ============================================================
+      const { data: appData, error: fetchError } = await withTimeout(
+        supabase
+          .from("seller_applications")
+          .select("*")
+          .eq("id", id)
+          .single(),
+        10000
+      );
 
       if (fetchError || !appData) {
         toast.error(isRTL ? "❌ فشل جلب بيانات الطلب" : "❌ Failed to fetch application");
@@ -424,8 +466,52 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
         return;
       }
 
-      await review.mutateAsync({ id, status, admin_note: admin_note || null });
+      applicationData = appData;
+      console.log(`✅ [decide] Application fetched: ${appData.store_name}`);
 
+      // ============================================================
+      // 2️⃣ تحديث حالة الطلب في قاعدة البيانات (مع Timeout)
+      // ============================================================
+      const updatePayload = {
+        status: status,
+        admin_note: admin_note || null,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: app.user?.id || null,
+      };
+
+      const { error: updateError } = await withTimeout(
+        supabase
+          .from("seller_applications")
+          .update(updatePayload)
+          .eq("id", id),
+        10000
+      );
+
+      if (updateError) {
+        toast.error(
+          isRTL 
+            ? `❌ فشل تحديث الطلب: ${updateError.message}` 
+            : `❌ Failed to update: ${updateError.message}`
+        );
+        setIsProcessing(false);
+        return;
+      }
+
+      console.log(`✅ [decide] Application status updated to: ${status}`);
+      isCompleted = true;
+
+      // ============================================================
+      // 3️⃣ إشعار فوري للمستخدم (نجاح أو فشل)
+      // ============================================================
+      toast.success(
+        status === "approved"
+          ? isRTL ? "✅ تمت الموافقة على الطلب" : "✅ Application approved"
+          : isRTL ? "❌ تم رفض الطلب" : "❌ Application rejected"
+      );
+
+      // ============================================================
+      // 4️⃣ معالجة الموافقة أو الرفض
+      // ============================================================
       if (status === "approved") {
         
         // ✅ ===== الموافقة على متجر =====
@@ -439,8 +525,8 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             store_logo_url: appData.store_logo_url,
             store_cover_url: appData.store_cover_url,
             store_phone: appData.store_phone,
-            allows_messaging: appData.allows_messaging,
-            allows_bookings: appData.allows_bookings,
+            allows_messaging: appData.allows_messaging ?? true,
+            allows_bookings: appData.allows_bookings ?? false,
             store_type: appData.store_type || 'online',
             governorate_id: appData.governorate_id,
             store_address: appData.address,
@@ -463,11 +549,36 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
 
           if (profileError) {
             console.error("❌ Error updating profile:", profileError);
-            toast.error(isRTL ? "⚠️ تمت الموافقة لكن فشل تحديث بيانات المتجر" : "⚠️ Approved but failed to update store data");
+            toast.warning(
+              isRTL 
+                ? "⚠️ تمت الموافقة لكن فشل تحديث بيانات المتجر" 
+                : "⚠️ Approved but failed to update store data"
+            );
+          } else {
+            console.log(`✅ [decide] Profile updated for user: ${appData.user_id}`);
+            
+            // ✅ ✅ ✅ ✅ ✅ إضافة رول seller للمستخدم ✅ ✅ ✅ ✅ ✅
+            const { error: roleError } = await supabase
+              .from("user_roles")
+              .insert({
+                user_id: appData.user_id,
+                role: 'seller'
+              });
+
+            if (roleError) {
+              console.error("❌ Error adding seller role:", roleError);
+              toast.warning(
+                isRTL 
+                  ? "⚠️ تمت الموافقة لكن فشل إضافة رول البائع" 
+                  : "⚠️ Approved but failed to add seller role"
+              );
+            } else {
+              console.log(`✅ Seller role added for user: ${appData.user_id}`);
+            }
           }
 
-          // ✅ إشعار موافقة متجر
-          await sendNotification.mutateAsync({
+          // ✅ إشعار موافقة متجر (غير حرج)
+          safeSendNotification(sendNotification, {
             userId: appData.user_id,
             type: 'store_approved',
             titleAr: "✅ تمت الموافقة على طلبك",
@@ -484,30 +595,43 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             actions: [
               { label_ar: 'عرض متجري', url: '/dashboard/store' },
             ]
+          }).then(success => {
+            if (success) {
+              console.log(`✅ [decide] Notification sent successfully`);
+            } else {
+              console.warn(`⚠️ [decide] Notification failed but application was approved`);
+            }
           });
         }
 
         // ✅ ===== الموافقة على منتج =====
         if (appData.application_type === 'product') {
           // ✅ البحث عن المنتج
-          const { data: listing, error: listingError } = await supabase
-            .from("listings")
-            .select("id, title_ar, cover_url")
-            .eq("owner_id", appData.user_id)
-            .eq("status", "pending")
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (listing && !listingError) {
-            await supabase
+          const { data: listing, error: listingError } = await withTimeout(
+            supabase
               .from("listings")
-              .update({ status: 'published' })
-              .eq("id", listing.id);
+              .select("id, title_ar, cover_url")
+              .eq("owner_id", appData.user_id)
+              .eq("status", "pending")
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+            10000
+          );
+
+          if (!listingError && listing) {
+            await withTimeout(
+              supabase
+                .from("listings")
+                .update({ status: 'published' })
+                .eq("id", listing.id),
+              10000
+            );
+            console.log(`✅ [decide] Product published: ${listing.id}`);
           }
 
-          // ✅ إشعار موافقة منتج
-          await sendNotification.mutateAsync({
+          // ✅ إشعار موافقة منتج (غير حرج)
+          safeSendNotification(sendNotification, {
             userId: appData.user_id,
             type: 'product_approved',
             titleAr: "✅ تمت الموافقة على طلبك",
@@ -524,6 +648,12 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             actions: [
               { label_ar: 'عرض المنتج', url: '/dashboard/products' },
             ]
+          }).then(success => {
+            if (success) {
+              console.log(`✅ [decide] Notification sent successfully`);
+            } else {
+              console.warn(`⚠️ [decide] Notification failed but product was approved`);
+            }
           });
         }
 
@@ -531,7 +661,7 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
         
         // ❌ ===== رفض متجر =====
         if (appData.application_type === 'store') {
-          await sendNotification.mutateAsync({
+          safeSendNotification(sendNotification, {
             userId: appData.user_id,
             type: 'store_rejected',
             titleAr: "❌ تم رفض طلبك",
@@ -547,34 +677,47 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             actions: [
               { label_ar: 'مراجعة الطلب', url: '/dashboard' },
             ]
+          }).then(success => {
+            if (success) {
+              console.log(`✅ [decide] Rejection notification sent`);
+            } else {
+              console.warn(`⚠️ [decide] Rejection notification failed but application was rejected`);
+            }
           });
         }
 
         // ❌ ===== رفض منتج =====
         if (appData.application_type === 'product') {
           // ✅ البحث عن المنتج
-          const { data: listing, error: listingError } = await supabase
-            .from("listings")
-            .select("id, title_ar, cover_url")
-            .eq("owner_id", appData.user_id)
-            .eq("status", "pending")
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (listing && !listingError) {
-            await supabase
+          const { data: listing, error: listingError } = await withTimeout(
+            supabase
               .from("listings")
-              .update({ 
-                status: 'draft',
-                rejection_reason: admin_note || null,
-                rejected_at: new Date().toISOString(),
-              })
-              .eq("id", listing.id);
+              .select("id, title_ar, cover_url")
+              .eq("owner_id", appData.user_id)
+              .eq("status", "pending")
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+            10000
+          );
+
+          if (!listingError && listing) {
+            await withTimeout(
+              supabase
+                .from("listings")
+                .update({ 
+                  status: 'draft',
+                  rejection_reason: admin_note || null,
+                  rejected_at: new Date().toISOString(),
+                })
+                .eq("id", listing.id),
+              10000
+            );
+            console.log(`✅ [decide] Product rejected: ${listing.id}`);
           }
 
-          // ✅ إشعار رفض منتج
-          await sendNotification.mutateAsync({
+          // ✅ إشعار رفض منتج (غير حرج)
+          safeSendNotification(sendNotification, {
             userId: appData.user_id,
             type: 'product_rejected',
             titleAr: "❌ تم رفض طلبك",
@@ -591,33 +734,69 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             actions: [
               { label_ar: 'مراجعة المنتج', url: '/dashboard/products' },
             ]
+          }).then(success => {
+            if (success) {
+              console.log(`✅ [decide] Product rejection notification sent`);
+            } else {
+              console.warn(`⚠️ [decide] Product rejection notification failed`);
+            }
           });
         }
       }
 
-      toast.success(
-        status === "approved"
-          ? isRTL ? "✅ تمت الموافقة على الطلب" : "✅ Application approved"
-          : isRTL ? "❌ تم رفض الطلب" : "❌ Application rejected"
-      );
-      
+      // ============================================================
+      // 5️⃣ إعادة تحميل البيانات
+      // ============================================================
+      await refetch();
+
+      // ============================================================
+      // 6️⃣ تنظيف الـ UI
+      // ============================================================
       setNoteFor(null);
       setNote("");
-      refetch();
+      setShowDeliveryCompanyDialog(false);
+      setSelectedDeliveryCompanyId("");
+      setPendingAppId("");
+
+      console.log(`✅ [decide] Complete for application: ${id}`);
+
+    } catch (error: any) {
+      console.error("❌ [decide] Fatal error:", error);
       
-    } catch (e: any) {
-      console.error("❌ Error in decide:", e);
-      const errorMessage = e.message || String(e);
-      
-      if (errorMessage.includes("لا يمكنك تقديم أكثر من طلب واحد")) {
-        toast.error(isRTL ? "⛔ هذا المستخدم لديه طلب سابق بالفعل" : "⛔ This user already has an existing application");
-      } else if (errorMessage.includes("لديك متجر مفعل")) {
-        toast.error(isRTL ? "✅ هذا المستخدم لديه متجر مفعل بالفعل" : "✅ This user already has an active store");
+      // ✅ إذا كانت العملية مكتملة ولكن حدث خطأ في الإشعار أو التحديث
+      if (isCompleted) {
+        toast.warning(
+          isRTL 
+            ? "⚠️ تم تحديث الطلب ولكن حدث خطأ في خطوة ثانوية" 
+            : "⚠️ Application updated but a secondary step failed"
+        );
       } else {
-        toast.error(isRTL ? `❌ فشل العملية: ${errorMessage}` : `❌ Operation failed: ${errorMessage}`);
+        // ✅ فشل كامل
+        const errorMessage = error.message || String(error);
+        
+        if (errorMessage.includes("timeout")) {
+          toast.error(
+            isRTL 
+              ? "⏱️ انتهت المهلة، يرجى المحاولة مرة أخرى" 
+              : "⏱️ Request timeout, please try again"
+          );
+        } else if (errorMessage.includes("لا يمكنك تقديم أكثر من طلب واحد")) {
+          toast.error(isRTL ? "⛔ هذا المستخدم لديه طلب سابق بالفعل" : "⛔ This user already has an existing application");
+        } else if (errorMessage.includes("لديك متجر مفعل")) {
+          toast.error(isRTL ? "✅ هذا المستخدم لديه متجر مفعل بالفعل" : "✅ This user already has an active store");
+        } else {
+          toast.error(
+            isRTL 
+              ? `❌ فشل العملية: ${errorMessage}` 
+              : `❌ Operation failed: ${errorMessage}`
+          );
+        }
       }
+
     } finally {
+      // ✅ ✅ ✅ دائماً نحرر حالة المعالجة
       setIsProcessing(false);
+      console.log(`🏁 [decide] Finished for application: ${id}`);
     }
   }
 
@@ -1011,89 +1190,123 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
                         </div>
                       </TableCell>
                       
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          
-                          {/* ✅ زر التفاصيل */}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="rounded-xl h-8 px-3 text-[#4a9f95] hover:text-[#0d2e2a] hover:bg-[#0d2e2a]/10 transition-all duration-300 hover:scale-105"
-                            onClick={() => {
-                              setSelectedApp(a);
-                              setShowDetailsDialog(true);
-                            }}
-                            title={isRTL ? "عرض التفاصيل" : "View details"}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
+               <TableCell className="text-center">
+  <div className="flex items-center justify-center gap-1.5 flex-wrap">
+    
+    {/* ✅ زر التفاصيل */}
+    <Button
+      size="sm"
+      variant="ghost"
+      className="rounded-xl h-8 px-3 text-[#4a9f95] hover:text-[#0d2e2a] hover:bg-[#0d2e2a]/10 transition-all duration-300 hover:scale-105"
+      onClick={() => {
+        setSelectedApp(a);
+        setShowDetailsDialog(true);
+      }}
+      title={isRTL ? "عرض التفاصيل" : "View details"}
+    >
+      <Eye className="h-3.5 w-3.5" />
+    </Button>
 
-                          {a.status === "pending" && (
-                            <>
-                              {/* ✅ زر الموافقة - يفتح Dialog اختيار شركة التوصيل */}
-                              <Button
-                                size="sm"
-                                className={cn(
-                                  "rounded-xl h-8 px-3 transition-all duration-300 hover:scale-105",
-                                  "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30"
-                                )}
-                                onClick={() => {
-                                  setPendingAppId(a.id);
-                                  setShowDeliveryCompanyDialog(true);
-                                }}
-                                disabled={isProcessing}
-                                title={isRTL ? "موافقة على الطلب" : "Approve application"}
-                              >
-                                {isProcessing ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <>
-                                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                                    {isRTL ? "موافقة" : "Approve"}
-                                  </>
-                                )}
-                              </Button>
+    {a.status === "pending" && (
+      <>
+        {/* ✅ زر الموافقة - يختلف حسب نوع الطلب */}
+        {a.application_type === "store" ? (
+          // ✅ طلب فتح متجر → يفتح Dialog اختيار شركة التوصيل
+          <Button
+            size="sm"
+            className={cn(
+              "rounded-xl h-8 px-3 transition-all duration-300 hover:scale-105",
+              "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30"
+            )}
+            onClick={() => {
+              setPendingAppId(a.id);
+              setShowDeliveryCompanyDialog(true);
+            }}
+            disabled={isProcessing}
+            title={isRTL ? "موافقة على الطلب (اختر شركة توصيل)" : "Approve application (Select delivery company)"}
+          >
+            {isProcessing && pendingAppId === a.id ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+            ) : (
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+            )}
+            {isRTL ? "موافقة" : "Approve"}
+          </Button>
+        ) : (
+          // ✅ طلب إضافة منتج → موافقة مباشرة (بدون شركة توصيل)
+          <Button
+            size="sm"
+            className={cn(
+              "rounded-xl h-8 px-3 transition-all duration-300 hover:scale-105",
+              "bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 text-white shadow-lg shadow-emerald-500/30"
+            )}
+            onClick={() => {
+              decide(a.id, "approved");
+            }}
+            disabled={isProcessing}
+            title={isRTL ? "موافقة على الطلب (بدون شركة توصيل)" : "Approve application (No delivery company)"}
+          >
+            {isProcessing && pendingAppId === a.id ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+            ) : (
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+            )}
+            {isRTL ? "موافقة" : "Approve"}
+          </Button>
+        )}
 
-                              {/* ✅ زر الرفض */}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="rounded-xl h-8 px-3 border-[#6bb5aa]/30 text-[#6bb5aa] hover:bg-[#6bb5aa]/10 hover:border-[#6bb5aa]/50 transition-all duration-300 hover:scale-105"
-                                onClick={() => {
-                                  setNoteFor(a.id);
-                                  setNote("");
-                                }}
-                                disabled={isProcessing}
-                                title={isRTL ? "رفض الطلب" : "Reject application"}
-                              >
-                                <XCircle className="h-3.5 w-3.5 mr-1" />
-                                {isRTL ? "رفض" : "Reject"}
-                              </Button>
-                            </>
-                          )}
-                          
-                          {a.status !== "pending" && (
-                            <div className={cn(
-                              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium",
-                              a.status === "approved" 
-                                ? "bg-[#0d2e2a]/10 text-[#0d2e2a]" 
-                                : "bg-[#6bb5aa]/10 text-[#6bb5aa]"
-                            )}>
-                              {a.status === "approved" ? (
-                                <>
-                                  <CheckCircle2 className="h-3.5 w-3.5 animate-bounce-slow" />
-                                  <span>{isRTL ? "تمت الموافقة" : "Approved"}</span>
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="h-3.5 w-3.5 animate-float" />
-                                  <span>{isRTL ? "مرفوض" : "Rejected"}</span>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
+        {/* ✅ زر الرفض */}
+        <Button
+          size="sm"
+          variant="outline"
+          className={cn(
+            "rounded-xl h-8 px-3 transition-all duration-300",
+            "border-[#6bb5aa]/30 text-[#6bb5aa] hover:bg-[#6bb5aa]/10 hover:border-[#6bb5aa]/50",
+            isProcessing && "opacity-50 cursor-not-allowed"
+          )}
+          onClick={() => {
+            if (isProcessing) {
+              toast.warning(isRTL ? "⏳ جاري المعالجة..." : "⏳ Processing...");
+              return;
+            }
+            setNoteFor(a.id);
+            setNote("");
+          }}
+          disabled={isProcessing}
+          title={isRTL ? "رفض الطلب" : "Reject application"}
+        >
+          {isProcessing && noteFor === a.id ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+          ) : (
+            <XCircle className="h-3.5 w-3.5 mr-1" />
+          )}
+          {isRTL ? "رفض" : "Reject"}
+        </Button>
+      </>
+    )}
+    
+    {a.status !== "pending" && (
+      <div className={cn(
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium",
+        a.status === "approved" 
+          ? "bg-[#0d2e2a]/10 text-[#0d2e2a]" 
+          : "bg-[#6bb5aa]/10 text-[#6bb5aa]"
+      )}>
+        {a.status === "approved" ? (
+          <>
+            <CheckCircle2 className="h-3.5 w-3.5 animate-bounce-slow" />
+            <span>{isRTL ? "تمت الموافقة" : "Approved"}</span>
+          </>
+        ) : (
+          <>
+            <XCircle className="h-3.5 w-3.5 animate-float" />
+            <span>{isRTL ? "مرفوض" : "Rejected"}</span>
+          </>
+        )}
+      </div>
+    )}
+  </div>
+</TableCell>
                     </TableRow>
                   );
                 })
@@ -1477,7 +1690,7 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
                 <SelectContent>
                   {deliveryCompanies.length === 0 ? (
                     <SelectItem value="no-company" disabled>
-                      {isRTL ? "⚠️ لا توجد شركات توصيل نشطة" : "⚠️ No active delivery companies"}
+                      {isRTL ? "⚠️ لا توجد شركات توصيل موثقة" : "⚠️ No verified delivery companies"}
                     </SelectItem>
                   ) : (
                     deliveryCompanies.map((company) => (
@@ -1485,6 +1698,9 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
                         <span className="flex items-center gap-2">
                           <Truck className="h-4 w-4 text-[#2d6b63]" />
                           <span>{company.name_ar || company.name_en}</span>
+                          <Badge className="text-[9px] bg-emerald-500/10 text-emerald-600 border-0">
+                            ✅ {isRTL ? "موثقة" : "Verified"}
+                          </Badge>
                           <Badge className="text-[9px] bg-[#2d6b63]/10 text-[#2d6b63] border-0">
                             {company.base_price || 0} SYP
                           </Badge>
@@ -1526,10 +1742,14 @@ async function decide(id: string, status: "approved" | "rejected", admin_note?: 
             </Button>
             <Button
               onClick={handleApproveWithDelivery}
-              disabled={!selectedDeliveryCompanyId}
+              disabled={!selectedDeliveryCompanyId || isProcessing}
               className="rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
+              {isProcessing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+              )}
               {isRTL ? "تأكيد الموافقة" : "Confirm Approve"}
             </Button>
           </DialogFooter>

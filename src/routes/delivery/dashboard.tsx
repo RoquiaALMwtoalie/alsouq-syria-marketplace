@@ -204,7 +204,8 @@ function DeliveryDashboardPage() {
   // ✅ State لتفاصيل الطلب
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<any>(null);
-
+const [distributorStats, setDistributorStats] = useState<Record<string, { pending: number; completed: number; total: number }>>({});
+const [isLoadingStats, setIsLoadingStats] = useState(false);
   // ✅ تعريف isArabic هنا
   const isArabic = app.lang === "ar";
 
@@ -835,7 +836,55 @@ const getProductImage = (item: any) => {
   console.log("🔍 [DELIVERY DASHBOARD] isDeliveryCompany:", isDeliveryCompany);
   console.log("🔍 [DELIVERY DASHBOARD] userRoles:", userRoles);
   console.log("🔍 [DELIVERY DASHBOARD] company:", company);
-
+// ✅ ✅ ✅ جلب إحصائيات الموزعين عند فتح نافذة القبول
+useEffect(() => {
+  if (!acceptDialogOpen || !allDistributors || allDistributors.length === 0) return;
+  
+  const fetchStats = async () => {
+    setIsLoadingStats(true);
+    try {
+      const stats: Record<string, { pending: number; completed: number; total: number }> = {};
+      
+      for (const dist of allDistributors) {
+        // ✅ جلب عدد الطلبات المعلقة (الجارية) لهذا الموزع
+        const { data: pendingOrders, error: pendingError } = await supabase
+          .from("delivery_orders")
+          .select("id", { count: 'exact' })
+          .eq("distributor_id", dist.id)
+          .in("status", ["pending", "assigned", "picked_up", "in_transit"]);
+        
+        if (pendingError) {
+          console.error("❌ Error fetching pending orders:", pendingError);
+        }
+        
+        // ✅ جلب عدد الطلبات المكتملة لهذا الموزع
+        const { data: completedOrders, error: completedError } = await supabase
+          .from("delivery_orders")
+          .select("id", { count: 'exact' })
+          .eq("distributor_id", dist.id)
+          .in("status", ["delivered", "completed"]);
+        
+        if (completedError) {
+          console.error("❌ Error fetching completed orders:", completedError);
+        }
+        
+        stats[dist.id] = {
+          pending: pendingOrders?.length || 0,
+          completed: completedOrders?.length || 0,
+          total: (pendingOrders?.length || 0) + (completedOrders?.length || 0),
+        };
+      }
+      
+      setDistributorStats(stats);
+    } catch (error) {
+      console.error("❌ Error fetching distributor stats:", error);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
+  
+  fetchStats();
+}, [acceptDialogOpen, allDistributors]);
   // ✅ إحصائيات الطلبات
   const stats = useMemo(() => {
     const total = orders.length;
@@ -2691,90 +2740,130 @@ const handleDeactivateDistributor = async () => {
                       : `🟢 ${allDistributors.length} distributors in your company`}
                   </p>
 
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                    {allDistributors
-                      .filter((dist: any) => {
-                        const search = distributorSearch.toLowerCase().trim();
-                        if (!search) return true;
-                        const nameAr = dist.full_name_ar?.toLowerCase() || "";
-                        const nameEn = dist.full_name_en?.toLowerCase() || "";
-                        const phone = dist.phone?.toLowerCase() || "";
-                        return nameAr.includes(search) || nameEn.includes(search) || phone.includes(search);
-                      })
-                      .map((dist: any) => (
-                        <div
-                          key={dist.id}
-                          onClick={() => setSelectedDistributorId(dist.id)}
-                          className={cn(
-                            "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-md",
-                            selectedDistributorId === dist.id
-                              ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-md shadow-emerald-500/20"
-                              : "border-slate-200/50 dark:border-slate-700/50 hover:border-emerald-300/50 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/10"
-                          )}
-                        >
-                          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-emerald-200 dark:border-emerald-800/50">
-                            {dist.avatar_url ? (
-                              <img 
-                                src={dist.avatar_url} 
-                                alt={dist.full_name_ar || dist.full_name_en || "موزع"}
-                                className="h-full w-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                }}
-                              />
-                            ) : (
-                              <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
-                                {dist.full_name_ar?.charAt(0) || dist.full_name_en?.charAt(0) || "M"}
-                              </span>
-                            )}
-                          </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+  {allDistributors
+    .filter((dist: any) => {
+      const search = distributorSearch.toLowerCase().trim();
+      if (!search) return true;
+      const nameAr = dist.full_name_ar?.toLowerCase() || "";
+      const nameEn = dist.full_name_en?.toLowerCase() || "";
+      const phone = dist.phone?.toLowerCase() || "";
+      return nameAr.includes(search) || nameEn.includes(search) || phone.includes(search);
+    })
+    .map((dist: any) => {
+      const stats = distributorStats[dist.id] || { pending: 0, completed: 0, total: 0 };
+      const hasActiveOrders = stats.pending > 0;
+      
+      return (
+        <div
+          key={dist.id}
+          onClick={() => setSelectedDistributorId(dist.id)}
+          className={cn(
+            "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-md",
+            selectedDistributorId === dist.id
+              ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-md shadow-emerald-500/20"
+              : "border-slate-200/50 dark:border-slate-700/50 hover:border-emerald-300/50 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/10"
+          )}
+        >
+          {/* صورة الموزع */}
+          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-emerald-200 dark:border-emerald-800/50">
+            {dist.avatar_url ? (
+              <img 
+                src={dist.avatar_url} 
+                alt={dist.full_name_ar || dist.full_name_en || "موزع"}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            ) : (
+              <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                {dist.full_name_ar?.charAt(0) || dist.full_name_en?.charAt(0) || "M"}
+              </span>
+            )}
+          </div>
 
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-semibold text-slate-900 dark:text-white">
-                                {isArabic ? dist.full_name_ar : dist.full_name_en || dist.full_name_ar}
-                              </p>
-                              {dist.is_available ? (
-                                <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 text-[9px]">
-                                  ● {isArabic ? "متاح" : "Available"}
-                                </Badge>
-                              ) : (
-                                <Badge className="bg-red-500/20 text-red-600 dark:text-red-400 border-0 text-[9px]">
-                                  ● {isArabic ? "غير متاح" : "Unavailable"}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                              <span className="flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
-                                {dist.phone || (isArabic ? "غير متوفر" : "Not available")}
-                              </span>
-                              <span className="text-muted-foreground/30">|</span>
-                              <span className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                {Number(dist.rating || 0).toFixed(1)}
-                              </span>
-                              <span className="text-muted-foreground/30">|</span>
-                              <span className="flex items-center gap-1">
-                                <Package className="h-3 w-3" />
-                                {dist.completed_orders || 0} {isArabic ? "طلب" : "orders"}
-                              </span>
-                            </div>
-                          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-slate-900 dark:text-white">
+                {isArabic ? dist.full_name_ar : dist.full_name_en || dist.full_name_ar}
+              </p>
+              {dist.is_available ? (
+                <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 text-[9px]">
+                  ● {isArabic ? "متاح" : "Available"}
+                </Badge>
+              ) : (
+                <Badge className="bg-red-500/20 text-red-600 dark:text-red-400 border-0 text-[9px]">
+                  ● {isArabic ? "غير متاح" : "Unavailable"}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+              <span className="flex items-center gap-1">
+                <Phone className="h-3 w-3" />
+                {dist.phone || (isArabic ? "غير متوفر" : "Not available")}
+              </span>
+              <span className="text-muted-foreground/30">|</span>
+              <span className="flex items-center gap-1">
+                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                {Number(dist.rating || 0).toFixed(1)}
+              </span>
+            </div>
+          </div>
 
-                          <div className={cn(
-                            "h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
-                            selectedDistributorId === dist.id
-                              ? "border-emerald-500 bg-emerald-500"
-                              : "border-slate-300 dark:border-slate-600"
-                          )}>
-                            {selectedDistributorId === dist.id && (
-                              <Check className="h-4 w-4 text-white" />
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
+          {/* ✅ ✅ ✅ إحصائيات الموزع (الجارية والمكتملة) */}
+          <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+            {isLoadingStats ? (
+              <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+            ) : (
+              <>
+                {/* ✅ الطلبات الجارية */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                    {isArabic ? "جارية:" : "Active:"}
+                  </span>
+                  <span className={cn(
+                    "text-xs font-bold",
+                    stats.pending > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
+                  )}>
+                    {stats.pending}
+                  </span>
+                  {stats.pending > 0 && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  )}
+                </div>
+                
+                {/* ✅ الطلبات المكتملة */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    {isArabic ? "مكتملة:" : "Completed:"}
+                  </span>
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    {stats.completed}
+                  </span>
+                  {stats.completed > 0 && (
+                    <CheckCircle className="h-3 w-3 text-emerald-500" />
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* زر الاختيار */}
+          <div className={cn(
+            "h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
+            selectedDistributorId === dist.id
+              ? "border-emerald-500 bg-emerald-500"
+              : "border-slate-300 dark:border-slate-600"
+          )}>
+            {selectedDistributorId === dist.id && (
+              <Check className="h-4 w-4 text-white" />
+            )}
+          </div>
+        </div>
+      );
+    })}
+</div>
 
                   {allDistributors.filter((dist: any) => {
                     const search = distributorSearch.toLowerCase().trim();
@@ -3703,7 +3792,7 @@ const handleDeactivateDistributor = async () => {
             </div>
           </div>
 
-          {/* ===== أزرار الإجراءات ===== */}
+         {/* ===== أزرار الإجراءات ===== */}
           <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex flex-wrap items-center justify-between gap-3">
             <Button
               variant="outline"
@@ -3713,29 +3802,52 @@ const handleDeactivateDistributor = async () => {
               {isArabic ? "إغلاق" : "Close"}
             </Button>
             
-            {/* ✅ يمكن إضافة أزرار إضافية هنا مثل قبول/رفض الطلب إذا كانت الحالة pending */}
             {orderData.status === "pending" && (
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 transition-all duration-300 hover:scale-105"
                   onClick={() => {
-                    // ✅ دالة قبول الطلب
+                    // ✅ إغلاق الـ Dialog أولاً
                     setShowOrderDetails(false);
-                    // handleAcceptDelivery(orderData.id);
+                    
+                    // ✅ فتح ديالوج القبول مع بيانات الطلب
+                    const orderId = orderData.order?.id || orderData.id;
+                    console.log("📦 [OrderDetails] Accepting order:", orderId);
+                    
+                    // ✅ تعيين البيانات المطلوبة لديالوج القبول
+                    setSelectedDeliveryOrderId(orderData.id);
+                    setSelectedOrderId(orderId);
+                    setSelectedDistributorId("");
+                    setDistributorSearch("");
+                    
+                    // ✅ فتح ديالوج القبول
+                    setAcceptDialogOpen(true);
                   }}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-1.5" />
                   {isArabic ? "قبول الطلب" : "Accept Order"}
                 </Button>
+                
                 <Button
                   size="sm"
                   variant="destructive"
                   className="rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-105"
                   onClick={() => {
-                    // ✅ دالة رفض الطلب
+                    // ✅ إغلاق الـ Dialog أولاً
                     setShowOrderDetails(false);
-                    // handleRejectDelivery(orderData.id);
+                    
+                    // ✅ فتح ديالوج الرفض مع بيانات الطلب
+                    const orderId = orderData.order?.id || orderData.id;
+                    console.log("📦 [OrderDetails] Rejecting order:", orderId);
+                    
+                    // ✅ تعيين البيانات المطلوبة لديالوج الرفض
+                    setSelectedDeliveryOrderId(orderData.id);
+                    setSelectedOrderId(orderId);
+                    setRejectReason("");
+                    
+                    // ✅ فتح ديالوج الرفض
+                    setRejectDialogOpen(true);
                   }}
                 >
                   <XCircle className="h-4 w-4 mr-1.5" />
@@ -4147,6 +4259,9 @@ function OrderCard({
 // ============================================================
 // 📦 DistributorCard
 // ============================================================
+// ============================================================
+// 📦 DistributorCard
+// ============================================================
 function DistributorCard({ 
   distributor, 
   isArabic,
@@ -4196,11 +4311,6 @@ function DistributorCard({
             <span className="flex items-center gap-1">
               <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
               {Number(distributor.rating || 0).toFixed(1)}
-            </span>
-            <span className="text-muted-foreground/30">|</span>
-            <span className="flex items-center gap-1">
-              <Package className="h-3 w-3" />
-              {distributor.completed_orders || 0} {isArabic ? "طلب" : "orders"}
             </span>
             <span className="text-muted-foreground/30">|</span>
             <span className="flex items-center gap-1">

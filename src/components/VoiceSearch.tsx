@@ -1,5 +1,5 @@
 // src/components/VoiceSearch.tsx
-// 🎤 مكون البحث الصوتي - نسخة محسنة مع التكامل مع المحرك الذكي
+// 🎤 مكون البحث الصوتي - نسخة محسنة مع زر إغلاق Dropdown
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Mic, MicOff, X, Loader2, RefreshCw, Volume2 } from "lucide-react";
@@ -43,6 +43,7 @@ export function VoiceSearch({
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
+  const isArabic = lang === 'ar-SA';
 
   // ✅ حجم الزر
   const sizeClasses = {
@@ -147,7 +148,7 @@ export function VoiceSearch({
   }, []);
 
   // ============================================================
-  // 🔍 معالجة النتيجة الصوتية
+  // 🔍 معالجة النتيجة الصوتية (معدلة مع إغلاق Dropdown)
   // ============================================================
   
   const handleVoiceResult = useCallback(async (text: string) => {
@@ -176,13 +177,22 @@ export function VoiceSearch({
           `🔍 ${response.totalCount} نتيجة لـ "${text}"`,
           { duration: 3000 }
         );
+        
+        // ✅ ✅ ✅ نترك Dropdown مفتوحاً - المستخدم يغلقه بالزر X
+        // لا نقوم بإغلاقه تلقائياً
+        
       } else if (response.suggestions && response.suggestions.length > 0) {
         // ✅ عرض اقتراحات
         toast.info(response.suggestions[0], { duration: 5000 });
         onResult(text, response.entities);
+        
+        // ✅ ✅ ✅ نترك Dropdown مفتوحاً - المستخدم يغلقه بالزر X
+        
       } else {
         toast.warning(`😕 لم أجد نتائج لـ "${text}"`, { duration: 3000 });
         onResult(text, response.entities);
+        
+        // ✅ ✅ ✅ نترك Dropdown مفتوحاً - المستخدم يغلقه بالزر X
       }
       
       // ✅ نطق النتيجة إذا كان TTS مفعلاً
@@ -203,10 +213,6 @@ export function VoiceSearch({
   // ============================================================
   // 🎙️ إنشاء كائن التعرف الصوتي
   // ============================================================
-  
-// ============================================================
-// 🎙️ إنشاء كائن التعرف الصوتي (محسّن مع كشف انتهاء الكلام)
-// ============================================================
   
 const createRecognition = useCallback(() => {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -306,6 +312,7 @@ const createRecognition = useCallback(() => {
 
   return recognition;
 }, [lang, handleVoiceResult, onListeningChange]);
+
   // ============================================================
   // ⏯️ التحكم في الاستماع
   // ============================================================
@@ -397,6 +404,15 @@ const createRecognition = useCallback(() => {
     }
   }, [onListeningChange]);
 
+  // ✅ دالة إغلاق Dropdown يدوياً
+  const closeDropdown = useCallback(() => {
+    setSearchResponse(null);
+    setTranscript("");
+    setInterimTranscript("");
+    setIsListening(false);
+    setError(null);
+  }, []);
+
   const toggleListening = useCallback(() => {
     if (isListening) {
       stopListening();
@@ -446,8 +462,6 @@ const createRecognition = useCallback(() => {
     );
   }
 
-  const isArabic = lang === 'ar-SA';
-
   return (
     <div className="relative inline-block">
       {/* ✅ زر الميكروفون الرئيسي */}
@@ -480,10 +494,24 @@ const createRecognition = useCallback(() => {
         )}
       </Button>
 
-      {/* ✅ حالة الاستماع المنبثقة */}
+      {/* ✅ حالة الاستماع المنبثقة مع زر إغلاق */}
       {showStatus && (isListening || isLoading || interimTranscript || searchResponse || error) && (
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 min-w-[220px] max-w-[350px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-[#2a655f]/20 p-3 z-50 animate-in slide-in-from-top-2 duration-200">
           
+          {/* ✅ ✅ ✅ رأس Dropdown مع عنوان وزر إغلاق */}
+          <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#2a655f]/10">
+            <span className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82]">
+              {isArabic ? "🔍 نتائج البحث" : "🔍 Search Results"}
+            </span>
+            <button
+              onClick={closeDropdown}
+              className="p-1 rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-200 text-slate-500 hover:text-red-500"
+              aria-label="Close dropdown"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
           {/* حالة الاستماع */}
           <div className="flex items-center gap-3">
             {isListening && (

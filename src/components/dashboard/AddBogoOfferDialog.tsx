@@ -28,6 +28,7 @@ interface ProductRequirement {
     listing_id: string;
     variations: VariationSelection;
     quantity: number;
+    variationQuantities?: Record<string, number>;  // ✅ جديد: توزيع الكميات على فيرنتات الشرط
 }
 
 interface OfferResult {
@@ -84,7 +85,7 @@ function AddBogoOfferDialogComponent({
     
     // ✅ الشروط (المنتجات المطلوبة)
     const [requirements, setRequirements] = useState<ProductRequirement[]>([
-        { listing_id: '', variations: { mode: 'all', ids: [] }, quantity: 1 }
+        { listing_id: '', variations: { mode: 'all', ids: [] }, quantity: 1, variationQuantities: {} }
     ]);
     
     // ✅ النتيجة (الهدية) مع دعم الكميات لكل فيرنت
@@ -239,7 +240,7 @@ function AddBogoOfferDialogComponent({
     // ✅ دوال إدارة الشروط
     // ============================================================
     const addRequirement = () => {
-        setRequirements([...requirements, { listing_id: '', variations: { mode: 'all', ids: [] }, quantity: 1 }]);
+        setRequirements([...requirements, { listing_id: '', variations: { mode: 'all', ids: [] }, quantity: 1, variationQuantities: {} }]);
     };
 
     const removeRequirement = (index: number) => {
@@ -253,6 +254,7 @@ function AddBogoOfferDialogComponent({
         newReqs[index] = { ...newReqs[index], [field]: value };
         if (field === 'listing_id') {
             newReqs[index].variations = { mode: 'all', ids: [] };
+            newReqs[index].variationQuantities = {};
         }
         setRequirements(newReqs);
     };
@@ -264,24 +266,38 @@ function AddBogoOfferDialogComponent({
             newReqs[reqIndex].variations.ids = current.includes(variationId)
                 ? current.filter(id => id !== variationId)
                 : [...current, variationId];
-            setRequirements(newReqs);
             
-            if (newReqs[reqIndex].variations.ids.length === 1) {
-                const price = getVariationPrice(newReqs[reqIndex].listing_id, newReqs[reqIndex].variations.ids[0]);
-                setSelectedVariationPrice(price);
+            // ✅ إعادة تعيين كميات الفيرنتات عند تغيير الاختيار
+            if (newReqs[reqIndex].variations.ids.length === 0) {
+                newReqs[reqIndex].variationQuantities = {};
             } else {
-                setSelectedVariationPrice(null);
+                // ✅ توزيع الكمية تلقائياً على الفيرنتات المختارة
+                const totalQty = newReqs[reqIndex].quantity || 1;
+                const ids = newReqs[reqIndex].variations.ids;
+                newReqs[reqIndex].variationQuantities = autoDistributeQuantities(ids, totalQty);
             }
+            
+            setRequirements(newReqs);
         } else if (target === 'result') {
             const current = result.variations.ids;
+            const newIds = current.includes(variationId)
+                ? current.filter(id => id !== variationId)
+                : [...current, variationId];
+            
+            // ✅ إعادة تعيين كميات الفيرنتات عند تغيير الاختيار
+            let newVariationQuantities = { ...(result.variationQuantities || {}) };
+            if (newIds.length === 0) {
+                newVariationQuantities = {};
+            } else {
+                // ✅ توزيع الكمية تلقائياً على الفيرنتات المختارة
+                const totalQty = result.quantity || 1;
+                newVariationQuantities = autoDistributeQuantities(newIds, totalQty);
+            }
+            
             setResult({
                 ...result,
-                variations: {
-                    ...result.variations,
-                    ids: current.includes(variationId)
-                        ? current.filter(id => id !== variationId)
-                        : [...current, variationId]
-                }
+                variations: { ...result.variations, ids: newIds },
+                variationQuantities: newVariationQuantities
             });
         }
     };
@@ -290,14 +306,44 @@ function AddBogoOfferDialogComponent({
         if (target === 'requirements' && reqIndex !== null) {
             const newReqs = [...requirements];
             newReqs[reqIndex].variations = { mode, ids: [] };
+            newReqs[reqIndex].variationQuantities = {};
             setRequirements(newReqs);
             if (mode === 'all') {
                 setSelectedVariationPrice(null);
             }
         } else if (target === 'result') {
-            setResult({ ...result, variations: { mode, ids: [] } });
+            setResult({ ...result, variations: { mode, ids: [] }, variationQuantities: {} });
         }
     };
+
+    // ✅ ✅ ✅ دالة تغيير كمية فيرنت الشرط
+    const handleRequirementVariationQuantityChange = useCallback((reqIndex: number, variationId: string, delta: number) => {
+        setRequirements(prev => {
+            const newReqs = [...prev];
+            const req = newReqs[reqIndex];
+            const currentQuantities = req.variationQuantities || {};
+            const currentQty = currentQuantities[variationId] || 0;
+            const newQty = Math.max(0, currentQty + delta);
+            const totalQty = req.quantity || 1;
+            const currentTotal = Object.values(currentQuantities).reduce((sum, qty) => sum + qty, 0);
+            
+            // ✅ منع التجاوز
+            if (delta > 0 && currentTotal >= totalQty) {
+                toast.warning(isArabic ? "⚠️ تم الوصول للحد الأقصى للكمية" : "⚠️ Maximum quantity reached");
+                return prev;
+            }
+            
+            const newQuantities = { ...currentQuantities };
+            if (newQty === 0) {
+                delete newQuantities[variationId];
+            } else {
+                newQuantities[variationId] = newQty;
+            }
+            
+            newReqs[reqIndex] = { ...req, variationQuantities: newQuantities };
+            return newReqs;
+        });
+    }, [isArabic]);
 
     // ✅ ✅ ✅ دالة تغيير كمية فيرنت الهدية
     const handleGiftVariationQuantityChange = useCallback((variationId: string, delta: number) => {
@@ -325,7 +371,47 @@ function AddBogoOfferDialogComponent({
         });
     }, [isArabic]);
 
-    // ✅ ✅ ✅ دالة توزيع الكمية المتبقية بالتساوي
+    // ✅ ✅ ✅ دالة توزيع الكمية المتبقية على فيرنتات الشرط
+    const distributeRemainingRequirementQuantity = useCallback((reqIndex: number, variations: any[]) => {
+        setRequirements(prev => {
+            const newReqs = [...prev];
+            const req = newReqs[reqIndex];
+            const totalQty = req.quantity || 1;
+            const currentQuantities = req.variationQuantities || {};
+            const currentTotal = Object.values(currentQuantities).reduce((sum, qty) => sum + qty, 0);
+            const remaining = totalQty - currentTotal;
+            
+            if (remaining <= 0) {
+                toast.info(isArabic ? "✅ الكمية مكتملة" : "✅ Quantity is complete");
+                return prev;
+            }
+            
+            const availableVariations = variations.filter((v: any) => 
+                !currentQuantities[v.id] || currentQuantities[v.id] > 0
+            );
+            
+            if (availableVariations.length === 0) return prev;
+            
+            const perVariation = Math.floor(remaining / availableVariations.length);
+            const remainder = remaining % availableVariations.length;
+            const newQuantities = { ...currentQuantities };
+            
+            availableVariations.forEach((v: any, index: number) => {
+                newQuantities[v.id] = (newQuantities[v.id] || 0) + perVariation + (index < remainder ? 1 : 0);
+            });
+            
+            toast.success(
+                isArabic 
+                    ? `✅ تم توزيع ${remaining} المتبقية على ${availableVariations.length} فيرنتات`
+                    : `✅ Distributed ${remaining} remaining to ${availableVariations.length} variations`
+            );
+            
+            newReqs[reqIndex] = { ...req, variationQuantities: newQuantities };
+            return newReqs;
+        });
+    }, [isArabic]);
+
+    // ✅ ✅ ✅ دالة توزيع الكمية المتبقية بالتساوي على الهدية
     const distributeRemainingGiftQuantity = useCallback((variations: any[]) => {
         setResult(prev => {
             const totalQty = prev.quantity || 1;
@@ -377,7 +463,7 @@ function AddBogoOfferDialogComponent({
     }, []);
 
     // ============================================================
-    // ✅ حفظ العرض - المُصحح بالكامل
+    // ✅ ✅ ✅ حفظ العرض - المُصحح بالكامل
     // ============================================================
     const handleSubmit = async () => {
         // ✅ التحقق
@@ -413,7 +499,57 @@ function AddBogoOfferDialogComponent({
             return;
         }
 
-        // ✅ ✅ ✅ التحقق من توزيع الكميات مع التوزيع التلقائي إذا لزم الأمر
+        // ✅ ✅ ✅ التحقق من توزيع الكميات للشروط
+        for (let i = 0; i < requirements.length; i++) {
+            const req = requirements[i];
+            const hasVariations = getProductVariations(req.listing_id).length > 0;
+            
+            if (hasVariations && req.variations.mode === 'selected' && req.variations.ids.length > 0) {
+                const totalQty = req.quantity || 1;
+                const variationQuantities = req.variationQuantities || {};
+                const distributedTotal = Object.values(variationQuantities).reduce((sum, qty) => sum + qty, 0);
+                
+                // ✅ إذا لم يتم توزيع الكميات بالكامل، وزعها تلقائيًا
+                if (distributedTotal !== totalQty) {
+                    const newQuantities = autoDistributeQuantities(req.variations.ids, totalQty);
+                    const newReqs = [...requirements];
+                    newReqs[i] = { ...req, variationQuantities: newQuantities };
+                    setRequirements(newReqs);
+                    
+                    // ✅ استمرار التحقق بعد التوزيع التلقائي
+                    const finalDistributedTotal = Object.values(newQuantities).reduce((sum, qty) => sum + qty, 0);
+                    if (finalDistributedTotal !== totalQty) {
+                        setError(isArabic 
+                            ? `❌ مجموع الكميات الموزعة في الشرط ${i+1} (${finalDistributedTotal}) لا يساوي الكمية الإجمالية (${totalQty})`
+                            : `❌ Total distributed quantity in requirement ${i+1} (${finalDistributedTotal}) doesn't match total (${totalQty})`
+                        );
+                        return;
+                    }
+                }
+                
+                // ✅ التحقق النهائي
+                const finalDistributedTotal = Object.values(req.variationQuantities || {}).reduce((sum, qty) => sum + qty, 0);
+                if (finalDistributedTotal !== totalQty) {
+                    setError(isArabic 
+                        ? `❌ مجموع الكميات الموزعة في الشرط ${i+1} (${finalDistributedTotal}) لا يساوي الكمية الإجمالية (${totalQty})`
+                        : `❌ Total distributed quantity in requirement ${i+1} (${finalDistributedTotal}) doesn't match total (${totalQty})`
+                    );
+                    return;
+                }
+                
+                // ✅ تأكد أن كل فيرنت مختار له كمية أكبر من 0
+                const hasZeroQuantity = req.variations.ids.some(id => (req.variationQuantities?.[id] || 0) === 0);
+                if (hasZeroQuantity) {
+                    setError(isArabic 
+                        ? `❌ جميع الفيرنتات المختارة في الشرط ${i+1} يجب أن يكون لها كمية أكبر من 0`
+                        : `❌ All selected variations in requirement ${i+1} must have quantity greater than 0`
+                    );
+                    return;
+                }
+            }
+        }
+
+        // ✅ ✅ ✅ التحقق من توزيع الكميات للهدية
         let variationQuantities = { ...(result.variationQuantities || {}) };
         
         if (giftHasVariations && result.variations.mode === 'selected' && result.variations.ids.length > 0) {
@@ -468,7 +604,9 @@ function AddBogoOfferDialogComponent({
                 required_variations: requirements.map(r => ({
                     product_id: r.listing_id,
                     variation_ids: r.variations.mode === 'selected' ? r.variations.ids : [],
-                    quantity: r.quantity
+                    quantity: r.quantity,
+                    // ✅ ✅ ✅ حفظ كميات الفيرنتات لكل شرط
+                    variation_quantities: r.variationQuantities || {}
                 })),
                 result_variation_ids: result.variations.mode === 'selected' ? result.variations.ids : null,
                 starts_at: new Date().toISOString(),
@@ -477,9 +615,14 @@ function AddBogoOfferDialogComponent({
                 display_text_ar: getPreviewText(),
                 display_text_en: getPreviewText(),
                 category_id: selectedCategoryId || null,
-                // ✅ ✅ ✅ حفظ الكميات لكل فيرنت في metadata - مع استخدام الكميات الموزعة تلقائيًا
+                // ✅ ✅ ✅ حفظ الكميات لكل فيرنت في metadata
                 metadata: {
-                    variation_quantities: variationQuantities
+                    variation_quantities: variationQuantities,
+                    // ✅ ✅ ✅ حفظ كميات الفيرنتات للشروط
+                    requirement_variation_quantities: requirements.map(r => ({
+                        product_id: r.listing_id,
+                        quantities: r.variationQuantities || {}
+                    }))
                 }
             };
 
@@ -535,11 +678,12 @@ function AddBogoOfferDialogComponent({
                 categories.find((c: any) => c.id === existingOffer.category_id)?.[isArabic ? 'name_ar' : 'name_en'] || ''
             );
             
-            // 3️⃣ ✅✅✅ المنتجات المطلوبة (requirements)
+            // 3️⃣ ✅✅✅ المنتجات المطلوبة (requirements) مع كميات الفيرنتات
             if (existingOffer.required_product_ids && existingOffer.required_product_ids.length > 0) {
                 const requirementsData = existingOffer.required_product_ids.map((productId: string, index: number) => {
                     let variations = { mode: 'all' as const, ids: [] as string[] };
                     let quantity = 1;
+                    let variationQuantities: Record<string, number> = {};
                     
                     if (existingOffer.required_variations && existingOffer.required_variations[index]) {
                         const reqVar = existingOffer.required_variations[index];
@@ -547,12 +691,23 @@ function AddBogoOfferDialogComponent({
                             variations = { mode: 'selected', ids: reqVar.variation_ids };
                         }
                         quantity = reqVar.quantity || 1;
+                        
+                        // ✅ ✅ ✅ استعادة كميات الفيرنتات من required_variations
+                        if (reqVar.variation_quantities) {
+                            variationQuantities = reqVar.variation_quantities;
+                            console.log(`🟢 [Edit] Restored variation quantities for requirement ${index}:`, variationQuantities);
+                        } else if (reqVar.variation_ids && reqVar.variation_ids.length > 0) {
+                            // ✅ إذا ما في كميات محفوظة، وزع بالتساوي
+                            variationQuantities = autoDistributeQuantities(reqVar.variation_ids, quantity);
+                            console.log(`🟡 [Edit] Auto-distributed quantities for requirement ${index}:`, variationQuantities);
+                        }
                     }
                     
                     return {
                         listing_id: productId,
                         variations: variations,
-                        quantity: quantity
+                        quantity: quantity,
+                        variationQuantities: variationQuantities
                     };
                 });
                 setRequirements(requirementsData);
@@ -618,12 +773,17 @@ function AddBogoOfferDialogComponent({
                 }
             }
             
-            // 5️⃣ التاريخ
+            // 5️⃣ ✅ ✅ ✅ التاريخ - المُصحح
             if (existingOffer.expires_at) {
                 setIsPermanent(false);
-                setExpiresAt(existingOffer.expires_at);
+                // ✅ ✅ ✅ تحويل التاريخ إلى الصيغة الصحيحة للـ input type="datetime-local"
+                const date = new Date(existingOffer.expires_at);
+                const formattedDate = date.toISOString().slice(0, 16);
+                setExpiresAt(formattedDate);
+                console.log("🟢 [Edit] Restored expires_at:", formattedDate);
             } else {
                 setIsPermanent(true);
+                setExpiresAt("");
             }
             
             isUpdatingFromExisting.current = false;
@@ -640,7 +800,8 @@ function AddBogoOfferDialogComponent({
         setRequirements([{ 
             listing_id: initialProduct?.id || '', 
             variations: { mode: 'all', ids: [] }, 
-            quantity: 1 
+            quantity: 1,
+            variationQuantities: {}
         }]);
         setResult({ 
             listing_id: initialProduct?.id && offerType === 'bogo' ? initialProduct.id : '', 
@@ -850,6 +1011,11 @@ function AddBogoOfferDialogComponent({
                         {requirements.map((req, index) => {
                             const variations = getProductVariations(req.listing_id);
                             const isBogoAndSingle = offerType === 'bogo' && requirements.length === 1;
+                            const totalQty = req.quantity || 1;
+                            const variationQuantities = req.variationQuantities || {};
+                            const distributedTotal = Object.values(variationQuantities).reduce((sum, qty) => sum + qty, 0);
+                            const remaining = totalQty - distributedTotal;
+                            const hasSelectedVariations = req.variations.mode === 'selected' && req.variations.ids.length > 0;
 
                             return (
                                 <div key={index} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
@@ -921,6 +1087,7 @@ function AddBogoOfferDialogComponent({
                                                                     .join(' ');
                                                                 const isSelected = req.variations.ids.includes(v.id);
                                                                 const price = v.price || v.old_price || getProductPrice(req.listing_id);
+                                                                const currentQty = variationQuantities[v.id] || 0;
 
                                                                 return (
                                                                     <button
@@ -940,6 +1107,11 @@ function AddBogoOfferDialogComponent({
                                                                                 {formatPrice(Number(price), app.currency, app.lang)}
                                                                             </span>
                                                                         )}
+                                                                        {isSelected && (
+                                                                            <span className="text-[8px] text-emerald-600 ml-1">
+                                                                                (×{currentQty})
+                                                                            </span>
+                                                                        )}
                                                                     </button>
                                                                 );
                                                             })}
@@ -957,22 +1129,6 @@ function AddBogoOfferDialogComponent({
                                                             })()}
                                                         </p>
                                                     )}
-                                                    {req.variations.mode === 'selected' && req.variations.ids.length === 1 && (
-                                                        <p className="text-[10px] text-emerald-500 font-medium mt-0.5">
-                                                            💰 {isArabic ? "سعر الفيرنت" : "Variation price"}: {
-                                                                formatPrice(
-                                                                    Number(getVariationPrice(req.listing_id, req.variations.ids[0]) || 0),
-                                                                    app.currency,
-                                                                    app.lang
-                                                                )
-                                                            }
-                                                        </p>
-                                                    )}
-                                                    {req.variations.mode === 'selected' && req.variations.ids.length > 1 && (
-                                                        <p className="text-[10px] text-amber-500/60 mt-0.5">
-                                                            ⚠️ {isArabic ? "تم اختيار عدة فيرنتات، سيتم تطبيق العرض على جميعها" : "Multiple variations selected, offer will apply to all"}
-                                                        </p>
-                                                    )}
                                                 </div>
                                             )}
 
@@ -987,7 +1143,12 @@ function AddBogoOfferDialogComponent({
                                                         className="h-7 w-7 rounded-full hover:bg-[#2a655f]/10"
                                                         onClick={() => {
                                                             const newReqs = [...requirements];
-                                                            newReqs[index].quantity = Math.max(1, req.quantity - 1);
+                                                            const newQty = Math.max(1, req.quantity - 1);
+                                                            newReqs[index].quantity = newQty;
+                                                            // ✅ إعادة توزيع الكميات عند تغيير الكمية الإجمالية
+                                                            if (req.variations.mode === 'selected' && req.variations.ids.length > 0) {
+                                                                newReqs[index].variationQuantities = autoDistributeQuantities(req.variations.ids, newQty);
+                                                            }
                                                             setRequirements(newReqs);
                                                         }}
                                                         type="button"
@@ -1003,7 +1164,12 @@ function AddBogoOfferDialogComponent({
                                                         className="h-7 w-7 rounded-full hover:bg-[#2a655f]/10"
                                                         onClick={() => {
                                                             const newReqs = [...requirements];
-                                                            newReqs[index].quantity = req.quantity + 1;
+                                                            const newQty = req.quantity + 1;
+                                                            newReqs[index].quantity = newQty;
+                                                            // ✅ إعادة توزيع الكميات عند تغيير الكمية الإجمالية
+                                                            if (req.variations.mode === 'selected' && req.variations.ids.length > 0) {
+                                                                newReqs[index].variationQuantities = autoDistributeQuantities(req.variations.ids, newQty);
+                                                            }
                                                             setRequirements(newReqs);
                                                         }}
                                                         type="button"
@@ -1012,6 +1178,98 @@ function AddBogoOfferDialogComponent({
                                                     </Button>
                                                 </div>
                                             </div>
+
+                                            {/* ✅ ✅ ✅ توزيع الكميات على فيرنتات الشرط */}
+                                            {hasSelectedVariations && (
+                                                <div className="mt-3 p-3 bg-white/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <Label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                                            📊 {isArabic ? "توزيع الكميات على الفيرنتات" : "Variation Quantity Distribution"}
+                                                            <Badge className={cn(
+                                                                "border-0 text-[9px]",
+                                                                distributedTotal === totalQty 
+                                                                    ? "bg-emerald-500/20 text-emerald-600" 
+                                                                    : "bg-amber-500/20 text-amber-600"
+                                                            )}>
+                                                                {distributedTotal}/{totalQty}
+                                                            </Badge>
+                                                            {remaining > 0 && (
+                                                                <Badge className="bg-amber-500/20 text-amber-600 border-0 text-[9px]">
+                                                                    {isArabic ? `متبقي ${remaining}` : `${remaining} remaining`}
+                                                                </Badge>
+                                                            )}
+                                                        </Label>
+                                                        {remaining > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => distributeRemainingRequirementQuantity(
+                                                                    index,
+                                                                    variations.filter((v: any) => req.variations.ids.includes(v.id))
+                                                                )}
+                                                                className="text-[10px] text-[#2a655f] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border border-[#2a655f]/20 rounded-lg hover:bg-[#2a655f]/5"
+                                                            >
+                                                                <Zap className="h-3 w-3" />
+                                                                {isArabic ? `وزع ${remaining}` : `Distribute ${remaining}`}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {req.variations.ids.map((id: string) => {
+                                                            const variation = variations.find((v: any) => v.id === id);
+                                                            if (!variation) return null;
+                                                            const combo = variation.combination || {};
+                                                            const comboText = Object.entries(combo)
+                                                                .map(([key, value]) => `${key}: ${value}`)
+                                                                .join(' • ');
+                                                            const currentQty = variationQuantities[id] || 0;
+                                                            const price = variation.price || getProductPrice(req.listing_id);
+                                                            
+                                                            return (
+                                                                <div key={id} className="flex items-center gap-2 p-2 border rounded-xl border-slate-200/50 bg-white/50 dark:bg-slate-800/50">
+                                                                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                                                        {comboText}
+                                                                    </span>
+                                                                    <span className="text-[10px] text-muted-foreground">
+                                                                        ({formatPrice(Number(price), app.currency, app.lang)})
+                                                                    </span>
+                                                                    <div className="flex items-center gap-1">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleRequirementVariationQuantityChange(index, id, -1)}
+                                                                            className={cn(
+                                                                                "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                                                                                currentQty > 0 
+                                                                                    ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600"
+                                                                                    : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800"
+                                                                            )}
+                                                                            disabled={currentQty === 0}
+                                                                        >
+                                                                            -
+                                                                        </button>
+                                                                        <span className="w-8 text-center font-bold text-[#0d2e2a] text-sm">
+                                                                            {currentQty}
+                                                                        </span>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleRequirementVariationQuantityChange(index, id, 1)}
+                                                                            className={cn(
+                                                                                "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                                                                                distributedTotal < totalQty
+                                                                                    ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white"
+                                                                                    : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700"
+                                                                            )}
+                                                                            disabled={distributedTotal >= totalQty}
+                                                                        >
+                                                                            +
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {offerType === 'bundle' && requirements.length > 1 && (
@@ -1285,7 +1543,15 @@ function AddBogoOfferDialogComponent({
                                     size="sm"
                                     variant="outline"
                                     className="h-7 w-7 rounded-full hover:bg-[#2a655f]/10"
-                                    onClick={() => setResult({ ...result, quantity: Math.max(1, result.quantity - 1) })}
+                                    onClick={() => {
+                                        const newQty = Math.max(1, result.quantity - 1);
+                                        // ✅ إعادة توزيع الكميات عند تغيير الكمية الإجمالية
+                                        let newVariationQuantities = { ...(result.variationQuantities || {}) };
+                                        if (result.variations.mode === 'selected' && result.variations.ids.length > 0) {
+                                            newVariationQuantities = autoDistributeQuantities(result.variations.ids, newQty);
+                                        }
+                                        setResult({ ...result, quantity: newQty, variationQuantities: newVariationQuantities });
+                                    }}
                                     type="button"
                                 >
                                     -
@@ -1297,7 +1563,15 @@ function AddBogoOfferDialogComponent({
                                     size="sm"
                                     variant="outline"
                                     className="h-7 w-7 rounded-full hover:bg-[#2a655f]/10"
-                                    onClick={() => setResult({ ...result, quantity: result.quantity + 1 })}
+                                    onClick={() => {
+                                        const newQty = result.quantity + 1;
+                                        // ✅ إعادة توزيع الكميات عند تغيير الكمية الإجمالية
+                                        let newVariationQuantities = { ...(result.variationQuantities || {}) };
+                                        if (result.variations.mode === 'selected' && result.variations.ids.length > 0) {
+                                            newVariationQuantities = autoDistributeQuantities(result.variations.ids, newQty);
+                                        }
+                                        setResult({ ...result, quantity: newQty, variationQuantities: newVariationQuantities });
+                                    }}
                                     type="button"
                                 >
                                     +
@@ -1314,7 +1588,7 @@ function AddBogoOfferDialogComponent({
                         <div className="flex items-center gap-3">
                             <button
                                 type="button"
-                                onClick={() => { setIsPermanent(true); setError(null); }}
+                                onClick={() => { setIsPermanent(true); setError(null); setExpiresAt(""); }}
                                 className={cn(
                                     "px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-300 flex-1 cursor-pointer",
                                     isPermanent
@@ -1373,7 +1647,14 @@ function AddBogoOfferDialogComponent({
                             </p>
                             {!isPermanent && expiresAt && (
                                 <p className="text-[10px] text-emerald-500/60">
-                                    📅 {isArabic ? 'ينتهي في' : 'Expires'} {new Date(expiresAt).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US')}
+                                    📅 {isArabic ? 'ينتهي في' : 'Expires'} {new Date(expiresAt).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US')} 
+                                    {(() => {
+                                        const date = new Date(expiresAt);
+                                        if (!isNaN(date.getTime())) {
+                                            return ` ${date.toLocaleTimeString(isArabic ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`;
+                                        }
+                                        return '';
+                                    })()}
                                 </p>
                             )}
                             {selectedCategoryId && (
@@ -1385,10 +1666,20 @@ function AddBogoOfferDialogComponent({
                             )}
                             {result.variationQuantities && Object.keys(result.variationQuantities).length > 0 && (
                                 <p className="text-[10px] text-emerald-500/60">
-                                    🎨 {isArabic ? 'توزيع الكميات' : 'Quantity distribution'}: {
+                                    🎨 {isArabic ? 'توزيع كميات الهدية' : 'Gift quantity distribution'}: {
                                         Object.entries(result.variationQuantities)
                                             .map(([id, qty]) => `${qty}`)
                                             .join(' + ')
+                                    }
+                                </p>
+                            )}
+                            {requirements.some(r => r.variationQuantities && Object.keys(r.variationQuantities).length > 0) && (
+                                <p className="text-[10px] text-emerald-500/60">
+                                    🎨 {isArabic ? 'توزيع كميات الشروط' : 'Requirements quantity distribution'}: {
+                                        requirements.map((r, i) => {
+                                            const qtyStr = Object.values(r.variationQuantities || {}).join('+');
+                                            return qtyStr ? `شرط ${i+1}: ${qtyStr}` : null;
+                                        }).filter(Boolean).join(' | ')
                                     }
                                 </p>
                             )}

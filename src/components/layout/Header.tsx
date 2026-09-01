@@ -1507,57 +1507,58 @@ export const Header = memo(function Header() {
               </TooltipContent>
             </Tooltip>
 
-            {/* Role Button */}
-            {(() => {
-              if (isAuthLoading) {
-                return <div className="ms-1 px-2 py-0.5 rounded-lg bg-[#2a655f]/20 animate-pulse h-5 w-16" />;
-              }
+          {/* Role Button */}
+{(() => {
+  if (isAuthLoading) {
+    return <div className="ms-1 px-2 py-0.5 rounded-lg bg-[#2a655f]/20 animate-pulse h-5 w-16" />;
+  }
 
-              if (app.user) {
-                if (isAdmin) {
-                  return (
-                    <Link 
-                      to="/admin" 
-                      className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
-                    >
-                      <LayoutDashboard className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-                      {app.lang === "ar" ? "لوحة الأدمن" : "Admin"}
-                    </Link>
-                  );
-                }
-                if (isSeller) {
-                  return (
-                    <Link 
-                      to="/dashboard" 
-                      className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
-                    >
-                      <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-                      {app.lang === "ar" ? "لوحة البائع" : "Seller"}
-                    </Link>
-                  );
-                }
-                return (
-                  <Link 
-                    to="/dashboard" 
-                    className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
-                  >
-                    <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-                    {app.lang === "ar" ? "أنشئ متجرك" : "List Business"}
-                  </Link>
-                );
-              }
-              
-              return (
-                <Link 
-                  to="/auth/$mode" 
-                  params={{ mode: "register" }} 
-                  className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
-                >
-                  <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-                  {app.lang === "ar" ? "أنشئ متجرك" : "List Business"}
-                </Link>
-              );
-            })()}
+  if (app.user) {
+    if (isAdmin) {
+      return (
+        <Link 
+          to="/admin" 
+          className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+        >
+          <LayoutDashboard className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+          {app.lang === "ar" ? "لوحة الأدمن" : "Admin"}
+        </Link>
+      );
+    }
+    if (isSeller) {
+      return (
+        <Link 
+          to="/dashboard" 
+          className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+        >
+          <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+          {app.lang === "ar" ? "لوحة البائع" : "Seller"}
+        </Link>
+      );
+    }
+    // ✅ ✅ ✅ إذا كان مستخدم عادي (ليس بائع) → يوجه إلى /become-seller
+    return (
+      <Link 
+        to="/become-seller"
+        className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+      >
+        <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+        {app.lang === "ar" ? "طلب فتح متجر" : "Open Store Request"}
+      </Link>
+    );
+  }
+  
+  // ✅ ✅ ✅ إذا كان المستخدم غير مسجل → يوجه إلى /become-seller
+  return (
+    <Link 
+      to="/become-seller"
+      className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+    >
+      <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
+      {app.lang === "ar" ? "طلب فتح متجر" : "Open Store Request"}
+    </Link>
+  );
+})()}
           </div>
         </div>
 
@@ -1631,7 +1632,7 @@ export const Header = memo(function Header() {
             .marquee-track {
               display: flex;
               width: max-content;
-              animation: marquee-scroll 35s linear infinite;
+              animation: marquee-scroll 180s linear infinite;
               will-change: transform;
             }
             .marquee-track.paused {

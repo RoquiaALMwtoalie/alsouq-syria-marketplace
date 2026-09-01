@@ -951,6 +951,7 @@ function RouteGuard() {
         "/about",
         "/terms",
         "/privacy",
+         "/become-seller",
       ];
 
       // ✅ المسارات الخاصة بالمسؤول (Admin)

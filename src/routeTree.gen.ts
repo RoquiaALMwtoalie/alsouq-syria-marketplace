@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AiRouteImport } from './routes/ai'
+import { Route as BecomeSellerRouteImport } from './routes/become-seller'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -69,6 +70,11 @@ const AdminRoute = AdminRouteImport.update({
 const AiRoute = AiRouteImport.update({
   id: '/ai',
   path: '/ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BecomeSellerRoute = BecomeSellerRouteImport.update({
+  id: '/become-seller',
+  path: '/become-seller',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CartRoute = CartRouteImport.update({
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/ai': typeof AiRoute
+  '/become-seller': typeof BecomeSellerRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/dashboard': typeof DashboardRoute
@@ -342,6 +349,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/ai': typeof AiRoute
+  '/become-seller': typeof BecomeSellerRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/dashboard': typeof DashboardRoute
@@ -391,6 +399,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/ai': typeof AiRoute
+  '/become-seller': typeof BecomeSellerRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/dashboard': typeof DashboardRoute
@@ -441,6 +450,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/ai'
+    | '/become-seller'
     | '/cart'
     | '/categories'
     | '/dashboard'
@@ -489,6 +499,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/ai'
+    | '/become-seller'
     | '/cart'
     | '/categories'
     | '/dashboard'
@@ -537,6 +548,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/ai'
+    | '/become-seller'
     | '/cart'
     | '/categories'
     | '/dashboard'
@@ -586,6 +598,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   AiRoute: typeof AiRoute
+  BecomeSellerRoute: typeof BecomeSellerRoute
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
   DashboardRoute: typeof DashboardRoute
@@ -652,6 +665,13 @@ declare module '@tanstack/react-router' {
       path: '/ai'
       fullPath: '/ai'
       preLoaderRoute: typeof AiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/become-seller': {
+      id: '/become-seller'
+      path: '/become-seller'
+      fullPath: '/become-seller'
+      preLoaderRoute: typeof BecomeSellerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cart': {
@@ -962,6 +982,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AiRoute: AiRoute,
+  BecomeSellerRoute: BecomeSellerRoute,
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
   DashboardRoute: DashboardRoute,

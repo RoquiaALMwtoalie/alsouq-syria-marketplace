@@ -18,7 +18,8 @@ import {
   CheckCircle, XCircle, MoreVertical,
   Eye, Edit, Trash2, ArrowLeft,
   Truck, RefreshCw, AlertCircle,
-  UserCheck, EyeOff, Lock, Unlock
+  UserCheck, EyeOff, Lock, Unlock,
+  Package, Clock, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +58,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Table,
   TableBody,
   TableCell,
@@ -64,7 +71,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -114,66 +121,102 @@ function DistributorsManagementPage() {
 
   const isArabic = app.lang === "ar";
 
-  // ✅ دالة تحويل المستخدم إلى موزع (معرفة هنا في النطاق الرئيسي)
-// ✅ دالة تحويل المستخدم إلى موزع - باستخدام RPC أو Edge Function
-const handleConvertUser = async () => {
-  if (!existingUserData || !pendingFormData) return;
-
-  const userId = existingUserData.id;
-  const { full_name_ar, full_name_en, phone, address_ar, address_en, governorate_id, is_available, distributor_type, avatar_url } = pendingFormData;
-
-  try {
-    // ✅ تحديث الاسم
-    if (full_name_ar && full_name_ar !== existingUserData.full_name) {
-      await supabase
-        .from("profiles")
-        .update({ full_name: full_name_ar })
-        .eq("id", userId);
-    }
-
-    // ✅ إضافة دور الموزع
-    await supabase.from("user_roles").insert({
-      user_id: userId,
-      role: "distributor"
-    });
-
-    // ✅ إضافة الموزع - باستخدام RPC
-    const { data: distributorId, error: distributorError } = await supabase.rpc('add_distributor', {
-      p_user_id: userId,
-      p_full_name_ar: full_name_ar || existingUserData.full_name || `موزع ${phone}`,
-      p_full_name_en: full_name_en || `Distributor ${phone}`,
-      p_phone: phone,
-      p_email: `${phone}@distributor.sy`,
-      p_address_ar: address_ar || null,
-      p_address_en: address_en || null,
-      p_governorate_id: governorate_id || null,
-      p_is_available: is_available,
-      p_distributor_type: distributor_type || 'freelance',
-      p_avatar_url: avatar_url || existingUserData.avatar_url || null,
-      p_delivery_company_id: companyId || null,
-    });
-
-    if (distributorError) {
-      console.error("❌ RPC error:", distributorError);
-      throw distributorError;
-    }
-
-    toast.success(
-      isArabic 
-        ? `✅ تم تحويل "${existingUserData.full_name}" إلى موزع بنجاح!` 
-        : `✅ Successfully converted "${existingUserData.full_name}" to distributor!`
-    );
+  // ✅ جلب إحصائيات الطلبات لكل موزع
+  const [distributorStats, setDistributorStats] = useState<Record<string, any>>({});
+  
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!distributors.length) return;
+      
+      const statsMap: Record<string, any> = {};
+      
+      for (const dist of distributors) {
+        // جلب كل طلبات الموزع
+        const { data: orders, error } = await supabase
+          .from("delivery_orders")
+          .select("status, order_id")
+          .eq("distributor_id", dist.id);
+        
+        if (!error && orders) {
+          statsMap[dist.id] = {
+            total: orders.length,
+            pending: orders.filter((o: any) => o.status === 'pending' || o.status === 'assigned').length,
+            in_transit: orders.filter((o: any) => o.status === 'in_transit' || o.status === 'picked_up').length,
+            delivered: orders.filter((o: any) => o.status === 'delivered').length,
+            cancelled: orders.filter((o: any) => o.status === 'cancelled' || o.status === 'failed').length,
+          };
+        } else {
+          statsMap[dist.id] = { total: 0, pending: 0, in_transit: 0, delivered: 0, cancelled: 0 };
+        }
+      }
+      
+      setDistributorStats(statsMap);
+    };
     
-    setShowConvertDialog(false);
-    setExistingUserData(null);
-    setPendingFormData(null);
-    refetch();
-    
-  } catch (error) {
-    console.error("Error converting user:", error);
-    toast.error(isArabic ? "❌ فشل تحويل المستخدم" : "❌ Failed to convert user");
-  }
-};
+    fetchStats();
+  }, [distributors]);
+
+  // ✅ دالة تحويل المستخدم إلى موزع
+  const handleConvertUser = async () => {
+    if (!existingUserData || !pendingFormData) return;
+
+    const userId = existingUserData.id;
+    const { full_name_ar, full_name_en, phone, address_ar, address_en, governorate_id, is_available, distributor_type, avatar_url, rating } = pendingFormData;
+
+    try {
+      // ✅ تحديث الاسم
+      if (full_name_ar && full_name_ar !== existingUserData.full_name) {
+        await supabase
+          .from("profiles")
+          .update({ full_name: full_name_ar })
+          .eq("id", userId);
+      }
+
+      // ✅ إضافة دور الموزع
+      await supabase.from("user_roles").insert({
+        user_id: userId,
+        role: "distributor"
+      });
+
+      // ✅ إضافة الموزع - باستخدام RPC
+      const { data: distributorId, error: distributorError } = await supabase.rpc('add_distributor', {
+        p_user_id: userId,
+        p_full_name_ar: full_name_ar || existingUserData.full_name || `موزع ${phone}`,
+        p_full_name_en: full_name_en || `Distributor ${phone}`,
+        p_phone: phone,
+        p_email: `${phone}@distributor.sy`,
+        p_address_ar: address_ar || null,
+        p_address_en: address_en || null,
+        p_governorate_id: governorate_id || null,
+        p_is_available: is_available,
+        p_distributor_type: distributor_type || 'freelance',
+        p_avatar_url: avatar_url || existingUserData.avatar_url || null,
+        p_delivery_company_id: companyId || null,
+        p_rating: rating || 0, // ✅ إضافة التقييم
+      });
+
+      if (distributorError) {
+        console.error("❌ RPC error:", distributorError);
+        throw distributorError;
+      }
+
+      toast.success(
+        isArabic 
+          ? `✅ تم تحويل "${existingUserData.full_name}" إلى موزع بنجاح!` 
+          : `✅ Successfully converted "${existingUserData.full_name}" to distributor!`
+      );
+      
+      setShowConvertDialog(false);
+      setExistingUserData(null);
+      setPendingFormData(null);
+      refetch();
+      
+    } catch (error) {
+      console.error("Error converting user:", error);
+      toast.error(isArabic ? "❌ فشل تحويل المستخدم" : "❌ Failed to convert user");
+    }
+  };
+
   // ✅ فلترة الموزعين
   const filteredDistributors = useMemo(() => {
     let result = distributors;
@@ -380,60 +423,66 @@ const handleConvertUser = async () => {
             )}
           </div>
         ) : (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 dark:bg-slate-800/50">
-                  <TableHead>{isArabic ? "الموزع" : "Distributor"}</TableHead>
-                  <TableHead>{isArabic ? "رقم الهاتف" : "Phone"}</TableHead>
-                  <TableHead>{isArabic ? "المحافظة" : "Governorate"}</TableHead>
-                  <TableHead>{isArabic ? "التقييم" : "Rating"}</TableHead>
-                  <TableHead>{isArabic ? "الطلبات" : "Orders"}</TableHead>
-                  <TableHead>{isArabic ? "الحالة" : "Status"}</TableHead>
-                  <TableHead className="text-center">{isArabic ? "إجراءات" : "Actions"}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDistributors.map((distributor: any) => (
-                  <DistributorRow 
-                    key={distributor.id} 
-                    distributor={distributor}
-                    onEdit={() => {
-                      setSelectedDistributor(distributor);
-                      setIsEditModalOpen(true);
-                    }}
-                    onDelete={() => {
-                      setSelectedDistributor(distributor);
-                      setIsDeleteDialogOpen(true);
-                    }}
-                    onToggleStatus={() => {
-                      updateDistributor.mutate({
-                        id: distributor.id,
-                        patch: { is_active: !distributor.is_active }
-                      });
-                      toast.success(
-                        isArabic 
-                          ? `✅ تم ${distributor.is_active ? 'تعطيل' : 'تفعيل'} الموزع بنجاح` 
-                          : `✅ Distributor ${distributor.is_active ? 'deactivated' : 'activated'} successfully`
-                      );
-                      refetch();
-                    }}
-                    onToggleAvailability={() => {
-                      updateDistributor.mutate({
-                        id: distributor.id,
-                        patch: { is_available: !distributor.is_available }
-                      });
-                      toast.success(
-                        isArabic 
-                          ? `✅ تم ${distributor.is_available ? 'إيقاف' : 'تفعيل'} توفر الموزع بنجاح` 
-                          : `✅ Distributor availability ${distributor.is_available ? 'disabled' : 'enabled'} successfully`
-                      );
-                      refetch();
-                    }}
-                  />
-                ))}
-              </TableBody>
-            </Table>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border overflow-hidden shadow-lg">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gradient-to-r from-[#2a655f]/5 to-[#3a8a82]/5 dark:from-[#2a655f]/20 dark:to-[#3a8a82]/20">
+                    <TableHead className="text-right min-w-[180px]">{isArabic ? "الموزع" : "Distributor"}</TableHead>
+                    <TableHead className="text-center min-w-[120px]">{isArabic ? "رقم الهاتف" : "Phone"}</TableHead>
+                    <TableHead className="text-center min-w-[120px]">{isArabic ? "المحافظة" : "Governorate"}</TableHead>
+                    <TableHead className="text-center min-w-[100px]">{isArabic ? "التقييم" : "Rating"}</TableHead>
+                    <TableHead className="text-center min-w-[160px]">{isArabic ? "الطلبات" : "Orders"}</TableHead>
+                    <TableHead className="text-center min-w-[180px]">{isArabic ? "الحالة" : "Status"}</TableHead>
+                    <TableHead className="text-center min-w-[120px]">{isArabic ? "إجراءات" : "Actions"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDistributors.map((distributor: any) => {
+                    const stats = distributorStats[distributor.id] || { total: 0, pending: 0, in_transit: 0, delivered: 0, cancelled: 0 };
+                    return (
+                      <DistributorRow 
+                        key={distributor.id} 
+                        distributor={distributor}
+                        stats={stats}
+                        onEdit={() => {
+                          setSelectedDistributor(distributor);
+                          setIsEditModalOpen(true);
+                        }}
+                        onDelete={() => {
+                          setSelectedDistributor(distributor);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                        onToggleStatus={() => {
+                          updateDistributor.mutate({
+                            id: distributor.id,
+                            patch: { is_active: !distributor.is_active }
+                          });
+                          toast.success(
+                            isArabic 
+                              ? `✅ تم ${distributor.is_active ? 'تعطيل' : 'تفعيل'} الموزع بنجاح` 
+                              : `✅ Distributor ${distributor.is_active ? 'deactivated' : 'activated'} successfully`
+                          );
+                          refetch();
+                        }}
+                        onToggleAvailability={() => {
+                          updateDistributor.mutate({
+                            id: distributor.id,
+                            patch: { is_available: !distributor.is_available }
+                          });
+                          toast.success(
+                            isArabic 
+                              ? `✅ تم ${distributor.is_available ? 'إيقاف' : 'تفعيل'} توفر الموزع بنجاح` 
+                              : `✅ Distributor availability ${distributor.is_available ? 'disabled' : 'enabled'} successfully`
+                          );
+                          refetch();
+                        }}
+                      />
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
       </div>
@@ -533,10 +582,11 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
 }
 
 // ============================================================
-// 📦 DistributorRow Component
+// 📦 DistributorRow Component (مع تقييم منفصل)
 // ============================================================
-function DistributorRow({ distributor, onEdit, onDelete, onToggleStatus, onToggleAvailability }: { 
-  distributor: any; 
+function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, onToggleAvailability }: { 
+  distributor: any;
+  stats: { total: number; pending: number; in_transit: number; delivered: number; cancelled: number };
   onEdit: () => void;
   onDelete: () => void;
   onToggleStatus: () => void;
@@ -545,38 +595,185 @@ function DistributorRow({ distributor, onEdit, onDelete, onToggleStatus, onToggl
   const app = useApp();
   const isArabic = app.lang === "ar";
 
+  // ✅ تعريف tooltips
+  const tooltips = {
+    total: isArabic ? "📦 إجمالي جميع الطلبات الموكلة للموزع" : "📦 Total all orders assigned to distributor",
+    pending: isArabic ? "⏳ طلبات قيد المراجعة أو منتظرة التنفيذ" : "⏳ Orders pending review or waiting for execution",
+    in_transit: isArabic ? "🚚 طلبات قيد التوصيل (في الطريق)" : "🚚 Orders in transit (on the way)",
+    delivered: isArabic ? "✅ طلبات تم توصيلها بنجاح للعميل" : "✅ Orders successfully delivered to customer",
+    cancelled: isArabic ? "❌ طلبات ملغية أو فشل توصيلها" : "❌ Cancelled or failed orders",
+  };
+
+  // ✅ دالة لتحديد لون التقييم
+  const getRatingColor = (rating: number) => {
+    if (rating >= 4.5) return "text-emerald-500";
+    if (rating >= 3.5) return "text-blue-500";
+    if (rating >= 2.5) return "text-yellow-500";
+    if (rating >= 1.5) return "text-orange-500";
+    return "text-red-500";
+  };
+
+  // ✅ دالة لتحديد خلفية التقييم
+  const getRatingBg = (rating: number) => {
+    if (rating >= 4.5) return "bg-emerald-500/10";
+    if (rating >= 3.5) return "bg-blue-500/10";
+    if (rating >= 2.5) return "bg-yellow-500/10";
+    if (rating >= 1.5) return "bg-orange-500/10";
+    return "bg-red-500/10";
+  };
+
   return (
-    <TableRow className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-      <TableCell>
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={distributor.avatar_url || ""} />
-            <AvatarFallback className="bg-[#2a655f]/10 text-[#2a655f]">
-              {distributor.full_name_ar?.charAt(0) || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium text-sm">
+    <TableRow className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors border-b border-slate-100/50 dark:border-slate-800/50">
+      
+      {/* ✅ عمود الموزع - مع صورة واسم محاذاة يمين */}
+      <TableCell className="text-right align-middle">
+        <div className="flex items-center gap-3 justify-end">
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate">
               {isArabic ? distributor.full_name_ar : distributor.full_name_en || distributor.full_name_ar}
             </p>
           </div>
+          <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-[#2a655f]/20">
+            <AvatarImage src={distributor.avatar_url || ""} className="object-cover" />
+            <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-sm font-bold">
+              {distributor.full_name_ar?.charAt(0) || distributor.full_name_en?.charAt(0) || 'U'}
+            </AvatarFallback>
+          </Avatar>
         </div>
       </TableCell>
-      <TableCell className="text-sm" dir="ltr">{distributor.phone}</TableCell>
-      <TableCell className="text-sm">
+      
+      {/* ✅ رقم الهاتف - محاذاة وسط */}
+      <TableCell className="text-center align-middle text-sm" dir="ltr">
+        <span className="font-mono bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-lg text-xs">
+          {distributor.phone}
+        </span>
+      </TableCell>
+      
+      {/* ✅ المحافظة - محاذاة وسط */}
+      <TableCell className="text-center align-middle text-sm">
         {distributor.governorates 
           ? (isArabic ? distributor.governorates.name_ar : distributor.governorates.name_en)
           : '-'}
       </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-1">
-          <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-          <span className="font-medium">{Number(distributor.rating || 0).toFixed(1)}</span>
+      
+      {/* ✅ التقييم - عمود منفصل مع نجوم */}
+      <TableCell className="text-center align-middle">
+        <div className="flex flex-col items-center gap-0.5">
+          <div className="flex items-center gap-1">
+            <Star className={cn(
+              "h-3.5 w-3.5 fill-current",
+              getRatingColor(Number(distributor.rating || 0))
+            )} />
+            <span className={cn(
+              "font-bold text-sm",
+              getRatingColor(Number(distributor.rating || 0))
+            )}>
+              {Number(distributor.rating || 0).toFixed(1)}
+            </span>
+          </div>
+          {/* ✅ شريط تقييم بصري */}
+          <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div 
+              className={cn(
+                "h-full rounded-full transition-all duration-300",
+                getRatingBg(Number(distributor.rating || 0))
+              )}
+              style={{ 
+                width: `${Math.min((Number(distributor.rating || 0) / 5) * 100, 100)}%`,
+                backgroundColor: Number(distributor.rating || 0) >= 4.5 ? '#10b981' :
+                                Number(distributor.rating || 0) >= 3.5 ? '#3b82f6' :
+                                Number(distributor.rating || 0) >= 2.5 ? '#eab308' :
+                                Number(distributor.rating || 0) >= 1.5 ? '#f97316' : '#ef4444'
+              }}
+            />
+          </div>
         </div>
       </TableCell>
-      <TableCell className="text-sm">{distributor.completed_orders || 0}</TableCell>
-      <TableCell>
-        <div className="flex flex-col gap-1">
+      
+      {/* ✅ الطلبات - مع Tooltips */}
+      <TableCell className="text-center align-middle">
+        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+          
+          {/* 📦 الإجمالي */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-0 text-[10px] px-2 py-1 cursor-help hover:scale-105 transition-transform">
+                  <Package className="h-3 w-3 mr-0.5" />
+                  {stats.total || 0}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs bg-slate-800 text-white dark:bg-slate-900 dark:text-white border-slate-700">
+                <p className="text-xs">{tooltips.total}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {/* ⏳ قيد المراجعة */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-0 text-[10px] px-2 py-1 cursor-help hover:scale-105 transition-transform">
+                  <Clock className="h-3 w-3 mr-0.5" />
+                  {stats.pending || 0}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs bg-slate-800 text-white dark:bg-slate-900 dark:text-white border-slate-700">
+                <p className="text-xs">{tooltips.pending}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {/* 🚚 قيد التوصيل */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0 text-[10px] px-2 py-1 cursor-help hover:scale-105 transition-transform">
+                  <Truck className="h-3 w-3 mr-0.5" />
+                  {stats.in_transit || 0}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs bg-slate-800 text-white dark:bg-slate-900 dark:text-white border-slate-700">
+                <p className="text-xs">{tooltips.in_transit}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {/* ✅ تم التوصيل */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0 text-[10px] px-2 py-1 cursor-help hover:scale-105 transition-transform">
+                  <CheckCircle2 className="h-3 w-3 mr-0.5" />
+                  {stats.delivered || 0}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs bg-slate-800 text-white dark:bg-slate-900 dark:text-white border-slate-700">
+                <p className="text-xs">{tooltips.delivered}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {/* ❌ ملغي */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge className="bg-red-500/10 text-red-500 dark:text-red-400 border-0 text-[10px] px-2 py-1 cursor-help hover:scale-105 transition-transform">
+                  <XCircle className="h-3 w-3 mr-0.5" />
+                  {stats.cancelled || 0}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs bg-slate-800 text-white dark:bg-slate-900 dark:text-white border-slate-700">
+                <p className="text-xs">{tooltips.cancelled}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </TableCell>
+      
+      {/* ✅ الحالة - محاذاة وسط */}
+      <TableCell className="text-center align-middle">
+        <div className="flex flex-col items-center gap-1">
           <Badge className={distributor.is_active ? "bg-emerald-500/10 text-emerald-600 border-0" : "bg-red-500/10 text-red-500 border-0"}>
             {distributor.is_active ? (isArabic ? "✅ نشط" : "✅ Active") : (isArabic ? "❌ غير نشط" : "❌ Inactive")}
           </Badge>
@@ -585,7 +782,9 @@ function DistributorRow({ distributor, onEdit, onDelete, onToggleStatus, onToggl
           </Badge>
         </div>
       </TableCell>
-      <TableCell>
+      
+      {/* ✅ الإجراءات - محاذاة وسط */}
+      <TableCell className="text-center align-middle">
         <div className="flex items-center justify-center gap-1">
           <Button variant="ghost" size="sm" className="h-8 w-8 rounded-lg hover:bg-[#2a655f]/10" onClick={onEdit}>
             <Edit className="h-4 w-4 text-[#2a655f]" />
@@ -617,7 +816,7 @@ function DistributorRow({ distributor, onEdit, onDelete, onToggleStatus, onToggl
 }
 
 // ============================================================
-// 📦 AddDistributorForm Component (مع إنشاء حساب و Dialog)
+// 📦 AddDistributorForm Component (مع حقل التقييم)
 // ============================================================
 function AddDistributorForm({ 
   companyId, 
@@ -658,128 +857,130 @@ function AddDistributorForm({
     governorate_id: "",
     is_available: true,
     distributor_type: "freelance" as "freelance" | "company_employee",
+    rating: 0, // ✅ إضافة حقل التقييم
   });
 
-  // ✅ دالة إنشاء موزع جديد
-// ✅ دالة إنشاء موزع جديد - باستخدام Edge Function (نفس طريقة dashboard)
-const createNewDistributor = async (data: any) => {
-  const { full_name_ar, full_name_en, phone, password, address_ar, address_en, governorate_id, is_available, distributor_type, avatar_url } = data;
+  // ✅ دالة إنشاء موزع جديد - باستخدام Edge Function
+  const createNewDistributor = async (data: any) => {
+    const { full_name_ar, full_name_en, phone, password, address_ar, address_en, governorate_id, is_available, distributor_type, avatar_url, rating } = data;
 
-  console.log("📝 [createNewDistributor] Starting...");
+    console.log("📝 [createNewDistributor] Starting...");
 
-  try {
-    // ✅ استدعاء Edge Function (نفس طريقة إضافة الأدمن)
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-distributor`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          phone,
-          password,
-          full_name_ar,
-          full_name_en,
-          address_ar,
-          address_en,
-          governorate_id,
-          company_id: companyId || null,
-        }),
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-distributor`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            phone,
+            password,
+            full_name_ar,
+            full_name_en,
+            address_ar,
+            address_en,
+            governorate_id,
+            company_id: companyId || null,
+            rating: rating || 0, // ✅ إضافة التقييم
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        throw new Error(result.error || 'Failed to create distributor');
       }
-    );
 
-    const result = await response.json();
-
-    if (!response.ok || result.error) {
-      throw new Error(result.error || 'Failed to create distributor');
+      toast.success(
+        isArabic 
+          ? `✅ تم إضافة الموزع بنجاح!\n📱 الرقم: ${phone}\n🔑 كلمة المرور: ${password}\n👤 الاسم: ${full_name_ar || full_name_en}\n⭐ التقييم: ${rating || 0}`
+          : `✅ Distributor added successfully!\n📱 Phone: ${phone}\n🔑 Password: ${password}\n👤 Name: ${full_name_en || full_name_ar}\n⭐ Rating: ${rating || 0}`
+      );
+      
+      setShowConvertDialog(false);
+      setExistingUserData(null);
+      setPendingFormData(null);
+      onSuccess();
+      
+    } catch (error: any) {
+      console.error("❌ Error creating distributor:", error);
+      toast.error(isArabic ? `❌ ${error.message}` : `❌ ${error.message}`);
     }
-
-    toast.success(
-      isArabic 
-        ? `✅ تم إضافة الموزع بنجاح!\n📱 الرقم: ${phone}\n🔑 كلمة المرور: ${password}\n👤 الاسم: ${full_name_ar || full_name_en}`
-        : `✅ Distributor added successfully!\n📱 Phone: ${phone}\n🔑 Password: ${password}\n👤 Name: ${full_name_en || full_name_ar}`
-    );
-    
-    setShowConvertDialog(false);
-    setExistingUserData(null);
-    setPendingFormData(null);
-    onSuccess();
-    
-  } catch (error: any) {
-    console.error("❌ Error creating distributor:", error);
-    toast.error(isArabic ? `❌ ${error.message}` : `❌ ${error.message}`);
-  }
-};
+  };
 
   // ✅ دالة handleSubmit
-// ✅ دالة handleSubmit - تستخدم Edge Function فقط
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  if (!formData.full_name_ar.trim()) {
-    toast.error(isArabic ? "الاسم (عربي) مطلوب" : "Name (Arabic) is required");
-    return;
-  }
-  
-  if (!formData.phone.trim() || formData.phone.length < 9) {
-    toast.error(isArabic ? "رقم هاتف صحيح مطلوب" : "Valid phone number is required");
-    return;
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.full_name_ar.trim()) {
+      toast.error(isArabic ? "الاسم (عربي) مطلوب" : "Name (Arabic) is required");
+      return;
+    }
+    
+    if (!formData.phone.trim() || formData.phone.length < 9) {
+      toast.error(isArabic ? "رقم هاتف صحيح مطلوب" : "Valid phone number is required");
+      return;
+    }
 
-  setLoading(true);
-  try {
-    // ✅ 1. التحقق من وجود المستخدم (اختياري، لأن Edge Function بتتحقق)
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("id, full_name, phone, avatar_url")
-      .eq("phone", formData.phone)
-      .maybeSingle();
-
-    if (existingProfile) {
-      // ✅ التحقق إذا كان بالفعل موزع
-      const { data: existingDistributor } = await supabase
-        .from("distributors")
-        .select("id")
-        .eq("user_id", existingProfile.id)
+    setLoading(true);
+    try {
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone, avatar_url")
+        .eq("phone", formData.phone)
         .maybeSingle();
-      
-      if (existingDistributor) {
-        toast.error(
-          isArabic 
-            ? `❌ المستخدم "${existingProfile.full_name}" بالفعل موزع` 
-            : `❌ User "${existingProfile.full_name}" is already a distributor`
-        );
+
+      if (existingProfile) {
+        const { data: existingDistributor } = await supabase
+          .from("distributors")
+          .select("id")
+          .eq("user_id", existingProfile.id)
+          .maybeSingle();
+        
+        if (existingDistributor) {
+          toast.error(
+            isArabic 
+              ? `❌ المستخدم "${existingProfile.full_name}" بالفعل موزع` 
+              : `❌ User "${existingProfile.full_name}" is already a distributor`
+          );
+          setLoading(false);
+          return;
+        }
+
+        setExistingUserData(existingProfile);
+        setPendingFormData(formData);
+        setShowConvertDialog(true);
         setLoading(false);
         return;
       }
 
-      // ✅ فتح Dialog
-      setExistingUserData(existingProfile);
-      setPendingFormData(formData);
-      setShowConvertDialog(true);
+      if (!formData.password || formData.password.length < 6) {
+        toast.error(isArabic ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
+        setLoading(false);
+        return;
+      }
+
+      await createNewDistributor(formData);
+
+    } catch (error: any) {
+      console.error("Error adding distributor:", error);
+      toast.error(isArabic ? "❌ حدث خطأ: " + (error.message || "") : "❌ Error: " + (error.message || ""));
+    } finally {
       setLoading(false);
-      return;
     }
+  };
 
-    // ✅ المستخدم غير موجود، استخدم Edge Function
-    if (!formData.password || formData.password.length < 6) {
-      toast.error(isArabic ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
-      setLoading(false);
-      return;
+  // ✅ دالة تغيير التقييم
+  const handleRatingChange = (value: string) => {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 5) {
+      setFormData({ ...formData, rating: numValue });
     }
-
-    // ✅ استدعاء Edge Function (بدون supabase.auth.signUp)
-    await createNewDistributor(formData);
-
-  } catch (error: any) {
-    console.error("Error adding distributor:", error);
-    toast.error(isArabic ? "❌ حدث خطأ: " + (error.message || "") : "❌ Error: " + (error.message || ""));
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <>
@@ -902,6 +1103,45 @@ const handleSubmit = async (e: React.FormEvent) => {
           </div>
         </div>
 
+        {/* ✅ التقييم - حقل جديد */}
+        <div className="space-y-1">
+          <Label className="flex items-center gap-2">
+            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+            {isArabic ? "تقييم الموزع" : "Distributor Rating"}
+          </Label>
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <Input
+                type="number"
+                value={formData.rating}
+                onChange={(e) => handleRatingChange(e.target.value)}
+                min="0"
+                max="5"
+                step="0.1"
+                className="w-full"
+                placeholder="0 - 5"
+              />
+            </div>
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
+              <Star className={cn(
+                "h-4 w-4",
+                formData.rating >= 4.5 ? "text-emerald-500 fill-emerald-500" :
+                formData.rating >= 3.5 ? "text-blue-500 fill-blue-500" :
+                formData.rating >= 2.5 ? "text-yellow-500 fill-yellow-500" :
+                formData.rating >= 1.5 ? "text-orange-500 fill-orange-500" :
+                "text-slate-400"
+              )} />
+              <span className="font-bold text-sm">
+                {formData.rating.toFixed(1)}
+              </span>
+              <span className="text-xs text-muted-foreground">/ 5</span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {isArabic ? "⭐ قيم الموزع من 0 إلى 5 (يمكنك استخدام أرقام عشرية مثل 4.5)" : "⭐ Rate the distributor from 0 to 5 (you can use decimal numbers like 4.5)"}
+          </p>
+        </div>
+
         {/* ✅ النوع والحالة */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
@@ -1017,8 +1257,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </p>
                 <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-0.5">
                   {isArabic 
-                    ? `سيتم إضافة صلاحية "موزع" للمستخدم "${existingUserData?.full_name}"`
-                    : `The "distributor" role will be added to "${existingUserData?.full_name}"`}
+                    ? `سيتم إضافة صلاحية "موزع" للمستخدم "${existingUserData?.full_name}" مع تقييم ${pendingFormData?.rating || 0}`
+                    : `The "distributor" role will be added to "${existingUserData?.full_name}" with rating ${pendingFormData?.rating || 0}`}
                 </p>
               </div>
             </div>
@@ -1036,6 +1276,13 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{isArabic ? "الهاتف" : "Phone"}</span>
                   <span className="font-medium" dir="ltr">{pendingFormData?.phone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                    {isArabic ? "التقييم" : "Rating"}
+                  </span>
+                  <span className="font-medium">{pendingFormData?.rating?.toFixed(1) || '0.0'}</span>
                 </div>
               </div>
             </div>
@@ -1081,7 +1328,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 }
 
 // ============================================================
-// 📦 EditDistributorForm Component
+// 📦 EditDistributorForm Component (مع حقل التقييم)
 // ============================================================
 function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onSuccess: () => void }) {
   const app = useApp();
@@ -1100,7 +1347,16 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
     governorate_id: distributor.governorate_id || "",
     is_available: distributor.is_available ?? true,
     distributor_type: distributor.distributor_type || "freelance",
+    rating: distributor.rating || 0, // ✅ إضافة التقييم
   });
+
+  // ✅ دالة تغيير التقييم
+  const handleRatingChange = (value: string) => {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 5) {
+      setFormData({ ...formData, rating: numValue });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1124,6 +1380,7 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
           is_available: formData.is_available,
           distributor_type: formData.distributor_type || 'freelance',
           avatar_url: avatarUrl,
+          rating: formData.rating, // ✅ إضافة التقييم
         },
       });
       
@@ -1197,6 +1454,45 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      {/* ✅ التقييم - حقل جديد في التعديل */}
+      <div className="space-y-1">
+        <Label className="flex items-center gap-2">
+          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+          {isArabic ? "تقييم الموزع" : "Distributor Rating"}
+        </Label>
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <Input
+              type="number"
+              value={formData.rating}
+              onChange={(e) => handleRatingChange(e.target.value)}
+              min="0"
+              max="5"
+              step="0.1"
+              className="w-full"
+              placeholder="0 - 5"
+            />
+          </div>
+          <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
+            <Star className={cn(
+              "h-4 w-4",
+              formData.rating >= 4.5 ? "text-emerald-500 fill-emerald-500" :
+              formData.rating >= 3.5 ? "text-blue-500 fill-blue-500" :
+              formData.rating >= 2.5 ? "text-yellow-500 fill-yellow-500" :
+              formData.rating >= 1.5 ? "text-orange-500 fill-orange-500" :
+              "text-slate-400"
+            )} />
+            <span className="font-bold text-sm">
+              {formData.rating.toFixed(1)}
+            </span>
+            <span className="text-xs text-muted-foreground">/ 5</span>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {isArabic ? "⭐ قيم الموزع من 0 إلى 5" : "⭐ Rate the distributor from 0 to 5"}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

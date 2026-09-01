@@ -8,11 +8,13 @@ import {
   AlertCircle, Sparkles, Rocket, DollarSign,
   Calendar, User, Phone, MessageCircle,
   TrendingUp, Star, Users, Clock as ClockIcon,
-  MapPin, Store
+  MapPin, Store,
+  Wallet, Trash2, Info, ChevronDown, ChevronUp, Zap, 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useApp, formatPrice } from "@/lib/i18n";
@@ -24,13 +26,15 @@ import pkg from 'file-saver';
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
 const { saveAs } = pkg;
+
 // ✅ دالة توليد رقم تتبع فريد
 const generateTrackingNumber = () => {
-  const prefix = 'SQT'; // Souq Tracking
+  const prefix = 'SQT';
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `${prefix}-${timestamp}-${random}`;
 };
+
 // ============================================================
 // ✅ دوال حالة الطلب (للمتجر) - getOrderStatus
 // ============================================================
@@ -114,7 +118,7 @@ function getOrderStatus(status: string) {
 }
 
 // ============================================================
-// ✅ ORDERS PAGE - جدول بسيط مع تفاصيل عند الضغط
+// ✅ ORDERS PAGE
 // ============================================================
 
 export const OrdersPage = React.memo(function OrdersPage() {
@@ -123,6 +127,15 @@ export const OrdersPage = React.memo(function OrdersPage() {
   // ===== STATES =====
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  
+  // ✅ ✅ ✅ STATE للفلتر الزمني
+  const [filterDateRange, setFilterDateRange] = useState<"all" | "today" | "week" | "month" | "custom">("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempDateFrom, setTempDateFrom] = useState<string>("");
+  const [tempDateTo, setTempDateTo] = useState<string>("");
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -132,7 +145,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
 
-  // ===== API - استخدم useStoreOrders (طلبات المتجر فقط) =====
+  // ===== API - useStoreOrders =====
   const { 
     data: allOrders = [], 
     isLoading, 
@@ -141,35 +154,122 @@ export const OrdersPage = React.memo(function OrdersPage() {
     isFetching 
   } = useStoreOrders(app.user?.id);
 
-  // ===== FILTER ORDERS BY SELLER (للتأكد) =====
+  // ===== FILTER ORDERS BY SELLER =====
   const storeOrders = useMemo(() => {
     return allOrders.filter((order: any) => order.seller_id === app.user?.id);
   }, [allOrders, app.user?.id]);
 
-  // ===== APPLY FILTERS (بدون فلتر نوع) =====
+  // ============================================================
+  // ✅✅✅ APPLY FILTERS (مع دعم الهاش والوقت والفلتر الزمني)
+  // ============================================================
   const filteredOrders = useMemo(() => {
     let result = storeOrders;
 
+    // ✅ فلتر الحالة
     if (filterStatus !== "all") {
       result = result.filter((order: any) => order.status === filterStatus);
     }
 
+    // ✅ ✅ ✅ فلتر النطاق الزمني (التقويم)
+    if (filterDateRange !== "all") {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      result = result.filter((order: any) => {
+        const orderDate = new Date(order.created_at);
+        
+        switch (filterDateRange) {
+          case "today":
+            return orderDate >= today;
+          case "week": {
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return orderDate >= weekAgo;
+          }
+          case "month": {
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return orderDate >= monthAgo;
+          }
+          case "custom": {
+            if (dateFrom) {
+              const from = new Date(dateFrom);
+              from.setHours(0, 0, 0, 0);
+              if (orderDate < from) return false;
+            }
+            if (dateTo) {
+              const to = new Date(dateTo);
+              to.setHours(23, 59, 59, 999);
+              if (orderDate > to) return false;
+            }
+            return true;
+          }
+          default:
+            return true;
+        }
+      });
+    }
+
+    // ✅ ✅ ✅ البحث النصي (مع دعم الهاش والوقت)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
+      const cleanQ = q.replace(/^#/, ''); // ✅ إزالة الهاش للبحث بالرقم فقط
+      
       result = result.filter((order: any) => {
-        const id = order.id?.toLowerCase() || "";
+        // ✅ رقم الطلب (مع وبدون هاش)
+        const orderId = order.id?.toLowerCase() || "";
+        const orderIdShort = orderId.slice(0, 8);
+        const orderIdWithHash = `#${orderIdShort}`;
+        
+        // ✅ بيانات العميل
         const customerName = order.buyer_name?.toLowerCase() || "";
         const customerPhone = order.buyer_phone?.toLowerCase() || "";
         const notes = order.notes?.toLowerCase() || "";
         
-        return id.includes(q) || 
-               customerName.includes(q) ||
-               customerPhone.includes(q) ||
-               notes.includes(q);
+        // ✅ ✅ ✅ الوقت والتاريخ (سيرش دقيق)
+        const createdAt = new Date(order.created_at);
+        const dateStr = createdAt.toLocaleDateString(app.lang === 'ar' ? 'ar-SA' : 'en-US');
+        const timeStr = createdAt.toLocaleTimeString(app.lang === 'ar' ? 'ar-SA' : 'en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        
+        // ✅ ✅ ✅ تنسيقات التاريخ والوقت للبحث
+        const dateFormats = [
+          dateStr.toLowerCase(),
+          timeStr.toLowerCase(),
+          `${dateStr} ${timeStr}`.toLowerCase(),
+          createdAt.toISOString().slice(0, 10), // YYYY-MM-DD
+          createdAt.toISOString().slice(0, 16), // YYYY-MM-DDTHH:mm
+          createdAt.toLocaleDateString('en-US'), // MM/DD/YYYY
+          createdAt.toLocaleDateString('ar-SA'), // DD/MM/YYYY
+          createdAt.toLocaleDateString('ar-SA', { month: 'long' }),
+          createdAt.toLocaleDateString('ar-SA', { day: 'numeric', month: 'long' }),
+          String(createdAt.getFullYear()),
+          String(createdAt.getDate()).padStart(2, '0'),
+          String(createdAt.getMonth() + 1).padStart(2, '0'),
+        ];
+        
+        // ✅ ✅ ✅ البحث بالهاش (#) - مهم جداً
+        const searchFields = [
+          orderId,
+          orderIdShort,
+          orderIdWithHash,
+          `#${orderIdShort}`,
+          customerName,
+          customerPhone,
+          notes,
+          ...dateFormats,
+        ];
+        
+        return searchFields.some(field => 
+          String(field).toLowerCase().includes(cleanQ) || 
+          String(field).toLowerCase().includes(q)
+        );
       });
     }
 
-    // ✅ ✅ ✅ ترتيب الطلبات: قيد المراجعة بالأعلى، ثم الأحدث
+    // ✅ ترتيب الطلبات: قيد المراجعة بالأعلى، ثم الأحدث
     const statusOrder: Record<string, number> = {
       pending: 0,
       accepted: 1,
@@ -186,9 +286,9 @@ export const OrdersPage = React.memo(function OrdersPage() {
       if (statusDiff !== 0) return statusDiff;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-  }, [storeOrders, searchQuery, filterStatus]);
+  }, [storeOrders, searchQuery, filterStatus, filterDateRange, dateFrom, dateTo, app.lang]);
 
-  // ===== ✅ PAGINATION =====
+  // ===== PAGINATION =====
   const totalItems = filteredOrders.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   
@@ -260,253 +360,244 @@ export const OrdersPage = React.memo(function OrdersPage() {
   };
 
   // ===== ACCEPT ORDER =====
-// ===== ACCEPT ORDER =====
-const handleAcceptOrder = useCallback(async (orderId: string) => {
-  try {
-    console.log("🚀 Starting order acceptance for:", orderId);
+  const handleAcceptOrder = useCallback(async (orderId: string) => {
+    try {
+      console.log("🚀 Starting order acceptance for:", orderId);
 
-    // ✅ 1️⃣ جلب بيانات الطلب
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select(`
-        id,
-        seller_id,
-        buyer_id,
-        delivery_address,
-        delivery_lat,
-        delivery_lng,
-        total,
-        delivery_fee, 
-        buyer_name,
-        buyer_phone,
-        notes
-      `)
-      .eq("id", orderId)
-      .single();
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select(`
+          id,
+          seller_id,
+          buyer_id,
+          delivery_address,
+          delivery_lat,
+          delivery_lng,
+          total,
+          delivery_fee, 
+          buyer_name,
+          buyer_phone,
+          notes
+        `)
+        .eq("id", orderId)
+        .single();
 
-    if (orderError) {
-      console.error("❌ Order fetch error:", orderError);
-      toast.error(app.lang === "ar" ? "❌ لم نتمكن من جلب الطلب" : "❌ Could not fetch order");
-      return;
-    }
+      if (orderError) {
+        console.error("❌ Order fetch error:", orderError);
+        toast.error(app.lang === "ar" ? "❌ لم نتمكن من جلب الطلب" : "❌ Could not fetch order");
+        return;
+      }
 
-    if (!order) {
-      toast.error(app.lang === "ar" ? "❌ الطلب غير موجود" : "❌ Order not found");
-      return;
-    }
+      if (!order) {
+        toast.error(app.lang === "ar" ? "❌ الطلب غير موجود" : "❌ Order not found");
+        return;
+      }
 
-    console.log("📦 Order data:", order);
+      console.log("📦 Order data:", order);
 
-    // ✅ 2️⃣ جلب بيانات المتجر
-    const { data: storeData, error: storeError } = await supabase
-      .from("profiles")
-      .select(`
-        id,
-        store_name,
-        delivery_company_id,
-        store_address,
-        lat,
-        lng
-      `)
-      .eq("id", order.seller_id)
-      .single();
+      const { data: storeData, error: storeError } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          store_name,
+          delivery_company_id,
+          store_address,
+          lat,
+          lng
+        `)
+        .eq("id", order.seller_id)
+        .single();
 
-    if (storeError) {
-      console.error("❌ Store fetch error:", storeError);
-      toast.error(app.lang === "ar" ? "❌ لم نتمكن من جلب بيانات المتجر" : "❌ Could not fetch store data");
-      return;
-    }
+      if (storeError) {
+        console.error("❌ Store fetch error:", storeError);
+        toast.error(app.lang === "ar" ? "❌ لم نتمكن من جلب بيانات المتجر" : "❌ Could not fetch store data");
+        return;
+      }
 
-    console.log("🏪 Store data:", storeData);
+      console.log("🏪 Store data:", storeData);
 
-    // ✅ 3️⃣ استخراج شركة التوصيل
-    let deliveryCompanyId = storeData?.delivery_company_id;
+      let deliveryCompanyId = storeData?.delivery_company_id;
 
-    console.log(`🏢 Delivery company from store: ${deliveryCompanyId}`);
+      console.log(`🏢 Delivery company from store: ${deliveryCompanyId}`);
 
-    if (!deliveryCompanyId) {
-      console.warn(`⚠️ Store ${storeData.id} (${storeData.store_name}) has no delivery company`);
-      
-      const { data: fallbackCompany } = await supabase
-        .from("delivery_companies")
-        .select("id, name_ar")
-        .eq("is_active", true)
-        .limit(1)
+      if (!deliveryCompanyId) {
+        console.warn(`⚠️ Store ${storeData.id} (${storeData.store_name}) has no delivery company`);
+        
+        const { data: fallbackCompany } = await supabase
+          .from("delivery_companies")
+          .select("id, name_ar")
+          .eq("is_active", true)
+          .limit(1)
+          .maybeSingle();
+
+        if (fallbackCompany) {
+          deliveryCompanyId = fallbackCompany.id;
+          console.log(`🔄 Using fallback company: ${fallbackCompany.name_ar} (${fallbackCompany.id})`);
+        }
+      }
+
+      if (!deliveryCompanyId) {
+        toast.error(app.lang === "ar" ? "❌ لا توجد شركة توصيل متاحة" : "❌ No delivery company available");
+        return;
+      }
+
+      console.log(`✅ Final delivery company: ${deliveryCompanyId}`);
+
+      const trackingNumber = generateTrackingNumber();
+      console.log(`🔢 Generated tracking number: ${trackingNumber}`);
+
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({ 
+          status: 'accepted',
+          accepted_at: new Date().toISOString(),
+          delivery_company_id: deliveryCompanyId,
+          tracking_number: trackingNumber,
+        })
+        .eq("id", orderId);
+
+      if (updateError) {
+        console.error("❌ Update error:", updateError);
+        throw updateError;
+      }
+
+      console.log("✅ Order updated successfully");
+
+      const { data: existingDelivery, error: checkError } = await supabase
+        .from("delivery_orders")
+        .select("id")
+        .eq("order_id", orderId)
         .maybeSingle();
 
-      if (fallbackCompany) {
-        deliveryCompanyId = fallbackCompany.id;
-        console.log(`🔄 Using fallback company: ${fallbackCompany.name_ar} (${fallbackCompany.id})`);
+      if (checkError) {
+        console.error("❌ Check delivery order error:", checkError);
       }
-    }
 
-    if (!deliveryCompanyId) {
-      toast.error(app.lang === "ar" ? "❌ لا توجد شركة توصيل متاحة" : "❌ No delivery company available");
-      return;
-    }
-
-    console.log(`✅ Final delivery company: ${deliveryCompanyId}`);
-
-    // ✅ ✅ ✅ إنشاء رقم تتبع فريد
-    const trackingNumber = generateTrackingNumber();
-    console.log(`🔢 Generated tracking number: ${trackingNumber}`);
-
-    // ✅ 4️⃣ تحديث الطلب مع tracking_number
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({ 
-        status: 'accepted',
-        accepted_at: new Date().toISOString(),
-        delivery_company_id: deliveryCompanyId,
-        tracking_number: trackingNumber, // ✅ ✅ ✅ إضافة رقم التتبع
-      })
-      .eq("id", orderId);
-
-    if (updateError) {
-      console.error("❌ Update error:", updateError);
-      throw updateError;
-    }
-
-    console.log("✅ Order updated successfully");
-
-    // ✅ 5️⃣ التحقق من وجود delivery_order مسبقاً
-    const { data: existingDelivery, error: checkError } = await supabase
-      .from("delivery_orders")
-      .select("id")
-      .eq("order_id", orderId)
-      .maybeSingle();
-
-    if (checkError) {
-      console.error("❌ Check delivery order error:", checkError);
-    }
-
-    // ✅ 6️⃣ إنشاء طلب توصيل (إذا لم يكن موجوداً) مع tracking_number
-    if (!existingDelivery) {
-      const { error: deliveryError } = await supabase
-        .from("delivery_orders")
-        .insert({
-          order_id: orderId,
-          delivery_company_id: deliveryCompanyId,
-          pickup_address: storeData?.store_address || "عنوان المتجر",
-          pickup_latitude: storeData?.lat || 0,
-          pickup_longitude: storeData?.lng || 0,
-          delivery_address: order.delivery_address || "عنوان التوصيل",
-          delivery_latitude: order.delivery_lat || 0,
-          delivery_longitude: order.delivery_lng || 0,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          estimated_pickup_at: new Date(Date.now() + 3600000).toISOString(),
-          estimated_delivery_at: new Date(Date.now() + 7200000).toISOString(),
-          delivery_fee: order.delivery_fee || 0,
-          tracking_number: trackingNumber, // ✅ ✅ ✅ إضافة رقم التتبع
-        });
-
-      if (deliveryError) {
-        console.error("❌ Delivery order creation error:", deliveryError);
-        toast.warning(app.lang === "ar" 
-          ? "⚠️ تم قبول الطلب لكن حدث خطأ في إنشاء طلب التوصيل (تحقق من الصلاحيات)" 
-          : "⚠️ Order accepted but delivery order creation failed (check permissions)");
-      } else {
-        console.log("✅ Delivery order created successfully");
-      }
-    } else {
-      console.log("ℹ️ Delivery order already exists, skipping creation");
-    }
-
-    // ✅ 7️⃣ إشعار للمشتري
-    if (order.buyer_id) {
-      const storeName = storeData?.store_name || 'المتجر';
-      const { error: buyerNotifyError } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: order.buyer_id,
-          type: "order_accepted",
-          title_ar: `✅ تم قبول طلبك من "${storeName}"`,
-          body_ar: `تم قبول طلبك بقيمة ${order.total?.toLocaleString() || 0} SYP وسيتم توصيله قريباً (رقم التتبع: ${trackingNumber})`,
-          title_en: `✅ Your order from "${storeName}" was accepted`,
-          body_en: `Your order for ${order.total?.toLocaleString() || 0} SYP was accepted and will be delivered soon (Tracking: ${trackingNumber})`,
-          link_url: `/orders`,
-          metadata: {
+      if (!existingDelivery) {
+        const { error: deliveryError } = await supabase
+          .from("delivery_orders")
+          .insert({
             order_id: orderId,
-            store_name: storeName,
-            total: order.total || 0,
+            delivery_company_id: deliveryCompanyId,
+            pickup_address: storeData?.store_address || "عنوان المتجر",
+            pickup_latitude: storeData?.lat || 0,
+            pickup_longitude: storeData?.lng || 0,
+            delivery_address: order.delivery_address || "عنوان التوصيل",
+            delivery_latitude: order.delivery_lat || 0,
+            delivery_longitude: order.delivery_lng || 0,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            estimated_pickup_at: new Date(Date.now() + 3600000).toISOString(),
+            estimated_delivery_at: new Date(Date.now() + 7200000).toISOString(),
+            delivery_fee: order.delivery_fee || 0,
             tracking_number: trackingNumber,
-          },
-          created_at: new Date().toISOString(),
-        });
+          });
 
-      if (buyerNotifyError) {
-        console.error("❌ Buyer notification error:", buyerNotifyError);
-      } else {
-        console.log("✅ Buyer notification sent");
-      }
-    }
-
-    // ✅ 8️⃣ إشعار لشركة التوصيل
-    if (deliveryCompanyId) {
-      console.log(`🔍 Fetching admins for company: ${deliveryCompanyId}`);
-      
-      const { data: companyAdmins, error: adminsError } = await supabase
-        .from("delivery_company_admins")
-        .select("user_id")
-        .eq("company_id", deliveryCompanyId);
-
-      console.log(`📊 Found ${companyAdmins?.length || 0} admins`);
-      console.log("👤 Admin IDs:", companyAdmins?.map((a: any) => a.user_id));
-
-      if (!adminsError && companyAdmins && companyAdmins.length > 0) {
-        const adminIds = companyAdmins.map((a: any) => a.user_id);
-        
-        console.log(`📨 Sending notifications to ${adminIds.length} admins`);
-        
-        const { error: notifyError } = await supabase
-          .from("notifications")
-          .insert(
-            adminIds.map((userId: string) => ({
-              user_id: userId,
-              type: "new_delivery_order",
-              title_ar: `🚚 طلب توصيل جديد #${trackingNumber}`,
-              body_ar: `تم قبول طلب توصيل جديد من المتجر (${storeData?.store_name || 'المتجر'})`,
-              title_en: `🚚 New delivery order #${trackingNumber}`,
-              body_en: `New delivery order accepted from store (${storeData?.store_name || 'Store'})`,
-              link_url: `/delivery/dashboard`,
-              metadata: {
-                order_id: orderId,
-                store_name: storeData?.store_name,
-                delivery_company_id: deliveryCompanyId,
-                tracking_number: trackingNumber,
-              }
-            }))
-          );
-
-        if (!notifyError) {
-          console.log(`✅ Notifications sent to ${adminIds.length} admins`);
-          toast.success(
-            app.lang === "ar" 
-              ? `✅ تم إرسال إشعار لـ ${adminIds.length} من أدمن شركة التوصيل` 
-              : `✅ Notified ${adminIds.length} delivery company admins`
-          );
+        if (deliveryError) {
+          console.error("❌ Delivery order creation error:", deliveryError);
+          toast.warning(app.lang === "ar" 
+            ? "⚠️ تم قبول الطلب لكن حدث خطأ في إنشاء طلب التوصيل (تحقق من الصلاحيات)" 
+            : "⚠️ Order accepted but delivery order creation failed (check permissions)");
         } else {
-          console.error("❌ Notification error:", notifyError);
+          console.log("✅ Delivery order created successfully");
         }
       } else {
-        console.warn(`⚠️ No admins found for company ${deliveryCompanyId}`);
+        console.log("ℹ️ Delivery order already exists, skipping creation");
       }
+
+      if (order.buyer_id) {
+        const storeName = storeData?.store_name || 'المتجر';
+        const { error: buyerNotifyError } = await supabase
+          .from("notifications")
+          .insert({
+            user_id: order.buyer_id,
+            type: "order_accepted",
+            title_ar: `✅ تم قبول طلبك من "${storeName}"`,
+            body_ar: `تم قبول طلبك بقيمة ${order.total?.toLocaleString() || 0} SYP وسيتم توصيله قريباً (رقم التتبع: ${trackingNumber})`,
+            title_en: `✅ Your order from "${storeName}" was accepted`,
+            body_en: `Your order for ${order.total?.toLocaleString() || 0} SYP was accepted and will be delivered soon (Tracking: ${trackingNumber})`,
+            link_url: `/orders`,
+            metadata: {
+              order_id: orderId,
+              store_name: storeName,
+              total: order.total || 0,
+              tracking_number: trackingNumber,
+            },
+            created_at: new Date().toISOString(),
+          });
+
+        if (buyerNotifyError) {
+          console.error("❌ Buyer notification error:", buyerNotifyError);
+        } else {
+          console.log("✅ Buyer notification sent");
+        }
+      }
+
+      if (deliveryCompanyId) {
+        console.log(`🔍 Fetching admins for company: ${deliveryCompanyId}`);
+        
+        const { data: companyAdmins, error: adminsError } = await supabase
+          .from("delivery_company_admins")
+          .select("user_id")
+          .eq("company_id", deliveryCompanyId);
+
+        console.log(`📊 Found ${companyAdmins?.length || 0} admins`);
+        console.log("👤 Admin IDs:", companyAdmins?.map((a: any) => a.user_id));
+
+        if (!adminsError && companyAdmins && companyAdmins.length > 0) {
+          const adminIds = companyAdmins.map((a: any) => a.user_id);
+          
+          console.log(`📨 Sending notifications to ${adminIds.length} admins`);
+          
+          const { error: notifyError } = await supabase
+            .from("notifications")
+            .insert(
+              adminIds.map((userId: string) => ({
+                user_id: userId,
+                type: "new_delivery_order",
+                title_ar: `🚚 طلب توصيل جديد #${trackingNumber}`,
+                body_ar: `تم قبول طلب توصيل جديد من المتجر (${storeData?.store_name || 'المتجر'})`,
+                title_en: `🚚 New delivery order #${trackingNumber}`,
+                body_en: `New delivery order accepted from store (${storeData?.store_name || 'Store'})`,
+                link_url: `/delivery/dashboard`,
+                metadata: {
+                  order_id: orderId,
+                  store_name: storeData?.store_name,
+                  delivery_company_id: deliveryCompanyId,
+                  tracking_number: trackingNumber,
+                }
+              }))
+            );
+
+          if (!notifyError) {
+            console.log(`✅ Notifications sent to ${adminIds.length} admins`);
+            toast.success(
+              app.lang === "ar" 
+                ? `✅ تم إرسال إشعار لـ ${adminIds.length} من أدمن شركة التوصيل` 
+                : `✅ Notified ${adminIds.length} delivery company admins`
+            );
+          } else {
+            console.error("❌ Notification error:", notifyError);
+          }
+        } else {
+          console.warn(`⚠️ No admins found for company ${deliveryCompanyId}`);
+        }
+      }
+
+      toast.success(app.lang === "ar" 
+        ? `✅ تم قبول الطلب (رقم التتبع: ${trackingNumber})` 
+        : `✅ Order accepted (Tracking: ${trackingNumber})`);
+
+      refetchOrders();
+      setDetailDialogOpen(false);
+      setSelectedOrder(null);
+
+    } catch (error) {
+      console.error("❌ Error accepting order:", error);
+      toast.error(app.lang === "ar" ? "❌ حدث خطأ في قبول الطلب" : "❌ Error accepting order");
     }
+  }, [app.lang, refetchOrders]);
 
-    toast.success(app.lang === "ar" 
-      ? `✅ تم قبول الطلب (رقم التتبع: ${trackingNumber})` 
-      : `✅ Order accepted (Tracking: ${trackingNumber})`);
-
-    refetchOrders();
-    setDetailDialogOpen(false);
-    setSelectedOrder(null);
-
-  } catch (error) {
-    console.error("❌ Error accepting order:", error);
-    toast.error(app.lang === "ar" ? "❌ حدث خطأ في قبول الطلب" : "❌ Error accepting order");
-  }
-}, [app.lang, refetchOrders]);
   // ===== REJECT ORDER =====
   const handleRejectOrder = useCallback(async (orderId: string, reason: string) => {
     if (!reason.trim()) {
@@ -517,7 +608,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
     setIsRejecting(true);
 
     try {
-      // ✅ 1️⃣ جلب بيانات الطلب (بما فيها promo_code_id)
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .select(`
@@ -548,7 +638,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
 
       if (orderError) throw orderError;
 
-      // ✅ 2️⃣ تحديث حالة الطلب إلى rejected
       const { error: updateError } = await supabase
         .from("orders")
         .update({ 
@@ -561,11 +650,9 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
 
       if (updateError) throw updateError;
 
-      // ✅ ✅ ✅ 3️⃣ نقصان used_count إذا كان الطلب يستخدم كود خصم
       if (order.promo_code_id) {
         console.log(`🔄 [Reject Order] Decreasing used_count for promo code: ${order.promo_code_id}`);
         
-        // ✅ جلب القيمة الحالية
         const { data: promoCode, error: fetchError } = await supabase
           .from("promo_codes")
           .select("used_count")
@@ -587,7 +674,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
           }
         }
         
-        // ✅ ✅ ✅ حذف سجل الاستخدام من promo_code_usage
         const { error: deleteUsageError } = await supabase
           .from("promo_code_usage")
           .delete()
@@ -600,7 +686,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
         }
       }
 
-      // ✅ 4️⃣ إشعار للمشتري
       let storeName = '';
       if (order.order_items && order.order_items.length > 0) {
         const firstItem = order.order_items[0];
@@ -792,7 +877,7 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
               {stats.delivered} {app.lang === "ar" ? "تم التوصيل" : "delivered"}
             </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200/50">
-              <DollarSign className="h-3.5 w-3.5 text-purple-500" />
+              <Wallet className="h-3.5 w-3.5 text-purple-500" />
               {formatPrice(totalRevenue, app.currency, app.lang)}
             </span>
           </div>
@@ -862,14 +947,17 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
         ))}
       </div>
 
-      {/* ===== SEARCH & FILTERS ===== */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+      {/* ============================================================ */}
+      {/* ✅✅✅ SEARCH & FILTERS (مع فلتر الوقت والتقويم المنبثق) ✅✅✅ */}
+      {/* ============================================================ */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* 🔍 حقل البحث */}
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400" />
           <Input 
             value={searchQuery} 
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
-            placeholder={app.lang === "ar" ? "🔍 ابحث في الطلبات..." : "🔍 Search orders..."} 
+            placeholder={app.lang === "ar" ? "🔍 ابحث برقم الطلب #، اسم العميل، التاريخ..." : "🔍 Search by Order #, Customer, Date..."} 
             className="ps-9 h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20" 
           />
           {searchQuery && (
@@ -882,8 +970,9 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
           )}
         </div>
         
+        {/* ✅ فلتر الحالة */}
         <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[160px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
+          <SelectTrigger className="w-[150px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
               <SelectValue placeholder={app.lang === "ar" ? "الحالة" : "Status"} />
@@ -900,7 +989,278 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
             <SelectItem value="cancelled">❌ {app.lang === "ar" ? "ملغي" : "Cancelled"}</SelectItem>
           </SelectContent>
         </Select>
-        
+
+        {/* ✅ ✅ ✅ فلتر النطاق الزمني - مع وصف "فلتر التاريخ" */}
+        <div className="flex items-center gap-2">
+          {/* ✅ شارة توضيحية لفلتر التاريخ */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 rounded-full border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+            <Calendar className="h-3.5 w-3.5 text-[#2a655f]" />
+            <span className="text-[10px] font-medium text-[#2a655f] dark:text-[#3a8a82] whitespace-nowrap">
+              {app.lang === "ar" ? "📅 فلتر التاريخ" : "📅 Date Filter"}
+            </span>
+          </div>
+          
+          <Select value={filterDateRange} onValueChange={(v: any) => { 
+            setFilterDateRange(v); 
+            setCurrentPage(1); 
+            if (v !== "custom") {
+              setDateFrom("");
+              setDateTo("");
+              setTempDateFrom("");
+              setTempDateTo("");
+            }
+          }}>
+            <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-slate-400" />
+                <SelectValue placeholder={app.lang === "ar" ? "الفترة" : "Period"} />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-[#2a655f]/20">
+              <SelectItem value="all">📅 {app.lang === "ar" ? "الكل" : "All"}</SelectItem>
+              <SelectItem value="today">📅 {app.lang === "ar" ? "اليوم" : "Today"}</SelectItem>
+              <SelectItem value="week">📅 {app.lang === "ar" ? "آخر 7 أيام" : "Last 7 days"}</SelectItem>
+              <SelectItem value="month">📅 {app.lang === "ar" ? "آخر شهر" : "Last month"}</SelectItem>
+              <SelectItem value="custom">📅 {app.lang === "ar" ? "مخصص" : "Custom"}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* ✅ ✅ ✅ فلتر التاريخ المخصص - تقويم منبثق احترافي */}
+        {filterDateRange === "custom" && (
+          <div className="relative inline-block">
+            {/* ✅ زر فتح التقويم */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className="h-10 px-4 rounded-xl border-[#2a655f]/30 hover:bg-[#2a655f]/10 transition-all duration-300 flex items-center gap-2"
+            >
+              <Calendar className="h-4 w-4 text-[#2a655f]" />
+              <span className="text-sm font-medium">
+                {dateFrom || dateTo 
+                  ? (app.lang === "ar" ? "تعديل التاريخ" : "Edit Date")
+                  : (app.lang === "ar" ? "اختر التاريخ" : "Select Date")}
+              </span>
+              {showDatePicker ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+              {/* ✅ تلميح الوقت */}
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50/80 dark:bg-blue-950/30 rounded-full border border-blue-200/50 dark:border-blue-800/30">
+                <ClockIcon className="h-3 w-3 text-blue-500" />
+                <span className="text-[9px] text-blue-600 dark:text-blue-400 font-medium">
+                  {app.lang === "ar" ? "الوقت" : "Time"}
+                </span>
+              </div>
+            </Button>
+
+            {/* ✅ التقويم المنبثق - يظهر فوق كل العناصر */}
+    {showDatePicker && (
+  <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[999999] bg-white dark:bg-slate-900 rounded-2xl border-2 border-[#2a655f]/20 shadow-2xl p-5 min-w-[420px] max-w-[95vw] max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+    <div className="space-y-4">
+                  {/* عنوان التقويم */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-[#2a655f]" />
+                      {app.lang === "ar" ? "اختر الفترة الزمنية" : "Select Time Period"}
+                    </span>
+                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px] animate-pulse">
+                      {app.lang === "ar" ? "التاريخ والوقت" : "Date & Time"}
+                    </Badge>
+                  </div>
+                  
+                  {/* ✅ حقل "من" مع تقويم */}
+                  <div>
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                      <span className="text-[#2a655f]">📅</span>
+                      {app.lang === "ar" ? "من" : "From"}
+                      <span className="text-[10px] text-muted-foreground">(اختر التاريخ والوقت)</span>
+                    </Label>
+                    <div className="relative mt-1">
+                      <Input
+                        type="datetime-local"
+                        value={tempDateFrom}
+                        onChange={(e) => setTempDateFrom(e.target.value)}
+                        className="h-10 w-full rounded-xl border-[#2a655f]/20 bg-white/50 dark:bg-slate-800/50 text-sm focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 cursor-pointer"
+                        onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* ✅ حقل "إلى" مع تقويم */}
+                  <div>
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                      <span className="text-[#2a655f]">📅</span>
+                      {app.lang === "ar" ? "إلى" : "To"}
+                      <span className="text-[10px] text-muted-foreground">(اختر التاريخ والوقت)</span>
+                    </Label>
+                    <div className="relative mt-1">
+                      <Input
+                        type="datetime-local"
+                        value={tempDateTo}
+                        onChange={(e) => setTempDateTo(e.target.value)}
+                        className="h-10 w-full rounded-xl border-[#2a655f]/20 bg-white/50 dark:bg-slate-800/50 text-sm focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 cursor-pointer"
+                        onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* ✅ أزرار سريعة */}
+                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 w-full">
+                      <Zap className="h-3 w-3 text-[#2a655f]" />
+                      {app.lang === "ar" ? "اختيارات سريعة:" : "Quick picks:"}
+                    </span>
+                    {[
+                      { label: app.lang === "ar" ? "اليوم" : "Today", value: "today" },
+                      { label: app.lang === "ar" ? "أمس" : "Yesterday", value: "yesterday" },
+                      { label: app.lang === "ar" ? "آخر 7 أيام" : "Last 7 days", value: "week" },
+                      { label: app.lang === "ar" ? "آخر 30 يوم" : "Last 30 days", value: "month" },
+                    ].map((item) => (
+                      <Button
+                        key={item.value}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const now = new Date();
+                          let from = new Date();
+                          let to = new Date();
+                          
+                          switch (item.value) {
+                            case "today":
+                              from.setHours(0, 0, 0, 0);
+                              to.setHours(23, 59, 59, 999);
+                              break;
+                            case "yesterday":
+                              from.setDate(from.getDate() - 1);
+                              from.setHours(0, 0, 0, 0);
+                              to.setDate(to.getDate() - 1);
+                              to.setHours(23, 59, 59, 999);
+                              break;
+                            case "week":
+                              from.setDate(from.getDate() - 7);
+                              from.setHours(0, 0, 0, 0);
+                              to.setHours(23, 59, 59, 999);
+                              break;
+                            case "month":
+                              from.setMonth(from.getMonth() - 1);
+                              from.setHours(0, 0, 0, 0);
+                              to.setHours(23, 59, 59, 999);
+                              break;
+                          }
+                          
+                          const fromStr = from.toISOString().slice(0, 16);
+                          const toStr = to.toISOString().slice(0, 16);
+                          setTempDateFrom(fromStr);
+                          setTempDateTo(toStr);
+                        }}
+                        className="h-7 px-3 rounded-lg text-[10px] border-[#2a655f]/20 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/40 transition-all duration-200"
+                      >
+                        {item.label}
+                      </Button>
+                    ))}
+                  </div>
+                  
+                  {/* ✅ عرض الفترة المحددة مؤقتاً */}
+                  {(tempDateFrom || tempDateTo) && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 animate-in fade-in duration-300">
+                      <ClockIcon className="h-3.5 w-3.5 text-[#2a655f]" />
+                      <span className="text-xs text-[#2a655f] dark:text-[#3a8a82] truncate">
+                        {tempDateFrom && tempDateTo 
+                          ? `${new Date(tempDateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')} → ${new Date(tempDateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                          : tempDateFrom 
+                            ? `${app.lang === 'ar' ? 'من' : 'From'} ${new Date(tempDateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                            : `${app.lang === 'ar' ? 'إلى' : 'To'} ${new Date(tempDateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                        }
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* ✅ أزرار التحكم */}
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setTempDateFrom("");
+                        setTempDateTo("");
+                        setShowDatePicker(false);
+                      }}
+                      className="h-8 px-3 rounded-xl text-xs text-slate-500 hover:text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-300"
+                    >
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      {app.lang === "ar" ? "إلغاء" : "Cancel"}
+                    </Button>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setTempDateFrom("");
+                          setTempDateTo("");
+                          setDateFrom("");
+                          setDateTo("");
+                          setShowDatePicker(false);
+                          setCurrentPage(1);
+                        }}
+                        className="h-8 px-3 rounded-xl text-xs border-red-200/50 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-300"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1" />
+                        {app.lang === "ar" ? "مسح" : "Clear"}
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (tempDateFrom) setDateFrom(tempDateFrom);
+                          if (tempDateTo) setDateTo(tempDateTo);
+                          setShowDatePicker(false);
+                          setCurrentPage(1);
+                        }}
+                        className="h-8 px-4 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                        {app.lang === "ar" ? "تطبيق" : "Apply"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ✅ عرض الفترة المحددة (أسفل الزر) */}
+            {(dateFrom || dateTo) && (
+              <div className="absolute top-full left-0 mt-14 flex items-center gap-2 px-3 py-1.5 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 animate-in fade-in duration-300 whitespace-nowrap z-50">
+                <ClockIcon className="h-3.5 w-3.5 text-[#2a655f]" />
+                <span className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82]">
+                  {dateFrom && dateTo 
+                    ? `${new Date(dateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')} → ${new Date(dateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                    : dateFrom 
+                      ? `${app.lang === 'ar' ? 'من' : 'From'} ${new Date(dateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                      : `${app.lang === 'ar' ? 'إلى' : 'To'} ${new Date(dateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                  }
+                </span>
+                <button
+                  onClick={() => {
+                    setDateFrom("");
+                    setDateTo("");
+                    setTempDateFrom("");
+                    setTempDateTo("");
+                    setCurrentPage(1);
+                  }}
+                  className="ml-1 text-[#2a655f]/60 hover:text-red-500 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ✅ عدد العناصر لكل صفحة */}
         <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
           <SelectTrigger className="w-[90px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
             <SelectValue placeholder="10" />
@@ -912,11 +1272,22 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
             <SelectItem value="50">50</SelectItem>
           </SelectContent>
         </Select>
-        
+
+        {/* ✅ زر مسح الكل */}
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => { setSearchQuery(""); setFilterStatus("all"); setItemsPerPage(10); setCurrentPage(1); }} 
+          onClick={() => { 
+            setSearchQuery(""); 
+            setFilterStatus("all"); 
+            setFilterDateRange("all");
+            setDateFrom("");
+            setDateTo("");
+            setTempDateFrom("");
+            setTempDateTo("");
+            setItemsPerPage(10); 
+            setCurrentPage(1); 
+          }} 
           className="h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5"
         >
           <X className="h-4 w-4 mr-1.5" />
@@ -924,7 +1295,9 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
         </Button>
       </div>
 
-      {/* ===== ORDERS TABLE ===== */}
+      {/* ============================================================ */}
+      {/* ✅ ORDERS TABLE */}
+      {/* ============================================================ */}
       {storeOrders.length === 0 ? (
         <div className="rounded-3xl border-2 border-dashed border-[#2a655f]/30 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-transparent">
           <div className="h-24 w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto">
@@ -948,7 +1321,7 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
           <Button 
             variant="outline" 
             className="mt-4 rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
-            onClick={() => { setSearchQuery(""); setFilterStatus("all"); setCurrentPage(1); }}
+            onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterDateRange("all"); setDateFrom(""); setDateTo(""); setCurrentPage(1); }}
           >
             <X className="h-4 w-4 mr-2" />
             {app.lang === "ar" ? "مسح الفلاتر" : "Clear filters"}
@@ -993,7 +1366,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                         className="group hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10 transition-colors duration-300 cursor-pointer"
                         onClick={() => { setSelectedOrder(order); setDetailDialogOpen(true); }}
                       >
-                        {/* رقم الطلب */}
                         <td className="px-4 py-3 text-center">
                           <div className="flex flex-col items-center">
                             <span className="font-mono font-bold text-sm text-slate-700 dark:text-slate-300">
@@ -1002,7 +1374,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                           </div>
                         </td>
                         
-                        {/* اسم العميل */}
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <User className="h-3.5 w-3.5 text-[#2a655f]" />
@@ -1012,7 +1383,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                           </div>
                         </td>
                         
-                        {/* رقم العميل */}
                         <td className="px-4 py-3 text-center">
                           {order.buyer_phone ? (
                             <div className="flex items-center justify-center gap-1.5">
@@ -1026,7 +1396,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                           )}
                         </td>
                         
-                        {/* الوقت */}
                         <td className="px-4 py-3 text-center">
                           <div className="flex flex-col items-center">
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -1045,7 +1414,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                           </div>
                         </td>
                         
-                        {/* الحالة */}
                         <td className="px-4 py-3 text-center">
                           <Badge className={`${statusColor} border text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1.5 w-fit mx-auto`}>
                             <StatusIcon className="h-3 w-3" />
@@ -1053,7 +1421,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                           </Badge>
                         </td>
                         
-                        {/* الإجراءات */}
                         <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-1 flex-wrap">
                             <Button
@@ -1119,7 +1486,7 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
             </div>
           </div>
 
-          {/* ===== ✅ PAGINATION ===== */}
+          {/* ===== PAGINATION ===== */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex-wrap gap-3">
               <span className="text-xs text-slate-500 flex items-center gap-2">
@@ -1222,7 +1589,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
           </Button>
 
           {selectedOrder && (() => {
-            // ✅ استخراج storeName من order_items أو listings
             let storeName = '';
             let storeLogo: string | null = null;
             let storePhone: string | null = null;
@@ -1251,7 +1617,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
               storeName = app.lang === "ar" ? "متجر" : "Store";
             }
 
-            // ✅ حساب الإجماليات
             const totalItems = selectedOrder.order_items?.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || selectedOrder.quantity || 1;
             const totalPrice = selectedOrder.order_items?.reduce((sum: number, item: any) => sum + (Number(item.price) * (item.quantity || 1)), 0) || Number(selectedOrder.total) || 0;
             const deliveryFee = Number(selectedOrder.delivery_fee) || 0;
@@ -1307,7 +1672,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
 
                 {/* ===== معلومات المتجر والعميل ===== */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50 mb-4">
-                  {/* ✅ المتجر */}
                   <div className="flex items-center gap-3">
                     {storeLogo ? (
                       <img 
@@ -1335,7 +1699,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                     </div>
                   </div>
 
-                  {/* ✅ العميل */}
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
                       <User className="h-3 w-3 text-[#2a655f]" />
@@ -1350,282 +1713,239 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                     )}
                   </div>
                 </div>
-{/* ===== قائمة المنتجات ===== */}
-<div className="mb-4">
-  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-    <Package className="h-3.5 w-3.5" />
-    {app.lang === "ar" ? "المنتجات" : "Products"}
-    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
-      {selectedOrder.order_items?.length || 1}
-    </Badge>
-  </div>
-  
-  <div className="space-y-3 mt-2">
-    {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
-      selectedOrder.order_items.map((item: any, index: number) => {
-        const listing = item.listings || item;
-        
-        // ✅ ✅ ✅ دالة الحصول على صورة الفيرنت المختار (مطابقة لدالة getProductImage في orders.tsx)
-        const getVariationImage = (item: any) => {
-          // 1. الأولوية الأولى: metadata.variation_image
-          if (item.metadata?.variation_image) {
-            return item.metadata.variation_image;
-          }
-          // 2. metadata.product_cover
-          if (item.metadata?.product_cover) {
-            return item.metadata.product_cover;
-          }
-          // 3. selected_options.variation_image
-          if (item.selected_options?.variation_image) {
-            return item.selected_options.variation_image;
-          }
-          // 4. variation_snapshot.image_url
-          if (item.variation_snapshot?.image_url) {
-            return item.variation_snapshot.image_url;
-          }
-          // 5. من selected_options.selected_variation_id
-          if (item.selected_options?.selected_variation_id) {
-            const variations = listing?.variations || [];
-            const variation = variations.find((v: any) => v.id === item.selected_options.selected_variation_id);
-            if (variation?.image_url) return variation.image_url;
-            if (variation?.color_id) {
-              const colors = listing?.colors || [];
-              const color = colors.find((c: any) => c.id === variation.color_id);
-              if (color?.image_url) return color.image_url;
-            }
-          }
-          // 6. selected_variation_id القديم
-          if (item.selected_variation_id) {
-            const variations = listing?.variations || [];
-            const variation = variations.find((v: any) => v.id === item.selected_variation_id);
-            if (variation?.image_url) return variation.image_url;
-            if (variation?.color_id) {
-              const colors = listing?.colors || [];
-              const color = colors.find((c: any) => c.id === variation.color_id);
-              if (color?.image_url) return color.image_url;
-            }
-            if (variation?.combination) {
-              const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
-              let colorValue = null;
-              for (const key of colorKeys) {
-                if (variation.combination[key]) {
-                  colorValue = variation.combination[key];
-                  break;
-                }
-              }
-              if (colorValue) {
-                const colors = listing?.colors || [];
-                const color = colors.find((c: any) => 
-                  c.color_name_ar === colorValue || c.color_name_en === colorValue
-                );
-                if (color?.image_url) return color.image_url;
-              }
-            }
-          }
-          // 7. من variation_combination
-          if (item.variation_combination?.colors) {
-            const colorName = item.variation_combination.colors;
-            const colors = listing?.colors || [];
-            const color = colors.find((c: any) => 
-              c.color_name_ar === colorName || c.color_name_en === colorName
-            );
-            if (color?.image_url) return color.image_url;
-          }
-          // 8. أخيراً: cover_url
-          return listing?.cover_url || null;
-        };
 
-        // ✅ ✅ ✅ الحصول على صورة الفيرنت
-        const imageUrl = getVariationImage(item);
-
-        // ✅ ✅ ✅ الحصول على تركيبة الفيرنت (مطابقة لطريقة العرض في orders.tsx)
-        const getVariationCombination = (item: any) => {
-          if (item.variation_snapshot?.combination) {
-            return item.variation_snapshot.combination;
-          }
-          if (item.metadata?.variation_combination) {
-            return item.metadata.variation_combination;
-          }
-          if (item.variation_combination) {
-            return item.variation_combination;
-          }
-          if (item.selected_options?.variation_combination) {
-            return item.selected_options.variation_combination;
-          }
-          return null;
-        };
-
-        const variationCombination = getVariationCombination(item);
-        const hasVariation = !!(variationCombination && Object.keys(variationCombination).length > 0);
-
-        // ✅ عرض اسم الفيرنت المختار (مطابق لـ orders.tsx)
-        const getVariationDisplay = (combination: any) => {
-          if (!combination) return null;
-          const parts: string[] = [];
-          
-          const order = ['colors', 'sizes', 'size', 'color', 'اللون', 'المقاس', 'colour'];
-          
-          for (const key of order) {
-            if (combination[key]) {
-              parts.push(combination[key]);
-            }
-          }
-          
-          for (const [key, value] of Object.entries(combination)) {
-            if (!order.includes(key) && value) {
-              parts.push(String(value));
-            }
-          }
-          
-          return parts.length > 0 ? parts.join(' • ') : null;
-        };
-
-        const variationDisplay = getVariationDisplay(variationCombination);
-
-        return (
-          <div 
-            key={item.id || index}
-            className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
-          >
-            <div className="flex items-center gap-4">
-              {/* ✅ صورة المنتج (مع دعم الفيرنتات) - نفس تصميم orders.tsx */}
-              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-                {imageUrl ? (
-                  <img 
-                    src={imageUrl} 
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                    <Package className="h-6 w-6 text-slate-400" />
+                {/* ===== قائمة المنتجات ===== */}
+                <div className="mb-4">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Package className="h-3.5 w-3.5" />
+                    {app.lang === "ar" ? "المنتجات" : "Products"}
+                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                      {selectedOrder.order_items?.length || 1}
+                    </Badge>
                   </div>
-                )}
-              </div>
-              
-              {/* ✅ معلومات المنتج - نفس تصميم orders.tsx */}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-slate-800 dark:text-white">
-                  {app.lang === "ar" 
-                    ? listing?.title_ar || 'منتج'
-                    : listing?.title_en || listing?.title_ar || 'Product'}
-                </p>
-                
-                {/* ✅ ✅ ✅ عرض الفيرنتات بنفس طريقة orders.tsx */}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
-                  <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
-                    <span className="font-medium text-slate-600 dark:text-slate-400">
-                      {app.lang === "ar" ? "الكمية:" : "Qty:"}
-                    </span>
-                    <span className="font-bold text-slate-800 dark:text-white">
-                      {item.quantity || 1}
-                    </span>
-                  </span>
                   
-                  <span className="text-muted-foreground/30">•</span>
-                  
-                  <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                      {app.lang === "ar" ? "السعر:" : "Price:"}
-                    </span>
-                    <span className="font-bold text-emerald-700 dark:text-emerald-300">
-                      {formatPrice(
-                        item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
-                        app.currency, 
-                        app.lang
-                      )}
-                    </span>
-                  </span>
-                  
-                  {/* ✅ ✅ ✅ عرض الفيرنت المختار بنفس طريقة orders.tsx */}
-                  {hasVariation && variationDisplay && (
-                    <>
-                      <span className="text-muted-foreground/30">•</span>
-                      <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
-                        <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
-                        {variationDisplay}
-                        {/* ✅ صورة مصغرة للفيرنت بجانب النص */}
-                        {imageUrl && (
-                          <img 
-                            src={imageUrl} 
-                            alt=""
-                            className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
-                          />
-                        )}
-                      </span>
-                    </>
-                  )}
-                  
-                  {/* ✅ ✅ ✅ عرض معلومات الفيرنت من metadata - نفس orders.tsx */}
-                  {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
-                    <>
-                      <span className="text-muted-foreground/30">•</span>
-                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                        <Layers className="h-2.5 w-2.5" />
-                        {Object.values(item.metadata.variation_combination).join(' • ')}
-                      </span>
-                    </>
-                  )}
+                  <div className="space-y-3 mt-2">
+                    {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
+                      selectedOrder.order_items.map((item: any, index: number) => {
+                        const listing = item.listings || item;
+                        
+                        const getVariationImage = (item: any) => {
+                          if (item.metadata?.variation_image) return item.metadata.variation_image;
+                          if (item.metadata?.product_cover) return item.metadata.product_cover;
+                          if (item.selected_options?.variation_image) return item.selected_options.variation_image;
+                          if (item.variation_snapshot?.image_url) return item.variation_snapshot.image_url;
+                          if (item.selected_options?.selected_variation_id) {
+                            const variations = listing?.variations || [];
+                            const variation = variations.find((v: any) => v.id === item.selected_options.selected_variation_id);
+                            if (variation?.image_url) return variation.image_url;
+                            if (variation?.color_id) {
+                              const colors = listing?.colors || [];
+                              const color = colors.find((c: any) => c.id === variation.color_id);
+                              if (color?.image_url) return color.image_url;
+                            }
+                          }
+                          if (item.selected_variation_id) {
+                            const variations = listing?.variations || [];
+                            const variation = variations.find((v: any) => v.id === item.selected_variation_id);
+                            if (variation?.image_url) return variation.image_url;
+                            if (variation?.color_id) {
+                              const colors = listing?.colors || [];
+                              const color = colors.find((c: any) => c.id === variation.color_id);
+                              if (color?.image_url) return color.image_url;
+                            }
+                            if (variation?.combination) {
+                              const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+                              let colorValue = null;
+                              for (const key of colorKeys) {
+                                if (variation.combination[key]) {
+                                  colorValue = variation.combination[key];
+                                  break;
+                                }
+                              }
+                              if (colorValue) {
+                                const colors = listing?.colors || [];
+                                const color = colors.find((c: any) => 
+                                  c.color_name_ar === colorValue || c.color_name_en === colorValue
+                                );
+                                if (color?.image_url) return color.image_url;
+                              }
+                            }
+                          }
+                          if (item.variation_combination?.colors) {
+                            const colorName = item.variation_combination.colors;
+                            const colors = listing?.colors || [];
+                            const color = colors.find((c: any) => 
+                              c.color_name_ar === colorName || c.color_name_en === colorName
+                            );
+                            if (color?.image_url) return color.image_url;
+                          }
+                          return listing?.cover_url || null;
+                        };
+
+                        const imageUrl = getVariationImage(item);
+
+                        const getVariationCombination = (item: any) => {
+                          if (item.variation_snapshot?.combination) return item.variation_snapshot.combination;
+                          if (item.metadata?.variation_combination) return item.metadata.variation_combination;
+                          if (item.variation_combination) return item.variation_combination;
+                          if (item.selected_options?.variation_combination) return item.selected_options.variation_combination;
+                          return null;
+                        };
+
+                        const variationCombination = getVariationCombination(item);
+                        const hasVariation = !!(variationCombination && Object.keys(variationCombination).length > 0);
+
+                        const getVariationDisplay = (combination: any) => {
+                          if (!combination) return null;
+                          const parts: string[] = [];
+                          const order = ['colors', 'sizes', 'size', 'color', 'اللون', 'المقاس', 'colour'];
+                          for (const key of order) {
+                            if (combination[key]) parts.push(combination[key]);
+                          }
+                          for (const [key, value] of Object.entries(combination)) {
+                            if (!order.includes(key) && value) parts.push(String(value));
+                          }
+                          return parts.length > 0 ? parts.join(' • ') : null;
+                        };
+
+                        const variationDisplay = getVariationDisplay(variationCombination);
+
+                        return (
+                          <div 
+                            key={item.id || index}
+                            className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                                {imageUrl ? (
+                                  <img 
+                                    src={imageUrl} 
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                                    <Package className="h-6 w-6 text-slate-400" />
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                                  {app.lang === "ar" 
+                                    ? listing?.title_ar || 'منتج'
+                                    : listing?.title_en || listing?.title_ar || 'Product'}
+                                </p>
+                                
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
+                                  <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
+                                    <span className="font-medium text-slate-600 dark:text-slate-400">
+                                      {app.lang === "ar" ? "الكمية:" : "Qty:"}
+                                    </span>
+                                    <span className="font-bold text-slate-800 dark:text-white">
+                                      {item.quantity || 1}
+                                    </span>
+                                  </span>
+                                  
+                                  <span className="text-muted-foreground/30">•</span>
+                                  
+                                  <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
+                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                                      {app.lang === "ar" ? "السعر:" : "Price:"}
+                                    </span>
+                                    <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                                      {formatPrice(
+                                        item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
+                                        app.currency, 
+                                        app.lang
+                                      )}
+                                    </span>
+                                  </span>
+                                  
+                                  {hasVariation && variationDisplay && (
+                                    <>
+                                      <span className="text-muted-foreground/30">•</span>
+                                      <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                                        <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
+                                        {variationDisplay}
+                                        {imageUrl && (
+                                          <img 
+                                            src={imageUrl} 
+                                            alt=""
+                                            className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
+                                          />
+                                        )}
+                                      </span>
+                                    </>
+                                  )}
+                                  
+                                  {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
+                                    <>
+                                      <span className="text-muted-foreground/30">•</span>
+                                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                                        <Layers className="h-2.5 w-2.5" />
+                                        {Object.values(item.metadata.variation_combination).join(' • ')}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10 transition-all duration-300 hover:scale-110">
+                                  <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                        <div className="flex items-center gap-4">
+                          <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                            {selectedOrder.listings?.cover_url ? (
+                              <img 
+                                src={selectedOrder.listings.cover_url} 
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                                <Package className="h-6 w-6 text-slate-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                              {app.lang === "ar" 
+                                ? selectedOrder.listings?.title_ar || 'منتج'
+                                : selectedOrder.listings?.title_en || selectedOrder.listings?.title_ar || 'Product'}
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                              <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
+                                <span className="font-medium">{app.lang === "ar" ? "الكمية:" : "Qty:"}</span>
+                                <span className="font-bold text-slate-800 dark:text-white">{selectedOrder.quantity || 1}</span>
+                              </span>
+                              <span className="text-muted-foreground/30">•</span>
+                              <span className="flex items-center gap-1 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 px-2 py-0.5 rounded-full">
+                                <span className="font-medium text-[#2a655f] dark:text-[#3a8a82]">{app.lang === "ar" ? "الإجمالي:" : "Total:"}</span>
+                                <span className="font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                                  {formatPrice(Number(selectedOrder.total) || 0, app.currency, app.lang)}
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                          <Link to="/listing/$id" params={{ id: selectedOrder.listing_id }}>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10">
+                              <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              
-              {/* ✅ زر عرض المنتج */}
-              <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10 transition-all duration-300 hover:scale-110">
-                  <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        );
-      })
-    ) : (
-      // ✅ للطلبات القديمة (بدون order_items) - نفس تصميم orders.tsx
-      <div className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-            {selectedOrder.listings?.cover_url ? (
-              <img 
-                src={selectedOrder.listings.cover_url} 
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                <Package className="h-6 w-6 text-slate-400" />
-              </div>
-            )}
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-sm text-slate-800 dark:text-white">
-              {app.lang === "ar" 
-                ? selectedOrder.listings?.title_ar || 'منتج'
-                : selectedOrder.listings?.title_en || selectedOrder.listings?.title_ar || 'Product'}
-            </p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-              <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
-                <span className="font-medium">{app.lang === "ar" ? "الكمية:" : "Qty:"}</span>
-                <span className="font-bold text-slate-800 dark:text-white">{selectedOrder.quantity || 1}</span>
-              </span>
-              <span className="text-muted-foreground/30">•</span>
-              <span className="flex items-center gap-1 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 px-2 py-0.5 rounded-full">
-                <span className="font-medium text-[#2a655f] dark:text-[#3a8a82]">{app.lang === "ar" ? "الإجمالي:" : "Total:"}</span>
-                <span className="font-bold text-[#2a655f] dark:text-[#3a8a82]">
-                  {formatPrice(Number(selectedOrder.total) || 0, app.currency, app.lang)}
-                </span>
-              </span>
-            </div>
-          </div>
-          <Link to="/listing/$id" params={{ id: selectedOrder.listing_id }}>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10">
-              <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
-            </Button>
-          </Link>
-        </div>
-      </div>
-    )}
-  </div>
-</div>
 
                 {/* ===== ملاحظات الطلب ===== */}
                 {selectedOrder.notes && (
@@ -1651,8 +1971,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
 
                 {/* ===== إجمالي الطلب ===== */}
                 <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
-                  
-                  {/* المجموع الفرعي */}
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">
                       {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
@@ -1662,7 +1980,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                     </span>
                   </div>
                   
-                  {/* سعر التوصيل */}
                   <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
                     <span className="text-sm text-muted-foreground">
                       {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
@@ -1680,7 +1997,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                     </span>
                   </div>
                   
-                  {/* الخصم */}
                   {promoDiscount > 0 && (
                     <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
                       <span className="text-sm">
@@ -1692,7 +2008,6 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                     </div>
                   )}
                   
-                  {/* الإجمالي الكامل */}
                   <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
                     <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
                       {app.lang === "ar" ? "الإجمالي الكامل" : "Total"}
@@ -1715,7 +2030,7 @@ const handleAcceptOrder = useCallback(async (orderId: string) => {
                   </div>
                 </div>
 
-                {/* ===== أزرار الإجراءات (في الأسفل) ===== */}
+                {/* ===== أزرار الإجراءات ===== */}
                 <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex flex-wrap items-center justify-between gap-3">
                   <Button
                     variant="outline"

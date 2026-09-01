@@ -12,7 +12,7 @@ import {
   ChevronDown, ChevronUp, Eye,
   Calendar, CreditCard, Send, ThumbsUp, ThumbsDown,
   User, Store, Sparkles, Zap, Rocket, Shield, Award, Timer,
-  Layers, MessageCircle, Phone
+  Layers, MessageCircle, Phone, Gift  
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -108,7 +108,34 @@ function getProductImage(item: any) {
   // ✅ 8. أخيراً: cover_url
   return listing?.cover_url || null;
 }
+// ✅ ✅ ✅ دالة استخراج بيانات العرض الترويجي من order_items
+function getPromoOfferData(item: any) {
+  // ✅ من metadata (هذا هو المكان الذي حفظناه فيه من cart.tsx)
+  if (item.metadata?.promo_offer_data) {
+    return item.metadata.promo_offer_data;
+  }
+  
+  // ✅ من variation_snapshot (للتوافق مع القديم)
+  if (item.variation_snapshot?.offer_data) {
+    return item.variation_snapshot.offer_data;
+  }
+  
+  // ✅ من offer_data مباشرة
+  if (item.offer_data) {
+    return item.offer_data;
+  }
+  
+  return null;
+}
 
+// ✅ ✅ ✅ دالة التحقق من وجود عرض ترويجي
+function isPromoOffer(item: any) {
+  return item.is_promo_offer === true || 
+         item.offer_id !== null ||
+         item.variation_snapshot?.is_promo_offer === true ||
+         item.metadata?.is_promo_offer === true ||
+         !!getPromoOfferData(item);
+}
 function OrdersPage() {
   const app = useApp();
   const navigate = useNavigate();
@@ -909,123 +936,246 @@ const handleCancelOrder = async (orderId: string) => {
   </Badge>
 </div>
                           
-                          {group.items.map((item: any) => {
-                            // ✅ ✅ ✅ جلب الـ listings من item مباشرة (من order_items)
-                            const listing = item.listings || item;
-                            
-                            // ✅ ✅ ✅ الحصول على الصورة الصحيحة (مع دعم الفيرنتات)
-                            const imageUrl = getProductImage(item);
-                            
-                            // ✅ ✅ ✅ LOG لتأكيد الصورة
-                            console.log("📸 [Orders] Item image:", {
-                              id: item.id,
-                              title: listing?.title_ar,
-                              imageUrl: imageUrl,
-                              metadata_variation_image: item.metadata?.variation_image,
-                              selected_options: item.selected_options,
-                              selected_variation_id: item.selected_variation_id
-                            });
-                            
-                            return (
-                              <div 
-                                key={item.id || item.listing_id}
-                                className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
-                              >
-                                <div className="flex items-center gap-4">
-                                  {/* ✅ صورة المنتج (مع دعم الفيرنتات) */}
-                                  <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-                                    {imageUrl ? (
-                                      <OptimizedImage
-                                        src={imageUrl}
-                                        alt=""
-                                        width={48}
-                                        height={48}
-                                        quality={80}
-                                        objectFit="cover"
-                                        className="h-full w-full"
-                                      />
-                                    ) : (
-                                      <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                                        <Package className="h-5 w-5 text-slate-400" />
-                                      </div>
-                                    )}
-                                  </div>
-                                  
-                                  {/* معلومات المنتج */}
-                                  <div className="flex-1">
-                                    <p className="font-semibold text-sm text-slate-800 dark:text-white">
-                                      {app.lang === "ar" 
-                                        ? listing?.title_ar || 'منتج'
-                                        : listing?.title_en || listing?.title_ar || 'Product'}
-                                    </p>
-                                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                                      <span>{app.lang === "ar" ? "الكمية:" : "Qty:"} {item.quantity || 1}</span>
-                                      <span className="text-muted-foreground/30">•</span>
-                                      <span className="font-semibold text-[#2a655f] dark:text-[#3a8a82]">
-                                        {formatPrice(
-                                          item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
-                                          app.currency, 
-                                          app.lang
-                                        )}
-                                      </span>
-                                      <span className="text-muted-foreground/30">•</span>
-                                      <Badge className={cn(
-                                        "border-0 text-[9px] px-2 py-0.5",
-                                        getOrderStatus(item.status || group.status).bg,
-                                        getOrderStatus(item.status || group.status).color
-                                      )}>
-                                        {getOrderStatus(item.status || group.status).label}
-                                      </Badge>
-                                      {/* ✅ ✅ ✅ عرض معلومات الفيرنت المختار */}
-                                      {item.selected_variation_id && (
-                                        <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                                          <Layers className="h-2.5 w-2.5" />
-                                          {item.variation_snapshot?.combination 
-                                            ? Object.values(item.variation_snapshot.combination).join(' • ')
-                                            : (item.selected_variation_id.slice(0, 8))}
-                                        </span>
-                                      )}
-                                      {/* ✅ ✅ ✅ عرض معلومات الفيرنت من metadata */}
-                                      {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && (
-                                        <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                                          <Layers className="h-2.5 w-2.5" />
-                                          {Object.values(item.metadata.variation_combination).join(' • ')}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  
-                                  {/* ✅ زر عرض المنتج */}
-                                  <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10">
-                                      <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
-                                    </Button>
-                                  </Link>
-                                </div>
+                       {group.items.map((item: any) => {
+  const listing = item.listings || item;
+  const imageUrl = getProductImage(item);
+  
+  // ✅ ✅ ✅ التحقق من وجود عرض ترويجي
+  const isPromo = isPromoOffer(item);
+  const offerData = getPromoOfferData(item);
+  
+  // ✅ استخراج بيانات العرض
+  const requiredVariations = offerData?.required_products?.variations || {};
+  const giftVariations = offerData?.free_product?.variations || {};
+  const hasRequired = Object.keys(requiredVariations).length > 0;
+  const hasGift = Object.keys(giftVariations).length > 0;
+  
+  return (
+    <div 
+      key={item.id || item.listing_id}
+      className={cn(
+        "p-3 rounded-xl border transition-all duration-300",
+        isPromo 
+          ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50 hover:border-purple-400/70" 
+          : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30"
+      )}
+    >
+      {isPromo ? (
+        // ===== ✅ عرض العرض الترويجي =====
+        <div className="space-y-3">
+          {/* شارة العرض الترويجي */}
+          <div className="flex items-center gap-2">
+            <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 px-3 py-1 rounded-full text-xs font-bold">
+              <Gift className="h-3.5 w-3.5 inline mr-1.5" />
+              {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
+            </Badge>
+            <Badge variant="outline" className="border-purple-300 text-purple-600 text-[10px]">
+              {offerData?.offer_type === 'bogo' ? '🎁 نفس المنتج' : 
+               offerData?.offer_type === 'cross_sell' ? '🔄 منتج مختلف' : '📦 باقة'}
+            </Badge>
+          </div>
 
-                                {/* ✅ ✅ ✅ أزرار التقييم فقط (تم إزالة زر الإلغاء من هنا) */}
-                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
-                                  {canRate(item.status || group.status) && (
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[10px] text-muted-foreground">
-                                        {app.lang === "ar" ? "قيم:" : "Rate:"}
-                                      </span>
-                                      <StarRating
-                                        rating={item.rating || 0}
-                                        onRatingChange={(value) => {
-                                          setRatingOrder(item.id || item.listing_id);
-                                          setRatingValue(value);
-                                          handleRateOrder(item.order_id || group.orderId, item.listing_id, value);
-                                        }}
-                                        readonly={isRating && ratingOrder === (item.id || item.listing_id)}
-                                        size="sm"
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
+          {/* نص العرض */}
+          {offerData?.display_text_ar && (
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {app.lang === "ar" ? offerData.display_text_ar : offerData.display_text_en}
+            </p>
+          )}
+
+          {/* المنتجات المطلوبة */}
+          {hasRequired && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
+                🛒 {app.lang === "ar" ? "المنتجات المطلوبة" : "Required Products"} ({Object.keys(requiredVariations).length})
+              </p>
+              {Object.entries(requiredVariations).map(([id, data]: any) => {
+                const comboText = Object.values(data.combination || {}).join(' • ');
+                const variationImage = data.image_url || 
+                                      offerData?.required_products?.main_product?.cover_url || 
+                                      null;
+                
+                return (
+                  <div key={id} className="flex items-center gap-3 p-2 bg-white/70 rounded-xl border border-purple-100/50">
+                    {variationImage ? (
+                      <img 
+                        src={variationImage} 
+                        alt={comboText} 
+                        className="w-10 h-10 rounded-lg object-cover border border-purple-100"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.png';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center text-purple-400">
+                        <Package className="h-5 w-5" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                      <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
+                    </div>
+                    <p className="text-sm font-bold text-[#0d2e2a] whitespace-nowrap">
+                      {(data.price * data.quantity).toLocaleString()} SYP
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* الهدية */}
+          {hasGift && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-emerald-500 flex items-center gap-2">
+                <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
+                🎁 {app.lang === "ar" ? "الهدية" : "Gift"} ({Object.keys(giftVariations).length})
+              </p>
+              {Object.entries(giftVariations).map(([id, data]: any) => {
+                const comboText = Object.values(data.combination || {}).join(' • ');
+                const giftImage = data.image_url || 
+                                 offerData?.free_product?.cover_url || 
+                                 null;
+                
+                return (
+                  <div key={id} className="flex items-center gap-3 p-2 bg-emerald-50/70 rounded-xl border border-emerald-100/50">
+                    {giftImage ? (
+                      <img 
+                        src={giftImage} 
+                        alt={comboText} 
+                        className="w-10 h-10 rounded-lg object-cover border border-emerald-100"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.png';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400">
+                        <Gift className="h-5 w-5" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                      <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
+                    </div>
+                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-xs font-bold px-3 py-1 rounded-full">
+                      🎁 {app.lang === "ar" ? "مجاناً" : "Free"}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* إجمالي السعر */}
+          <div className="mt-3 pt-3 border-t border-purple-200/50">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
+                {app.lang === "ar" ? "إجمالي المنتجات المطلوبة" : "Total required products"}
+              </span>
+              <span className="text-lg font-bold text-[#0d2e2a]">
+                {(item.price * item.quantity).toLocaleString()} SYP
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // ===== ✅ عرض المنتج العادي =====
+        <div className="flex items-center gap-4">
+          {/* صورة المنتج */}
+          <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+            {imageUrl ? (
+              <OptimizedImage
+                src={imageUrl}
+                alt=""
+                width={48}
+                height={48}
+                quality={80}
+                objectFit="cover"
+                className="h-full w-full"
+              />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                <Package className="h-5 w-5 text-slate-400" />
+              </div>
+            )}
+          </div>
+          
+          {/* معلومات المنتج */}
+          <div className="flex-1">
+            <p className="font-semibold text-sm text-slate-800 dark:text-white">
+              {app.lang === "ar" 
+                ? listing?.title_ar || 'منتج'
+                : listing?.title_en || listing?.title_ar || 'Product'}
+            </p>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+              <span>{app.lang === "ar" ? "الكمية:" : "Qty:"} {item.quantity || 1}</span>
+              <span className="text-muted-foreground/30">•</span>
+              <span className="font-semibold text-[#2a655f] dark:text-[#3a8a82]">
+                {formatPrice(
+                  item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
+                  app.currency, 
+                  app.lang
+                )}
+              </span>
+              <span className="text-muted-foreground/30">•</span>
+              <Badge className={cn(
+                "border-0 text-[9px] px-2 py-0.5",
+                getOrderStatus(item.status || group.status).bg,
+                getOrderStatus(item.status || group.status).color
+              )}>
+                {getOrderStatus(item.status || group.status).label}
+              </Badge>
+              {/* ✅ عرض معلومات الفيرنت المختار */}
+              {item.selected_variation_id && (
+                <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                  <Layers className="h-2.5 w-2.5" />
+                  {item.variation_snapshot?.combination 
+                    ? Object.values(item.variation_snapshot.combination).join(' • ')
+                    : (item.selected_variation_id.slice(0, 8))}
+                </span>
+              )}
+              {/* ✅ عرض معلومات الفيرنت من metadata */}
+              {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && (
+                <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                  <Layers className="h-2.5 w-2.5" />
+                  {Object.values(item.metadata.variation_combination).join(' • ')}
+                </span>
+              )}
+            </div>
+          </div>
+          
+          {/* زر عرض المنتج */}
+          <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10">
+              <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
+            </Button>
+          </Link>
+        </div>
+      )}
+      
+      {/* ✅ ✅ ✅ أزرار التقييم (لجميع المنتجات) */}
+      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+        {canRate(item.status || group.status) && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground">
+              {app.lang === "ar" ? "قيم:" : "Rate:"}
+            </span>
+            <StarRating
+              rating={item.rating || 0}
+              onRatingChange={(value) => {
+                setRatingOrder(item.id || item.listing_id);
+                setRatingValue(value);
+                handleRateOrder(item.order_id || group.orderId, item.listing_id, value);
+              }}
+              readonly={isRating && ratingOrder === (item.id || item.listing_id)}
+              size="sm"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+})}
                         </div>
 
                         {/* ✅ ✅ ✅ زر إلغاء الطلب كامل (في الأسفل) */}

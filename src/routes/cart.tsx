@@ -1201,29 +1201,54 @@ const items = useMemo(() => {
         console.log(`✅ [Checkout] Order created with ID: ${order.id}`);
 
         // ✅ حفظ بيانات الفيرنتات في order_items
-        const orderItems = itemsList.map((item: any) => ({
-          order_id: order.id,
-          listing_id: item.listing_id,
-          quantity: item.quantity,
-          price: Number(item.price),
-          currency: item.currency || 'SYP',
-          variation_combination: item.variation_combination || null,
-          selected_options: {
-            selected_variation_id: item.selected_variation_id || null,
-            selected_color: item.selected_color || null,
-            selected_size: item.selected_size || null,
-          },
-          metadata: {
-            variation_image: item.displayImage || null,
-            variation_price: Number(item.price),
-            variation_combination: item.variation_combination || {},
-            product_title: item.listing?.title_ar || null,
-            product_cover: item.listing?.cover_url || null,
-            is_promo_offer: item.isPromoOffer || false,
-            is_discount_offer: item.isDiscountOffer || false,
-          },
-        }));
-
+      // ✅ ✅ ✅ حفظ بيانات الفيرنتات والعروض الترويجية في order_items
+const orderItems = itemsList.map((item: any) => {
+  // ✅ ✅ ✅ استخراج بيانات العرض الترويجي
+  let offerData = null;
+  let isPromoOffer = false;
+  
+  // ✅ من variation_snapshot
+  if (item.variation_snapshot?.offer_data) {
+    offerData = item.variation_snapshot.offer_data;
+    isPromoOffer = true;
+  }
+  
+  // ✅ من item مباشرة
+  if (item.offer_id && item.variation_snapshot?.offer_data) {
+    isPromoOffer = true;
+  }
+  
+  // ✅ من metadata (إذا كانت موجودة)
+  if (item.metadata?.promo_offer_data) {
+    offerData = item.metadata.promo_offer_data;
+    isPromoOffer = true;
+  }
+  
+  return {
+    order_id: order.id,
+    listing_id: item.listing_id,
+    quantity: item.quantity,
+    price: Number(item.price),
+    currency: item.currency || 'SYP',
+    variation_combination: item.variation_combination || null,
+    selected_options: {
+      selected_variation_id: item.selected_variation_id || null,
+      selected_color: item.selected_color || null,
+      selected_size: item.selected_size || null,
+    },
+    metadata: {
+      variation_image: item.displayImage || null,
+      variation_price: Number(item.price),
+      variation_combination: item.variation_combination || {},
+      product_title: item.listing?.title_ar || null,
+      product_cover: item.listing?.cover_url || null,
+      is_promo_offer: isPromoOffer,
+      is_discount_offer: item.isDiscountOffer || false,
+      // ✅ ✅ ✅ حفظ بيانات العرض الترويجي الكاملة
+      promo_offer_data: offerData,
+    },
+  };
+});
         const { error: itemsError } = await supabase
           .from("order_items")
           .insert(orderItems);

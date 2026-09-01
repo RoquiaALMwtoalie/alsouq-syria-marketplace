@@ -451,8 +451,7 @@ const hasVariations = useMemo(() => {
     app.toggleFavorite(item.id);
   }, [app, item.id]);
 
-  // ✅ ✅ ✅ renderImage مع OptimizedImage
-// ✅ ✅ ✅ renderImage مع OptimizedImage + console.log
+  // ✅ renderImage مع OptimizedImage
 const renderImage = useCallback(() => {
   console.log('🔍 [ListingCard] renderImage called, cover:', cover);
   if (cover) {
@@ -476,6 +475,7 @@ const renderImage = useCallback(() => {
     </div>
   );
 }, [cover, title]);
+
   const renderPrice = useCallback(() => {
     if (isDiscountOffer && oldPrice) {
       return (
@@ -611,6 +611,154 @@ const renderImage = useCallback(() => {
     );
   }, [isPromoOffer, item.variations, item.variation_ids, item.price, app.currency, app.lang]);
 
+// ✅ ✅ ✅ عرض الألوان (نسخة محسنة مع ألوان افتراضية)
+// ✅ ✅ ✅ عرض الألوان (النسخة النهائية - بدون شرط hasVariations)
+const renderColors = useCallback((maxDisplay: number = 5) => {
+  const colors = item.product_colors || item.colors || [];
+  
+  if (!colors || colors.length === 0) return null;
+  
+  const isLightColor = (hex: string): boolean => {
+    if (!hex || hex === '#CCCCCC' || hex === '#cccccc') return true;
+    
+    let r: number, g: number, b: number;
+    const clean = hex.replace('#', '');
+    
+    if (clean.length === 3) {
+      r = parseInt(clean[0] + clean[0], 16);
+      g = parseInt(clean[1] + clean[1], 16);
+      b = parseInt(clean[2] + clean[2], 16);
+    } else if (clean.length === 6) {
+      r = parseInt(clean.substring(0, 2), 16);
+      g = parseInt(clean.substring(2, 4), 16);
+      b = parseInt(clean.substring(4, 6), 16);
+    } else {
+      return true;
+    }
+    
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5;
+  };
+  
+  const defaultColors: Record<string, string> = {
+    'أحمر': '#FF0000', 'احمر': '#FF0000',
+    'أزرق': '#0000FF', 'ازرق': '#0000FF',
+    'أخضر': '#00FF00', 'اخضر': '#00FF00',
+    'أسود': '#000000', 'اسود': '#000000',
+    'أبيض': '#FFFFFF', 'ابيض': '#FFFFFF',
+    'بني': '#8B4513',
+    'ذهبي': '#FFD700',
+    'فضي': '#C0C0C0',
+    'وردي': '#FF69B4',
+    'بنفسجي': '#800080',
+    'أصفر': '#FFFF00', 'اصفر': '#FFFF00',
+    'برتقالي': '#FF8C00',
+    'رمادي': '#808080',
+    'بيج': '#F5F5DC',
+    'نحاسي': '#B87333',
+    'تركواز': '#40E0D0',
+    'فيروزي': '#40E0D0',
+    'كحلي': '#000080',
+    'عسلي': '#C68E5E',
+    'كريمي': '#FFFDD0',
+    'خمري': '#722F37',
+    'نبيتي': '#722F37',
+    'عنابي': '#800000',
+    'زيتوني': '#808000',
+    'نعناعي': '#98FF98',
+    'لافندر': '#E6E6FA',
+    'موف': '#C8A2C8',
+    'مرجاني': '#FF7F50',
+    'قرمزي': '#DC143C',
+    'كرزي': '#DE3163',
+    'سماوي': '#00BFFF',
+    'ليموني': '#FFF44F',
+    'خوخي': '#FFDAB9',
+    'عنبري': '#FFBF00',
+    'زهري': '#FFB6C1',
+    'فوشي': '#FF00FF',
+    'أرجواني': '#800080',
+    'بشري': '#F5D0B8',
+    'خردلي': '#DAA520',
+    'مينت': '#98FF98',
+    'بيبي بينك': '#F4C2C2',
+    'نود': '#E8D5B7',
+    'رملي': '#D7C4A1',
+    'ثلجي': '#FFFAFA',
+    'أوف وايت': '#F8F8FF',
+    'ترابي': '#C4A882',
+    'قمحي': '#F5DEB3',
+    'حنطي': '#D4A574',
+    'سكري': '#FDF5E6',
+    'عاجي': '#FFFFF0',
+    'لؤلؤي': '#F5F5F5',
+    'قهوي': '#6F4E37',
+    'شوكولاتة': '#7B3F00',
+    'كاكي': '#C3B091',
+    'برونزي': '#CD7F32',
+  };
+  
+  return (
+    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+      <span className="text-[10px] text-muted-foreground font-medium">
+        {app.lang === "ar" ? "الألوان:" : "Colors:"}
+      </span>
+      {colors.slice(0, maxDisplay).map((color: any, idx: number) => {
+        let hexColor = color.color_hex;
+        if (!hexColor || hexColor === 'null' || hexColor === '') {
+          const name = (color.color_name_ar || color.color_name_en || '').toLowerCase();
+          hexColor = defaultColors[name] || '#CCCCCC';
+        }
+        
+        const imageUrl = color.image_url;
+        const colorName = app.lang === "ar" ? color.color_name_ar : (color.color_name_en || color.color_name_ar);
+        const isLight = isLightColor(hexColor);
+        
+        return (
+          <div
+            key={idx}
+            className="group relative h-6 w-6 rounded-full border-2 border-slate-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-110 cursor-pointer overflow-visible flex items-center justify-center"
+            style={{ 
+              backgroundColor: imageUrl ? 'transparent' : hexColor,
+              backgroundImage: imageUrl ? `url(${imageUrl})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          >
+            {/* ✅ Tooltip - يظهر عند تمرير الماوس على الدائرة */}
+            <div 
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 shadow-xl border border-white/20 pointer-events-none"
+              style={{ 
+                backgroundColor: hexColor,
+                color: isLight ? '#1a1a1a' : '#ffffff',
+                boxShadow: `0 8px 25px ${hexColor}88, 0 2px 8px rgba(0,0,0,0.1)`,
+              }}
+            >
+              {colorName || (app.lang === "ar" ? "لون" : "Color")}
+              
+              {/* ✅ السهم الصغير تحت الـ tooltip */}
+              <div 
+                className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45"
+                style={{ 
+                  backgroundColor: hexColor,
+                }}
+              />
+            </div>
+            
+            {!imageUrl && !hexColor && (
+              <span className="text-[8px] font-bold text-white">?</span>
+            )}
+          </div>
+        );
+      })}
+      {colors.length > maxDisplay && (
+        <span className="text-[9px] text-muted-foreground">
+          +{colors.length - maxDisplay}
+        </span>
+      )}
+    </div>
+  );
+}, [item.product_colors, item.colors, app.lang]);
   const isOfferCard = isDiscountOffer || isPromoOffer;
   const productLink = isPromoOffer ? "/offer/$id" : "/listing/$id";
 
@@ -698,7 +846,6 @@ const renderImage = useCallback(() => {
                 >
                   <div className="h-7 w-7 rounded-full border border-white/40 shadow-inner overflow-hidden bg-white flex-shrink-0 grid place-items-center">
                     {storeCover ? (
-                      // ✅ ✅ ✅ استبدال img بـ OptimizedImage
                       <OptimizedImage
                         src={storeCover}
                         alt={storeName || "Store"}
@@ -740,6 +887,8 @@ const renderImage = useCallback(() => {
               </div>
               
               {renderVariations(3)}
+              {/* ✅ ✅ ✅ عرض الألوان */}
+              {renderColors()}
               
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div>
@@ -844,7 +993,6 @@ const renderImage = useCallback(() => {
               >
                 <div className="h-7 w-7 rounded-full border border-white/40 shadow-inner overflow-hidden bg-white flex-shrink-0 grid place-items-center">
                   {storeCover ? (
-                    // ✅ ✅ ✅ استبدال img بـ OptimizedImage
                     <OptimizedImage
                       src={storeCover}
                       alt={storeName || "Store"}
@@ -893,6 +1041,8 @@ const renderImage = useCallback(() => {
             </div>
             
             {renderVariations(4)}
+            {/* ✅ ✅ ✅ عرض الألوان */}
+            {renderColors()}
             
             <div className="mt-2 flex flex-wrap items-end justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <div>

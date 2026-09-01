@@ -341,6 +341,10 @@ async function fetchProfilesForListings(listings: any[]) {
 }
 
 // ✅ useListings محسّن مع Cache Manager
+// src/lib/queries.ts
+
+// src/lib/queries.ts
+
 export function useListings(filter: ListingsFilter = {}) {
   return useQuery({
     queryKey: ["listings", filter],
@@ -364,7 +368,6 @@ export function useListings(filter: ListingsFilter = {}) {
         categoryId = category?.id || null;
       }
       
-      // ✅ ✅ ✅ جلب governorate_id من slug
       let governorateId = null;
       if (filter.governorateSlug) {
         const { data: gov } = await supabase
@@ -383,7 +386,7 @@ export function useListings(filter: ListingsFilter = {}) {
           p_is_offer: filter.isOffer || null,
           p_category_id: categoryId,
           p_is_featured: filter.isFeatured || null,
-          p_governorate_id: governorateId  // ✅✅✅ هذا السطر الجديد
+          p_governorate_id: governorateId
         });
       
       if (error) throw error;
@@ -393,14 +396,29 @@ export function useListings(filter: ListingsFilter = {}) {
         listings = listings.filter((item: any) => item.owner_id === filter.ownerId);
       }
       
+      // ✅ ✅ ✅ تحويل البيانات: إضافة product_colors من colors
+      const transformedListings = listings.map((item: any) => {
+        // ✅ إذا كان item.colors موجود، انسخه إلى product_colors
+        // ✅ وإذا كان item.colors في المصفوفة بشكل مختلف
+        const colors = item.colors || [];
+        
+        return {
+          ...item,
+          product_colors: colors,  // ✅ إضافة المفتاح المطلوب
+          colors: colors,          // ✅ الاحتفاظ بالمفتاح القديم
+        };
+      });
+      
       const result = {
-        data: listings,
-        count: listings.length,
-        totalPages: filter.limit ? Math.ceil(listings.length / filter.limit) : 1,
+        data: transformedListings,
+        count: transformedListings.length,
+        totalPages: filter.limit ? Math.ceil(transformedListings.length / filter.limit) : 1,
       };
       
       cacheManager.set(cacheKey, result, LISTINGS_CACHE_TTL);
-      console.log(`📊 [useListings] Total listings: ${listings.length}`);
+      console.log(`📊 [useListings] Total listings: ${transformedListings.length}`);
+      console.log(`📊 [useListings] First item colors:`, transformedListings[0]?.colors);
+      console.log(`📊 [useListings] First item product_colors:`, transformedListings[0]?.product_colors);
       return result;
     },
     staleTime: 5 * 60 * 1000,

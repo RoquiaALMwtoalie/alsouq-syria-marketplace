@@ -747,20 +747,67 @@ function extractKeywords(text: string): string[] {
 
 function correctSpelling(text: string): string {
   const corrections: Record<string, string> = {
-    'سامسنج': 'سامسونج', 'ابل': 'آبل', 'ايفون': 'آيفون',
-    'جوالات': 'جوال', 'سماعات': 'سماعة', 'لابتوبات': 'لابتوب',
-    'ساعات': 'ساعة', 'عطور': 'عطر', 'شنط': 'شنطة',
-    'احذية': 'حذاء', 'فساتين': 'فستان', 'خواتم': 'خاتم',
-    'تليفون': 'تلفون', 'موبيل': 'موبايل', 'كوتش': 'كوتشي',
-    'سنييكر': 'سنايكر', 'جزمة': 'حذاء', 'هدوم': 'ملابس',
-    'تيشيرت': 'تيشرت', 'جاكت': 'جاكيت', 'كنزة': 'جاكيت',
-    'برفان': 'عطر', 'مرطب': 'كريم', 'مصل': 'سيروم',
-    'اواني': 'أواني', 'مفروشات': 'أثاث', 'موكيت': 'سجاد',
-    'بوت': 'بوط', 'مداس': 'حذاء', 'شبشب': 'حذاء',
-    'صندل': 'حذاء', 'كعب': 'حذاء', 'مسطح': 'حذاء',
-    'هدوم': 'ملابس', 'لبس': 'ملابس', 'ثياب': 'ملابس',
-    'عربة': 'سلة', 'طلبات': 'طلباتي', 'اوردر': 'طلباتي',
-    'كومبيوتر': 'كمبيوتر', 'موكيت': 'سجاد', 'بساط': 'سجاد'
+    // التصحيحات الموجودة
+    'سامسنج': 'سامسونج',
+    'ابل': 'آبل',
+    'ايفون': 'آيفون',
+    'جوالات': 'جوال',
+    'سماعات': 'سماعة',
+    'لابتوبات': 'لابتوب',
+    'ساعات': 'ساعة',
+    'عطور': 'عطر',
+    'شنط': 'شنطة',
+    'احذية': 'حذاء',
+    'فساتين': 'فستان',
+    'خواتم': 'خاتم',
+    'تليفون': 'تلفون',
+    'موبيل': 'موبايل',
+    'كوتش': 'كوتشي',
+    'سنييكر': 'سنايكر',
+    'جزمة': 'حذاء',
+    'هدوم': 'ملابس',
+    'تيشيرت': 'تيشرت',
+    'جاكت': 'جاكيت',
+    'كنزة': 'جاكيت',
+    'برفان': 'عطر',
+    'مرطب': 'كريم',
+    'مصل': 'سيروم',
+    'اواني': 'أواني',
+    'مفروشات': 'أثاث',
+    'موكيت': 'سجاد',
+    'بوت': 'بوط',
+    'مداس': 'حذاء',
+    'شبشب': 'حذاء',
+    'صندل': 'حذاء',
+    'كعب': 'حذاء',
+    'مسطح': 'حذاء',
+    'هدوم': 'ملابس',
+    'لبس': 'ملابس',
+    'ثياب': 'ملابس',
+    'عربة': 'سلة',
+    'طلبات': 'طلباتي',
+    'اوردر': 'طلباتي',
+    'كومبيوتر': 'كمبيوتر',
+    'موكيت': 'سجاد',
+    'بساط': 'سجاد',
+    
+    // ✅ ✅ ✅ التصحيحات الجديدة للكلمات التي بها مسافات
+    'تي شيرت': 'تيشرت',
+    'تي شيرتات': 'تيشرت',
+    'تي شيرتات': 'تيشرت',
+    'تي شيرت': 'تيشرت',
+    'تي شيرتات': 'تيشرت',
+    'تي - شيرت': 'تيشرت',
+    'تي_شيرت': 'تيشرت',
+    
+    // ✅ إصلاح الكلمات التي بها مسافات إضافية
+    'جاكيت ولادي': 'جاكيت ولادي',
+    'كولكشن شتاء': 'كولكشن شتاء',
+    
+    // ✅ أخطاء شائعة أخرى
+    'تيشرتات': 'تيشرت',
+    'تيشيرتات': 'تيشرت',
+    'فانلات': 'فانلة',
   };
   
   let corrected = text;
@@ -1005,7 +1052,7 @@ export async function executeSearch(
       return results;
     }
     
-    // ✅ بناء شروط البحث (محسن)
+    // ✅ ✅ ✅ البحث الذكي: يبحث عن أي كلمة (OR)
     const searchConditions: string[] = [];
     const uniqueWords = [...new Set(allSearchWords.map(w => w.trim().toLowerCase()))];
     
@@ -1025,7 +1072,7 @@ export async function executeSearch(
       return results;
     }
     
-    // ✅ تنفيذ الاستعلام (محسن)
+    // ✅ ✅ ✅ استخدام OR بدلاً من AND
     let query = supabase
       .from('listings')
       .select(`
@@ -1039,7 +1086,7 @@ export async function executeSearch(
       `)
       .eq('status', 'published')
       .eq('is_available', true)
-      .or(searchConditions.join(','));
+      .or(searchConditions.join(','));  // ✅ OR بدلاً من AND
     
     // ✅ فلتر السعر
     if (entities.priceMin !== undefined) {
@@ -1077,9 +1124,22 @@ export async function executeSearch(
         const title = lang === 'ar' ? item.title_ar : item.title_en;
         const desc = lang === 'ar' ? item.description_ar : item.description_en;
         
+        // ✅ حساب الدرجة بناءً على عدد الكلمات المتطابقة
+        let matchCount = 0;
         for (const word of uniqueWords) {
-          if (title?.includes(word)) score += 15;
-          if (desc?.includes(word)) score += 5;
+          if (title?.includes(word)) {
+            score += 15;
+            matchCount++;
+          }
+          if (desc?.includes(word)) {
+            score += 5;
+            matchCount++;
+          }
+        }
+        
+        // ✅ مكافأة إضافية لتطابق كلمات متعددة
+        if (matchCount > 1) {
+          score += 10;
         }
         
         if (item.is_offer) score += 10;
@@ -1119,12 +1179,17 @@ export async function processVoiceSearch(
   
   console.log('🎤 [VoiceEngine] Processing:', text);
   
-  // ✅ تنظيف النص
-  const corrected = correctSpelling(text);
+  // ✅ تنظيف النص وإزالة علامات الترقيم
+  let corrected = correctSpelling(text);
+  
+  // ✅ ✅ ✅ إزالة جميع علامات الترقيم من النص (النقطة، الفاصلة، علامة الاستفهام، إلخ)
+  corrected = corrected.replace(/[،،.،؛؟!?.,;:()"''""''«»\-]/g, ' '); // استبدال بمسافة
+  corrected = corrected.replace(/\s+/g, ' ').trim(); // إزالة المسافات الزائدة
+  
   const normalized = normalizeArabicText(corrected);
   
   // ✅ التحقق من صحة الإدخال
-  if (!text || text.trim().length < 2) {
+  if (!corrected || corrected.trim().length < 1) {
     return {
       query: text,
       intent: 'unknown',
@@ -1133,7 +1198,7 @@ export async function processVoiceSearch(
       totalCount: 0,
       executionTime: Date.now() - startTime,
       suggestions: ['من فضلك اكتب كلمة للبحث'],
-      debug: { error: 'Empty query' }
+      debug: { error: 'Empty query', original: text }
     };
   }
   
@@ -1143,13 +1208,13 @@ export async function processVoiceSearch(
   if (cached) {
     console.log('⚡ [VoiceEngine] Using cached results');
     return {
-      query: text,
+      query: corrected,
       intent: detectIntent(corrected),
       entities: extractEntities(corrected, lang),
       results: cached.results,
       totalCount: cached.results.length,
       executionTime: Date.now() - startTime,
-      debug: { cached: true }
+      debug: { cached: true, original: text, cleaned: corrected }
     };
   }
   
@@ -1159,6 +1224,7 @@ export async function processVoiceSearch(
   
   console.log('🎯 Intent:', intent);
   console.log('📊 Entities:', entities);
+  console.log('🧹 Cleaned text:', corrected);
   
   // ✅ حساب الثقة
   let confidence = 0.5;
@@ -1173,7 +1239,7 @@ export async function processVoiceSearch(
   // ✅ تنفيذ الإجراءات
   if (intent === 'help') {
     return {
-      query: text,
+      query: corrected,
       intent: 'help',
       entities: {},
       results: [],
@@ -1184,30 +1250,30 @@ export async function processVoiceSearch(
           ? '💡 يمكنك قول: "ابحث عن جاكيت"، "عروض"، "مساعدة"، "سلة الشراء"، "طلباتي"'
           : '💡 You can say: "search jacket", "offers", "help", "cart", "my orders"'
       ],
-      debug: { normalized, corrected, confidence: 1 }
+      debug: { normalized, corrected, confidence: 1, original: text }
     };
   }
 
   if (intent === 'action') {
     // ✅ كشف نوع الإجراء
     let actionMessage = '';
-    if (/(سلة|عربة|شراء|cart|basket)/i.test(text)) {
+    if (/(سلة|عربة|شراء|cart|basket)/i.test(corrected)) {
       actionMessage = lang === 'ar' ? '🛒 جارٍ التوجيه إلى السلة...' : '🛒 Redirecting to cart...';
-    } else if (/(طلبات|شحن|توصيل|orders|delivery)/i.test(text)) {
+    } else if (/(طلبات|شحن|توصيل|orders|delivery)/i.test(corrected)) {
       actionMessage = lang === 'ar' ? '📦 جارٍ التوجيه إلى الطلبات...' : '📦 Redirecting to orders...';
     } else {
       actionMessage = lang === 'ar' ? '✅ جارٍ تنفيذ الإجراء...' : '✅ Executing action...';
     }
     
     return {
-      query: text,
+      query: corrected,
       intent: 'action',
       entities: {},
       results: [],
       totalCount: 0,
       executionTime: Date.now() - startTime,
       suggestions: [actionMessage],
-      debug: { normalized, corrected, confidence: 1 }
+      debug: { normalized, corrected, confidence: 1, original: text }
     };
   }
   
@@ -1247,7 +1313,7 @@ export async function processVoiceSearch(
   cache.clearExpired();
   
   return {
-    query: text,
+    query: corrected,
     intent,
     entities,
     results: results.slice(0, 20),
@@ -1258,11 +1324,11 @@ export async function processVoiceSearch(
       normalized,
       corrected,
       confidence,
-      keywords: extractKeywords(text),
+      original: text,
+      keywords: extractKeywords(corrected),
     },
   };
 }
-
 // ============================================================
 // 🗣️ تحويل النتائج إلى نص صوتي
 // ============================================================

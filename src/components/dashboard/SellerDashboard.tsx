@@ -18,7 +18,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { useApp, useT, formatPrice } from "@/lib/i18n";
-import { useMyOrders, useMyListings, useSellerCustomers, useCategories, useProfile } from "@/lib/queries";
+import { useStoreOrders, useMyListings, useSellerCustomers, useCategories, useProfile } from "@/lib/queries";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -164,13 +164,12 @@ export function SellerDashboard({}: SellerDashboardProps) {
   const storeStatus = isStoreActive && isStoreOnline;
 
   // ===== جلب البيانات من API (Database) =====
-  const { data: sellerOrdersRaw = [] } = useMyOrders(app.user?.id);
+const { data: sellerOrders = [] } = useStoreOrders(app.user?.id);
   const { data: sellerListings = [] } = useMyListings(app.user?.id);
   const { data: sellerCustomers = [] } = useSellerCustomers(app.user?.id);
   const { data: cats = [] } = useCategories();
   
-  // ===== تصفية الطلبات الخاصة بالبائع =====
-  const sellerOrders = sellerOrdersRaw.filter((row: any) => row.seller_id === app.user?.id);
+
 
   // ✅✅✅ حساب عدد الطلبات لكل عميل (مصحح)
   const customerOrderCounts = useMemo(() => {
@@ -520,7 +519,7 @@ const topProducts = useMemo(() => {
     { id: "products" as const, label: app.lang === 'ar' ? "المنتجات" : "Products", icon: Package, desc: app.lang === 'ar' ? 'إدارة المنتجات' : 'Manage Products' },
     { id: "orders" as const, label: app.lang === 'ar' ? "الطلبات" : "Orders", icon: ShoppingCart, desc: app.lang === 'ar' ? 'متابعة الطلبات' : 'Track Orders' },
     { id: "customers" as const, label: app.lang === 'ar' ? "العملاء" : "Customers", icon: Users, desc: app.lang === 'ar' ? 'قاعدة العملاء' : 'Customer Base' },
-    { id: "stats" as const, label: app.lang === 'ar' ? "الإحصائيات" : "Analytics", icon: BarChart3, desc: app.lang === 'ar' ? 'تحليل الأداء' : 'Performance Analysis' },
+  
     { id: "settings" as const, label: app.lang === 'ar' ? "الإعدادات" : "Settings", icon: Settings, desc: app.lang === 'ar' ? 'تخصيص المتجر' : 'Store Settings' },
   ];
 
@@ -1629,15 +1628,7 @@ const topProducts = useMemo(() => {
                 {/* بطاقات الإحصائيات */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   {[
-                    { 
-                      label: app.lang === 'ar' ? "💰 إجمالي الإيرادات" : "💰 Total Revenue", 
-                      value: formatPrice(totalRevenue, app.currency, app.lang), 
-                      icon: DollarSign, 
-                      change: '+12.5%', 
-                      color: 'text-[#0d2e2a]', 
-                      bg: 'bg-[#0d2e2a]/10',
-                      gradient: 'from-[#0d2e2a] to-[#1a4f4a]',
-                    },
+                  
                     { 
                       label: app.lang === 'ar' ? "📦 إجمالي الطلبات" : "📦 Total Orders", 
                       value: totalOrders, 
@@ -1771,12 +1762,20 @@ const topProducts = useMemo(() => {
                         <div key={idx} className={`px-5 py-3 hover:bg-[#0d2e2a]/5 dark:hover:bg-[#0d2e2a]/20 transition-colors ${isRTL ? 'text-right' : ''}`}>
                           <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                              <div className="h-8 w-8 rounded-lg bg-[#0d2e2a]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border-2 border-[#0d2e2a]/20">
-                                {/* ✅ رقم الطلب واضح مع إمكانية عرضه كامل */}
-                                <span className="text-xs font-bold text-[#0d2e2a]" title={order.id}>
-                                  #{String(order.id).slice(0, 8)}
-                                </span>
-                              </div>
+                              <div className="flex items-center gap-2 group">
+  <span className="text-xs font-mono text-[#0d2e2a] dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+    #{String(order.id).slice(0, 8)}
+  </span>
+  <button
+    onClick={() => {
+      navigator.clipboard.writeText(order.id);
+      toast.success(app.lang === 'ar' ? '✅ تم نسخ رقم الطلب' : '✅ Order ID copied');
+    }}
+    className="text-[10px] text-muted-foreground hover:text-[#0d2e2a] transition-colors opacity-0 group-hover:opacity-100"
+  >
+    📋 نسخ
+  </button>
+</div>
                               <div>
                                 <p className="text-sm font-medium text-slate-900 dark:text-white truncate max-w-[120px]">
                                   {order.product_name || (app.lang === 'ar' ? 'طلب' : 'Order')}

@@ -18,6 +18,32 @@ export interface SearchResult {
   slug?: string;
   created_at?: string;
   governorate_id?: string;
+  // ✅ ✅ ✅ حقول إضافية لـ ListingCard
+  title_ar?: string;
+  title_en?: string;
+  description_ar?: string;
+  description_en?: string;
+  old_price?: number;
+  discount_percent?: number;
+  is_offer?: boolean;
+  cover_url?: string;
+  governorates?: any;
+  categories?: any;
+  profiles?: any;
+  listing_images?: any[];
+  product_variations?: any[];
+  product_colors?: any[];
+  owner_id?: string;
+  views?: number;
+  favorites_count?: number;
+  status?: string;
+  is_available?: boolean;
+  metadata?: any;
+  category_id?: string;
+  delivery_fee?: number;
+  delivery_method?: string;
+  is_featured?: boolean;
+  featured_sort?: number;
 }
 
 interface SearchFilters {
@@ -48,7 +74,7 @@ export function useSearch() {
   const debouncedQuery = useDebounce(query, 400);
   const debouncedSuggestQuery = useDebounce(query, 150);
 
-  // ====== ✅ البحث الرئيسي ======
+  // ====== ✅ البحث الرئيسي (محسن للبحث الذكي مع بيانات كاملة) ======
   const performSearch = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     const searchTerm = debouncedQuery.trim();
     
@@ -71,7 +97,7 @@ export function useSearch() {
       const limit = 20;
       const offset = (pageNum - 1) * limit;
 
-      // ✅ 1. البحث في المنتجات (listings)
+      // ✅ ✅ ✅ 1. البحث في المنتجات (listings) - بيانات كاملة
       let productsQuery = supabase
         .from("listings")
         .select(`
@@ -81,39 +107,89 @@ export function useSearch() {
           description_ar,
           description_en,
           price,
+          price_usd,
           old_price,
+          old_price_usd,
           discount_percent,
+          is_offer,
           cover_url,
           rating,
           views,
-          is_offer,
+          favorites_count,
+          is_available,
+          status,
           created_at,
+          updated_at,
           governorate_id,
-          profiles:owner_id (
+          category_id,
+          owner_id,
+          delivery_fee,
+          delivery_method,
+          is_featured,
+          featured_sort,
+          metadata,
+          governorates:governorate_id (
             id,
-            full_name,
-            store_name,
-            store_logo_url,
-            avatar_url
+            name_ar,
+            name_en
           ),
           categories:category_id (
             id,
             name_ar,
             name_en,
             slug
+          ),
+          profiles:owner_id (
+            id,
+            full_name,
+            store_name,
+            store_logo_url,
+            avatar_url,
+            store_cover_url
+          ),
+          listing_images (
+            id,
+            url,
+            sort_order
+          ),
+          product_colors (
+            id,
+            color_name_ar,
+            color_name_en,
+            color_hex,
+            image_url
+          ),
+          product_variations (
+            id,
+            combination,
+            price,
+            stock_quantity,
+            image_url,
+            is_active
           )
         `, { count: 'exact' })
         .eq("status", "published")
         .eq("is_available", true);
 
-      // ✅ بحث في النص (العنوان والوصف)
+      // ✅ ✅ ✅ البحث الذكي: تقسيم الكلمات والبحث عن كل كلمة (OR)
       if (searchTerm) {
-        productsQuery = productsQuery.or(
-          `title_ar.ilike.%${searchTerm}%,` +
-          `title_en.ilike.%${searchTerm}%,` +
-          `description_ar.ilike.%${searchTerm}%,` +
-          `description_en.ilike.%${searchTerm}%`
-        );
+        const searchWords = searchTerm.trim().split(' ').filter(w => w.length > 1);
+        
+        if (searchWords.length > 1) {
+          // ✅ كلمات متعددة: بحث عن أي كلمة (OR) - ذكي
+          const conditions = searchWords.map(term => 
+            `title_ar.ilike.%${term}%,title_en.ilike.%${term}%,description_ar.ilike.%${term}%,description_en.ilike.%${term}%`
+          ).join(',');
+          productsQuery = productsQuery.or(conditions);
+        } else {
+          // ✅ كلمة واحدة: بحث عادي
+          productsQuery = productsQuery.or(
+            `title_ar.ilike.%${searchTerm}%,` +
+            `title_en.ilike.%${searchTerm}%,` +
+            `description_ar.ilike.%${searchTerm}%,` +
+            `description_en.ilike.%${searchTerm}%`
+          );
+        }
       }
 
       // ✅ فلتر التصنيف
@@ -169,7 +245,7 @@ export function useSearch() {
 
       if (productsError) throw productsError;
 
-      // ✅ 2. البحث في المتاجر (profiles)
+      // ✅ 2. البحث في المتاجر (profiles) - محسن للبحث الذكي
       let stores: any[] = [];
       if (searchTerm || filters.governorate) {
         let storesQuery = supabase
@@ -180,17 +256,29 @@ export function useSearch() {
             store_name,
             store_logo_url,
             avatar_url,
+            store_cover_url,
             store_description,
             governorate_id,
-            created_at
+            created_at,
+            is_verified
           `)
           .not("store_name", "is", null);
 
         if (searchTerm) {
-          storesQuery = storesQuery.or(
-            `store_name.ilike.%${searchTerm}%,` +
-            `full_name.ilike.%${searchTerm}%`
-          );
+          const storeWords = searchTerm.trim().split(' ').filter(w => w.length > 1);
+          
+          if (storeWords.length > 1) {
+            // ✅ بحث ذكي في المتاجر
+            const storeConditions = storeWords.map(term => 
+              `store_name.ilike.%${term}%,full_name.ilike.%${term}%`
+            ).join(',');
+            storesQuery = storesQuery.or(storeConditions);
+          } else {
+            storesQuery = storesQuery.or(
+              `store_name.ilike.%${searchTerm}%,` +
+              `full_name.ilike.%${searchTerm}%`
+            );
+          }
         }
 
         if (filters.governorate) {
@@ -201,10 +289,10 @@ export function useSearch() {
         stores = storesData || [];
       }
 
-      // ✅ 3. البحث في التصنيفات (categories)
+      // ✅ 3. البحث في التصنيفات (categories) - محسن للبحث الذكي
       let categories: any[] = [];
       if (!filters.category && searchTerm) {
-        const { data: categoriesData } = await supabase
+        let categoryQuery = supabase
           .from("categories")
           .select(`
             id,
@@ -214,30 +302,68 @@ export function useSearch() {
             icon,
             image_url,
             created_at
-          `)
-          .or(`name_ar.ilike.%${searchTerm}%,name_en.ilike.%${searchTerm}%`)
-          .limit(5);
+          `);
 
+        const catWords = searchTerm.trim().split(' ').filter(w => w.length > 1);
+        
+        if (catWords.length > 1) {
+          // ✅ بحث ذكي في التصنيفات
+          const catConditions = catWords.map(term => 
+            `name_ar.ilike.%${term}%,name_en.ilike.%${term}%`
+          ).join(',');
+          categoryQuery = categoryQuery.or(catConditions);
+        } else {
+          categoryQuery = categoryQuery.or(
+            `name_ar.ilike.%${searchTerm}%,name_en.ilike.%${searchTerm}%`
+          );
+        }
+
+        const { data: categoriesData } = await categoryQuery.limit(5);
         categories = categoriesData || [];
       }
 
-      // ✅ 4. تجميع النتائج
+      // ✅ ✅ ✅ 4. تجميع النتائج مع بيانات كاملة
       const formattedResults: SearchResult[] = [
-        // ✅ المنتجات
+        // ✅ المنتجات - بيانات كاملة
         ...(products || []).map((p: any) => ({
           id: p.id,
           title: app.lang === "ar" ? p.title_ar : (p.title_en || p.title_ar),
+          title_ar: p.title_ar,
+          title_en: p.title_en,
           description: app.lang === "ar" ? p.description_ar : (p.description_en || p.description_ar),
+          description_ar: p.description_ar,
+          description_en: p.description_en,
           image: p.cover_url,
+          cover_url: p.cover_url,
           type: p.is_offer ? 'offer' : 'product' as const,
           url: `/listing/${p.id}`,
           badge: p.is_offer ? (app.lang === "ar" ? "🔥 عرض" : "🔥 Offer") : 
                  p.discount_percent ? `🏷️ -${p.discount_percent}%` : undefined,
           price: p.price,
+          old_price: p.old_price,
+          discount_percent: p.discount_percent,
+          is_offer: p.is_offer,
           store_name: p.profiles?.store_name || p.profiles?.full_name,
           rating: p.rating,
           created_at: p.created_at,
           governorate_id: p.governorate_id,
+          governorates: p.governorates,
+          categories: p.categories,
+          profiles: p.profiles,
+          listing_images: p.listing_images,
+          product_variations: p.product_variations,
+          product_colors: p.product_colors,
+          owner_id: p.owner_id,
+          views: p.views,
+          favorites_count: p.favorites_count,
+          status: p.status,
+          is_available: p.is_available,
+          metadata: p.metadata,
+          category_id: p.category_id,
+          delivery_fee: p.delivery_fee,
+          delivery_method: p.delivery_method,
+          is_featured: p.is_featured,
+          featured_sort: p.featured_sort,
         })),
         // ✅ المتاجر
         ...stores.map((s: any) => ({
@@ -245,6 +371,7 @@ export function useSearch() {
           title: s.store_name || s.full_name || "متجر",
           description: s.store_description || (app.lang === "ar" ? "متجر على السوق" : "Store on Alsouq"),
           image: s.store_logo_url || s.avatar_url,
+          cover_url: s.store_cover_url || s.store_logo_url || s.avatar_url,
           type: 'store' as const,
           url: `/store/${s.id}`,
           badge: "🏪 متجر",
@@ -252,6 +379,23 @@ export function useSearch() {
           rating: undefined,
           created_at: s.created_at,
           governorate_id: s.governorate_id,
+          profiles: s,
+          governorates: null,
+          categories: null,
+          listing_images: [],
+          product_variations: [],
+          product_colors: [],
+          owner_id: s.id,
+          views: 0,
+          favorites_count: 0,
+          status: "published",
+          is_available: true,
+          metadata: null,
+          category_id: null,
+          delivery_fee: 0,
+          delivery_method: null,
+          is_featured: false,
+          featured_sort: 0,
         })),
         // ✅ التصنيفات
         ...categories.map((c: any) => ({
@@ -259,11 +403,32 @@ export function useSearch() {
           title: app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar),
           description: app.lang === "ar" ? "تصفح المنتجات في هذا التصنيف" : "Browse products in this category",
           image: c.image_url || c.icon || "/category-placeholder.png",
+          cover_url: c.image_url || c.icon || "/category-placeholder.png",
           type: 'category' as const,
           url: `/category/${c.slug}`,
           badge: "📂 تصنيف",
           slug: c.slug,
           created_at: c.created_at,
+          store_name: null,
+          rating: undefined,
+          governorate_id: null,
+          profiles: null,
+          governorates: null,
+          categories: c,
+          listing_images: [],
+          product_variations: [],
+          product_colors: [],
+          owner_id: null,
+          views: 0,
+          favorites_count: 0,
+          status: "published",
+          is_available: true,
+          metadata: null,
+          category_id: c.id,
+          delivery_fee: 0,
+          delivery_method: null,
+          is_featured: false,
+          featured_sort: 0,
         })),
       ];
 
@@ -287,7 +452,7 @@ export function useSearch() {
     }
   }, [debouncedQuery, filters, app.lang]);
 
-  // ====== ✅ الاقتراحات الفورية ======
+  // ====== ✅ الاقتراحات الفورية (محسنة للبحث الذكي) ======
   const getSuggestions = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim() || searchQuery.length < 2) {
       setSuggestions([]);
@@ -297,7 +462,7 @@ export function useSearch() {
     setIsSuggesting(true);
 
     try {
-      // ✅ اقتراحات المنتجات
+      // ✅ اقتراحات المنتجات - بحث ذكي
       let productQuery = supabase
         .from("listings")
         .select(`
@@ -307,8 +472,20 @@ export function useSearch() {
           cover_url
         `)
         .eq("status", "published")
-        .eq("is_available", true)
-        .or(`title_ar.ilike.%${searchQuery}%,title_en.ilike.%${searchQuery}%`);
+        .eq("is_available", true);
+
+      const prodWords = searchQuery.trim().split(' ').filter(w => w.length > 1);
+      
+      if (prodWords.length > 1) {
+        const prodConditions = prodWords.map(term => 
+          `title_ar.ilike.%${term}%,title_en.ilike.%${term}%`
+        ).join(',');
+        productQuery = productQuery.or(prodConditions);
+      } else {
+        productQuery = productQuery.or(
+          `title_ar.ilike.%${searchQuery}%,title_en.ilike.%${searchQuery}%`
+        );
+      }
 
       if (filters.governorate) {
         productQuery = productQuery.eq("governorate_id", filters.governorate);
@@ -316,7 +493,7 @@ export function useSearch() {
 
       const { data: productSuggestions } = await productQuery.limit(5);
 
-      // ✅ اقتراحات المتاجر
+      // ✅ اقتراحات المتاجر - بحث ذكي
       let storeQuery = supabase
         .from("profiles")
         .select(`
@@ -326,8 +503,18 @@ export function useSearch() {
           store_logo_url,
           avatar_url
         `)
-        .ilike("store_name", `%${searchQuery}%`)
         .not("store_name", "is", null);
+
+      const storeWords = searchQuery.trim().split(' ').filter(w => w.length > 1);
+      
+      if (storeWords.length > 1) {
+        const storeConditions = storeWords.map(term => 
+          `store_name.ilike.%${term}%,full_name.ilike.%${term}%`
+        ).join(',');
+        storeQuery = storeQuery.or(storeConditions);
+      } else {
+        storeQuery = storeQuery.ilike("store_name", `%${searchQuery}%`);
+      }
 
       if (filters.governorate) {
         storeQuery = storeQuery.eq("governorate_id", filters.governorate);
@@ -335,17 +522,30 @@ export function useSearch() {
 
       const { data: storeSuggestions } = await storeQuery.limit(3);
 
-      // ✅ اقتراحات التصنيفات
-      const { data: categorySuggestions } = await supabase
+      // ✅ اقتراحات التصنيفات - بحث ذكي
+      let categoryQuery = supabase
         .from("categories")
         .select(`
           id,
           name_ar,
           name_en,
           slug
-        `)
-        .or(`name_ar.ilike.%${searchQuery}%,name_en.ilike.%${searchQuery}%`)
-        .limit(3);
+        `);
+
+      const catWords = searchQuery.trim().split(' ').filter(w => w.length > 1);
+      
+      if (catWords.length > 1) {
+        const catConditions = catWords.map(term => 
+          `name_ar.ilike.%${term}%,name_en.ilike.%${term}%`
+        ).join(',');
+        categoryQuery = categoryQuery.or(catConditions);
+      } else {
+        categoryQuery = categoryQuery.or(
+          `name_ar.ilike.%${searchQuery}%,name_en.ilike.%${searchQuery}%`
+        );
+      }
+
+      const { data: categorySuggestions } = await categoryQuery.limit(3);
 
       const allSuggestions: SearchResult[] = [
         ...(productSuggestions || []).map((p: any) => ({
