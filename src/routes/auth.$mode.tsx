@@ -1,16 +1,40 @@
 // src/routes/auth.$mode.tsx
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { 
-  Lock, User as UserIcon, Phone, Sparkles, Eye, EyeOff, Headphones, 
-  X, Send, CheckCircle, Shield, HelpCircle, Loader2, AlertCircle, 
-  MapPin, Globe, Facebook, Twitter, Instagram, Youtube, Mail, Clock,
-  House, Heart, Star, Zap, Rocket, Gem, Crown, Flame, Compass,
-  Award, Gift, Calendar, LayoutDashboard, Package, MessageCircle,
-  Store, ShoppingBag, Truck, Users, Briefcase, FileText, ArrowUp,
+import {
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import {
+  Lock,
+  User as UserIcon,
+  Phone,
+  Sparkles,
+  Eye,
+  EyeOff,
+  Headphones,
+  X,
+  Send,
+  CheckCircle,
+  Shield,
+  HelpCircle,
+  Loader2,
+  AlertCircle,
+  MapPin,
+  Globe,
+  Facebook,
+  Twitter,
+  Instagram,
+  Youtube,
+  ShoppingBag,
+  Truck,
+  Compass,
+  Gem,
+  Crown,
+  Rocket,
   UserPlus,
-  type LucideIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,17 +42,31 @@ import { Label } from "@/components/ui/label";
 import { useApp, useT } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { AddressPicker, type PickedLocation } from "@/components/AddressPicker";
+import {
+  AddressPicker,
+  type PickedLocation,
+} from "@/components/AddressPicker";
 import { useUserRoles } from "@/lib/queries";
 import { getAuthRedirect } from "@/lib/auth-redirect";
 import { cn } from "@/lib/utils";
 
 // ============================================================
-// Export route
+// 🎨 ZOOQ BRAND COLORS
+// ============================================================
+const ZOOQ_COLORS = {
+  primary: "#2a655f",
+  pink: "#f9a8d4",
+  pinkLight: "#fbcfe8",
+};
+
+// ============================================================
+// ✅ Export route
 // ============================================================
 export const Route = createFileRoute("/auth/$mode")({
   component: AuthPage,
-  head: () => ({ meta: [{ title: "Souqi — Auth" }] }),
+  head: () => ({
+    meta: [{ title: "zooq — ذوق" }],
+  }),
 });
 
 // ============================================================
@@ -39,14 +77,15 @@ function phoneToEmail(phone: string) {
   return `sy${digits}@souqi.local`;
 }
 
-// ✅ دالة التحقق من صيغة الرقم السوري
-function isValidSyrianPhoneFormat(phone: string): { valid: boolean; message?: string } {
+function isValidSyrianPhoneFormat(
+  phone: string
+): { valid: boolean; message?: string } {
   const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
-  
+
   if (!/^[0-9+]+$/.test(cleanPhone)) {
     return {
       valid: false,
-      message: "⚠️ الرقم يجب أن يحتوي على أرقام فقط"
+      message: "⚠️ الرقم يجب أن يحتوي على أرقام فقط",
     };
   }
 
@@ -55,53 +94,56 @@ function isValidSyrianPhoneFormat(phone: string): { valid: boolean; message?: st
   let isValid = false;
   let numberAfterPrefix = "";
 
-  if (cleanPhone.startsWith('+963')) {
-    if (digits.length === 13) {
+  if (cleanPhone.startsWith("+963")) {
+    if (digits.length === 12) {
       numberAfterPrefix = digits.slice(-9);
-      isValid = numberAfterPrefix.startsWith('9');
+      isValid = numberAfterPrefix.startsWith("9");
     }
-  } else if (cleanPhone.startsWith('00963')) {
-    if (digits.length === 13) {
+  } else if (cleanPhone.startsWith("00963")) {
+    if (digits.length === 14) {
       numberAfterPrefix = digits.slice(-9);
-      isValid = numberAfterPrefix.startsWith('9');
+      isValid = numberAfterPrefix.startsWith("9");
     }
-  } else if (cleanPhone.startsWith('0')) {
+  } else if (cleanPhone.startsWith("0")) {
     if (digits.length === 10) {
       numberAfterPrefix = digits.slice(1);
-      isValid = numberAfterPrefix.startsWith('9');
+      isValid = numberAfterPrefix.startsWith("9");
     }
   } else if (digits.length === 9) {
     numberAfterPrefix = digits;
-    isValid = numberAfterPrefix.startsWith('9');
+    isValid = numberAfterPrefix.startsWith("9");
   }
 
   if (!isValid) {
     return {
       valid: false,
-      message: "⚠️ صيغة الرقم غير صحيحة. استخدم: +963xxxxxxxxx أو 0xxxxxxxxx (يبدأ بـ 9)"
+      message:
+        "⚠️ صيغة الرقم غير صحيحة. استخدم: +963xxxxxxxxx أو 0xxxxxxxxx (يبدأ بـ 9)",
     };
   }
 
   return { valid: true };
 }
 
-// ✅ دالة التحقق من توفر رقم الهاتف
-async function isPhoneAvailableForRegister(phone: string): Promise<{
+async function isPhoneAvailableForRegister(
+  phone: string
+): Promise<{
   available: boolean;
   message?: string;
 }> {
   if (!phone || phone.trim().length < 5) {
     return {
       available: false,
-      message: "رقم الهاتف غير صحيح (يجب أن يكون 5 أرقام على الأقل)"
+      message: "رقم الهاتف غير صحيح (يجب أن يكون 5 أرقام على الأقل)",
     };
   }
 
   const formatCheck = isValidSyrianPhoneFormat(phone);
+
   if (!formatCheck.valid) {
     return {
       available: false,
-      message: formatCheck.message || "⚠️ صيغة الرقم غير صحيحة"
+      message: formatCheck.message || "⚠️ صيغة الرقم غير صحيحة",
     };
   }
 
@@ -113,41 +155,51 @@ async function isPhoneAvailableForRegister(phone: string): Promise<{
 
   if (error) {
     console.error("Error checking phone:", error);
+
     return {
       available: false,
-      message: "حدث خطأ في التحقق من الرقم"
+      message: "حدث خطأ في التحقق من الرقم",
     };
   }
 
   if (data) {
     return {
       available: false,
-      message: "⚠️ هذا الرقم مستخدم من قبل حساب آخر"
+      message: "⚠️ هذا الرقم مستخدم من قبل حساب آخر",
     };
   }
 
-  return { available: true };
+  return {
+    available: true,
+  };
 }
 
-// ✅ دالة استخراج المحافظة من العنوان
-async function extractGovernorateFromAddress(address: string, lat?: number, lng?: number): Promise<{ governorate_id: string; governorate_name: string }> {
+async function extractGovernorateFromAddress(
+  address: string,
+  lat?: number,
+  lng?: number
+): Promise<{
+  governorate_id: string;
+  governorate_name: string;
+}> {
   try {
     if (lat && lng) {
       const { data: governorates } = await supabase
-        .from('governorates')
-        .select('*');
+        .from("governorates")
+        .select("*");
 
       if (governorates) {
         for (const g of governorates) {
           if (g.center_lat && g.center_lng) {
             const distance = Math.sqrt(
-              Math.pow(lat - g.center_lat, 2) + 
-              Math.pow(lng - g.center_lng, 2)
+              Math.pow(lat - g.center_lat, 2) +
+                Math.pow(lng - g.center_lng, 2)
             );
+
             if (distance < 0.5) {
               return {
                 governorate_id: g.id,
-                governorate_name: g.name_ar
+                governorate_name: g.name_ar,
               };
             }
           }
@@ -157,15 +209,18 @@ async function extractGovernorateFromAddress(address: string, lat?: number, lng?
 
     if (address) {
       const { data: governorates } = await supabase
-        .from('governorates')
-        .select('*');
+        .from("governorates")
+        .select("*");
 
       if (governorates) {
         for (const g of governorates) {
-          if (address.includes(g.name_ar) || address.includes(g.name_en || '')) {
+          if (
+            address.includes(g.name_ar) ||
+            address.includes(g.name_en || "")
+          ) {
             return {
               governorate_id: g.id,
-              governorate_name: g.name_ar
+              governorate_name: g.name_ar,
             };
           }
         }
@@ -173,44 +228,59 @@ async function extractGovernorateFromAddress(address: string, lat?: number, lng?
     }
 
     const { data: defaultGov } = await supabase
-      .from('governorates')
-      .select('id, name_ar')
-      .eq('name_ar', 'دمشق')
+      .from("governorates")
+      .select("id, name_ar")
+      .eq("name_ar", "دمشق")
       .single();
 
     if (defaultGov) {
       return {
         governorate_id: defaultGov.id,
-        governorate_name: defaultGov.name_ar
+        governorate_name: defaultGov.name_ar,
       };
     }
 
-    return { governorate_id: '', governorate_name: '' };
+    return {
+      governorate_id: "",
+      governorate_name: "",
+    };
   } catch (error) {
-    console.error('Error extracting governorate:', error);
-    return { governorate_id: '', governorate_name: '' };
+    console.error("Error extracting governorate:", error);
+
+    return {
+      governorate_id: "",
+      governorate_name: "",
+    };
   }
 }
 
-// ✅ دالة حفظ العنوان مع المحافظة
 async function saveAddressWithGovernorate(
   userId: string,
   location: PickedLocation
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
   try {
-    const { governorate_id, governorate_name } = await extractGovernorateFromAddress(
-      location.address,
-      location.lat,
-      location.lng
-    );
+    const { governorate_id, governorate_name } =
+      await extractGovernorateFromAddress(
+        location.address,
+        location.lat,
+        location.lng
+      );
 
-    console.log('📍 Extracted governorate:', governorate_name, 'ID:', governorate_id);
+    console.log(
+      "📍 Extracted governorate:",
+      governorate_name,
+      "ID:",
+      governorate_id
+    );
 
     const addressPayload = {
       user_id: userId,
-      label: location.label || 'الرئيسي',
+      label: location.label || "الرئيسي",
       address_text: location.address.trim(),
-      details: location.details?.trim() || '',
+      details: location.details?.trim() || "",
       lat: location.lat || 0,
       lng: location.lng || 0,
       governorate_id: governorate_id || null,
@@ -229,13 +299,17 @@ async function saveAddressWithGovernorate(
         .update(addressPayload)
         .eq("id", existingAddress.id);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
     } else {
       const { error } = await supabase
         .from("user_addresses")
         .insert(addressPayload);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
     }
 
     const { error: updateProfileError } = await supabase
@@ -249,63 +323,115 @@ async function saveAddressWithGovernorate(
       .eq("id", userId);
 
     if (updateProfileError) {
-      console.error("❌ Error updating profile:", updateProfileError);
+      console.error(
+        "❌ Error updating profile:",
+        updateProfileError
+      );
+
       throw updateProfileError;
     }
 
-    console.log('✅ Address saved with governorate:', governorate_name);
-    return { success: true };
+    console.log(
+      "✅ Address saved with governorate:",
+      governorate_name
+    );
 
+    return {
+      success: true,
+    };
   } catch (error: any) {
-    console.error('❌ Error saving address:', error);
-    return { success: false, error: error.message };
+    console.error("❌ Error saving address:", error);
+
+    return {
+      success: false,
+      error: error.message,
+    };
   }
 }
 
-const SLIDER_IMAGES = [
-  "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/istockphoto-2105032127-612x612.jpg",
-  "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/42430876-ai-generated-8793863_1920.jpg",
-  "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/mohamed_hassan-systems-icons-3334262_1920.jpg",
-  "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/regencygirl123-present-8440034_1920.jpg",
-  "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/gonghuimin468-happy-holidays-3040029_1920.jpg",
+// ============================================================
+// 🎨 ZOOQ — Brand slider content
+// ============================================================
+const SLIDER_IMAGES: string[] = [];
+
+const ZOOQ_SLIDES = [
+  {
+    arTitle: "كل ذوق… إله مكان.",
+    arText:
+      "اكتشف متاجر ومنتجات بتشبهك، وخلي اختيارك يحكي عنك.",
+    enTitle: "Every taste has a place.",
+    enText:
+      "Discover stores and products that feel like you.",
+    icon: Compass,
+    accent: "pink",
+  },
+  {
+    arTitle: "مو بس تسوّق…",
+    arText:
+      "اختار. اكتشف. واستمتع بتجربة معمولة على ذوقك.",
+    enTitle: "More than shopping.",
+    enText:
+      "Discover. Choose. Enjoy a shopping experience made for you.",
+    icon: Sparkles,
+    accent: "olive",
+  },
+  {
+    arTitle: "الاختيار إلو ذوق.",
+    arText:
+      "ومن هون… بيبدأ الاختيار الصح.",
+    enTitle: "Choice has a taste.",
+    enText:
+      "And this is where the right choice begins.",
+    icon: Gem,
+    accent: "pink",
+  },
+  {
+    arTitle: "اللي بتدور عليه… أقرب مما تتخيّل.",
+    arText:
+      "مكان واحد، آلاف الخيارات، وذوقك هو البداية.",
+    enTitle: "What you want is closer than you think.",
+    enText:
+      "One place. Endless choices. Your taste leads the way.",
+    icon: Rocket,
+    accent: "olive",
+  },
+  {
+    arTitle: "خلّي ذوقك يحكي.",
+    arText:
+      "تسوّق بطريقتك. اختار بطريقتك. وكن أنت.",
+    enTitle: "Let your taste speak.",
+    enText:
+      "Shop your way. Choose your way. Be you.",
+    icon: Crown,
+    accent: "pink",
+  },
 ];
 
-// ✅ أيقونة متحركة للشعار
-const AnimatedLogoIcon = ({ Icon, className = "", delay = 0 }: { Icon: LucideIcon, className?: string, delay?: number }) => {
-  return (
-    <div className="relative inline-flex" style={{ animationDelay: `${delay}ms` }}>
-      <div className="animate-float-logo">
-        <Icon className={cn("transition-all duration-500", className)} />
-      </div>
-      <span className="absolute -inset-2 rounded-full border-2 border-emerald-400/30 animate-ripple-logo opacity-0" />
-      <span className="absolute -inset-4 rounded-full border-2 border-emerald-400/15 animate-ripple-logo delay-700 opacity-0" />
-    </div>
-  );
-};
-
-// ✅ أيقونة متحركة للفلدات
-const FloatingFieldIcon = ({ Icon, className = "", delay = 0 }: { Icon: LucideIcon, className?: string, delay?: number }) => {
-  return (
-    <div className="relative inline-flex" style={{ animationDelay: `${delay}ms` }}>
-      <div className="animate-float-field">
-        <Icon className={cn("transition-all duration-300", className)} />
-      </div>
-    </div>
-  );
-};
-
-function GlassField({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
+// ============================================================
+// GlassField
+// ============================================================
+function GlassField({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div>
-      <Label className="text-xs font-semibold text-white/90 flex items-center gap-2">
-        <span className="h-1 w-3 rounded-full bg-emerald-400/60" />
+      <Label className="flex items-center gap-2 text-xs font-bold text-white/90">
+        <span className="h-1 w-3 rounded-full bg-[#f9a8d4] shadow-[0_0_10px_rgba(249,168,212,.55)]" />
         {label}
       </Label>
+
       <div className="relative mt-1.5">
-        <span className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-emerald-300/70 z-10">
+        <span className="absolute inset-y-0 start-3 z-10 my-auto h-4 w-4 text-[#f9a8d4]">
           {icon}
         </span>
-        <div className="[&_input]:ps-9 [&_input]:h-11 [&_input]:bg-white/95 [&_input]:text-slate-800 [&_input]:border-0 [&_input]:placeholder:text-slate-400 [&_input]:focus:ring-2 [&_input]:focus:ring-emerald-500/50 [&_input]:shadow-inner [&_input]:rounded-xl">
+
+        <div className="[&_input]:h-12 [&_input]:rounded-2xl [&_input]:border-0 [&_input]:bg-white/[.97] [&_input]:ps-9 [&_input]:text-slate-800 [&_input]:placeholder:text-slate-400 [&_input]:shadow-[0_4px_20px_rgba(0,0,0,.08)] [&_input]:focus:ring-2 [&_input]:focus:ring-[#f9a8d4]/50">
           {children}
         </div>
       </div>
@@ -314,7 +440,7 @@ function GlassField({ label, icon, children }: { label: string; icon: React.Reac
 }
 
 // ============================================================
-// AuthPage Component
+// AuthPage
 // ============================================================
 function AuthPage() {
   const { mode } = Route.useParams();
@@ -325,31 +451,42 @@ function AuthPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [location, setLocation] = useState<PickedLocation | null>(null);
+  const [location, setLocation] =
+    useState<PickedLocation | null>(null);
   const [loading, setLoading] = useState(false);
   const [slide, setSlide] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const [isCheckingPhone, setIsCheckingPhone] = useState(false);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [phoneAvailable, setPhoneAvailable] = useState<boolean | null>(null);
+  const [phoneError, setPhoneError] =
+    useState<string | null>(null);
+  const [phoneAvailable, setPhoneAvailable] =
+    useState<boolean | null>(null);
 
-  const [detectedGovernorate, setDetectedGovernorate] = useState<string>('');
-  const [isExtractingGovernorate, setIsExtractingGovernorate] = useState(false);
+  const [detectedGovernorate, setDetectedGovernorate] =
+    useState<string>("");
+  const [isExtractingGovernorate, setIsExtractingGovernorate] =
+    useState(false);
 
-  // ✅ إيقاف حركة الفورم - إزالة animate-float-slow
   useEffect(() => {
-    const id = setInterval(() => setSlide((s) => (s + 1) % SLIDER_IMAGES.length), 5000);
+    const id = setInterval(() => {
+      setSlide((s) => (s + 1) % 5);
+    }, 5000);
+
     return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (session) {
         window.location.href = "/";
       }
     };
+
     checkSession();
   }, []);
 
@@ -358,9 +495,10 @@ function AuthPage() {
 
   useEffect(() => {
     if (!isRegister) return;
-    
+
     const checkPhone = async () => {
       const cleanPhone = phone.trim();
+
       if (cleanPhone.length < 5) {
         setPhoneError(null);
         setPhoneAvailable(null);
@@ -368,13 +506,25 @@ function AuthPage() {
       }
 
       setIsCheckingPhone(true);
+
       try {
-        const result = await isPhoneAvailableForRegister(cleanPhone);
+        const result =
+          await isPhoneAvailableForRegister(cleanPhone);
+
         setPhoneAvailable(result.available);
-        setPhoneError(result.available ? null : result.message || null);
+
+        setPhoneError(
+          result.available
+            ? null
+            : result.message || null
+        );
       } catch (error) {
         console.error("Error checking phone:", error);
-        setPhoneError("حدث خطأ في التحقق من الرقم");
+
+        setPhoneError(
+          "حدث خطأ في التحقق من الرقم"
+        );
+
         setPhoneAvailable(false);
       } finally {
         setIsCheckingPhone(false);
@@ -382,26 +532,35 @@ function AuthPage() {
     };
 
     const timer = setTimeout(checkPhone, 500);
+
     return () => clearTimeout(timer);
   }, [phone, isRegister]);
 
   useEffect(() => {
     const extractGovernorate = async () => {
       if (!location) {
-        setDetectedGovernorate('');
+        setDetectedGovernorate("");
         return;
       }
 
       setIsExtractingGovernorate(true);
+
       try {
-        const result = await extractGovernorateFromAddress(
-          location.address,
-          location.lat,
-          location.lng
+        const result =
+          await extractGovernorateFromAddress(
+            location.address,
+            location.lat,
+            location.lng
+          );
+
+        setDetectedGovernorate(
+          result.governorate_name
         );
-        setDetectedGovernorate(result.governorate_name);
       } catch (error) {
-        console.error('Error extracting governorate:', error);
+        console.error(
+          "Error extracting governorate:",
+          error
+        );
       } finally {
         setIsExtractingGovernorate(false);
       }
@@ -411,124 +570,172 @@ function AuthPage() {
   }, [location]);
 
   function handleForgotPasswordClick() {
-    nav({ to: "/reset-password" });
+    nav({
+      to: "/reset-password",
+    });
   }
 
-  // ✅ دالة معالجة أخطاء تسجيل الدخول مع ترجمة صحيحة
   function getLoginErrorMessage(error: any): string {
     const message = error?.message || String(error);
     const lang = app.lang === "ar" ? "ar" : "en";
-    
-    // رسائل الخطأ الشائعة مع الترجمة
-    const errorMessages: Record<string, { ar: string; en: string }> = {
+
+    const errorMessages: Record<
+      string,
+      { ar: string; en: string }
+    > = {
       "Invalid login credentials": {
         ar: "❌ رقم الهاتف أو كلمة المرور غير صحيحة",
-        en: "❌ Invalid phone number or password"
+        en: "❌ Invalid phone number or password",
       },
       "Email not confirmed": {
         ar: "⚠️ البريد الإلكتروني غير مؤكد. يرجى التحقق من بريدك الإلكتروني",
-        en: "⚠️ Email not confirmed. Please check your email"
+        en: "⚠️ Email not confirmed. Please check your email",
       },
       "User not found": {
         ar: "❌ لا يوجد حساب بهذا الرقم",
-        en: "❌ No account found with this number"
+        en: "❌ No account found with this number",
       },
       "Invalid password": {
         ar: "❌ كلمة المرور غير صحيحة",
-        en: "❌ Invalid password"
+        en: "❌ Invalid password",
       },
       "Too many requests": {
         ar: "⚠️ عدد كبير من المحاولات. يرجى المحاولة لاحقاً",
-        en: "⚠️ Too many attempts. Please try again later"
-      }
+        en: "⚠️ Too many attempts. Please try again later",
+      },
     };
 
-    // البحث عن رسالة مطابقة
-    for (const [key, value] of Object.entries(errorMessages)) {
-      if (message.toLowerCase().includes(key.toLowerCase())) {
+    for (const [key, value] of Object.entries(
+      errorMessages
+    )) {
+      if (
+        message
+          .toLowerCase()
+          .includes(key.toLowerCase())
+      ) {
         return value[lang];
       }
     }
 
-    // رسالة افتراضية حسب اللغة
-    if (message.includes("phone") || message.includes("رقم")) {
-      return lang === "ar" ? "❌ رقم الهاتف غير صحيح" : "❌ Invalid phone number";
+    if (
+      message.includes("phone") ||
+      message.includes("رقم")
+    ) {
+      return lang === "ar"
+        ? "❌ رقم الهاتف غير صحيح"
+        : "❌ Invalid phone number";
     }
 
-    if (message.includes("password") || message.includes("كلمة المرور")) {
-      return lang === "ar" ? "❌ كلمة المرور غير صحيحة" : "❌ Invalid password";
+    if (
+      message.includes("password") ||
+      message.includes("كلمة المرور")
+    ) {
+      return lang === "ar"
+        ? "❌ كلمة المرور غير صحيحة"
+        : "❌ Invalid password";
     }
 
-    // رسالة عامة
-    return lang === "ar" 
-      ? `❌ حدث خطأ: ${message}` 
+    return lang === "ar"
+      ? `❌ حدث خطأ: ${message}`
       : `❌ Error: ${message}`;
   }
 
-  // ✅ دالة معالجة أخطاء التسجيل مع ترجمة صحيحة
   function getRegisterErrorMessage(error: any): string {
     const message = error?.message || String(error);
     const lang = app.lang === "ar" ? "ar" : "en";
-    
-    const errorMessages: Record<string, { ar: string; en: string }> = {
+
+    const errorMessages: Record<
+      string,
+      { ar: string; en: string }
+    > = {
       "User already registered": {
         ar: "⚠️ هذا الرقم مسجل مسبقاً. يرجى تسجيل الدخول",
-        en: "⚠️ This number is already registered. Please login"
+        en: "⚠️ This number is already registered. Please login",
       },
       "Password should be at least 6 characters": {
         ar: "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل",
-        en: "❌ Password must be at least 6 characters"
+        en: "❌ Password must be at least 6 characters",
       },
       "Email already in use": {
         ar: "⚠️ هذا الرقم مستخدم من قبل حساب آخر",
-        en: "⚠️ This number is already in use"
+        en: "⚠️ This number is already in use",
       },
       "Network error": {
         ar: "⚠️ خطأ في الشبكة. يرجى التحقق من الاتصال بالإنترنت",
-        en: "⚠️ Network error. Please check your internet connection"
-      }
+        en: "⚠️ Network error. Please check your internet connection",
+      },
     };
 
-    for (const [key, value] of Object.entries(errorMessages)) {
-      if (message.toLowerCase().includes(key.toLowerCase())) {
+    for (const [key, value] of Object.entries(
+      errorMessages
+    )) {
+      if (
+        message
+          .toLowerCase()
+          .includes(key.toLowerCase())
+      ) {
         return value[lang];
       }
     }
 
-    if (message.includes("phone") || message.includes("رقم")) {
-      return lang === "ar" ? "❌ رقم الهاتف غير صحيح" : "❌ Invalid phone number";
+    if (
+      message.includes("phone") ||
+      message.includes("رقم")
+    ) {
+      return lang === "ar"
+        ? "❌ رقم الهاتف غير صحيح"
+        : "❌ Invalid phone number";
     }
 
-    if (message.includes("password") || message.includes("كلمة المرور")) {
-      return lang === "ar" ? "❌ كلمة المرور غير صحيحة" : "❌ Invalid password";
+    if (
+      message.includes("password") ||
+      message.includes("كلمة المرور")
+    ) {
+      return lang === "ar"
+        ? "❌ كلمة المرور غير صحيحة"
+        : "❌ Invalid password";
     }
 
-    return lang === "ar" 
-      ? `❌ حدث خطأ: ${message}` 
+    return lang === "ar"
+      ? `❌ حدث خطأ: ${message}`
       : `❌ Error: ${message}`;
   }
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       if (!phone.trim() || !password.trim()) {
-        toast.error(app.lang === "ar" ? "❌ رقم الهاتف وكلمة المرور مطلوبة" : "❌ Phone and password are required");
+        toast.error(
+          app.lang === "ar"
+            ? "❌ رقم الهاتف وكلمة المرور مطلوبة"
+            : "❌ Phone and password are required"
+        );
+
         setLoading(false);
         return;
       }
 
-      // ✅ التحقق من صيغة الرقم قبل تسجيل الدخول
-      const formatCheck = isValidSyrianPhoneFormat(phone);
+      const formatCheck =
+        isValidSyrianPhoneFormat(phone);
+
       if (!formatCheck.valid) {
-        toast.error(app.lang === "ar" ? "❌ صيغة الرقم غير صحيحة. استخدم +963xxxxxxxxx أو 0xxxxxxxxx" : "❌ Invalid phone format. Use +963xxxxxxxxx or 0xxxxxxxxx");
+        toast.error(
+          app.lang === "ar"
+            ? "❌ صيغة الرقم غير صحيحة. استخدم +963xxxxxxxxx أو 0xxxxxxxxx"
+            : "❌ Invalid phone format. Use +963xxxxxxxxx or 0xxxxxxxxx"
+        );
+
         setLoading(false);
         return;
       }
 
-      const digits = phone.replace(/[^0-9]/g, "");
-      
+      const digits = phone.replace(
+        /[^0-9]/g,
+        ""
+      );
+
       const possibleEmails = [
         `sy${digits}@souqi.local`,
         `${digits}@delivery.com`,
@@ -541,15 +748,25 @@ function AuthPage() {
       let signInError = null;
 
       for (const email of possibleEmails) {
-        console.log("🔍 Trying email format:", email);
-        const res = await supabase.auth.signInWithPassword({
-          email: email,
-          password: password,
-        });
+        console.log(
+          "🔍 Trying email format:",
+          email
+        );
+
+        const res =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
 
         if (!res.error) {
           signInData = res.data;
-          console.log("✅ Successfully signed in with:", email);
+
+          console.log(
+            "✅ Successfully signed in with:",
+            email
+          );
+
           break;
         } else {
           signInError = res.error;
@@ -557,201 +774,317 @@ function AuthPage() {
       }
 
       if (!signInData && signInError) {
-        // ✅ عرض رسالة خطأ مترجمة
-        const errorMessage = getLoginErrorMessage(signInError);
+        const errorMessage =
+          getLoginErrorMessage(signInError);
+
         toast.error(errorMessage);
+
         setLoading(false);
         return;
       }
 
-      const redirect = await getAuthRedirect(signInData.user);
+      const redirect =
+        await getAuthRedirect(
+          signInData.user
+        );
 
-      toast.success(app.lang === "ar" ? "✅ تم تسجيل الدخول بنجاح" : "✅ Signed in successfully");
+      toast.success(
+        app.lang === "ar"
+          ? "✨ أهلاً بعودتك إلى ذوق"
+          : "✨ Welcome back to Zooq"
+      );
 
       nav({
         to: redirect.url,
-        state: { showLoginSplash: true }
+        state: {
+          showLoginSplash: true,
+        },
       });
-
     } catch (err: any) {
-      console.error("❌ Login error:", err);
-      const errorMessage = getLoginErrorMessage(err);
+      console.error(
+        "❌ Login error:",
+        err
+      );
+
+      const errorMessage =
+        getLoginErrorMessage(err);
+
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleRegister(e: React.FormEvent) {
+  async function handleRegister(
+    e: FormEvent
+  ) {
     e.preventDefault();
     setLoading(true);
+
     try {
-      // ✅ التحقق من رقم الهاتف
       if (!phone.trim()) {
-        toast.error(app.lang === "ar" ? "❌ رقم الهاتف مطلوب" : "❌ Phone is required");
+        toast.error(
+          app.lang === "ar"
+            ? "❌ رقم الهاتف مطلوب"
+            : "❌ Phone is required"
+        );
+
         setLoading(false);
         return;
       }
-      
-      // ✅ التحقق من صيغة الرقم
-      const formatCheck = isValidSyrianPhoneFormat(phone);
+
+      const formatCheck =
+        isValidSyrianPhoneFormat(phone);
+
       if (!formatCheck.valid) {
-        toast.error(app.lang === "ar" ? "❌ صيغة الرقم غير صحيحة. استخدم +963xxxxxxxxx أو 0xxxxxxxxx" : "❌ Invalid phone format. Use +963xxxxxxxxx or 0xxxxxxxxx");
+        toast.error(
+          app.lang === "ar"
+            ? "❌ صيغة الرقم غير صحيحة. استخدم +963xxxxxxxxx أو 0xxxxxxxxx"
+            : "❌ Invalid phone format. Use +963xxxxxxxxx or 0xxxxxxxxx"
+        );
+
         setLoading(false);
         return;
       }
-      
+
       if (phoneError) {
         toast.error(phoneError);
         setLoading(false);
         return;
       }
-      
+
       if (phoneAvailable === false) {
-        toast.error(app.lang === "ar" ? "⚠️ هذا الرقم مستخدم من قبل" : "⚠️ This phone is already in use");
+        toast.error(
+          app.lang === "ar"
+            ? "⚠️ هذا الرقم مستخدم من قبل"
+            : "⚠️ This phone is already in use"
+        );
+
         setLoading(false);
         return;
       }
 
-      // ✅ التحقق من الاسم الكامل
       if (!fullName.trim()) {
-        toast.error(app.lang === "ar" ? "❌ الاسم الكامل مطلوب" : "❌ Full name is required");
+        toast.error(
+          app.lang === "ar"
+            ? "❌ الاسم الكامل مطلوب"
+            : "❌ Full name is required"
+        );
+
         setLoading(false);
         return;
       }
 
-      // ✅ التحقق من كلمة المرور
       if (!password.trim()) {
-        toast.error(app.lang === "ar" ? "❌ كلمة المرور مطلوبة" : "❌ Password is required");
+        toast.error(
+          app.lang === "ar"
+            ? "❌ كلمة المرور مطلوبة"
+            : "❌ Password is required"
+        );
+
         setLoading(false);
         return;
       }
+
       if (password.length < 6) {
-        toast.error(app.lang === "ar" ? "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "❌ Password must be at least 6 characters");
+        toast.error(
+          app.lang === "ar"
+            ? "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل"
+            : "❌ Password must be at least 6 characters"
+        );
+
         setLoading(false);
         return;
       }
-      
-      // ✅ التحقق من الموقع
+
       if (!location) {
-        toast.error(app.lang === "ar" ? "❌ الرجاء اختيار الموقع على الخريطة" : "❌ Please select a location on the map");
-        setLoading(false);
-        return;
-      }
-      
-      if (!location.address || location.address.trim() === '') {
-        toast.error(app.lang === "ar" ? "❌ الرجاء اختيار عنوان صحيح من الخريطة" : "❌ Please select a valid address from the map");
+        toast.error(
+          app.lang === "ar"
+            ? "❌ الرجاء اختيار الموقع على الخريطة"
+            : "❌ Please select a location on the map"
+        );
+
         setLoading(false);
         return;
       }
 
-      const addressDetails = location.details?.trim() || "";
+      if (
+        !location.address ||
+        location.address.trim() === ""
+      ) {
+        toast.error(
+          app.lang === "ar"
+            ? "❌ الرجاء اختيار عنوان صحيح من الخريطة"
+            : "❌ Please select a valid address from the map"
+        );
+
+        setLoading(false);
+        return;
+      }
+
+      const addressDetails =
+        location.details?.trim() || "";
+
       if (!addressDetails) {
-        toast.error(app.lang === "ar" ? "❌ الرجاء إدخال وصف تفصيلي للعنوان" : "❌ Please enter a detailed description for the address");
+        toast.error(
+          app.lang === "ar"
+            ? "❌ الرجاء إدخال وصف تفصيلي للعنوان"
+            : "❌ Please enter a detailed description for the address"
+        );
+
         setLoading(false);
         return;
       }
 
-      const addressLabel = location.label?.trim() || (app.lang === "ar" ? "الرئيسي" : "Main");
-
-      // ✅ محاولة التسجيل
-      const { data, error } = await supabase.auth.signUp({
-        email: phoneToEmail(phone),
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-            phone: phone.trim(),
+      const { data, error } =
+        await supabase.auth.signUp({
+          email: phoneToEmail(phone),
+          password,
+          options: {
+            data: {
+              full_name: fullName.trim(),
+              phone: phone.trim(),
+            },
           },
-        },
-      });
+        });
 
       if (error) {
-        // ✅ عرض رسالة خطأ مترجمة
-        const errorMessage = getRegisterErrorMessage(error);
+        const errorMessage =
+          getRegisterErrorMessage(error);
+
         toast.error(errorMessage);
+
         setLoading(false);
         return;
       }
 
-      // ✅ تسجيل الدخول تلقائياً بعد التسجيل
-      const signInResult = await supabase.auth.signInWithPassword({
-        email: phoneToEmail(phone),
-        password,
-      });
+      const signInResult =
+        await supabase.auth.signInWithPassword({
+          email: phoneToEmail(phone),
+          password,
+        });
 
       if (signInResult.error) {
-        const errorMessage = getLoginErrorMessage(signInResult.error);
+        const errorMessage =
+          getLoginErrorMessage(
+            signInResult.error
+          );
+
         toast.error(errorMessage);
+
         setLoading(false);
         return;
       }
 
-      const uid = signInResult.data.user?.id ?? data?.user?.id;
+      const uid =
+        signInResult.data.user?.id ??
+        data?.user?.id;
+
       if (!uid) {
-        toast.error(app.lang === "ar" ? "❌ فشل تسجيل الدخول بعد التسجيل" : "❌ Failed to sign in after registration");
+        toast.error(
+          app.lang === "ar"
+            ? "❌ فشل تسجيل الدخول بعد التسجيل"
+            : "❌ Failed to sign in after registration"
+        );
+
         setLoading(false);
         return;
       }
 
-      // ✅ حفظ بيانات الملف الشخصي
       const profileData = {
         id: uid,
         full_name: fullName.trim(),
         phone: phone.trim(),
       };
 
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert(profileData, { onConflict: "id" });
-      
+      const { error: profileError } =
+        await supabase
+          .from("profiles")
+          .upsert(profileData, {
+            onConflict: "id",
+          });
+
       if (profileError) {
-        console.error("Profile error:", profileError);
-        toast.error(app.lang === "ar" ? "⚠️ حدث خطأ في حفظ الملف الشخصي" : "⚠️ Error saving profile");
+        console.error(
+          "Profile error:",
+          profileError
+        );
+
+        toast.error(
+          app.lang === "ar"
+            ? "⚠️ حدث خطأ في حفظ الملف الشخصي"
+            : "⚠️ Error saving profile"
+        );
+
         setLoading(false);
         return;
       }
 
-      // ✅ حفظ العنوان
-      const saveResult = await saveAddressWithGovernorate(uid, location);
+      const saveResult =
+        await saveAddressWithGovernorate(
+          uid,
+          location
+        );
 
       if (!saveResult.success) {
-        console.warn('⚠️ Address saved but governorate extraction failed:', saveResult.error);
+        console.warn(
+          "⚠️ Address saved but governorate extraction failed:",
+          saveResult.error
+        );
       }
 
       if (detectedGovernorate) {
         toast.success(
-          app.lang === "ar" 
-            ? `✅ تم تحديد المحافظة: ${detectedGovernorate}` 
-            : `✅ Governorate detected: ${detectedGovernorate}`
+          app.lang === "ar"
+            ? `✨ تم تحديد المحافظة: ${detectedGovernorate}`
+            : `✨ Governorate detected: ${detectedGovernorate}`
         );
       }
 
-      toast.success(app.lang === "ar" ? "✅ تم إنشاء الحساب بنجاح" : "✅ Account created successfully");
+      toast.success(
+        app.lang === "ar"
+          ? "🎉 أهلاً فيك بعالم ذوق!"
+          : "🎉 Welcome to the world of Zooq!"
+      );
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (user) {
-        const redirect = await getAuthRedirect(user);
+        const redirect =
+          await getAuthRedirect(user);
+
         setTimeout(() => {
-          window.location.replace(redirect.url);
+          window.location.replace(
+            redirect.url
+          );
         }, 500);
       } else {
         setTimeout(() => {
           window.location.href = "/";
         }, 500);
       }
-      
     } catch (err: any) {
-      console.error("Registration error:", err);
-      const errorMessage = getRegisterErrorMessage(err);
+      console.error(
+        "Registration error:",
+        err
+      );
+
+      const errorMessage =
+        getRegisterErrorMessage(err);
+
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(
+    e: FormEvent
+  ) {
     e.preventDefault();
+
     if (isLogin) {
       await handleLogin(e);
     } else {
@@ -759,563 +1092,1894 @@ function AuthPage() {
     }
   }
 
-  const { data: userRoles = [] } = useUserRoles(app.user?.id);
-  const isDeliveryCompany = userRoles.includes('delivery_company');
-  const isDistributor = userRoles.includes('distributor');
-  const isAdmin = userRoles.includes('admin');
-  const isSeller = userRoles.includes('seller');
+  const {
+    data: userRoles = [],
+  } = useUserRoles(app.user?.id);
+
+  const isDeliveryCompany =
+    userRoles.includes(
+      "delivery_company"
+    );
+
+  const isDistributor =
+    userRoles.includes(
+      "distributor"
+    );
+
+  const isAdmin =
+    userRoles.includes("admin");
+
+  const isSeller =
+    userRoles.includes("seller");
 
   const year = new Date().getFullYear();
 
-  // ============================================================
-  // ✅ UI المحسن مع تصميم احترافي
-  // ============================================================
+  const CurrentSlideIcon =
+    ZOOQ_SLIDES[slide]?.icon ??
+    Sparkles;
+
+  const currentSlide =
+    ZOOQ_SLIDES[slide];
+
   return (
-    <div className="relative min-h-[calc(100vh-140px)] overflow-hidden">
-      
-      {/* ===== خلفية الصور ===== */}
-      <div className="absolute inset-0 -z-10">
-        {SLIDER_IMAGES.map((src, i) => (
-          <div
-            key={src}
-            className="absolute inset-0 transition-opacity duration-[1500ms] ease-in-out"
-            style={{ opacity: slide === i ? 1 : 0 }}
-          >
-            <img 
-              src={src} 
-              alt="" 
-              className="h-full w-full object-cover object-center scale-110 animate-[kenburns_20s_ease-in-out_infinite]"
-              loading={i === 0 ? "eager" : "lazy"}
-              decoding="async"
-              draggable="false"
-            />
-          </div>
-        ))}
-        
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0d2e2a]/90 via-[#1a4f4a]/80 to-black/80 backdrop-blur-[3px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+    <div
+      dir={
+        app.lang === "ar"
+          ? "rtl"
+          : "ltr"
+      }
+      className="relative min-h-[calc(100vh-140px)] overflow-hidden bg-[#071f1c] text-white selection:bg-[#f9a8d4]/30"
+    >
+      {/* ======================================================
+          PREMIUM BACKGROUND
+      ====================================================== */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_12%,rgba(249,168,212,.18),transparent_30%),radial-gradient(circle_at_90%_20%,rgba(42,101,95,.32),transparent_35%),radial-gradient(circle_at_55%_90%,rgba(251,207,232,.08),transparent_35%)]" />
+
+        <div className="absolute inset-0 bg-gradient-to-br from-[#071f1c] via-[#0d2e2a] to-[#071f1c]" />
+
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,rgba(249,168,212,.06)_35%,transparent_55%,rgba(42,101,95,.08)_80%,transparent_100%)] opacity-40" />
       </div>
 
+      {/* ======================================================
+          PREMIUM ANIMATIONS
+      ====================================================== */}
       <style>{`
-        @keyframes kenburns { 
-          0%, 100% { transform: scale(1.08); } 
-          50% { transform: scale(1.18); } 
+        @keyframes zooq-float {
+          0%, 100% {
+            transform: translateY(0) rotate(0deg);
+          }
+
+          50% {
+            transform: translateY(-9px) rotate(.5deg);
+          }
         }
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-8px) scale(1.02); }
+
+        @keyframes zooq-pulse {
+          0%, 100% {
+            opacity: .35;
+            transform: scale(1);
+          }
+
+          50% {
+            opacity: .9;
+            transform: scale(1.08);
+          }
         }
-        @keyframes float-logo {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          25% { transform: translateY(-6px) rotate(3deg); }
-          75% { transform: translateY(6px) rotate(-2deg); }
+
+        @keyframes zooq-shine {
+          0% {
+            transform: translateX(-140%) skewX(-18deg);
+          }
+
+          100% {
+            transform: translateX(280%) skewX(-18deg);
+          }
         }
-        .animate-float-logo {
-          animation: float-logo 3s ease-in-out infinite;
+
+        @keyframes zooq-enter {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        @keyframes float-field {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-3px); }
+
+        @keyframes zooq-glow {
+          0%, 100% {
+            box-shadow:
+              0 0 0 rgba(249,168,212,0);
+          }
+
+          50% {
+            box-shadow:
+              0 0 45px rgba(249,168,212,.12);
+          }
         }
-        .animate-float-field {
-          animation: float-field 2.5s ease-in-out infinite;
+
+        /* ====================================================
+           ✨ PREMIUM LOGO MOTION
+           ==================================================== */
+
+        @keyframes zooq-logo-float {
+          0%, 100% {
+            transform:
+              translate3d(0, 0, 0)
+              rotate(0deg)
+              scale(1);
+          }
+
+          25% {
+            transform:
+              translate3d(0, -5px, 0)
+              rotate(-1deg)
+              scale(1.015);
+          }
+
+          50% {
+            transform:
+              translate3d(0, -10px, 0)
+              rotate(0deg)
+              scale(1.035);
+          }
+
+          75% {
+            transform:
+              translate3d(0, -5px, 0)
+              rotate(1deg)
+              scale(1.015);
+          }
         }
-        @keyframes ripple-logo {
-          0% { transform: scale(0.8); opacity: 1; }
-          100% { transform: scale(2); opacity: 0; }
+
+        @keyframes zooq-logo-glow {
+          0%, 100% {
+            opacity: .35;
+            transform: scale(.92);
+          }
+
+          50% {
+            opacity: .8;
+            transform: scale(1.08);
+          }
         }
-        .animate-ripple-logo {
-          animation: ripple-logo 3s ease-out infinite;
+
+        @keyframes zooq-logo-ring {
+          from {
+            transform: rotate(0deg);
+          }
+
+          to {
+            transform: rotate(360deg);
+          }
         }
-        .glass-card {
-          background: rgba(13, 46, 42, 0.75);
-          backdrop-filter: blur(25px);
-          -webkit-backdrop-filter: blur(25px);
-          border: 1px solid rgba(16, 185, 129, 0.25);
-          box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.6);
+
+        @keyframes zooq-logo-shine {
+          0% {
+            opacity: 0;
+            transform:
+              translateX(-150%)
+              rotate(20deg);
+          }
+
+          20% {
+            opacity: .45;
+          }
+
+          45% {
+            opacity: 0;
+            transform:
+              translateX(150%)
+              rotate(20deg);
+          }
+
+          100% {
+            opacity: 0;
+            transform:
+              translateX(150%)
+              rotate(20deg);
+          }
         }
-        .glass-card:hover {
-          background: rgba(13, 46, 42, 0.85);
-          border-color: rgba(16, 185, 129, 0.4);
-          box-shadow: 0 30px 80px -12px rgba(16, 185, 129, 0.2);
+
+        .zooq-logo-motion {
+          animation:
+            zooq-logo-float
+            5.5s
+            ease-in-out
+            infinite;
+          transform-origin: center;
+          will-change: transform;
         }
-        .input-glow:focus {
-          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25), 0 0 30px rgba(16, 185, 129, 0.1);
+
+        .zooq-logo-halo {
+          animation:
+            zooq-logo-glow
+            4.5s
+            ease-in-out
+            infinite;
+          will-change: transform, opacity;
         }
-        .auth-shimmer {
-          background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.05) 50%, transparent 60%);
-          background-size: 200% 100%;
-          animation: shimmer 4s ease-in-out infinite;
+
+        .zooq-logo-ring {
+          animation:
+            zooq-logo-ring
+            18s
+            linear
+            infinite;
+          transform-origin: center;
+          will-change: transform;
         }
-        @keyframes shimmer {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
+
+        .zooq-logo-shine {
+          animation:
+            zooq-logo-shine
+            5s
+            ease-in-out
+            infinite;
+          pointer-events: none;
         }
-        .slide-indicator {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        .zooq-logo-image {
+          image-rendering: auto;
+          backface-visibility: hidden;
+          transform: translateZ(0);
+          transition:
+            transform .7s cubic-bezier(.2,.8,.2,1),
+            filter .7s ease;
         }
-        .slide-indicator.active {
-          background: #10b981;
-          width: 2rem;
-          box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+
+        .zooq-logo-container:hover .zooq-logo-image {
+          transform:
+            scale(1.09)
+            rotate(-1deg)
+            translateY(-3px);
+          filter:
+            drop-shadow(0 28px 48px rgba(0,0,0,.62))
+            drop-shadow(0 0 28px rgba(249,168,212,.18));
         }
-        .btn-submit {
-          background: linear-gradient(135deg, #0d2e2a, #1a4f4a);
-          border: 1px solid rgba(16, 185, 129, 0.3);
-          transition: all 0.3s ease;
+
+        .zooq-logo-container:hover .zooq-logo-ring {
+          animation-duration: 7s;
+          opacity: .95;
         }
-        .btn-submit:hover {
-          background: linear-gradient(135deg, #1a4f4a, #0d2e2a);
-          border-color: rgba(16, 185, 129, 0.6);
-          box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
-          transform: scale(1.02);
+
+        .zooq-logo-container:hover .zooq-logo-halo {
+          opacity: .95;
         }
-        .btn-submit:active {
-          transform: scale(0.98);
+
+        @media (prefers-reduced-motion: reduce) {
+          .zooq-logo-motion,
+          .zooq-logo-halo,
+          .zooq-logo-ring,
+          .zooq-logo-shine {
+            animation: none !important;
+          }
+
+          .zooq-logo-image {
+            transition: none !important;
+          }
         }
-        .btn-submit:disabled {
-          opacity: 0.6;
+
+        .zooq-glass {
+          background:
+            linear-gradient(
+              145deg,
+              rgba(9,35,32,.97),
+              rgba(20,68,63,.91)
+            );
+
+          backdrop-filter: blur(30px);
+          -webkit-backdrop-filter: blur(30px);
+
+          border: 1px solid rgba(255,255,255,.09);
+
+          box-shadow:
+            0 35px 100px rgba(0,0,0,.52),
+            inset 0 1px 0 rgba(255,255,255,.055);
+        }
+
+        .zooq-glass-soft {
+          background: rgba(255,255,255,.045);
+
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+
+          border: 1px solid rgba(255,255,255,.09);
+        }
+
+        .zooq-input:focus-within {
+          box-shadow:
+            0 0 0 3px rgba(249,168,212,.13),
+            0 15px 40px rgba(249,168,212,.08);
+        }
+
+        .zooq-submit {
+          background:
+            linear-gradient(
+              135deg,
+              #ffffff 0%,
+              #fbcfe8 28%,
+              #f9a8d4 70%,
+              #2a655f 135%
+            );
+
+          color: #082520;
+
+          box-shadow:
+            0 16px 38px rgba(249,168,212,.26),
+            inset 0 1px 0 rgba(255,255,255,.7);
+
+          transition:
+            transform .3s ease,
+            box-shadow .3s ease,
+            filter .3s ease;
+        }
+
+        .zooq-submit:hover:not(:disabled) {
+          transform: translateY(-3px);
+
+          box-shadow:
+            0 22px 50px rgba(249,168,212,.38),
+            0 0 25px rgba(42,101,95,.16);
+
+          filter: brightness(1.035);
+        }
+
+        .zooq-submit:active:not(:disabled) {
+          transform: translateY(-1px) scale(.99);
+        }
+
+        .zooq-submit:disabled {
+          opacity: .58;
           cursor: not-allowed;
-          transform: none !important;
         }
-        .footer-link {
-          color: rgba(255, 255, 255, 0.6);
-          transition: all 0.3s ease;
+
+        .zooq-logo-float {
+          animation:
+            zooq-float
+            5s
+            ease-in-out
+            infinite;
         }
-        .footer-link:hover {
-          color: #10b981;
-          transform: translateX(2px);
+
+        .zooq-link {
+          transition:
+            color .2s ease,
+            opacity .2s ease,
+            transform .2s ease;
         }
-        .footer-icon {
-          transition: all 0.3s ease;
+
+        .zooq-link:hover {
+          color: #f9a8d4;
         }
-        .footer-icon:hover {
-          transform: scale(1.1) translateY(-2px);
-          color: #10b981;
+
+        .zooq-social {
+          transition: all .25s ease;
+        }
+
+        .zooq-social:hover {
+          transform: translateY(-4px);
+          color: #f9a8d4;
+          border-color: rgba(249,168,212,.38);
+          background: rgba(42,101,95,.18);
+          box-shadow:
+            0 8px 25px rgba(249,168,212,.08);
+        }
+
+        .zooq-brand-title {
+          text-shadow:
+            0 15px 45px rgba(0,0,0,.35);
+        }
+
+        .zooq-tagline {
+          text-shadow:
+            0 5px 25px rgba(0,0,0,.25);
+        }
+
+        .zooq-zooq-text {
+          font-size: 2.2rem;
+          letter-spacing: .16em;
+          font-weight: 950;
+        }
+
+        .zooq-slide-content {
+          animation:
+            zooq-enter
+            .7s
+            ease
+            both;
+        }
+
+        .zooq-glow-card {
+          animation:
+            zooq-glow
+            4s
+            ease-in-out
+            infinite;
+        }
+
+        .zooq-o-pink {
+          color: #f9a8d4;
+
+          text-shadow:
+            0 0 30px rgba(249,168,212,.38);
+        }
+
+        .zooq-o-olive {
+          color: #2a655f;
+
+          text-shadow:
+            0 0 24px rgba(42,101,95,.32);
+        }
+
+        .zooq-pink-light {
+          color: #fbcfe8;
+        }
+
+        .zooq-logo-frame {
+          box-shadow:
+            0 35px 80px rgba(0,0,0,.55),
+            inset 0 1px 0 rgba(255,255,255,.08),
+            inset 0 0 35px rgba(255,255,255,.018);
+        }
+
+        .zooq-logo-brand {
+          text-shadow:
+            0 12px 35px rgba(0,0,0,.45);
+        }
+
+        .zooq-logo-word {
+          letter-spacing: .12em;
+          font-weight: 950;
+          line-height: 1;
+        }
+
+        .zooq-slide-title-accent {
+          position: relative;
+          display: inline-block;
+        }
+
+        .zooq-slide-title-accent::after {
+          content: "";
+          position: absolute;
+          left: 4%;
+          right: 4%;
+          bottom: -7px;
+          height: 3px;
+          border-radius: 999px;
+          background:
+            linear-gradient(
+              90deg,
+              transparent,
+              #2a655f 25%,
+              #f9a8d4 50%,
+              #2a655f 75%,
+              transparent
+            );
+          opacity: .72;
+          filter: blur(.2px);
+        }
+
+        .zooq-slide-accent-line {
+          background:
+            linear-gradient(
+              90deg,
+              transparent,
+              rgba(42,101,95,.95),
+              rgba(249,168,212,.85),
+              transparent
+            );
+        }
+
+        @media (min-width: 640px) {
+          .zooq-zooq-text {
+            font-size: 3rem;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .zooq-zooq-text {
+            font-size: 3.8rem;
+          }
         }
       `}</style>
 
-      <div className="min-h-[calc(100vh-140px)] grid place-items-center px-4 py-10">
-        {/* ✅ ✅ ✅ إزالة animate-float-slow من هنا لإيقاف حركة الفورم ✅ ✅ ✅ */}
-        <div className="w-full max-w-md">
-          
-          {/* ===== الشعار ===== */}
-          <div className="text-center text-white mb-6">
-            <div className="inline-flex items-center gap-3">
-              <div className="relative">
-                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] border-2 border-emerald-400/40 flex items-center justify-center shadow-2xl shadow-emerald-500/20">
-                  <AnimatedLogoIcon Icon={House} className="h-7 w-7 text-emerald-300" delay={0} />
+      {/* ======================================================
+          DECORATIVE LIGHTS
+      ====================================================== */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -start-32 -top-32 h-96 w-96 rounded-full bg-[#f9a8d4]/10 blur-3xl" />
+
+        <div className="absolute -bottom-40 -end-20 h-[30rem] w-[30rem] rounded-full bg-[#2a655f]/25 blur-3xl" />
+
+        <div className="absolute start-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fbcfe8]/5 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto flex min-h-[calc(100vh-140px)] w-full max-w-7xl items-center px-4 py-7 sm:px-6 lg:px-8">
+        <div className="grid w-full items-stretch gap-5 lg:grid-cols-[1.08fr_.92fr]">
+
+          {/* ====================================================
+              BRAND / SLIDER
+          ==================================================== */}
+          <section className="relative hidden min-h-[670px] overflow-hidden rounded-[2rem] border border-white/10 bg-[#092622]/85 shadow-[0_35px_100px_rgba(0,0,0,.45)] lg:block">
+
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(249,168,212,.10),transparent_28%),radial-gradient(circle_at_50%_75%,rgba(42,101,95,.24),transparent_42%)]" />
+
+            <div className="absolute inset-0 bg-gradient-to-b from-[#071f1c]/55 via-transparent to-[#071f1c]/95" />
+
+            <div className="absolute inset-0 bg-gradient-to-r from-[#071f1c]/55 via-transparent to-[#fbcfe8]/[.035]" />
+
+            <div className="relative z-10 flex h-full min-h-[670px] flex-col justify-between p-7 xl:p-9">
+
+           {/* TOP BRAND BAR */}
+<div className="flex items-center justify-between">
+
+  <div className="zooq-glass-soft inline-flex items-center gap-3 rounded-full px-5 py-3 border border-[#f9a8d4]/30 bg-gradient-to-r from-[#f9a8d4]/10 via-[#f9a8d4]/5 to-[#2a655f]/10 backdrop-blur-md hover:from-[#f9a8d4]/20 hover:via-[#f9a8d4]/10 hover:to-[#2a655f]/20 transition-all duration-500 group cursor-pointer shadow-lg shadow-[#f9a8d4]/20 hover:shadow-[#f9a8d4]/40">
+
+    {/* ✅ نقطة متحركة - أكبر وأوضح */}
+    <span className="relative flex h-3.5 w-3.5">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#f9a8d4] opacity-75" />
+      <span className="absolute inline-flex h-full w-full animate-pulse rounded-full bg-[#f9a8d4] opacity-50" style={{ animationDelay: '0.5s' }} />
+      <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-[#f9a8d4] shadow-[0_0_24px_rgba(249,168,212,1)] animate-pulse" />
+    </span>
+
+    {/* ✅ النص - مع تدرج لوني زهري + زيتي وحركة */}
+    <span className="text-xs md:text-sm font-black tracking-[.15em] bg-gradient-to-r from-[#f9a8d4] via-[#fbcfe8] to-[#2a655f] bg-clip-text text-transparent bg-[length:200%_auto] animate-[shimmer-gold_3s_linear_infinite] group-hover:scale-105 transition-transform duration-300">
+      {app.lang === "ar"
+        ? "✨ كلشي ع ذوقك"
+        : "✨ Exactly your taste"}
+    </span>
+
+    {/* ✅ زخرفة وردية متحركة */}
+    <span className="text-[#f9a8d4] text-sm animate-bounce opacity-70 group-hover:opacity-100 transition-opacity duration-300">
+      ✦
+    </span>
+  </div>
+
+  {/* ✅ عداد الصفحات - مع لمسة وردية */}
+  <div className="rounded-full border border-[#f9a8d4]/40 bg-gradient-to-r from-[#f9a8d4]/20 to-[#2a655f]/20 px-4 py-2.5 text-[11px] font-black tracking-[.12em] text-white/80 shadow-lg shadow-[#f9a8d4]/10 backdrop-blur-sm">
+    <span className="text-[#f9a8d4]">✦</span>
+    {String(slide + 1).padStart(2, "0")}
+    <span className="text-white/40"> / 05</span>
+  </div>
+
+</div>
+
+{/* ✅ إضافة الـ Keyframes للحركة */}  
+<style>{`
+  @keyframes shimmer-gold {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+`}</style>
+              {/* MAIN BRAND */}
+              <div
+                className="zooq-slide-content flex flex-col items-center text-center"
+                key={slide}
+              >
+
+                {/* ==================================================
+                    BRAND NAME + CLEAR ANIMATED LOGO
+                ================================================== */}
+                <div className="relative inline-flex flex-col items-center">
+
+                  <div className="absolute -inset-16 rounded-full bg-[#f9a8d4]/[.035] blur-3xl" />
+
+                  <div className="relative flex items-center justify-center gap-5 sm:gap-6">
+
+                    {/* ARABIC BRAND */}
+                    <div className="relative">
+
+                      <h1
+                        className="zooq-brand-title relative text-[4.5rem] font-black leading-none tracking-[-.085em] text-white sm:text-[5.5rem] xl:text-[6.2rem]"
+                        dir="rtl"
+                      >
+                        <span className="bg-gradient-to-r from-white via-white to-[#f9a8d4] bg-clip-text text-transparent">
+                          ذوق
+                        </span>
+                      </h1>
+
+                    </div>
+
+                    {/* ==================================================
+                        ✨ CLEAR ANIMATED REAL LOGO
+                    ================================================== */}
+                    <div className="zooq-logo-container relative flex h-36 w-36 shrink-0 items-center justify-center sm:h-40 sm:w-40 xl:h-44 xl:w-44">
+
+                      {/* Pink breathing halo */}
+                      <div className="zooq-logo-halo absolute -inset-10 rounded-full bg-[#f9a8d4]/12 blur-3xl" />
+
+                      {/* Olive breathing halo */}
+                      <div className="absolute -inset-7 rounded-full bg-[#2a655f]/14 blur-2xl" />
+
+                      {/* Elegant rotating ring */}
+                      <div className="zooq-logo-ring absolute inset-1 rounded-full border border-[#f9a8d4]/10 border-t-[#2a655f]/55 border-r-[#f9a8d4]/35" />
+
+                      <div className="zooq-logo-ring absolute inset-4 rounded-full border border-transparent border-b-[#2a655f]/25 border-l-[#f9a8d4]/20 opacity-70" />
+
+                      {/* Actual transparent logo */}
+                      <div className="zooq-logo-motion relative z-10 flex h-full w-full items-center justify-center">
+
+                        <img
+                          src="/images/Logo.png"
+                          alt="ذوق | zooq"
+                          draggable={false}
+                          className="zooq-logo-image h-full w-full object-contain drop-shadow-[0_24px_45px_rgba(0,0,0,.68)]"
+                        />
+
+                      </div>
+
+                      {/* Soft shine */}
+                      <div className="zooq-logo-shine absolute left-1/2 top-1/2 z-20 h-[130%] w-5 -translate-y-1/2 rounded-full bg-gradient-to-b from-transparent via-white/20 to-transparent blur-md" />
+
+                    </div>
+
+                  </div>
+
+                  {/* ENGLISH BRAND */}
+                  <div className="mt-3 flex items-center justify-center gap-4">
+
+                    <span className="h-px w-12 bg-gradient-to-r from-transparent via-[#2a655f]/70 to-[#f9a8d4]/70 sm:w-16" />
+
+                    <div className="zooq-zooq-text">
+
+                      <span className="zooq-o-olive">
+                        z
+                      </span>
+
+                      <span className="zooq-o-pink">
+                        o
+                      </span>
+
+                      <span className="zooq-o-olive">
+                        o
+                      </span>
+
+                      <span className="zooq-o-olive">
+                        q
+                      </span>
+
+                    </div>
+
+                    <span className="h-px w-12 bg-gradient-to-l from-transparent via-[#2a655f]/70 to-[#f9a8d4]/70 sm:w-16" />
+
+                  </div>
+
+                  {/* BRAND DESCRIPTION */}
+                  <div className="mt-3">
+
+                    <div className="inline-flex items-center gap-2 rounded-full border border-[#f9a8d4]/15 bg-gradient-to-r from-[#2a655f]/10 via-[#f9a8d4]/[.045] to-[#fbcfe8]/[.05] px-4 py-2">
+
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f] shadow-[0_0_12px_rgba(42,101,95,.8)]" />
+
+                      <span className="text-[10px] font-black tracking-[.1em] text-white/65">
+                        {app.lang === "ar"
+                          ? "تسوّق بطريقة مختلفة"
+                          : "A DIFFERENT WAY TO SHOP"}
+                      </span>
+
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#f9a8d4] shadow-[0_0_12px_rgba(249,168,212,.8)]" />
+
+                    </div>
+
+                  </div>
+
                 </div>
-                <span className="absolute -inset-1 rounded-2xl bg-emerald-400/30 blur-lg animate-pulse" />
+
+                {/* DYNAMIC MESSAGE */}
+                <div className="mt-7 max-w-xl px-4">
+
+                  <div className="mb-4 flex items-center justify-center gap-2">
+
+                    <span className="h-px w-9 bg-gradient-to-r from-transparent to-[#2a655f]" />
+
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#f9a8d4]/20 bg-gradient-to-br from-[#2a655f]/20 to-[#f9a8d4]/10">
+
+                      <CurrentSlideIcon className="h-4.5 w-4.5 text-[#f9a8d4]" />
+
+                    </div>
+
+                    <span className="h-px w-9 bg-gradient-to-l from-transparent to-[#2a655f]" />
+
+                  </div>
+
+                  <h2 className="zooq-tagline text-2xl font-black leading-tight text-white sm:text-3xl xl:text-[2.15rem]">
+
+                    {app.lang === "ar" ? (
+                      <>
+                        {slide === 1 ? (
+                          <>
+                            مو بس{" "}
+                            <span className="zooq-slide-title-accent text-[#f9a8d4]">
+                              تسوّق…
+                            </span>
+                          </>
+                        ) : slide === 0 ? (
+                          <>
+                            كل{" "}
+                            <span className="text-[#fbcfe8]">
+                              ذوق
+                            </span>
+                            … إله مكان.
+                          </>
+                        ) : slide === 2 ? (
+                          <>
+                            الاختيار إلو{" "}
+                            <span className="text-[#f9a8d4]">
+                              ذوق.
+                            </span>
+                          </>
+                        ) : slide === 3 ? (
+                          <>
+                            اللي بتدور عليه…{" "}
+                            <span className="text-[#fbcfe8]">
+                              أقرب
+                            </span>{" "}
+                            مما تتخيّل.
+                          </>
+                        ) : (
+                          <>
+                            خلّي{" "}
+                            <span className="text-[#f9a8d4]">
+                              ذوقك
+                            </span>{" "}
+                            يحكي.
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      currentSlide.enTitle
+                    )}
+
+                  </h2>
+
+                  <div className="mx-auto mt-3 flex max-w-md items-start gap-2 text-start">
+
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#2a655f] shadow-[0_0_10px_rgba(42,101,95,.7)]" />
+
+                    <p className="text-sm font-medium leading-7 text-white/55 sm:text-base">
+                      {app.lang === "ar"
+                        ? currentSlide.arText
+                        : currentSlide.enText}
+                    </p>
+
+                  </div>
+
+                  <div className="mx-auto mt-4 h-px w-24 zooq-slide-accent-line opacity-50" />
+
+                </div>
+
+                {/* ==================================================
+                    SECONDARY PREMIUM BRAND PANEL
+                    REAL LOGO + NAME
+                ================================================== */}
+                <div className="zooq-logo-float relative mt-8 flex items-center justify-center">
+
+                  <div className="absolute h-72 w-72 rounded-full bg-[#f9a8d4]/[.07] blur-[70px]" />
+
+                  <div className="absolute h-56 w-56 rounded-full bg-[#2a655f]/20 blur-[55px]" />
+
+                  <div className="zooq-logo-frame zooq-logo-container group relative flex min-h-64 min-w-[22rem] items-center justify-center overflow-hidden rounded-[2.5rem] border border-white/[.10] bg-white/[.025] px-8 py-7 backdrop-blur-xl transition-all duration-700 hover:-translate-y-2 hover:scale-[1.025] hover:border-[#f9a8d4]/25 hover:shadow-[0_40px_100px_rgba(0,0,0,.62)] sm:min-w-[25rem]">
+
+                    <div className="pointer-events-none absolute inset-2 rounded-[2rem] border border-white/[.055]" />
+
+                    <div className="pointer-events-none absolute -right-3 -top-3 h-20 w-20 rounded-full bg-[#f9a8d4]/10 blur-2xl" />
+
+                    <div className="pointer-events-none absolute -bottom-3 -left-3 h-20 w-20 rounded-full bg-[#2a655f]/25 blur-2xl" />
+
+                    <div className="relative z-10 flex items-center justify-center gap-6">
+
+                      {/* ==================================================
+                          REAL LOGO — LARGER + ANIMATED
+                      ================================================== */}
+                      <div className="relative flex h-40 w-40 shrink-0 items-center justify-center sm:h-44 sm:w-44">
+
+                        <div className="zooq-logo-halo absolute -inset-8 rounded-full bg-[#fbcfe8]/[.07] blur-3xl" />
+
+                        <div className="zooq-logo-ring absolute inset-2 rounded-full border border-[#f9a8d4]/10 border-t-[#2a655f]/50 border-b-[#f9a8d4]/30" />
+
+                        <div className="zooq-logo-motion relative z-10 h-full w-full">
+
+                          <img
+                            src="/images/Logo.png"
+                            alt="ذوق | zooq"
+                            draggable={false}
+                            className="zooq-logo-image h-full w-full object-contain drop-shadow-[0_24px_42px_rgba(0,0,0,.7)]"
+                          />
+
+                        </div>
+
+                        <div className="zooq-logo-shine absolute left-1/2 top-1/2 z-20 h-[120%] w-4 -translate-y-1/2 rounded-full bg-white/10 blur-md" />
+
+                      </div>
+
+                      {/* DIVIDER */}
+                      <div className="h-28 w-px bg-gradient-to-b from-transparent via-[#2a655f]/40 via-[#f9a8d4]/30 to-transparent" />
+
+                      {/* STORE NAME */}
+                      <div className="flex min-w-0 flex-col items-start justify-center text-start">
+
+                        <div
+                          dir="rtl"
+                          className="zooq-logo-brand bg-gradient-to-r from-white via-white to-[#f9a8d4] bg-clip-text text-[3.8rem] font-black leading-none tracking-[-.08em] text-transparent sm:text-[4.5rem]"
+                        >
+                          ذوق
+                        </div>
+
+                        <div className="mt-2 flex items-center gap-1">
+
+                          <span className="zooq-logo-word text-2xl sm:text-3xl">
+
+                            <span className="text-[#2a655f]">
+                              z
+                            </span>
+
+                            <span className="zooq-o-pink">
+                              o
+                            </span>
+
+                            <span className="text-[#2a655f]">
+                              o
+                            </span>
+
+                            <span className="text-[#2a655f]">
+                              q
+                            </span>
+
+                          </span>
+
+                        </div>
+
+                        <div className="mt-3 flex items-center gap-2">
+
+                          <span className="h-1 w-5 rounded-full bg-[#2a655f] shadow-[0_0_10px_rgba(42,101,95,.6)]" />
+
+                          <span className="whitespace-nowrap text-[9px] font-black tracking-[.12em] text-white/45">
+                            {app.lang === "ar"
+                              ? "تسوّق بطريقة مختلفة"
+                              : "A DIFFERENT WAY TO SHOP"}
+                          </span>
+
+                          <span className="h-1 w-2 rounded-full bg-[#f9a8d4] shadow-[0_0_10px_rgba(249,168,212,.6)]" />
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
               </div>
+
+              {/* BOTTOM FEATURES */}
               <div>
-                <div className="font-black text-2xl tracking-tight text-white flex items-center gap-2">
-                  {t("brand")}
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping" />
-                </div>
-                <div className="text-[11px] text-emerald-300 tracking-widest uppercase font-bold mt-0.5 flex items-center gap-1.5 justify-center">
-                  <span className="h-0.5 w-4 bg-emerald-400" />
-                  {t("tagline")}
-                  <span className="h-0.5 w-4 bg-emerald-400" />
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* ===== البطاقة ===== */}
-          <div className="rounded-3xl glass-card shadow-2xl p-6 md:p-8 text-white relative overflow-hidden auth-shimmer">
-            
-            {/* شريط علوي متدرج */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400" />
-            
-            {/* الرأس */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black text-white">
-                {isLogin ? "تسجيل الدخول" : "إنشاء حساب جديد"}
+                <div className="mb-5 flex items-center justify-center gap-2">
+
+                  {[0, 1, 2, 3, 4].map(
+                    (i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() =>
+                          setSlide(i)
+                        }
+                        aria-label={`slide ${
+                          i + 1
+                        }`}
+                        className={cn(
+                          "h-1.5 rounded-full transition-all duration-500",
+                          slide === i
+                            ? "w-12 bg-gradient-to-r from-[#2a655f] via-[#f9a8d4] to-[#fbcfe8] shadow-[0_0_20px_rgba(249,168,212,.7)]"
+                            : "w-2 bg-white/20 hover:bg-[#2a655f]/70"
+                        )}
+                      />
+                    )
+                  )}
+
+                </div>
+
+                <div className="grid grid-cols-3 gap-2.5">
+
+                  {[
+                    {
+                      icon: ShoppingBag,
+                      ar: "خيارات بلا حدود",
+                      en: "Endless choices",
+                    },
+                    {
+                      icon: Shield,
+                      ar: "تسوّق بثقة",
+                      en: "Shop with confidence",
+                    },
+                    {
+                      icon: Truck,
+                      ar: "والباقي علينا",
+                      en: "We've got delivery",
+                    },
+                  ].map((item, index) => {
+                    const Icon = item.icon;
+
+                    return (
+                      <div
+                        key={item.en}
+                        className="zooq-glow-card rounded-2xl border border-white/[.07] bg-black/15 px-2 py-3.5 text-center backdrop-blur-md"
+                      >
+                        <Icon
+                          className={cn(
+                            "mx-auto mb-2 h-4 w-4",
+                            index === 1
+                              ? "text-[#2a655f]"
+                              : "text-[#f9a8d4]"
+                          )}
+                        />
+
+                        <span className="text-[9px] font-bold text-white/50">
+                          {app.lang === "ar"
+                            ? item.ar
+                            : item.en}
+                        </span>
+                      </div>
+                    );
+                  })}
+
+                </div>
+
+              </div>
+
+            </div>
+          </section>
+
+          {/* ====================================================
+              MOBILE BRAND
+          ==================================================== */}
+          <section className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-[#092622]/90 p-6 shadow-[0_30px_90px_rgba(0,0,0,.45)] lg:hidden">
+
+            <div className="absolute -end-10 -top-20 h-56 w-56 rounded-full bg-[#f9a8d4]/10 blur-3xl" />
+
+            <div className="absolute -bottom-20 -start-10 h-48 w-48 rounded-full bg-[#2a655f]/20 blur-3xl" />
+
+            <div className="relative flex flex-col items-center text-center">
+
+              <div className="zooq-glass-soft mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5">
+
+                <span className="h-2 w-2 rounded-full bg-[#f9a8d4] shadow-[0_0_12px_rgba(249,168,212,.8)]" />
+
+                <span className="text-[9px] font-black tracking-[.2em] text-white/60">
+                  {app.lang === "ar"
+                    ? "تسوّق بطريقة مختلفة"
+                    : "zooq"}
+                </span>
+
+              </div>
+
+              {/* MOBILE BRAND + LOGO */}
+              <div className="relative flex items-center justify-center gap-4">
+
+                <div className="relative inline-block">
+
+                  <h1
+                    className="zooq-brand-title relative text-[4rem] font-black leading-none tracking-[-.08em]"
+                    dir="rtl"
+                  >
+                    <span className="bg-gradient-to-r from-white to-[#f9a8d4] bg-clip-text text-transparent">
+                      ذوق
+                    </span>
+                  </h1>
+
+                </div>
+
+                {/* MOBILE ANIMATED LOGO */}
+                <div className="zooq-logo-container relative flex h-28 w-28 shrink-0 items-center justify-center">
+
+                  <div className="zooq-logo-halo absolute -inset-7 rounded-full bg-[#f9a8d4]/10 blur-3xl" />
+
+                  <div className="absolute -inset-4 rounded-full bg-[#2a655f]/10 blur-2xl" />
+
+                  <div className="zooq-logo-ring absolute inset-1 rounded-full border border-[#f9a8d4]/10 border-t-[#2a655f]/50 border-b-[#f9a8d4]/25" />
+
+                  <div className="zooq-logo-motion relative z-10 h-full w-full">
+
+                    <img
+                      src="/images/Logo.png"
+                      alt="ذوق | zooq"
+                      draggable={false}
+                      className="zooq-logo-image h-full w-full object-contain drop-shadow-[0_20px_32px_rgba(0,0,0,.7)]"
+                    />
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div className="mt-2 flex items-center justify-center gap-3">
+
+                <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#2a655f]" />
+
+                <span className="text-2xl font-black tracking-[.16em]">
+
+                  <span className="text-[#2a655f]">
+                    z
+                  </span>
+
+                  <span className="text-[#f9a8d4]">
+                    o
+                  </span>
+
+                  <span className="text-[#2a655f]">
+                    o
+                  </span>
+
+                  <span className="text-[#2a655f]">
+                    q
+                  </span>
+
+                </span>
+
+                <span className="h-px w-8 bg-gradient-to-l from-transparent to-[#f9a8d4]" />
+
+              </div>
+
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#f9a8d4]/15 bg-gradient-to-r from-[#2a655f]/10 to-[#f9a8d4]/[.045] px-3 py-1.5">
+
+                <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
+
+                <span className="text-[9px] font-black tracking-[.08em] text-white/60">
+                  {app.lang === "ar"
+                    ? "تسوّق بطريقة مختلفة"
+                    : "A DIFFERENT WAY TO SHOP"}
+                </span>
+
+                <span className="h-1.5 w-1.5 rounded-full bg-[#f9a8d4]" />
+
+              </div>
+
+              <h2 className="mt-5 text-xl font-black leading-tight text-white">
+
+                {app.lang === "ar" ? (
+                  <>
+                    {slide === 1 ? (
+                      <>
+                        مو بس{" "}
+                        <span className="text-[#f9a8d4]">
+                          تسوّق…
+                        </span>
+                      </>
+                    ) : slide === 0 ? (
+                      <>
+                        كل{" "}
+                        <span className="text-[#fbcfe8]">
+                          ذوق
+                        </span>
+                        … إله مكان.
+                      </>
+                    ) : slide === 2 ? (
+                      <>
+                        الاختيار إلو{" "}
+                        <span className="text-[#f9a8d4]">
+                          ذوق.
+                        </span>
+                      </>
+                    ) : slide === 3 ? (
+                      <>
+                        اللي بتدور عليه…{" "}
+                        <span className="text-[#fbcfe8]">
+                          أقرب
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        خلّي{" "}
+                        <span className="text-[#f9a8d4]">
+                          ذوقك
+                        </span>{" "}
+                        يحكي.
+                      </>
+                    )}
+                  </>
+                ) : (
+                  currentSlide.enTitle
+                )}
+
               </h2>
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/20 backdrop-blur border border-emerald-400/30 grid place-items-center animate-pulse">
-                <Sparkles className="h-5 w-5 text-emerald-300" />
-              </div>
-            </div>
-            <p className="text-emerald-300/80 text-sm mt-1">
-              {isLogin ? "أهلاً بعودتك 👋" : "خطوة واحدة تفصلك عن عالم التسوق 🛍️"}
-            </p>
 
-            {/* ===== النموذج ===== */}
-            <form className="space-y-3.5 mt-5" onSubmit={handleSubmit} autoComplete="off">
-              
-              {/* ✅ الاسم الكامل (للتسجيل فقط) */}
+              <div className="mt-2 flex max-w-xs items-start gap-2 text-start">
+
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#2a655f]" />
+
+                <p className="text-xs font-medium leading-6 text-white/55">
+                  {app.lang === "ar"
+                    ? currentSlide.arText
+                    : currentSlide.enText}
+                </p>
+
+              </div>
+
+              {/* MOBILE PREMIUM LOGO PANEL */}
+              <div className="zooq-logo-float relative mt-7 flex w-full items-center justify-center">
+
+                <div className="absolute -inset-10 rounded-full bg-[#f9a8d4]/10 blur-3xl" />
+
+                <div className="absolute -inset-4 rounded-full bg-[#2a655f]/15 blur-2xl" />
+
+                <div className="zooq-logo-container group relative flex min-h-48 w-full max-w-[22rem] items-center justify-center overflow-hidden rounded-[2rem] border border-white/[.10] bg-white/[.025] px-4 py-5 shadow-[0_30px_65px_rgba(0,0,0,.55)] backdrop-blur-xl">
+
+                  <div className="pointer-events-none absolute inset-2 rounded-[1.6rem] border border-white/[.055]" />
+
+                  <div className="pointer-events-none absolute -right-2 -top-2 h-14 w-14 rounded-full bg-[#f9a8d4]/10 blur-xl" />
+
+                  <div className="pointer-events-none absolute -bottom-2 -left-2 h-14 w-14 rounded-full bg-[#2a655f]/25 blur-xl" />
+
+                  <div className="relative z-10 flex items-center justify-center gap-4">
+
+                    {/* MOBILE REAL LOGO */}
+                    <div className="relative flex h-28 w-28 shrink-0 items-center justify-center">
+
+                      <div className="zooq-logo-halo absolute -inset-6 rounded-full bg-[#fbcfe8]/[.06] blur-2xl" />
+
+                      <div className="zooq-logo-ring absolute inset-1 rounded-full border border-[#f9a8d4]/10 border-t-[#2a655f]/50" />
+
+                      <div className="zooq-logo-motion relative z-10 h-full w-full">
+
+                        <img
+                          src="/images/Logo.png"
+                          alt="ذوق | zooq"
+                          draggable={false}
+                          className="zooq-logo-image h-full w-full object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,.65)]"
+                        />
+
+                      </div>
+
+                    </div>
+
+                    <div className="h-20 w-px bg-gradient-to-b from-transparent via-[#2a655f]/35 via-[#f9a8d4]/25 to-transparent" />
+
+                    <div className="flex flex-col items-start text-start">
+
+                      <div
+                        dir="rtl"
+                        className="bg-gradient-to-r from-white to-[#f9a8d4] bg-clip-text text-[3.2rem] font-black leading-none tracking-[-.08em] text-transparent"
+                      >
+                        ذوق
+                      </div>
+
+                      <div className="mt-2 text-xl font-black tracking-[.16em]">
+
+                        <span className="text-[#2a655f]">
+                          z
+                        </span>
+
+                        <span className="text-[#f9a8d4]">
+                          o
+                        </span>
+
+                        <span className="text-[#2a655f]">
+                          o
+                        </span>
+
+                        <span className="text-[#2a655f]">
+                          q
+                        </span>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div className="mt-5 flex gap-1.5">
+
+                {[0, 1, 2, 3, 4].map(
+                  (i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() =>
+                        setSlide(i)
+                      }
+                      aria-label={`slide ${
+                        i + 1
+                      }`}
+                      className={cn(
+                        "h-1.5 rounded-full transition-all duration-500",
+                        slide === i
+                          ? "w-8 bg-gradient-to-r from-[#2a655f] via-[#f9a8d4] to-[#fbcfe8]"
+                          : "w-1.5 bg-white/20"
+                      )}
+                    />
+                  )
+                )}
+
+              </div>
+
+            </div>
+          </section>
+
+          {/* ====================================================
+              AUTH CARD
+          ==================================================== */}
+          <section className="zooq-glass relative overflow-hidden rounded-[2rem] p-5 sm:p-7 xl:p-8">
+
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#f9a8d4] to-[#2a655f] opacity-90" />
+
+            <div className="absolute -end-20 -top-24 h-60 w-60 rounded-full bg-[#f9a8d4]/7 blur-3xl" />
+
+            <div className="absolute -bottom-24 -start-20 h-60 w-60 rounded-full bg-[#2a655f]/20 blur-3xl" />
+
+            {/* HEADER */}
+            <div className="relative mb-7">
+
+              <div className="mb-5 flex items-center justify-between">
+
+                <div className="flex items-center gap-3">
+
+                  <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[#f9a8d4]/20 bg-gradient-to-br from-[#2a655f]/20 to-[#f9a8d4]/[.07]">
+
+                    <div className="absolute inset-0 rounded-2xl bg-[#f9a8d4]/5 blur-md" />
+
+                    <Sparkles className="relative h-5 w-5 text-[#f9a8d4]" />
+
+                  </div>
+
+                  <div>
+
+                    <div className="flex items-center gap-2">
+
+                      <span
+                        className="bg-gradient-to-r from-white to-[#f9a8d4] bg-clip-text text-2xl font-black tracking-tight text-transparent"
+                        dir="rtl"
+                      >
+                        ذوق
+                      </span>
+
+                      <span className="h-5 w-px bg-white/15" />
+
+                      <span className="text-sm font-black tracking-[.16em]">
+
+                        <span className="text-[#2a655f]">
+                          z
+                        </span>
+
+                        <span className="text-[#f9a8d4]">
+                          o
+                        </span>
+
+                        <span className="text-[#2a655f]">
+                          o
+                        </span>
+
+                        <span className="text-[#2a655f]">
+                          q
+                        </span>
+
+                      </span>
+
+                    </div>
+
+                    <p className="mt-0.5 text-[9px] font-bold tracking-[.08em] text-white/30">
+                      {app.lang === "ar"
+                        ? "تسوّق بطريقة مختلفة"
+                        : "A DIFFERENT WAY TO SHOP"}
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              <h2 className="text-3xl font-black tracking-tight text-white">
+
+                {isLogin
+                  ? app.lang === "ar"
+                    ? "رجعت لمكانك. 👋"
+                    : "Welcome back. 👋"
+                  : app.lang === "ar"
+                    ? "جاهز تكتشف ذوقك؟"
+                    : "Ready to discover your taste?"}
+
+              </h2>
+
+              <p className="mt-2 max-w-sm text-xs font-medium leading-6 text-white/45">
+
+                {isLogin
+                  ? app.lang === "ar"
+                    ? "سجّل دخولك… وخلي رحلتك مع ذوق تكمل من محل ما وقفت."
+                    : "Sign in and continue your Zooq journey right where you left off."
+                  : app.lang === "ar"
+                    ? "حساب واحد بيفتحلك عالم من الخيارات. والبداية من هون."
+                    : "One account opens the door to a world of choices."}
+
+              </p>
+
+            </div>
+
+            <form
+              className="relative space-y-4"
+              onSubmit={handleSubmit}
+              autoComplete="off"
+            >
+
+              {/* FULL NAME */}
               {isRegister && (
-                <GlassField label={t("full_name") + " *"} icon={<FloatingFieldIcon Icon={UserIcon} className="h-4 w-4 text-emerald-300" delay={0} />}>
-                  <Input 
-                    value={fullName} 
-                    onChange={(e) => setFullName(e.target.value)} 
-                    required 
+                <GlassField
+                  label={t("full_name") + " *"}
+                  icon={
+                    <UserIcon className="h-4 w-4 text-[#f9a8d4]" />
+                  }
+                >
+                  <Input
+                    value={fullName}
+                    onChange={(e) =>
+                      setFullName(
+                        e.target.value
+                      )
+                    }
+                    required
                     autoComplete="off"
-                    className="input-glow transition-all duration-300 rounded-xl" 
-                    placeholder={app.lang === "ar" ? "أدخل اسمك الكامل" : "Enter your full name"}
+                    className="input-glow rounded-2xl border-0 transition-all duration-300"
+                    placeholder={
+                      app.lang === "ar"
+                        ? "الاسم اللي بتحب نناديك فيه"
+                        : "The name you'd like us to call you"
+                    }
                   />
                 </GlassField>
               )}
 
-              {/* ✅ رقم الهاتف */}
-              <GlassField label={t("phone") + " *"} icon={<FloatingFieldIcon Icon={Phone} className="h-4 w-4 text-emerald-300" delay={100} />}>
-                <div className="relative">
-                  <Input 
-                    type="tel" 
-                    placeholder="+963 9xx xxx xxx" 
-                    value={phone} 
-                    onChange={(e) => setPhone(e.target.value)} 
-                    required 
+              {/* PHONE */}
+              <GlassField
+                label={t("phone") + " *"}
+                icon={
+                  <Phone className="h-4 w-4 text-[#f9a8d4]" />
+                }
+              >
+                <div className="zooq-input relative rounded-2xl">
+
+                  <Input
+                    type="tel"
+                    placeholder="+963 9xx xxx xxx"
+                    value={phone}
+                    onChange={(e) =>
+                      setPhone(
+                        e.target.value
+                      )
+                    }
+                    required
                     autoComplete="off"
-                    className={`
-                      input-glow transition-all duration-300 rounded-xl
-                      ${phoneError && isRegister ? 'border-red-500 focus-visible:ring-red-500 focus-visible:ring-2' : ''}
-                      ${phoneAvailable === true && isRegister && phone.trim().length >= 5 ? 'border-emerald-400' : ''}
-                    `}
+                    className={`input-glow rounded-2xl border-0 pe-10 transition-all duration-300 ${
+                      phoneError &&
+                      isRegister
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : ""
+                    } ${
+                      phoneAvailable ===
+                        true &&
+                      isRegister &&
+                      phone.trim()
+                        .length >= 5
+                        ? "border-[#f9a8d4]"
+                        : ""
+                    }`}
                   />
-                  {isRegister && phone.trim().length >= 5 && (
-                    <div className="absolute inset-y-0 end-3 flex items-center">
-                      {isCheckingPhone ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-emerald-300" />
-                      ) : phoneAvailable === true ? (
-                        <CheckCircle className="h-4 w-4 text-emerald-400" />
-                      ) : phoneAvailable === false ? (
-                        <X className="h-4 w-4 text-red-400" />
-                      ) : null}
-                    </div>
-                  )}
+
+                  {isRegister &&
+                    phone.trim()
+                      .length >= 5 && (
+                      <div className="absolute inset-y-0 end-3 flex items-center">
+
+                        {isCheckingPhone ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-[#f9a8d4]" />
+                        ) : phoneAvailable ===
+                          true ? (
+                          <CheckCircle className="h-4 w-4 text-[#2a655f]" />
+                        ) : phoneAvailable ===
+                          false ? (
+                          <X className="h-4 w-4 text-red-400" />
+                        ) : null}
+
+                      </div>
+                    )}
+
                 </div>
               </GlassField>
 
-              {/* ✅ حالة رقم الهاتف - رسائل تحذيرية فقط */}
-              {isRegister && phone.trim().length >= 5 && phoneError && (
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-red-500/25 border-2 border-red-500/40 shadow-lg shadow-red-500/10 animate-in slide-in-from-top-2 duration-300">
-                  <div className="h-8 w-8 rounded-full bg-red-500/30 flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="h-4 w-4 text-red-300" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-red-200">
-                      {phoneError.includes("صيغة") || phoneError.includes("يبدأ") 
-                        ? "⚠️ صيغة الرقم غير صحيحة" 
-                        : phoneError.includes("مستخدم")
-                        ? "⚠️ رقم الهاتف مستخدم"
-                        : "⚠️ خطأ في الرقم"}
-                    </p>
-                    <p className="text-xs text-red-300/80">
+              {/* PHONE ERROR */}
+              {isRegister &&
+                phone.trim()
+                  .length >= 5 &&
+                phoneError && (
+                  <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-3.5">
+
+                    <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+
+                    <p className="text-xs font-semibold text-red-200">
                       {phoneError}
                     </p>
-                  </div>
-                </div>
-              )}
 
-              {/* ✅ كلمة المرور */}
-              <GlassField label={t("password") + " *"} icon={<FloatingFieldIcon Icon={Lock} className="h-4 w-4 text-emerald-300" delay={200} />}>
-                <div className="relative">
-                  <Input 
-                    type={showPassword ? "text" : "password"} 
-                    value={password} 
-                    onChange={(e) => setPassword(e.target.value)} 
-                    required 
+                  </div>
+                )}
+
+              {/* PASSWORD */}
+              <GlassField
+                label={t("password") + " *"}
+                icon={
+                  <Lock className="h-4 w-4 text-[#f9a8d4]" />
+                }
+              >
+                <div className="zooq-input relative rounded-2xl">
+
+                  <Input
+                    type={
+                      showPassword
+                        ? "text"
+                        : "password"
+                    }
+                    value={password}
+                    onChange={(e) =>
+                      setPassword(
+                        e.target.value
+                      )
+                    }
+                    required
                     minLength={6}
                     autoComplete="off"
-                    className="pe-10 input-glow transition-all duration-300 rounded-xl"
-                    placeholder={app.lang === "ar" ? "كلمة مرور قوية (6 أحرف على الأقل)" : "Strong password (6+ characters)"}
+                    className="input-glow rounded-2xl border-0 pe-10 transition-all duration-300"
+                    placeholder={
+                      app.lang === "ar"
+                        ? "كلمة المرور — 6 أحرف على الأقل"
+                        : "Password — 6+ characters"
+                    }
                   />
+
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 my-auto end-3 text-emerald-400/70 hover:text-emerald-300 transition"
+                    onClick={() =>
+                      setShowPassword(
+                        !showPassword
+                      )
+                    }
+                    className="absolute inset-y-0 end-3 my-auto text-[#f9a8d4]/70 transition hover:text-[#f9a8d4]"
+                    aria-label={
+                      showPassword
+                        ? "Hide password"
+                        : "Show password"
+                    }
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
+
                 </div>
               </GlassField>
 
-              {/* ✅ العنوان (للتسجيل فقط) */}
+              {/* ADDRESS */}
               {isRegister && (
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-white/90 flex items-center gap-2">
-                    <span className="h-1 w-3 rounded-full bg-emerald-400/60" />
-                    {app.lang === "ar" ? "📍 العنوان *" : "📍 Address *"}
+
+                  <Label className="flex items-center gap-2 text-xs font-bold text-white/85">
+
+                    <span className="h-1 w-3 rounded-full bg-[#f9a8d4] shadow-[0_0_10px_rgba(249,168,212,.55)]" />
+
+                    {app.lang === "ar"
+                      ? "وين بدنا نوصل طلباتك؟ *"
+                      : "Where should we deliver? *"}
+
                   </Label>
-                  <div className="rounded-xl bg-white/95 text-slate-800 p-3 border-2 border-emerald-400/30 focus-within:border-emerald-400/60 transition-all duration-300 shadow-inner">
-                    <AddressPicker 
-                      value={location ?? undefined} 
-                      onChange={setLocation} 
-                      lang={app.lang} 
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[.96] p-3 text-slate-800 transition-all duration-300 focus-within:border-[#f9a8d4]/60 focus-within:shadow-[0_0_0_3px_rgba(249,168,212,.08)]">
+
+                    <AddressPicker
+                      value={
+                        location ??
+                        undefined
+                      }
+                      onChange={
+                        setLocation
+                      }
+                      lang={app.lang}
                     />
+
                   </div>
-                  
-                  {/* عرض المحافظة المكتشفة */}
-                  {location && (
-                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30">
-                      {isExtractingGovernorate ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-emerald-300" />
-                      ) : (
-                        <MapPin className="h-4 w-4 text-emerald-300" />
-                      )}
-                      <span className="text-sm text-emerald-200 font-medium">
-                        {isExtractingGovernorate 
-                          ? (app.lang === "ar" ? "جاري تحديد المحافظة..." : "Detecting governorate...")
-                          : detectedGovernorate 
-                            ? (app.lang === "ar" ? `🏛️ المحافظة: ${detectedGovernorate}` : `🏛️ Governorate: ${detectedGovernorate}`)
-                            : (app.lang === "ar" ? "⚠️ لم يتم تحديد المحافظة" : "⚠️ Governorate not detected")
-                        }
-                      </span>
-                    </div>
-                  )}
+
+                  {location &&
+                    detectedGovernorate && (
+                      <div className="flex items-center gap-2 rounded-xl border border-[#f9a8d4]/20 bg-gradient-to-r from-[#2a655f]/10 to-[#f9a8d4]/[.07] p-2.5">
+
+                        {isExtractingGovernorate ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#f9a8d4]" />
+                        ) : (
+                          <MapPin className="h-3.5 w-3.5 text-[#2a655f]" />
+                        )}
+
+                        <span className="text-[11px] font-medium text-[#fbcfe8]">
+
+                          {isExtractingGovernorate
+                            ? app.lang ===
+                              "ar"
+                              ? "عم نحدد منطقتك..."
+                              : "Detecting your area..."
+                            : detectedGovernorate
+                              ? app.lang ===
+                                "ar"
+                                ? `المحافظة: ${detectedGovernorate}`
+                                : `Governorate: ${detectedGovernorate}`
+                              : app.lang ===
+                                "ar"
+                                ? "⚠️ لم يتم التحديد"
+                                : "⚠️ Not detected"}
+
+                        </span>
+
+                      </div>
+                    )}
+
                 </div>
               )}
 
-              {/* ✅ زر الإرسال */}
-              <Button 
-                type="submit" 
-                size="lg" 
-                className="w-full h-12 btn-submit text-white font-bold text-base rounded-xl shadow-2xl shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-300 relative overflow-hidden group"
-                disabled={loading || (isRegister && (phoneAvailable === false || phoneError !== null))}
+              {/* SUBMIT */}
+              <Button
+                type="submit"
+                size="lg"
+                className="zooq-submit group relative mt-2 h-13 w-full overflow-hidden rounded-2xl border-0 text-base font-black"
+                disabled={
+                  loading ||
+                  (isRegister &&
+                    (phoneAvailable ===
+                      false ||
+                      phoneError !==
+                        null))
+                }
               >
-                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+
+                <span className="zooq-shine pointer-events-none absolute inset-y-0 -start-1/2 w-1/2 skew-x-[-18deg] bg-white/20 animate-[zooq-shine_2.8s_ease-in-out_infinite]" />
+
                 {loading ? (
-                  <span className="flex items-center gap-2 relative z-10">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    {app.lang === "ar" ? "جاري..." : "Loading..."}
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0d2e2a] border-t-transparent" />
+
+                    {app.lang === "ar"
+                      ? "لحظة… عم نجهز كل شي"
+                      : "Just a moment..."}
+
                   </span>
                 ) : (
-                  <span className="flex items-center gap-2 relative z-10">
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+
                     {isLogin ? (
-                      <>
-                        <Lock className="h-4 w-4" />
-                        {t("login")}
-                      </>
+                      <Lock className="h-4 w-4" />
                     ) : (
-                      <>
-                        <UserPlus className="h-4 w-4" />
-                        {t("register")}
-                      </>
+                      <UserPlus className="h-4 w-4" />
                     )}
+
+                    {isLogin
+                      ? app.lang === "ar"
+                        ? "دخول إلى ذوق"
+                        : "Enter Zooq"
+                      : app.lang === "ar"
+                        ? "ابدأ رحلتك مع ذوق"
+                        : "Start your Zooq journey"}
+
                   </span>
                 )}
+
               </Button>
 
-              {/* ✅ الروابط الإضافية */}
-              <div className="text-sm text-center text-white/85 pt-1 space-y-2">
+              {/* LINKS */}
+              <div className="space-y-3 pt-2 text-center text-sm text-white/65">
+
                 {isLogin ? (
                   <>
                     <div>
-                      {(app.lang === "ar" ? "ليس لديك حساب؟" : "No account?")}{" "}
-                      <Link to="/auth/$mode" params={{ mode: "register" }} className="text-emerald-300 font-semibold hover:text-emerald-200 transition hover:underline">
-                        {t("register")}
-                      </Link>
-                    </div>
-                    <div>
-                      <button
-                        type="button"
-                        onClick={handleForgotPasswordClick}
-                        className="text-sm text-white/60 hover:text-white transition underline-offset-2 hover:underline flex items-center justify-center gap-1 mx-auto"
+
+                      {app.lang === "ar"
+                        ? "لسا ما صار عندك حساب؟"
+                        : "Don't have an account?"}{" "}
+
+                      <Link
+                        to="/auth/$mode"
+                        params={{
+                          mode: "register",
+                        }}
+                        className="zooq-link font-black text-[#f9a8d4]"
                       >
-                        <HelpCircle className="h-3.5 w-3.5 text-emerald-300" />
-                        {app.lang === "ar" ? "نسيت كلمة المرور؟" : "Forgot password?"}
-                      </button>
+                        {app.lang === "ar"
+                          ? "خلينا نبدأ"
+                          : "Let's start"}
+                      </Link>
+
                     </div>
-                    
+
+                    <button
+                      type="button"
+                      onClick={
+                        handleForgotPasswordClick
+                      }
+                      className="zooq-link mx-auto flex items-center justify-center gap-1.5 text-xs text-white/40"
+                    >
+
+                      <HelpCircle className="h-3.5 w-3.5 text-[#f9a8d4]" />
+
+                      {app.lang === "ar"
+                        ? "نسيت كلمة المرور؟"
+                        : "Forgot your password?"}
+
+                    </button>
+
                     {app.user && (
-                      <div className="pt-2 border-t border-white/10 mt-2 space-y-1">
+                      <div className="mt-3 space-y-1.5 border-t border-white/8 pt-3">
+
                         {isDeliveryCompany && (
-                          <Link 
-                            to="/delivery/dashboard" 
-                            className="block text-sm text-emerald-300 hover:text-emerald-200 transition font-medium"
+                          <Link
+                            to="/delivery/dashboard"
+                            className="zooq-link block text-xs text-[#f9a8d4]"
                           >
-                            🚚 {app.lang === "ar" ? "لوحة شركة التوصيل" : "Delivery Company Dashboard"}
+                            🚚{" "}
+                            {app.lang === "ar"
+                              ? "لوحة التوصيل"
+                              : "Delivery Dashboard"}
                           </Link>
                         )}
+
                         {isDistributor && (
-                          <Link 
-                            to="/distributor/dashboard" 
-                            className="block text-sm text-blue-300 hover:text-blue-200 transition font-medium"
+                          <Link
+                            to="/distributor/dashboard"
+                            className="zooq-link block text-xs text-[#2a655f]"
                           >
-                            📦 {app.lang === "ar" ? "لوحة الموزع" : "Distributor Dashboard"}
+                            📦{" "}
+                            {app.lang === "ar"
+                              ? "لوحة الموزع"
+                              : "Distributor Dashboard"}
                           </Link>
                         )}
+
                         {isAdmin && (
-                          <Link 
-                            to="/admin" 
-                            className="block text-sm text-red-300 hover:text-red-200 transition font-medium"
+                          <Link
+                            to="/admin"
+                            className="zooq-link block text-xs text-red-300"
                           >
-                            ⚡ {app.lang === "ar" ? "لوحة الأدمن" : "Admin Panel"}
+                            ⚡{" "}
+                            {app.lang === "ar"
+                              ? "لوحة الأدمن"
+                              : "Admin Panel"}
                           </Link>
                         )}
+
                         {isSeller && (
-                          <Link 
-                            to="/dashboard" 
-                            className="block text-sm text-amber-300 hover:text-amber-200 transition font-medium"
+                          <Link
+                            to="/dashboard"
+                            className="zooq-link block text-xs text-amber-300"
                           >
-                            🏪 {app.lang === "ar" ? "لوحة البائع" : "Seller Dashboard"}
+                            🏪{" "}
+                            {app.lang === "ar"
+                              ? "لوحة البائع"
+                              : "Seller Dashboard"}
                           </Link>
                         )}
+
                       </div>
                     )}
+
                   </>
-               ) : (
+                ) : (
                   <>
                     <div>
-                      {(app.lang === "ar" ? "لديك حساب؟" : "Have an account?")}{" "}
-                      <Link to="/auth/$mode" params={{ mode: "login" }} className="text-emerald-300 font-semibold hover:text-emerald-200 transition hover:underline">
-                        {t("login")}
+
+                      {app.lang === "ar"
+                        ? "عندك حساب معنا؟"
+                        : "Already part of Zooq?"}{" "}
+
+                      <Link
+                        to="/auth/$mode"
+                        params={{
+                          mode: "login",
+                        }}
+                        className="zooq-link font-black text-[#f9a8d4]"
+                      >
+                        {app.lang === "ar"
+                          ? "فوت لعندنا"
+                          : "Sign in"}
                       </Link>
+
                     </div>
-                    
-                    {/* ✅ زر التصفح كزائر */}
-                    <div className="relative pt-2">
-                      <div className="relative">
-                        <div className="absolute -top-2 left-0 right-0 flex items-center gap-2">
-                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
-                          <span className="text-[9px] text-emerald-400/40 font-bold tracking-widest whitespace-nowrap">
-                            {app.lang === "ar" ? "أو" : "OR"}
-                          </span>
-                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
-                        </div>
-                        
-                        <Link
-                          to="/"
-                          className="group relative block w-full mt-3"
-                        >
-                          <Button
-                            variant="outline"
-                            className="w-full h-11 rounded-xl border-2 border-emerald-400/40 hover:border-emerald-400/70 bg-emerald-500/10 hover:bg-emerald-500/20 text-white font-bold text-sm transition-all duration-300 hover:scale-[1.02] active:scale-95 relative overflow-hidden shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40"
-                          >
-                            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                            
-                            <span className="relative flex items-center justify-center gap-2.5">
-                              <span className="flex items-center gap-1">
-                                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse delay-200" />
-                                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse delay-400" />
-                              </span>
-                              
-                              <span className="text-emerald-200 font-extrabold tracking-wide">
-                                {app.lang === "ar" ? "👀 تصفح كزائر" : "👀 Browse as Guest"}
-                              </span>
-                              
-                              <span className="inline-block animate-pulse text-emerald-300">
-                                →
-                              </span>
-                            </span>
-                          </Button>
-                        </Link>
-                        
-                        <p className="text-[10px] text-emerald-300/60 mt-1.5 flex items-center justify-center gap-1">
-                          <Shield className="h-3 w-3 text-emerald-400/40" />
-                          {app.lang === "ar" 
-                            ? "✨ تصفح المتجر واكتشف المنتجات بدون تسجيل" 
-                            : "✨ Browse the store and discover products without signing up"}
-                        </p>
+
+                    <div className="relative pt-4">
+
+                      <div className="absolute inset-x-0 top-0 flex items-center gap-3">
+
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#2a655f]/20" />
+
+                        <span className="text-[9px] font-black tracking-[.25em] text-white/25">
+                          {app.lang === "ar"
+                            ? "أو"
+                            : "OR"}
+                        </span>
+
+                        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#f9a8d4]/20" />
+
                       </div>
+
+                      <Link
+                        to="/"
+                        className="block w-full"
+                      >
+                        <Button
+                          variant="outline"
+                          className="mt-2 h-11 w-full rounded-2xl border-white/10 bg-white/[.035] text-sm font-bold text-white hover:border-[#f9a8d4]/35 hover:bg-[#2a655f]/10 hover:text-white"
+                        >
+                          {app.lang === "ar"
+                            ? "خليني اكتشف أول 👀"
+                            : "Let me explore first 👀"}
+                        </Button>
+                      </Link>
+
+                      <p className="mt-2 text-[10px] text-white/30">
+
+                        {app.lang === "ar"
+                          ? "تصفح، اكتشف، وخلي التسجيل لوقت ما تكون جاهز."
+                          : "Explore first. Sign up when you're ready."}
+
+                      </p>
+
                     </div>
                   </>
                 )}
+
               </div>
+
             </form>
-          </div>
 
-          {/* ============================================================ */}
-          {/* ✅ الفوتر الداخلي */}
-          {/* ============================================================ */}
-          <div className="mt-6 pt-4 border-t border-white/10">
-            
-            {/* رقم الهاتف */}
-            <div className="text-center mb-3">
-              <a 
-                href="tel:+963110000000" 
-                dir="ltr"
-                className="text-sm text-white/70 hover:text-emerald-300 transition font-mono flex items-center justify-center gap-2 group"
-              >
-                <Phone className="h-3.5 w-3.5 text-emerald-400/60 group-hover:text-emerald-300 transition" />
-                <span className="group-hover:tracking-wider transition-all">+963 11 000 0000</span>
-              </a>
-            </div>
+            {/* BRAND FOOTER */}
+            <div className="relative mt-7 flex flex-col items-center justify-center gap-2 border-t border-white/7 pt-5 text-center">
 
-            {/* مواقع التواصل الاجتماعي */}
-            <div className="flex items-center justify-center gap-2 mb-3">
-              {[
-                { icon: Twitter, label: "Twitter", color: "hover:text-[#1a9cd8]" },
-                { icon: Instagram, label: "Instagram", color: "hover:text-pink-500" },
-                { icon: Facebook, label: "Facebook", color: "hover:text-[#1877f2]" },
-                { icon: Youtube, label: "YouTube", color: "hover:text-red-500" },
-                { icon: Globe, label: "Website", color: "hover:text-emerald-300" },
-              ].map((social, i) => {
-                const Icon = social.icon;
-                return (
-                  <a
-                    key={i}
-                    href="#"
-                    aria-label={social.label}
-                    className={cn(
-                      "h-9 w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center",
-                      "text-white/60 hover:text-white transition-all duration-300 hover:scale-110 hover:-translate-y-1",
-                      "hover:bg-white/10 hover:border-emerald-400/30",
-                      social.color
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </a>
-                );
-              })}
-            </div>
+              <div className="flex items-center gap-2">
 
-            {/* روابط السياسات */}
-            <div className="flex flex-wrap items-center justify-center gap-3 text-[11px]">
-              <Link to="/privacy" className="text-white/50 hover:text-emerald-300 transition footer-link">
-                {app.lang === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}
-              </Link>
-              <span className="text-white/20">•</span>
-              <Link to="/terms" className="text-white/50 hover:text-emerald-300 transition footer-link">
-                {app.lang === "ar" ? "الشروط والأحكام" : "Terms & Conditions"}
-              </Link>
-              <span className="text-white/20">•</span>
-              <Link to="/faq" className="text-white/50 hover:text-emerald-300 transition footer-link">
-                {app.lang === "ar" ? "الأسئلة الشائعة" : "FAQ"}
-              </Link>
-              <span className="text-white/20">•</span>
-              <span className="text-white/30 text-[10px]">
-                © {year} {t("brand")}
-              </span>
-            </div>
+                <span className="h-1 w-1 rounded-full bg-[#2a655f] shadow-[0_0_8px_rgba(42,101,95,.8)]" />
 
-            {/* شارة الأمان */}
-            <div className="mt-3 flex items-center justify-center gap-2">
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+                <span className="text-[9px] font-black tracking-[.28em] text-white/25">
+                  zooq
                 </span>
-                <span className="text-emerald-300 font-medium text-[10px]">
-                  {app.lang === "ar" ? "نظام آمن ومشفر" : "Secure & Encrypted"}
-                </span>
+
+                <span className="h-1 w-1 rounded-full bg-[#f9a8d4] shadow-[0_0_8px_rgba(249,168,212,.8)]" />
+
               </div>
-            </div>
-          </div>
 
-          {/* نقاط التنقل في السلايدر */}
-          <div className="mt-4 flex justify-center gap-2">
-            {SLIDER_IMAGES.map((_, i) => (
-              <button 
-                key={i} 
-                onClick={() => setSlide(i)} 
-                aria-label={`slide ${i}`}
-                className={`slide-indicator h-1.5 rounded-full transition-all duration-300 ${
-                  slide === i 
-                    ? "w-8 bg-emerald-400 shadow-lg shadow-emerald-500/50" 
-                    : "w-2 bg-white/30 hover:bg-white/60"
-                }`} 
-              />
-            ))}
-          </div>
+              <p className="text-[10px] font-semibold text-white/30">
+                {app.lang === "ar"
+                  ? "تسوّق بطريقة مختلفة."
+                  : "A different way to shop."}
+              </p>
+
+            </div>
+
+          </section>
+
         </div>
       </div>
 
-      {/* زر الدعم */}
+      {/* ======================================================
+          FOOTER
+      ====================================================== */}
+      <div className="relative mx-auto w-full max-w-7xl px-4 pb-7 sm:px-6 lg:px-8">
+
+        <div className="mx-auto max-w-4xl border-t border-white/7 pt-5">
+
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+
+            <a
+              href="tel:+963110000000"
+              dir="ltr"
+              className="zooq-link flex items-center gap-2 text-xs font-mono text-white/35"
+            >
+
+              <Phone className="h-3.5 w-3.5 text-[#f9a8d4]" />
+
+              +963 11 000 0000
+
+            </a>
+
+            <div className="flex items-center gap-1.5">
+
+              {[
+                {
+                  icon: Twitter,
+                  label: "Twitter",
+                },
+                {
+                  icon: Instagram,
+                  label: "Instagram",
+                },
+                {
+                  icon: Facebook,
+                  label: "Facebook",
+                },
+                {
+                  icon: Youtube,
+                  label: "YouTube",
+                },
+                {
+                  icon: Globe,
+                  label: "Website",
+                },
+              ].map((social) => {
+                const Icon =
+                  social.icon;
+
+                return (
+                  <a
+                    key={
+                      social.label
+                    }
+                    href="#"
+                    aria-label={
+                      social.label
+                    }
+                    className="zooq-social flex h-8 w-8 items-center justify-center rounded-xl border border-white/7 bg-white/[.025] text-white/30"
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </a>
+                );
+              })}
+
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2 text-[10px]">
+
+              <Link
+                to="/privacy"
+                className="zooq-link text-white/32"
+              >
+                {app.lang === "ar"
+                  ? "الخصوصية"
+                  : "Privacy"}
+              </Link>
+
+              <span className="text-white/15">
+                •
+              </span>
+
+              <Link
+                to="/terms"
+                className="zooq-link text-white/32"
+              >
+                {app.lang === "ar"
+                  ? "الشروط"
+                  : "Terms"}
+              </Link>
+
+              <span className="text-white/15">
+                •
+              </span>
+
+              <span className="text-white/25">
+                © {year} ذوق
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
       <SupportButton />
+
     </div>
   );
 }
@@ -1325,286 +2989,475 @@ function AuthPage() {
 // ============================================================
 function SupportButton() {
   const app = useApp();
-  
-  const [isOpen, setIsOpen] = useState(false);
-  const [message, setMessage] = useState("");
-  const [subject, setSubject] = useState("");
-  const [visitorPhone, setVisitorPhone] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+
+  const [isOpen, setIsOpen] =
+    useState(false);
+  const [message, setMessage] =
+    useState("");
+  const [subject, setSubject] =
+    useState("");
+  const [visitorPhone, setVisitorPhone] =
+    useState("");
+  const [isLoading, setIsLoading] =
+    useState(false);
+  const [isSuccess, setIsSuccess] =
+    useState(false);
+  const [isHovered, setIsHovered] =
+    useState(false);
 
   const handleOpenSupport = () => {
     setIsOpen(true);
   };
 
-  const handleSubmitSupport = async () => {
-    const phone = app.user?.phone || visitorPhone.trim();
-    if (!phone) {
-      toast.error(app.lang === "ar" ? "الرجاء إدخال رقم هاتفك للتواصل معك" : "Please enter your phone number");
-      return;
-    }
-    
-    if (!message.trim()) {
-      toast.error(app.lang === "ar" ? "الرجاء كتابة رسالتك" : "Please write your message");
-      return;
-    }
+  const handleSubmitSupport =
+    async () => {
+      const phone =
+        app.user?.phone ||
+        visitorPhone.trim();
 
-    setIsLoading(true);
-    try {
-      const { data: adminData, error: adminError } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin")
-        .limit(1)
-        .single();
+      if (!phone) {
+        toast.error(
+          app.lang === "ar"
+            ? "الرجاء إدخال رقم هاتفك للتواصل معك"
+            : "Please enter your phone number"
+        );
 
-      if (adminError || !adminData) {
-        toast.error(app.lang === "ar" ? "حدث خطأ، يرجى المحاولة لاحقاً" : "Error, please try again later");
         return;
       }
 
-      const adminId = adminData.user_id;
-      const userId = app.user?.id || adminId;
-      const userPhone = app.user?.phone || visitorPhone.trim();
-      const isRegistered = !!app.user;
+      if (!message.trim()) {
+        toast.error(
+          app.lang === "ar"
+            ? "الرجاء كتابة رسالتك"
+            : "Please write your message"
+        );
 
-      const { data: newConversation, error: convError } = await supabase
-        .from("conversations")
-        .insert({
-          participant1_id: userId,
-          participant2_id: adminId,
-          last_message: message.substring(0, 100),
-          last_message_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+        return;
+      }
 
-      if (convError) throw convError;
-      const conversationId = newConversation.id;
+      setIsLoading(true);
 
-      const { error: msgError } = await supabase
-        .from("messages")
-        .insert({
-          sender_id: userId,
-          receiver_id: adminId,
-          conversation_id: conversationId,
-          content: `📩 رسالة دعم\n📞 من: ${userPhone}\n${isRegistered ? '✅ مستخدم مسجل' : '❌ زائر (ليس لديه حساب)'}\nالموضوع: ${subject || "دعم"}\n\nالرسالة:\n${message}`,
-          type: "text",
-          created_at: new Date().toISOString(),
-        });
+      try {
+        const {
+          data: adminData,
+          error: adminError,
+        } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "admin")
+          .limit(1)
+          .single();
 
-      if (msgError) throw msgError;
+        if (
+          adminError ||
+          !adminData
+        ) {
+          toast.error(
+            app.lang === "ar"
+              ? "حدث خطأ، يرجى المحاولة لاحقاً"
+              : "Error, please try again later"
+          );
 
-      await supabase
-        .from("notifications")
-        .insert({
-          user_id: adminId,
-          type: "support",
-          title_ar: "📩 رسالة دعم جديدة",
-          body_ar: `📞 من: ${userPhone}\n${isRegistered ? '✅ مسجل' : '❌ زائر'}\nالموضوع: ${subject || "دعم"}`,
-          reference_id: conversationId,
-          link_url: `/messages/${conversationId}`,
-          created_at: new Date().toISOString(),
-        });
+          return;
+        }
 
-      setIsSuccess(true);
-      setTimeout(() => {
-        setIsOpen(false);
-        setIsSuccess(false);
-        setMessage("");
-        setSubject("");
-        setVisitorPhone("");
-      }, 2000);
+        const adminId =
+          adminData.user_id;
 
-      toast.success(
-        app.lang === "ar" 
-          ? "✅ تم إرسال رسالتك بنجاح! سنرد عليك خلال ثواني ⚡" 
-          : "✅ Message sent successfully! We'll reply within seconds ⚡"
-      );
+        const userId =
+          app.user?.id ||
+          adminId;
 
-    } catch (error) {
-      console.error("Error sending support message:", error);
-      toast.error(app.lang === "ar" ? "حدث خطأ أثناء الإرسال" : "Error sending message");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        const userPhone =
+          app.user?.phone ||
+          visitorPhone.trim();
+
+        const isRegistered =
+          !!app.user;
+
+        const {
+          data: newConversation,
+          error: convError,
+        } = await supabase
+          .from("conversations")
+          .insert({
+            participant1_id:
+              userId,
+            participant2_id:
+              adminId,
+            last_message:
+              message.substring(
+                0,
+                100
+              ),
+            last_message_at:
+              new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (convError) {
+          throw convError;
+        }
+
+        const conversationId =
+          newConversation.id;
+
+        const {
+          error: msgError,
+        } = await supabase
+          .from("messages")
+          .insert({
+            sender_id: userId,
+            receiver_id: adminId,
+            conversation_id:
+              conversationId,
+            content: `📩 رسالة دعم\n📞 من: ${userPhone}\n${
+              isRegistered
+                ? "✅ مستخدم مسجل"
+                : "❌ زائر (ليس لديه حساب)"
+            }\nالموضوع: ${
+              subject || "دعم"
+            }\n\nالرسالة:\n${message}`,
+            type: "text",
+            created_at:
+              new Date().toISOString(),
+          });
+
+        if (msgError) {
+          throw msgError;
+        }
+
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: adminId,
+            type: "support",
+            title_ar:
+              "📩 رسالة دعم جديدة",
+            body_ar: `📞 من: ${userPhone}\n${
+              isRegistered
+                ? "✅ مسجل"
+                : "❌ زائر"
+            }\nالموضوع: ${
+              subject || "دعم"
+            }`,
+            reference_id:
+              conversationId,
+            link_url: `/messages/${conversationId}`,
+            created_at:
+              new Date().toISOString(),
+          });
+
+        setIsSuccess(true);
+
+        setTimeout(() => {
+          setIsOpen(false);
+          setIsSuccess(false);
+          setMessage("");
+          setSubject("");
+          setVisitorPhone("");
+        }, 2000);
+
+        toast.success(
+          app.lang === "ar"
+            ? "✅ وصلت رسالتك! نحنا معك."
+            : "✅ Your message is on its way!"
+        );
+      } catch (error) {
+        console.error(
+          "Error sending support message:",
+          error
+        );
+
+        toast.error(
+          app.lang === "ar"
+            ? "حدث خطأ أثناء الإرسال"
+            : "Error sending message"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
   return (
     <>
+      {/* SUPPORT BUTTON */}
       <div className="fixed bottom-6 start-6 z-50">
+
         <button
-          onClick={handleOpenSupport}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className={`
-            group relative flex items-center gap-3 px-5 py-3 rounded-2xl 
-            bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] 
-            hover:from-[#1a4f4a] hover:to-[#0d2e2a] 
-            text-white border border-emerald-400/30
-            shadow-lg shadow-emerald-500/20 
-            hover:shadow-xl hover:shadow-emerald-500/30 
-            transition-all duration-300 
-            ${isHovered ? 'scale-105 -translate-y-1' : ''}
-          `}
+          onClick={
+            handleOpenSupport
+          }
+          onMouseEnter={() =>
+            setIsHovered(true)
+          }
+          onMouseLeave={() =>
+            setIsHovered(false)
+          }
+          className="group relative flex items-center gap-3 rounded-2xl border border-[#f9a8d4]/30 bg-gradient-to-r from-[#071f1c] via-[#123d38] to-[#2a655f] px-4 py-2.5 text-white shadow-lg shadow-[#f9a8d4]/15 transition-all duration-300 hover:-translate-y-1 hover:border-[#f9a8d4]/45 hover:shadow-xl hover:shadow-[#f9a8d4]/25"
         >
+
           <div className="relative">
-            <Headphones className="h-5 w-5 text-emerald-300" />
+
+            <Headphones className="h-5 w-5 text-[#f9a8d4]" />
+
             {!isHovered && (
-              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="absolute -right-1 -top-1 h-2 w-2 animate-pulse rounded-full bg-[#fbcfe8] shadow-[0_0_8px_rgba(249,168,212,.8)]" />
             )}
+
           </div>
-          <span className="font-medium text-sm hidden sm:inline">
-            {app.lang === "ar" ? "الدعم والمساعدة" : "Support & Help"}
+
+          <span className="hidden text-sm font-bold sm:inline">
+            {app.lang === "ar"
+              ? "نحنا هون"
+              : "We're here"}
           </span>
-          {isHovered && (
-            <span className="absolute -top-10 -right-2 bg-[#0d2e2a] text-white text-xs px-3 py-1 rounded-lg whitespace-nowrap animate-in fade-in zoom-in-95 border border-emerald-400/30">
-              {app.lang === "ar" ? "نسعد بمساعدتك 🤝" : "We're here to help 🤝"}
-            </span>
-          )}
+
         </button>
+
       </div>
 
+      {/* SUPPORT MODAL */}
       {isOpen && (
         <>
-          <div 
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={() => setIsOpen(false)}
+          <div
+            className="fixed inset-0 z-[100] animate-in fade-in bg-black/65 backdrop-blur-md duration-200"
+            onClick={() =>
+              setIsOpen(false)
+            }
           />
+
           <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
-            <div className="bg-[#0d2e2a] rounded-3xl max-w-md w-full shadow-2xl border border-emerald-400/30 animate-in zoom-in-95 duration-300 overflow-hidden">
-              <div className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] p-6 border-b border-emerald-400/20">
+
+            <div className="w-full max-w-md animate-in overflow-hidden rounded-[2rem] border border-[#f9a8d4]/25 bg-[#071f1c] shadow-[0_35px_100px_rgba(0,0,0,.58)] zoom-in-95 duration-300">
+
+              <div className="border-b border-[#f9a8d4]/15 bg-gradient-to-r from-[#071f1c] via-[#123d38] to-[#2a655f] p-6">
+
                 <div className="flex items-center justify-between">
+
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
-                      <Headphones className="h-6 w-6 text-emerald-300" />
+
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#f9a8d4]/30 bg-gradient-to-br from-[#2a655f]/30 to-[#f9a8d4]/15">
+
+                      <Headphones className="h-6 w-6 text-[#f9a8d4]" />
+
                     </div>
+
                     <div>
-                      <h3 className="text-white font-bold text-lg">
-                        {app.lang === "ar" ? "الدعم والمساعدة" : "Support & Help"}
+
+                      <h3 className="text-lg font-black text-white">
+                        {app.lang === "ar"
+                          ? "خلينا نساعدك"
+                          : "Let's help you"}
                       </h3>
-                      <p className="text-emerald-300/80 text-sm">
-                        {app.lang === "ar" ? "نحن هنا لمساعدتك 💙" : "We're here to help 💙"}
+
+                      <p className="mt-0.5 text-sm text-[#fbcfe8]/80">
+                        {app.lang === "ar"
+                          ? "رسالتك بتوصلنا مباشرة 💗"
+                          : "Your message reaches us directly 💗"}
                       </p>
+
                     </div>
+
                   </div>
+
                   <button
-                    onClick={() => setIsOpen(false)}
-                    className="text-white/60 hover:text-white transition-colors"
+                    onClick={() =>
+                      setIsOpen(false)
+                    }
+                    className="text-white/50 transition-colors hover:text-white"
                   >
                     <X className="h-5 w-5" />
                   </button>
+
                 </div>
+
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="space-y-4 p-6">
+
                 {isSuccess ? (
-                  <div className="text-center py-8">
-                    <div className="h-16 w-16 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mx-auto mb-4">
-                      <CheckCircle className="h-8 w-8 text-emerald-400" />
+                  <div className="py-8 text-center">
+
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[#f9a8d4]/30 bg-[#f9a8d4]/15">
+
+                      <CheckCircle className="h-8 w-8 text-[#f9a8d4]" />
+
                     </div>
-                    <h4 className="text-lg font-bold text-white">
-                      {app.lang === "ar" ? "تم الإرسال ✅" : "Sent ✅"}
+
+                    <h4 className="text-lg font-black text-white">
+                      {app.lang === "ar"
+                        ? "وصلت! 💗"
+                        : "Got it! 💗"}
                     </h4>
-                    <p className="text-sm text-emerald-300/80 mt-1">
-                      {app.lang === "ar" 
-                        ? "سنرد عليك خلال ثواني ⚡" 
-                        : "We'll reply within seconds ⚡"}
+
+                    <p className="mt-1 text-sm text-[#fbcfe8]/80">
+                      {app.lang === "ar"
+                        ? "نحنا معك، وراح نرد عليك بأسرع وقت."
+                        : "We're on it and will get back to you soon."}
                     </p>
+
                   </div>
                 ) : (
                   <>
                     {app.user ? (
                       <div>
+
                         <Label className="text-sm font-semibold text-white/90">
-                          {app.lang === "ar" ? "رقم هاتفك" : "Your Phone"}
+                          {app.lang === "ar"
+                            ? "رقم هاتفك"
+                            : "Your Phone"}
                         </Label>
+
                         <Input
                           type="tel"
-                          value={app.user?.phone || "غير متاح"}
+                          value={
+                            app.user?.phone ||
+                            "غير متاح"
+                          }
                           disabled
-                          className="mt-1.5 h-11 rounded-xl bg-white/10 border-emerald-400/20 text-white cursor-not-allowed"
+                          className="mt-1.5 h-11 cursor-not-allowed rounded-xl border-[#f9a8d4]/20 bg-white/10 text-white"
                         />
+
                       </div>
                     ) : (
                       <div>
+
                         <Label className="text-sm font-semibold text-white/90">
-                          {app.lang === "ar" ? "رقم الهاتف *" : "Phone Number *"}
+                          {app.lang === "ar"
+                            ? "رقم الهاتف *"
+                            : "Phone Number *"}
                         </Label>
+
                         <Input
                           type="tel"
-                          value={visitorPhone}
-                          onChange={(e) => setVisitorPhone(e.target.value)}
+                          value={
+                            visitorPhone
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            setVisitorPhone(
+                              e.target.value
+                            )
+                          }
                           placeholder="+963 9xx xxx xxx"
-                          className="mt-1.5 h-11 rounded-xl bg-white/5 border-emerald-400/20 text-white placeholder:text-white/40 focus:border-emerald-400/50 transition-all"
+                          className="mt-1.5 h-11 rounded-xl border-[#f9a8d4]/20 bg-white/5 text-white placeholder:text-white/40 transition-all focus:border-[#f9a8d4]/50"
                           required
                         />
-                        <p className="text-[10px] text-white/40 mt-1">
-                          {app.lang === "ar" 
-                            ? "سنستخدم رقمك للتواصل معك" 
-                            : "We'll use your number to contact you"}
+
+                        <p className="mt-1 text-[10px] text-white/40">
+                          {app.lang === "ar"
+                            ? "بس مشان نقدر نرجعلك"
+                            : "So we can get back to you"}
                         </p>
+
                       </div>
                     )}
 
                     <div>
+
                       <Label className="text-sm font-semibold text-white/90">
-                        {app.lang === "ar" ? "الموضوع" : "Subject"}
+                        {app.lang === "ar"
+                          ? "شو الموضوع؟"
+                          : "What's on your mind?"}
                       </Label>
+
                       <Input
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                        placeholder={app.lang === "ar" ? "مشكلة في إنشاء الحساب" : "Registration issue"}
-                        className="mt-1.5 h-11 rounded-xl bg-white/5 border-emerald-400/20 text-white placeholder:text-white/40 focus:border-emerald-400/50 transition-all"
+                        value={
+                          subject
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          setSubject(
+                            e.target.value
+                          )
+                        }
+                        placeholder={
+                          app.lang === "ar"
+                            ? "مثلاً: مشكلة بالحساب..."
+                            : "e.g. Account issue..."
+                        }
+                        className="mt-1.5 h-11 rounded-xl border-[#f9a8d4]/20 bg-white/5 text-white placeholder:text-white/40 transition-all focus:border-[#f9a8d4]/50"
                       />
+
                     </div>
 
                     <div>
+
                       <Label className="text-sm font-semibold text-white/90">
-                        {app.lang === "ar" ? "الرسالة *" : "Message *"}
+                        {app.lang === "ar"
+                          ? "احكيلنا شو صار *"
+                          : "Tell us what happened *"}
                       </Label>
+
                       <textarea
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        placeholder={app.lang === "ar" 
-                          ? "اكتب رسالتك هنا..." 
-                          : "Write your message here..."}
+                        value={
+                          message
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          setMessage(
+                            e.target.value
+                          )
+                        }
+                        placeholder={
+                          app.lang === "ar"
+                            ? "اكتب رسالتك هون… نحنا سامعينك."
+                            : "Write your message here..."
+                        }
                         rows={4}
-                        className="mt-1.5 w-full px-4 py-3 rounded-xl bg-white/5 border border-emerald-400/20 text-white placeholder:text-white/40 focus:border-emerald-400/50 focus:bg-white/10 focus:outline-none transition-all resize-none"
+                        className="mt-1.5 w-full resize-none rounded-xl border border-[#f9a8d4]/20 bg-white/5 px-4 py-3 text-white placeholder:text-white/40 transition-all focus:border-[#f9a8d4]/50 focus:bg-white/10 focus:outline-none"
                       />
+
                     </div>
 
                     <Button
-                      onClick={handleSubmitSupport}
-                      disabled={isLoading || !message.trim() || (!app.user && !visitorPhone.trim())}
-                      className="w-full h-12 rounded-xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white font-semibold border border-emerald-400/30 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all"
+                      onClick={
+                        handleSubmitSupport
+                      }
+                      disabled={
+                        isLoading ||
+                        !message.trim() ||
+                        (!app.user &&
+                          !visitorPhone.trim())
+                      }
+                      className="h-12 w-full rounded-xl border border-[#f9a8d4]/30 bg-gradient-to-r from-[#071f1c] via-[#174944] to-[#2a655f] font-black text-white shadow-lg shadow-[#f9a8d4]/15 transition-all hover:-translate-y-0.5 hover:border-[#f9a8d4]/45 hover:shadow-[#f9a8d4]/25"
                     >
+
                       {isLoading ? (
                         <span className="flex items-center gap-2">
+
                           <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          {app.lang === "ar" ? "جاري الإرسال..." : "Sending..."}
+
+                          {app.lang === "ar"
+                            ? "عم نوصلها..."
+                            : "Sending..."}
+
                         </span>
                       ) : (
                         <span className="flex items-center gap-2">
-                          <Send className="h-4 w-4 text-emerald-300" />
-                          {app.lang === "ar" ? "إرسال" : "Send"}
+
+                          <Send className="h-4 w-4 text-[#f9a8d4]" />
+
+                          {app.lang === "ar"
+                            ? "إرسال الرسالة"
+                            : "Send message"}
+
                         </span>
                       )}
-                    </Button>
 
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-400/20">
-                      <Shield className="h-4 w-4 text-emerald-300 shrink-0" />
-                      <p className="text-xs text-white/60">
-                        {app.lang === "ar" 
-                          ? "⚡ سيتم الرد عليك خلال ثواني عبر نظام المراسلة" 
-                          : "⚡ We'll reply within seconds via messaging system"}
-                      </p>
-                    </div>
+                    </Button>
                   </>
                 )}
+
               </div>
+
             </div>
+
           </div>
         </>
       )}

@@ -38,11 +38,11 @@ const ListingCard = lazy(() => import("@/components/ListingCard"));
 export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
-    meta: [
-      { title: "السوق لعندك — سوقك السوري بين يديك" },
-      { name: "description", content: "منصة سورية شاملة: تسوّق واحجز واكتشف من المتاجر والخدمات والعروض والهدايا في كل المحافظات." },
-    ],
-  }),
+  meta: [
+    { title: "ذوق | Zooq — سوقك السوري بين يديك" },
+    { name: "description", content: "ذوق | Zooq: منصة سورية شاملة: تسوّق واحجز واكتشف من المتاجر والخدمات والعروض والهدايا في كل المحافظات." },
+  ],
+}),
 });
 
 function Home() {
@@ -372,7 +372,7 @@ const allOffers = useMemo(() => {
                 {app.lang === "ar" ? "👑 متاجر مميزة" : "👑 Popular Stores"}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {app.lang === "ar" ? "أفضل المتاجر على السوق لعندك" : "Top stores on Souqi"}
+               {app.lang === "ar" ? "أفضل المتاجر على ذوق | Zooq" : "Top stores on Zooq"}
               </p>
             </div>
           </div>
@@ -415,7 +415,7 @@ const allOffers = useMemo(() => {
                   {app.lang === "ar" ? "🔥 عروض حصرية" : "🔥 Exclusive Offers"}
                 </Badge>
                 <h3 className="mt-3 text-2xl md:text-3xl font-black text-[#2a655f] dark:text-white">
-                  {app.lang === "ar" ? "أفضل العروض على السوق لعندك" : "Best Offers on Souqi"}
+                 {app.lang === "ar" ? "أفضل العروض على ذوق | Zooq" : "Best Offers on Zooq"}
                 </h3>
                 <p className="text-[#1a4f4a]/80 dark:text-white/70 text-sm mt-1">
                   {app.lang === "ar" ? "خصومات وعروض ترويجية لفترة محدودة" : "Discounts and promo offers for a limited time"}
@@ -573,7 +573,7 @@ export function CategorySlider({ categories }: { categories: any[] }) {
               {isRtl ? "✨ الأقسام المميزة" : "✨ Featured Categories"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {isRtl ? "اختيارات مميزة من السوق لعندك" : "Handpicked by Souqi"}
+             {isRtl ? "اختيارات مميزة من ذوق | Zooq" : "Handpicked by Zooq"}
             </p>
           </div>
         </div>
@@ -800,7 +800,7 @@ function FeaturedSection() {
               {app.lang === "ar" ? "💎 منتجات مميزة" : "💎 Featured Products"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {app.lang === "ar" ? "الأكثر إعجاباً من زوار السوق لعندك" : "Most loved by Souqi visitors"}
+             {app.lang === "ar" ? "الأكثر إعجاباً من زوار ذوق | Zooq" : "Most loved by Zooq visitors"}
             </p>
           </div>
         </div>
@@ -882,7 +882,7 @@ function TrendingSection() {
               {app.lang === "ar" ? "🔥 الأكثر رواجاً" : "🔥 Trending Now"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {app.lang === "ar" ? "اختيارات فريق السوق لعندك" : "Handpicked by Souqi team"}
+             {app.lang === "ar" ? "اختيارات فريق ذوق | Zooq" : "Handpicked by Zooq team"}
             </p>
           </div>
         </div>
@@ -1291,7 +1291,7 @@ export function StoreCard({ store, badge }: StoreCardProps) {
   const isRtl = app.lang === "ar";
 
   const storeName = store.store_name || store.full_name || (isRtl ? "متجر مميز" : "Featured Store");
-  const storeDesc = store.store_description || (isRtl ? "متجر موثوق على السوق لعندك لبيع أفضل المنتجات" : "A trusted store on Souqi for the best products");
+  const storeDesc = store.store_description || (isRtl ? "متجر موثوق على ذوق | Zooq لبيع أفضل المنتجات" : "A trusted store on Zooq for the best products");
   const coverUrl = store.store_cover_url;
   const logoUrl = store.store_logo_url || store.avatar_url;
   const rating = Number(store.avg_rating ?? 0).toFixed(1);

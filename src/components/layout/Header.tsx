@@ -688,32 +688,196 @@ export const Header = memo(function Header() {
             </SheetContent>
           </Sheet>
 
-          {/* Home Button - ✅ مع لمعة متحركة (Shimmer) */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={goHome}
-                className="flex items-center gap-2 shrink-0 group cursor-pointer relative"
-              >
-                <div className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-md group-hover:shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 relative overflow-hidden">
-                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  <House className="h-4.5 w-4.5 relative z-10" />
-                </div>
-                <div className="hidden sm:flex flex-col leading-none">
-                  <span className="font-black text-lg tracking-tight bg-gradient-to-r from-[#2a655f] to-[#3a8a82] bg-clip-text text-transparent group-hover:from-[#1a4f4a] group-hover:to-[#2a655f] transition">
-                    {t("brand")}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground tracking-wider">
-                    {t("tagline")}
-                  </span>
-                </div>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p>{app.lang === "ar" ? "الرئيسية" : "Home"}</p>
-            </TooltipContent>
-          </Tooltip>
+{/* Home Button - ✦ ZOOQ Premium Brand Identity */}
+<Tooltip>
+  <TooltipTrigger asChild>
+    <button
+      onClick={goHome}
+      className="flex items-center gap-3.5 shrink-0 group cursor-pointer relative"
+      aria-label={app.lang === "ar" ? "الرئيسية - ذوق" : "Home - zooq"}
+    >
+      {/* ✦ Subtle brand glow - بدون أي خلفية للوغو */}
+      <div
+        className="
+          absolute -inset-4
+          rounded-full
+          bg-gradient-to-r
+          from-[#f9a8d4]/0
+          via-[#f9a8d4]/15
+          to-[#2a655f]/0
+          blur-2xl
+          opacity-0
+          group-hover:opacity-100
+          transition-all duration-700
+          pointer-events-none
+        "
+      />
 
+      {/* ═══════════════════════════════════════
+          LOGO — Transparent / No Background
+         ═══════════════════════════════════════ */}
+      <div className="relative flex items-center justify-center shrink-0">
+        {/* Soft glow behind logo only */}
+        <div
+          className="
+            absolute
+            -inset-3
+            rounded-full
+            bg-[#f9a8d4]/15
+            blur-xl
+            opacity-0
+            group-hover:opacity-100
+            scale-75
+            group-hover:scale-100
+            transition-all duration-500
+          "
+        />
+
+        {/* ✦ Logo itself — completely transparent & larger */}
+        <img
+          src="/images/Logo.png"
+          alt="ذوق | zooq"
+          draggable={false}
+          className="
+            relative z-10
+            h-[64px] w-[64px]
+            sm:h-[72px] sm:w-[72px]
+            object-contain
+            drop-shadow-[0_4px_16px_rgba(42,101,95,0.25)]
+            group-hover:scale-110
+            group-hover:drop-shadow-[0_6px_24px_rgba(249,168,212,0.45)]
+            transition-all duration-500
+          "
+        />
+      </div>
+
+      {/* ═══════════════════════════════════════
+          BRAND TYPOGRAPHY
+         ═══════════════════════════════════════ */}
+      <div className="hidden sm:flex flex-col justify-center leading-none">
+
+        {/* Arabic Brand Name - Larger & Clearer */}
+        <div
+          className="
+            relative
+            font-black
+            text-[28px]
+            md:text-[31px]
+            tracking-[-0.02em]
+            bg-gradient-to-l
+            from-[#2a655f]
+            via-[#f9a8d4]
+            to-[#2a655f]
+            bg-clip-text
+            text-transparent
+            bg-[length:200%_auto]
+            animate-[shimmer-gold_5s_linear_infinite]
+            transition-all duration-300
+            group-hover:scale-[1.02]
+            origin-right
+          "
+        >
+          ذوق
+        </div>
+
+        {/* English Brand Name */}
+        <div
+          className="
+            mt-1.5
+            text-[14px]
+            md:text-[15px]
+            font-extrabold
+            tracking-[0.3em]
+            lowercase
+            bg-gradient-to-r
+            from-[#2a655f]
+            via-[#3a8a82]
+            to-[#f9a8d4]
+            bg-clip-text
+            text-transparent
+            transition-all duration-300
+            group-hover:tracking-[0.36em]
+          "
+        >
+          zooq
+        </div>
+
+        {/* Premium Tagline */}
+        <div
+          className="
+            mt-2
+            flex items-center gap-1.5
+            text-[10px]
+            md:text-[11px]
+            font-bold
+            tracking-wide
+            text-muted-foreground
+            group-hover:text-[#2a655f]
+            transition-colors duration-300
+            whitespace-nowrap
+          "
+        >
+          <span
+            className="
+              h-1.5 w-1.5
+              rounded-full
+              bg-[#f9a8d4]
+              shadow-[0_0_10px_rgba(249,168,212,0.8)]
+            "
+          />
+
+          <span>
+            {app.lang === "ar"
+              ? "كلشي ع ذوقك"
+              : "Exactly your taste"}
+          </span>
+
+          <span
+            className="
+              h-1.5 w-1.5
+              rounded-full
+              bg-[#2a655f]
+              shadow-[0_0_10px_rgba(42,101,95,0.6)]
+            "
+          />
+        </div>
+      </div>
+    </button>
+  </TooltipTrigger>
+
+  {/* Premium Tooltip */}
+  <TooltipContent
+    side="bottom"
+    sideOffset={10}
+    className="
+      bg-[#071f1c]
+      text-white
+      border
+      border-[#f9a8d4]/30
+      rounded-xl
+      px-4 py-2.5
+      shadow-[0_10px_40px_rgba(7,31,28,0.45)]
+    "
+  >
+    <div className="flex flex-col items-center gap-1">
+      <div className="flex items-center gap-2">
+        <span className="text-[#f9a8d4] text-xs">✦</span>
+
+        <span className="text-sm font-bold tracking-wide">
+          {app.lang === "ar"
+            ? "ذوق · كلشي ع ذوقك"
+            : "zooq · Exactly your taste"}
+        </span>
+
+        <span className="text-[#f9a8d4] text-xs">✦</span>
+      </div>
+
+      <span className="text-[10px] text-white/60 tracking-[0.2em] lowercase font-medium">
+        zooq marketplace
+      </span>
+    </div>
+  </TooltipContent>
+</Tooltip>
           {/* Mega Menu */}
           <div className="hidden md:block">
             <MegaMenu categories={categories} />

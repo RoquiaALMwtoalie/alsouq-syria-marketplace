@@ -12,6 +12,7 @@ interface OptimizedImageProps {
   priority?: boolean;
   objectFit?: 'cover' | 'contain' | 'fill';
   quality?: number;
+  transparent?: boolean; // ✅ خاصية جديدة للصور المفرغة
 }
 
 export function OptimizedImage({ 
@@ -22,7 +23,8 @@ export function OptimizedImage({
   className = '',
   priority = false,
   objectFit = 'cover',
-  quality = 85
+  quality = 85,
+  transparent = false // ✅
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -82,7 +84,8 @@ export function OptimizedImage({
   return (
     <div 
       className={cn(
-        'relative overflow-hidden bg-slate-100 dark:bg-slate-800',
+        'relative overflow-hidden',
+        !transparent && 'bg-slate-100 dark:bg-slate-800', // ✅ فقط إذا لم تكن شفافة
         className
       )}
       style={{ aspectRatio: `${width}/${height}` }}

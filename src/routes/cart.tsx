@@ -1637,9 +1637,9 @@ const orderItems = itemsList.map((item: any) => {
                                   <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
                                   <p className="text-xs text-muted-foreground">الكمية: {data.quantity}</p>
                                 </div>
-                                <p className="text-sm font-bold text-[#0d2e2a] whitespace-nowrap">
-                                  {(data.price * data.quantity).toLocaleString()} SYP
-                                </p>
+                             <p className="text-sm font-bold text-[#0d2e2a] whitespace-nowrap">
+  {formatPrice(data.price * data.quantity, app.currency, app.lang)}
+</p>
                               </div>
                             );
                           })}
@@ -1694,9 +1694,9 @@ const orderItems = itemsList.map((item: any) => {
                       <div className="mt-3 pt-3 border-t border-purple-200/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">إجمالي المنتجات المطلوبة</span>
-                          <span className="text-lg font-bold text-[#0d2e2a]">
-                            {item.price?.toLocaleString()} SYP
-                          </span>
+                     <span className="text-lg font-bold text-[#0d2e2a]">
+  {formatPrice(Number(item.price), app.currency, app.lang)}
+</span>
                         </div>
                         
                         {/* ✅ أزرار التحكم بالكمية للعرض الترويجي */}

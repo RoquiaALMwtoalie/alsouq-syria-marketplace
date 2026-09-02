@@ -57,6 +57,7 @@ function OfferDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [isVariationSelectedFlag, setIsVariationSelectedFlag] = useState<boolean>(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   
   // ✅ مؤقت لمنع التحديثات المتكررة للصورة
   const imageUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1075,7 +1076,7 @@ function OfferDetailPage() {
   }, [selectedVariations, mainProduct, selectedOptionId, offerImages, currentImageIndex, getVariationImage]);
 
   // ============================================================
-  // ✅ اختيار تلقائي للخيارات (خيارات أو ألوان) للمنتجات المطلوبة في Bundle
+  // ✅ اختيار تلقائي للخيارات (لـ Bundle) - المصحح
   // ============================================================
   useEffect(() => {
     if (isBundle && requiredProducts.length > 0) {
@@ -1083,7 +1084,9 @@ function OfferDetailPage() {
         const selectedMap = selectedVariations[item.productId] || {};
         const selectedTotal = Object.values(selectedMap).reduce((sum, qty) => sum + qty, 0);
         
-        if (item.options.length === 0) {
+        const filteredOptions = item.options || [];
+        
+        if (filteredOptions.length === 0) {
           setSelectedVariations(prev => ({
             ...prev,
             [item.productId]: {
@@ -1093,20 +1096,21 @@ function OfferDetailPage() {
           return;
         }
         
-        if (item.options.length === 1 && selectedTotal === 0) {
+        if (filteredOptions.length === 1 && selectedTotal === 0) {
           setSelectedVariations(prev => ({
             ...prev,
             [item.productId]: {
-              [item.options[0].id]: item.totalRequiredQuantity
+              [filteredOptions[0].id]: item.totalRequiredQuantity
             }
           }));
+          return;
         }
         
-        if (item.options.length > 1 && selectedTotal === 0) {
-          const perOption = Math.floor(item.totalRequiredQuantity / item.options.length);
-          const remainder = item.totalRequiredQuantity % item.options.length;
+        if (filteredOptions.length > 1 && selectedTotal === 0) {
+          const perOption = Math.floor(item.totalRequiredQuantity / filteredOptions.length);
+          const remainder = item.totalRequiredQuantity % filteredOptions.length;
           const map: Record<string, number> = {};
-          item.options.forEach((opt: any, index: number) => {
+          filteredOptions.forEach((opt: any, index: number) => {
             map[opt.id] = perOption + (index < remainder ? 1 : 0);
           });
           setSelectedVariations(prev => ({
@@ -1119,7 +1123,7 @@ function OfferDetailPage() {
   }, [requiredProducts, isBundle]);
 
   // ============================================================
-  // ✅ اختيار تلقائي للخيارات (لـ BOGO و Cross-sell)
+  // ✅ اختيار تلقائي للخيارات (لـ BOGO و Cross-sell) - المصحح
   // ============================================================
   useEffect(() => {
     if ((isBogo || isCrossSell) && mainProductWithVariations) {
@@ -1127,7 +1131,13 @@ function OfferDetailPage() {
       const selectedMap = selectedVariations[item.productId] || {};
       const selectedTotal = Object.values(selectedMap).reduce((sum, qty) => sum + qty, 0);
       
-      if (item.options.length === 0) {
+      const selectedIds = offer?.variation_ids || [];
+      const allVariations = item.product.variations || [];
+      const filteredOptions = selectedIds.length > 0 
+        ? allVariations.filter((v: any) => selectedIds.includes(v.id))
+        : allVariations;
+      
+      if (filteredOptions.length === 0) {
         setSelectedVariations(prev => ({
           ...prev,
           [item.productId]: {
@@ -1137,20 +1147,21 @@ function OfferDetailPage() {
         return;
       }
       
-      if (item.options.length === 1 && selectedTotal === 0) {
+      if (filteredOptions.length === 1 && selectedTotal === 0) {
         setSelectedVariations(prev => ({
           ...prev,
           [item.productId]: {
-            [item.options[0].id]: item.totalRequiredQuantity
+            [filteredOptions[0].id]: item.totalRequiredQuantity
           }
         }));
+        return;
       }
       
-      if (item.options.length > 1 && selectedTotal === 0) {
-        const perOption = Math.floor(item.totalRequiredQuantity / item.options.length);
-        const remainder = item.totalRequiredQuantity % item.options.length;
+      if (filteredOptions.length > 1 && selectedTotal === 0) {
+        const perOption = Math.floor(item.totalRequiredQuantity / filteredOptions.length);
+        const remainder = item.totalRequiredQuantity % filteredOptions.length;
         const map: Record<string, number> = {};
-        item.options.forEach((opt: any, index: number) => {
+        filteredOptions.forEach((opt: any, index: number) => {
           map[opt.id] = perOption + (index < remainder ? 1 : 0);
         });
         setSelectedVariations(prev => ({
@@ -1159,7 +1170,7 @@ function OfferDetailPage() {
         }));
       }
     }
-  }, [isBogo, isCrossSell, mainProductWithVariations]);
+  }, [isBogo, isCrossSell, mainProductWithVariations, offer?.variation_ids]);
 
   // ============================================================
   // ✅ اختيار تلقائي لخيارات الهدية (خيارات أو ألوان)
@@ -1527,15 +1538,436 @@ function OfferDetailPage() {
   }, []);
 
   // ============================================================
-  // ✅ دالة إضافة العرض للسلة (محذوفة للاختصار - نفس الكود السابق)
+  // ✅ دالة إضافة العرض للسلة (كاملة)
   // ============================================================
-  const handleAddToCart = useCallback(async () => {
-    // ... (نفس الكود السابق)
-  }, []);
+// ============================================================
+// ✅ دالة إضافة العرض للسلة (النسخة الأصلية المصححة)
+// ============================================================
+// ============================================================
+// ✅ دالة إضافة العرض للسلة (النسخة الأصلية المصححة - فقط إضافة currency)
+// ============================================================
+const handleAddToCart = useCallback(async () => {
+  if (!app.user) {
+    toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
+    navigate({ to: "/auth/$mode", params: { mode: "login" } });
+    return;
+  }
+
+  if (!offer) {
+    toast.error(app.lang === "ar" ? "العرض غير موجود" : "Offer not found");
+    return;
+  }
+
+  if (!isVariationSelected) {
+    toast.warning(app.lang === "ar" ? "⚠️ الرجاء استكمال الكميات المطلوبة" : "⚠️ Please complete required quantities");
+    return;
+  }
+
+  if (offer.store_id === app.user.id || mainProduct?.owner_id === app.user.id) {
+    toast.error(
+      app.lang === "ar" 
+        ? "❌ لا يمكنك إضافة عروض من متجرك الخاص إلى السلة" 
+        : "❌ You cannot add offers from your own store to cart"
+    );
+    return;
+  }
+
+  // ============================================================
+  // ✅ 1. جمع الخيارات التي اختارها المستخدم
+  // ============================================================
+  const requiredVariationsDetails: Record<string, {
+    quantity: number;
+    price: number;
+    combination: Record<string, string>;
+    image_url?: string | null;
+    product_id: string;
+    product_title: string;
+  }> = {};
+  
+  let mainListingId = "";
+  let mainProductTitle = "";
+
+  // ✅ 1.1 خيارات المنتج الرئيسي (BOGO / Cross-sell)
+  if (isBogo || isCrossSell) {
+    const productId = mainProduct?.id;
+    if (productId) {
+      mainListingId = productId;
+      mainProductTitle = mainProduct?.title_ar || "";
+      const selectedMap = selectedVariations[productId] || {};
+      
+      const defaultKey = `default-${productId}`;
+      if (selectedMap[defaultKey] > 0) {
+        requiredVariationsDetails[defaultKey] = {
+          quantity: selectedMap[defaultKey],
+          price: mainProduct?.price || 0,
+          combination: {},
+          image_url: mainProduct?.cover_url || null,
+          product_id: productId,
+          product_title: mainProductTitle,
+        };
+      }
+      
+      const variations = mainProduct?.variations || [];
+      const colors = mainProduct?.colors || mainProduct?.product_colors || [];
+      
+      for (const [optionId, qty] of Object.entries(selectedMap)) {
+        if (qty > 0 && !optionId.startsWith('default-')) {
+          let option: any = variations.find((v: any) => v.id === optionId);
+          let optionType: 'variation' | 'color' = 'variation';
+          let combo = {};
+          
+          if (option) {
+            combo = option.combination || {};
+          } else {
+            option = colors.find((c: any) => c.id === optionId);
+            optionType = 'color';
+            if (option) {
+              combo = { colors: option.color_name_ar };
+            }
+          }
+          
+          if (option) {
+            const comboText = Object.entries(combo).map(([key, val]) => `${val}`).join(' • ');
+            const price = optionType === 'variation' 
+              ? (option.price || mainProduct?.price || 0)
+              : (mainProduct?.price || 0);
+            const image = getOptionImageUrl(option, mainProduct, optionType);
+            
+            requiredVariationsDetails[optionId] = {
+              quantity: qty,
+              price: price,
+              combination: combo,
+              image_url: image,
+              product_id: productId,
+              product_title: mainProductTitle,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  // ✅ 1.2 خيارات Bundle
+  if (isBundle) {
+    for (const req of requiredProducts) {
+      const productId = req.productId;
+      if (!mainListingId) mainListingId = productId;
+      mainProductTitle = req.product.title_ar || "";
+      const selectedMap = selectedVariations[productId] || {};
+      
+      const defaultKey = `default-${productId}`;
+      if (selectedMap[defaultKey] > 0) {
+        requiredVariationsDetails[defaultKey] = {
+          quantity: selectedMap[defaultKey],
+          price: req.product.price || 0,
+          combination: {},
+          image_url: req.product.cover_url || null,
+          product_id: productId,
+          product_title: req.product.title_ar || "",
+        };
+      }
+      
+      const variations = req.product.variations || [];
+      const colors = req.product.colors || req.product.product_colors || [];
+      
+      for (const [optionId, qty] of Object.entries(selectedMap)) {
+        if (qty > 0 && !optionId.startsWith('default-')) {
+          let option: any = variations.find((v: any) => v.id === optionId);
+          let optionType: 'variation' | 'color' = 'variation';
+          let combo = {};
+          
+          if (option) {
+            combo = option.combination || {};
+          } else {
+            option = colors.find((c: any) => c.id === optionId);
+            optionType = 'color';
+            if (option) {
+              combo = { colors: option.color_name_ar };
+            }
+          }
+          
+          if (option) {
+            const comboText = Object.entries(combo).map(([key, val]) => `${val}`).join(' • ');
+            const price = optionType === 'variation' 
+              ? (option.price || req.product.price || 0)
+              : (req.product.price || 0);
+            const image = getOptionImageUrl(option, req.product, optionType);
+            
+            requiredVariationsDetails[optionId] = {
+              quantity: qty,
+              price: price,
+              combination: combo,
+              image_url: image,
+              product_id: productId,
+              product_title: req.product.title_ar || "",
+            };
+          }
+        }
+      }
+    }
+  }
+
+  // ============================================================
+  // ✅ 2. خيارات الهدية
+  // ============================================================
+  const giftVariationsDetails: Record<string, {
+    quantity: number;
+    price: number;
+    combination: Record<string, string>;
+    image_url?: string | null;
+  }> = {};
+
+  const giftVariationIds = offer?.result_variation_ids || [];
+  const variations = freeProduct?.variations || [];
+  const colors = freeProduct?.colors || freeProduct?.product_colors || [];
+  
+  let availableGiftOptions: any[] = [];
+  let giftOptionType: 'variation' | 'color' = 'variation';
+  
+  if (giftVariationIds.length > 0) {
+    const filteredVariations = variations.filter((v: any) => giftVariationIds.includes(v.id));
+    if (filteredVariations.length > 0) {
+      availableGiftOptions = filteredVariations;
+      giftOptionType = 'variation';
+    } else {
+      const filteredColors = colors.filter((c: any) => giftVariationIds.includes(c.id));
+      if (filteredColors.length > 0) {
+        availableGiftOptions = filteredColors;
+        giftOptionType = 'color';
+      }
+    }
+  }
+  
+  if (availableGiftOptions.length === 0) {
+    if (variations.length > 0) {
+      availableGiftOptions = variations;
+      giftOptionType = 'variation';
+    } else if (colors.length > 0) {
+      availableGiftOptions = colors;
+      giftOptionType = 'color';
+    }
+  }
+  
+  if (availableGiftOptions.length === 0) {
+    const defaultGiftQty = offer?.get_quantity || 1;
+    giftVariationsDetails[`default-gift`] = {
+      quantity: defaultGiftQty,
+      price: 0,
+      combination: {},
+      image_url: freeProduct?.cover_url || null,
+    };
+  } else {
+    const userSelectedGifts = selectedGiftVariations || {};
+    
+    availableGiftOptions.forEach((opt: any) => {
+      const qty = userSelectedGifts[opt.id] || 0;
+      
+      if (qty > 0) {
+        const isColor = giftOptionType === 'color';
+        const displayName = isColor 
+          ? opt.color_name_ar || opt.color_name_en || 'لون'
+          : Object.entries(opt.combination || {})
+              .map(([key, value]) => `${value}`)
+              .join(' • ');
+        const giftImage = getOptionImageUrl(opt, freeProduct, giftOptionType);
+        
+        giftVariationsDetails[opt.id] = {
+          quantity: qty,
+          price: 0,
+          combination: isColor ? { colors: opt.color_name_ar } : (opt.combination || {}),
+          image_url: giftImage,
+        };
+      }
+    });
+  }
+
+  // ============================================================
+  // ✅ 3. التحقق
+  // ============================================================
+  const hasRequired = Object.keys(requiredVariationsDetails).length > 0;
+
+  if (!hasRequired) {
+    toast.warning(app.lang === "ar" ? "⚠️ لم تختار أي خيارات" : "⚠️ No options selected");
+    return;
+  }
+
+  if (!mainListingId) {
+    toast.warning(app.lang === "ar" ? "⚠️ لا يوجد منتج رئيسي" : "⚠️ No main product");
+    return;
+  }
+
+  // ============================================================
+  // ✅ 4. حساب السعر الإجمالي
+  // ============================================================
+  let totalPrice = 0;
+  for (const [variationId, data] of Object.entries(requiredVariationsDetails)) {
+    totalPrice += data.price * data.quantity;
+  }
+
+  // ============================================================
+  // ✅ 5. بناء البيانات النهائية
+  // ============================================================
+  const offerData = {
+    offer_id: offer.id,
+    offer_type: offer.offer_type,
+    buy_quantity: offer.buy_quantity,
+    get_quantity: offer.get_quantity,
+    display_text_ar: offer.display_text_ar,
+    display_text_en: offer.display_text_en,
+    required_products: {
+      main_product: {
+        id: mainProduct?.id,
+        title_ar: mainProduct?.title_ar,
+        title_en: mainProduct?.title_en,
+        cover_url: mainProduct?.cover_url,
+        colors: mainProduct?.colors || [],
+      },
+      variations: requiredVariationsDetails,
+    },
+    free_product: {
+      id: freeProduct?.id,
+      title_ar: freeProduct?.title_ar,
+      title_en: freeProduct?.title_en,
+      cover_url: freeProduct?.cover_url,
+      colors: freeProduct?.colors || [],
+      variations: giftVariationsDetails,
+    },
+    store: {
+      id: offer.store_id || mainProduct?.owner_id,
+      name: storeData.name,
+      logo: storeData.logo,
+    }
+  };
+
+  // ============================================================
+  // ✅ 6. إضافة للسلة باستخدام addToCartMutation
+  // ============================================================
+  try {
+    // ✅ إرسال البيانات إلى addToCartMutation مع العملة
+    await addToCartMutation.mutateAsync({
+      userId: app.user.id,
+      listingId: mainListingId,
+      quantity: 1,
+      price: totalPrice,
+      currency: app.currency || "SYP", // ✅ ✅ ✅ العملة الصحيحة
+      variationPrice: totalPrice,
+      selectedVariationId: null,
+      selectedColor: null,
+      selectedSize: null,
+      variationCombination: {},
+      variationImage: null,
+      extraData: {
+        is_promo_offer: true,
+        offer_id: offer.id,
+        offer_data: offerData,
+        required_variations: requiredVariationsDetails,
+        gift_variations: giftVariationsDetails,
+        currency: app.currency || "SYP", // ✅ العملة في extraData أيضاً
+      },
+    });
+
+    // ✅ عرض رسالة نجاح
+    const totalSelected = Object.keys(requiredVariationsDetails).length;
+    const totalGift = Object.keys(giftVariationsDetails).length;
+    
+   toast.success(
+  app.lang === "ar" 
+    ? `✅ تم إضافة العرض للسلة بنجاح! ${offer.display_text_ar}`
+    : `✅ Offer added to cart successfully! ${offer.display_text_en}`,
+  { 
+    duration: 4000,
+    icon: '🛒',
+    style: {
+      background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',
+      color: '#831843',
+      borderRadius: '16px',
+      border: '1px solid #f9a8d4',
+      boxShadow: '0 20px 60px rgba(236, 72, 153, 0.25)',
+    },
+    className: 'font-bold',
+    action: {
+      label: app.lang === "ar" ? "🛒 عرض السلة 🛒" : "🛒 View Cart 🛒",
+      onClick: () => {
+        navigate({ to: "/cart" });
+        toast.dismiss();
+      }
+    },
+    actionButtonStyle: {
+      background: 'linear-gradient(135deg, #f472b6, #ec4899, #db2777)',
+      color: 'white',
+      fontWeight: 'bold',
+      borderRadius: '12px',
+      padding: '8px 24px',
+      boxShadow: '0 8px 30px rgba(236, 72, 153, 0.4)',
+      border: 'none',
+      fontSize: '14px',
+    }
+  }
+);
+
+  } catch (error: any) {
+    console.error(`❌ [handleAddToCart] Error:`, error);
+    
+    // ✅ معالجة خطأ تعارض المتجر
+    if (error?.message?.includes("store")) {
+      setCurrentStoreName(error.currentStoreName || "");
+      setNewStoreName(error.newStoreName || "");
+      setPendingAddData({
+        listingId: mainListingId,
+        quantity: 1,
+        selectedVariations: requiredVariationsDetails,
+        selectedGiftVariations: giftVariationsDetails,
+      });
+      setShowStoreConflict(true);
+      return;
+    }
+    
+    toast.error(
+      app.lang === "ar" 
+        ? "❌ حدث خطأ أثناء إضافة العرض للسلة" 
+        : "❌ An error occurred while adding the offer to cart"
+    );
+  }
+}, [
+  app.user,
+  app.lang,
+  app.currency, // ✅ أضف هذا
+  offer,
+  isVariationSelected,
+  mainProduct,
+  selectedVariations,
+  selectedGiftVariations,
+  freeProduct,
+  addToCartMutation,
+  navigate,
+  isBogo,
+  isCrossSell,
+  isBundle,
+  requiredProducts,
+  storeData,
+  getOptionImageUrl,
+]);
 
   const handleConfirmClearCart = useCallback(async () => {
-    // ... (نفس الكود السابق)
-  }, []);
+    if (!app.user || !pendingAddData) return;
+    
+    try {
+      await clearCartMutation.mutateAsync({ userId: app.user.id });
+      setShowStoreConflict(false);
+      toast.success(app.lang === "ar" ? "✅ تم تفريغ السلة" : "✅ Cart cleared");
+      
+      // ✅ إعادة محاولة الإضافة بعد تفريغ السلة
+      await handleAddToCart();
+      
+    } catch (error: any) {
+      console.error("❌ Error clearing cart:", error);
+      toast.error(
+        app.lang === "ar" 
+          ? `❌ فشل تفريغ السلة: ${error.message || "يرجى المحاولة مرة أخرى"}`
+          : `❌ Failed to clear cart: ${error.message || "Please try again"}`
+      );
+    }
+  }, [app.user, clearCartMutation, pendingAddData, handleAddToCart, app.lang]);
 
   // ========== ✅ LOADING & ERROR ==========
   if (isLoading) {
@@ -1893,9 +2325,9 @@ function OfferDetailPage() {
             <div className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-2xl border border-primary/10">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-4 flex-wrap">
-                  <span className="text-4xl md:text-5xl font-black text-primary">
-                    {finalPrice.toLocaleString(app.lang === "ar" ? "ar-SY" : "en-US")}
-                  </span>
+             <span className="text-4xl md:text-5xl font-black text-primary">
+  {formatPrice(finalPrice, app.currency, app.lang)}
+</span>
                   {discountPercent > 0 && (
                     <Badge className="bg-gradient-to-r from-rose-500 to-orange-500 text-white border-0 text-sm font-bold px-3 py-1.5 rounded-full shadow-md shadow-rose-500/20 animate-pulse">
                       🎁 {discountPercent}% OFF
@@ -1983,7 +2415,7 @@ function OfferDetailPage() {
                   </h3>
                 </div>
                 
-             {/* ✅ عرض المنتج الرئيسي لـ BOGO و Cross-sell مع دعم الألوان */}
+{/* ✅ عرض المنتج الرئيسي لـ BOGO و Cross-sell مع دعم الألوان - المصحح */}
 {(isBogo || isCrossSell) && mainProductWithVariations && (
   (() => {
     const item = mainProductWithVariations;
@@ -2050,7 +2482,7 @@ function OfferDetailPage() {
           </Badge>
         </div>
 
-        {/* ===== عرض الخيارات (خيارات أو ألوان) ===== */}
+        {/* ===== عرض الخيارات (فقط التشكيلات المحددة) ===== */}
         {filteredOptions.length > 0 ? (
           <div className="mt-3">
             <div className="flex items-center justify-between">
@@ -2818,9 +3250,9 @@ function OfferDetailPage() {
                 !isVariationSelected && "opacity-60 cursor-not-allowed hover:scale-100 hover:shadow-xl"
               )}
               onClick={handleAddToCart}
-              disabled={addToCartMutation.isPending || !isVariationSelected}
+              disabled={addToCartMutation.isPending || !isVariationSelected || isSubmitting}
             >
-              {addToCartMutation.isPending ? (
+              {addToCartMutation.isPending || isSubmitting ? (
                 <div className="flex items-center gap-3">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                   {app.lang === "ar" ? "جاري الإضافة..." : "Adding..."}

@@ -121,16 +121,16 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 // ===== Route Definition =====
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "السوق لعندك — Syria's Super Marketplace" },
-      { name: "description", content: "السوق لعندك: منصة سوريا الشاملة للتسوق والخدمات والعقارات والمطاعم والسياحة والسيارات — كل ما تحتاجه بمكان واحد." },
-      { property: "og:title", content: "السوق لعندك — Syria's Super Marketplace" },
-      { property: "og:description", content: "اكتشف كل ما تحتاجه في سوريا بمكان واحد: متاجر، خدمات، عقارات، أطباء وأكثر." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
+     meta: [
+    { charSet: "utf-8" },
+    { name: "viewport", content: "width=device-width, initial-scale=1" },
+    { title: "ذوق | Zooq — Syria's Super Marketplace" },  // ✅ تم التغيير
+    { name: "description", content: "ذوق | Zooq: منصة سوريا الشاملة للتسوق..." },  // ✅ تم التغيير
+    { property: "og:title", content: "ذوق | Zooq — Syria's Super Marketplace" },  // ✅ تم التغيير
+    { property: "og:description", content: "اكتشف كل ما تحتاجه في سوريا بمكان واحد: متاجر، خدمات، عقارات، أطباء وأكثر." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
@@ -839,349 +839,299 @@ function RouteGuard() {
   }, [app.user, clearCacheIfUserChanged]);
 
   // ✅ دوال التحقق من الصلاحيات - مع Cache المتقدم + sessionStorage
-  const checkAuthorization = useCallback(async () => {
-    // ✅ إذا لم يكن هناك مستخدم، السماح بالوصول (لصفحات التسجيل والدخول)
-    if (!app.user) {
+const checkAuthorization = useCallback(async () => {
+  // ✅ إذا لم يكن هناك مستخدم، السماح بالوصول (لصفحات التسجيل والدخول)
+  if (!app.user) {
+    setLoading(false);
+    setIsAuthorized(true);
+    return;
+  }
+
+  try {
+    // ✅ التحقق من sessionStorage أولاً
+    const cachedRoles = sessionStorage.getItem('user_roles');
+    const cachedUserId = sessionStorage.getItem('cached_user_id');
+    
+    let roles: string[] = [];
+
+    if (cachedRoles && cachedUserId === app.user.id) {
+      roles = JSON.parse(cachedRoles);
+      console.log('✅ [RouteGuard] Using sessionStorage roles:', roles);
+      
+      roleCache.data = roles;
+      roleCache.userId = app.user.id;
+      roleCache.timestamp = Date.now();
+    } else {
+      const now = Date.now();
+      const isCacheValid = 
+        roleCache.data && 
+        roleCache.userId === app.user.id && 
+        (now - roleCache.timestamp) < roleCache.ttl;
+
+      if (isCacheValid) {
+        roles = roleCache.data;
+        console.log('✅ [RouteGuard] Using roleCache roles:', roles);
+      } else {
+        console.log('🔄 [RouteGuard] Forcing fresh roles from DB...');
+        
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", app.user.id);
+
+        if (error) throw error;
+        
+        roles = data?.map((r: any) => r.role) || [];
+        
+        roleCache.data = roles;
+        roleCache.userId = app.user.id;
+        roleCache.timestamp = now;
+        console.log('📦 [RouteGuard] Fresh roles from DB:', roles);
+      }
+      
+      sessionStorage.setItem('user_roles', JSON.stringify(roles));
+      sessionStorage.setItem('cached_user_id', app.user.id);
+    }
+
+    const isAdmin = roles.includes("admin");
+    const isDeliveryCompany = roles.includes("delivery_company");
+    const isDistributor = roles.includes("distributor");
+    const isSeller = roles.includes("seller");
+
+    console.log("🔍 [RouteGuard] Path:", pathname);
+    console.log("🔍 [RouteGuard] Roles:", { isAdmin, isDeliveryCompany, isDistributor, isSeller });
+
+    // ============================================================
+    // ✅ ✅ ✅ منع الأدوار الأخرى من الوصول إلى /become-seller
+    // ============================================================
+    if (pathname === "/become-seller" || pathname.startsWith("/become-seller")) {
+      // ✅ إذا كان المستخدم عادي (ليس لديه أي دور) أو زائر → يسمح
+      const hasAnyRole = roles.some(r => 
+        r === 'admin' || r === 'seller' || 
+        r === 'delivery_company' || r === 'distributor' ||
+        r === 'delivery_company_admin'
+      );
+      
+      if (!hasAnyRole) {
+        console.log('✅ [RouteGuard] Regular user → Access granted to /become-seller');
+        setLoading(false);
+        setIsAuthorized(true);
+        return;
+      }
+      
+      // ❌ أي دور آخر → يمنع
+      console.log('🚫 [RouteGuard] Blocked: /become-seller for role:', roles);
+      redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
+      return;
+    }
+
+    // ============================================================
+    // ❌ منع الوصول لـ /dashboard لجميع الأدوار عدا البائع
+    // ============================================================
+    if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
+      if (isSeller) {
+        console.log('✅ [RouteGuard] Seller → access granted to /dashboard');
+        setLoading(false);
+        setIsAuthorized(true);
+        return;
+      }
+      
+      console.log('🚫 [RouteGuard] Blocked: /dashboard for role:', roles);
+      redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
+      return;
+    }
+
+    // ============================================================
+    // ✅ المسارات العامة
+    // ============================================================
+    const publicPaths = [
+      "/",
+      "/auth",
+      "/auth/login",
+      "/auth/register",
+      "/reset-password",
+      "/products",
+      "/categories",
+      "/search",
+      "/voice-search",
+      "/listing",
+      "/offer",
+      "/cart",
+      "/orders",
+      "/tracking",
+      "/contact",
+      "/about",
+      "/terms",
+      "/privacy",
+    ];
+
+    const isPublicPath = publicPaths.some(path => 
+      pathname === path || pathname.startsWith(path + '/')
+    );
+
+    if (isPublicPath) {
+      console.log('✅ [RouteGuard] Public path, access granted:', pathname);
       setLoading(false);
       setIsAuthorized(true);
       return;
     }
 
-    try {
-      // ============================================================
-      // ✅ ✅ ✅ التحقق من sessionStorage أولاً (أسرع)
-      // ============================================================
-      const cachedRoles = sessionStorage.getItem('user_roles');
-      const cachedUserId = sessionStorage.getItem('cached_user_id');
+    // ============================================================
+    // ✅ المسارات الخاصة بالمسؤول (Admin)
+    // ============================================================
+    const adminPaths = [
+      "/admin",
+      "/admin/dashboard",
+      "/admin/users",
+      "/admin/orders",
+      "/admin/products",
+      "/admin/categories",
+      "/admin/settings",
+      "/admin/analytics",
+      "/admin/reports",
+      "/admin/promo-codes",
+      "/admin/announcements",
+      "/admin/banners",
+      "/admin/delivery",
+      "/admin/delivery/companies",
+      "/admin/delivery/distributors",
+      "/admin/delivery/orders",
+      "/admin/delivery/admins",
+      "/admin/offers",
+      "/admin/bookings",
+      "/admin/complaints",
+      "/admin/reviews",
+      "/admin/notifications",
+      "/admin/logs",
+      "/admin/backup",
+      "/admin/restore",
+      "/admin/import",
+      "/admin/export",
+      "/admin/tools",
+    ];
+
+    // ✅ المسارات الخاصة بشركة التوصيل
+    const deliveryPaths = [
+      "/delivery/dashboard",
+      "/delivery/orders",
+      "/delivery/orders/new",
+      "/delivery/orders",
+      "/delivery/distributors",
+      "/delivery/messages",
+      "/delivery/conversation",
+      "/delivery/settings",
+      "/delivery/reports",
+      "/delivery/analytics",
+      "/delivery/complete",
+      "/delivery/admins",
+      "/delivery/notifications",
+      "/delivery/tracking",
+    ];
+
+    // ✅ المسارات الخاصة بالموزع
+    const distributorPaths = [
+      "/distributor/dashboard",
+      "/distributor/messages",
+      "/distributor/conversation",
+      "/distributor/settings",
+      "/distributor/review",
+      "/distributor/notifications",
+      "/distributor/tracking",
+      "/distributor/orders",
+      "/distributor/earnings",
+      "/distributor/profile",
+    ];
+
+    // ✅ إذا كان المستخدم مسؤول (Admin)
+    if (isAdmin) {
+      console.log('✅ [RouteGuard] Admin, access granted:', pathname);
+      setLoading(false);
+      setIsAuthorized(true);
+      return;
+    }
+
+    // ✅ إذا كان المستخدم شركة توصيل
+    if (isDeliveryCompany) {
+      const isDeliveryPath = deliveryPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
       
-      let roles: string[] = [];
-
-      // ✅ إذا كان الكاش موجود وصالح (نفس المستخدم)
-      if (cachedRoles && cachedUserId === app.user.id) {
-        roles = JSON.parse(cachedRoles);
-        console.log('✅ [RouteGuard] Using sessionStorage roles:', roles);
-        
-        // ✅ تحديث roleCache أيضاً
-        roleCache.data = roles;
-        roleCache.userId = app.user.id;
-        roleCache.timestamp = Date.now();
-      } else {
-        // ✅ إذا انتهت صلاحية roleCache أو مستخدم جديد
-        const now = Date.now();
-        const isCacheValid = 
-          roleCache.data && 
-          roleCache.userId === app.user.id && 
-          (now - roleCache.timestamp) < roleCache.ttl;
-
-        if (isCacheValid) {
-          // ✅ استخدام roleCache
-          roles = roleCache.data;
-          console.log('✅ [RouteGuard] Using roleCache roles:', roles);
-        } else {
-          // ✅ جلب من DB إذا انتهت الصلاحية
-          console.log('🔄 [RouteGuard] Forcing fresh roles from DB...');
-          
-          const { data, error } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", app.user.id);
-
-          if (error) throw error;
-          
-          roles = data?.map((r: any) => r.role) || [];
-          
-          // ✅ تحديث roleCache
-          roleCache.data = roles;
-          roleCache.userId = app.user.id;
-          roleCache.timestamp = now;
-          console.log('📦 [RouteGuard] Fresh roles from DB:', roles);
-        }
-        
-        // ✅ حفظ في sessionStorage
-        sessionStorage.setItem('user_roles', JSON.stringify(roles));
-        sessionStorage.setItem('cached_user_id', app.user.id);
+      if (isDeliveryPath) {
+        console.log('✅ [RouteGuard] Delivery path, access granted:', pathname);
+        setLoading(false);
+        setIsAuthorized(true);
+        return;
       }
 
-      const isAdmin = roles.includes("admin");
-      const isDeliveryCompany = roles.includes("delivery_company");
-      const isDistributor = roles.includes("distributor");
-
-      console.log("🔍 [RouteGuard] Path:", pathname);
-      console.log("🔍 [RouteGuard] Roles:", { isAdmin, isDeliveryCompany, isDistributor });
-
-      // ============================================================
-      // ❌ منع الوصول لـ /dashboard لجميع الأدوار عدا البائع
-      // ============================================================
-      if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
-        // ✅ إذا كان المستخدم بائع (seller) → يسمح له
-        if (roles.includes("seller")) {
-          console.log('✅ [RouteGuard] Seller → access granted to /dashboard');
-          setLoading(false);
-          setIsAuthorized(true);
-          return;
-        }
-        
-        // ❌ أي دور آخر (موزع، شركة توصيل، أدمن، مستخدم عادي) → يمنع
-        console.log('🚫 [RouteGuard] Blocked: /dashboard for role:', roles);
+      const isDistributorPath = distributorPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      const isAdminPath = adminPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      
+      if (isDistributorPath || isAdminPath) {
+        console.log('🚫 [RouteGuard] Delivery → blocked path:', pathname);
         redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
         return;
       }
+    }
 
-      // ============================================================
-      // ✅ 1. تعريف المسارات المسموحة لكل دور
-      // ============================================================
-      
-      // ✅ المسارات العامة (متاحة للجميع)
-      const publicPaths = [
-        "/",
-        "/auth",
-        "/auth/login",
-        "/auth/register",
-        "/reset-password",
-        "/products",
-        "/categories",
-        "/search",
-        "/voice-search",
-        "/listing",
-        "/offer",
-        "/cart",
-        "/orders",
-        "/tracking",
-        "/contact",
-        "/about",
-        "/terms",
-        "/privacy",
-         "/become-seller",
-      ];
-
-      // ✅ المسارات الخاصة بالمسؤول (Admin)
-      const adminPaths = [
-        "/admin",
-        "/admin/dashboard",
-        "/admin/users",
-        "/admin/orders",
-        "/admin/products",
-        "/admin/categories",
-        "/admin/settings",
-        "/admin/analytics",
-        "/admin/reports",
-        "/admin/promo-codes",
-        "/admin/announcements",
-        "/admin/banners",
-        "/admin/delivery",
-        "/admin/delivery/companies",
-        "/admin/delivery/distributors",
-        "/admin/delivery/orders",
-        "/admin/delivery/admins",
-        "/admin/offers",
-        "/admin/bookings",
-        "/admin/complaints",
-        "/admin/reviews",
-        "/admin/notifications",
-        "/admin/logs",
-        "/admin/backup",
-        "/admin/restore",
-        "/admin/import",
-        "/admin/export",
-        "/admin/tools",
-      ];
-
-      // ✅ المسارات الخاصة بشركة التوصيل (Delivery Company)
-      const deliveryPaths = [
-        "/delivery/dashboard",
-        "/delivery/orders",
-        "/delivery/orders/new",
-        "/delivery/orders",
-        "/delivery/distributors",
-        "/delivery/messages",
-        "/delivery/conversation",
-        "/delivery/settings",
-        "/delivery/reports",
-        "/delivery/analytics",
-        "/delivery/complete",
-        "/delivery/admins",
-        "/delivery/notifications",
-        "/delivery/tracking",
-      ];
-
-      // ✅ المسارات الخاصة بالموزع (Distributor)
-      const distributorPaths = [
-        "/distributor/dashboard",
-        "/distributor/messages",
-        "/distributor/conversation",
-        "/distributor/settings",
-        "/distributor/review",
-        "/distributor/notifications",
-        "/distributor/tracking",
-        "/distributor/orders",
-        "/distributor/earnings",
-        "/distributor/profile",
-
-      ];
-
-      // ============================================================
-      // ✅ 2. التحقق من الوصول مع توجيه الأدوار للصفحة الرئيسية
-      // ============================================================
-
-      // ✅ 2.1 التحقق من المسارات العامة
-      const isPublicPath = publicPaths.some(path => 
+    // ✅ إذا كان المستخدم موزع
+    if (isDistributor) {
+      const isDistributorPath = distributorPaths.some(path => 
         pathname === path || pathname.startsWith(path + '/')
       );
-
-      // ✅ ✅ ✅ 2.1.1 إذا كان المسار هو الصفحة الرئيسية، نوجه حسب الدور
-      if (pathname === "/") {
-        // ✅ إذا كان المستخدم مسجل
-        if (app.user) {
-          // ✅ موزع → Dashboard الموزع
-          if (roles.includes('distributor')) {
-            console.log('🔄 [RouteGuard] Distributor → Redirecting to /distributor/dashboard');
-            setLoading(false);
-            setIsAuthorized(false);
-            navigate({ to: '/distributor/dashboard', replace: true });
-            return;
-          }
-          
-          // ✅ شركة توصيل → Dashboard التوصيل
-          if (roles.includes('delivery_company')) {
-            console.log('🔄 [RouteGuard] Delivery Company → Redirecting to /delivery/dashboard');
-            setLoading(false);
-            setIsAuthorized(false);
-            navigate({ to: '/delivery/dashboard', replace: true });
-            return;
-          }
-          
-          // ✅ مسؤول → Dashboard الإدارة
-          if (roles.includes('admin')) {
-            console.log('✅ [RouteGuard] Admin → Access granted to /');
-            setLoading(false);
-            setIsAuthorized(true);
-            return;
-          }
-          
-          // ✅ بائع → Dashboard البائع
-          if (roles.includes('seller')) {
-            console.log('✅ [RouteGuard] Seller → Access granted to /');
-            setLoading(false);
-            setIsAuthorized(true);
-            return;
-          }
-          
-          // ✅ مستخدم عادي → يبقى في الصفحة الرئيسية
-          console.log('✅ [RouteGuard] Regular user → Access granted to /');
-          setLoading(false);
-          setIsAuthorized(true);
-          return;
-        }
-        
-        // ✅ إذا كان المستخدم غير مسجل → يبقى في الصفحة الرئيسية
-        console.log('✅ [RouteGuard] Guest → Access granted to /');
+      
+      if (isDistributorPath) {
+        console.log('✅ [RouteGuard] Distributor path, access granted:', pathname);
         setLoading(false);
         setIsAuthorized(true);
         return;
       }
 
-      if (isPublicPath) {
-        console.log('✅ [RouteGuard] Public path, access granted:', pathname);
-        setLoading(false);
-        setIsAuthorized(true);
+      const isDeliveryPath = deliveryPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      const isAdminPath = adminPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      
+      if (isDeliveryPath || isAdminPath) {
+        console.log('🚫 [RouteGuard] Distributor → blocked path:', pathname);
+        redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
         return;
       }
-
-      // ✅ 2.2 إذا كان المستخدم مسؤول (Admin)
-      if (isAdmin) {
-        // ✅ المسؤول يسمح له بكل شيء عدا /dashboard (تم منعها أعلاه)
-        console.log('✅ [RouteGuard] Admin, access granted:', pathname);
-        setLoading(false);
-        setIsAuthorized(true);
-        return;
-      }
-
-      // ✅ 2.3 إذا كان المستخدم شركة توصيل (Delivery Company)
-      if (isDeliveryCompany) {
-        const isDeliveryPath = deliveryPaths.some(path => 
-          pathname === path || pathname.startsWith(path + '/')
-        );
-        
-        if (isDeliveryPath) {
-          console.log('✅ [RouteGuard] Delivery path, access granted:', pathname);
-          setLoading(false);
-          setIsAuthorized(true);
-          return;
-        }
-
-        // ❌ منع شركة التوصيل من الوصول لصفحات الموزع أو المسؤول
-        const isDistributorPath = distributorPaths.some(path => 
-          pathname === path || pathname.startsWith(path + '/')
-        );
-        const isAdminPath = adminPaths.some(path => 
-          pathname === path || pathname.startsWith(path + '/')
-        );
-        
-        if (isDistributorPath || isAdminPath) {
-          console.log('🚫 [RouteGuard] Delivery → blocked path:', pathname);
-          redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
-          return;
-        }
-      }
-
-      // ✅ 2.4 إذا كان المستخدم موزع (Distributor)
-      if (isDistributor) {
-        const isDistributorPath = distributorPaths.some(path => 
-          pathname === path || pathname.startsWith(path + '/')
-        );
-        
-        if (isDistributorPath) {
-          console.log('✅ [RouteGuard] Distributor path, access granted:', pathname);
-          setLoading(false);
-          setIsAuthorized(true);
-          return;
-        }
-
-        // ❌ منع الموزع من الوصول لصفحات شركة التوصيل أو المسؤول
-        const isDeliveryPath = deliveryPaths.some(path => 
-          pathname === path || pathname.startsWith(path + '/')
-        );
-        const isAdminPath = adminPaths.some(path => 
-          pathname === path || pathname.startsWith(path + '/')
-        );
-        
-        if (isDeliveryPath || isAdminPath) {
-          console.log('🚫 [RouteGuard] Distributor → blocked path:', pathname);
-          redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
-          return;
-        }
-      }
-
-      // ✅ 2.5 مستخدم عادي (بدون دور)
-      if (!isAdmin && !isDeliveryCompany && !isDistributor) {
-        // ✅ منع المستخدم العادي من الوصول لصفحات الإدارة
-        const isRestrictedPath = adminPaths.some(path => 
-          pathname === path || pathname.startsWith(path + '/')
-        ) || distributorPaths.some(path => 
-          pathname === path || pathname.startsWith(path + '/')
-        ) || deliveryPaths.some(path => 
-          pathname === path || pathname.startsWith(path + '/')
-        );
-        
-        if (isRestrictedPath) {
-          console.log('🚫 [RouteGuard] Regular user → restricted path:', pathname);
-          redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
-          return;
-        }
-      }
-
-      // ✅ إذا لم يتم العثور على أي قاعدة، السماح بالوصول
-      console.log('✅ [RouteGuard] No restriction found, access granted:', pathname);
-      setLoading(false);
-      setIsAuthorized(true);
-
-    } catch (error) {
-      console.error('❌ [RouteGuard] Error checking authorization:', error);
-      setLoading(false);
-      setIsAuthorized(true); // السماح بالوصول في حالة الخطأ
     }
-  }, [app.user, pathname, navigate, isArabic]);
 
+    // ✅ مستخدم عادي (بدون دور) - السماح بالوصول للمسارات العامة فقط
+    if (!isAdmin && !isDeliveryCompany && !isDistributor && !isSeller) {
+      const isRestrictedPath = adminPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      ) || distributorPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      ) || deliveryPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      );
+      
+      if (isRestrictedPath) {
+        console.log('🚫 [RouteGuard] Regular user → restricted path:', pathname);
+        redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
+        return;
+      }
+    }
+
+    // ✅ إذا لم يتم العثور على أي قاعدة، السماح بالوصول
+    console.log('✅ [RouteGuard] No restriction found, access granted:', pathname);
+    setLoading(false);
+    setIsAuthorized(true);
+
+  } catch (error) {
+    console.error('❌ [RouteGuard] Error checking authorization:', error);
+    setLoading(false);
+    setIsAuthorized(true);
+  }
+}, [app.user, pathname, navigate, isArabic]);
   // ✅ دالة التوجيه إلى الصفحة الآمنة
   const redirectToSafePage = useCallback((
     isAdmin: boolean,

@@ -143,6 +143,7 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
           quality={85}
           priority={true}
           objectFit="cover"
+          transparent={true}
           className="h-full w-full object-contain md:object-cover opacity-85"
         />
         {/* طبقة تدرج لضمان وضوح النصوص فوق الصورة */}
@@ -171,12 +172,13 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
             <div className="relative w-20 h-20 sm:w-32 sm:h-32 md:w-40 md:h-40 mx-auto animate-float-logo">
               <OptimizedImage
                 src="/images/Logo.png"
-                alt="السوق لعندك"
+                alt="zooq"
                 width={200}
                 height={200}
                 quality={90}
                 priority={true}
                 objectFit="contain"
+                transparent={true}
                 className="w-full h-full object-contain drop-shadow-2xl relative z-10 animate-pulse-glow"
               />
               
@@ -193,20 +195,20 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
           {/* اسم التطبيق */}
           <h1 className="text-xl sm:text-3xl font-black mb-1">
             <span className="bg-gradient-to-r from-[#f5d742] via-[#f0e68c] to-[#f5d742] bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(245,215,66,0.4)]">
-              {isArabic ? "السوق لعندك" : "Souq Le3ndak"}
+              zooq
             </span>
           </h1>
 
           {/* الوصف */}
           <div className="space-y-1 px-2">
             <p className="text-xs sm:text-base font-bold text-[#4a9e96]/90 tracking-wide">
-              {isArabic ? "🇸🇾 سوقك السوري بين يديك" : "🇸🇾 Your Syrian Market"}
+              {isArabic ? "تسوق بذوق" : "Shop with taste"}
             </p>
             
             <p className="text-[11px] sm:text-xs text-white/70 max-w-md mx-auto leading-relaxed line-clamp-2 sm:line-clamp-none">
               {isArabic 
-                ? "اكتشف آلاف المنتجات من متاجر موثوقة في جميع المحافظات السورية. تسوق بسهولة وادفع بأمان."
-                : "Discover thousands of products from trusted stores across all Syrian governorates."}
+                ? "اكتشف آلاف المنتجات من متاجر موثوقة. تسوق بسهولة وادفع بأمان."
+                : "Discover thousands of products from trusted stores. Shop easily and pay securely."}
             </p>
           </div>
 
@@ -251,7 +253,7 @@ export function LoginSplash({ onComplete }: LoginSplashProps) {
           <p className="text-[7px] sm:text-[9px] text-white/30 tracking-[0.15em] font-bold uppercase flex items-center justify-center gap-2">
             <span>© {new Date().getFullYear()}</span>
             <Heart className="h-2 w-2 text-[#2a655f]/70 animate-heartbeat" />
-            <span>{isArabic ? "السوق لعندك" : "Souq Le3ndak"}</span>
+            <span>zooq</span>
           </p>
         </div>
 
