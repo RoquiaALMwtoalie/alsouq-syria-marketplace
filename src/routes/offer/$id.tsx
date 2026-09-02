@@ -1,4 +1,4 @@
-// src/routes/offer/$id.tsx - الكود المصحح بالكامل مع دعم الألوان والفيرنتات والاختيار التلقائي
+// src/routes/offer/$id.tsx - الكود المصحح بالكامل (نسخة احترافية)
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Gift, Sparkles, Package, Store, ArrowRight, 
-  ChevronLeft, Star, MapPin, 
+  ChevronLeft, ChevronRight,
+  Star, MapPin, 
   Gift as GiftIcon, Tag, ShoppingCart, CheckCircle,
   Truck, Shield, Clock, Award, Minus, Plus, AlertTriangle,
   Layers, Palette, Ruler, Trash2, Check, X,
@@ -52,25 +53,99 @@ function OfferDetailPage() {
   const [newStoreName, setNewStoreName] = useState("");
   const [pendingAddData, setPendingAddData] = useState<any>(null);
   const [mainImage, setMainImage] = useState<string>("");
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const [isVariationSelectedFlag, setIsVariationSelectedFlag] = useState<boolean>(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
 
   // ========== ✅ QUERIES ==========
   const { data: rawOffer, isLoading, isError } = useProductOfferByIdV2(id);
   
-  const offer = useMemo(() => {
-    if (!rawOffer) return null;
-    return {
-      ...rawOffer,
-      products: Array.isArray(rawOffer.products) 
-        ? rawOffer.products[0] 
-        : rawOffer.products,
-      free_product: Array.isArray(rawOffer.free_product) 
-        ? rawOffer.free_product[0] 
-        : rawOffer.free_product,
-    };
-  }, [rawOffer]);
-  
   const { data: listingsData } = useListings({ limit: 1000 });
   const listings = listingsData?.data || [];
+
+  // ========== ✅ OFFER ==========
+  const offer = useMemo(() => {
+    if (!rawOffer) return null;
+    
+    const products = Array.isArray(rawOffer.products) 
+      ? rawOffer.products 
+      : rawOffer.products ? [rawOffer.products] : [];
+    
+    let mainProduct = products[0] || null;
+    let freeProduct = null;
+    
+    if (rawOffer.offer_type === 'bundle' && rawOffer.free_listing_id) {
+      const freeListing = listings.find((l: any) => l.id === rawOffer.free_listing_id);
+      if (freeListing) {
+        freeProduct = freeListing;
+      }
+    } else if (products.length > 1) {
+      freeProduct = products[1];
+    } else if (rawOffer.free_product) {
+      freeProduct = rawOffer.free_product;
+    }
+    
+    if (rawOffer.offer_type === 'bundle' && mainProduct) {
+      const hasColors = (mainProduct.colors && mainProduct.colors.length > 0);
+      const hasVariations = (mainProduct.variations && mainProduct.variations.length > 0);
+      
+      if (hasColors && !hasVariations) {
+        const colorVariations = mainProduct.colors.map((color: any) => ({
+          id: color.id,
+          combination: {
+            colors: color.color_name_ar || color.color_name_en || 'لون',
+            hex: color.color_hex || '#ccc'
+          },
+          price: mainProduct.price || 0,
+          old_price: mainProduct.old_price || null,
+          image_url: color.image_url || null,
+          is_active: true,
+          stock_quantity: 0,
+          _type: 'color'
+        }));
+        
+        mainProduct = {
+          ...mainProduct,
+          variations: colorVariations,
+          _hasOnlyColors: true
+        };
+      }
+    }
+    
+    if (freeProduct) {
+      const hasColors = (freeProduct.colors && freeProduct.colors.length > 0);
+      const hasVariations = (freeProduct.variations && freeProduct.variations.length > 0);
+      
+      if (hasColors && !hasVariations) {
+        const colorVariations = freeProduct.colors.map((color: any) => ({
+          id: color.id,
+          combination: {
+            colors: color.color_name_ar || color.color_name_en || 'لون',
+            hex: color.color_hex || '#ccc'
+          },
+          price: freeProduct.price || 0,
+          old_price: freeProduct.old_price || null,
+          image_url: color.image_url || null,
+          is_active: true,
+          stock_quantity: 0,
+          _type: 'color'
+        }));
+        
+        freeProduct = {
+          ...freeProduct,
+          variations: colorVariations,
+          _hasOnlyColors: true
+        };
+      }
+    }
+    
+    return {
+      ...rawOffer,
+      products: mainProduct,
+      free_product: freeProduct,
+    };
+  }, [rawOffer, listings]);
 
   // ========== ✅ CALLBACKS ==========
   const getPromoTypeLabel = useCallback((type: string) => {
@@ -112,10 +187,9 @@ function OfferDetailPage() {
   const isCrossSell = useMemo(() => offer?.offer_type === 'cross_sell', [offer]);
 
   // ============================================================
-  // ✅✅✅ دوال مساعدة لدعم الألوان
+  // ✅ دوال مساعدة لدعم الألوان
   // ============================================================
 
-  // ✅ جلب خيارات المنتج (فيرنتات + ألوان)
   const getProductOptions = useCallback((product: any) => {
     if (!product) return { variations: [], colors: [], hasOptions: false };
     
@@ -133,7 +207,6 @@ function OfferDetailPage() {
     return { variations: [], colors: [], hasOptions: false };
   }, []);
 
-  // ✅ جلب اسم الخيار
   const getOptionDisplayName = useCallback((option: any, type: 'variation' | 'color') => {
     if (type === 'variation') {
       const combo = option.combination || {};
@@ -144,7 +217,6 @@ function OfferDetailPage() {
     return option.color_name_ar || option.color_name_en || 'لون';
   }, []);
 
-  // ✅ جلب سعر الخيار
   const getOptionPrice = useCallback((option: any, product: any, type: 'variation' | 'color') => {
     if (type === 'variation') {
       return option.price || product.price || 0;
@@ -152,7 +224,6 @@ function OfferDetailPage() {
     return product.price || 0;
   }, []);
 
-  // ✅ جلب صورة الخيار
   const getOptionImage = useCallback((option: any, type: 'variation' | 'color') => {
     if (type === 'variation') {
       return option.image_url || null;
@@ -160,7 +231,6 @@ function OfferDetailPage() {
     return option.image_url || null;
   }, []);
 
-  // ✅ فيرنتات المنتج الرئيسي
   const mainVariations = useMemo(() => {
     const selectedIds = offer?.variation_ids || [];
     const allVariations = mainProduct?.variations || [];
@@ -172,7 +242,6 @@ function OfferDetailPage() {
     return allVariations.filter((v: any) => selectedIds.includes(v.id));
   }, [mainProduct, offer?.variation_ids]);
 
-  // ✅ فيرنتات الهدية
   const giftVariations = useMemo(() => {
     const selectedIds = offer?.result_variation_ids || [];
     const allVariations = freeProduct?.variations || [];
@@ -185,7 +254,7 @@ function OfferDetailPage() {
   }, [freeProduct, offer?.result_variation_ids]);
 
   // ============================================================
-  // ✅✅✅ المنتجات المطلوبة (لـ Bundle) مع دعم الألوان
+  // ✅ المنتجات المطلوبة (لـ Bundle) مع دعم الألوان
   // ============================================================
   const requiredProducts = useMemo(() => {
     if (!offer?.required_product_ids || offer.required_product_ids.length === 0) {
@@ -204,7 +273,6 @@ function OfferDetailPage() {
         (rv: any) => rv.product_id === productId
       )?.quantity || 1;
       
-      // ✅ جلب الخيارات (فيرنتات أو ألوان)
       const variations = product.variations || [];
       const colors = product.colors || product.product_colors || [];
       
@@ -249,7 +317,7 @@ function OfferDetailPage() {
   }, [offer, listings, selectedVariations]);
 
   // ============================================================
-  // ✅✅✅ المنتج الرئيسي مع خياراته (لـ BOGO و Cross-sell) مع دعم الألوان
+  // ✅ المنتج الرئيسي مع خياراته (لـ BOGO و Cross-sell) مع دعم الألوان
   // ============================================================
   const mainProductWithVariations = useMemo(() => {
     if (!mainProduct || isBundle) return null;
@@ -262,7 +330,6 @@ function OfferDetailPage() {
     const isOver = selectedTotal > totalRequiredQuantity;
     const remaining = Math.max(0, totalRequiredQuantity - selectedTotal);
     
-    // ✅ جلب الخيارات (فيرنتات أو ألوان)
     const variations = mainProduct.variations || [];
     const colors = mainProduct.colors || mainProduct.product_colors || [];
     
@@ -294,6 +361,301 @@ function OfferDetailPage() {
     };
   }, [mainProduct, offer?.buy_quantity, selectedVariations, isBundle]);
 
+  // ============================================================
+  // ✅ دالة مساعدة لجلب صورة الخيار من قاعدة البيانات
+  // ============================================================
+  const getVariationImage = useCallback((product: any, variationId: string): string | null => {
+    if (!product) return null;
+    
+    // ✅ 1. البحث في product_variations
+    const variation = product.variations?.find((v: any) => v.id === variationId);
+    if (variation?.image_url) {
+      return variation.image_url;
+    }
+    
+    // ✅ 2. إذا كان للخيار color_id → البحث في product_colors
+    if (variation?.color_id) {
+      const color = product.colors?.find((c: any) => c.id === variation.color_id);
+      if (color?.image_url) {
+        return color.image_url;
+      }
+    }
+    
+    // ✅ 3. البحث في product_colors مباشرة (إذا كان الـ ID هو لون)
+    const color = product.colors?.find((c: any) => c.id === variationId);
+    if (color?.image_url) {
+      return color.image_url;
+    }
+    
+    // ✅ 4. إذا كان الخيار يحتوي على combo مع لون
+    if (variation?.combination) {
+      const combo = variation.combination || {};
+      const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+      for (const key of colorKeys) {
+        if (combo[key]) {
+          const colorValue = String(combo[key]).trim();
+          const foundColor = product.colors?.find((c: any) => 
+            String(c.color_name_ar || "").trim().toLowerCase() === colorValue.toLowerCase()
+          );
+          if (foundColor?.image_url) {
+            return foundColor.image_url;
+          }
+        }
+      }
+    }
+    
+    // ✅ 5. الصورة الافتراضية للمنتج
+    return product.cover_url || null;
+  }, []);
+
+  // ============================================================
+  // ✅✅✅ مصفوفة صور العرض (تشمل جميع الصور - المنتجات + الخيارات + الألوان)
+  // ============================================================
+  const offerImages = useMemo(() => {
+    const images: Array<{ 
+      url: string; 
+      title: string; 
+      type: 'main' | 'free' | 'required' | 'variation' | 'color' | 'gift_variation' | 'gift_color';
+      variationId?: string;
+      colorId?: string;
+      productId?: string;
+      isGift?: boolean;
+      isRequired?: boolean;
+      displayName?: string;
+    }> = [];
+    
+    const addImage = (url: string, title: string, type: any, extra?: any) => {
+      if (!url) return;
+      const exists = images.some(img => img.url === url);
+      if (!exists) {
+        images.push({ url, title, type, ...extra });
+      }
+    };
+    
+    // ✅ 1. المنتج الرئيسي + خياراته + ألوانه
+    if (mainProduct) {
+      addImage(
+        mainProduct.cover_url, 
+        mainProduct.title_ar || 'المنتج الرئيسي', 
+        'main',
+        { productId: mainProduct.id, displayName: mainProduct.title_ar || 'المنتج الرئيسي' }
+      );
+      
+      const mainVariations = mainProduct.variations || [];
+      mainVariations.forEach((v: any) => {
+        let imageUrl = v.image_url || null;
+        let displayName = '';
+        
+        if (!imageUrl && v.color_id) {
+          const color = mainProduct.colors?.find((c: any) => c.id === v.color_id);
+          if (color?.image_url) imageUrl = color.image_url;
+          if (color?.color_name_ar) displayName = color.color_name_ar;
+        }
+        
+        if (!imageUrl) {
+          const combo = v.combination || {};
+          const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+          for (const key of colorKeys) {
+            if (combo[key]) {
+              const colorValue = String(combo[key]).trim();
+              const color = mainProduct.colors?.find((c: any) => 
+                String(c.color_name_ar || "").trim().toLowerCase() === colorValue.toLowerCase()
+              );
+              if (color?.image_url) {
+                imageUrl = color.image_url;
+                displayName = color.color_name_ar || colorValue;
+                break;
+              }
+              displayName = colorValue;
+            }
+          }
+        }
+        
+        if (imageUrl) {
+          const comboText = Object.entries(v.combination || {})
+            .map(([key, val]) => `${val}`)
+            .join(' • ');
+          addImage(
+            imageUrl,
+            `${mainProduct.title_ar || 'منتج'} - ${comboText || 'خيار'}`,
+            'variation',
+            { variationId: v.id, productId: mainProduct.id, displayName: comboText || displayName || 'خيار' }
+          );
+        }
+      });
+      
+      const colors = mainProduct.colors || mainProduct.product_colors || [];
+      colors.forEach((c: any) => {
+        if (c.image_url) {
+          addImage(
+            c.image_url,
+            `${mainProduct.title_ar || 'منتج'} - ${c.color_name_ar || 'لون'}`,
+            'color',
+            { colorId: c.id, productId: mainProduct.id, displayName: c.color_name_ar || 'لون' }
+          );
+        }
+      });
+    }
+    
+    // ✅ 2. الهدية + خياراتها + ألوانها
+    if (freeProduct) {
+      addImage(
+        freeProduct.cover_url,
+        freeProduct.title_ar || 'الهدية',
+        'free',
+        { productId: freeProduct.id, isGift: true, displayName: freeProduct.title_ar || 'الهدية' }
+      );
+      
+      const giftVariations = freeProduct.variations || [];
+      giftVariations.forEach((v: any) => {
+        let imageUrl = v.image_url || null;
+        let displayName = '';
+        
+        if (!imageUrl && v.color_id) {
+          const color = freeProduct.colors?.find((c: any) => c.id === v.color_id);
+          if (color?.image_url) imageUrl = color.image_url;
+          if (color?.color_name_ar) displayName = color.color_name_ar;
+        }
+        
+        if (!imageUrl) {
+          const combo = v.combination || {};
+          const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+          for (const key of colorKeys) {
+            if (combo[key]) {
+              const colorValue = String(combo[key]).trim();
+              const color = freeProduct.colors?.find((c: any) => 
+                String(c.color_name_ar || "").trim().toLowerCase() === colorValue.toLowerCase()
+              );
+              if (color?.image_url) {
+                imageUrl = color.image_url;
+                displayName = color.color_name_ar || colorValue;
+                break;
+              }
+              displayName = colorValue;
+            }
+          }
+        }
+        
+        if (imageUrl) {
+          const comboText = Object.entries(v.combination || {})
+            .map(([key, val]) => `${val}`)
+            .join(' • ');
+          addImage(
+            imageUrl,
+            `${freeProduct.title_ar || 'هدية'} - ${comboText || 'خيار'}`,
+            'gift_variation',
+            { variationId: v.id, productId: freeProduct.id, isGift: true, displayName: comboText || displayName || 'خيار' }
+          );
+        }
+      });
+      
+      const giftColors = freeProduct.colors || freeProduct.product_colors || [];
+      giftColors.forEach((c: any) => {
+        if (c.image_url) {
+          addImage(
+            c.image_url,
+            `${freeProduct.title_ar || 'هدية'} - ${c.color_name_ar || 'لون'}`,
+            'gift_color',
+            { colorId: c.id, productId: freeProduct.id, isGift: true, displayName: c.color_name_ar || 'لون' }
+          );
+        }
+      });
+    }
+    
+    // ✅ 3. المنتجات المطلوبة (Bundle) + خياراتها + ألوانها
+    if (isBundle) {
+      requiredProducts.forEach((req: any) => {
+        const product = req.product;
+        if (!product) return;
+        
+        addImage(
+          product.cover_url,
+          product.title_ar || 'منتج مطلوب',
+          'required',
+          { productId: product.id, isRequired: true, displayName: product.title_ar || 'منتج مطلوب' }
+        );
+        
+        const variations = product.variations || [];
+        variations.forEach((v: any) => {
+          let imageUrl = v.image_url || null;
+          let displayName = '';
+          
+          if (!imageUrl && v.color_id) {
+            const color = product.colors?.find((c: any) => c.id === v.color_id);
+            if (color?.image_url) imageUrl = color.image_url;
+            if (color?.color_name_ar) displayName = color.color_name_ar;
+          }
+          
+          if (!imageUrl) {
+            const combo = v.combination || {};
+            const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+            for (const key of colorKeys) {
+              if (combo[key]) {
+                const colorValue = String(combo[key]).trim();
+                const color = product.colors?.find((c: any) => 
+                  String(c.color_name_ar || "").trim().toLowerCase() === colorValue.toLowerCase()
+                );
+                if (color?.image_url) {
+                  imageUrl = color.image_url;
+                  displayName = color.color_name_ar || colorValue;
+                  break;
+                }
+                displayName = colorValue;
+              }
+            }
+          }
+          
+          if (imageUrl) {
+            const comboText = Object.entries(v.combination || {})
+              .map(([key, val]) => `${val}`)
+              .join(' • ');
+            addImage(
+              imageUrl,
+              `${product.title_ar || 'منتج'} - ${comboText || 'خيار'}`,
+              'variation',
+              { variationId: v.id, productId: product.id, isRequired: true, displayName: comboText || displayName || 'خيار' }
+            );
+          }
+        });
+        
+        const colors = product.colors || product.product_colors || [];
+        colors.forEach((c: any) => {
+          if (c.image_url) {
+            addImage(
+              c.image_url,
+              `${product.title_ar || 'منتج'} - ${c.color_name_ar || 'لون'}`,
+              'color',
+              { colorId: c.id, productId: product.id, isRequired: true, displayName: c.color_name_ar || 'لون' }
+            );
+          }
+        });
+      });
+    }
+    
+    return images;
+  }, [mainProduct, freeProduct, requiredProducts, isBundle]);
+
+  // ============================================================
+  // ✅✅✅ دالة موحدة لتغيير الصورة (حل مشكلة الضغط مرتين)
+  // ============================================================
+  const changeImage = useCallback((index: number) => {
+    if (index < 0 || index >= offerImages.length) return;
+    
+    const image = offerImages[index];
+    setCurrentImageIndex(index);
+    setMainImage(image.url);
+    
+    if (image.variationId) {
+      setSelectedOptionId(image.variationId);
+      setIsVariationSelectedFlag(true);
+    } else if (image.colorId) {
+      setSelectedOptionId(image.colorId);
+      setIsVariationSelectedFlag(true);
+    } else {
+      setIsVariationSelectedFlag(false);
+    }
+  }, [offerImages]);
+
   // ✅ حساب السعر النهائي
   const finalPrice = useMemo(() => {
     if (!offer) return 0;
@@ -305,7 +667,6 @@ function OfferDetailPage() {
       const selectedMap = selectedVariations[productId] || {};
       const selectedVariationIds = Object.keys(selectedMap).filter(id => selectedMap[id] > 0);
       
-      // ✅ تحقق من القيمة الافتراضية للمنتجات التي ليس لها خيارات
       const defaultKey = `default-${productId}`;
       if (selectedMap[defaultKey] > 0) {
         return mainProduct.price * selectedMap[defaultKey] * quantity;
@@ -342,7 +703,6 @@ function OfferDetailPage() {
         const product = req.product;
         const selectedMap = selectedVariations[product.id] || {};
         
-        // ✅ تحقق من القيمة الافتراضية للمنتجات التي ليس لها خيارات
         const defaultKey = `default-${product.id}`;
         if (selectedMap[defaultKey] > 0) {
           total += product.price * selectedMap[defaultKey];
@@ -453,16 +813,14 @@ function OfferDetailPage() {
   }, [isBundle, isBogo, isCrossSell, requiredProducts, mainProductWithVariations]);
 
   // ============================================================
-  // ✅✅✅ التحقق من اختيار الخيارات (مع دعم المنتجات التي ليس لها خيارات)
+  // ✅ التحقق من اختيار الخيارات (مع دعم المنتجات التي ليس لها خيارات)
   // ============================================================
   const isVariationSelected = useMemo(() => {
     if (!offer) return false;
     
-    // ✅ دالة مساعدة للتحقق من اكتمال الكمية لمنتج معين
     const checkProductComplete = (productId: string, requiredQty: number, options: any[]) => {
       const selectedMap = selectedVariations[productId] || {};
       
-      // ✅ إذا كان المنتج ليس لديه خيارات → تحقق من وجود قيمة افتراضية
       if (options.length === 0) {
         const defaultKey = `default-${productId}`;
         return (selectedMap[defaultKey] || 0) >= requiredQty;
@@ -472,7 +830,6 @@ function OfferDetailPage() {
       return selectedTotal >= requiredQty;
     };
     
-    // ✅ BOGO: تحقق من المنتج الرئيسي والهدية
     if (offer.offer_type === 'bogo') {
       const mainComplete = mainProductWithVariations 
         ? checkProductComplete(
@@ -485,7 +842,6 @@ function OfferDetailPage() {
       return mainComplete && giftComplete;
     }
     
-    // ✅ Cross-sell: تحقق من المنتج الرئيسي والهدية
     if (offer.offer_type === 'cross_sell') {
       const mainComplete = mainProductWithVariations 
         ? checkProductComplete(
@@ -498,7 +854,6 @@ function OfferDetailPage() {
       return mainComplete && giftComplete;
     }
     
-    // ✅ Bundle: تحقق من جميع المنتجات والهدية
     if (offer.offer_type === 'bundle') {
       const productsComplete = requiredProducts.every((item: any) => 
         checkProductComplete(item.productId, item.totalRequiredQuantity, item.options)
@@ -536,15 +891,91 @@ function OfferDetailPage() {
   }, [offer, mainProduct, app.lang]);
 
   // ========== ✅ EFFECTS ==========
+  
   // ✅ تعيين الصورة الأولية
   useEffect(() => {
-    if (mainProduct?.cover_url) {
+    if (offerImages.length > 0) {
+      setMainImage(offerImages[0].url);
+      setCurrentImageIndex(0);
+    } else if (mainProduct?.cover_url) {
       setMainImage(mainProduct.cover_url);
     }
-  }, [mainProduct]);
+  }, [offerImages, mainProduct]);
 
   // ============================================================
-  // ✅✅✅ اختيار تلقائي للخيارات (فيرنتات أو ألوان) للمنتجات المطلوبة في Bundle
+  // ✅✅✅ تغيير الصورة الرئيسية (مصحح بالكامل)
+  // ============================================================
+  useEffect(() => {
+    if (!mainProduct) return;
+    
+    const productId = mainProduct.id;
+    const selectedMap = selectedVariations[productId] || {};
+    const selectedVariationIds = Object.keys(selectedMap).filter(id => selectedMap[id] > 0);
+    
+    // ✅ إذا لم يتم اختيار أي شيء → استخدم صور العرض (كوفر)
+    if (selectedVariationIds.length === 0) {
+      setIsVariationSelectedFlag(false);
+      const currentImageExists = offerImages.some(img => img.url === mainImage);
+      if (offerImages.length > 0 && !currentImageExists) {
+        const imageIndex = currentImageIndex % offerImages.length;
+        setMainImage(offerImages[imageIndex].url);
+      }
+      return;
+    }
+    
+    // ✅ تم اختيار خيار
+    setIsVariationSelectedFlag(true);
+    
+    // ✅ استخدم آخر ID تم اختياره
+    let targetId = selectedOptionId;
+    if (!targetId || !selectedVariationIds.includes(targetId)) {
+      targetId = selectedVariationIds[selectedVariationIds.length - 1];
+    }
+    
+    if (!targetId) {
+      targetId = selectedVariationIds[0];
+    }
+    
+    // ✅ تحقق من القيمة الافتراضية
+    if (targetId.startsWith('default-')) {
+      if (mainProduct.cover_url && mainImage !== mainProduct.cover_url) {
+        setMainImage(mainProduct.cover_url);
+      }
+      return;
+    }
+    
+    // ✅ تحقق من أن targetId ليس للهدية (يبدأ بـ gift-)
+    const isGiftSelection = targetId.startsWith('gift-');
+    const cleanTargetId = isGiftSelection ? targetId.replace('gift-', '') : targetId;
+    
+    // ✅ 1. ابحث في offerImages عن الصورة المطابقة
+    const matchingImage = offerImages.find(img => {
+      if (isGiftSelection) {
+        return (img.variationId === cleanTargetId || img.colorId === cleanTargetId) && img.isGift === true;
+      }
+      return img.variationId === cleanTargetId || img.colorId === cleanTargetId;
+    });
+    
+    if (matchingImage?.url && mainImage !== matchingImage.url) {
+      setMainImage(matchingImage.url);
+      return;
+    }
+    
+    // ✅ 2. استخدم الدالة getVariationImage
+    const imageUrl = getVariationImage(mainProduct, cleanTargetId);
+    if (imageUrl && mainImage !== imageUrl) {
+      setMainImage(imageUrl);
+      return;
+    }
+    
+    // ✅ 3. استخدام الصورة الافتراضية
+    if (mainProduct.cover_url && mainImage !== mainProduct.cover_url) {
+      setMainImage(mainProduct.cover_url);
+    }
+  }, [selectedVariations, mainProduct, selectedOptionId, offerImages, currentImageIndex, getVariationImage]);
+
+  // ============================================================
+  // ✅ اختيار تلقائي للخيارات (خيارات أو ألوان) للمنتجات المطلوبة في Bundle
   // ============================================================
   useEffect(() => {
     if (isBundle && requiredProducts.length > 0) {
@@ -552,7 +983,6 @@ function OfferDetailPage() {
         const selectedMap = selectedVariations[item.productId] || {};
         const selectedTotal = Object.values(selectedMap).reduce((sum, qty) => sum + qty, 0);
         
-        // ✅ إذا كان المنتج ليس لديه خيارات → اختر الكمية تلقائياً
         if (item.options.length === 0) {
           setSelectedVariations(prev => ({
             ...prev,
@@ -589,7 +1019,7 @@ function OfferDetailPage() {
   }, [requiredProducts, isBundle]);
 
   // ============================================================
-  // ✅✅✅ اختيار تلقائي للخيارات (لـ BOGO و Cross-sell)
+  // ✅ اختيار تلقائي للخيارات (لـ BOGO و Cross-sell)
   // ============================================================
   useEffect(() => {
     if ((isBogo || isCrossSell) && mainProductWithVariations) {
@@ -597,7 +1027,6 @@ function OfferDetailPage() {
       const selectedMap = selectedVariations[item.productId] || {};
       const selectedTotal = Object.values(selectedMap).reduce((sum, qty) => sum + qty, 0);
       
-      // ✅ إذا كان المنتج ليس لديه خيارات → اختر الكمية تلقائياً
       if (item.options.length === 0) {
         setSelectedVariations(prev => ({
           ...prev,
@@ -633,7 +1062,7 @@ function OfferDetailPage() {
   }, [isBogo, isCrossSell, mainProductWithVariations]);
 
   // ============================================================
-  // ✅✅✅ اختيار تلقائي لخيارات الهدية (فيرنتات أو ألوان)
+  // ✅ اختيار تلقائي لخيارات الهدية (خيارات أو ألوان)
   // ============================================================
   useEffect(() => {
     if (!freeProduct || !offer) return;
@@ -642,21 +1071,18 @@ function OfferDetailPage() {
     const totalGiftQty = offer?.get_quantity || 1;
     const variationQuantities = offer?.metadata?.variation_quantities || {};
     
-    // ✅ جلب خيارات الهدية (فيرنتات + ألوان)
     const variations = freeProduct.variations || [];
     const colors = freeProduct.colors || freeProduct.product_colors || [];
     
     let availableOptions: any[] = [];
     let optionType: 'variation' | 'color' = 'variation';
     
-    // ✅ إذا كان هناك فيرنتات محددة، استخدمها
     if (giftVariationIds.length > 0) {
       const filteredVariations = variations.filter((v: any) => giftVariationIds.includes(v.id));
       if (filteredVariations.length > 0) {
         availableOptions = filteredVariations;
         optionType = 'variation';
       } else {
-        // ✅ إذا لم توجد فيرنتات محددة، استخدم الألوان المحددة
         const filteredColors = colors.filter((c: any) => giftVariationIds.includes(c.id));
         if (filteredColors.length > 0) {
           availableOptions = filteredColors;
@@ -665,7 +1091,6 @@ function OfferDetailPage() {
       }
     }
     
-    // ✅ إذا لم تكن هناك خيارات محددة، استخدم جميع الخيارات المتاحة
     if (availableOptions.length === 0) {
       if (variations.length > 0) {
         availableOptions = variations;
@@ -676,7 +1101,6 @@ function OfferDetailPage() {
       }
     }
     
-    // ✅ إذا لم يكن هناك أي خيارات → اختر الكمية تلقائياً (Default)
     if (availableOptions.length === 0) {
       setSelectedGiftVariations(prev => ({
         ...prev,
@@ -688,9 +1112,7 @@ function OfferDetailPage() {
     const currentMap = selectedGiftVariations || {};
     const currentTotal = Object.values(currentMap).reduce((sum, qty) => sum + qty, 0);
     
-    // ✅ إذا كانت الكمية المختارة 0، قم بتوزيعها تلقائياً
     if (currentTotal === 0) {
-      // ✅ إذا كان هناك توزيع محفوظ في metadata، استخدمه
       if (Object.keys(variationQuantities).length > 0) {
         const validQuantities: Record<string, number> = {};
         availableOptions.forEach((opt: any) => {
@@ -704,7 +1126,6 @@ function OfferDetailPage() {
         }
       }
       
-      // ✅ توزيع الكمية بالتساوي على الخيارات المتاحة
       const perOption = Math.floor(totalGiftQty / availableOptions.length);
       const remainder = totalGiftQty % availableOptions.length;
       const map: Record<string, number> = {};
@@ -715,69 +1136,8 @@ function OfferDetailPage() {
     }
   }, [offer, freeProduct, selectedGiftVariations]);
 
-  // ✅ تغيير الصورة الرئيسية عند اختيار خيار
-  useEffect(() => {
-    if (!mainProduct) return;
-    
-    const productId = mainProduct.id;
-    const selectedMap = selectedVariations[productId] || {};
-    const selectedVariationIds = Object.keys(selectedMap).filter(id => selectedMap[id] > 0);
-    
-    if (selectedVariationIds.length > 0) {
-      const firstSelectedId = selectedVariationIds[0];
-      
-      // ✅ تحقق من القيمة الافتراضية
-      if (firstSelectedId.startsWith('default-')) {
-        if (mainProduct.cover_url) {
-          setMainImage(mainProduct.cover_url);
-        }
-        return;
-      }
-      
-      // ✅ تحقق من الفيرنتات
-      const selectedVariation = mainProduct.variations?.find((v: any) => v.id === firstSelectedId);
-      if (selectedVariation) {
-        if (selectedVariation.image_url) {
-          setMainImage(selectedVariation.image_url);
-          return;
-        }
-        
-        const combo = selectedVariation.combination || {};
-        const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
-        let colorValue = null;
-        for (const key of colorKeys) {
-          if (combo[key]) {
-            colorValue = combo[key];
-            break;
-          }
-        }
-        
-        if (colorValue) {
-          const productColors = mainProduct.colors || [];
-          const color = productColors.find((c: any) => 
-            String(c.color_name_ar || "").trim().toLowerCase() === String(colorValue).trim().toLowerCase()
-          );
-          if (color?.image_url) {
-            setMainImage(color.image_url);
-            return;
-          }
-        }
-      }
-      
-      // ✅ تحقق من الألوان
-      const selectedColor = mainProduct.colors?.find((c: any) => c.id === firstSelectedId);
-      if (selectedColor?.image_url) {
-        setMainImage(selectedColor.image_url);
-        return;
-      }
-    }
-    
-    if (mainProduct.cover_url && mainImage !== mainProduct.cover_url) {
-      setMainImage(mainProduct.cover_url);
-    }
-  }, [selectedVariations, mainProduct, mainImage]);
-
   // ========== ✅ HANDLERS ==========
+  
   // ✅ دالة تغيير كمية خيار معين
   const handleVariationQuantityChange = useCallback((productId: string, variationId: string, delta: number) => {
     setSelectedVariations(prev => {
@@ -804,9 +1164,10 @@ function OfferDetailPage() {
         }
       };
     });
+    setSelectedOptionId(variationId);
   }, []);
 
-  // ✅ دالة تغيير كمية فيرنت الهدية
+  // ✅ دالة تغيير كمية خيار الهدية
   const handleGiftVariationQuantityChange = useCallback((variationId: string, delta: number) => {
     setSelectedGiftVariations(prev => {
       const currentQty = prev[variationId] || 0;
@@ -824,6 +1185,39 @@ function OfferDetailPage() {
       };
     });
   }, []);
+
+  // ✅ دالة اختيار خيار من المنتجات المطلوبة (Bundle)
+  const handleRequiredVariationSelect = useCallback((productId: string, variationId: string) => {
+    setSelectedOptionId(variationId);
+    setIsVariationSelectedFlag(true);
+    
+    const matchingImage = offerImages.find(img => 
+      img.variationId === variationId || 
+      img.colorId === variationId
+    );
+    
+    if (matchingImage?.url) {
+      setMainImage(matchingImage.url);
+      const index = offerImages.findIndex(img => img.url === matchingImage.url);
+      if (index >= 0) setCurrentImageIndex(index);
+    }
+  }, [offerImages]);
+
+  // ✅ دالة اختيار خيار من الهدية
+  const handleGiftVariationSelect = useCallback((variationId: string) => {
+    setSelectedOptionId(`gift-${variationId}`);
+    setIsVariationSelectedFlag(true);
+    
+    const matchingImage = offerImages.find(img => 
+      (img.variationId === variationId || img.colorId === variationId) && img.isGift === true
+    );
+    
+    if (matchingImage?.url) {
+      setMainImage(matchingImage.url);
+      const index = offerImages.findIndex(img => img.url === matchingImage.url);
+      if (index >= 0) setCurrentImageIndex(index);
+    }
+  }, [offerImages]);
 
   // ✅ دالة توزيع الكمية المتبقية
   const autoDistributeRemaining = useCallback((productId: string, options: any[], totalRequired: number) => {
@@ -927,10 +1321,6 @@ function OfferDetailPage() {
   // ✅ دالة إضافة العرض للسلة
   // ============================================================
   const handleAddToCart = useCallback(async () => {
-    console.log("🚀 [handleAddToCart] ===== START =====");
-    console.log("🚀 [handleAddToCart] User:", app.user?.id);
-    console.log("🚀 [handleAddToCart] Offer:", offer?.id);
-
     if (!app.user) {
       toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
       navigate({ to: "/auth/$mode", params: { mode: "login" } });
@@ -956,9 +1346,6 @@ function OfferDetailPage() {
       return;
     }
 
-    console.log("📊 [handleAddToCart] selectedVariations:", selectedVariations);
-    console.log("📊 [handleAddToCart] selectedGiftVariations:", selectedGiftVariations);
-
     // ============================================================
     // ✅ 1. جمع الخيارات التي اختارها المستخدم
     // ============================================================
@@ -982,7 +1369,6 @@ function OfferDetailPage() {
         mainProductTitle = mainProduct?.title_ar || "";
         const selectedMap = selectedVariations[productId] || {};
         
-        // ✅ تحقق من القيمة الافتراضية للمنتجات التي ليس لها خيارات
         const defaultKey = `default-${productId}`;
         if (selectedMap[defaultKey] > 0) {
           requiredVariationsDetails[defaultKey] = {
@@ -1029,7 +1415,6 @@ function OfferDetailPage() {
                 product_id: productId,
                 product_title: mainProductTitle,
               };
-              console.log(`✅ [handleAddToCart] User selected: ${comboText} x${qty} (image: ${image || 'none'})`);
             }
           }
         }
@@ -1044,7 +1429,6 @@ function OfferDetailPage() {
         mainProductTitle = req.product.title_ar || "";
         const selectedMap = selectedVariations[productId] || {};
         
-        // ✅ تحقق من القيمة الافتراضية
         const defaultKey = `default-${productId}`;
         if (selectedMap[defaultKey] > 0) {
           requiredVariationsDetails[defaultKey] = {
@@ -1091,7 +1475,6 @@ function OfferDetailPage() {
                 product_id: productId,
                 product_title: req.product.title_ar || "",
               };
-              console.log(`✅ [handleAddToCart] User selected bundle: ${comboText} x${qty} (image: ${image || 'none'})`);
             }
           }
         }
@@ -1099,7 +1482,7 @@ function OfferDetailPage() {
     }
 
     // ============================================================
-    // ✅ 2. خيارات الهدية (فيرنتات أو ألوان)
+    // ✅ 2. خيارات الهدية (خيارات أو ألوان)
     // ============================================================
     const giftVariationsDetails: Record<string, {
       quantity: number;
@@ -1115,7 +1498,6 @@ function OfferDetailPage() {
     let availableGiftOptions: any[] = [];
     let giftOptionType: 'variation' | 'color' = 'variation';
     
-    // ✅ جلب خيارات الهدية المحددة
     if (giftVariationIds.length > 0) {
       const filteredVariations = variations.filter((v: any) => giftVariationIds.includes(v.id));
       if (filteredVariations.length > 0) {
@@ -1130,7 +1512,6 @@ function OfferDetailPage() {
       }
     }
     
-    // ✅ إذا لم تكن هناك خيارات محددة، استخدم جميع الخيارات المتاحة
     if (availableGiftOptions.length === 0) {
       if (variations.length > 0) {
         availableGiftOptions = variations;
@@ -1141,7 +1522,6 @@ function OfferDetailPage() {
       }
     }
     
-    // ✅ إذا لم يكن هناك أي خيارات، استخدم القيمة الافتراضية
     if (availableGiftOptions.length === 0) {
       const defaultGiftQty = offer?.get_quantity || 1;
       giftVariationsDetails[`default-gift`] = {
@@ -1150,9 +1530,7 @@ function OfferDetailPage() {
         combination: {},
         image_url: freeProduct?.cover_url || null,
       };
-      console.log(`✅ [handleAddToCart] Gift has no options, using default: ${defaultGiftQty}`);
     } else {
-      // ✅ استخدام اختيارات المستخدم للهدية
       const userSelectedGifts = selectedGiftVariations || {};
       
       availableGiftOptions.forEach((opt: any) => {
@@ -1173,7 +1551,6 @@ function OfferDetailPage() {
             combination: isColor ? { colors: opt.color_name_ar } : (opt.combination || {}),
             image_url: giftImage,
           };
-          console.log(`✅ [handleAddToCart] Gift option (user selected): ${displayName} x${qty} (image: ${giftImage || 'none'})`);
         }
       });
     }
@@ -1235,8 +1612,6 @@ function OfferDetailPage() {
         logo: storeData.logo,
       }
     };
-
-    console.log(`📊 [handleAddToCart] Offer data:`, offerData);
 
     // ============================================================
     // ✅ 6. إضافة للسلة
@@ -1317,8 +1692,6 @@ function OfferDetailPage() {
         );
       }
     }
-
-    console.log("🚀 [handleAddToCart] ===== END =====");
   }, [app.user, app.lang, offer, isVariationSelected, mainProduct, selectedVariations, selectedGiftVariations, freeProduct, addToCartMutation, navigate, isBogo, isCrossSell, isBundle, requiredProducts, storeData, getOptionImageUrl]);
 
   const handleConfirmClearCart = useCallback(async () => {
@@ -1420,28 +1793,18 @@ function OfferDetailPage() {
           
           {/* ===== LEFT - قسم الصور ===== */}
           <div className="space-y-4">
-            <div className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-950/30 dark:to-indigo-950/30 border-2 border-purple-200/50 dark:border-purple-800/30 shadow-xl">
+            <div 
+              className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-950/30 dark:to-indigo-950/30 border-2 border-purple-200/50 dark:border-purple-800/30 shadow-xl cursor-pointer group"
+              onClick={() => setIsLightboxOpen(true)}
+            >
+              
               {mainImage ? (
-                <OptimizedImage
+                <img
+                  key={mainImage}
                   src={mainImage}
                   alt={offer.display_text_ar || "Promo offer"}
-                  width={800}
-                  height={800}
-                  quality={85}
-                  priority={true}
-                  objectFit="cover"
-                  className="w-full h-full transition-all duration-700 hover:scale-105"
-                />
-              ) : mainProduct?.cover_url ? (
-                <OptimizedImage
-                  src={mainProduct.cover_url}
-                  alt={offer.display_text_ar || "Promo offer"}
-                  width={800}
-                  height={800}
-                  quality={85}
-                  priority={true}
-                  objectFit="cover"
-                  className="w-full h-full transition-all duration-700 hover:scale-105"
+                  className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
+                  loading="eager"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -1449,11 +1812,83 @@ function OfferDetailPage() {
                 </div>
               )}
               
-              {/* ✅ ألوان المنتج - مع تغيير الصورة عند الضغط */}
+              {/* ✅ أيقونة التكبير */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/90 backdrop-blur rounded-full p-3 shadow-xl">
+                  <svg className="w-8 h-8 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m4-6v6" />
+                  </svg>
+                </div>
+              </div>
+              
+              {/* ✅✅✅ أزرار التقليب (تظهر دائماً) - استخدام changeImage */}
+              {offerImages.length > 1 && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const newIndex = (currentImageIndex - 1 + offerImages.length) % offerImages.length;
+                      changeImage(newIndex);
+                    }}
+                    className="absolute start-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 backdrop-blur text-slate-800 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-white/20 z-10"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const newIndex = (currentImageIndex + 1) % offerImages.length;
+                      changeImage(newIndex);
+                    }}
+                    className="absolute end-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 backdrop-blur text-slate-800 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-white/20 z-10"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                  
+                  {/* ✅ مؤشر عدد الصور */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur px-4 py-1.5 rounded-full text-white text-xs font-medium z-10">
+                    {currentImageIndex + 1} / {offerImages.length}
+                  </div>
+                  
+                  {/* ✅ نقاط التنقل مع أسماء الخيارات - استخدام changeImage */}
+                  <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-2 z-10 flex-wrap justify-center max-w-[80%]">
+                    {offerImages.map((img, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          changeImage(index);
+                        }}
+                        className={cn(
+                          "flex flex-col items-center gap-0.5 transition-all duration-300",
+                          currentImageIndex === index 
+                            ? "scale-110" 
+                            : "opacity-60 hover:opacity-100"
+                        )}
+                        title={img.displayName || img.title}
+                      >
+                        <div className={cn(
+                          "h-2 rounded-full transition-all duration-300",
+                          currentImageIndex === index 
+                            ? "w-6 bg-white" 
+                            : "w-2 bg-white/50 hover:bg-white/80"
+                        )} />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              
+              {/* ✅ أزرار الألوان - استخدام changeImage */}
               {mainProduct?.colors && mainProduct.colors.length > 0 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/50 backdrop-blur px-3 py-1.5 rounded-full">
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 bg-black/50 backdrop-blur px-3 py-1.5 rounded-full z-10">
                   {mainProduct.colors.map((color: any) => {
                     const matchingVariation = mainProduct.variations?.find((v: any) => {
+                      if (v.color_id === color.id) return true;
                       const combo = v.combination || {};
                       const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
                       for (const key of colorKeys) {
@@ -1465,17 +1900,28 @@ function OfferDetailPage() {
                     });
                     
                     const isSelected = matchingVariation && selectedVariations[mainProduct.id]?.[matchingVariation.id] > 0;
-                    const variationImage = matchingVariation?.image_url || color.image_url;
                     
                     return (
                       <button
                         key={color.id}
-                        onClick={() => {
-                          if (matchingVariation) {
-                            if (variationImage) {
-                              setMainImage(variationImage);
-                            }
-                            if (!selectionStats.hasOver) {
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const index = offerImages.findIndex(img => img.url === color.image_url);
+                          if (index >= 0) {
+                            changeImage(index);
+                          } else if (color.image_url) {
+                            setMainImage(color.image_url);
+                            setIsVariationSelectedFlag(true);
+                            setSelectedOptionId(color.id);
+                          }
+                          
+                          if (matchingVariation && !selectionStats.hasOver) {
+                            const currentQty = selectedVariations[mainProduct.id]?.[matchingVariation.id] || 0;
+                            const totalRequired = mainProductWithVariations?.totalRequiredQuantity || 1;
+                            const currentTotal = Object.values(selectedVariations[mainProduct.id] || {}).reduce((sum, qty) => sum + qty, 0);
+                            
+                            if (currentTotal < totalRequired) {
                               handleVariationQuantityChange(mainProduct.id, matchingVariation.id, 1);
                             }
                           }
@@ -1485,7 +1931,7 @@ function OfferDetailPage() {
                           isSelected 
                             ? "border-white ring-2 ring-purple-500 scale-110 shadow-lg shadow-purple-500/50" 
                             : "border-white/50 hover:scale-110 hover:border-white/80",
-                          mainImage === variationImage && "ring-2 ring-purple-300 scale-105"
+                          mainImage === color.image_url && "ring-2 ring-purple-300 scale-105"
                         )}
                         style={{ backgroundColor: color.color_hex || '#ccc' }}
                         title={color.color_name_ar}
@@ -1507,6 +1953,40 @@ function OfferDetailPage() {
                 )}
               </div>
             </div>
+            
+            {/* ✅ معرض الصور المصغرة مع أسماء الخيارات - استخدام changeImage */}
+            {offerImages.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {offerImages.map((img, index) => (
+                  <button
+                    key={index}
+                    onClick={() => changeImage(index)}
+                    className={cn(
+                      "flex flex-col items-center gap-1 transition-all flex-shrink-0",
+                      mainImage === img.url 
+                        ? "scale-105" 
+                        : "opacity-60 hover:opacity-100"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-16 h-16 rounded-lg overflow-hidden border-2 transition-all relative",
+                      mainImage === img.url 
+                        ? "border-purple-500 ring-2 ring-purple-300" 
+                        : "border-transparent hover:border-gray-300"
+                    )}>
+                      <img 
+                        src={img.url} 
+                        alt={img.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground truncate max-w-[60px] text-center">
+                      {img.displayName || 'خيار'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* ===== RIGHT - معلومات العرض ===== */}
@@ -1693,7 +2173,7 @@ function OfferDetailPage() {
               </div>
             )}
 
-            {/* ===== ✅ المنتجات المطلوبة مع خياراتها (فيرنتات أو ألوان) ===== */}
+            {/* ===== ✅ المنتجات المطلوبة مع خياراتها (خيارات أو ألوان) ===== */}
             {(isBundle || isBogo || isCrossSell) && (
               <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
                 <div className="flex items-center justify-between mb-3">
@@ -1717,7 +2197,6 @@ function OfferDetailPage() {
                     const isOver = selectedTotal > item.totalRequiredQuantity;
                     const remaining = Math.max(0, item.totalRequiredQuantity - selectedTotal);
                     
-                    // ✅ تحقق من القيمة الافتراضية
                     const defaultKey = `default-${product.id}`;
                     const hasDefault = selectedMap[defaultKey] > 0;
 
@@ -1765,7 +2244,7 @@ function OfferDetailPage() {
                           </Badge>
                         </div>
 
-                        {/* ===== عرض الخيارات (فيرنتات أو ألوان) ===== */}
+                        {/* ===== عرض الخيارات (خيارات أو ألوان) ===== */}
                         {options.length > 0 ? (
                           <div className="mt-3">
                             <div className="flex items-center justify-between">
@@ -1841,7 +2320,10 @@ function OfferDetailPage() {
                                         {currentQty}
                                       </span>
                                       <button
-                                        onClick={() => handleVariationQuantityChange(product.id, opt.id, 1)}
+                                        onClick={() => {
+                                          handleRequiredVariationSelect(product.id, opt.id);
+                                          handleVariationQuantityChange(product.id, opt.id, 1);
+                                        }}
                                         className={cn(
                                           "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
                                           !isOver || currentQty === 0
@@ -1960,7 +2442,7 @@ function OfferDetailPage() {
                         </Badge>
                       </div>
 
-                      {/* ===== عرض الخيارات (فيرنتات أو ألوان) ===== */}
+                      {/* ===== عرض الخيارات (خيارات أو ألوان) ===== */}
                       {options.length > 0 ? (
                         <div className="mt-3">
                           <div className="flex items-center justify-between">
@@ -2036,7 +2518,10 @@ function OfferDetailPage() {
                                       {currentQty}
                                     </span>
                                     <button
-                                      onClick={() => handleVariationQuantityChange(product.id, opt.id, 1)}
+                                      onClick={() => {
+                                        handleRequiredVariationSelect(product.id, opt.id);
+                                        handleVariationQuantityChange(product.id, opt.id, 1);
+                                      }}
                                       className={cn(
                                         "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
                                         !isOver || currentQty === 0
@@ -2182,7 +2667,6 @@ function OfferDetailPage() {
                         let availableOptions: any[] = [];
                         let optionType: 'variation' | 'color' = 'variation';
                         
-                        // ✅ جلب خيارات الهدية (فيرنتات أو ألوان)
                         if (giftVariationIds.length > 0) {
                           const filteredVariations = variations.filter((v: any) => giftVariationIds.includes(v.id));
                           if (filteredVariations.length > 0) {
@@ -2207,7 +2691,6 @@ function OfferDetailPage() {
                           }
                         }
                         
-                        // ✅ إذا كانت للهدية خيارات، اعرضها
                         if (availableOptions.length > 0) {
                           availableOptions.forEach((opt: any) => {
                             if (!giftImage) {
@@ -2322,7 +2805,6 @@ function OfferDetailPage() {
                         }
                       }
                       
-                      // ✅ إذا لم يكن هناك خيارات → اعرض رسالة أن الكمية ستختار تلقائياً
                       if (availableOptions.length === 0) {
                         return (
                           <div className="mt-3 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
@@ -2351,7 +2833,6 @@ function OfferDetailPage() {
                       const giftIsOver = giftSelectedTotal > totalGiftQty;
                       const giftRemaining = Math.max(0, totalGiftQty - giftSelectedTotal);
                       
-                      // ✅ إذا كانت الكمية مكتملة تلقائياً (بدون تفاعل المستخدم)
                       const isAutoComplete = giftSelectedTotal === totalGiftQty && Object.keys(giftSelectedMap).length > 0;
                       
                       return (
@@ -2425,7 +2906,10 @@ function OfferDetailPage() {
                                       {currentQty}
                                     </span>
                                     <button
-                                      onClick={() => handleGiftVariationQuantityChange(opt.id, 1)}
+                                      onClick={() => {
+                                        handleGiftVariationSelect(opt.id);
+                                        handleGiftVariationQuantityChange(opt.id, 1);
+                                      }}
                                       className={cn(
                                         "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
                                         !giftIsOver && (currentQty === 0 || giftRemaining > 0)
@@ -2568,6 +3052,66 @@ function OfferDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ===== ✅ Lightbox لعرض الصورة بحجم كبير ===== */}
+      <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none rounded-2xl overflow-hidden">
+          <div className="relative w-full h-full min-h-[60vh] flex items-center justify-center">
+            {mainImage && (
+              <img
+                src={mainImage}
+                alt={offer.display_text_ar || "Promo offer"}
+                className="max-w-full max-h-[85vh] object-contain"
+              />
+            )}
+            
+            {/* ✅ أزرار التقليب في Lightbox */}
+            {offerImages.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newIndex = (currentImageIndex - 1 + offerImages.length) % offerImages.length;
+                    changeImage(newIndex);
+                  }}
+                  className="absolute start-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-white/20 z-10"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newIndex = (currentImageIndex + 1) % offerImages.length;
+                    changeImage(newIndex);
+                  }}
+                  className="absolute end-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-white/20 z-10"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+                
+                {/* ✅ مؤشر عدد الصور في Lightbox */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur px-4 py-1.5 rounded-full text-white text-xs font-medium z-10">
+                  {currentImageIndex + 1} / {offerImages.length}
+                </div>
+                
+                {/* ✅ اسم الصورة الحالية في Lightbox */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur px-4 py-2 rounded-full text-white text-xs font-medium z-10 max-w-[80%] truncate">
+                  {offerImages[currentImageIndex]?.displayName || offerImages[currentImageIndex]?.title || 'صورة'}
+                </div>
+              </>
+            )}
+            
+            {/* ✅ زر الإغلاق */}
+            <button
+              onClick={() => setIsLightboxOpen(false)}
+              className="absolute top-4 end-4 h-10 w-10 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-white/20 z-20"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ===== مودال تعارض المتجر ===== */}
       <Dialog open={showStoreConflict} onOpenChange={setShowStoreConflict}>
