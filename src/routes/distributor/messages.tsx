@@ -52,6 +52,7 @@ export const Route = createFileRoute("/distributor/messages")({
 function DistributorMessagesPage() {
   const app = useApp();
   const navigate = useNavigate();
+  const isArabic = app.lang === "ar";
   
   // ====== ✅ جميع الـ State في الأعلى ======
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,12 +99,12 @@ function DistributorMessagesPage() {
 
   const getUserAvatar = useCallback((user: any) => {
     if (!user) {
-      return `https://ui-avatars.com/api/?name=${app.lang === "ar" ? "مستخدم" : "User"}&background=0d2e2a&color=fff&size=128`;
+      return `https://ui-avatars.com/api/?name=${app.lang === "ar" ? "مستخدم" : "User"}&background=d81b60&color=fff&size=128`;
     }
     return (
       user?.store_logo_url ||
       user?.avatar_url ||
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName(user))}&background=0d2e2a&color=fff&size=128`
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName(user))}&background=d81b60&color=fff&size=128`
     );
   }, [getUserName, app.lang]);
 
@@ -159,7 +160,7 @@ function DistributorMessagesPage() {
       case "distributor": return "bg-blue-500/20 text-blue-600 border-blue-500/30";
       case "delivery_company": return "bg-purple-500/20 text-purple-600 border-purple-500/30";
       case "admin": return "bg-yellow-500/20 text-yellow-600 border-yellow-500/30";
-      case "company_admin": return "bg-indigo-500/20 text-indigo-600 border-indigo-500/30";
+      case "company_admin": return "bg-pink-500/20 text-pink-600 border-pink-500/30";
       default: return "bg-slate-500/20 text-slate-600 border-slate-500/30";
     }
   }, []);
@@ -455,22 +456,22 @@ function DistributorMessagesPage() {
   
   if (app.authLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0d2e2a]/5 via-white to-[#0d2e2a]/10">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0d2e2a]/20 border-t-[#0d2e2a]" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#d81b60]/5 via-white to-[#d81b60]/10">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#d81b60]/20 border-t-[#d81b60]" />
       </div>
     );
   }
 
   if (!app.user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0d2e2a]/5 via-white to-[#0d2e2a]/10">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#d81b60]/5 via-white to-[#d81b60]/10">
         <div className="text-center">
           <p className="text-muted-foreground">
             {app.lang === "ar" ? "يرجى تسجيل الدخول" : "Please login"}
           </p>
           <Button 
             onClick={() => navigate({ to: "/auth/$mode", params: { mode: "login" } })}
-            className="mt-4"
+            className="mt-4 bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/30"
           >
             {app.lang === "ar" ? "تسجيل الدخول" : "Login"}
           </Button>
@@ -480,18 +481,18 @@ function DistributorMessagesPage() {
   }
 
   // ============================================================
-  // التصميم
+  // التصميم مع الألوان الوردية
   // ============================================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0d2e2a]/5 via-white to-[#0d2e2a]/10 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#0d2e2a]/10">
+    <div className="min-h-screen bg-gradient-to-br from-[#d81b60]/5 via-white to-[#d81b60]/10 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#d81b60]/10">
       
-      {/* ===== الهيدر ===== */}
-      <div className="relative bg-gradient-to-r from-[#0d2e2a] via-[#1a4f4a] to-[#2a655f] text-white overflow-hidden shadow-lg shadow-[#0d2e2a]/20">
+      {/* ===== الهيدر - تدرج وردي ===== */}
+      <div className="relative bg-gradient-to-r from-[#d81b60] via-[#f48fb1] to-[#d81b60] text-white overflow-hidden shadow-lg shadow-[#d81b60]/30">
         
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 animate-pulse" />
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 animate-pulse" style={{ animationDelay: '2s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl animate-spin-slow" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl animate-spin-slow" />
         </div>
         
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
@@ -515,22 +516,26 @@ function DistributorMessagesPage() {
             
             {/* ✅ القسم الأيسر - زر الرجوع المحسن */}
             <div className="flex items-center gap-3">
-               <Button
-    variant="ghost"
-    size="icon"
-    onClick={() => navigate({ to: "/distributor/dashboard" })}
-    className="h-9 w-9 shrink-0 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all duration-300 hover:scale-105 group"
-  >
-    <ChevronRight className="h-5 w-5 text-slate-700 dark:text-slate-300 group-hover:scale-110 transition-transform duration-300" />
-  </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate({ to: "/distributor/dashboard" })}
+                className="h-9 w-9 shrink-0 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-300 hover:scale-105 group border border-white/30"
+              >
+                {isArabic ? (
+                  <ChevronRight className="h-5 w-5 text-white group-hover:scale-110 transition-transform duration-300" />
+                ) : (
+                  <ChevronLeft className="h-5 w-5 text-white group-hover:scale-110 transition-transform duration-300" />
+                )}
+              </Button>
               
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-                  <div className="p-2.5 rounded-2xl bg-gradient-to-br from-emerald-400 to-[#0d2e2a] text-white shadow-lg shadow-emerald-500/30 animate-float">
+                  <div className="p-2.5 rounded-2xl bg-white/20 backdrop-blur-sm text-white shadow-lg shadow-white/20 animate-float">
                     <MessageCircle className="h-5 w-5" />
                   </div>
                   {app.lang === "ar" ? "المراسلات" : "Messages"}
-                  <Badge className="bg-emerald-500/30 text-emerald-200 border-0 text-[10px] px-2 py-0.5 flex items-center gap-1 animate-pulse">
+                  <Badge className="bg-white/20 text-white border-0 text-[10px] px-2 py-0.5 flex items-center gap-1 animate-pulse backdrop-blur-sm">
                     <Truck className="h-3 w-3 animate-bounce-slow" />
                     {app.lang === "ar" ? "موزع" : "Distributor"}
                   </Badge>
@@ -556,241 +561,241 @@ function DistributorMessagesPage() {
               </div>
             </div>
 
-            {/* ✅ القسم الأيمن - الأزرار */}
+            {/* ✅ القسم الأيمن - الأزرار */} 
             <div className="flex items-center gap-2 flex-wrap">
               
-      {/* ✅ زر أدمن الشركة - واضح في الهيدر الداكن */}
-<Dialog open={showAdminDialog} onOpenChange={setShowAdminDialog}>
-  <DialogTrigger asChild>
-    <Button 
-      variant="outline"
-      className="h-10 px-5 rounded-xl bg-white/15 backdrop-blur-sm hover:bg-white/25 border-white/20 hover:border-white/40 text-white hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-white/10 group font-medium"
-    >
-      <ShieldCheck className="h-4 w-4 mr-2 text-white/80 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
-      <span className="hidden sm:inline">{app.lang === "ar" ? "أدمن الشركة" : "Company Admin"}</span>
-      <span className="inline sm:hidden">{app.lang === "ar" ? "أدمن" : "Admin"}</span>
-      {companyAdmins.length > 0 && (
-        <Badge className="bg-gradient-to-r from-white/30 to-white/20 text-white border-0 text-[10px] px-2 py-0.5 ml-1.5 backdrop-blur-sm">
-          {companyAdmins.length}
-        </Badge>
-      )}
-    </Button>
-  </DialogTrigger>
-  <DialogContent className="rounded-2xl max-w-md border-white/20 shadow-2xl shadow-black/20 bg-white dark:bg-slate-900">
-    <DialogHeader>
-      <DialogTitle className="flex items-center gap-2 text-[#0d2e2a] dark:text-white text-xl">
-        <div className="p-1.5 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#2a655f]">
-          <ShieldCheck className="h-5 w-5 text-white" />
-        </div>
-        {app.lang === "ar" ? "أدمن الشركة" : "Company Admins"}
-      </DialogTitle>
-      <DialogDescription>
-        {app.lang === "ar"
-          ? `اختر أدمن من شركتك (${companyAdmins.length}) لبدء المحادثة`
-          : `Select an admin from your company (${companyAdmins.length}) to start chatting`}
-      </DialogDescription>
-    </DialogHeader>
-    
-    <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      <Input
-        placeholder={app.lang === "ar" ? "بحث عن أدمن..." : "Search admin..."}
-        value={adminSearch}
-        onChange={(e) => setAdminSearch(e.target.value)}
-        className="pl-9 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
-      />
-    </div>
-    
-    <div className="max-h-60 overflow-y-auto space-y-1.5 border rounded-xl p-1.5">
-      {loadingAdmins ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#2a655f]/20 border-t-[#2a655f]" />
-        </div>
-      ) : filteredAdmins.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground text-sm">
-          {adminSearch
-            ? app.lang === "ar"
-              ? `لا يوجد أدمن باسم أو رقم "${adminSearch}"`
-              : `No admin named or phone "${adminSearch}"`
-            : app.lang === "ar"
-            ? "لا يوجد أدمن في الشركة"
-            : "No admins in the company"}
-        </div>
-      ) : (
-        filteredAdmins.map((admin: any) => (
-          <div
-            key={admin.id}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#0d2e2a]/5 dark:hover:bg-[#0d2e2a]/20 cursor-pointer transition-all hover:border-[#2a655f]/30 border border-transparent group"
-            onClick={() => startAdminChat(admin)}
-          >
-            <Avatar className="h-10 w-10 ring-2 ring-[#2a655f]/20 group-hover:ring-[#2a655f]/40 transition-all">
-              <img 
-                src={admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.full_name || 'A')}&background=0d2e2a&color=fff`} 
-                alt={admin.full_name || 'Admin'}
-                className="object-cover"
-              />
-              <AvatarFallback className="bg-gradient-to-br from-[#0d2e2a] to-[#2a655f] text-white">
-                {(admin.full_name || 'A').charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate group-hover:text-[#0d2e2a] transition-colors">
-                {admin.full_name || (app.lang === "ar" ? "أدمن" : "Admin")}
-              </p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                <Phone className="h-3 w-3" />
-                <span>{admin.phone || (app.lang === "ar" ? "رقم غير متاح" : "No phone")}</span>
-                <Badge className="bg-[#0d2e2a]/20 text-[#0d2e2a] dark:text-[#2a655f] text-[8px] px-2 py-0 flex items-center gap-0.5 border-0">
-                  <ShieldCheck className="h-2.5 w-2.5" />
-                  {app.lang === "ar" ? "أدمن" : "Admin"}
-                </Badge>
-              </div>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="h-8 w-8 rounded-full hover:bg-[#0d2e2a]/10 opacity-0 group-hover:opacity-100 transition-all"
-            >
-              <ChevronRight className="h-4 w-4 text-[#2a655f]" />
-            </Button>
-          </div>
-        ))
-      )}
-    </div>
-    
-    <DialogFooter>
-      <Button variant="outline" onClick={() => setShowAdminDialog(false)}>
-        {app.lang === "ar" ? "إغلاق" : "Close"}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+              {/* ✅ زر أدمن الشركة - وردي */}
+              <Dialog open={showAdminDialog} onOpenChange={setShowAdminDialog}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    className="h-10 px-5 rounded-xl bg-white/15 backdrop-blur-sm hover:bg-white/25 border-white/20 hover:border-white/40 text-white hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-white/10 group font-medium"
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2 text-white/80 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
+                    <span className="hidden sm:inline">{app.lang === "ar" ? "أدمن الشركة" : "Company Admin"}</span>
+                    <span className="inline sm:hidden">{app.lang === "ar" ? "أدمن" : "Admin"}</span>
+                    {companyAdmins.length > 0 && (
+                      <Badge className="bg-gradient-to-r from-white/30 to-white/20 text-white border-0 text-[10px] px-2 py-0.5 ml-1.5 backdrop-blur-sm">
+                        {companyAdmins.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="rounded-2xl max-w-md border-2 border-[#d81b60]/30 shadow-2xl shadow-[#d81b60]/20 bg-white dark:bg-slate-900">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-[#d81b60] dark:text-white text-xl">
+                      <div className="p-1.5 rounded-xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1]">
+                        <ShieldCheck className="h-5 w-5 text-white" />
+                      </div>
+                      {app.lang === "ar" ? "أدمن الشركة" : "Company Admins"}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {app.lang === "ar"
+                        ? `اختر أدمن من شركتك (${companyAdmins.length}) لبدء المحادثة`
+                        : `Select an admin from your company (${companyAdmins.length}) to start chatting`}
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d81b60]/50" />
+                    <Input
+                      placeholder={app.lang === "ar" ? "بحث عن أدمن..." : "Search admin..."}
+                      value={adminSearch}
+                      onChange={(e) => setAdminSearch(e.target.value)}
+                      className="pl-9 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                    />
+                  </div>
+                  
+                  <div className="max-h-60 overflow-y-auto space-y-1.5 border-2 rounded-xl p-1.5 border-[#d81b60]/20">
+                    {loadingAdmins ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#d81b60]/20 border-t-[#d81b60]" />
+                      </div>
+                    ) : filteredAdmins.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground text-sm">
+                        {adminSearch
+                          ? app.lang === "ar"
+                            ? `لا يوجد أدمن باسم أو رقم "${adminSearch}"`
+                            : `No admin named or phone "${adminSearch}"`
+                          : app.lang === "ar"
+                          ? "لا يوجد أدمن في الشركة"
+                          : "No admins in the company"}
+                      </div>
+                    ) : (
+                      filteredAdmins.map((admin: any) => (
+                        <div
+                          key={admin.id}
+                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#d81b60]/10 dark:hover:bg-[#d81b60]/20 cursor-pointer transition-all hover:border-[#d81b60]/40 border-2 border-transparent group"
+                          onClick={() => startAdminChat(admin)}
+                        >
+                          <Avatar className="h-10 w-10 ring-2 ring-[#d81b60]/20 group-hover:ring-[#d81b60]/40 transition-all">
+                            <img 
+                              src={admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.full_name || 'A')}&background=d81b60&color=fff`} 
+                              alt={admin.full_name || 'Admin'}
+                              className="object-cover"
+                            />
+                            <AvatarFallback className="bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white">
+                              {(admin.full_name || 'A').charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate group-hover:text-[#d81b60] transition-colors">
+                              {admin.full_name || (app.lang === "ar" ? "أدمن" : "Admin")}
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                              <Phone className="h-3 w-3" />
+                              <span>{admin.phone || (app.lang === "ar" ? "رقم غير متاح" : "No phone")}</span>
+                              <Badge className="bg-[#d81b60]/20 text-[#d81b60] dark:text-[#f48fb1] text-[8px] px-2 py-0 flex items-center gap-0.5 border-0">
+                                <ShieldCheck className="h-2.5 w-2.5" />
+                                {app.lang === "ar" ? "أدمن" : "Admin"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="h-8 w-8 rounded-full hover:bg-[#d81b60]/20 opacity-0 group-hover:opacity-100 transition-all text-[#d81b60]"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowAdminDialog(false)} className="border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60]">
+                      {app.lang === "ar" ? "إغلاق" : "Close"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
-{/* ✅ زر الموزعين - واضح في الهيدر الداكن */}
-<Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
-  <DialogTrigger asChild>
-    <Button 
-      variant="outline"
-      className="h-10 px-5 rounded-xl bg-white/15 backdrop-blur-sm hover:bg-white/25 border-white/20 hover:border-white/40 text-white hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-white/10 group font-medium"
-    >
-      <UsersRound className="h-4 w-4 mr-2 text-white/80 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
-      <span className="hidden sm:inline">{app.lang === "ar" ? "الموزعين" : "Distributors"}</span>
-      <span className="inline sm:hidden">{app.lang === "ar" ? "موزعين" : "Dists"}</span>
-      {companyDistributors.length > 0 && (
-        <Badge className="bg-gradient-to-r from-white/30 to-white/20 text-white border-0 text-[10px] px-2 py-0.5 ml-1.5 backdrop-blur-sm">
-          {companyDistributors.length}
-        </Badge>
-      )}
-    </Button>
-  </DialogTrigger>
-  <DialogContent className="rounded-2xl max-w-md border-white/20 shadow-2xl shadow-black/20 bg-white dark:bg-slate-900">
-    <DialogHeader>
-      <DialogTitle className="flex items-center gap-2 text-[#0d2e2a] dark:text-white text-xl">
-        <div className="p-1.5 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#2a655f]">
-          <UsersRound className="h-5 w-5 text-white" />
-        </div>
-        {app.lang === "ar" ? "الموزعين" : "Distributors"}
-      </DialogTitle>
-      <DialogDescription>
-        {app.lang === "ar"
-          ? `اختر موزعاً من شركتك (${companyDistributors.length}) لبدء المحادثة`
-          : `Select a distributor from your company (${companyDistributors.length}) to start chatting`}
-      </DialogDescription>
-    </DialogHeader>
-    
-    <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      <Input
-        placeholder={app.lang === "ar" ? "بحث عن موزع..." : "Search distributor..."}
-        value={distributorSearch}
-        onChange={(e) => setDistributorSearch(e.target.value)}
-        className="pl-9 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
-      />
-    </div>
-    
-    <div className="max-h-60 overflow-y-auto space-y-1.5 border rounded-xl p-1.5">
-      {filteredDistributors.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground text-sm">
-          {distributorSearch
-            ? app.lang === "ar"
-              ? `لا يوجد موزع باسم أو رقم "${distributorSearch}"`
-              : `No distributor named or phone "${distributorSearch}"`
-            : app.lang === "ar"
-            ? "لا يوجد موزعين في الشركة"
-            : "No distributors in the company"}
-        </div>
-      ) : (
-        filteredDistributors.map((dist: any) => (
-          <div
-            key={dist.id}
-            className={`flex items-center gap-3 p-3 rounded-xl hover:bg-[#0d2e2a]/5 dark:hover:bg-[#0d2e2a]/20 cursor-pointer transition-all hover:border-[#2a655f]/30 border border-transparent group ${
-              !dist.user_id ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            onClick={() => dist.user_id && startDistributorChat(dist)}
-          >
-            <Avatar className="h-10 w-10 ring-2 ring-[#2a655f]/20 group-hover:ring-[#2a655f]/40 transition-all">
-              <img 
-                src={dist.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(dist.full_name_ar || dist.full_name_en || 'D')}&background=0d2e2a&color=fff`} 
-                alt={dist.full_name_ar || dist.full_name_en || 'Distributor'}
-                className="object-cover"
-              />
-              <AvatarFallback className="bg-gradient-to-br from-[#0d2e2a] to-[#2a655f] text-white">
-                {(dist.full_name_ar || dist.full_name_en || 'D').charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate group-hover:text-[#0d2e2a] transition-colors">
-                {app.lang === "ar" ? dist.full_name_ar : dist.full_name_en || dist.full_name_ar}
-              </p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                <Phone className="h-3 w-3" />
-                <span>{dist.phone}</span>
-                {dist.is_available && (
-                  <Badge className="bg-emerald-500/20 text-emerald-600 text-[8px] px-2 py-0 flex items-center gap-1 border-0">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    {app.lang === "ar" ? "متاح" : "Available"}
-                  </Badge>
-                )}
-                {!dist.user_id && (
-                  <Badge className="bg-red-500/20 text-red-600 text-[8px] px-2 py-0 border-0">
-                    ⚠️ {app.lang === "ar" ? "بدون حساب" : "No account"}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className={`h-8 w-8 rounded-full ${dist.user_id ? 'hover:bg-[#0d2e2a]/10 opacity-0 group-hover:opacity-100' : 'opacity-50 cursor-not-allowed'} transition-all`}
-              disabled={!dist.user_id}
-            >
-              <ChevronRight className="h-4 w-4 text-[#2a655f]" />
-            </Button>
-          </div>
-        ))
-      )}
-    </div>
-    
-    <DialogFooter>
-      <Button variant="outline" onClick={() => setShowDistributorDialog(false)}>
-        {app.lang === "ar" ? "إغلاق" : "Close"}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+              {/* ✅ زر الموزعين - وردي */}
+              <Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    className="h-10 px-5 rounded-xl bg-white/15 backdrop-blur-sm hover:bg-white/25 border-white/20 hover:border-white/40 text-white hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-white/10 group font-medium"
+                  >
+                    <UsersRound className="h-4 w-4 mr-2 text-white/80 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
+                    <span className="hidden sm:inline">{app.lang === "ar" ? "الموزعين" : "Distributors"}</span>
+                    <span className="inline sm:hidden">{app.lang === "ar" ? "موزعين" : "Dists"}</span>
+                    {companyDistributors.length > 0 && (
+                      <Badge className="bg-gradient-to-r from-white/30 to-white/20 text-white border-0 text-[10px] px-2 py-0.5 ml-1.5 backdrop-blur-sm">
+                        {companyDistributors.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="rounded-2xl max-w-md border-2 border-[#d81b60]/30 shadow-2xl shadow-[#d81b60]/20 bg-white dark:bg-slate-900">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-[#d81b60] dark:text-white text-xl">
+                      <div className="p-1.5 rounded-xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1]">
+                        <UsersRound className="h-5 w-5 text-white" />
+                      </div>
+                      {app.lang === "ar" ? "الموزعين" : "Distributors"}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {app.lang === "ar"
+                        ? `اختر موزعاً من شركتك (${companyDistributors.length}) لبدء المحادثة`
+                        : `Select a distributor from your company (${companyDistributors.length}) to start chatting`}
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d81b60]/50" />
+                    <Input
+                      placeholder={app.lang === "ar" ? "بحث عن موزع..." : "Search distributor..."}
+                      value={distributorSearch}
+                      onChange={(e) => setDistributorSearch(e.target.value)}
+                      className="pl-9 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                    />
+                  </div>
+                  
+                  <div className="max-h-60 overflow-y-auto space-y-1.5 border-2 rounded-xl p-1.5 border-[#d81b60]/20">
+                    {filteredDistributors.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground text-sm">
+                        {distributorSearch
+                          ? app.lang === "ar"
+                            ? `لا يوجد موزع باسم أو رقم "${distributorSearch}"`
+                            : `No distributor named or phone "${distributorSearch}"`
+                          : app.lang === "ar"
+                          ? "لا يوجد موزعين في الشركة"
+                          : "No distributors in the company"}
+                      </div>
+                    ) : (
+                      filteredDistributors.map((dist: any) => (
+                        <div
+                          key={dist.id}
+                          className={`flex items-center gap-3 p-3 rounded-xl hover:bg-[#d81b60]/10 dark:hover:bg-[#d81b60]/20 cursor-pointer transition-all hover:border-[#d81b60]/40 border-2 border-transparent group ${
+                            !dist.user_id ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                          onClick={() => dist.user_id && startDistributorChat(dist)}
+                        >
+                          <Avatar className="h-10 w-10 ring-2 ring-[#d81b60]/20 group-hover:ring-[#d81b60]/40 transition-all">
+                            <img 
+                              src={dist.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(dist.full_name_ar || dist.full_name_en || 'D')}&background=d81b60&color=fff`} 
+                              alt={dist.full_name_ar || dist.full_name_en || 'Distributor'}
+                              className="object-cover"
+                            />
+                            <AvatarFallback className="bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white">
+                              {(dist.full_name_ar || dist.full_name_en || 'D').charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate group-hover:text-[#d81b60] transition-colors">
+                              {app.lang === "ar" ? dist.full_name_ar : dist.full_name_en || dist.full_name_ar}
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                              <Phone className="h-3 w-3" />
+                              <span>{dist.phone}</span>
+                              {dist.is_available && (
+                                <Badge className="bg-emerald-500/20 text-emerald-600 text-[8px] px-2 py-0 flex items-center gap-1 border-0">
+                                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  {app.lang === "ar" ? "متاح" : "Available"}
+                                </Badge>
+                              )}
+                              {!dist.user_id && (
+                                <Badge className="bg-red-500/20 text-red-600 text-[8px] px-2 py-0 border-0">
+                                  ⚠️ {app.lang === "ar" ? "بدون حساب" : "No account"}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className={`h-8 w-8 rounded-full ${dist.user_id ? 'hover:bg-[#d81b60]/20 opacity-0 group-hover:opacity-100 text-[#d81b60]' : 'opacity-50 cursor-not-allowed'} transition-all`}
+                            disabled={!dist.user_id}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowDistributorDialog(false)} className="border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60]">
+                      {app.lang === "ar" ? "إغلاق" : "Close"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
-              <div className="w-px h-8 bg-[#0d2e2a]/20 mx-1 hidden sm:block" />
+              <div className="w-px h-8 bg-[#d81b60]/30 mx-1 hidden sm:block" />
 
               {/* بحث في المحادثات */}
               <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#0d2e2a] transition-all duration-300 group-focus-within:scale-110" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d81b60]/50 group-focus-within:text-[#d81b60] transition-all duration-300 group-focus-within:scale-110" />
                 <Input
                   placeholder={app.lang === "ar" ? "🔍 بحث في المحادثات..." : "🔍 Search conversations..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 w-full md:w-56 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300 focus:scale-[1.02]"
+                  className="pl-9 w-full md:w-56 rounded-xl border-2 border-[#d81b60]/30 dark:border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 transition-all duration-300 focus:scale-[1.02]"
                 />
               </div>
 
@@ -799,35 +804,35 @@ function DistributorMessagesPage() {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="h-10 px-3 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/5"
+                    className="h-10 px-3 rounded-xl border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60]"
                   >
-                    <Filter className="h-4 w-4 text-[#0d2e2a]" />
+                    <Filter className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="rounded-xl p-1">
+                <DropdownMenuContent align="end" className="rounded-xl p-1 border-2 border-[#d81b60]/20">
                   <DropdownMenuItem 
                     onClick={() => setFilterType("all")}
-                    className="rounded-lg flex items-center gap-2 cursor-pointer"
+                    className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#d81b60]/10"
                   >
                     <Users className="h-4 w-4" />
                     {app.lang === "ar" ? "الكل" : "All"}
-                    {filterType === "all" && <Check className="h-4 w-4 text-[#0d2e2a] mr-auto" />}
+                    {filterType === "all" && <Check className="h-4 w-4 text-[#d81b60] mr-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setFilterType("distributors")}
-                    className="rounded-lg flex items-center gap-2 cursor-pointer"
+                    className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#d81b60]/10"
                   >
                     <Truck className="h-4 w-4" />
                     {app.lang === "ar" ? "الموزعين" : "Distributors"}
-                    {filterType === "distributors" && <Check className="h-4 w-4 text-[#0d2e2a] mr-auto" />}
+                    {filterType === "distributors" && <Check className="h-4 w-4 text-[#d81b60] mr-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setFilterType("admins")}
-                    className="rounded-lg flex items-center gap-2 cursor-pointer"
+                    className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#d81b60]/10"
                   >
                     <ShieldCheck className="h-4 w-4" />
                     {app.lang === "ar" ? "الأدمن" : "Admins"}
-                    {filterType === "admins" && <Check className="h-4 w-4 text-[#0d2e2a] mr-auto" />}
+                    {filterType === "admins" && <Check className="h-4 w-4 text-[#d81b60] mr-auto" />}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -835,10 +840,10 @@ function DistributorMessagesPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-xl hover:bg-[#0d2e2a]/10 transition-all duration-300 hover:rotate-180 group"
+                className="h-10 w-10 rounded-xl hover:bg-[#d81b60]/10 transition-all duration-300 hover:rotate-180 group border-2 border-[#d81b60]/30 hover:border-[#d81b60]/60"
                 onClick={() => refetch()}
               >
-                <RefreshCw className="h-4 w-4 text-[#0d2e2a] group-hover:scale-110 transition-all duration-300" />
+                <RefreshCw className="h-4 w-4 text-[#d81b60] group-hover:scale-110 transition-all duration-300" />
               </Button>
             </div>
           </div>
@@ -849,14 +854,14 @@ function DistributorMessagesPage() {
       <div className="container mx-auto px-4 py-6">
         {isCreating ? (
           <div className="flex items-center justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0d2e2a]/20 border-t-[#0d2e2a]" />
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#d81b60]/20 border-t-[#d81b60]" />
           </div>
         ) : filteredConversations.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900/50 rounded-3xl border border-[#0d2e2a]/10 dark:border-[#0d2e2a]/30 p-12 text-center shadow-sm hover:shadow-md hover:border-[#0d2e2a]/30 transition-all duration-300">
-            <div className="h-20 w-20 rounded-full bg-[#0d2e2a]/5 dark:bg-[#0d2e2a]/20 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
-              <MessageCircle className="h-10 w-10 text-[#0d2e2a]/40" />
+          <div className="bg-white dark:bg-slate-900/50 rounded-3xl border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30 p-12 text-center shadow-sm hover:shadow-md hover:border-[#d81b60]/40 transition-all duration-300">
+            <div className="h-20 w-20 rounded-full bg-[#d81b60]/10 dark:bg-[#d81b60]/20 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
+              <MessageCircle className="h-10 w-10 text-[#d81b60]/40" />
             </div>
-            <h3 className="text-xl font-semibold text-[#0d2e2a] dark:text-white">
+            <h3 className="text-xl font-semibold text-[#d81b60] dark:text-white">
               {searchQuery
                 ? app.lang === "ar"
                   ? "لا توجد نتائج"
@@ -903,20 +908,20 @@ function DistributorMessagesPage() {
                 >
                   <div
                     className={`
-                      bg-white dark:bg-slate-900 rounded-2xl border p-4 hover:shadow-xl transition-all duration-300 
-                      hover:border-[#0d2e2a]/40 hover:scale-[1.01]
+                      bg-white dark:bg-slate-900 rounded-2xl border-2 p-4 hover:shadow-xl transition-all duration-300 
+                      hover:border-[#d81b60]/50 hover:scale-[1.01]
                       ${
                         unread
-                          ? "border-[#0d2e2a]/30 dark:border-[#0d2e2a]/50 bg-gradient-to-r from-[#0d2e2a]/5 to-transparent dark:from-[#0d2e2a]/10 dark:to-transparent"
-                          : "border-slate-200/60 dark:border-slate-700/60"
+                          ? "border-[#d81b60]/40 dark:border-[#d81b60]/50 bg-gradient-to-r from-[#d81b60]/5 to-transparent dark:from-[#d81b60]/10 dark:to-transparent"
+                          : "border-[#d81b60]/20 dark:border-[#d81b60]/30"
                       }
                     `}
                   >
                     <div className="flex items-center gap-4">
                       <div className="relative">
-                        <Avatar className="h-14 w-14 ring-2 ring-slate-200 dark:ring-slate-700 group-hover:ring-[#0d2e2a] transition-all duration-300 group-hover:scale-105">
+                        <Avatar className="h-14 w-14 ring-2 ring-[#d81b60]/30 dark:ring-[#d81b60]/40 group-hover:ring-[#d81b60] transition-all duration-300 group-hover:scale-105">
                           <img src={avatar} alt={name} className="object-cover" />
-                          <AvatarFallback className="bg-gradient-to-br from-[#0d2e2a] to-[#2a655f] text-white text-sm font-bold">
+                          <AvatarFallback className="bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white text-sm font-bold">
                             {name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -936,8 +941,8 @@ function DistributorMessagesPage() {
                           </div>
                         )}
                         {role === "company_admin" && (
-                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-indigo-500/20 border-2 border-white dark:border-slate-900 flex items-center justify-center">
-                            <ShieldCheck className="h-2.5 w-2.5 text-indigo-500" />
+                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-pink-500/20 border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                            <ShieldCheck className="h-2.5 w-2.5 text-pink-500" />
                           </div>
                         )}
                         {role === "delivery_company" && (
@@ -950,7 +955,7 @@ function DistributorMessagesPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold truncate text-slate-900 dark:text-white group-hover:text-[#0d2e2a] transition-colors duration-300">
+                            <span className="font-semibold truncate text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors duration-300">
                               {name}
                             </span>
                             <Badge 
@@ -971,19 +976,19 @@ function DistributorMessagesPage() {
                         </div>
 
                         {conv.last_message && (
-                          <p className="text-sm text-muted-foreground truncate mt-0.5 group-hover:text-[#0d2e2a]/70 transition-colors duration-300">
+                          <p className="text-sm text-muted-foreground truncate mt-0.5 group-hover:text-[#d81b60]/70 transition-colors duration-300">
                             {conv.last_message}
                           </p>
                         )}
                       </div>
 
                       {unread && (
-                        <Badge className="bg-[#0d2e2a] text-white rounded-full px-2.5 py-0.5 text-xs font-bold animate-pulse shadow-lg shadow-[#0d2e2a]/30">
+                        <Badge className="bg-[#d81b60] text-white rounded-full px-2.5 py-0.5 text-xs font-bold animate-pulse shadow-lg shadow-[#d81b60]/30 border-0">
                           {conv.unread_count_participant1 || conv.unread_count_participant2}
                         </Badge>
                       )}
 
-                      <ChevronRight className="h-4 w-4 text-muted-foreground/50 group-hover:translate-x-1 group-hover:text-[#0d2e2a] transition-all duration-300" />
+                      <ChevronRight className="h-4 w-4 text-[#d81b60]/50 group-hover:translate-x-1 group-hover:text-[#d81b60] transition-all duration-300" />
                     </div>
                   </div>
 
@@ -993,12 +998,12 @@ function DistributorMessagesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                          className="h-8 w-8 rounded-full hover:bg-[#d81b60]/10 border-2 border-[#d81b60]/20 hover:border-[#d81b60]/50 text-[#d81b60]"
                         >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-xl">
+                      <DropdownMenuContent align="end" className="rounded-xl border-2 border-[#d81b60]/20">
                         <DropdownMenuItem
                           className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
                           onClick={(e) => handleDeleteConversation(conv.id, e)}

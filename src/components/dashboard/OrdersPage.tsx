@@ -213,20 +213,17 @@ export const OrdersPage = React.memo(function OrdersPage() {
     // ✅ ✅ ✅ البحث النصي (مع دعم الهاش والوقت)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      const cleanQ = q.replace(/^#/, ''); // ✅ إزالة الهاش للبحث بالرقم فقط
+      const cleanQ = q.replace(/^#/, '');
       
       result = result.filter((order: any) => {
-        // ✅ رقم الطلب (مع وبدون هاش)
         const orderId = order.id?.toLowerCase() || "";
         const orderIdShort = orderId.slice(0, 8);
         const orderIdWithHash = `#${orderIdShort}`;
         
-        // ✅ بيانات العميل
         const customerName = order.buyer_name?.toLowerCase() || "";
         const customerPhone = order.buyer_phone?.toLowerCase() || "";
         const notes = order.notes?.toLowerCase() || "";
         
-        // ✅ ✅ ✅ الوقت والتاريخ (سيرش دقيق)
         const createdAt = new Date(order.created_at);
         const dateStr = createdAt.toLocaleDateString(app.lang === 'ar' ? 'ar-SA' : 'en-US');
         const timeStr = createdAt.toLocaleTimeString(app.lang === 'ar' ? 'ar-SA' : 'en-US', { 
@@ -234,15 +231,14 @@ export const OrdersPage = React.memo(function OrdersPage() {
           minute: '2-digit' 
         });
         
-        // ✅ ✅ ✅ تنسيقات التاريخ والوقت للبحث
         const dateFormats = [
           dateStr.toLowerCase(),
           timeStr.toLowerCase(),
           `${dateStr} ${timeStr}`.toLowerCase(),
-          createdAt.toISOString().slice(0, 10), // YYYY-MM-DD
-          createdAt.toISOString().slice(0, 16), // YYYY-MM-DDTHH:mm
-          createdAt.toLocaleDateString('en-US'), // MM/DD/YYYY
-          createdAt.toLocaleDateString('ar-SA'), // DD/MM/YYYY
+          createdAt.toISOString().slice(0, 10),
+          createdAt.toISOString().slice(0, 16),
+          createdAt.toLocaleDateString('en-US'),
+          createdAt.toLocaleDateString('ar-SA'),
           createdAt.toLocaleDateString('ar-SA', { month: 'long' }),
           createdAt.toLocaleDateString('ar-SA', { day: 'numeric', month: 'long' }),
           String(createdAt.getFullYear()),
@@ -250,7 +246,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
           String(createdAt.getMonth() + 1).padStart(2, '0'),
         ];
         
-        // ✅ ✅ ✅ البحث بالهاش (#) - مهم جداً
         const searchFields = [
           orderId,
           orderIdShort,
@@ -269,7 +264,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
       });
     }
 
-    // ✅ ترتيب الطلبات: قيد المراجعة بالأعلى، ثم الأحدث
     const statusOrder: Record<string, number> = {
       pending: 0,
       accepted: 1,
@@ -889,7 +883,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
             size="sm" 
             onClick={exportToExcel} 
             disabled={filteredOrders.length === 0} 
-            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
+            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300"
           >
             <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Excel
           </Button>
@@ -898,7 +892,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
             size="sm" 
             onClick={exportToWord} 
             disabled={filteredOrders.length === 0} 
-            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
+            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300"
           >
             <FileText className="h-4 w-4 mr-1.5" /> Word
           </Button>
@@ -906,7 +900,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
             variant="outline" 
             size="sm" 
             onClick={() => refetchOrders()} 
-            className="rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5"
+            className="rounded-xl border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300"
           >
             <RefreshCw className="h-4 w-4 mr-1.5" /> 
             {app.lang === "ar" ? "تحديث" : "Refresh"}
@@ -914,85 +908,103 @@ export const OrdersPage = React.memo(function OrdersPage() {
         </div>
       </div>
 
-      {/* ===== STATS CARDS ===== */}
+      {/* ===== STATS CARDS - خلفية وردية وبوردر وردي ===== */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {[
-          { key: 'total', label: app.lang === 'ar' ? 'الإجمالي' : 'Total', value: stats.total, icon: ShoppingBag, color: 'text-[#2a655f]', bg: 'bg-[#2a655f]/10' },
-          { key: 'pending', label: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: stats.pending, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-500/10' },
-          { key: 'accepted', label: app.lang === 'ar' ? 'مقبول' : 'Accepted', value: stats.accepted, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-          { key: 'rejected', label: app.lang === 'ar' ? 'مرفوض' : 'Rejected', value: stats.rejected, icon: XCircle, color: 'text-red-600', bg: 'bg-red-500/10' },
-          { key: 'processing', label: app.lang === 'ar' ? 'قيد المعالجة' : 'Processing', value: stats.processing, icon: RefreshCw, color: 'text-blue-600', bg: 'bg-blue-500/10' },
-          { key: 'shipped', label: app.lang === 'ar' ? 'تم الشحن' : 'Shipped', value: stats.shipped, icon: Truck, color: 'text-purple-600', bg: 'bg-purple-500/10' },
-          { key: 'delivered', label: app.lang === 'ar' ? 'تم التوصيل' : 'Delivered', value: stats.delivered, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-          { key: 'cancelled', label: app.lang === 'ar' ? 'ملغي' : 'Cancelled', value: stats.cancelled, icon: XCircle, color: 'text-red-600', bg: 'bg-red-500/10' },
-        ].map((stat) => (
-          <div 
-            key={stat.key} 
-            className="group relative bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-3 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden"
-          >
-            <div className="relative flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  {stat.label}
-                </p>
-                <p className={`text-xl font-bold mt-0.5 ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
-                  {stat.value}
-                </p>
+          { key: 'total', label: app.lang === 'ar' ? 'الإجمالي' : 'Total', value: stats.total, icon: ShoppingBag },
+          { key: 'pending', label: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: stats.pending, icon: Clock },
+          { key: 'accepted', label: app.lang === 'ar' ? 'مقبول' : 'Accepted', value: stats.accepted, icon: CheckCircle2 },
+          { key: 'rejected', label: app.lang === 'ar' ? 'مرفوض' : 'Rejected', value: stats.rejected, icon: XCircle },
+          { key: 'processing', label: app.lang === 'ar' ? 'قيد المعالجة' : 'Processing', value: stats.processing, icon: RefreshCw },
+          { key: 'shipped', label: app.lang === 'ar' ? 'تم الشحن' : 'Shipped', value: stats.shipped, icon: Truck },
+          { key: 'delivered', label: app.lang === 'ar' ? 'تم التوصيل' : 'Delivered', value: stats.delivered, icon: CheckCircle2 },
+          { key: 'cancelled', label: app.lang === 'ar' ? 'ملغي' : 'Cancelled', value: stats.cancelled, icon: XCircle },
+        ].map((stat) => {
+          let colorClass = 'text-[#2a655f]';
+          
+          if (stat.key === 'pending') {
+            colorClass = 'text-yellow-600 dark:text-yellow-400';
+          } else if (stat.key === 'accepted' || stat.key === 'delivered') {
+            colorClass = 'text-emerald-600 dark:text-emerald-400';
+          } else if (stat.key === 'rejected' || stat.key === 'cancelled') {
+            colorClass = 'text-red-600 dark:text-red-400';
+          } else if (stat.key === 'processing') {
+            colorClass = 'text-blue-600 dark:text-blue-400';
+          } else if (stat.key === 'shipped') {
+            colorClass = 'text-purple-600 dark:text-purple-400';
+          }
+          
+          return (
+            <div 
+              key={stat.key} 
+              className="group relative bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute -top-8 -right-8 h-16 w-16 rounded-full bg-[#fbcfe8]/60 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative flex items-center justify-between p-3">
+                <div>
+                  <p className="text-[10px] font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">
+                    {stat.label}
+                  </p>
+                  <p className={`text-xl font-bold mt-0.5 ${colorClass} group-hover:scale-110 transition-transform duration-300`}>
+                    {stat.value}
+                  </p>
+                </div>
+                <div className={`h-8 w-8 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
+                  <stat.icon className={`h-4 w-4 ${colorClass}`} />
+                </div>
               </div>
-              <div className={`h-8 w-8 rounded-lg ${stat.bg} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-              </div>
+              <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ============================================================ */}
       {/* ✅✅✅ SEARCH & FILTERS (مع فلتر الوقت والتقويم المنبثق) ✅✅✅ */}
       {/* ============================================================ */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* 🔍 حقل البحث */}
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400" />
+        {/* 🔍 حقل البحث - بوردر وردي */}
+        <div className="relative flex-1 min-w-[200px] group">
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#f9a8d4] transition-colors" />
           <Input 
             value={searchQuery} 
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
             placeholder={app.lang === "ar" ? "🔍 ابحث برقم الطلب #، اسم العميل، التاريخ..." : "🔍 Search by Order #, Customer, Date..."} 
-            className="ps-9 h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20" 
+            className="ps-9 h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300" 
           />
           {searchQuery && (
             <button
               onClick={() => { setSearchQuery(""); setCurrentPage(1); }}
-              className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
+              className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#f9a8d4] transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
         
-        {/* ✅ فلتر الحالة */}
+        {/* ✅ فلتر الحالة - بوردر وردي */}
         <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[150px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
+          <SelectTrigger className="w-[150px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
+              <Filter className="h-4 w-4 text-slate-400 group-hover:text-[#f9a8d4]" />
               <SelectValue placeholder={app.lang === "ar" ? "الحالة" : "Status"} />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#2a655f]/20">
-            <SelectItem value="all">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
-            <SelectItem value="pending">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
-            <SelectItem value="accepted">✅ {app.lang === "ar" ? "مقبول" : "Accepted"}</SelectItem>
-            <SelectItem value="rejected">❌ {app.lang === "ar" ? "مرفوض" : "Rejected"}</SelectItem>
-            <SelectItem value="processing">🔄 {app.lang === "ar" ? "قيد المعالجة" : "Processing"}</SelectItem>
-            <SelectItem value="shipped">🚚 {app.lang === "ar" ? "تم الشحن" : "Shipped"}</SelectItem>
-            <SelectItem value="delivered">✅ {app.lang === "ar" ? "تم التوصيل" : "Delivered"}</SelectItem>
-            <SelectItem value="cancelled">❌ {app.lang === "ar" ? "ملغي" : "Cancelled"}</SelectItem>
+          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
+            <SelectItem value="pending" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
+            <SelectItem value="accepted" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">✅ {app.lang === "ar" ? "مقبول" : "Accepted"}</SelectItem>
+            <SelectItem value="rejected" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">❌ {app.lang === "ar" ? "مرفوض" : "Rejected"}</SelectItem>
+            <SelectItem value="processing" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">🔄 {app.lang === "ar" ? "قيد المعالجة" : "Processing"}</SelectItem>
+            <SelectItem value="shipped" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">🚚 {app.lang === "ar" ? "تم الشحن" : "Shipped"}</SelectItem>
+            <SelectItem value="delivered" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">✅ {app.lang === "ar" ? "تم التوصيل" : "Delivered"}</SelectItem>
+            <SelectItem value="cancelled" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">❌ {app.lang === "ar" ? "ملغي" : "Cancelled"}</SelectItem>
           </SelectContent>
         </Select>
 
-        {/* ✅ ✅ ✅ فلتر النطاق الزمني - مع وصف "فلتر التاريخ" */}
+        {/* ✅ ✅ ✅ فلتر النطاق الزمني - بوردر وردي */}
         <div className="flex items-center gap-2">
-          {/* ✅ شارة توضيحية لفلتر التاريخ */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 rounded-full border border-[#2a655f]/20 dark:border-[#2a655f]/30">
             <Calendar className="h-3.5 w-3.5 text-[#2a655f]" />
             <span className="text-[10px] font-medium text-[#2a655f] dark:text-[#3a8a82] whitespace-nowrap">
@@ -1010,31 +1022,30 @@ export const OrdersPage = React.memo(function OrdersPage() {
               setTempDateTo("");
             }
           }}>
-            <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
+            <SelectTrigger className="w-[140px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-slate-400" />
+                <Calendar className="h-4 w-4 text-slate-400 group-hover:text-[#f9a8d4]" />
                 <SelectValue placeholder={app.lang === "ar" ? "الفترة" : "Period"} />
               </div>
             </SelectTrigger>
-            <SelectContent className="rounded-xl border-[#2a655f]/20">
-              <SelectItem value="all">📅 {app.lang === "ar" ? "الكل" : "All"}</SelectItem>
-              <SelectItem value="today">📅 {app.lang === "ar" ? "اليوم" : "Today"}</SelectItem>
-              <SelectItem value="week">📅 {app.lang === "ar" ? "آخر 7 أيام" : "Last 7 days"}</SelectItem>
-              <SelectItem value="month">📅 {app.lang === "ar" ? "آخر شهر" : "Last month"}</SelectItem>
-              <SelectItem value="custom">📅 {app.lang === "ar" ? "مخصص" : "Custom"}</SelectItem>
+            <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+              <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📅 {app.lang === "ar" ? "الكل" : "All"}</SelectItem>
+              <SelectItem value="today" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📅 {app.lang === "ar" ? "اليوم" : "Today"}</SelectItem>
+              <SelectItem value="week" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📅 {app.lang === "ar" ? "آخر 7 أيام" : "Last 7 days"}</SelectItem>
+              <SelectItem value="month" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📅 {app.lang === "ar" ? "آخر شهر" : "Last month"}</SelectItem>
+              <SelectItem value="custom" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📅 {app.lang === "ar" ? "مخصص" : "Custom"}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {/* ✅ ✅ ✅ فلتر التاريخ المخصص - تقويم منبثق احترافي */}
+        {/* ✅ ✅ ✅ فلتر التاريخ المخصص */}
         {filterDateRange === "custom" && (
           <div className="relative inline-block">
-            {/* ✅ زر فتح التقويم */}
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowDatePicker(!showDatePicker)}
-              className="h-10 px-4 rounded-xl border-[#2a655f]/30 hover:bg-[#2a655f]/10 transition-all duration-300 flex items-center gap-2"
+              className="h-10 px-4 rounded-xl border-3 border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 flex items-center gap-2"
             >
               <Calendar className="h-4 w-4 text-[#2a655f]" />
               <span className="text-sm font-medium">
@@ -1047,7 +1058,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
               ) : (
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               )}
-              {/* ✅ تلميح الوقت */}
               <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50/80 dark:bg-blue-950/30 rounded-full border border-blue-200/50 dark:border-blue-800/30">
                 <ClockIcon className="h-3 w-3 text-blue-500" />
                 <span className="text-[9px] text-blue-600 dark:text-blue-400 font-medium">
@@ -1056,13 +1066,11 @@ export const OrdersPage = React.memo(function OrdersPage() {
               </div>
             </Button>
 
-            {/* ✅ التقويم المنبثق - يظهر فوق كل العناصر */}
-    {showDatePicker && (
-  <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[999999] bg-white dark:bg-slate-900 rounded-2xl border-2 border-[#2a655f]/20 shadow-2xl p-5 min-w-[420px] max-w-[95vw] max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-    <div className="space-y-4">
-                  {/* عنوان التقويم */}
+            {showDatePicker && (
+              <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[999999] bg-white dark:bg-slate-900 rounded-2xl border-3 border-[#f9a8d4]/30 shadow-2xl p-5 min-w-[420px] max-w-[95vw] max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
+                    <span className="text-sm font-bold text-[#2a655f] dark:text-white flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-[#2a655f]" />
                       {app.lang === "ar" ? "اختر الفترة الزمنية" : "Select Time Period"}
                     </span>
@@ -1071,7 +1079,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     </Badge>
                   </div>
                   
-                  {/* ✅ حقل "من" مع تقويم */}
                   <div>
                     <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <span className="text-[#2a655f]">📅</span>
@@ -1083,13 +1090,11 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         type="datetime-local"
                         value={tempDateFrom}
                         onChange={(e) => setTempDateFrom(e.target.value)}
-                        className="h-10 w-full rounded-xl border-[#2a655f]/20 bg-white/50 dark:bg-slate-800/50 text-sm focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 cursor-pointer"
-                        onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                        className="h-10 w-full rounded-xl border-3 border-[#2a655f]/20 focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 bg-white/50 dark:bg-slate-800/50 text-sm transition-all duration-300 cursor-pointer"
                       />
                     </div>
                   </div>
                   
-                  {/* ✅ حقل "إلى" مع تقويم */}
                   <div>
                     <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <span className="text-[#2a655f]">📅</span>
@@ -1101,14 +1106,12 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         type="datetime-local"
                         value={tempDateTo}
                         onChange={(e) => setTempDateTo(e.target.value)}
-                        className="h-10 w-full rounded-xl border-[#2a655f]/20 bg-white/50 dark:bg-slate-800/50 text-sm focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 cursor-pointer"
-                        onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                        className="h-10 w-full rounded-xl border-3 border-[#2a655f]/20 focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 bg-white/50 dark:bg-slate-800/50 text-sm transition-all duration-300 cursor-pointer"
                       />
                     </div>
                   </div>
                   
-                  {/* ✅ أزرار سريعة */}
-                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
                     <span className="text-[10px] text-muted-foreground flex items-center gap-1 w-full">
                       <Zap className="h-3 w-3 text-[#2a655f]" />
                       {app.lang === "ar" ? "اختيارات سريعة:" : "Quick picks:"}
@@ -1156,16 +1159,15 @@ export const OrdersPage = React.memo(function OrdersPage() {
                           setTempDateFrom(fromStr);
                           setTempDateTo(toStr);
                         }}
-                        className="h-7 px-3 rounded-lg text-[10px] border-[#2a655f]/20 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/40 transition-all duration-200"
+                        className="h-7 px-3 rounded-lg text-[10px] border-3 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-200"
                       >
                         {item.label}
                       </Button>
                     ))}
                   </div>
                   
-                  {/* ✅ عرض الفترة المحددة مؤقتاً */}
                   {(tempDateFrom || tempDateTo) && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 animate-in fade-in duration-300">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 animate-in fade-in duration-300">
                       <ClockIcon className="h-3.5 w-3.5 text-[#2a655f]" />
                       <span className="text-xs text-[#2a655f] dark:text-[#3a8a82] truncate">
                         {tempDateFrom && tempDateTo 
@@ -1178,8 +1180,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     </div>
                   )}
                   
-                  {/* ✅ أزرار التحكم */}
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1206,7 +1207,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                           setShowDatePicker(false);
                           setCurrentPage(1);
                         }}
-                        className="h-8 px-3 rounded-xl text-xs border-red-200/50 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-300"
+                        className="h-8 px-3 rounded-xl text-xs border-3 border-red-200/50 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-300"
                       >
                         <Trash2 className="h-3.5 w-3.5 mr-1" />
                         {app.lang === "ar" ? "مسح" : "Clear"}
@@ -1220,7 +1221,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                           setShowDatePicker(false);
                           setCurrentPage(1);
                         }}
-                        className="h-8 px-4 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105"
+                        className="h-8 px-4 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105 border-2 border-white/30"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                         {app.lang === "ar" ? "تطبيق" : "Apply"}
@@ -1231,9 +1232,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
               </div>
             )}
 
-            {/* ✅ عرض الفترة المحددة (أسفل الزر) */}
             {(dateFrom || dateTo) && (
-              <div className="absolute top-full left-0 mt-14 flex items-center gap-2 px-3 py-1.5 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 animate-in fade-in duration-300 whitespace-nowrap z-50">
+              <div className="absolute top-full left-0 mt-14 flex items-center gap-2 px-3 py-1.5 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 animate-in fade-in duration-300 whitespace-nowrap z-50">
                 <ClockIcon className="h-3.5 w-3.5 text-[#2a655f]" />
                 <span className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82]">
                   {dateFrom && dateTo 
@@ -1262,18 +1262,18 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
         {/* ✅ عدد العناصر لكل صفحة */}
         <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[90px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60">
+          <SelectTrigger className="w-[90px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
             <SelectValue placeholder="10" />
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#2a655f]/20">
-            <SelectItem value="5">5</SelectItem>
-            <SelectItem value="10">10</SelectItem>
-            <SelectItem value="20">20</SelectItem>
-            <SelectItem value="50">50</SelectItem>
+          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <SelectItem value="5" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">5</SelectItem>
+            <SelectItem value="10" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">10</SelectItem>
+            <SelectItem value="20" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">20</SelectItem>
+            <SelectItem value="50" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">50</SelectItem>
           </SelectContent>
         </Select>
 
-        {/* ✅ زر مسح الكل */}
+        {/* ✅ زر مسح الكل - بوردر وردي */}
         <Button 
           variant="outline" 
           size="sm" 
@@ -1288,18 +1288,18 @@ export const OrdersPage = React.memo(function OrdersPage() {
             setItemsPerPage(10); 
             setCurrentPage(1); 
           }} 
-          className="h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5"
+          className="h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 group"
         >
-          <X className="h-4 w-4 mr-1.5" />
+          <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
           {app.lang === "ar" ? "مسح الكل" : "Clear All"}
         </Button>
       </div>
 
       {/* ============================================================ */}
-      {/* ✅ ORDERS TABLE */}
+      {/* ✅ ORDERS TABLE - أعمدة فاصلة وردية وهوفرو وردي */}
       {/* ============================================================ */}
       {storeOrders.length === 0 ? (
-        <div className="rounded-3xl border-2 border-dashed border-[#2a655f]/30 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-transparent">
+        <div className="rounded-3xl border-3 border-dashed border-[#2a655f]/30 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-transparent">
           <div className="h-24 w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto">
             <ShoppingBag className="h-12 w-12 text-[#2a655f]/60" />
           </div>
@@ -1313,14 +1313,14 @@ export const OrdersPage = React.memo(function OrdersPage() {
           </p>
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="rounded-3xl border-2 border-dashed border-slate-200/50 dark:border-slate-800/50 p-20 text-center">
+        <div className="rounded-3xl border-3 border-dashed border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 p-20 text-center">
           <Search className="h-20 w-20 text-muted-foreground/40 mx-auto" />
           <h3 className="text-xl font-semibold text-muted-foreground mt-4">
             {app.lang === "ar" ? "🔍 لا توجد نتائج مطابقة" : "🔍 No matching results"}
           </h3>
           <Button 
             variant="outline" 
-            className="mt-4 rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
+            className="mt-4 rounded-xl border-3 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300"
             onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterDateRange("all"); setDateFrom(""); setDateTo(""); setCurrentPage(1); }}
           >
             <X className="h-4 w-4 mr-2" />
@@ -1329,32 +1329,32 @@ export const OrdersPage = React.memo(function OrdersPage() {
         </div>
       ) : (
         <>
-          <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden shadow-lg">
+          <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 border-b border-slate-200/50 dark:border-slate-700/50">
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
+                  <tr className="bg-gradient-to-r from-[#f9a8d4]/30 via-[#fbcfe8]/20 to-[#f9a8d4]/30 dark:from-[#f9a8d4]/20 dark:via-[#fbcfe8]/10 dark:to-[#f9a8d4]/20 border-b-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30">
+                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                       {app.lang === "ar" ? "رقم الطلب" : "Order #"}
                     </th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
+                    <th className="px-4 py-3 text-right font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                       {app.lang === "ar" ? "العميل" : "Customer"}
                     </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                       {app.lang === "ar" ? "رقم العميل" : "Phone"}
                     </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                       {app.lang === "ar" ? "الوقت" : "Time"}
                     </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                       {app.lang === "ar" ? "الحالة" : "Status"}
                     </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider">
                       {app.lang === "ar" ? "الإجراءات" : "Actions"}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y-2 divide-[#f9a8d4]/20 dark:divide-[#f9a8d4]/10">
                   {paginatedOrders.map((order: any) => {
                     const StatusIcon = getStatusIcon(order.status);
                     const statusColor = getStatusColor(order.status);
@@ -1363,31 +1363,29 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     return (
                       <tr 
                         key={order.id} 
-                        className="group hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10 transition-colors duration-300 cursor-pointer"
+                        className="group hover:bg-[#f9a8d4]/15 dark:hover:bg-[#f9a8d4]/10 transition-colors duration-300 cursor-pointer"
                         onClick={() => { setSelectedOrder(order); setDetailDialogOpen(true); }}
                       >
-                        <td className="px-4 py-3 text-center">
-                          <div className="flex flex-col items-center">
-                            <span className="font-mono font-bold text-sm text-slate-700 dark:text-slate-300">
-                              #{String(order.id).slice(0, 8)}
-                            </span>
-                          </div>
+                        <td className="px-4 py-3 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                          <span className="font-mono font-bold text-sm text-[#2a655f] dark:text-[#f9a8d4] group-hover:text-[#d81b60] transition-colors">
+                            #{String(order.id).slice(0, 8)}
+                          </span>
                         </td>
                         
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-right border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
                           <div className="flex items-center justify-end gap-2">
-                            <User className="h-3.5 w-3.5 text-[#2a655f]" />
-                            <span className="font-medium text-slate-800 dark:text-slate-200">
+                            <User className="h-3.5 w-3.5 text-[#2a655f] group-hover:text-[#d81b60] transition-colors" />
+                            <span className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-[#2a655f] transition-colors">
                               {order.buyer_name || (app.lang === "ar" ? "عميل" : "Customer")}
                             </span>
                           </div>
                         </td>
                         
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
                           {order.buyer_phone ? (
                             <div className="flex items-center justify-center gap-1.5">
-                              <Phone className="h-3.5 w-3.5 text-[#2a655f]" />
-                              <span className="font-mono text-sm text-slate-600 dark:text-slate-300">
+                              <Phone className="h-3.5 w-3.5 text-[#2a655f] group-hover:text-[#d81b60] transition-colors" />
+                              <span className="font-mono text-sm text-slate-600 dark:text-slate-300 group-hover:text-[#2a655f] transition-colors">
                                 {order.buyer_phone}
                               </span>
                             </div>
@@ -1396,9 +1394,9 @@ export const OrdersPage = React.memo(function OrdersPage() {
                           )}
                         </td>
                         
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
                           <div className="flex flex-col items-center">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-[#2a655f] transition-colors">
                               {new Date(order.created_at).toLocaleDateString(
                                 app.lang === "ar" ? "ar-SA" : "en-US",
                                 { day: 'numeric', month: 'short' }
@@ -1414,8 +1412,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
                           </div>
                         </td>
                         
-                        <td className="px-4 py-3 text-center">
-                          <Badge className={`${statusColor} border text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1.5 w-fit mx-auto`}>
+                        <td className="px-4 py-3 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                          <Badge className={`${statusColor} border-2 border-[#f9a8d4]/30 text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1.5 w-fit mx-auto`}>
                             <StatusIcon className="h-3 w-3" />
                             {getStatusLabel(order.status)}
                           </Badge>
@@ -1426,21 +1424,21 @@ export const OrdersPage = React.memo(function OrdersPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all"
+                              className="h-8 w-8 rounded-lg border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedOrder(order);
                                 setDetailDialogOpen(true);
                               }}
                             >
-                              <Eye className="h-4 w-4 text-[#2a655f]" />
+                              <Eye className="h-4 w-4 text-[#2a655f] group-hover:text-[#d81b60] transition-colors" />
                             </Button>
                             
                             {isPending && (
                               <>
                                 <Button
                                   size="sm"
-                                  className="h-8 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md shadow-emerald-500/30 transition-all duration-300 hover:scale-105"
+                                  className="h-8 px-3 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-500/30 transition-all duration-300 hover:scale-105 border-2 border-white/30"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleAcceptOrder(order.id);
@@ -1451,8 +1449,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  variant="destructive"
-                                  className="h-8 px-3 rounded-lg text-xs font-bold shadow-md shadow-red-500/30 transition-all duration-300 hover:scale-105"
+                                  className="h-8 px-3 rounded-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold shadow-md shadow-red-500/30 transition-all duration-300 hover:scale-105 border-2 border-white/30"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setRejectOrderId(order.id);
@@ -1467,7 +1464,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                             )}
                             
                             {!isPending && (
-                              <Badge className={`${statusColor} border text-[9px] px-2 py-0.5`}>
+                              <Badge className={`${statusColor} border-2 border-[#f9a8d4]/30 text-[9px] px-2 py-0.5`}>
                                 {order.status === "accepted" && "✅ " + (app.lang === "ar" ? "مقبول" : "Accepted")}
                                 {order.status === "rejected" && "❌ " + (app.lang === "ar" ? "مرفوض" : "Rejected")}
                                 {order.status === "processing" && "🔄 " + (app.lang === "ar" ? "قيد المعالجة" : "Processing")}
@@ -1488,7 +1485,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
           {/* ===== PAGINATION ===== */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex-wrap gap-3">
+            <div className="flex items-center justify-between pt-4 border-t-3 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10 flex-wrap gap-3">
               <span className="text-xs text-slate-500 flex items-center gap-2">
                 <TrendingUp className="h-3.5 w-3.5 text-[#2a655f]" />
                 {app.lang === "ar" ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
@@ -1504,7 +1501,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   size="sm" 
                   onClick={() => setCurrentPage(1)} 
                   disabled={currentPage === 1} 
-                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 disabled:opacity-50"
+                  className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 disabled:opacity-40 transition-all duration-300"
                 >
                   <span className="text-xs font-bold">«</span>
                 </Button>
@@ -1514,7 +1511,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   size="sm" 
                   onClick={() => setCurrentPage(currentPage - 1)} 
                   disabled={currentPage === 1} 
-                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 disabled:opacity-50"
+                  className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 disabled:opacity-40 transition-all duration-300"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -1541,8 +1538,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         className={cn(
                           "h-8 w-8 p-0 rounded-xl text-xs font-medium transition-all duration-300",
                           pageNum === currentPage 
-                            ? "bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md shadow-[#2a655f]/25" 
-                            : "hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
+                            ? "bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white shadow-md shadow-[#2a655f]/25 border-2 border-white/30" 
+                            : "border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 hover:text-[#2a655f]"
                         )}
                       >
                         {pageNum}
@@ -1556,7 +1553,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   size="sm" 
                   onClick={() => setCurrentPage(currentPage + 1)} 
                   disabled={currentPage === totalPages} 
-                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 disabled:opacity-50"
+                  className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 disabled:opacity-40 transition-all duration-300"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -1566,7 +1563,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   size="sm" 
                   onClick={() => setCurrentPage(totalPages)} 
                   disabled={currentPage === totalPages} 
-                  className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 disabled:opacity-50"
+                  className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 disabled:opacity-40 transition-all duration-300"
                 >
                   <span className="text-xs font-bold">»</span>
                 </Button>
@@ -1578,11 +1575,11 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
       {/* ===== ORDER DETAIL DIALOG ===== */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#2a655f]/20 bg-white dark:bg-slate-900 p-6">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 bg-white dark:bg-slate-900 p-6 shadow-2xl shadow-[#f9a8d4]/10">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-9 w-9 rounded-full bg-black/50 hover:bg-black/70 text-white z-30"
+            className="absolute top-4 end-4 h-9 w-9 rounded-full bg-black/50 hover:bg-black/70 text-white z-30 transition-all duration-300 hover:scale-110 hover:rotate-90"
             onClick={() => setDetailDialogOpen(false)}
           >
             <X className="h-5 w-5" />
@@ -1629,7 +1626,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
             return (
               <div>
-                {/* ===== HEADER ===== */}
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
@@ -1644,7 +1640,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     </p>
                   </div>
                   <Badge className={cn(
-                    "border-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold shadow-sm",
+                    "border-2 border-[#f9a8d4]/30 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold shadow-sm",
                     status.bg,
                     status.border,
                     status.color,
@@ -1655,9 +1651,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </Badge>
                 </div>
 
-                {/* ===== حالة الطلب مع وصف ===== */}
                 <div className={cn(
-                  "p-4 rounded-xl border mb-4",
+                  "p-4 rounded-xl border-2 border-[#f9a8d4]/30 mb-4",
                   status.bg,
                   status.border
                 )}>
@@ -1670,8 +1665,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                 </div>
 
-                {/* ===== معلومات المتجر والعميل ===== */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10 mb-4">
                   <div className="flex items-center gap-3">
                     {storeLogo ? (
                       <img 
@@ -1714,7 +1708,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                 </div>
 
-                {/* ===== قائمة المنتجات ===== */}
                 <div className="mb-4">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                     <Package className="h-3.5 w-3.5" />
@@ -1813,10 +1806,10 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         return (
                           <div 
                             key={item.id || index}
-                            className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
+                            className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border-2 border-slate-200/50 dark:border-slate-700/50 hover:border-[#f9a8d4]/50 transition-all duration-300"
                           >
                             <div className="flex items-center gap-4">
-                              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border-2 border-slate-200/50 dark:border-slate-700/50">
                                 {imageUrl ? (
                                   <img 
                                     src={imageUrl} 
@@ -1892,7 +1885,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                               </div>
                               
                               <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10 transition-all duration-300 hover:scale-110">
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 hover:scale-110">
                                   <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
                                 </Button>
                               </Link>
@@ -1901,9 +1894,9 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         );
                       })
                     ) : (
-                      <div className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                      <div className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border-2 border-slate-200/50 dark:border-slate-700/50">
                         <div className="flex items-center gap-4">
-                          <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                          <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border-2 border-slate-200/50 dark:border-slate-700/50">
                             {selectedOrder.listings?.cover_url ? (
                               <img 
                                 src={selectedOrder.listings.cover_url} 
@@ -1937,7 +1930,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                             </div>
                           </div>
                           <Link to="/listing/$id" params={{ id: selectedOrder.listing_id }}>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 hover:scale-110">
                               <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
                             </Button>
                           </Link>
@@ -1947,9 +1940,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                 </div>
 
-                {/* ===== ملاحظات الطلب ===== */}
                 {selectedOrder.notes && (
-                  <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200/50 dark:border-yellow-800/30 mb-4">
+                  <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border-2 border-yellow-200/50 dark:border-yellow-800/30 mb-4">
                     <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
                       <MessageCircle className="h-3.5 w-3.5" />
                       {app.lang === "ar" ? "ملاحظات العميل" : "Customer Notes"}
@@ -1958,9 +1950,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                 )}
 
-                {/* ===== سبب الرفض ===== */}
                 {selectedOrder.status === "rejected" && selectedOrder.rejection_reason && (
-                  <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-800/30 mb-4">
+                  <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border-2 border-red-200/50 dark:border-red-800/30 mb-4">
                     <p className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
                       <XCircle className="h-3.5 w-3.5" />
                       {app.lang === "ar" ? "سبب الرفض" : "Rejection Reason"}
@@ -1969,8 +1960,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                 )}
 
-                {/* ===== إجمالي الطلب ===== */}
-                <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">
                       {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
@@ -2030,12 +2020,11 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                 </div>
 
-                {/* ===== أزرار الإجراءات ===== */}
-                <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex flex-wrap items-center justify-between gap-3">
+                <div className="mt-6 pt-4 border-t-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10 flex flex-wrap items-center justify-between gap-3">
                   <Button
                     variant="outline"
                     onClick={() => setDetailDialogOpen(false)}
-                    className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10"
+                    className="rounded-xl border-2 border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300"
                   >
                     {app.lang === "ar" ? "إغلاق" : "Close"}
                   </Button>
@@ -2044,7 +2033,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
-                        className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 transition-all duration-300 hover:scale-105"
+                        className="rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/30 transition-all duration-300 hover:scale-105 border-2 border-white/30"
                         onClick={() => {
                           setDetailDialogOpen(false);
                           handleAcceptOrder(selectedOrder.id);
@@ -2055,8 +2044,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                       </Button>
                       <Button
                         size="sm"
-                        variant="destructive"
-                        className="rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-105"
+                        className="rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/30 transition-all duration-300 hover:scale-105 border-2 border-white/30"
                         onClick={() => {
                           setDetailDialogOpen(false);
                           setRejectOrderId(selectedOrder.id);
@@ -2078,7 +2066,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
       {/* ===== REJECT ORDER DIALOG ===== */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl border-red-200/50 dark:border-red-800/30 bg-white dark:bg-slate-900 p-6 shadow-2xl shadow-red-500/10">
+        <DialogContent className="max-w-md rounded-2xl border-3 border-red-200/50 dark:border-red-800/30 bg-white dark:bg-slate-900 p-6 shadow-2xl shadow-red-500/10">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-xl font-bold text-red-600 dark:text-red-400">
               <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
@@ -2089,7 +2077,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
           </DialogHeader>
 
           <div className="mt-4 space-y-4">
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border-2 border-amber-200/50 dark:border-amber-800/30">
               <p className="text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <span>
@@ -2112,7 +2100,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   ? "اكتب سبب رفض الطلب..."
                   : "Write the reason for rejecting the order..."
                 }
-                className="w-full min-h-[100px] p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-red-400 focus:ring-2 focus:ring-red-400/20 resize-none"
+                className="w-full min-h-[100px] p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-red-400 focus:ring-2 focus:ring-red-400/20 resize-none"
                 dir={app.lang === "ar" ? "rtl" : "ltr"}
               />
               <p className="text-xs text-muted-foreground mt-1 text-right">
@@ -2146,7 +2134,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   setRejectOrderId(null);
                   setRejectReason("");
                 }}
-                className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                className="flex-1 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 {app.lang === "ar" ? "إلغاء" : "Cancel"}
               </Button>
@@ -2158,7 +2146,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   }
                 }}
                 disabled={!rejectReason.trim() || isRejecting}
-                className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-105 disabled:opacity-50"
+                className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 border-2 border-white/30"
               >
                 {isRejecting ? (
                   <>

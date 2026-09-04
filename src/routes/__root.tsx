@@ -981,7 +981,7 @@ const checkAuthorization = useCallback(async () => {
     // ============================================================
     const adminPaths = [
       "/admin",
-      "/admin/dashboard",
+
       "/admin/users",
       "/admin/orders",
       "/admin/products",
@@ -1146,7 +1146,7 @@ const checkAuthorization = useCallback(async () => {
     // ✅ تحديد الصفحة الآمنة حسب الدور
     let safePath = '/auth/login';
     
-    if (isAdmin) safePath = '/admin/dashboard';
+   if (isAdmin) safePath = '/admin'; 
     else if (isDistributor) safePath = '/distributor/dashboard';
     else if (isDeliveryCompany) safePath = '/delivery/dashboard';
     else safePath = '/auth/login';

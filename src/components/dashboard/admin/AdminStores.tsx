@@ -47,7 +47,7 @@ import * as fileSaver from 'file-saver';
 import { cn } from "@/lib/utils";
 const { saveAs } = fileSaver;
 
-// ✅ ✅ ✅ دوال إضافية للحذف (نضيفها مؤقتاً هنا، لكن الأفضل نقلها لـ queries.ts)
+// ✅ ✅ ✅ دوال إضافية للحذف
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -59,7 +59,6 @@ function useAdminDeleteStore() {
     mutationFn: async (userId: string) => {
       console.log(`🗑️ [Admin] Deleting store for user: ${userId}`);
       
-      // ✅ 1. حذف المنتجات (مع CASCADE)
       const { error: listingsError } = await supabase
         .from("listings")
         .delete()
@@ -70,7 +69,6 @@ function useAdminDeleteStore() {
         throw new Error(`Failed to delete listings: ${listingsError.message}`);
       }
 
-      // ✅ 2. حذف طلبات فتح المتجر
       const { error: appsError } = await supabase
         .from("seller_applications")
         .delete()
@@ -80,7 +78,6 @@ function useAdminDeleteStore() {
         console.warn(`⚠️ Error deleting seller applications:`, appsError);
       }
 
-      // ✅ 3. حذف متابعي المتجر
       const { error: followersError } = await supabase
         .from("store_followers")
         .delete()
@@ -90,7 +87,6 @@ function useAdminDeleteStore() {
         console.warn(`⚠️ Error deleting store followers:`, followersError);
       }
 
-      // ✅ 4. تنظيف بيانات المتجر من جدول profiles
       const { error: updateProfileError } = await supabase
         .from("profiles")
         .update({
@@ -112,7 +108,7 @@ function useAdminDeleteStore() {
           is_featured: false,
           featured_sort: 0,
           company_id: null,
-          delivery_company_id: null, // ✅ تنظيف شركة التوصيل
+          delivery_company_id: null,
         })
         .eq("id", userId);
 
@@ -121,7 +117,6 @@ function useAdminDeleteStore() {
         throw new Error(`Failed to clear store data: ${updateProfileError.message}`);
       }
 
-      // ✅ 5. حذف دور seller
       const { error: roleError } = await supabase
         .from("user_roles")
         .delete()
@@ -132,7 +127,6 @@ function useAdminDeleteStore() {
         console.warn(`⚠️ Error removing seller role:`, roleError);
       }
 
-      // ✅ 6. إرسال إشعار للمستخدم
       try {
         await supabase.from("notifications").insert({
           user_id: userId,
@@ -178,7 +172,6 @@ function useAdminStoreStats(userId: string | undefined) {
     queryFn: async () => {
       if (!userId) return null;
       
-      // ✅ عدد المنتجات
       const { count: products, error: productsError } = await supabase
         .from("listings")
         .select("*", { count: "exact", head: true })
@@ -188,7 +181,6 @@ function useAdminStoreStats(userId: string | undefined) {
         console.error("❌ Error counting products:", productsError);
       }
 
-      // ✅ عدد الطلبات
       const { count: orders, error: ordersError } = await supabase
         .from("orders")
         .select("*", { count: "exact", head: true })
@@ -198,7 +190,6 @@ function useAdminStoreStats(userId: string | undefined) {
         console.error("❌ Error counting orders:", ordersError);
       }
 
-      // ✅ عدد المفضلات
       const { count: favorites, error: favoritesError } = await supabase
         .from("favorites")
         .select("*", { count: "exact", head: true })
@@ -208,7 +199,6 @@ function useAdminStoreStats(userId: string | undefined) {
         console.error("❌ Error counting favorites:", favoritesError);
       }
 
-      // ✅ عدد التقييمات
       const { count: reviews, error: reviewsError } = await supabase
         .from("reviews")
         .select("*", { count: "exact", head: true })
@@ -218,7 +208,6 @@ function useAdminStoreStats(userId: string | undefined) {
         console.error("❌ Error counting reviews:", reviewsError);
       }
 
-      // ✅ عدد الرسائل
       const { count: messages, error: messagesError } = await supabase
         .from("messages")
         .select("*", { count: "exact", head: true })
@@ -299,9 +288,8 @@ function isStoreCurrentlyOpen(store: any): boolean {
 
 export function AdminStores() {
   const app = useApp();
-// ✅ بعد
-const { data: storesData, isLoading, refetch } = useAdminAllStores();
-const stores = storesData?.data || [];
+  const { data: storesData, isLoading, refetch } = useAdminAllStores();
+  const stores = storesData?.data || [];
   const setActive = useSetStoreActive();
   const setFeatured = useSetStoreFeatured();
   const deleteStore = useAdminDeleteStore();
@@ -319,14 +307,14 @@ const stores = storesData?.data || [];
   const [selectedStore, setSelectedStore] = useState<any>(null);
   const [confirmStoreName, setConfirmStoreName] = useState("");
 
-  // ✅ ✅ ✅ State لنافذة تعديل شركة التوصيل
+  // ✅ State لنافذة تعديل شركة التوصيل
   const [deliveryDialogOpen, setDeliveryDialogOpen] = useState(false);
   const [selectedStoreForDelivery, setSelectedStoreForDelivery] = useState<any>(null);
   const [selectedDeliveryCompanyId, setSelectedDeliveryCompanyId] = useState<string>("");
   const [deliveryCompanies, setDeliveryCompanies] = useState<any[]>([]);
   const [isLoadingDeliveryCompanies, setIsLoadingDeliveryCompanies] = useState(false);
 
-  // ✅ ✅ ✅ State لتخزين أسماء شركات التوصيل
+  // ✅ State لتخزين أسماء شركات التوصيل
   const [deliveryCompanyNames, setDeliveryCompanyNames] = useState<Record<string, string>>({});
 
   // ✅ جلب إحصائيات المتجر المحدد
@@ -334,7 +322,7 @@ const stores = storesData?.data || [];
     selectedStore?.id
   );
 
-  // ✅ ✅ ✅ جلب أسماء شركات التوصيل لكل متجر
+  // ✅ جلب أسماء شركات التوصيل لكل متجر
   useEffect(() => {
     const fetchDeliveryCompanyNames = async () => {
       const storesWithDelivery = stores.filter((s: any) => s.delivery_company_id);
@@ -413,7 +401,7 @@ const stores = storesData?.data || [];
     setDeleteDialogOpen(true);
   };
 
-  // ✅ ✅ ✅ فتح نافذة تعديل شركة التوصيل
+  // ✅ فتح نافذة تعديل شركة التوصيل
   const openDeliveryDialog = async (store: any) => {
     setSelectedStoreForDelivery(store);
     setSelectedDeliveryCompanyId(store.delivery_company_id || "");
@@ -437,7 +425,7 @@ const stores = storesData?.data || [];
     }
   };
 
-  // ✅ ✅ ✅ حفظ شركة التوصيل
+  // ✅ حفظ شركة التوصيل
   const handleSaveDeliveryCompany = async () => {
     if (!selectedStoreForDelivery) return;
     
@@ -521,19 +509,19 @@ const stores = storesData?.data || [];
       <head><meta charset="UTF-8">
       <style>
         body { font-family: 'Arial', sans-serif; padding: 20px; background: #f8fafc; }
-        h1 { color: #0d2e2a; text-align: center; border-bottom: 3px solid #0d2e2a; padding-bottom: 10px; }
+        h1 { color: #2a655f; text-align: center; border-bottom: 3px solid #f9a8d4; padding-bottom: 10px; }
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
-        .stat-card { background: white; padding: 14px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-right: 4px solid #0d2e2a; }
-        .stat-card .value { font-size: 22px; font-weight: bold; color: #0d2e2a; }
+        .stat-card { background: white; padding: 14px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-right: 4px solid #f9a8d4; }
+        .stat-card .value { font-size: 22px; font-weight: bold; color: #2a655f; }
         .stat-card .label { font-size: 11px; color: #94a3b8; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        th { background: #0d2e2a; color: white; padding: 12px; text-align: right; }
+        th { background: #2a655f; color: white; padding: 12px; text-align: right; }
         td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; }
-        tr:hover { background: #f1f5f9; }
-        .status-active { color: #0d2e2a; font-weight: bold; }
-        .status-banned { color: #6bb5aa; font-weight: bold; }
+        tr:hover { background: #fdf2f8; }
+        .status-active { color: #2a655f; font-weight: bold; }
+        .status-banned { color: #d81b60; font-weight: bold; }
         .footer { margin-top: 20px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
-        .badge-featured { background: #2d6b63; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; }
+        .badge-featured { background: #f9a8d4; color: #2a655f; padding: 2px 10px; border-radius: 20px; font-size: 11px; }
       </style></head>
       <body>
         <h1>🏪 تقرير المتاجر</h1>
@@ -571,177 +559,149 @@ const stores = storesData?.data || [];
     toast.success(app.lang === "ar" ? "✅ تم تصدير البيانات إلى Word" : "✅ Data exported to Word");
   };
 
+  // ============================================================
+  // ✅ التصميم - نفس أسلوب ProductsPage
+  // ============================================================
+
   return (
     <div className="space-y-5">
       
-      {/* ✅ Header */}
+      {/* ✅ HEADER - نفس تصميم ProductsPage */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center shadow-lg shadow-[#0d2e2a]/30">
-              <StoreIcon className="h-5 w-5 text-white animate-float" />
+        <div className="relative">
+          <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
+          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#f9a8d4]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+          
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
+            <div className="relative group">
+              <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
+              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#f9a8d4]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                <StoreIcon className="h-5 w-5 group-hover:animate-bounce" />
+              </div>
             </div>
-            <span className="bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] bg-clip-text text-transparent">
-              {app.lang === "ar" ? "المتاجر" : "Stores"}
-            </span>
-            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 text-[10px]">
-              <Sparkles className="h-2.5 w-2.5 mr-1 animate-pulse" />
-              {app.lang === 'ar' ? 'مباشر' : 'Live'}
+            {isRTL ? "المتاجر" : "Stores"}
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
+              {stats.total}
             </Badge>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
-            {app.lang === "ar"
-              ? `إدارة جميع المتاجر (${filteredStores.length} من ${stores.length})`
-              : `Manage all stores (${filteredStores.length} of ${stores.length})`}
-            <span className="h-1 w-1 rounded-full bg-[#0d2e2a]/30" />
-            <span className="text-xs text-[#2d6b63] flex items-center gap-1">
-              <Zap className="h-3 w-3 animate-pulse" />
-              {app.lang === 'ar' ? 'تحديث لحظي' : 'Real-time'}
+          
+          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
+              <StoreIcon className="h-3.5 w-3.5 text-[#2a655f]" />
+              <span className="text-[#2a655f] font-medium">{stats.active}</span>
+              <span className="text-xs text-muted-foreground">{isRTL ? "نشط" : "active"}</span>
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-800/30 hover:bg-red-100/50 dark:hover:bg-red-950/30 transition-colors">
+              <XCircle className="h-3.5 w-3.5 text-red-500" />
+              <span className="text-red-600 dark:text-red-400 font-medium">{stats.banned}</span>
+              <span className="text-xs text-muted-foreground">{isRTL ? "محظور" : "banned"}</span>
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f9a8d4]/10 border border-[#f9a8d4]/20 hover:bg-[#f9a8d4]/20 transition-colors">
+              <Flame className="h-3.5 w-3.5 text-[#d81b60]" />
+              <span className="text-[#d81b60] font-medium">{stats.featured}</span>
+              <span className="text-xs text-muted-foreground">{isRTL ? "رائج" : "featured"}</span>
             </span>
           </p>
         </div>
-        
-        {/* ✅ أزرار التصدير */}
+
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-[#0d2e2a]/20 shadow-sm">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={exportToExcel}
-              disabled={filteredStores.length === 0}
-              className="rounded-lg h-9 px-4 text-[#2d6b63] hover:bg-[#2d6b63]/10 hover:text-[#2d6b63] gap-2 transition-all duration-300 hover:scale-105"
-            >
-              <FileSpreadsheet className="h-4 w-4" />
-              <span className="hidden sm:inline text-xs font-medium">Excel</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={exportToWord}
-              disabled={filteredStores.length === 0}
-              className="rounded-lg h-9 px-4 text-[#1a4f4a] hover:bg-[#1a4f4a]/10 hover:text-[#1a4f4a] gap-2 transition-all duration-300 hover:scale-105"
-            >
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline text-xs font-medium">Word</span>
-            </Button>
-            <div className="w-px h-6 bg-[#0d2e2a]/20" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => refetch()}
-              className="rounded-lg h-9 px-3 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 transition-all duration-300 hover:scale-105"
-            >
-              <RefreshCw className="h-4 w-4 animate-spin-slow" />
-            </Button>
-          </div>
-          <Badge className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#0d2e2a]/30 animate-pulse">
-            <Sparkles className="h-3 w-3 mr-1" />
-            {app.lang === 'ar' ? 'لوحة تحكم' : 'Dashboard'}
-          </Badge>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={exportToExcel} 
+            disabled={filteredStores.length === 0} 
+            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Excel
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={exportToWord} 
+            disabled={filteredStores.length === 0} 
+            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
+          >
+            <FileText className="h-4 w-4 mr-1.5" /> Word
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()} 
+            className="rounded-xl border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 group"
+          >
+            <RefreshCw className="h-4 w-4 mr-1.5 group-hover:rotate-180 transition-transform duration-700" /> 
+            {isRTL ? "تحديث" : "Refresh"}
+          </Button>
         </div>
       </div>
 
-      {/* ✅ Stats Cards - بألوان النظام */}
+      {/* ✅ STATS CARDS - نفس تصميم ProductsPage مع خلفية وردية */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { 
-            key: "total", 
-            label: app.lang === "ar" ? "إجمالي المتاجر" : "Total Stores", 
-            value: stats.total,
-            icon: StoreIcon,
-            gradient: "from-[#0d2e2a] to-[#1a4f4a]",
-            bg: "bg-[#0d2e2a]/10",
-            glow: "shadow-[#0d2e2a]/20",
-          },
-          { 
-            key: "active", 
-            label: app.lang === "ar" ? "نشطة" : "Active", 
-            value: stats.active,
-            icon: CheckCircle2,
-            gradient: "from-[#2d6b63] to-[#4a9f95]",
-            bg: "bg-[#2d6b63]/10",
-            glow: "shadow-[#2d6b63]/20",
-          },
-          { 
-            key: "banned", 
-            label: app.lang === "ar" ? "محظورة" : "Banned", 
-            value: stats.banned,
-            icon: XCircle,
-            gradient: "from-[#4a9f95] to-[#6bb5aa]",
-            bg: "bg-[#4a9f95]/10",
-            glow: "shadow-[#4a9f95]/20",
-          },
-          { 
-            key: "featured", 
-            label: app.lang === "ar" ? "رائجة" : "Featured", 
-            value: stats.featured,
-            icon: Flame,
-            gradient: "from-[#0d2e2a] to-[#2d6b63]",
-            bg: "bg-[#0d2e2a]/10",
-            glow: "shadow-[#0d2e2a]/20",
-          },
+          { key: 'total', label: isRTL ? 'الإجمالي' : 'Total', value: stats.total, icon: StoreIcon, color: 'text-[#2a655f]' },
+          { key: 'active', label: isRTL ? 'نشط' : 'Active', value: stats.active, icon: CheckCircle2, color: 'text-emerald-500' },
+          { key: 'banned', label: isRTL ? 'محظور' : 'Banned', value: stats.banned, icon: XCircle, color: 'text-red-500' },
+          { key: 'featured', label: isRTL ? 'رائج' : 'Featured', value: stats.featured, icon: Flame, color: 'text-[#d81b60]' },
         ].map((stat) => (
-          <div
-            key={stat.key}
-            className="group bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 p-4 shadow-lg hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden"
+          <div 
+            key={stat.key} 
+            className="group relative bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
           >
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-              <div className={`absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#0d2e2a]/5 blur-3xl animate-pulse`} />
-            </div>
-            <div className="flex items-center justify-between relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute -top-8 -right-8 h-16 w-16 rounded-full bg-[#fbcfe8]/60 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative flex items-center justify-between p-3">
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#0d2e2a] transition-colors">{stat.value}</p>
+                <p className="text-[10px] font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider flex items-center gap-1.5">
+                  <stat.icon className={`h-3 w-3 text-[#2a655f] dark:text-[#f9a8d4] group-hover:scale-110 transition-transform duration-300`} />
+                  {stat.label}
+                </p>
+                <p className={`text-xl font-bold mt-0.5 ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                  {stat.value}
+                </p>
               </div>
-              <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg ${stat.glow}`}>
-                <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
-                  <stat.icon className="h-3.5 w-3.5 text-white" />
-                </div>
+              <div className={`h-9 w-9 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </div>
             </div>
-            <div className="mt-2 h-0.5 w-full rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-              <div 
-                className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000 animate-shimmer`} 
-                style={{ width: `${Math.min(100, (stat.value / (stats.total || 1)) * 100)}%` }}
-              />
-            </div>
+            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
           </div>
         ))}
       </div>
 
-      {/* ✅ Search & Filters */}
+      {/* ✅ SEARCH & FILTERS - مع بوردرات وردية مثل ProductsPage */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 group">
-          <Search className={`absolute inset-y-0 my-auto ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-focus-within:text-[#0d2e2a] transition-colors duration-300`} />
+          <Search className={`absolute inset-y-0 my-auto ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors duration-300`} />
           <Input
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            placeholder={app.lang === "ar" ? "🔍 بحث عن متجر..." : "🔍 Search stores..."}
-            className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300`}
+            placeholder={isRTL ? "🔍 بحث عن متجر..." : "🔍 Search stores..."}
+            className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300`}
           />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className={`absolute inset-y-0 ${isRTL ? 'left-3' : 'right-3'} flex items-center text-slate-400 hover:text-[#f9a8d4] transition-colors`}>
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
-        <Select
-          value={filterStatus}
-          onValueChange={(value: any) => {
-            setFilterStatus(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[160px] h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] hover:border-[#0d2e2a]/40 transition-colors">
+        <Select value={filterStatus} onValueChange={(value: any) => { setFilterStatus(value); setPage(1); }}>
+          <SelectTrigger className="w-[150px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 transition-all duration-300">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-[#0d2e2a]" />
-              <SelectValue placeholder={app.lang === "ar" ? "جميع المتاجر" : "All stores"} />
+              <Filter className="h-4 w-4 text-slate-400" />
+              <SelectValue placeholder={isRTL ? "الحالة" : "Status"} />
             </div>
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{app.lang === "ar" ? "📋 جميع المتاجر" : "📋 All stores"}</SelectItem>
-            <SelectItem value="active">{app.lang === "ar" ? "✅ نشطة فقط" : "✅ Active only"}</SelectItem>
-            <SelectItem value="banned">{app.lang === "ar" ? "🚫 محظورة فقط" : "🚫 Banned only"}</SelectItem>
-            <SelectItem value="featured">{app.lang === "ar" ? "🔥 رائجة فقط" : "🔥 Featured only"}</SelectItem>
+          <SelectContent className="rounded-xl border-3 border-[#2a655f]/20">
+            <SelectItem value="all" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">{isRTL ? "الكل" : "All"}</SelectItem>
+            <SelectItem value="active" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">✅ {isRTL ? "نشط" : "Active"}</SelectItem>
+            <SelectItem value="banned" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">🚫 {isRTL ? "محظور" : "Banned"}</SelectItem>
+            <SelectItem value="featured" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">🔥 {isRTL ? "رائج" : "Featured"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -752,18 +712,18 @@ const stores = storesData?.data || [];
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] hover:border-[#0d2e2a]/40 transition-colors">
+          <SelectTrigger className="w-[100px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 transition-all duration-300">
             <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-[#0d2e2a]" />
+              <Layers className="h-4 w-4 text-slate-400" />
               <SelectValue placeholder="10" />
             </div>
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="6">6</SelectItem>
-            <SelectItem value="10">10</SelectItem>
-            <SelectItem value="20">20</SelectItem>
-            <SelectItem value="50">50</SelectItem>
-            <SelectItem value="100">100</SelectItem>
+          <SelectContent className="rounded-xl border-3 border-[#2a655f]/20">
+            <SelectItem value="6" className="text-xs hover:bg-[#f9a8d4]/10">6</SelectItem>
+            <SelectItem value="10" className="text-xs hover:bg-[#f9a8d4]/10">10</SelectItem>
+            <SelectItem value="20" className="text-xs hover:bg-[#f9a8d4]/10">20</SelectItem>
+            <SelectItem value="50" className="text-xs hover:bg-[#f9a8d4]/10">50</SelectItem>
+            <SelectItem value="100" className="text-xs hover:bg-[#f9a8d4]/10">100</SelectItem>
           </SelectContent>
         </Select>
 
@@ -775,506 +735,521 @@ const stores = storesData?.data || [];
             setFilterStatus("all");
             setPage(1);
           }}
-          className="h-10 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 hover:scale-105"
+          className="h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 group"
         >
-          <XCircle className="h-4 w-4 mr-1.5" />
-          {app.lang === "ar" ? "مسح الكل" : "Clear all"}
+          <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
+          {isRTL ? "مسح الكل" : "Clear All"}
         </Button>
       </div>
 
-      {/* ✅ Table */}
-      <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 overflow-hidden shadow-lg shadow-[#0d2e2a]/5 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-300">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 hover:bg-transparent bg-gradient-to-r from-[#0d2e2a]/5 to-[#1a4f4a]/5">
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-right min-w-[200px]">
-                  <div className="flex items-center gap-2">
-                    <StoreIcon className="h-3.5 w-3.5" />
-                    {app.lang === "ar" ? "المتجر" : "Store"}
-                  </div>
-                </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[120px]">
-                  <div className="flex items-center justify-center gap-2">
-                    <Users className="h-3.5 w-3.5" />
-                    {app.lang === "ar" ? "المالك" : "Owner"}
-                  </div>
-                </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[80px]">
-                  <div className="flex items-center justify-center gap-2">
-                    <Package className="h-3.5 w-3.5" />
-                    {app.lang === "ar" ? "المنتجات" : "Products"}
-                  </div>
-                </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[100px]">
-                  <div className="flex items-center justify-center gap-2">
-                    <Shield className="h-3.5 w-3.5" />
-                    {app.lang === "ar" ? "الحالة" : "Status"}
-                  </div>
-                </TableHead>
-                {/* ✅ ✅ ✅ عمود جديد: الدوام (مفتوح/مغلق) */}
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[120px]">
-                  <div className="flex items-center justify-center gap-2">
-                    <Clock className="h-3.5 w-3.5" />
-                    {app.lang === "ar" ? "الدوام" : "Hours"}
-                  </div>
-                </TableHead>
-                {/* ✅ ✅ ✅ عمود جديد: شركة التوصيل */}
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[160px]">
-                  <div className="flex items-center justify-center gap-2">
-                    <Truck className="h-3.5 w-3.5" />
-                    {app.lang === "ar" ? "شركة التوصيل" : "Delivery Co."}
-                  </div>
-                </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[480px]">
-                  <div className="flex items-center justify-center gap-2">
-                    <Zap className="h-3.5 w-3.5 animate-pulse" />
-                    {app.lang === "ar" ? "إجراءات" : "Actions"}
-                  </div>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
-                    <div className="flex items-center justify-center gap-3">
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#0d2e2a] border-t-transparent" />
-                      {app.lang === "ar" ? "جار التحميل..." : "Loading..."}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-              {!isLoading && paginatedStores.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="h-16 w-16 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center animate-bounce-slow">
-                        <StoreIcon className="h-8 w-8 text-[#0d2e2a]/40" />
-                      </div>
-                      <p className="font-medium text-slate-900 dark:text-white">
-                        {app.lang === "ar" ? "لا توجد متاجر" : "No stores"}
-                      </p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {app.lang === "ar" ? "لا توجد متاجر تطابق البحث" : "No stores match your search"}
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSearchQuery("");
-                          setFilterStatus("all");
-                        }}
-                        className="mt-2 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300"
-                      >
-                        {app.lang === "ar" ? "مسح البحث" : "Clear search"}
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-              {paginatedStores.map((s: any, index: number) => (
-                <TableRow 
-                  key={s.id} 
-                  className="border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/5 dark:hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
+  {/* ✅ TABLE - نفس تصميم جدول CustomersPage */}
+<div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
+  <div className="overflow-x-auto">
+    <Table>
+      <TableHeader>
+        <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-gradient-to-r from-[#f9a8d4]/30 via-[#fbcfe8]/20 to-[#f9a8d4]/30 dark:from-[#f9a8d4]/20 dark:via-[#fbcfe8]/10 dark:to-[#f9a8d4]/20 border-b-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30">
+          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-right min-w-[200px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <div className="flex items-center gap-2">
+              <StoreIcon className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
+              {isRTL ? "المتجر" : "Store"}
+            </div>
+          </TableHead>
+          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <div className="flex items-center justify-center gap-2">
+              <Users className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
+              {isRTL ? "المالك" : "Owner"}
+            </div>
+          </TableHead>
+          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[80px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <div className="flex items-center justify-center gap-2">
+              <Package className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
+              {isRTL ? "المنتجات" : "Products"}
+            </div>
+          </TableHead>
+          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[100px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <div className="flex items-center justify-center gap-2">
+              <Shield className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
+              {isRTL ? "الحالة" : "Status"}
+            </div>
+          </TableHead>
+          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <div className="flex items-center justify-center gap-2">
+              <Clock className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
+              {isRTL ? "الدوام" : "Hours"}
+            </div>
+          </TableHead>
+          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[160px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <div className="flex items-center justify-center gap-2">
+              <Truck className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
+              {isRTL ? "شركة التوصيل" : "Delivery Co."}
+            </div>
+          </TableHead>
+          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[340px]">
+            <div className="flex items-center justify-center gap-2">
+              <Zap className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4] animate-pulse" />
+              {isRTL ? "إجراءات" : "Actions"}
+            </div>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {isLoading && (
+          <TableRow>
+            <TableCell colSpan={7} className="text-center py-12">
+              <div className="flex items-center justify-center gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-[#2a655f]" />
+                <span className="text-slate-500">{isRTL ? "جار التحميل..." : "Loading..."}</span>
+              </div>
+            </TableCell>
+          </TableRow>
+        )}
+        {!isLoading && paginatedStores.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={7} className="text-center py-12">
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-16 w-16 rounded-full bg-[#2a655f]/10 flex items-center justify-center animate-bounce-slow">
+                  <StoreIcon className="h-8 w-8 text-[#2a655f]/40" />
+                </div>
+                <p className="font-medium text-slate-900 dark:text-white">
+                  {isRTL ? "لا توجد متاجر" : "No stores"}
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {isRTL ? "لا توجد متاجر تطابق البحث" : "No stores match your search"}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setFilterStatus("all");
+                  }}
+                  className="mt-2 rounded-xl border-3 border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300"
                 >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      {s.store_logo_url ? (
-                        <div className="relative h-11 w-11 rounded-xl overflow-hidden border border-[#0d2e2a]/20 flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
-                          <img
-                            src={s.store_logo_url}
-                            className="h-full w-full object-cover"
-                            alt=""
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        </div>
-                      ) : (
-                        <div className="h-11 w-11 rounded-xl bg-[#0d2e2a]/10 border border-[#0d2e2a]/20 flex items-center justify-center flex-shrink-0">
-                          <StoreIcon className="h-5 w-5 text-[#0d2e2a]/40" />
-                        </div>
+                  {isRTL ? "مسح البحث" : "Clear search"}
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        )}
+        {paginatedStores.map((s: any) => {
+          const isOpen = isStoreCurrentlyOpen(s);
+          
+          return (
+            <TableRow 
+              key={s.id} 
+              className="border-slate-100 dark:border-slate-800 hover:bg-[#f9a8d4]/15 dark:hover:bg-[#f9a8d4]/10 transition-colors duration-300 group border-b-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10"
+            >
+              <TableCell className="border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                <div className="flex items-center gap-3">
+                  {s.store_logo_url ? (
+                    <div className="relative h-11 w-11 rounded-xl overflow-hidden border-2 border-[#f9a8d4]/30 flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      <img
+                        src={s.store_logo_url}
+                        className="h-full w-full object-cover"
+                        alt=""
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#f9a8d4]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </div>
+                  ) : (
+                    <div className="h-11 w-11 rounded-xl bg-[#f9a8d4]/20 border-2 border-[#f9a8d4]/30 flex items-center justify-center flex-shrink-0">
+                      <StoreIcon className="h-5 w-5 text-[#d81b60]/40" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 group-hover:text-[#d81b60] transition-colors">
+                      <Link
+                        to="/store/$id"
+                        params={{ id: s.id }}
+                        className="hover:text-[#d81b60] transition-colors truncate"
+                      >
+                        {s.store_name || s.full_name || "—"}
+                      </Link>
+                      {s.is_featured && (
+                        <Flame className="h-3.5 w-3.5 text-[#d81b60] fill-[#d81b60] animate-pulse shrink-0" />
                       )}
-                      <div className="min-w-0">
-                        <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 group-hover:text-[#0d2e2a] transition-colors">
-                          <Link
-                            to="/store/$id"
-                            params={{ id: s.id }}
-                            className="hover:text-[#2d6b63] transition-colors truncate"
-                          >
-                            {s.store_name || s.full_name || "—"}
-                          </Link>
-                          {s.is_featured && (
-                            <Flame className="h-3.5 w-3.5 text-orange-500 fill-orange-500 animate-pulse shrink-0" />
-                          )}
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
-                          {s.store_description || s.full_name || ""}
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <Link
-                            to="/store/$id"
-                            params={{ id: s.id }}
-                            className="text-[10px] text-[#2d6b63] hover:underline flex items-center gap-0.5 transition-colors"
-                          >
-                            <Eye className="h-3 w-3" />
-                            {app.lang === "ar" ? "عرض المتجر" : "View store"}
-                          </Link>
-                          <span className="text-[#0d2e2a]/20">|</span>
-                          <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
-                            <Users className="h-3 w-3" />
-                            {s.full_name || "—"}
-                          </span>
-                        </div>
-                      </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600 dark:text-slate-300 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <Users className="h-3 w-3 text-[#2d6b63]" />
-                      {s.full_name || "—"}
+                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
+                      {s.store_description || s.full_name || ""}
                     </div>
-                  </TableCell>
-                  <TableCell className="font-medium text-slate-900 dark:text-white text-center">
-                    <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 font-mono">
-                      {s.listing_count || 0}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {s.store_active === false ? (
-                      <Badge className="bg-[#6bb5aa]/10 text-[#6bb5aa] border border-[#6bb5aa]/20">
-                        <XCircle className="h-3 w-3 mr-1" />
-                        {app.lang === "ar" ? "محظور" : "Banned"}
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-[#2d6b63]/10 text-[#2d6b63] border border-[#2d6b63]/20">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        {app.lang === "ar" ? "نشط" : "Active"}
-                      </Badge>
-                    )}
-                  </TableCell>
-                  {/* ✅ ✅ ✅ عمود الدوام (مفتوح/مغلق) */}
-                  <TableCell className="text-center">
-                    {(() => {
-                      const isOpen = isStoreCurrentlyOpen(s);
-                      return (
-                        <Badge className={cn(
-                          "border-0 text-xs font-medium px-3 py-1",
-                          isOpen
-                            ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20"
-                            : "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400 border border-red-500/20"
-                        )}>
-                          <span className={cn(
-                            "h-1.5 w-1.5 rounded-full inline-block mr-1.5",
-                            isOpen ? "bg-emerald-500 animate-pulse" : "bg-red-500"
-                          )} />
-                          {isOpen 
-                            ? (app.lang === "ar" ? "🟢 مفتوح" : "🟢 Open")
-                            : (app.lang === "ar" ? "🔴 مغلق" : "🔴 Closed")}
-                          {s.store_opens_at && s.store_closes_at && (
-                            <span className="text-[9px] text-muted-foreground block mt-0.5">
-                              {s.store_opens_at.slice(0,5)} - {s.store_closes_at.slice(0,5)}
-                            </span>
-                          )}
-                        </Badge>
-                      );
-                    })()}
-                  </TableCell>
-                  {/* ✅ ✅ ✅ عمود شركة التوصيل - التعديل المهم */}
-                  <TableCell className="text-center">
-                    {s.delivery_company_id ? (
-                      <Badge className="bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-500/20 px-3 py-1 text-xs font-medium">
-                        <Truck className="h-3 w-3 mr-1" />
-                        {deliveryCompanyNames[s.id] || (
-                          <span className="animate-pulse text-muted-foreground text-[10px]">
-                            {app.lang === "ar" ? "جاري التحميل..." : "Loading..."}
-                          </span>
-                        )}
-                      </Badge>
-                    ) : (
-                      <span className="text-xs text-muted-foreground/50">
-                        {app.lang === "ar" ? "— غير مرتبط" : "— Not linked"}
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Link
+                        to="/store/$id"
+                        params={{ id: s.id }}
+                        className="text-[10px] text-[#2a655f] hover:text-[#d81b60] hover:underline flex items-center gap-0.5 transition-colors"
+                      >
+                        <Eye className="h-3 w-3" />
+                        {isRTL ? "عرض المتجر" : "View store"}
+                      </Link>
+                      <span className="text-[#f9a8d4]/30">|</span>
+                      <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                        <Users className="h-3 w-3" />
+                        {s.full_name || "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className="text-sm text-slate-600 dark:text-slate-300 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                <div className="flex items-center justify-center gap-1">
+                  <Users className="h-3 w-3 text-[#d81b60]" />
+                  {s.full_name || "—"}
+                </div>
+              </TableCell>
+              <TableCell className="font-medium text-slate-900 dark:text-white text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40 font-mono">
+                  {s.listing_count || 0}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                {s.store_active === false ? (
+                  <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400 border-2 border-red-500/20">
+                    <XCircle className="h-3 w-3 mr-1" />
+                    {isRTL ? "محظور" : "Banned"}
+                  </Badge>
+                ) : (
+                  <Badge className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-2 border-emerald-500/20">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    {isRTL ? "نشط" : "Active"}
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell className="text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                <Badge className={cn(
+                  "border-2 text-xs font-medium px-3 py-1",
+                  isOpen
+                    ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-500/20"
+                    : "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400 border-red-500/20"
+                )}>
+                  <span className={cn(
+                    "h-1.5 w-1.5 rounded-full inline-block mr-1.5",
+                    isOpen ? "bg-emerald-500 animate-pulse" : "bg-red-500"
+                  )} />
+                  {isOpen 
+                    ? (isRTL ? "🟢 مفتوح" : "🟢 Open")
+                    : (isRTL ? "🔴 مغلق" : "🔴 Closed")}
+                  {s.store_opens_at && s.store_closes_at && (
+                    <span className="text-[9px] text-muted-foreground block mt-0.5">
+                      {s.store_opens_at.slice(0,5)} - {s.store_closes_at.slice(0,5)}
+                    </span>
+                  )}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                {s.delivery_company_id ? (
+                  <Badge className="bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border-2 border-blue-500/20 px-3 py-1 text-xs font-medium">
+                    <Truck className="h-3 w-3 mr-1" />
+                    {deliveryCompanyNames[s.id] || (
+                      <span className="animate-pulse text-muted-foreground text-[10px]">
+                        {isRTL ? "جاري التحميل..." : "Loading..."}
                       </span>
                     )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                      
-                      {/* ✅ زر Featured - رائج */}
-                      <Button
-                        size="sm"
-                        className={cn(
-                          "rounded-xl h-8 px-3 transition-all duration-300 hover:scale-105",
-                          s.is_featured
-                            ? "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30"
-                            : "border border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40"
-                        )}
-                        onClick={() =>
-                          setFeatured.mutate(
-                            { id: s.id, is_featured: !s.is_featured },
+                  </Badge>
+                ) : (
+                  <span className="text-xs text-muted-foreground/50">
+                    {isRTL ? "— غير مرتبط" : "— Not linked"}
+                  </span>
+                )}
+              </TableCell>
+              <TableCell className="text-center">
+                <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                  
+                  {/* ✅ زر Featured - رائج */}
+                  <Button
+                    size="sm"
+                    className={cn(
+                      "rounded-xl h-8 px-3 transition-all duration-300 hover:scale-105 border-2",
+                      s.is_featured
+                        ? "bg-gradient-to-r from-[#d81b60] to-[#f9a8d4] hover:from-[#c2185b] hover:to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/30 border-[#f9a8d4]/50"
+                        : "border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60]"
+                    )}
+                    onClick={() =>
+                      setFeatured.mutate(
+                        { id: s.id, is_featured: !s.is_featured },
+                        {
+                          onSuccess: () =>
+                            toast.success(
+                              isRTL
+                                ? s.is_featured
+                                  ? "✨ أُزيل من الرائج"
+                                  : "🔥 أُضيف للرائج"
+                                : s.is_featured
+                                ? "✨ Removed from trending"
+                                : "🔥 Added to trending"
+                            ),
+                        }
+                      )
+                    }
+                    title={isRTL ? "الأكثر رواجاً" : "Trending"}
+                  >
+                    <Flame className={cn(
+                      "h-3.5 w-3.5 mr-1",
+                      s.is_featured ? "animate-pulse" : ""
+                    )} />
+                    {isRTL ? "رائج" : "Trend"}
+                  </Button>
+
+                  {/* ✅ زر Ban/Unban */}
+                  {s.store_active === false ? (
+                    <Button
+                      size="sm"
+                      className="rounded-xl h-8 px-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/30 transition-all duration-300 hover:scale-105 border-2 border-emerald-500/30"
+                      onClick={() =>
+                        setActive.mutate(
+                          { id: s.id, active: true },
+                          {
+                            onSuccess: () =>
+                              toast.success(
+                                isRTL ? "✅ تم التفعيل" : "✅ Activated"
+                              ),
+                          }
+                        )
+                      }
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                      {isRTL ? "تفعيل" : "Unban"}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-xl h-8 px-3 border-red-300/50 text-red-500 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all duration-300 hover:scale-105"
+                      onClick={() => {
+                        if (
+                          confirm(
+                            isRTL
+                              ? "⚠️ هل أنت متأكد من حظر هذا المتجر؟"
+                              : "⚠️ Are you sure you want to ban this store?"
+                          )
+                        )
+                          setActive.mutate(
+                            { id: s.id, active: false },
                             {
                               onSuccess: () =>
                                 toast.success(
-                                  app.lang === "ar"
-                                    ? s.is_featured
-                                      ? "✨ أُزيل من الرائج"
-                                      : "🔥 أُضيف للرائج"
-                                    : s.is_featured
-                                    ? "✨ Removed from trending"
-                                    : "🔥 Added to trending"
+                                  isRTL ? "🚫 تم الحظر" : "🚫 Banned"
                                 ),
                             }
-                          )
-                        }
-                        title={app.lang === "ar" ? "الأكثر رواجاً" : "Trending"}
-                      >
-                        <Flame className={cn(
-                          "h-3.5 w-3.5 mr-1",
-                          s.is_featured ? "animate-pulse" : ""
-                        )} />
-                        {app.lang === "ar" ? "رائج" : "Trend"}
-                      </Button>
-
-                      {/* ✅ زر Ban/Unban */}
-                      {s.store_active === false ? (
-                        <Button
-                          size="sm"
-                          className="rounded-xl h-8 px-3 bg-gradient-to-r from-[#2d6b63] to-[#4a9f95] hover:from-[#4a9f95] hover:to-[#6bb5aa] text-white shadow-lg shadow-[#2d6b63]/30 transition-all duration-300 hover:scale-105"
-                          onClick={() =>
-                            setActive.mutate(
-                              { id: s.id, active: true },
-                              {
-                                onSuccess: () =>
-                                  toast.success(
-                                    app.lang === "ar" ? "✅ تم التفعيل" : "✅ Activated"
-                                  ),
-                              }
-                            )
-                          }
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                          {app.lang === "ar" ? "تفعيل" : "Unban"}
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="rounded-xl h-8 px-3 border-[#6bb5aa]/30 text-[#6bb5aa] hover:bg-[#6bb5aa]/10 hover:border-[#6bb5aa]/50 transition-all duration-300 hover:scale-105"
-                          onClick={() => {
-                            if (
-                              confirm(
-                                app.lang === "ar"
-                                  ? "⚠️ هل أنت متأكد من حظر هذا المتجر؟"
-                                  : "⚠️ Are you sure you want to ban this store?"
-                              )
-                            )
-                              setActive.mutate(
-                                { id: s.id, active: false },
-                                {
-                                  onSuccess: () =>
-                                    toast.success(
-                                      app.lang === "ar" ? "🚫 تم الحظر" : "🚫 Banned"
-                                    ),
-                                }
-                              );
-                          }}
-                        >
-                          <XCircle className="h-3.5 w-3.5 mr-1" />
-                          {app.lang === "ar" ? "حظر" : "Ban"}
-                        </Button>
-                      )}
-
-                      {/* ✅ ✅ ✅ زر تعديل شركة التوصيل */}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-xl h-8 px-3 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105"
-                        onClick={() => openDeliveryDialog(s)}
-                        title={isRTL ? "تعديل شركة التوصيل" : "Edit delivery company"}
-                      >
-                        <Truck className="h-3.5 w-3.5 mr-1" />
-                        {isRTL ? "تعديل التوصيل" : "Edit Delivery"}
-                      </Button>
-
-                      {/* ✅ زر حذف المتجر */}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-xl h-8 px-3 border-red-300/50 text-red-500 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all duration-300 hover:scale-105"
-                        onClick={() => openDeleteDialog(s)}
-                        title={isRTL ? "حذف المتجر نهائياً" : "Permanently delete store"}
-                      >
-                        <Trash2 className="h-3.5 w-3.5 mr-1" />
-                        {isRTL ? "حذف" : "Delete"}
-                      </Button>
-
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* ✅ Pagination */}
-        {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              {filteredStores.length === 0 ? (
-                <span>{app.lang === "ar" ? "لا توجد متاجر" : "No stores"}</span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#2d6b63] animate-pulse" />
-                  {app.lang === "ar"
-                    ? `عرض ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredStores.length)} من ${filteredStores.length} متجر`
-                    : `Showing ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredStores.length)} of ${filteredStores.length} stores`}
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(1)}
-                disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
-              >
-                <span className="text-xs font-bold">«</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(page - 1)}
-                disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum: number;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (page <= 3) {
-                    pageNum = i + 1;
-                  } else if (page >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = page - 2 + i;
-                  }
-
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={page === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => goToPage(pageNum)}
-                      className={cn(
-                        "h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300",
-                        page === pageNum
-                          ? "bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30 scale-105"
-                          : "border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 hover:scale-105"
-                      )}
+                          );
+                      }}
                     >
-                      {pageNum}
+                      <XCircle className="h-3.5 w-3.5 mr-1" />
+                      {isRTL ? "حظر" : "Ban"}
                     </Button>
-                  );
-                })}
+                  )}
 
-                {totalPages > 5 && page < totalPages - 2 && (
-                  <>
-                    <span className="text-slate-400 text-sm px-1">...</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => goToPage(totalPages)}
-                      className="h-8 min-w-[32px] p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 text-xs transition-all duration-300 hover:scale-105"
-                    >
-                      {totalPages}
-                    </Button>
-                  </>
+                  {/* ✅ زر تعديل شركة التوصيل */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-xl h-8 px-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] transition-all duration-300 hover:scale-105"
+                    onClick={() => openDeliveryDialog(s)}
+                    title={isRTL ? "تعديل شركة التوصيل" : "Edit delivery company"}
+                  >
+                    <Truck className="h-3.5 w-3.5 mr-1" />
+                    {isRTL ? "تعديل التوصيل" : "Edit Delivery"}
+                  </Button>
+
+                  {/* ✅ زر حذف المتجر */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-xl h-8 px-3 border-red-300/50 text-red-500 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all duration-300 hover:scale-105"
+                    onClick={() => openDeleteDialog(s)}
+                    title={isRTL ? "حذف المتجر نهائياً" : "Permanently delete store"}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    {isRTL ? "حذف" : "Delete"}
+                  </Button>
+
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  </div>
+
+  {/* ✅ PAGINATION - نفس تصميم CustomersPage */}
+  {totalPages > 1 && (
+    <div className="px-4 py-3 border-t-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="text-xs text-slate-500 dark:text-slate-400">
+        {filteredStores.length === 0 ? (
+          <span>{isRTL ? "لا توجد متاجر" : "No stores"}</span>
+        ) : (
+          <span className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60] animate-pulse" />
+            {isRTL
+              ? `عرض ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredStores.length)} من ${filteredStores.length} متجر`
+              : `Showing ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredStores.length)} of ${filteredStores.length} stores`}
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => goToPage(1)}
+          disabled={page === 1}
+          className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] transition-all duration-300 disabled:opacity-50"
+          title={isRTL ? "الصفحة الأولى" : "First page"}
+        >
+          <span className="text-xs font-bold">«</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => goToPage(page - 1)}
+          disabled={page === 1}
+          className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] transition-all duration-300 disabled:opacity-50"
+          title={isRTL ? "السابق" : "Previous"}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        <div className="flex items-center gap-1">
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum: number;
+            if (totalPages <= 5) {
+              pageNum = i + 1;
+            } else if (page <= 3) {
+              pageNum = i + 1;
+            } else if (page >= totalPages - 2) {
+              pageNum = totalPages - 4 + i;
+            } else {
+              pageNum = page - 2 + i;
+            }
+            
+            return (
+              <Button
+                key={pageNum}
+                variant={page === pageNum ? "default" : "outline"}
+                size="sm"
+                onClick={() => goToPage(pageNum)}
+                className={cn(
+                  "h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300",
+                  page === pageNum
+                    ? "bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#f9a8d4]/30 border-2 border-white/30 scale-105"
+                    : "border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60]"
                 )}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(page + 1)}
-                disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
               >
-                <ChevronRight className="h-4 w-4" />
+                {pageNum}
               </Button>
+            );
+          })}
 
+          {totalPages > 5 && page < totalPages - 2 && (
+            <>
+              <span className="text-slate-400 text-sm px-1">...</span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => goToPage(totalPages)}
-                disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 disabled:opacity-50"
+                className="h-8 min-w-[32px] p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] text-xs transition-all duration-300 hover:scale-105"
               >
-                <span className="text-xs font-bold">»</span>
+                {totalPages}
               </Button>
-            </div>
-          </div>
-        )}
-
-        {/* ✅ Footer */}
-        <div className="px-4 py-2 border-t border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-          <span className="flex items-center gap-2">
-            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20">
-              {app.lang === "ar"
-                ? `عرض ${paginatedStores.length} من ${filteredStores.length}`
-                : `Showing ${paginatedStores.length} of ${filteredStores.length}`}
-            </Badge>
-            <span className="text-[10px] text-[#2d6b63]">
-              {app.lang === "ar" ? `إجمالي ${stores.length}` : `Total ${stores.length}`}
-            </span>
-          </span>
-          <div className="flex items-center gap-2">
-            <Badge className="bg-[#0d2e2a]/5 text-[#0d2e2a] border border-[#0d2e2a]/20">
-              <Shield className="h-3 w-3 mr-1" />
-              {filterStatus === "all" && (app.lang === "ar" ? "جميع" : "All")}
-              {filterStatus === "active" && (app.lang === "ar" ? "نشطة" : "Active")}
-              {filterStatus === "banned" && (app.lang === "ar" ? "محظورة" : "Banned")}
-              {filterStatus === "featured" && (app.lang === "ar" ? "رائجة" : "Featured")}
-            </Badge>
-            {searchQuery && (
-              <Badge className="bg-[#1a4f4a]/10 text-[#1a4f4a] border border-[#1a4f4a]/20">
-                <Search className="h-3 w-3 mr-1" />
-                {searchQuery}
-              </Badge>
-            )}
-          </div>
+            </>
+          )}
         </div>
-      </div>
 
-      {/* ✅ ✅ ✅ نافذة حذف المتجر */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => goToPage(page + 1)}
+          disabled={page === totalPages}
+          className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] transition-all duration-300 disabled:opacity-50"
+          title={isRTL ? "التالي" : "Next"}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => goToPage(totalPages)}
+          disabled={page === totalPages}
+          className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] transition-all duration-300 disabled:opacity-50"
+          title={isRTL ? "الصفحة الأخيرة" : "Last page"}
+        >
+          <span className="text-xs font-bold">»</span>
+        </Button>
+      </div>
+    </div>
+  )}
+
+  {/* ✅ FOOTER - نفس تصميم CustomersPage */}
+  <div className="px-4 py-2 border-t-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#f9a8d4]/10 to-[#fbcfe8]/10">
+    <span className="flex items-center gap-2">
+      <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
+        {isRTL
+          ? `عرض ${paginatedStores.length} من ${filteredStores.length}`
+          : `Showing ${paginatedStores.length} of ${filteredStores.length}`}
+      </Badge>
+      <span className="text-[10px] text-[#d81b60]">
+        {isRTL ? `إجمالي ${stores.length}` : `Total ${stores.length}`}
+      </span>
+    </span>
+    <div className="flex items-center gap-2">
+      <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
+        <Shield className="h-3 w-3 mr-1 text-[#d81b60]" />
+        {filterStatus === "all" && (isRTL ? "الكل" : "All")}
+        {filterStatus === "active" && (isRTL ? "نشط" : "Active")}
+        {filterStatus === "banned" && (isRTL ? "محظور" : "Banned")}
+        {filterStatus === "featured" && (isRTL ? "رائج" : "Featured")}
+      </Badge>
+      {searchQuery && (
+        <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
+          <Search className="h-3 w-3 mr-1 text-[#d81b60]" />
+          {searchQuery}
+        </Badge>
+      )}
+    </div>
+  </div>
+</div>
+      {/* ✅ DIALOG: حذف المتجر - مع بوردرات وردية */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-2xl rounded-2xl border-red-200/50 dark:border-red-800/30 shadow-2xl shadow-red-500/20 p-0 overflow-hidden">
+        <DialogContent className="max-w-2xl rounded-2xl border-3 border-[#d81b60]/40 shadow-2xl shadow-[#d81b60]/20 p-0 overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            onClick={() => {
+              setDeleteDialogOpen(false);
+              setConfirmStoreName("");
+              setSelectedStore(null);
+            }}
+          >
+            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+          </Button>
+
           <DialogHeader className="p-6 pb-0">
-            <DialogTitle className="text-2xl font-bold flex items-center gap-3 text-red-600 dark:text-red-400">
-              <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center animate-bounce">
-                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+            <div className="flex items-start gap-4 mb-2">
+              <div className="h-14 w-14 rounded-2xl bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center flex-shrink-0 animate-pulse">
+                <AlertTriangle className="h-7 w-7 text-red-600 dark:text-red-400" />
               </div>
-              {isRTL ? "⚠️ تأكيد حذف المتجر" : "⚠️ Confirm Store Deletion"}
-            </DialogTitle>
-            <DialogDescription className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-              {isRTL
-                ? "هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع بيانات المتجر نهائياً."
-                : "This action cannot be undone. All store data will be permanently deleted."}
-            </DialogDescription>
+              <div>
+                <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  {isRTL ? "⚠️ تأكيد حذف المتجر" : "⚠️ Confirm Store Deletion"}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  {isRTL
+                    ? "هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع بيانات المتجر نهائياً."
+                    : "This action cannot be undone. All store data will be permanently deleted."}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
           <ScrollArea className="max-h-[60vh]">
             <div className="p-6 space-y-4">
               {/* ✅ معلومات المتجر */}
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+              <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-4 border-2 border-slate-200/50 dark:border-slate-700/50">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
                     <StoreIcon className="h-4 w-4 text-[#2a655f]" />
@@ -1298,27 +1273,27 @@ const stores = storesData?.data || [];
               {/* ✅ إحصاءات البيانات المرتبطة */}
               {storeStats && !statsLoading ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <div className="bg-red-50/50 dark:bg-red-950/20 rounded-xl p-3 border border-red-200/30 dark:border-red-800/30">
+                  <div className="bg-red-50/50 dark:bg-red-950/20 rounded-xl p-3 border-2 border-red-200/30 dark:border-red-800/30">
                     <p className="text-xs text-red-600/70 dark:text-red-400/70">📦 {isRTL ? "منتجات" : "Products"}</p>
                     <p className="text-xl font-bold text-red-700 dark:text-red-400">{storeStats.products}</p>
                   </div>
-                  <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-xl p-3 border border-amber-200/30 dark:border-amber-800/30">
+                  <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-xl p-3 border-2 border-amber-200/30 dark:border-amber-800/30">
                     <p className="text-xs text-amber-600/70 dark:text-amber-400/70">🛒 {isRTL ? "طلبات" : "Orders"}</p>
                     <p className="text-xl font-bold text-amber-700 dark:text-amber-400">{storeStats.orders}</p>
                   </div>
-                  <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-xl p-3 border border-blue-200/30 dark:border-blue-800/30">
+                  <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-xl p-3 border-2 border-blue-200/30 dark:border-blue-800/30">
                     <p className="text-xs text-blue-600/70 dark:text-blue-400/70">💬 {isRTL ? "رسائل" : "Messages"}</p>
                     <p className="text-xl font-bold text-blue-700 dark:text-blue-400">{storeStats.messages}</p>
                   </div>
-                  <div className="bg-pink-50/50 dark:bg-pink-950/20 rounded-xl p-3 border border-pink-200/30 dark:border-pink-800/30">
+                  <div className="bg-pink-50/50 dark:bg-pink-950/20 rounded-xl p-3 border-2 border-pink-200/30 dark:border-pink-800/30">
                     <p className="text-xs text-pink-600/70 dark:text-pink-400/70">❤️ {isRTL ? "مفضلات" : "Favorites"}</p>
                     <p className="text-xl font-bold text-pink-700 dark:text-pink-400">{storeStats.favorites}</p>
                   </div>
-                  <div className="bg-green-50/50 dark:bg-green-950/20 rounded-xl p-3 border border-green-200/30 dark:border-green-800/30">
+                  <div className="bg-green-50/50 dark:bg-green-950/20 rounded-xl p-3 border-2 border-green-200/30 dark:border-green-800/30">
                     <p className="text-xs text-green-600/70 dark:text-green-400/70">⭐ {isRTL ? "تقييمات" : "Reviews"}</p>
                     <p className="text-xl font-bold text-green-700 dark:text-green-400">{storeStats.reviews}</p>
                   </div>
-                  <div className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-3 border border-purple-200/30 dark:border-purple-800/30">
+                  <div className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-3 border-2 border-purple-200/30 dark:border-purple-800/30">
                     <p className="text-xs text-purple-600/70 dark:text-purple-400/70">📊 {isRTL ? "إجمالي" : "Total"}</p>
                     <p className="text-xl font-bold text-purple-700 dark:text-purple-400">
                       {storeStats.products + storeStats.orders + storeStats.messages + storeStats.favorites + storeStats.reviews}
@@ -1351,7 +1326,7 @@ const stores = storesData?.data || [];
               </div>
 
               {/* ✅ حقل تأكيد الاسم */}
-              <div className="bg-red-50/30 dark:bg-red-950/10 rounded-xl p-4 border border-red-200/50 dark:border-red-800/30">
+              <div className="bg-red-50/30 dark:bg-red-950/10 rounded-xl p-4 border-2 border-red-200/50 dark:border-red-800/30">
                 <label className="block text-sm font-medium text-red-700 dark:text-red-400 mb-2">
                   {isRTL
                     ? `✍️ اكتب اسم المتجر "${selectedStore?.store_name}" لتأكيد الحذف`
@@ -1362,7 +1337,7 @@ const stores = storesData?.data || [];
                   onChange={(e) => setConfirmStoreName(e.target.value)}
                   placeholder={isRTL ? "أدخل اسم المتجر هنا..." : "Enter store name here..."}
                   className={cn(
-                    "rounded-xl border-red-200/50 dark:border-red-800/50 focus:border-red-500 focus:ring-red-500/20",
+                    "rounded-xl border-3 border-red-200/50 dark:border-red-800/50 focus:border-red-500 focus:ring-red-500/20",
                     confirmStoreName && confirmStoreName !== selectedStore?.store_name && "border-red-500 focus:border-red-500"
                   )}
                 />
@@ -1390,7 +1365,7 @@ const stores = storesData?.data || [];
                 setConfirmStoreName("");
                 setSelectedStore(null);
               }}
-              className="flex-1 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300 h-12"
+              className="flex-1 rounded-xl border-3 border-[#2a655f]/20 hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300 h-12"
             >
               {isRTL ? "إلغاء" : "Cancel"}
             </Button>
@@ -1401,10 +1376,10 @@ const stores = storesData?.data || [];
                 confirmStoreName !== selectedStore?.store_name
               }
               className={cn(
-                "flex-1 rounded-xl text-white shadow-lg transition-all duration-300 h-12",
+                "flex-1 rounded-xl text-white shadow-lg transition-all duration-300 h-12 border-2",
                 confirmStoreName === selectedStore?.store_name
-                  ? "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-600/30 hover:shadow-red-600/50 hover:scale-105"
-                  : "bg-slate-400 cursor-not-allowed opacity-50"
+                  ? "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-600/30 hover:shadow-red-600/50 hover:scale-105 border-red-500/30"
+                  : "bg-slate-400 cursor-not-allowed opacity-50 border-slate-400/30"
               )}
             >
               {deleteStore.isPending ? (
@@ -1423,138 +1398,153 @@ const stores = storesData?.data || [];
         </DialogContent>
       </Dialog>
 
-      {/* ✅ ✅ ✅ نافذة تعديل شركة التوصيل */}
+      {/* ✅ DIALOG: تعديل شركة التوصيل - مع بوردرات وردية */}
       <Dialog open={deliveryDialogOpen} onOpenChange={setDeliveryDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-2xl shadow-[#2a655f]/10">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-[#2d6b63]/10 flex items-center justify-center">
-                <Truck className="h-5 w-5 text-[#2d6b63]" />
-              </div>
-              <div>
-                <DialogTitle className="text-xl font-bold text-[#0d2e2a] dark:text-white">
-                  {isRTL ? "🚚 تعديل شركة التوصيل" : "🚚 Edit Delivery Company"}
-                </DialogTitle>
-                <DialogDescription>
-                  {isRTL 
-                    ? `تعديل شركة التوصيل لمتجر "${selectedStoreForDelivery?.store_name}"`
-                    : `Edit delivery company for store "${selectedStoreForDelivery?.store_name}"`}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            {/* ✅ معلومات المتجر الحالية */}
-            {selectedStoreForDelivery && (
-              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-                <div className="h-10 w-10 rounded-lg bg-[#0d2e2a]/10 flex items-center justify-center flex-shrink-0">
-                  <StoreIcon className="h-5 w-5 text-[#0d2e2a]/40" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                    {selectedStoreForDelivery.store_name || selectedStoreForDelivery.full_name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {isRTL ? `المالك: ${selectedStoreForDelivery.full_name || "—"}` : `Owner: ${selectedStoreForDelivery.full_name || "—"}`}
-                  </p>
-                </div>
-                <Badge className={selectedStoreForDelivery.store_active === false ? "bg-red-500/10 text-red-600" : "bg-emerald-500/10 text-emerald-600"}>
-                  {selectedStoreForDelivery.store_active === false ? (isRTL ? "محظور" : "Banned") : (isRTL ? "نشط" : "Active")}
-                </Badge>
-              </div>
-            )}
+        <DialogContent className="max-w-md rounded-2xl border-3 border-[#2a655f]/30 shadow-2xl shadow-[#2a655f]/15 p-0 overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            onClick={() => {
+              setDeliveryDialogOpen(false);
+              setSelectedStoreForDelivery(null);
+              setSelectedDeliveryCompanyId("");
+            }}
+          >
+            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+          </Button>
 
-            {/* ✅ اختيار شركة التوصيل */}
-            <div className="space-y-2">
-              <Label className="text-[#0d2e2a] dark:text-white font-semibold flex items-center gap-2">
-                <Truck className="h-4 w-4 text-[#2d6b63]" />
-                {isRTL ? "شركة التوصيل" : "Delivery Company"}
-              </Label>
-              
-              {isLoadingDeliveryCompanies ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-6 w-6 animate-spin text-[#2d6b63]" />
+          <div className="p-6">
+            <DialogHeader>
+              <div className="flex items-start gap-4 mb-2">
+                <div className="h-12 w-12 rounded-2xl bg-[#2a655f]/10 border-2 border-[#2a655f]/30 flex items-center justify-center flex-shrink-0">
+                  <Truck className="h-6 w-6 text-[#2a655f]" />
                 </div>
-              ) : deliveryCompanies.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground border-2 border-dashed border-[#0d2e2a]/20 rounded-xl">
-                  <Truck className="h-8 w-8 mx-auto mb-2 text-[#0d2e2a]/30" />
-                  <p className="text-sm">{isRTL ? "⚠️ لا توجد شركات توصيل نشطة" : "⚠️ No active delivery companies"}</p>
+                <div>
+                  <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                    {isRTL ? "🚚 تعديل شركة التوصيل" : "🚚 Edit Delivery Company"}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-slate-500 dark:text-slate-400">
+                    {isRTL 
+                      ? `تعديل شركة التوصيل لمتجر "${selectedStoreForDelivery?.store_name}"`
+                      : `Edit delivery company for store "${selectedStoreForDelivery?.store_name}"`}
+                  </DialogDescription>
                 </div>
-              ) : (
-                <Select 
-                  value={selectedDeliveryCompanyId} 
-                  onValueChange={setSelectedDeliveryCompanyId}
-                >
-                  <SelectTrigger className="rounded-xl border-[#0d2e2a]/20">
-                    <SelectValue placeholder={isRTL ? "🔍 اختر شركة التوصيل..." : "🔍 Select delivery company..."} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">
-                      <span className="flex items-center gap-2 text-muted-foreground">
-                        <XCircle className="h-4 w-4" />
-                        {isRTL ? "بدون شركة توصيل" : "No delivery company"}
-                      </span>
-                    </SelectItem>
-                    {deliveryCompanies.map((company) => (
-                      <SelectItem key={company.id} value={company.id}>
-                        <span className="flex items-center gap-2">
-                          <Truck className="h-4 w-4 text-[#2d6b63]" />
-                          <span>{company.name_ar || company.name_en}</span>
-                          <Badge className="text-[9px] bg-[#2d6b63]/10 text-[#2d6b63] border-0">
-                            {company.base_price || 0} SYP
-                          </Badge>
+              </div>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              {/* ✅ معلومات المتجر الحالية */}
+              {selectedStoreForDelivery && (
+                <div className="flex items-center gap-3 p-3 bg-[#f9a8d4]/10 rounded-xl border-2 border-[#f9a8d4]/30">
+                  <div className="h-10 w-10 rounded-lg bg-[#2a655f]/10 flex items-center justify-center flex-shrink-0">
+                    <StoreIcon className="h-5 w-5 text-[#2a655f]/40" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                      {selectedStoreForDelivery.store_name || selectedStoreForDelivery.full_name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {isRTL ? `المالك: ${selectedStoreForDelivery.full_name || "—"}` : `Owner: ${selectedStoreForDelivery.full_name || "—"}`}
+                    </p>
+                  </div>
+                  <Badge className={selectedStoreForDelivery.store_active === false ? "bg-red-500/10 text-red-600 border-2 border-red-500/20" : "bg-emerald-500/10 text-emerald-600 border-2 border-emerald-500/20"}>
+                    {selectedStoreForDelivery.store_active === false ? (isRTL ? "محظور" : "Banned") : (isRTL ? "نشط" : "Active")}
+                  </Badge>
+                </div>
+              )}
+
+              {/* ✅ اختيار شركة التوصيل */}
+              <div className="space-y-2">
+                <Label className="text-[#2a655f] dark:text-white font-semibold flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-[#2a655f]" />
+                  {isRTL ? "شركة التوصيل" : "Delivery Company"}
+                </Label>
+                
+                {isLoadingDeliveryCompanies ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-[#2a655f]" />
+                  </div>
+                ) : deliveryCompanies.length === 0 ? (
+                  <div className="p-4 text-center text-muted-foreground border-3 border-dashed border-[#2a655f]/20 rounded-xl">
+                    <Truck className="h-8 w-8 mx-auto mb-2 text-[#2a655f]/30" />
+                    <p className="text-sm">{isRTL ? "⚠️ لا توجد شركات توصيل نشطة" : "⚠️ No active delivery companies"}</p>
+                  </div>
+                ) : (
+                  <Select 
+                    value={selectedDeliveryCompanyId} 
+                    onValueChange={setSelectedDeliveryCompanyId}
+                  >
+                    <SelectTrigger className="rounded-xl border-3 border-[#2a655f]/20 focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30">
+                      <SelectValue placeholder={isRTL ? "🔍 اختر شركة التوصيل..." : "🔍 Select delivery company..."} />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-3 border-[#2a655f]/20">
+                      <SelectItem value="">
+                        <span className="flex items-center gap-2 text-muted-foreground">
+                          <XCircle className="h-4 w-4" />
+                          {isRTL ? "بدون شركة توصيل" : "No delivery company"}
                         </span>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Info className="h-3 w-3 text-[#2d6b63]" />
-                {isRTL 
-                  ? "💡 هذه الشركة ستكون المسؤولة عن توصيل طلبات هذا المتجر"
-                  : "💡 This company will handle delivery for this store"}
-              </p>
-            </div>
-
-            {/* ✅ عرض الشركة الحالية */}
-            {selectedStoreForDelivery?.delivery_company_id && (
-              <div className="p-3 bg-[#2d6b63]/5 rounded-xl border border-[#2d6b63]/20">
-                <p className="text-xs text-muted-foreground">
-                  {isRTL ? "🔄 الشركة الحالية" : "🔄 Current company"}
-                </p>
-                <p className="text-sm font-medium text-[#2d6b63]">
-                  {deliveryCompanies.find(c => c.id === selectedStoreForDelivery.delivery_company_id)?.name_ar 
-                    || deliveryCompanies.find(c => c.id === selectedStoreForDelivery.delivery_company_id)?.name_en 
-                    || selectedStoreForDelivery.delivery_company_id}
+                      {deliveryCompanies.map((company) => (
+                        <SelectItem key={company.id} value={company.id} className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">
+                          <span className="flex items-center gap-2">
+                            <Truck className="h-4 w-4 text-[#2a655f]" />
+                            <span>{company.name_ar || company.name_en}</span>
+                            <Badge className="text-[9px] bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20">
+                              {company.base_price || 0} SYP
+                            </Badge>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3 w-3 text-[#2a655f]" />
+                  {isRTL 
+                    ? "💡 هذه الشركة ستكون المسؤولة عن توصيل طلبات هذا المتجر"
+                    : "💡 This company will handle delivery for this store"}
                 </p>
               </div>
-            )}
+
+              {/* ✅ عرض الشركة الحالية */}
+              {selectedStoreForDelivery?.delivery_company_id && (
+                <div className="p-3 bg-[#2a655f]/5 rounded-xl border-2 border-[#2a655f]/20">
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL ? "🔄 الشركة الحالية" : "🔄 Current company"}
+                  </p>
+                  <p className="text-sm font-medium text-[#2a655f]">
+                    {deliveryCompanies.find(c => c.id === selectedStoreForDelivery.delivery_company_id)?.name_ar 
+                      || deliveryCompanies.find(c => c.id === selectedStoreForDelivery.delivery_company_id)?.name_en 
+                      || selectedStoreForDelivery.delivery_company_id}
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter className="gap-3 pt-4 border-t-3 border-[#2a655f]/20">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDeliveryDialogOpen(false);
+                  setSelectedStoreForDelivery(null);
+                  setSelectedDeliveryCompanyId("");
+                }}
+                className="flex-1 rounded-xl border-3 border-[#2a655f]/20 hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300"
+              >
+                {isRTL ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                onClick={handleSaveDeliveryCompany}
+                disabled={isLoadingDeliveryCompanies}
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-[1.02] border-2 border-[#2a655f]/30"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                {isRTL ? "حفظ التغييرات" : "Save Changes"}
+              </Button>
+            </DialogFooter>
           </div>
-          
-          <DialogFooter className="gap-3 pt-4 border-t border-[#0d2e2a]/10">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDeliveryDialogOpen(false);
-                setSelectedStoreForDelivery(null);
-                setSelectedDeliveryCompanyId("");
-              }}
-              className="rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300"
-            >
-              {isRTL ? "إلغاء" : "Cancel"}
-            </Button>
-            <Button
-              onClick={handleSaveDeliveryCompany}
-              disabled={isLoadingDeliveryCompanies}
-              className="rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-[1.02]"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              {isRTL ? "حفظ التغييرات" : "Save Changes"}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1595,10 +1585,23 @@ const stores = storesData?.data || [];
         .animate-pulse-slow {
           animation: pulse-slow 2s ease-in-out infinite;
         }
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.5s ease-out forwards;
+          opacity: 0;
+        }
       `}</style>
     </div>
   );
 }
 
-// ✅ تصدير افتراضي
 export default AdminStores;

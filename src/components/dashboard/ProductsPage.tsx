@@ -49,6 +49,34 @@ import { PromoOfferDetailDialog } from "./PromoOfferDetailDialog";
 
 const { saveAs } = pkg;
 
+// ============================================================
+// 🎨 ZOOQ BRAND COLORS - ألوان محسّنة واحترافية
+// ============================================================
+const COLORS = {
+  olive: '#2a655f',
+  oliveLight: '#3a8a82',
+  oliveDark: '#1a4f4a',
+  oliveVeryLight: '#e8f0ee',
+  oliveGlow: 'rgba(42,101,95,0.2)',
+  oliveGlowStrong: 'rgba(42,101,95,0.35)',
+  
+  pink: '#f9a8d4',
+  pinkLight: '#fbcfe8',
+  pinkDark: '#f48fb1',
+  pinkVeryLight: '#fdf2f8',
+  pinkGlow: 'rgba(249,168,212,0.25)',
+  pinkGlowStrong: 'rgba(249,168,212,0.4)',
+  
+  fuchsia: '#d81b60',
+  fuchsiaDark: '#c2185b',
+  fuchsiaGlow: 'rgba(216,27,96,0.2)',
+  fuchsiaGlowStrong: 'rgba(194,24,91,0.35)',
+  
+  glowOlive: 'rgba(42,101,95,0.15)',
+  glowPink: 'rgba(249,168,212,0.2)',
+  glowPinkStrong: 'rgba(249,168,212,0.35)',
+};
+
 export const ProductsPage = React.memo(function ProductsPage() {
   const app = useApp();
   const t = useT();
@@ -307,7 +335,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
   }, [govs, app.lang]);
 
   // ===== دالة إرسال إشعار للأدمن =====
-// ===== دالة إرسال إشعار للأدمن =====
 const notifyAdmin = useCallback(async (productTitle: string, actionType: string, userId: string, listingId: string) => {
   try {
     const { data: adminRole, error: roleError } = await supabase
@@ -844,7 +871,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
           </p>
         </div>
         <div className="w-64 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-          <div className="h-full w-1/2 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] rounded-full animate-slide" />
+          <div className="h-full w-1/2 bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] rounded-full animate-slide" />
         </div>
       </div>
     );
@@ -853,14 +880,14 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
   // ✅ عرض حالة الخطأ
   if (isError) {
     return (
-      <div className="rounded-3xl border-2 border-red-200/50 dark:border-red-800/30 p-20 text-center bg-red-50/50 dark:bg-red-950/20">
+      <div className="rounded-3xl border-3 border-red-200/50 dark:border-red-800/30 p-20 text-center bg-red-50/50 dark:bg-red-950/20">
         <AlertTriangle className="h-20 w-20 text-red-500/60 mx-auto animate-pulse" />
         <h3 className="text-xl font-semibold text-red-600 dark:text-red-400 mt-4">
           {app.lang === "ar" ? "❌ حدث خطأ في تحميل المنتجات" : "❌ Error loading products"}
         </h3>
         <Button 
           variant="outline" 
-          className="mt-6 rounded-xl border-red-300/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-300 hover:scale-105"
+          className="mt-6 rounded-xl border-2 border-red-300/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-300 hover:scale-105"
           onClick={() => refetchMyListings()}
         >
           <RefreshCw className="h-4 w-4 mr-2 animate-spin-slow" />
@@ -876,17 +903,17 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="relative">
           <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
-          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#3a8a82]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#f9a8d4]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
           
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
             <div className="relative group">
               <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
-              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#2a655f]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#f9a8d4]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
                 <ShoppingBag className="h-5 w-5 group-hover:animate-bounce" />
               </div>
             </div>
             {app.lang === "ar" ? "منتجاتي" : "My Products"}
-            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
               {stats.total}
             </Badge>
           </h1>
@@ -904,9 +931,9 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
               <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "تخفيض" : "discounts"}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/30 hover:bg-purple-100/50 dark:hover:bg-purple-950/30 transition-colors">
-              <Sparkles className="h-3.5 w-3.5 text-purple-500" />
-              <span className="text-purple-600 dark:text-purple-400 font-medium">{stats.promo}</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f9a8d4]/10 border border-[#f9a8d4]/20 hover:bg-[#f9a8d4]/20 transition-colors">
+              <Sparkles className="h-3.5 w-3.5 text-[#d81b60]" />
+              <span className="text-[#d81b60] font-medium">{stats.promo}</span>
               <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "ترويجي" : "promo"}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
@@ -921,7 +948,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
         <div className="flex items-center gap-2 flex-wrap">
           <Button 
             size="sm" 
-            className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 hover:scale-105 transition-all duration-300 group"
+            className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 hover:scale-105 transition-all duration-300 group border-2 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
             onClick={() => openAddDialog("product")}
           >
             <Plus className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" /> 
@@ -930,7 +957,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
           
           <Button 
             size="sm" 
-            className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:scale-105 transition-all duration-300 group"
+            className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:scale-105 transition-all duration-300 group border-2 border-emerald-500/30 hover:border-emerald-500/50"
             onClick={() => openAddDialog("offer")}
           >
             <Percent className="h-4 w-4 mr-1.5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" /> 
@@ -939,7 +966,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
 
           <Button 
             size="sm" 
-            className="rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 hover:scale-105 transition-all duration-300 group"
+            className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/25 hover:shadow-[#d81b60]/40 hover:scale-105 transition-all duration-300 group border-2 border-[#d81b60]/30 hover:border-[#d81b60]/50"
             onClick={() => {
               setSelectedOfferProduct(null);
               setEditingOffer(null);
@@ -955,7 +982,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
             size="sm" 
             onClick={exportToExcel} 
             disabled={filteredProducts.length === 0} 
-            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105"
+            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
           >
             <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Excel
           </Button>
@@ -964,7 +991,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
             size="sm" 
             onClick={exportToWord} 
             disabled={filteredProducts.length === 0} 
-            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105"
+            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
           >
             <FileText className="h-4 w-4 mr-1.5" /> Word
           </Button>
@@ -972,47 +999,46 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
             variant="outline" 
             size="sm" 
             onClick={() => { refetchMyListings(); refetchSellerOffers(); }} 
-            className="rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5 transition-all duration-300 group"
+            className="rounded-xl border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 group"
           >
             <RefreshCw className="h-4 w-4 mr-1.5 group-hover:rotate-180 transition-transform duration-700" /> 
             {app.lang === "ar" ? "تحديث" : "Refresh"}
           </Button>
         </div>
       </div>
-
-      {/* ===== STATS CARDS ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        {[
-          { key: 'total', label: app.lang === 'ar' ? 'الإجمالي' : 'Total', value: stats.total, icon: Package, color: 'text-[#2a655f]', bg: 'bg-[#2a655f]/10', border: 'border-[#2a655f]/20', gradient: 'from-[#2a655f]/5 to-[#2a655f]/10' },
-          { key: 'products', label: app.lang === 'ar' ? 'منتجات' : 'Products', value: stats.products, icon: ShoppingBag, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-200/50 dark:border-indigo-800/30', gradient: 'from-indigo-500/5 to-indigo-500/10' },
-          { key: 'offers', label: app.lang === 'ar' ? 'تخفيضات' : 'Discounts', value: stats.offers, icon: Percent, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-200/50 dark:border-emerald-800/30', gradient: 'from-emerald-500/5 to-emerald-500/10' },
-          { key: 'promo', label: app.lang === 'ar' ? 'ترويجية' : 'Promo', value: stats.promo, icon: Sparkles, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-200/50 dark:border-purple-800/30', gradient: 'from-purple-500/5 to-purple-500/10' },
-          { key: 'pending', label: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: stats.pending, icon: Clock, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-200/50 dark:border-yellow-800/30', gradient: 'from-yellow-500/5 to-yellow-500/10' },
-          { key: 'published', label: app.lang === 'ar' ? 'منشورة' : 'Published', value: stats.published, icon: CheckCircle2, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-200/50 dark:border-green-800/30', gradient: 'from-green-500/5 to-green-500/10' },
-        ].map((stat) => (
-          <div key={stat.key} className="group relative bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-4 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden">
-            <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-            <div className={`absolute -top-8 -right-8 h-16 w-16 rounded-full ${stat.bg} blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-            <div className="relative flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <stat.icon className={`h-3 w-3 ${stat.color} group-hover:scale-110 transition-transform duration-300`} />
-                  {stat.label}
-                </p>
-                <p className={`text-2xl font-bold mt-1 ${stat.color} group-hover:scale-110 transition-transform duration-300 origin-right`}>
-                  {stat.value}
-                </p>
-              </div>
-              <div className={`h-10 w-10 rounded-lg ${stat.bg} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#2a655f] to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
-          </div>
-        ))}
+{/* ===== STATS CARDS - بتصميم جديد مع خلفية وردية ===== */}
+<div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+  {[
+    { key: 'total', label: app.lang === 'ar' ? 'الإجمالي' : 'Total', value: stats.total, icon: Package, color: 'text-[#2a655f]', bg: 'bg-[#fbcfe8]/60' },
+    { key: 'products', label: app.lang === 'ar' ? 'منتجات' : 'Products', value: stats.products, icon: ShoppingBag, color: 'text-[#2a655f]', bg: 'bg-[#fbcfe8]/60' },
+    { key: 'offers', label: app.lang === 'ar' ? 'تخفيضات' : 'Discounts', value: stats.offers, icon: Percent, color: 'text-[#2a655f]', bg: 'bg-[#fbcfe8]/60' },
+    { key: 'promo', label: app.lang === 'ar' ? 'ترويجية' : 'Promo', value: stats.promo, icon: Sparkles, color: 'text-[#2a655f]', bg: 'bg-[#fbcfe8]/60' },
+    { key: 'pending', label: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: stats.pending, icon: Clock, color: 'text-[#2a655f]', bg: 'bg-[#fbcfe8]/60' },
+    { key: 'published', label: app.lang === 'ar' ? 'منشورة' : 'Published', value: stats.published, icon: CheckCircle2, color: 'text-[#2a655f]', bg: 'bg-[#fbcfe8]/60' },
+  ].map((stat) => (
+    <div key={stat.key} className="group relative bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden">
+      <div className={`absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+      <div className={`absolute -top-8 -right-8 h-16 w-16 rounded-full ${stat.bg} blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+      <div className="relative flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider flex items-center gap-1.5">
+            <stat.icon className={`h-3 w-3 text-[#2a655f] dark:text-[#f9a8d4] group-hover:scale-110 transition-transform duration-300`} />
+            {stat.label}
+          </p>
+          <p className={`text-2xl font-bold mt-1 text-[#2a655f] dark:text-white group-hover:scale-110 transition-transform duration-300 origin-right`}>
+            {stat.value}
+          </p>
+        </div>
+        <div className={`h-10 w-10 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
+          <stat.icon className={`h-5 w-5 text-[#2a655f] dark:text-[#f9a8d4]`} />
+        </div>
       </div>
+      <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
+    </div>
+  ))}
+</div>
 
-      {/* ===== SEARCH & FILTERS ===== */}
+      {/* ===== SEARCH & FILTERS - بتصميم جديد ===== */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 group">
           <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors duration-300" />
@@ -1020,52 +1046,52 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
             value={searchQuery} 
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
             placeholder={app.lang === "ar" ? "🔍 ابحث في منتجاتك..." : "🔍 Search your products..."} 
-            className="ps-9 h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300" 
+            className="ps-9 h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300" 
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors">
+            <button onClick={() => setSearchQuery("")} className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#f9a8d4] transition-colors">
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
         
         <Select value={filterStatus} onValueChange={(v: any) => { setFilterStatus(v); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[150px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 transition-all duration-300">
+          <SelectTrigger className="w-[150px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 transition-all duration-300">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
               <SelectValue placeholder={app.lang === "ar" ? "الحالة" : "Status"} />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#2a655f]/20">
-            <SelectItem value="all" className="hover:bg-[#2a655f]/10">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
-            <SelectItem value="pending" className="hover:bg-[#2a655f]/10">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
-            <SelectItem value="published" className="hover:bg-[#2a655f]/10">✅ {app.lang === "ar" ? "منشور" : "Published"}</SelectItem>
-            <SelectItem value="archived" className="hover:bg-[#2a655f]/10">📁 {app.lang === "ar" ? "مؤرشف" : "Archived"}</SelectItem>
+          <SelectContent className="rounded-xl border-3 border-[#2a655f]/20">
+            <SelectItem value="all" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
+            <SelectItem value="pending" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
+            <SelectItem value="published" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">✅ {app.lang === "ar" ? "منشور" : "Published"}</SelectItem>
+            <SelectItem value="archived" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">📁 {app.lang === "ar" ? "مؤرشف" : "Archived"}</SelectItem>
           </SelectContent>
         </Select>
         
         <Select value={filterType} onValueChange={(v: any) => { setFilterType(v); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[170px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 transition-all duration-300">
+          <SelectTrigger className="w-[170px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 transition-all duration-300">
             <div className="flex items-center gap-2">
               <Tags className="h-4 w-4 text-slate-400" />
               <SelectValue placeholder={app.lang === "ar" ? "النوع" : "Type"} />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#2a655f]/20">
-            <SelectItem value="all" className="hover:bg-[#2a655f]/10">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
-            <SelectItem value="product" className="hover:bg-[#2a655f]/10">📦 {app.lang === "ar" ? "منتج" : "Product"}</SelectItem>
-            <SelectItem value="offer" className="hover:bg-[#2a655f]/10">🏷️ {app.lang === "ar" ? "عرض تخفيض" : "Discount"}</SelectItem>
-            <SelectItem value="promo" className="hover:bg-[#2a655f]/10">✨ {app.lang === "ar" ? "عرض ترويجي" : "Promo"}</SelectItem>
+          <SelectContent className="rounded-xl border-3 border-[#2a655f]/20">
+            <SelectItem value="all" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
+            <SelectItem value="product" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">📦 {app.lang === "ar" ? "منتج" : "Product"}</SelectItem>
+            <SelectItem value="offer" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">🏷️ {app.lang === "ar" ? "عرض تخفيض" : "Discount"}</SelectItem>
+            <SelectItem value="promo" className="hover:bg-[#f9a8d4]/10 hover:text-[#2a655f] transition-colors">✨ {app.lang === "ar" ? "عرض ترويجي" : "Promo"}</SelectItem>
           </SelectContent>
         </Select>
         
-        <div className="flex items-center gap-1 bg-muted/50 rounded-xl p-1 border border-slate-200/50 dark:border-slate-700/50">
+        <div className="flex items-center gap-1 bg-muted/50 rounded-xl p-1 border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30">
           <Button 
             variant={viewMode === "grid" ? "default" : "ghost"} 
             size="sm" 
             className={cn(
               "h-8 px-3 rounded-lg text-xs transition-all duration-300",
-              viewMode === "grid" && "bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md shadow-[#2a655f]/25"
+              viewMode === "grid" && "bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md shadow-[#2a655f]/25 border-2 border-[#2a655f]/40"
             )} 
             onClick={() => setViewMode("grid")}
           >
@@ -1077,7 +1103,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
             size="sm" 
             className={cn(
               "h-8 px-3 rounded-lg text-xs transition-all duration-300",
-              viewMode === "list" && "bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md shadow-[#2a655f]/25"
+              viewMode === "list" && "bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md shadow-[#2a655f]/25 border-2 border-[#2a655f]/40"
             )} 
             onClick={() => setViewMode("list")}
           >
@@ -1090,7 +1116,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
           variant="outline" 
           size="sm" 
           onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setCurrentPage(1); }} 
-          className="h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 group"
+          className="h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 group"
         >
           <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
           {app.lang === "ar" ? "مسح الكل" : "Clear All"}
@@ -1101,20 +1127,20 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
       {/* 🚀 PRODUCTS DISPLAY - صفحة عادية مع Pagination */}
       {/* ============================================================ */}
       {myListings.length === 0 ? (
-        <div className="relative rounded-3xl border-2 border-dashed border-[#2a655f]/30 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-transparent group hover:border-[#2a655f]/50 transition-all duration-500">
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="relative rounded-3xl border-3 border-[#2a655f]/40 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-[#f9a8d4]/5 group hover:border-[#d81b60]/60 hover:shadow-[0_0_35px_rgba(216,27,96,0.2)] transition-all duration-500">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-[#f9a8d4] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="relative">
             <div className="absolute -top-12 -left-12 h-32 w-32 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
-            <div className="absolute -bottom-12 -right-12 h-32 w-32 rounded-full bg-[#3a8a82]/5 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+            <div className="absolute -bottom-12 -right-12 h-32 w-32 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
             <div className="relative inline-block">
               <div className="h-24 w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto animate-bounce">
                 <Package className="h-12 w-12 text-[#2a655f]/60" />
               </div>
-              <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-[#2a655f] flex items-center justify-center shadow-lg shadow-[#2a655f]/30">
+              <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#2a655f]/30">
                 <Plus className="h-4 w-4 text-white" />
               </div>
             </div>
-            <h3 className="text-2xl font-bold mt-6 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] bg-clip-text text-transparent">
+            <h3 className="text-2xl font-bold mt-6 bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] bg-clip-text text-transparent">
               {app.lang === "ar" ? "🚀 لا توجد منتجات بعد" : "🚀 No products yet"}
             </h3>
             <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
@@ -1124,7 +1150,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
             </p>
             <div className="flex items-center justify-center gap-3 mt-6 flex-wrap">
               <Button 
-                className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-105 group"
+                className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-105 group border-3 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
                 onClick={() => openAddDialog("product")}
               >
                 <Plus className="h-4 w-4 me-2 group-hover:rotate-90 transition-transform duration-300" /> 
@@ -1132,14 +1158,14 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
               </Button>
               <Button 
                 variant="outline" 
-                className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105 group"
+                className="rounded-xl border-3 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105 group"
                 onClick={() => openAddDialog("offer")}
               >
                 <Percent className="h-4 w-4 me-2 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" /> 
                 {app.lang === "ar" ? "أضف عرض تخفيض" : "Add Discount Offer"}
               </Button>
               <Button 
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 transition-all duration-300 hover:scale-105 group"
+                className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/25 hover:shadow-[#d81b60]/40 transition-all duration-300 hover:scale-105 group border-3 border-[#d81b60]/30 hover:border-[#d81b60]/50"
                 onClick={() => {
                   setSelectedOfferProduct(null);
                   setEditingOffer(null);
@@ -1153,8 +1179,8 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
           </div>
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="relative rounded-3xl border-2 border-dashed border-slate-200/50 dark:border-slate-800/50 p-20 text-center bg-gradient-to-b from-slate-50/50 to-transparent dark:from-slate-900/20 group hover:border-[#2a655f]/30 transition-all duration-500">
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-slate-300 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="relative rounded-3xl border-3 border-[#2a655f]/30 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-[#f9a8d4]/5 group hover:border-[#d81b60]/40 hover:shadow-[0_0_25px_rgba(216,27,96,0.15)] transition-all duration-500">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-[#f9a8d4] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <Search className="h-20 w-20 text-muted-foreground/40 mx-auto group-hover:scale-110 transition-transform duration-500" />
           <h3 className="text-xl font-semibold text-muted-foreground mt-4">
             {app.lang === "ar" ? "🔍 لا توجد نتائج مطابقة" : "🔍 No matching results"}
@@ -1166,7 +1192,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
           </p>
           <Button 
             variant="outline" 
-            className="mt-4 rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 transition-all duration-300"
+            className="mt-4 rounded-xl border-3 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 transition-all duration-300"
             onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); }}
           >
             <X className="h-4 w-4 mr-2" />
@@ -1203,14 +1229,14 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
           </div>
 
           {/* ===== PAGINATION ===== */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-5 mt-5 border-t border-slate-200/50 dark:border-slate-800/50">
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-5 mt-5 border-t-3 border-[#2a655f]/20 dark:border-[#2a655f]/30">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-sm text-muted-foreground">
                 {app.lang === "ar" 
                   ? `صفحة ${currentPage} من ${totalPages}` 
                   : `Page ${currentPage} of ${totalPages}`}
               </span>
-              <Badge variant="outline" className="border-[#2a655f]/20 text-[#2a655f] text-[10px]">
+              <Badge variant="outline" className="border-3 border-[#2a655f]/20 text-[#2a655f] text-[10px]">
                 {filteredProducts.length} {app.lang === "ar" ? "منتج" : "products"}
               </Badge>
               
@@ -1225,15 +1251,15 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                     setCurrentPage(1); 
                   }}
                 >
-                  <SelectTrigger className="w-[70px] h-8 rounded-lg border-slate-200/50 dark:border-slate-700/50 text-xs">
+                  <SelectTrigger className="w-[70px] h-8 rounded-lg border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 text-xs">
                     <SelectValue placeholder="6" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-lg border-[#2a655f]/20">
-                    <SelectItem value="6" className="text-xs">6</SelectItem>
-                    <SelectItem value="10" className="text-xs">10</SelectItem>
-                    <SelectItem value="20" className="text-xs">20</SelectItem>
-                    <SelectItem value="30" className="text-xs">30</SelectItem>
-                    <SelectItem value="50" className="text-xs">50</SelectItem>
+                  <SelectContent className="rounded-lg border-3 border-[#2a655f]/20">
+                    <SelectItem value="6" className="text-xs hover:bg-[#f9a8d4]/10">6</SelectItem>
+                    <SelectItem value="10" className="text-xs hover:bg-[#f9a8d4]/10">10</SelectItem>
+                    <SelectItem value="20" className="text-xs hover:bg-[#f9a8d4]/10">20</SelectItem>
+                    <SelectItem value="30" className="text-xs hover:bg-[#f9a8d4]/10">30</SelectItem>
+                    <SelectItem value="50" className="text-xs hover:bg-[#f9a8d4]/10">50</SelectItem>
                   </SelectContent>
                 </Select>
                 <span className="text-xs text-muted-foreground">
@@ -1248,7 +1274,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                 size="sm"
                 onClick={() => goToPage(1)}
                 disabled={currentPage === 1}
-                className="h-9 w-9 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-40"
+                className="h-9 w-9 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 disabled:opacity-40"
               >
                 <ChevronsLeft className="h-4 w-4 text-[#2a655f]" />
               </Button>
@@ -1258,7 +1284,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                 size="sm"
                 onClick={prevPage}
                 disabled={currentPage === 1}
-                className="h-9 w-9 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-40"
+                className="h-9 w-9 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 disabled:opacity-40"
               >
                 <ChevronLeft className="h-4 w-4 text-[#2a655f]" />
               </Button>
@@ -1293,8 +1319,8 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                       className={cn(
                         "h-9 min-w-[36px] px-2.5 rounded-xl text-sm font-medium transition-all duration-300",
                         pageNum === currentPage 
-                          ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-md shadow-[#2a655f]/25" 
-                          : "hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
+                          ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-md shadow-[#2a655f]/25 border-3 border-[#2a655f]/40" 
+                          : "hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] border-3 border-transparent hover:border-[#f9a8d4]/30"
                       )}
                     >
                       {pageNum}
@@ -1308,7 +1334,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                 size="sm"
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
-                className="h-9 w-9 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-40"
+                className="h-9 w-9 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 disabled:opacity-40"
               >
                 <ChevronRight className="h-4 w-4 text-[#2a655f]" />
               </Button>
@@ -1318,7 +1344,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                 size="sm"
                 onClick={() => goToPage(totalPages)}
                 disabled={currentPage === totalPages}
-                className="h-9 w-9 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-40"
+                className="h-9 w-9 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 disabled:opacity-40"
               >
                 <ChevronsRight className="h-4 w-4 text-[#2a655f]" />
               </Button>
@@ -1327,9 +1353,9 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
         </>
       )}
 
-      {/* ===== PRODUCT DETAIL DIALOG ===== */}
+      {/* ===== PRODUCT DETAIL DIALOG - مع بوردر فوشي غامق ===== */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-[#2a655f]/10">
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden rounded-2xl border-3 border-[#d81b60]/60 dark:border-[#d81b60]/40 shadow-[0_0_35px_rgba(216,27,96,0.2)] dark:shadow-[0_0_35px_rgba(216,27,96,0.15)] bg-white dark:bg-slate-900 p-0">
           <Button
             variant="ghost"
             size="icon"
@@ -1345,8 +1371,8 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
 
           {selectedProduct && (
             <div className="flex flex-col lg:flex-row h-[95vh]">
-              <div className="lg:w-1/2 bg-gradient-to-br from-[#2a655f]/5 via-slate-50 to-[#2a655f]/5 dark:from-[#2a655f]/20 dark:via-slate-800 dark:to-[#2a655f]/20 flex flex-col h-full relative">
-                <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-transparent animate-pulse" />
+              <div className="lg:w-1/2 bg-gradient-to-br from-[#2a655f]/5 via-slate-50 to-[#f9a8d4]/5 dark:from-[#2a655f]/20 dark:via-slate-800 dark:to-[#f9a8d4]/20 flex flex-col h-full relative">
+                <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-[#f9a8d4] animate-pulse" />
                 
                 <div className="flex-1 flex items-center justify-center p-4 relative overflow-hidden">
                   {(() => {
@@ -1408,18 +1434,18 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                         
                         <div className="absolute top-4 start-4 flex flex-col gap-2">
                           {selectedProduct.is_offer && (
-                            <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 shadow-lg rounded-full px-3 py-1.5 text-xs font-bold animate-pulse">
+                            <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-0 shadow-lg rounded-full px-3 py-1.5 text-xs font-bold animate-pulse border-2 border-white/30">
                               🔥 {app.lang === "ar" ? "عرض خاص" : "Special Offer"}
                               {selectedProduct.discount_percent && ` -${selectedProduct.discount_percent}%`}
                             </Badge>
                           )}
                           {selectedProduct.status === "pending" && (
-                            <Badge className="bg-yellow-500/90 text-white border-0 shadow-lg rounded-full px-3 py-1.5 text-xs animate-pulse">
+                            <Badge className="bg-[#f9a8d4]/90 text-[#2a655f] border-0 shadow-lg rounded-full px-3 py-1.5 text-xs animate-pulse border-2 border-white/30">
                               ⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}
                             </Badge>
                           )}
                           {selectedProduct.is_available === false && (
-                            <Badge className="bg-red-500/90 text-white border-0 shadow-lg rounded-full px-3 py-1.5 text-xs">
+                            <Badge className="bg-red-500/90 text-white border-0 shadow-lg rounded-full px-3 py-1.5 text-xs border-2 border-white/30">
                               ❌ {app.lang === "ar" ? "غير متوفر" : "Unavailable"}
                             </Badge>
                           )}
@@ -1433,7 +1459,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                                 onClick={() => setCurrentImageIndex(idx)}
                                 className={cn(
                                   "h-1.5 rounded-full transition-all duration-300",
-                                  idx === currentImageIndex ? "w-6 bg-white" : "w-1.5 bg-white/50 hover:bg-white/70"
+                                  idx === currentImageIndex ? "w-6 bg-[#f9a8d4]" : "w-1.5 bg-white/50 hover:bg-white/70"
                                 )}
                               />
                             ))}
@@ -1473,8 +1499,8 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                           className={cn(
                             "flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-300 hover:scale-105",
                             idx === currentImageIndex 
-                              ? "border-[#2a655f] shadow-md shadow-[#2a655f]/25" 
-                              : "border-slate-200/50 hover:border-[#2a655f]/50"
+                              ? "border-[#d81b60] shadow-md shadow-[#d81b60]/25" 
+                              : "border-slate-200/50 hover:border-[#d81b60]/50"
                           )}
                         >
                           <img src={img} alt="" className="w-full h-full object-cover" />
@@ -1486,12 +1512,12 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
               </div>
 
               <div className="lg:w-1/2 p-6 md:p-8 overflow-y-auto bg-white dark:bg-slate-900 h-full relative">
-                <div className="absolute top-0 right-0 w-0.5 h-full bg-gradient-to-b from-transparent via-[#2a655f]/10 to-transparent" />
+                <div className="absolute top-0 right-0 w-0.5 h-full bg-gradient-to-b from-transparent via-[#f9a8d4]/20 to-transparent" />
                 
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                   {selectedProduct.title_ar}
                   {selectedProduct.is_offer && (
-                    <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[10px] animate-pulse">
+                    <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-0 text-[10px] animate-pulse border-2 border-white/30">
                       🎯 عرض
                     </Badge>
                   )}
@@ -1503,7 +1529,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                       <Star key={star} className={cn(
                         "h-4 w-4 transition-all duration-300",
                         star <= Math.round(selectedProduct.avg_rating || selectedProduct.rating || 0) 
-                          ? "fill-yellow-400 text-yellow-400" 
+                          ? "fill-[#f9a8d4] text-[#f9a8d4]" 
                           : "text-slate-300 dark:text-slate-600"
                       )} />
                     ))}
@@ -1513,7 +1539,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                   </span>
                 </div>
 
-                <div className="mt-4 p-4 bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                <div className="mt-4 p-4 bg-gradient-to-r from-[#2a655f]/5 to-[#f9a8d4]/5 dark:from-[#2a655f]/20 dark:to-[#f9a8d4]/20 rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30">
                   <div className="flex items-end gap-4">
                     <div>
                       <p className="text-3xl font-bold text-[#2a655f] dark:text-[#3a8a82]">
@@ -1525,7 +1551,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                         <div className="text-sm text-red-500 line-through font-medium">
                           {formatPrice(Number(selectedProduct.old_price), app.currency, app.lang)}
                         </div>
-                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-0 text-xs animate-pulse">
+                        <Badge className="bg-[#d81b60]/20 text-[#d81b60] dark:bg-[#d81b60]/30 dark:text-[#f9a8d4] border-0 text-xs animate-pulse">
                           🎯 {Math.round(((selectedProduct.old_price - selectedProduct.price) / selectedProduct.old_price) * 100)}% {app.lang === "ar" ? "خصم" : "OFF"}
                         </Badge>
                       </div>
@@ -1554,8 +1580,8 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                             <div className={cn(
                               "relative h-14 w-14 rounded-xl overflow-hidden border-2 transition-all duration-300 shadow-sm",
                               isSelected 
-                                ? "border-[#2a655f] ring-2 ring-[#2a655f]/30 scale-110 shadow-md shadow-[#2a655f]/20" 
-                                : "border-slate-200/50 group-hover:border-[#2a655f] group-hover:scale-105"
+                                ? "border-[#d81b60] ring-2 ring-[#d81b60]/30 scale-110 shadow-md shadow-[#d81b60]/20" 
+                                : "border-slate-200/50 group-hover:border-[#d81b60] group-hover:scale-105"
                             )}>
                               <img 
                                 src={color.image_url} 
@@ -1566,14 +1592,14 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                                 }}
                               />
                               {isSelected && (
-                                <div className="absolute inset-0 bg-[#2a655f]/20 flex items-center justify-center">
-                                  <CheckCircle2 className="h-6 w-6 text-[#2a655f] drop-shadow-lg" />
+                                <div className="absolute inset-0 bg-[#d81b60]/20 flex items-center justify-center">
+                                  <CheckCircle2 className="h-6 w-6 text-[#d81b60] drop-shadow-lg" />
                                 </div>
                               )}
                             </div>
                             <span className={cn(
                               "text-[10px] transition-colors duration-300 font-medium",
-                              isSelected ? "text-[#2a655f] font-bold" : "text-muted-foreground group-hover:text-[#2a655f]"
+                              isSelected ? "text-[#d81b60] font-bold" : "text-muted-foreground group-hover:text-[#d81b60]"
                             )}>
                               {color.color_name_ar}
                             </span>
@@ -1583,9 +1609,9 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                     </div>
                     {detailSelectedColor && (
                       <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                        <CheckCircle2 className="h-3 w-3 text-[#d81b60]" />
                         {app.lang === "ar" ? "اللون المختار:" : "Selected color:"} 
-                        <span className="font-bold text-[#2a655f]">{detailSelectedColor.color_name_ar}</span>
+                        <span className="font-bold text-[#d81b60]">{detailSelectedColor.color_name_ar}</span>
                       </p>
                     )}
                   </div>
@@ -1607,8 +1633,8 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                             className={cn(
                               "p-3 rounded-xl border-2 transition-all duration-300 cursor-pointer hover:scale-[1.02]",
                               isSelected 
-                                ? "border-[#2a655f] bg-[#2a655f]/10 shadow-md shadow-[#2a655f]/20" 
-                                : "border-slate-200/50 hover:border-[#2a655f]/50 hover:shadow-md"
+                                ? "border-[#d81b60] bg-[#d81b60]/10 shadow-md shadow-[#d81b60]/20" 
+                                : "border-slate-200/50 hover:border-[#d81b60]/50 hover:shadow-md"
                             )}
                           >
                             <div className="flex flex-col gap-1">
@@ -1621,7 +1647,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                                   ))}
                                 </div>
                                 {isSelected && (
-                                  <CheckCircle2 className="h-5 w-5 text-[#2a655f] flex-shrink-0" />
+                                  <CheckCircle2 className="h-5 w-5 text-[#d81b60] flex-shrink-0" />
                                 )}
                               </div>
                               
@@ -1660,7 +1686,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                       {selectedProduct.sizes.map((size: string) => (
                         <span 
                           key={size}
-                          className="px-4 py-2 border-2 border-slate-200/50 rounded-xl text-sm font-medium bg-white/50 dark:bg-slate-900/50 hover:border-[#2a655f] hover:bg-[#2a655f]/5 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md cursor-default"
+                          className="px-4 py-2 border-2 border-[#2a655f]/20 rounded-xl text-sm font-medium bg-white/50 dark:bg-slate-900/50 hover:border-[#d81b60] hover:bg-[#f9a8d4]/10 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md cursor-default"
                         >
                           {size}
                         </span>
@@ -1670,7 +1696,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                 )}
 
                 {selectedProduct.description_ar && (
-                  <div className="mt-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                  <div className="mt-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border-2 border-[#2a655f]/10 dark:border-[#2a655f]/30">
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {selectedProduct.description_ar}
                     </p>
@@ -1678,7 +1704,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                 )}
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-gradient-to-br from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10 dark:to-transparent rounded-xl border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                  <div className="p-3 bg-gradient-to-br from-[#2a655f]/5 to-[#f9a8d4]/5 dark:from-[#2a655f]/10 dark:to-[#f9a8d4]/10 rounded-xl border-2 border-[#2a655f]/10 dark:border-[#2a655f]/20">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                       <Layers className="h-3 w-3 text-[#2a655f]" />
                       {app.lang === "ar" ? "التصنيف" : "Category"}
@@ -1687,7 +1713,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                       {getCategoryName(selectedProduct.category_id)}
                     </p>
                   </div>
-                  <div className="p-3 bg-gradient-to-br from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10 dark:to-transparent rounded-xl border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                  <div className="p-3 bg-gradient-to-br from-[#2a655f]/5 to-[#f9a8d4]/5 dark:from-[#2a655f]/10 dark:to-[#f9a8d4]/10 rounded-xl border-2 border-[#2a655f]/10 dark:border-[#2a655f]/20">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-[#2a655f]" />
                       {app.lang === "ar" ? "المحافظة" : "Governorate"}
@@ -1698,7 +1724,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center gap-2 p-3 bg-gradient-to-r from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10 dark:to-transparent rounded-xl border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                <div className="mt-4 flex items-center gap-2 p-3 bg-gradient-to-r from-[#2a655f]/5 to-[#f9a8d4]/5 dark:from-[#2a655f]/10 dark:to-[#f9a8d4]/10 rounded-xl border-2 border-[#2a655f]/10 dark:border-[#2a655f]/20">
                   <div className={cn(
                     "h-3 w-3 rounded-full animate-pulse",
                     selectedProduct.is_available ? "bg-emerald-500" : "bg-red-500"
@@ -1713,7 +1739,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   <Button
                     variant="outline"
-                    className="flex-1 rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 h-12 group transition-all duration-300 hover:scale-105"
+                    className="flex-1 rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#d81b60]/50 h-12 group transition-all duration-300 hover:scale-105"
                     onClick={() => {
                       setDetailDialogOpen(false);
                       openEditDialog(selectedProduct);
@@ -1725,7 +1751,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
 
                   <Button
                     variant="outline"
-                    className="flex-1 rounded-xl border-red-200/50 text-red-500 hover:text-red-600 hover:bg-red-50/50 h-12 group transition-all duration-300 hover:scale-105"
+                    className="flex-1 rounded-xl border-2 border-red-200/50 text-red-500 hover:text-red-600 hover:bg-red-50/50 h-12 group transition-all duration-300 hover:scale-105"
                     onClick={() => {
                       setDetailDialogOpen(false);
                       setProductToDelete(selectedProduct);
@@ -1737,7 +1763,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                   </Button>
                 </div>
 
-                <p className="text-[11px] text-muted-foreground text-center mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex items-center justify-center gap-2">
+                <p className="text-[11px] text-muted-foreground text-center mt-4 pt-4 border-t-2 border-[#2a655f]/10 dark:border-[#2a655f]/20 flex items-center justify-center gap-2">
                   <Clock className="h-3.5 w-3.5 text-[#2a655f]" />
                   {app.lang === "ar" ? "تم الإضافة في " : "Added on "}
                   {new Date(selectedProduct.created_at).toLocaleDateString(
@@ -1753,7 +1779,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
 
       {/* ===== DELETE PRODUCT DIALOG ===== */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 p-0 overflow-hidden shadow-2xl shadow-[#2a655f]/10">
+        <DialogContent className="max-w-md rounded-2xl border-3 border-[#d81b60]/40 dark:border-[#d81b60]/30 p-0 overflow-hidden shadow-[0_0_35px_rgba(216,27,96,0.2)] dark:shadow-[0_0_35px_rgba(216,27,96,0.15)]">
           <Button
             variant="ghost"
             size="icon"
@@ -1778,7 +1804,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
               </div>
             </div>
 
-            <div className="bg-red-50/50 dark:bg-red-950/20 rounded-xl p-4 border border-red-200/50 dark:border-red-800/30 mb-4">
+            <div className="bg-red-50/50 dark:bg-red-950/20 rounded-xl p-4 border-2 border-red-200/50 dark:border-red-800/30 mb-4">
               <p className="text-sm text-red-700 dark:text-red-300">
                 {app.lang === "ar"
                   ? `هل أنت متأكد من حذف المنتج "${productToDelete?.title_ar}"؟`
@@ -1797,14 +1823,14 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
               <Button
                 variant="outline"
                 onClick={() => setDeleteDialogOpen(false)}
-                className="flex-1 rounded-xl border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300"
+                className="flex-1 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300"
               >
                 {app.lang === "ar" ? "إلغاء" : "Cancel"}
               </Button>
               <Button
                 onClick={handleDeleteProduct}
                 disabled={del.isPending}
-                className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-600/25 hover:shadow-red-600/40 hover:scale-[1.02] transition-all duration-300 group"
+                className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-600/25 hover:shadow-red-600/40 hover:scale-[1.02] transition-all duration-300 group border-2 border-red-500/30 hover:border-red-500/50"
               >
                 {del.isPending ? (
                   <span className="flex items-center gap-2">
@@ -1828,7 +1854,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
         setConfirmDeleteOfferOpen(open);
         if (!open) setOfferToDelete(null);
       }}>
-        <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 p-0 overflow-hidden shadow-2xl shadow-[#2a655f]/10">
+        <DialogContent className="max-w-md rounded-2xl border-3 border-[#d81b60]/40 dark:border-[#d81b60]/30 p-0 overflow-hidden shadow-[0_0_35px_rgba(216,27,96,0.2)] dark:shadow-[0_0_35px_rgba(216,27,96,0.15)]">
           <Button
             variant="ghost"
             size="icon"
@@ -1856,7 +1882,7 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
               </div>
             </div>
 
-            <div className="bg-red-50/50 dark:bg-red-950/20 rounded-xl p-4 border border-red-200/50 dark:border-red-800/30 mb-4">
+            <div className="bg-red-50/50 dark:bg-red-950/20 rounded-xl p-4 border-2 border-red-200/50 dark:border-red-800/30 mb-4">
               <p className="text-sm text-red-700 dark:text-red-300">
                 {app.lang === "ar"
                   ? `هل أنت متأكد من حذف العرض الترويجي؟`
@@ -1883,14 +1909,14 @@ const memoizedPromoOfferDetailDialog = useMemo(() => (
                   setConfirmDeleteOfferOpen(false);
                   setOfferToDelete(null);
                 }}
-                className="flex-1 rounded-xl border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300"
+                className="flex-1 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300"
               >
                 {app.lang === "ar" ? "إلغاء" : "Cancel"}
               </Button>
               <Button
                 onClick={handleConfirmDeleteOffer}
                 disabled={deletePromoOffer.isPending}
-                className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-600/25 hover:shadow-red-600/40 hover:scale-[1.02] transition-all duration-300 group"
+                className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-600/25 hover:shadow-red-600/40 hover:scale-[1.02] transition-all duration-300 group border-2 border-red-500/30 hover:border-red-500/50"
               >
                 {deletePromoOffer.isPending ? (
                   <span className="flex items-center gap-2">

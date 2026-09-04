@@ -565,9 +565,9 @@ function OrdersPage() {
       },
       accepted: { 
         label: app.lang === "ar" ? "✅ تم القبول" : "✅ Accepted", 
-        color: "text-[#2a655f] dark:text-[#3a8a82]",
-        bg: "bg-[#2a655f]/5 dark:bg-[#2a655f]/20",
-        border: "border-[#2a655f]/20 dark:border-[#2a655f]/30",
+        color: "text-emerald-600 dark:text-emerald-400",
+        bg: "bg-emerald-50/80 dark:bg-emerald-950/30",
+        border: "border-emerald-200/60 dark:border-emerald-800/40",
         icon: CheckCircle2,
         description: app.lang === "ar" ? "تم قبول الطلب من قبل البائع" : "Order accepted by seller"
       },
@@ -663,25 +663,27 @@ function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-white via-[#fdf2f8] to-[#f0faf8] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 py-8">
       <div className="mx-auto max-w-4xl px-4">
         
-        {/* ===== HEADER ===== */}
+        {/* ===== HEADER - PINK & GREEN ===== */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
-              <div className="p-2 rounded-2xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white shadow-lg shadow-[#0d2e2a]/30">
+              <div className="p-2 rounded-2xl bg-gradient-to-br from-[#d81b60] to-[#1b433e] text-white shadow-lg shadow-[#d81b60]/30">
                 <ShoppingBag className="h-6 w-6" />
               </div>
-              {app.lang === "ar" ? "طلباتي" : "My Orders"}
+              <span className="bg-gradient-to-r from-[#d81b60] to-[#1b433e] bg-clip-text text-transparent">
+                {app.lang === "ar" ? "طلباتي" : "My Orders"}
+              </span>
             </h1>
             <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60]" />
               {groupedOrders.length} {app.lang === "ar" ? "طلب" : "orders"} • {orders.length} {app.lang === "ar" ? "منتج" : "items"}
             </p>
           </div>
           <Link to="/">
-            <Button variant="outline" className="rounded-xl border-[#2a655f]/20 hover:bg-[#2a655f]/10 hover:border-[#2a655f]/40 transition-all duration-300">
+            <Button variant="outline" className="rounded-xl border-2 border-[#d81b60]/30 hover:border-[#d81b60]/60 hover:bg-[#d81b60]/10 text-[#d81b60] font-bold transition-all duration-300">
               {app.lang === "ar" ? "متابعة التسوق" : "Continue Shopping"}
             </Button>
           </Link>
@@ -689,9 +691,9 @@ function OrdersPage() {
 
         {/* ===== ORDERS LIST (GROUPED BY ORDER ID) ===== */}
         {groupedOrders.length === 0 ? (
-          <div className="text-center py-20 bg-card rounded-3xl border-2 border-dashed border-slate-200/50 dark:border-slate-800/50">
+          <div className="text-center py-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl border-2 border-dashed border-[#d81b60]/30">
             <div className="text-7xl mb-4">📦</div>
-            <h3 className="text-2xl font-semibold">
+            <h3 className="text-2xl font-semibold text-[#d81b60]">
               {app.lang === "ar" ? "لا توجد طلبات" : "No orders"}
             </h3>
             <p className="text-muted-foreground mt-2">
@@ -700,13 +702,13 @@ function OrdersPage() {
                 : "You haven't placed any orders yet"}
             </p>
             <Link to="/products">
-              <Button className="mt-6 bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white rounded-xl shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 hover:scale-105">
+              <Button className="mt-6 bg-gradient-to-r from-[#d81b60] to-[#1b433e] hover:from-[#c2185b] hover:to-[#2a655f] text-white rounded-xl shadow-lg shadow-[#d81b60]/30 transition-all duration-300 hover:scale-105 font-bold">
                 {app.lang === "ar" ? "ابدأ التسوق" : "Start Shopping"}
               </Button>
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {groupedOrders.map((group) => {
               const status = getOrderStatus(group.status);
               const StatusIcon = status.icon;
@@ -722,26 +724,26 @@ function OrdersPage() {
                 <div 
                   key={group.orderId}
                   className={cn(
-                    "bg-white dark:bg-slate-900/90 rounded-2xl overflow-hidden transition-all duration-500 shadow-sm hover:shadow-xl",
-                    "border",
+                    "bg-white dark:bg-slate-900/95 backdrop-blur-sm rounded-2xl overflow-hidden transition-all duration-500 shadow-lg hover:shadow-2xl",
+                    "border-3",
                     isActive 
-                      ? "border-[#2a655f]/30 dark:border-[#2a655f]/40 shadow-[#2a655f]/10 hover:shadow-[#2a655f]/25" 
-                      : "border-slate-200/50 dark:border-slate-700/50 hover:shadow-md"
+                      ? "border-[#d81b60]/40 dark:border-[#d81b60]/50 shadow-[#d81b60]/15 hover:shadow-[#d81b60]/30" 
+                      : "border-[#d81b60]/20 dark:border-[#d81b60]/30 hover:shadow-md"
                   )}
                 >
-                  {/* ===== ORDER HEADER ===== */}
+                  {/* ===== ORDER HEADER - PINK & GREEN ===== */}
                   <div 
                     className={cn(
-                      "p-4 cursor-pointer transition-all duration-300",
+                      "p-5 cursor-pointer transition-all duration-300",
                       isActive 
-                        ? "bg-gradient-to-r from-[#2a655f]/5 via-[#2a655f]/10 to-[#2a655f]/5 dark:from-[#2a655f]/10 dark:via-[#2a655f]/20 dark:to-[#2a655f]/10 hover:from-[#2a655f]/10 hover:via-[#2a655f]/20 hover:to-[#2a655f]/10" 
-                        : "hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
+                        ? "bg-gradient-to-r from-[#d81b60]/5 via-[#f48fb1]/10 to-[#1b433e]/5 dark:from-[#d81b60]/10 dark:via-[#f48fb1]/5 dark:to-[#1b433e]/10 hover:from-[#d81b60]/10 hover:via-[#f48fb1]/20 hover:to-[#1b433e]/10" 
+                        : "hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/10"
                     )}
                     onClick={() => setExpandedOrder(isExpanded ? null : group.orderId)}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="relative h-14 w-14 rounded-2xl overflow-hidden flex-shrink-0 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-md hover:shadow-xl transition-all duration-300">
+                        <div className="relative h-14 w-14 rounded-2xl overflow-hidden flex-shrink-0 border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 shadow-lg hover:shadow-xl transition-all duration-300">
                           {group.storeLogo ? (
                             <OptimizedImage
                               src={group.storeLogo}
@@ -753,7 +755,7 @@ function OrdersPage() {
                               className="h-full w-full transition-transform duration-500 group-hover:scale-110"
                             />
                           ) : (
-                            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white font-bold text-xl">
+                            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#d81b60]/20 to-[#1b433e]/20 text-[#d81b60] font-bold text-xl">
                               {group.storeName.charAt(0).toUpperCase()}
                             </div>
                           )}
@@ -765,7 +767,7 @@ function OrdersPage() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <Store className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82]" />
+                            <Store className="h-3.5 w-3.5 text-[#d81b60] dark:text-[#f48fb1]" />
                             <span className="font-bold text-base text-slate-800 dark:text-white">
                               {group.storeName}
                             </span>
@@ -790,7 +792,7 @@ function OrdersPage() {
                           </div>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
                             <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
-                              <Layers className="h-3 w-3 text-[#2a655f]" />
+                              <Layers className="h-3 w-3 text-[#d81b60]" />
                               {group.totalItems} {app.lang === "ar" ? "منتج" : "items"}
                             </span>
                             <span className="text-muted-foreground/30">•</span>
@@ -802,7 +804,7 @@ function OrdersPage() {
                               )}
                             </span>
                             <span className="text-muted-foreground/30">•</span>
-                            <span className="flex items-center gap-1 font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                            <span className="flex items-center gap-1 font-bold text-[#d81b60] dark:text-[#f48fb1]">
                               <CreditCard className="h-3 w-3" />
                               {formatPrice(group.totalWithDelivery, app.currency, app.lang)}
                             </span>
@@ -822,9 +824,9 @@ function OrdersPage() {
                           {status.label}
                         </Badge>
                         {isExpanded ? (
-                          <ChevronUp className="h-5 w-5 text-muted-foreground transition-transform duration-300" />
+                          <ChevronUp className="h-5 w-5 text-[#d81b60] transition-transform duration-300" />
                         ) : (
-                          <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-300" />
+                          <ChevronDown className="h-5 w-5 text-[#d81b60] transition-transform duration-300" />
                         )}
                       </div>
                     </div>
@@ -832,10 +834,10 @@ function OrdersPage() {
 
                   {/* ===== DETAILS (EXPANDED) ===== */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-2 border-t border-slate-200/50 dark:border-slate-700/50 animate-fade-up">
+                    <div className="px-5 pb-5 pt-3 border-t-3 border-[#d81b60]/20 dark:border-[#d81b60]/30 animate-fade-up">
                       <div className="space-y-4">
                         <div className={cn(
-                          "p-4 rounded-xl border",
+                          "p-4 rounded-xl border-2",
                           status.bg,
                           status.border
                         )}>
@@ -848,17 +850,17 @@ function OrdersPage() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                        <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-r from-[#d81b60]/5 to-[#1b433e]/5 dark:from-[#d81b60]/10 dark:to-[#1b433e]/10 rounded-xl border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30">
                           <div>
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                              <User className="h-3 w-3" />
+                              <User className="h-3 w-3 text-[#d81b60]" />
                               {app.lang === "ar" ? "العميل" : "Customer"}
                             </p>
                             <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{group.buyerName}</p>
                           </div>
                           <div>
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
+                              <Clock className="h-3 w-3 text-[#d81b60]" />
                               {app.lang === "ar" ? "رقم الطلب" : "Order ID"}
                             </p>
                             <p className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">{group.orderId.slice(0, 12)}</p>
@@ -866,7 +868,7 @@ function OrdersPage() {
                           {group.buyerPhone && (
                             <div className="col-span-2">
                               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
+                                <Phone className="h-3 w-3 text-[#d81b60]" />
                                 {app.lang === "ar" ? "رقم الهاتف" : "Phone"}
                               </p>
                               <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{group.buyerPhone}</p>
@@ -876,9 +878,9 @@ function OrdersPage() {
 
                         <div className="space-y-3">
                           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                            <Package className="h-3.5 w-3.5" />
+                            <Package className="h-3.5 w-3.5 text-[#d81b60]" />
                             {app.lang === "ar" ? "المنتجات" : "Products"}
-                            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                            <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[10px]">
                               {group.items.length}
                             </Badge>
                           </div>
@@ -897,10 +899,10 @@ function OrdersPage() {
                               <div 
                                 key={item.id || item.listing_id}
                                 className={cn(
-                                  "p-3 rounded-xl border transition-all duration-300",
+                                  "p-3 rounded-xl border-2 transition-all duration-300",
                                   isPromo 
                                     ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50 hover:border-purple-400/70" 
-                                    : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30"
+                                    : "bg-slate-50/80 dark:bg-slate-800/40 border-[#d81b60]/20 dark:border-[#d81b60]/30 hover:border-[#d81b60]/50"
                                 )}
                               >
                                 {isPromo ? (
@@ -951,7 +953,7 @@ function OrdersPage() {
                                                 <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
                                                 <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
                                               </div>
-                                              <p className="text-sm font-bold text-[#0d2e2a] whitespace-nowrap">
+                                              <p className="text-sm font-bold text-[#d81b60] whitespace-nowrap">
                                                 {(data.price * data.quantity).toLocaleString()} SYP
                                               </p>
                                             </div>
@@ -1003,7 +1005,7 @@ function OrdersPage() {
                                         <span className="text-sm text-muted-foreground">
                                           {app.lang === "ar" ? "إجمالي المنتجات المطلوبة" : "Total required products"}
                                         </span>
-                                        <span className="text-lg font-bold text-[#0d2e2a]">
+                                        <span className="text-lg font-bold text-[#d81b60]">
                                           {(item.price * item.quantity).toLocaleString()} SYP
                                         </span>
                                       </div>
@@ -1011,7 +1013,7 @@ function OrdersPage() {
                                   </div>
                                 ) : (
                                   <div className="flex items-center gap-4">
-                                    <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                                    <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30">
                                       {imageUrl ? (
                                         <OptimizedImage
                                           src={imageUrl}
@@ -1037,7 +1039,7 @@ function OrdersPage() {
                                       <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                                         <span>{app.lang === "ar" ? "الكمية:" : "Qty:"} {item.quantity || 1}</span>
                                         <span className="text-muted-foreground/30">•</span>
-                                        <span className="font-semibold text-[#2a655f] dark:text-[#3a8a82]">
+                                        <span className="font-semibold text-[#d81b60] dark:text-[#f48fb1]">
                                           {formatPrice(
                                             item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
                                             app.currency, 
@@ -1054,7 +1056,7 @@ function OrdersPage() {
                                         </Badge>
                                         {item.selected_variation_id && (
                                           <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                                            <Layers className="h-2.5 w-2.5" />
+                                            <Layers className="h-2.5 w-2.5 text-[#d81b60]" />
                                             {item.variation_snapshot?.combination 
                                               ? Object.values(item.variation_snapshot.combination).join(' • ')
                                               : (item.selected_variation_id.slice(0, 8))}
@@ -1062,20 +1064,20 @@ function OrdersPage() {
                                         )}
                                         {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && (
                                           <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                                            <Layers className="h-2.5 w-2.5" />
+                                            <Layers className="h-2.5 w-2.5 text-[#d81b60]" />
                                             {Object.values(item.metadata.variation_combination).join(' • ')}
                                           </span>
                                         )}
                                       </div>
                                     </div>
                                     <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
-                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#2a655f]/10">
-                                        <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#d81b60]/10 border border-[#d81b60]/20 hover:border-[#d81b60]/50">
+                                        <Eye className="h-3.5 w-3.5 text-[#d81b60]" />
                                       </Button>
                                     </Link>
                                   </div>
                                 )}
-                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#d81b60]/20 dark:border-[#d81b60]/30">
                                   {canRate(item.status || group.status) && (
                                     <div className="flex items-center gap-2">
                                       <span className="text-[10px] text-muted-foreground">
@@ -1099,12 +1101,12 @@ function OrdersPage() {
                           })}
                         </div>
 
-                        {/* ✅ زر إلغاء الطلب كامل - يفتح Dialog احترافي */}
+                        {/* ✅ زر إلغاء الطلب كامل - PINK & GREEN */}
                         {canCancelOrder && (
                           <Button
                             variant="destructive"
                             size="sm"
-                            className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-[1.02] group"
+                            className="w-full rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-[1.02] group font-bold border-0"
                             onClick={() => openCancelDialog(group.orderId)}
                             disabled={isCancelling === group.orderId}
                           >
@@ -1123,7 +1125,7 @@ function OrdersPage() {
                         )}
 
                         {group.notes && (
-                          <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200/50 dark:border-yellow-800/30">
+                          <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border-2 border-yellow-200/50 dark:border-yellow-800/30">
                             <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
                               <MessageCircle className="h-3.5 w-3.5" />
                               {app.lang === "ar" ? "ملاحظات" : "Notes"}
@@ -1133,7 +1135,7 @@ function OrdersPage() {
                         )}
 
                         {group.rejectionReason && (
-                          <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-800/30">
+                          <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border-2 border-red-200/50 dark:border-red-800/30">
                             <p className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
                               <XCircle className="h-3.5 w-3.5" />
                               {app.lang === "ar" ? "سبب الرفض" : "Rejection Reason"}
@@ -1142,18 +1144,18 @@ function OrdersPage() {
                           </div>
                         )}
 
-                        <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                        <div className="p-4 bg-gradient-to-r from-[#d81b60]/5 to-[#1b433e]/5 dark:from-[#d81b60]/10 dark:to-[#1b433e]/10 rounded-xl border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-muted-foreground">
                               {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
                             </span>
-                            <span className="text-lg font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                            <span className="text-lg font-bold text-[#d81b60] dark:text-[#f48fb1]">
                               {formatPrice(group.totalPrice, app.currency, app.lang)}
                             </span>
                           </div>
                           
                           {group.deliveryFee !== undefined && (
-                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
+                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#d81b60]/10">
                               <span className="text-sm text-muted-foreground">
                                 {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
                               </span>
@@ -1161,7 +1163,7 @@ function OrdersPage() {
                                 "text-sm font-medium",
                                 group.deliveryFee === 0 
                                   ? "text-emerald-500 font-bold" 
-                                  : "text-[#0d2e2a] dark:text-[#3a8a82]"
+                                  : "text-[#d81b60] dark:text-[#f48fb1]"
                               )}>
                                 {group.deliveryFee === 0 
                                   ? (app.lang === "ar" ? "🆓 مجاني" : "🆓 Free")
@@ -1172,7 +1174,7 @@ function OrdersPage() {
                           )}
                           
                           {group.promoDiscount > 0 && (
-                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
+                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#d81b60]/10 text-emerald-500">
                               <span className="text-sm">
                                 {app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}
                               </span>
@@ -1182,11 +1184,11 @@ function OrdersPage() {
                             </div>
                           )}
                           
-                          <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
-                            <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#d81b60]/30">
+                            <span className="text-sm font-semibold text-[#d81b60] dark:text-white">
                               {app.lang === "ar" ? "الإجمالي الكامل" : "Total"}
                             </span>
-                            <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+                            <span className="text-2xl font-bold text-[#d81b60] dark:text-[#f48fb1]">
                               {formatPrice(group.totalWithDelivery, app.currency, app.lang)}
                             </span>
                           </div>
@@ -1208,7 +1210,7 @@ function OrdersPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full rounded-xl border-amber-500/30 text-amber-600 hover:bg-amber-50 hover:border-amber-500 transition-all duration-300 group"
+                            className="w-full rounded-xl border-2 border-amber-500/30 text-amber-600 hover:bg-amber-50 hover:border-amber-500 transition-all duration-300 group font-bold"
                             onClick={() => {
                               setSelectedOrder(group);
                               setComplaintDialogOpen(true);
@@ -1228,15 +1230,15 @@ function OrdersPage() {
         )}
       </div>
 
-      {/* ===== COMPLAINT DIALOG ===== */}
+      {/* ===== COMPLAINT DIALOG - PINK & GREEN ===== */}
       <Dialog open={complaintDialogOpen} onOpenChange={setComplaintDialogOpen}>
-        <DialogContent className="max-w-lg rounded-2xl border-[#2a655f]/20 shadow-2xl shadow-[#2a655f]/10">
+        <DialogContent className="max-w-lg rounded-2xl border-2 border-[#d81b60]/30 shadow-2xl shadow-[#d81b60]/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl text-[#0d2e2a]">
+            <DialogTitle className="flex items-center gap-2 text-xl text-[#d81b60]">
               <AlertTriangle className="h-6 w-6 text-amber-500" />
               {app.lang === "ar" ? "📢 تقديم شكوى" : "📢 Submit Complaint"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="font-medium">
               {app.lang === "ar" 
                 ? `شكوى بخصوص الطلبية من "${selectedOrder?.storeName || ''}"`
                 : `Complaint for order from "${selectedOrder?.storeName || ''}"`}
@@ -1245,19 +1247,19 @@ function OrdersPage() {
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label className="text-[#0d2e2a] font-semibold">
+              <Label className="text-[#d81b60] font-bold">
                 {app.lang === "ar" ? "الموضوع *" : "Subject *"}
               </Label>
               <Input
                 value={complaintSubject}
                 onChange={(e) => setComplaintSubject(e.target.value)}
                 placeholder={app.lang === "ar" ? "مثال: تأخر في التوصيل" : "Example: Delivery delay"}
-                className="rounded-xl border-slate-200/50 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                className="rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 font-medium"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[#0d2e2a] font-semibold">
+              <Label className="text-[#d81b60] font-bold">
                 {app.lang === "ar" ? "تفاصيل الشكوى *" : "Complaint Details *"}
               </Label>
               <Textarea
@@ -1266,9 +1268,9 @@ function OrdersPage() {
                 placeholder={app.lang === "ar" 
                   ? "اكتب تفاصيل شكواك بالتفصيل..." 
                   : "Describe your complaint in detail..."}
-                className="min-h-[120px] rounded-xl border-slate-200/50 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                className="min-h-[120px] rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 font-medium"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground font-medium">
                 {app.lang === "ar" 
                   ? "📌 سيتم إرسال الشكوى إلى فريق الدعم وسنقوم بالرد عليك في أقرب وقت" 
                   : "📌 Your complaint will be sent to our support team and we will respond shortly"}
@@ -1280,14 +1282,14 @@ function OrdersPage() {
             <Button
               variant="outline"
               onClick={() => setComplaintDialogOpen(false)}
-              className="rounded-xl border-slate-200/50 hover:bg-slate-100/50"
+              className="rounded-xl border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 font-bold"
             >
               {app.lang === "ar" ? "إلغاء" : "Cancel"}
             </Button>
             <Button
               onClick={handleSubmitComplaint}
               disabled={isSubmittingComplaint}
-              className="bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white rounded-xl shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 hover:scale-[1.02]"
+              className="bg-gradient-to-r from-[#d81b60] to-[#1b433e] hover:from-[#c2185b] hover:to-[#2a655f] text-white rounded-xl shadow-lg shadow-[#d81b60]/30 transition-all duration-300 hover:scale-[1.02] font-bold border-0"
             >
               {isSubmittingComplaint ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -1300,9 +1302,9 @@ function OrdersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: تأكيد إلغاء الطلب (احترافي) ===== */}
+      {/* ===== DIALOG: تأكيد إلغاء الطلب (احترافي) - PINK & GREEN ===== */}
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl border-red-200/50 dark:border-red-800/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-red-500/10 overflow-hidden">
+        <DialogContent className="max-w-md rounded-2xl border-2 border-red-200/50 dark:border-red-800/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-red-500/10 overflow-hidden">
           <div className="bg-gradient-to-r from-red-600 to-rose-600 p-5 text-white">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
@@ -1327,10 +1329,10 @@ function OrdersPage() {
                 <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <p className="font-semibold text-red-700 dark:text-red-300">
+                <p className="font-bold text-red-700 dark:text-red-300">
                   {app.lang === "ar" ? "هل أنت متأكد؟" : "Are you sure?"}
                 </p>
-                <p className="text-sm text-red-600/80 dark:text-red-400/70">
+                <p className="text-sm text-red-600/80 dark:text-red-400/70 font-medium">
                   {app.lang === "ar"
                     ? `سيتم إلغاء هذا الطلب بالكامل ولن يمكن استرجاعه`
                     : `This order will be cancelled permanently and cannot be recovered`}
@@ -1338,8 +1340,8 @@ function OrdersPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
-              <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+            <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border-2 border-amber-200/50 dark:border-amber-800/30">
+              <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2 font-medium">
                 <Info className="h-3.5 w-3.5" />
                 {app.lang === "ar"
                   ? "📌 سيتم إرسال إشعار للمتجر بإلغاء الطلب"
@@ -1348,14 +1350,14 @@ function OrdersPage() {
             </div>
           </div>
 
-          <DialogFooter className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 gap-3">
+          <DialogFooter className="p-4 border-t-2 border-slate-200/50 dark:border-slate-800/50 bg-gradient-to-r from-[#d81b60]/5 to-[#1b433e]/5 dark:from-[#d81b60]/10 dark:to-[#1b433e]/10 gap-3">
             <Button
               variant="outline"
               onClick={() => {
                 setCancelDialogOpen(false);
                 setOrderToCancel(null);
               }}
-              className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300"
+              className="flex-1 rounded-xl border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 transition-all duration-300 font-bold"
               disabled={isCancelling === orderToCancel}
             >
               <XCircle className="h-4 w-4 mr-1.5" />
@@ -1365,7 +1367,7 @@ function OrdersPage() {
               variant="destructive"
               onClick={handleCancelOrder}
               disabled={isCancelling === orderToCancel}
-              className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-[1.02]"
+              className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-[1.02] font-bold border-0"
             >
               {isCancelling === orderToCancel ? (
                 <>

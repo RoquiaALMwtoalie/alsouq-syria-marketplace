@@ -1,4 +1,4 @@
-// src/routes/offer/$id.tsx - الكود المصحح بالكامل (نسخة احترافية)
+// src/routes/offer/$id.tsx - الكود المصحح بالكامل (نسخة احترافية مع ألوان وردية وزيتية)
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
@@ -158,20 +158,20 @@ function OfferDetailPage() {
       bogo: { 
         label: app.lang === "ar" ? "🎁 نفس المنتج" : "🎁 Same Product", 
         icon: Gift,
-        color: "text-purple-600",
-        bg: "bg-purple-100 dark:bg-purple-900/30"
+        color: "text-[#d81b60]",
+        bg: "bg-[#fbcfe8]/50 dark:bg-[#d81b60]/20"
       },
       cross_sell: { 
         label: app.lang === "ar" ? "🔄 منتج مختلف" : "🔄 Different Product", 
         icon: Tag,
-        color: "text-blue-600",
-        bg: "bg-blue-100 dark:bg-blue-900/30"
+        color: "text-[#d81b60]",
+        bg: "bg-[#fbcfe8]/50 dark:bg-[#d81b60]/20"
       },
       bundle: { 
         label: app.lang === "ar" ? "📦 باقة منتجات" : "📦 Bundle", 
         icon: Package,
-        color: "text-orange-600",
-        bg: "bg-orange-100 dark:bg-orange-900/30"
+        color: "text-[#d81b60]",
+        bg: "bg-[#fbcfe8]/50 dark:bg-[#d81b60]/20"
       },
     };
     return types[type] || types.bogo;
@@ -1997,7 +1997,7 @@ const handleAddToCart = useCallback(async () => {
           <p className="text-muted-foreground mt-2">
             {app.lang === "ar" ? "قد يكون تم انتهاؤه أو إلغاؤه" : "It may have expired or been cancelled"}
           </p>
-          <Button className="mt-6" onClick={() => navigate({ to: "/" })}>
+          <Button className="mt-6 bg-[#2a655f] hover:bg-[#1a4f4a] text-white" onClick={() => navigate({ to: "/" })}>
             {app.lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
           </Button>
         </div>
@@ -2011,7 +2011,7 @@ const handleAddToCart = useCallback(async () => {
       <div className="mx-auto max-w-7xl px-4 py-6">
         {/* ===== Breadcrumb ===== */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
-          <Link to="/" className="hover:text-primary transition-colors">
+          <Link to="/" className="hover:text-[#d81b60] transition-colors">
             {app.lang === "ar" ? "الرئيسية" : "Home"}
           </Link>
           <ChevronLeft className="h-4 w-4" />
@@ -2025,7 +2025,7 @@ const handleAddToCart = useCallback(async () => {
           {/* ===== LEFT - قسم الصور ===== */}
           <div className="space-y-4">
             <div 
-              className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-950/30 dark:to-indigo-950/30 border-2 border-purple-200/50 dark:border-purple-800/30 shadow-xl cursor-pointer group"
+              className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-[#fbcfe8]/30 to-[#fdf2f8]/50 dark:from-[#d81b60]/20 dark:to-[#f48fb1]/10 border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer group"
               onClick={() => setIsLightboxOpen(true)}
             >
               
@@ -2039,14 +2039,14 @@ const handleAddToCart = useCallback(async () => {
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  <GiftIcon className="h-20 w-20 text-purple-300" />
+                  <GiftIcon className="h-20 w-20 text-[#d81b60]/30" />
                 </div>
               )}
               
               {/* ✅ أيقونة التكبير */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/90 backdrop-blur rounded-full p-3 shadow-xl">
-                  <svg className="w-8 h-8 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/90 backdrop-blur rounded-full p-3 shadow-xl border-2 border-[#d81b60]/30">
+                  <svg className="w-8 h-8 text-[#d81b60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m4-6v6" />
                   </svg>
                 </div>
@@ -2062,7 +2062,7 @@ const handleAddToCart = useCallback(async () => {
                       const newIndex = (currentImageIndex - 1 + offerImages.length) % offerImages.length;
                       changeImage(newIndex);
                     }}
-                    className="absolute start-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 backdrop-blur text-slate-800 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-white/20 z-10"
+                    className="absolute start-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 backdrop-blur text-[#d81b60] hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110 border-2 border-[#d81b60]/30 z-10"
                   >
                     <ChevronLeft className="h-6 w-6" />
                   </button>
@@ -2074,13 +2074,13 @@ const handleAddToCart = useCallback(async () => {
                       const newIndex = (currentImageIndex + 1) % offerImages.length;
                       changeImage(newIndex);
                     }}
-                    className="absolute end-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 backdrop-blur text-slate-800 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-white/20 z-10"
+                    className="absolute end-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 backdrop-blur text-[#d81b60] hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110 border-2 border-[#d81b60]/30 z-10"
                   >
                     <ChevronRight className="h-6 w-6" />
                   </button>
                   
                   {/* ✅ مؤشر عدد الصور */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur px-4 py-1.5 rounded-full text-white text-xs font-medium z-10">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#d81b60]/80 backdrop-blur px-4 py-1.5 rounded-full text-white text-xs font-medium z-10 border border-white/20">
                     {currentImageIndex + 1} / {offerImages.length}
                   </div>
                   
@@ -2105,8 +2105,8 @@ const handleAddToCart = useCallback(async () => {
                         <div className={cn(
                           "h-2 rounded-full transition-all duration-300",
                           currentImageIndex === index 
-                            ? "w-6 bg-white" 
-                            : "w-2 bg-white/50 hover:bg-white/80"
+                            ? "w-6 bg-[#d81b60]" 
+                            : "w-2 bg-[#d81b60]/50 hover:bg-[#d81b60]/80"
                         )} />
                       </button>
                     ))}
@@ -2116,7 +2116,7 @@ const handleAddToCart = useCallback(async () => {
               
               {/* ✅ أزرار الألوان - استخدام changeImage */}
               {mainProduct?.colors && mainProduct.colors.length > 0 && (
-                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 bg-black/50 backdrop-blur px-3 py-1.5 rounded-full z-10">
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 bg-[#d81b60]/80 backdrop-blur px-3 py-1.5 rounded-full z-10 border border-white/20">
                   {mainProduct.colors.map((color: any) => {
                     const matchingVariation = mainProduct.variations?.find((v: any) => {
                       if (v.color_id === color.id) return true;
@@ -2160,9 +2160,9 @@ const handleAddToCart = useCallback(async () => {
                         className={cn(
                           "w-6 h-6 rounded-full border-2 transition-all duration-300",
                           isSelected 
-                            ? "border-white ring-2 ring-purple-500 scale-110 shadow-lg shadow-purple-500/50" 
+                            ? "border-white ring-2 ring-[#d81b60] scale-110 shadow-lg shadow-[#d81b60]/50" 
                             : "border-white/50 hover:scale-110 hover:border-white/80",
-                          mainImage === color.image_url && "ring-2 ring-purple-300 scale-105"
+                          mainImage === color.image_url && "ring-2 ring-[#f48fb1] scale-105"
                         )}
                         style={{ backgroundColor: color.color_hex || '#ccc' }}
                         title={color.color_name_ar}
@@ -2173,12 +2173,12 @@ const handleAddToCart = useCallback(async () => {
               )}
               
               <div className="absolute top-4 start-4 flex flex-col gap-2">
-                <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm font-bold animate-pulse">
+                <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm font-bold animate-pulse">
                   <Sparkles className="h-3.5 w-3.5 inline mr-1" />
                   {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
                 </Badge>
                 {discountPercent > 0 && (
-                  <Badge className="bg-gradient-to-r from-rose-500 to-orange-500 text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm font-bold animate-pulse">
+                  <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm font-bold animate-pulse">
                     🎁 {discountPercent}% OFF
                   </Badge>
                 )}
@@ -2200,10 +2200,10 @@ const handleAddToCart = useCallback(async () => {
                     )}
                   >
                     <div className={cn(
-                      "w-16 h-16 rounded-lg overflow-hidden border-2 transition-all relative",
+                      "w-16 h-16 rounded-lg overflow-hidden border-3 transition-all relative",
                       mainImage === img.url 
-                        ? "border-purple-500 ring-2 ring-purple-300" 
-                        : "border-transparent hover:border-gray-300"
+                        ? "border-[#d81b60] ring-2 ring-[#f48fb1]" 
+                        : "border-transparent hover:border-[#d81b60]/50"
                     )}>
                       <img 
                         src={img.url} 
@@ -2241,24 +2241,24 @@ const handleAddToCart = useCallback(async () => {
                 </Badge>
               )}
               {!offer.expires_at && (
-                <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 rounded-full px-3 py-1.5">
+                <Badge variant="outline" className="border-[#d81b60]/30 text-[#d81b60] rounded-full px-3 py-1.5">
                   🔓 {app.lang === "ar" ? "دائم" : "Permanent"}
                 </Badge>
               )}
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-bold leading-tight">
+            <h1 className="text-3xl md:text-4xl font-bold leading-tight text-[#1a4f4a] dark:text-white">
               {app.lang === "ar" ? offer.display_text_ar : offer.display_text_en}
             </h1>
 
-            {/* ===== المتجر ===== */}
+            {/* ===== المتجر - زر وردي ===== */}
             {(offer?.store_id || mainProduct?.owner_id) && (
               <Link 
                 to="/store/$id" 
                 params={{ id: offer?.store_id || mainProduct?.owner_id }}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-purple-500/10 to-indigo-500/10 hover:from-purple-500/20 hover:to-indigo-500/20 transition-all border border-purple-300/30 dark:border-purple-800/30 group"
+                className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-[#fbcfe8]/50 to-[#fdf2f8]/70 dark:from-[#d81b60]/20 dark:to-[#f48fb1]/10 hover:from-[#fbcfe8]/70 hover:to-[#fdf2f8]/90 transition-all border-3 border-[#d81b60]/40 hover:border-[#d81b60]/70 shadow-lg hover:shadow-[#d81b60]/20 group"
               >
-                <div className="h-14 w-14 rounded-2xl overflow-hidden border-2 border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0 bg-gradient-to-br from-purple-600 to-indigo-600">
+                <div className="h-14 w-14 rounded-2xl overflow-hidden border-3 border-[#d81b60]/30 shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0 bg-gradient-to-br from-[#d81b60] to-[#f48fb1]">
                   {storeData.logo ? (
                     <OptimizedImage
                       src={storeData.logo}
@@ -2277,30 +2277,34 @@ const handleAddToCart = useCallback(async () => {
                 </div>
                 
                 <div className="flex-1">
-                  <div className="font-bold text-lg group-hover:text-purple-600 transition">{storeData.name}</div>
+                  <div className="font-bold text-lg group-hover:text-[#d81b60] transition">{storeData.name}</div>
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-green-500" />
+                    <Shield className="h-4 w-4 text-emerald-500" />
                     {app.lang === "ar" ? "متجر موثوق" : "Trusted Store"}
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="group-hover:bg-purple-500/10 group-hover:scale-105 transition">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="group-hover:bg-[#d81b60]/20 group-hover:scale-105 transition-all duration-300 text-[#d81b60] font-bold border-2 border-[#d81b60]/30 hover:border-[#d81b60] hover:text-[#d81b60] hover:bg-[#d81b60]/10 rounded-xl px-4"
+                >
                   {app.lang === "ar" ? "زيارة المتجر" : "Visit Store"} <ArrowRight className="h-4 w-4 ms-1" />
                 </Button>
               </Link>
             )}
 
             {/* ===== تفاصيل العرض ===== */}
-            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 p-6 rounded-2xl border border-purple-200/50 dark:border-purple-800/30">
+            <div className="bg-gradient-to-r from-[#fbcfe8]/30 to-[#fdf2f8]/50 dark:from-[#d81b60]/20 dark:to-[#f48fb1]/10 p-6 rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 shadow-inner">
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl">
+                <div className="text-center p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl border border-[#d81b60]/20">
                   <p className="text-xs text-muted-foreground">
                     {app.lang === "ar" ? "الكمية المطلوبة للشراء" : "Required Purchase Quantity"}
                   </p>
-                  <p className="text-2xl font-bold text-[#0d2e2a]">
+                  <p className="text-2xl font-bold text-[#d81b60]">
                     {offer.buy_quantity || 2}
                   </p>
                 </div>
-                <div className="text-center p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl">
+                <div className="text-center p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl border border-emerald-500/30">
                   <p className="text-xs text-muted-foreground">
                     {app.lang === "ar" ? "الكمية المجانية" : "Free Quantity"}
                   </p>
@@ -2313,7 +2317,7 @@ const handleAddToCart = useCallback(async () => {
               <div className="mt-4 text-center">
                 <span className="text-sm font-medium text-muted-foreground">
                   {app.lang === "ar" ? "🎯 اشتري" : "🎯 Buy"} 
-                  <span className="font-bold text-[#0d2e2a] mx-1">{offer.buy_quantity || 2}</span>
+                  <span className="font-bold text-[#d81b60] mx-1">{offer.buy_quantity || 2}</span>
                   {app.lang === "ar" ? "واحصل على" : "and get"} 
                   <span className="font-bold text-emerald-600 mx-1">{offer.get_quantity || 1}</span>
                   {app.lang === "ar" ? "مجاناً 🎁" : "free 🎁"}
@@ -2322,14 +2326,14 @@ const handleAddToCart = useCallback(async () => {
             </div>
 
             {/* ===== السعر ===== */}
-            <div className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-2xl border border-primary/10">
+            <div className="bg-gradient-to-r from-[#d81b60]/10 to-[#f48fb1]/5 p-6 rounded-2xl border-2 border-[#d81b60]/30 dark:border-[#d81b60]/40">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-4 flex-wrap">
-             <span className="text-4xl md:text-5xl font-black text-primary">
+             <span className="text-4xl md:text-5xl font-black text-[#d81b60]">
   {formatPrice(finalPrice, app.currency, app.lang)}
 </span>
                   {discountPercent > 0 && (
-                    <Badge className="bg-gradient-to-r from-rose-500 to-orange-500 text-white border-0 text-sm font-bold px-3 py-1.5 rounded-full shadow-md shadow-rose-500/20 animate-pulse">
+                    <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-0 text-sm font-bold px-3 py-1.5 rounded-full shadow-md shadow-[#d81b60]/30 animate-pulse">
                       🎁 {discountPercent}% OFF
                     </Badge>
                   )}
@@ -2339,7 +2343,7 @@ const handleAddToCart = useCallback(async () => {
 
             {/* ===== ✅ تقدم اختيار المنتجات المطلوبة ===== */}
             {(isBundle || isBogo || isCrossSell) && (
-              <div className="p-4 bg-white/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+              <div className="p-4 bg-white/50 dark:bg-slate-800/30 rounded-xl border-2 border-[#d81b60]/30 dark:border-[#d81b60]/40 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-muted-foreground">
@@ -2360,7 +2364,7 @@ const handleAddToCart = useCallback(async () => {
                           : `⚠️ ${totalSelectedQuantity}/${totalRequiredQuantity}`}
                     </Badge>
                   </div>
-                  <span className="text-xs font-bold text-[#0d2e2a]">
+                  <span className="text-xs font-bold text-[#d81b60]">
                     {totalSelectedQuantity}/{totalRequiredQuantity}
                   </span>
                 </div>
@@ -2372,7 +2376,7 @@ const handleAddToCart = useCallback(async () => {
                         ? "bg-gradient-to-r from-emerald-500 to-teal-500"
                         : selectionStats.hasOver
                           ? "bg-gradient-to-r from-red-500 to-rose-500"
-                          : "bg-gradient-to-r from-[#2a655f] to-[#3a8a82]"
+                          : "bg-gradient-to-r from-[#d81b60] to-[#f48fb1]"
                     )}
                     style={{ 
                       width: `${Math.min(100, (totalSelectedQuantity / totalRequiredQuantity) * 100)}%` 
@@ -2406,10 +2410,10 @@ const handleAddToCart = useCallback(async () => {
 
             {/* ===== ✅ المنتجات المطلوبة مع خياراتها (خيارات أو ألوان) ===== */}
             {(isBundle || isBogo || isCrossSell) && (
-              <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
+              <div className="border-t-2 border-[#d81b60]/20 pt-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-sm flex items-center gap-2">
-                    <Package className="h-4 w-4 text-[#0d2e2a]" />
+                  <h3 className="font-bold text-sm flex items-center gap-2 text-[#d81b60]">
+                    <Package className="h-4 w-4" />
                     {app.lang === "ar" ? "المنتجات المطلوبة" : "Required Products"}
                     <span className="text-xs text-red-500">*</span>
                   </h3>
@@ -2440,17 +2444,17 @@ const handleAddToCart = useCallback(async () => {
 
     return (
       <div key={product.id} className={cn(
-        "p-4 rounded-xl border transition-all duration-300 mb-3",
+        "p-4 rounded-xl border-3 transition-all duration-300 mb-3",
         isComplete && !isOver
-          ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-800/30"
+          ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300/50 dark:border-emerald-700/50"
           : isOver
-            ? "bg-red-50/50 dark:bg-red-950/20 border-red-200/50 dark:border-red-800/30"
-            : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/30"
+            ? "bg-red-50/50 dark:bg-red-950/20 border-red-300/50 dark:border-red-700/50"
+            : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-300/50 dark:border-amber-700/50"
       )}>
         {/* ===== رأس المنتج ===== */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-[#2a655f] flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#d81b60] to-[#f48fb1] flex items-center justify-center text-sm font-bold text-white flex-shrink-0 shadow-md shadow-[#d81b60]/30">
               {isBogo ? "🎁" : "🔄"}
             </div>
             <div>
@@ -2467,7 +2471,7 @@ const handleAddToCart = useCallback(async () => {
           </div>
           
           <Badge className={cn(
-            "border-0 text-[10px]",
+            "border-0 text-[10px] font-bold",
             isComplete && !isOver
               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
               : isOver
@@ -2487,7 +2491,7 @@ const handleAddToCart = useCallback(async () => {
           <div className="mt-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Layers className="h-3 w-3" />
+                <Layers className="h-3 w-3 text-[#d81b60]" />
                 {app.lang === "ar" ? "🎨 توزيع الكميات" : "🎨 Quantity Distribution"}
                 {remaining > 0 && !isOver && (
                   <Badge className="bg-amber-500/20 text-amber-600 border-0 text-[9px]">
@@ -2498,7 +2502,7 @@ const handleAddToCart = useCallback(async () => {
               {remaining > 0 && !isOver && filteredOptions.length > 1 && (
                 <button
                   onClick={() => autoDistributeRemaining(product.id, filteredOptions, item.totalRequiredQuantity)}
-                  className="text-[10px] text-[#2a655f] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border border-[#2a655f]/20 rounded-lg hover:bg-[#2a655f]/5"
+                  className="text-[10px] text-[#d81b60] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border-2 border-[#d81b60]/30 rounded-lg hover:bg-[#d81b60]/10"
                 >
                   <Zap className="h-3 w-3" />
                   {app.lang === "ar" ? `وزع ${remaining} المتبقية` : `Distribute ${remaining} remaining`}
@@ -2521,10 +2525,10 @@ const handleAddToCart = useCallback(async () => {
                 const image = isColor ? opt.image_url : opt.image_url;
 
                 return (
-                  <div key={opt.id} className="flex items-center gap-2 p-2 border rounded-xl border-slate-200/50 bg-white/50 dark:bg-slate-800/50">
+                  <div key={opt.id} className="flex items-center gap-2 p-2 border-2 rounded-xl border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50 shadow-sm hover:shadow-md transition-all">
                     {isColor && (
                       <div 
-                        className="w-4 h-4 rounded-full border border-slate-200 flex-shrink-0"
+                        className="w-4 h-4 rounded-full border-2 border-[#d81b60]/30 flex-shrink-0"
                         style={{ backgroundColor: opt.color_hex || '#ccc' }}
                       />
                     )}
@@ -2532,13 +2536,13 @@ const handleAddToCart = useCallback(async () => {
                       <img 
                         src={image} 
                         alt={displayName}
-                        className="w-6 h-6 rounded object-cover"
+                        className="w-6 h-6 rounded object-cover border border-[#d81b60]/20"
                       />
                     )}
                     {/* ✅ زر اسم الخيار - عند الضغط عليه تعرض الصورة فقط (بدون زيادة الكمية) */}
                     <button
                       onClick={() => handleRequiredVariationSelect(product.id, opt.id)}
-                      className="text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-[#2a655f] transition-colors hover:underline"
+                      className="text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-[#d81b60] transition-colors hover:underline"
                     >
                       {displayName}
                     </button>
@@ -2549,25 +2553,25 @@ const handleAddToCart = useCallback(async () => {
                       <button
                         onClick={() => handleVariationQuantityChange(product.id, opt.id, -1, true)}
                         className={cn(
-                          "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                          "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
                           currentQty > 0 
-                            ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600"
-                            : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800"
+                            ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 border-slate-300"
+                            : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800 border-slate-200"
                         )}
                         disabled={currentQty === 0}
                       >
                         -
                       </button>
-                      <span className="w-8 text-center font-bold text-[#0d2e2a] text-sm">
+                      <span className="w-8 text-center font-bold text-[#d81b60] text-sm">
                         {currentQty}
                       </span>
                       <button
                         onClick={() => handleVariationQuantityChange(product.id, opt.id, 1, true)}
                         className={cn(
-                          "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                          "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
                           !isOver || currentQty === 0
-                            ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white"
-                            : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700"
+                            ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white border-[#d81b60] shadow-sm shadow-[#d81b60]/30"
+                            : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 border-slate-300"
                         )}
                         disabled={isOver}
                       >
@@ -2580,7 +2584,7 @@ const handleAddToCart = useCallback(async () => {
             </div>
             
             {hasDefault && (
-              <div className="mt-2 p-2 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30">
+              <div className="mt-2 p-2 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg border-2 border-emerald-300/50">
                 <p className="text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
                   <CheckCircle className="h-3 w-3" />
                   {app.lang === "ar" 
@@ -2592,7 +2596,7 @@ const handleAddToCart = useCallback(async () => {
           </div>
         ) : (
           // ===== المنتج ليس لديه خيارات =====
-          <div className="mt-2 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
+          <div className="mt-2 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-300/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-emerald-500" />
@@ -2631,18 +2635,18 @@ const handleAddToCart = useCallback(async () => {
 
                   return (
                     <div key={product.id} className={cn(
-                      "p-4 rounded-xl border transition-all duration-300 mb-3",
+                      "p-4 rounded-xl border-3 transition-all duration-300 mb-3",
                       isComplete && !isOver
-                        ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-800/30"
+                        ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300/50 dark:border-emerald-700/50"
                         : isOver
-                          ? "bg-red-50/50 dark:bg-red-950/20 border-red-200/50 dark:border-red-800/30"
-                          : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/30"
+                          ? "bg-red-50/50 dark:bg-red-950/20 border-red-300/50 dark:border-red-700/50"
+                          : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-300/50 dark:border-amber-700/50"
                     )}>
                       {/* ===== رأس المنتج ===== */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className={cn(
-                            "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0",
+                            "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 shadow-md",
                             isComplete && !isOver
                               ? "bg-emerald-500"
                               : isOver
@@ -2665,7 +2669,7 @@ const handleAddToCart = useCallback(async () => {
                         </div>
                         
                         <Badge className={cn(
-                          "border-0 text-[10px]",
+                          "border-0 text-[10px] font-bold",
                           isComplete && !isOver
                             ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
                             : isOver
@@ -2685,7 +2689,7 @@ const handleAddToCart = useCallback(async () => {
                         <div className="mt-3">
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Layers className="h-3 w-3" />
+                              <Layers className="h-3 w-3 text-[#d81b60]" />
                               {app.lang === "ar" ? "🎨 توزيع الكميات" : "🎨 Quantity Distribution"}
                               {remaining > 0 && !isOver && (
                                 <Badge className="bg-amber-500/20 text-amber-600 border-0 text-[9px]">
@@ -2696,7 +2700,7 @@ const handleAddToCart = useCallback(async () => {
                             {remaining > 0 && !isOver && options.length > 1 && (
                               <button
                                 onClick={() => autoDistributeRemaining(product.id, options, item.totalRequiredQuantity)}
-                                className="text-[10px] text-[#2a655f] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border border-[#2a655f]/20 rounded-lg hover:bg-[#2a655f]/5"
+                                className="text-[10px] text-[#d81b60] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border-2 border-[#d81b60]/30 rounded-lg hover:bg-[#d81b60]/10"
                               >
                                 <Zap className="h-3 w-3" />
                                 {app.lang === "ar" ? `وزع ${remaining} المتبقية` : `Distribute ${remaining} remaining`}
@@ -2719,10 +2723,10 @@ const handleAddToCart = useCallback(async () => {
                               const image = isColor ? opt.image_url : opt.image_url;
 
                               return (
-                                <div key={opt.id} className="flex items-center gap-2 p-2 border rounded-xl border-slate-200/50 bg-white/50 dark:bg-slate-800/50">
+                                <div key={opt.id} className="flex items-center gap-2 p-2 border-2 rounded-xl border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50 shadow-sm hover:shadow-md transition-all">
                                   {isColor && (
                                     <div 
-                                      className="w-4 h-4 rounded-full border border-slate-200 flex-shrink-0"
+                                      className="w-4 h-4 rounded-full border-2 border-[#d81b60]/30 flex-shrink-0"
                                       style={{ backgroundColor: opt.color_hex || '#ccc' }}
                                     />
                                   )}
@@ -2730,13 +2734,13 @@ const handleAddToCart = useCallback(async () => {
                                     <img 
                                       src={image} 
                                       alt={displayName}
-                                      className="w-6 h-6 rounded object-cover"
+                                      className="w-6 h-6 rounded object-cover border border-[#d81b60]/20"
                                     />
                                   )}
                                   {/* ✅ زر اسم الخيار - عند الضغط عليه تعرض الصورة + زيادة الكمية */}
                                   <button
                                     onClick={() => handleRequiredVariationSelect(product.id, opt.id)}
-                                    className="text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-[#2a655f] transition-colors hover:underline"
+                                    className="text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-[#d81b60] transition-colors hover:underline"
                                   >
                                     {displayName}
                                   </button>
@@ -2747,25 +2751,25 @@ const handleAddToCart = useCallback(async () => {
                                     <button
                                       onClick={() => handleVariationQuantityChange(product.id, opt.id, -1, true)}
                                       className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
                                         currentQty > 0 
-                                          ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600"
-                                          : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800"
+                                          ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 border-slate-300"
+                                          : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800 border-slate-200"
                                       )}
                                       disabled={currentQty === 0}
                                     >
                                       -
                                     </button>
-                                    <span className="w-8 text-center font-bold text-[#0d2e2a] text-sm">
+                                    <span className="w-8 text-center font-bold text-[#d81b60] text-sm">
                                       {currentQty}
                                     </span>
                                     <button
                                       onClick={() => handleVariationQuantityChange(product.id, opt.id, 1, true)}
                                       className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
                                         !isOver || currentQty === 0
-                                          ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white"
-                                          : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700"
+                                          ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white border-[#d81b60] shadow-sm shadow-[#d81b60]/30"
+                                          : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 border-slate-300"
                                       )}
                                       disabled={isOver}
                                     >
@@ -2778,7 +2782,7 @@ const handleAddToCart = useCallback(async () => {
                           </div>
                           
                           {hasDefault && (
-                            <div className="mt-2 p-2 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30">
+                            <div className="mt-2 p-2 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg border-2 border-emerald-300/50">
                               <p className="text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
                                 <CheckCircle className="h-3 w-3" />
                                 {app.lang === "ar" 
@@ -2790,7 +2794,7 @@ const handleAddToCart = useCallback(async () => {
                         </div>
                       ) : (
                         // ===== المنتج ليس لديه خيارات =====
-                        <div className="mt-2 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
+                        <div className="mt-2 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-300/50">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <CheckCircle className="h-4 w-4 text-emerald-500" />
@@ -2819,14 +2823,14 @@ const handleAddToCart = useCallback(async () => {
             {freeProduct && (
               <>
                 {/* ===== تقدم اختيار الهدية ===== */}
-                <div className="p-4 bg-white/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                <div className="p-4 bg-white/50 dark:bg-slate-800/30 rounded-xl border-2 border-[#d81b60]/30 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium text-muted-foreground">
                         {app.lang === "ar" ? "📊 تقدم اختيار الهدية" : "📊 Gift Progress"}
                       </span>
                       <Badge className={cn(
-                        "border-0 text-[10px]",
+                        "border-0 text-[10px] font-bold",
                         giftStats.isComplete && !giftStats.isOver
                           ? "bg-emerald-500/20 text-emerald-600"
                           : giftStats.isOver
@@ -2840,7 +2844,7 @@ const handleAddToCart = useCallback(async () => {
                             : `⚠️ ${giftStats.selected}/${giftStats.total}`}
                       </Badge>
                     </div>
-                    <span className="text-xs font-bold text-[#0d2e2a]">
+                    <span className="text-xs font-bold text-[#d81b60]">
                       {giftStats.selected}/{giftStats.total}
                     </span>
                   </div>
@@ -2852,7 +2856,7 @@ const handleAddToCart = useCallback(async () => {
                           ? "bg-gradient-to-r from-emerald-500 to-teal-500"
                           : giftStats.isOver
                             ? "bg-gradient-to-r from-red-500 to-rose-500"
-                            : "bg-gradient-to-r from-[#2a655f] to-[#3a8a82]"
+                            : "bg-gradient-to-r from-[#d81b60] to-[#f48fb1]"
                       )}
                       style={{ 
                         width: `${Math.min(100, (giftStats.selected / giftStats.total) * 100)}%` 
@@ -2884,9 +2888,9 @@ const handleAddToCart = useCallback(async () => {
                 </div>
 
                 {/* ===== عرض الهدية مع دعم الألوان ===== */}
-                <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
+                <div className="border-t-2 border-[#d81b60]/20 pt-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-sm flex items-center gap-2 text-emerald-600">
+                    <h3 className="font-bold text-sm flex items-center gap-2 text-[#d81b60]">
                       <GiftIcon className="h-4 w-4" />
                       {app.lang === "ar" ? "🎁 الهدية" : "🎁 Gift"}
                     </h3>
@@ -2895,7 +2899,7 @@ const handleAddToCart = useCallback(async () => {
                     </Badge>
                   </div>
                   
-                  <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
+                  <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-300/50 shadow-sm">
                     <div className="flex items-center gap-3">
                       {(() => {
                         const giftVariationIds = offer?.result_variation_ids || [];
@@ -2975,10 +2979,10 @@ const handleAddToCart = useCallback(async () => {
                                 height={48}
                                 quality={80}
                                 objectFit="cover"
-                                className="h-12 w-12 rounded-lg object-cover"
+                                className="h-12 w-12 rounded-lg object-cover border-2 border-emerald-300/50"
                               />
                             ) : (
-                              <div className="h-12 w-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                              <div className="h-12 w-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center border-2 border-emerald-300/50">
                                 <GiftIcon className="h-6 w-6 text-emerald-400" />
                               </div>
                             )}
@@ -2994,7 +2998,7 @@ const handleAddToCart = useCallback(async () => {
                                   ×{offer?.get_quantity || 1}
                                 </Badge>
                                 {availableOptions.length > 0 && (
-                                  <Badge className="bg-purple-500/20 text-purple-600 border-0 text-[10px]">
+                                  <Badge className="bg-[#d81b60]/20 text-[#d81b60] border-0 text-[10px]">
                                     🎨 {availableOptions.length} {app.lang === "ar" ? "خيار" : "options"}
                                   </Badge>
                                 )}
@@ -3046,7 +3050,7 @@ const handleAddToCart = useCallback(async () => {
                       
                       if (availableOptions.length === 0) {
                         return (
-                          <div className="mt-3 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
+                          <div className="mt-3 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-300/50">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <CheckCircle className="h-4 w-4 text-emerald-500" />
@@ -3075,7 +3079,7 @@ const handleAddToCart = useCallback(async () => {
                       const isAutoComplete = giftSelectedTotal === totalGiftQty && Object.keys(giftSelectedMap).length > 0;
                       
                       return (
-                        <div className="mt-3 p-3 bg-white/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                        <div className="mt-3 p-3 bg-white/50 dark:bg-slate-800/30 rounded-xl border-2 border-[#d81b60]/30">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                               🎨 {app.lang === "ar" ? "توزيع كميات الهدية" : "Gift Quantity Distribution"}
@@ -3093,7 +3097,7 @@ const handleAddToCart = useCallback(async () => {
                             {giftRemaining > 0 && !giftIsOver && availableOptions.length > 1 && (
                               <button
                                 onClick={() => autoDistributeGiftRemaining(availableOptions, totalGiftQty)}
-                                className="text-[10px] text-[#2a655f] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border border-[#2a655f]/20 rounded-lg hover:bg-[#2a655f]/5"
+                                className="text-[10px] text-[#d81b60] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border-2 border-[#d81b60]/30 rounded-lg hover:bg-[#d81b60]/10"
                               >
                                 <Zap className="h-3 w-3" />
                                 {app.lang === "ar" ? `وزع ${giftRemaining}` : `Distribute ${giftRemaining}`}
@@ -3115,10 +3119,10 @@ const handleAddToCart = useCallback(async () => {
                                 : opt.price || freeProduct?.price || 0;
                               
                               return (
-                                <div key={opt.id} className="flex items-center gap-2 p-2 border rounded-xl border-slate-200/50 bg-white/50 dark:bg-slate-800/50">
+                                <div key={opt.id} className="flex items-center gap-2 p-2 border-2 rounded-xl border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50 shadow-sm hover:shadow-md transition-all">
                                   {isColor && (
                                     <div 
-                                      className="w-4 h-4 rounded-full border border-slate-200 flex-shrink-0"
+                                      className="w-4 h-4 rounded-full border-2 border-[#d81b60]/30 flex-shrink-0"
                                       style={{ backgroundColor: opt.color_hex || '#ccc' }}
                                     />
                                   )}
@@ -3136,25 +3140,25 @@ const handleAddToCart = useCallback(async () => {
                                     <button
                                       onClick={() => handleGiftVariationQuantityChange(opt.id, -1, true)}
                                       className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
                                         currentQty > 0 
-                                          ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600"
-                                          : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800"
+                                          ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 border-slate-300"
+                                          : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800 border-slate-200"
                                       )}
                                       disabled={currentQty === 0}
                                     >
                                       -
                                     </button>
-                                    <span className="w-8 text-center font-bold text-[#0d2e2a] text-sm">
+                                    <span className="w-8 text-center font-bold text-[#d81b60] text-sm">
                                       {currentQty}
                                     </span>
                                     <button
                                       onClick={() => handleGiftVariationQuantityChange(opt.id, 1, true)}
                                       className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
                                         !giftIsOver && (currentQty === 0 || giftRemaining > 0)
-                                          ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white"
-                                          : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700"
+                                          ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white border-[#d81b60] shadow-sm shadow-[#d81b60]/30"
+                                          : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 border-slate-300"
                                       )}
                                       disabled={giftIsOver || (currentQty > 0 && giftRemaining === 0)}
                                     >
@@ -3186,7 +3190,7 @@ const handleAddToCart = useCallback(async () => {
 
             {/* ===== تنبيه اختيار الخيارات ===== */}
             {!isVariationSelected && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border-2 border-amber-300/50 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
                 <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
@@ -3205,7 +3209,7 @@ const handleAddToCart = useCallback(async () => {
 
             {/* ===== تم الاختيار ===== */}
             {isVariationSelected && (
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/50 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-300/50 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
                 <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
@@ -3224,17 +3228,17 @@ const handleAddToCart = useCallback(async () => {
             {/* ===== الكمية ===== */}
             <div className="flex items-center gap-4">
               <span className="font-semibold">{app.lang === "ar" ? "الكمية:" : "Quantity:"}</span>
-              <div className="flex items-center border-2 rounded-2xl overflow-hidden shadow-sm border-[#0d2e2a]/20">
+              <div className="flex items-center border-3 rounded-2xl overflow-hidden shadow-sm border-[#d81b60]/30">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="h-12 w-12 flex items-center justify-center hover:bg-[#0d2e2a]/5 transition text-lg font-bold text-[#0d2e2a]"
+                  className="h-12 w-12 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-lg font-bold text-[#d81b60]"
                 >
                   <Minus className="h-5 w-5" />
                 </button>
-                <span className="w-16 text-center font-bold text-lg text-[#0d2e2a]">{quantity}</span>
+                <span className="w-16 text-center font-bold text-lg text-[#d81b60]">{quantity}</span>
                 <button
                   onClick={() => setQuantity(quantity + 1)}
-                  className="h-12 w-12 flex items-center justify-center hover:bg-[#0d2e2a]/5 transition text-lg font-bold text-[#0d2e2a]"
+                  className="h-12 w-12 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-lg font-bold text-[#d81b60]"
                 >
                   <Plus className="h-5 w-5" />
                 </button>
@@ -3245,8 +3249,8 @@ const handleAddToCart = useCallback(async () => {
             <Button 
               size="lg" 
               className={cn(
-                "w-full h-14 rounded-2xl text-white shadow-xl shadow-[#2a655f]/30 hover:shadow-2xl hover:shadow-[#2a655f]/40 transition-all hover:scale-[1.02] active:scale-[0.98] text-lg font-bold",
-                "bg-[#2a655f] hover:bg-[#1a4f4a]",
+                "w-full h-14 rounded-2xl text-white shadow-xl shadow-[#d81b60]/30 hover:shadow-2xl hover:shadow-[#d81b60]/40 transition-all hover:scale-[1.02] active:scale-[0.98] text-lg font-bold",
+                "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] border-2 border-[#d81b60]/30",
                 !isVariationSelected && "opacity-60 cursor-not-allowed hover:scale-100 hover:shadow-xl"
               )}
               onClick={handleAddToCart}
@@ -3276,15 +3280,15 @@ const handleAddToCart = useCallback(async () => {
             </Button>
 
             {/* ===== مميزات ===== */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t-2 border-[#d81b60]/20">
               {[
                 { icon: Truck, label: app.lang === "ar" ? "توصيل سريع" : "Fast Delivery" },
                 { icon: Shield, label: app.lang === "ar" ? "دفع آمن" : "Secure Payment" },
                 { icon: Award, label: app.lang === "ar" ? "ضمان الجودة" : "Quality Guarantee" },
                 { icon: Clock, label: app.lang === "ar" ? "دعم 24/7" : "24/7 Support" },
               ].map((item, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition border border-border/30">
-                  <item.icon className="h-5 w-5 text-[#0d2e2a]" />
+                <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition border border-[#d81b60]/20 hover:border-[#d81b60]/40">
+                  <item.icon className="h-5 w-5 text-[#d81b60]" />
                   <span className="text-sm font-medium">{item.label}</span>
                 </div>
               ))}
@@ -3314,7 +3318,7 @@ const handleAddToCart = useCallback(async () => {
                     const newIndex = (currentImageIndex - 1 + offerImages.length) % offerImages.length;
                     changeImage(newIndex);
                   }}
-                  className="absolute start-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-white/20 z-10"
+                  className="absolute start-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border-2 border-white/20 z-10"
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </button>
@@ -3325,7 +3329,7 @@ const handleAddToCart = useCallback(async () => {
                     const newIndex = (currentImageIndex + 1) % offerImages.length;
                     changeImage(newIndex);
                   }}
-                  className="absolute end-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-white/20 z-10"
+                  className="absolute end-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border-2 border-white/20 z-10"
                 >
                   <ChevronRight className="h-6 w-6" />
                 </button>
@@ -3345,7 +3349,7 @@ const handleAddToCart = useCallback(async () => {
             {/* ✅ زر الإغلاق */}
             <button
               onClick={() => setIsLightboxOpen(false)}
-              className="absolute top-4 end-4 h-10 w-10 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-white/20 z-20"
+              className="absolute top-4 end-4 h-10 w-10 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border-2 border-white/20 z-20"
             >
               <X className="h-5 w-5" />
             </button>
@@ -3355,9 +3359,9 @@ const handleAddToCart = useCallback(async () => {
 
       {/* ===== مودال تعارض المتجر ===== */}
       <Dialog open={showStoreConflict} onOpenChange={setShowStoreConflict}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-md rounded-2xl border-2 border-[#d81b60]/30">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl text-[#0d2e2a]">
+            <DialogTitle className="flex items-center gap-2 text-xl text-[#d81b60]">
               <ShoppingCart className="h-6 w-6 text-amber-500" />
               {app.lang === "ar" ? "⚠️ سلة من متجر آخر" : "⚠️ Cart from another store"}
             </DialogTitle>
@@ -3369,7 +3373,7 @@ const handleAddToCart = useCallback(async () => {
           </DialogHeader>
           
           <div className="py-4 space-y-4">
-            <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/30">
+            <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border-2 border-amber-200 dark:border-amber-800/30">
               <p className="text-sm text-amber-700 dark:text-amber-400">
                 {app.lang === "ar" 
                   ? `📦 السلة تحتوي على منتجات من "${currentStoreName}"`
@@ -3390,13 +3394,13 @@ const handleAddToCart = useCallback(async () => {
           </div>
           
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowStoreConflict(false)}>
+            <Button variant="outline" onClick={() => setShowStoreConflict(false)} className="border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60]">
               {app.lang === "ar" ? "إلغاء" : "Cancel"}
             </Button>
             <Button 
               variant="destructive" 
               onClick={handleConfirmClearCart}
-              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-2 border-red-400/30"
             >
               <Trash2 className="h-4 w-4 mr-2" />
               {app.lang === "ar" ? "تفريغ السلة وإضافة العرض" : "Clear cart and add offer"}

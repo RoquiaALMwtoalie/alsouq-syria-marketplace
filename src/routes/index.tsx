@@ -9,9 +9,9 @@ import {
   TrendingUp, Zap, Crown, Gem, Award, Clock, ThumbsUp, Eye, Truck, Coffee,
   Layers, Grid3X3, List, Percent, Tag, MapPin, Navigation, 
   ArrowLeft,
-  Globe,  Store as StoreIcon,
+  Globe, Store as StoreIcon,
   Building2,
-  Compass
+  Compass, LayoutGrid
 } from "lucide-react";
 import { useApp, useT } from "@/lib/i18n";
 import { useListings, useBanners, useAllStores, useCategories, useMostFavoritedListings, useMostFavoritedStores, useTrendingListings, useTrendingStores, useProductOffers } from "@/lib/queries";
@@ -34,6 +34,31 @@ import {
 
 // ✅ ✅ ✅ Lazy Loading لـ ListingCard
 const ListingCard = lazy(() => import("@/components/ListingCard"));
+
+// ============================================================
+// 🎨 ZOOQ BRAND COLORS
+// ============================================================
+const COLORS = {
+  // زيتي
+  olive: '#2a655f',
+  oliveLight: '#3a8a82',
+  oliveDark: '#1a4f4a',
+  oliveVeryLight: '#e8f0ee',
+  // زهري
+  pink: '#f9a8d4',
+  pinkLight: '#fbcfe8',
+  pinkDark: '#f48fb1',
+  pinkVeryLight: '#fdf2f8',
+  // فوشي غامق
+  fuchsia: '#d81b60',
+  fuchsiaDark: '#c2185b',
+  fuchsiaGlow: 'rgba(216,27,96,0.2)',
+  fuchsiaGlowStrong: 'rgba(194,24,91,0.35)',
+  // توهجات
+  glowOlive: 'rgba(42,101,95,0.15)',
+  glowPink: 'rgba(249,168,212,0.2)',
+  glowPinkStrong: 'rgba(249,168,212,0.35)',
+};
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -219,12 +244,12 @@ const allOffers = useMemo(() => {
                 <div className="absolute inset-0 flex flex-col items-start justify-center p-6 sm:p-10 md:p-14 text-white">
                   {bannerIdx === i && (
                     <div className="animate-banner-reveal space-y-3 sm:space-y-4 max-w-2xl">
-                      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#2a655f]/90 border border-pink-300/40 shadow-lg">
-                        <span className="text-sm animate-icon-dance">✨</span>
-                        <span className="text-xs sm:text-sm font-black text-pink-100 tracking-wide">
-                          {app.lang === "ar" ? "عروض حصرية ولفترة محدودة" : "Exclusive Limited Offer"}
-                        </span>
-                      </div>
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#fbcfe8] to-[#f9a8d4] border border-pink-300/60 shadow-lg shadow-pink-300/30">
+  <span className="text-sm animate-icon-dance">✨</span>
+  <span className="text-xs sm:text-sm font-black text-[#2a655f] tracking-wide">
+    {app.lang === "ar" ? "عروض حصرية ولفترة محدودة" : "Exclusive Limited Offer"}
+  </span>
+</div>
                       <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
                         {app.lang === "ar" ? b.title_ar : (b.title_en || b.title_ar)}
                       </h2>
@@ -295,7 +320,9 @@ const allOffers = useMemo(() => {
     <div className="flex items-center justify-between mb-6">
       <div>
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🔥</span>
+          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#f9a8d4] to-[#fbcfe8] grid place-items-center text-[#2a655f] shadow-md hover:scale-110 hover:-rotate-6 transition-all duration-500 shrink-0">
+            <BadgePercent className="h-5 w-5" />
+          </div>
           <h2 className="text-2xl font-bold">
             {app.lang === "ar" ? "عروض اليوم" : "Today's Offers"}
           </h2>
@@ -324,7 +351,6 @@ const allOffers = useMemo(() => {
       <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
         {allOffers.map((item: any, index: number) => (
           <div key={item.id || index} className="w-[200px] md:w-[250px] flex-shrink-0">
-            {/* ✅ كل العروض تتعامل معها بنفس البطاقة (ListingCard) */}
             <Suspense fallback={<ProductSkeleton />}>
               <ListingCard item={item} />
             </Suspense>
@@ -357,19 +383,19 @@ const allOffers = useMemo(() => {
       {/* ===== FEATURED PRODUCTS - أيقونة Gem ===== */}
       <FeaturedSection />
 
-      {/* ===== TRENDING NOW - أيقونة Flame ===== */}
+      {/* ===== TRENDING NOW - أيقونة TrendingUp ===== */}
       <TrendingSection />
 
-      {/* ===== POPULAR STORES - أيقونة Crown ===== */}
+      {/* ===== POPULAR STORES - أيقونة Store ===== */}
       <section className="mx-auto max-w-7xl px-4 pb-8 md:pb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] grid place-items-center text-white shadow-md">
-              <Crown className="h-5 w-5" />
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] grid place-items-center text-white shadow-md hover:scale-110 hover:rotate-12 transition-all duration-500 cursor-pointer">
+              <Store className="h-5 w-5" />
             </div>
             <div>
               <h2 className="text-xl md:text-2xl font-black text-foreground">
-                {app.lang === "ar" ? "👑 متاجر مميزة" : "👑 Popular Stores"}
+                {app.lang === "ar" ? "متاجر مميزة" : "Popular Stores"}
               </h2>
               <p className="text-xs text-muted-foreground">
                {app.lang === "ar" ? "أفضل المتاجر على ذوق | Zooq" : "Top stores on Zooq"}
@@ -395,8 +421,7 @@ const allOffers = useMemo(() => {
       {/* ===== ✅ NEARBY STORES - أيقونة Compass ===== */}
       <NearbyStores />
 
-      {/* ===== CATEGORY BANNERS ===== */}
-      <CategoryBanners />
+   
 
       {/* ===== RECENTLY VIEWED ===== */}
       <RecentlyViewed />
@@ -447,8 +472,8 @@ const allOffers = useMemo(() => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl md:text-2xl font-black text-foreground flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-[#2a655f]" />
-              {app.lang === "ar" ? "✨ أحدث المنتجات" : "✨ Latest Products"}
+              <LayoutGrid className="h-5 w-5 text-[#2a655f]" />
+              {app.lang === "ar" ? "أحدث المنتجات" : "Latest Products"}
               <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20">
                 {productsData.count || 0}
               </Badge>
@@ -537,7 +562,11 @@ const allOffers = useMemo(() => {
 }
 
 // ============================================================
-// CATEGORY SLIDER - أيقونة Sparkles
+// CATEGORY SLIDER - أيقونة Grid3X3
+// ============================================================
+
+// ============================================================
+// CATEGORY SLIDER - أيقونة Grid3X3 - مع بوردر فوشي غامق مطابق لـ StoreCard
 // ============================================================
 
 export function CategorySlider({ categories }: { categories: any[] }) {
@@ -565,12 +594,12 @@ export function CategorySlider({ categories }: { categories: any[] }) {
     <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-400 grid place-items-center text-white shadow-md hover:scale-110 hover:rotate-12 transition-all duration-500 cursor-pointer">
-            <Sparkles className="h-5 w-5" />
+          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] grid place-items-center text-white shadow-md hover:scale-110 hover:rotate-12 transition-all duration-500 cursor-pointer">
+            <Grid3X3 className="h-5 w-5" />
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-black text-foreground">
-              {isRtl ? "✨ الأقسام المميزة" : "✨ Featured Categories"}
+              {isRtl ? "الأقسام المميزة" : "Featured Categories"}
             </h2>
             <p className="text-xs text-muted-foreground">
              {isRtl ? "اختيارات مميزة من ذوق | Zooq" : "Handpicked by Zooq"}
@@ -662,9 +691,10 @@ export function CategorySlider({ categories }: { categories: any[] }) {
                     params={{ slug: c.slug }}
                     className={cn(
                       "group relative block w-[160px] md:w-[200px] rounded-2xl overflow-hidden transition-all duration-500 hover:scale-105 hover:shadow-2xl",
+                      // ✅ ✅ ✅ بوردر فوشي غامق مطابق تماماً لـ StoreCard
                       isOffer 
-                        ? "p-[3px] glowing-border-pink shadow-[0_0_25px_rgba(236,72,153,0.6)] animate-pulse" 
-                        : "hover:shadow-[#2a655f]/30"
+                        ? "border-3 border-[#d81b60]/60 hover:border-[#c2185b] shadow-[0_0_35px_rgba(216,27,96,0.2)] hover:shadow-[0_0_55px_rgba(194,24,91,0.35)]" 
+                        : "border-3 border-[#d81b60]/40 hover:border-[#d81b60]/80 hover:shadow-[0_0_25px_rgba(216,27,96,0.15)]"
                     )}
                   >
                     <div className={cn(
@@ -731,18 +761,10 @@ export function CategorySlider({ categories }: { categories: any[] }) {
           0% { transform: translateX(0); }
           100% { transform: translateX(calc(-25%)); }
         }
-        @keyframes border-glow-pink {
-          0% { box-shadow: 0 0 5px #f9a8d4, 0 0 10px #fbcfe8, inset 0 0 5px #f9a8d4; }
-          50% { box-shadow: 0 0 20px #f9a8d4, 0 0 35px #fbcfe8, inset 0 0 12px #fbcfe8; }
-          100% { box-shadow: 0 0 5px #f9a8d4, 0 0 10px #fbcfe8, inset 0 0 5px #f9a8d4; }
-        }
         @keyframes gradient-flow {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
-        }
-        .glowing-border-pink {
-          animation: border-glow-pink 2s infinite ease-in-out;
         }
         .animate-gradient-flow {
           animation: gradient-flow 4s ease infinite;
@@ -792,7 +814,7 @@ function FeaturedSection() {
     <section className="mx-auto max-w-7xl px-4 py-8 md:py-12">
       <div className="flex items-end justify-between mb-6 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-400 grid place-items-center text-white shadow-md hover:scale-110 hover:-rotate-6 transition-all duration-500 cursor-pointer">
+          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#f9a8d4] to-[#fbcfe8] grid place-items-center text-[#2a655f] shadow-md hover:scale-110 hover:-rotate-6 transition-all duration-500 cursor-pointer">
             <Gem className="h-5 w-5" />
           </div>
           <div>
@@ -859,7 +881,7 @@ function FeaturedSection() {
 }
 
 // ============================================================
-// TRENDING SECTION - أيقونة Flame
+// TRENDING SECTION - أيقونة TrendingUp
 // ============================================================
 function TrendingSection() {
   const app = useApp();
@@ -875,7 +897,7 @@ function TrendingSection() {
       <div className="flex items-end justify-between mb-6 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] grid place-items-center text-white shadow-md hover:scale-110 hover:rotate-12 transition-all duration-500 cursor-pointer">
-            <Flame className="h-5 w-5" />
+            <TrendingUp className="h-5 w-5" />
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-black text-foreground">
@@ -1158,7 +1180,7 @@ function NearbyStores() {
     return (
       <section className="mx-auto max-w-7xl px-4 py-8 md:py-12">
         <div className="flex items-center gap-3 mb-6">
-          <div className="h-12 w-12 rounded-2xl bg-[#2a655f] grid place-items-center text-white shadow-lg animate-pulse">
+          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] grid place-items-center text-white shadow-lg animate-pulse">
             <Compass className="h-6 w-6 animate-bounce" />
           </div>
           <div className="space-y-2">
@@ -1183,14 +1205,14 @@ function NearbyStores() {
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div className="flex items-center gap-3.5">
           <div className="relative">
-            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] opacity-75 blur-md animate-pulse"></div>
-            <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] grid place-items-center text-white shadow-xl">
-              <Compass className="h-6 w-6 animate-bounce" />
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] opacity-75 blur-md animate-pulse"></div>
+            <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] grid place-items-center text-white shadow-xl hover:scale-110 transition-all duration-500">
+              <Compass className="h-6 w-6" />
             </div>
           </div>
           <div>
             <h2 className="text-2xl md:text-3xl font-black text-foreground flex items-center gap-2.5 tracking-tight">
-              {isArabic ? "🧭 المتاجر الأقرب إليك" : "🧭 Nearby Stores"}
+              {isArabic ? "المتاجر الأقرب إليك" : "Nearby Stores"}
               <Badge className="bg-[#2a655f]/15 text-[#2a655f] dark:text-emerald-400 border border-[#2a655f]/30 font-extrabold text-[11px] px-2.5 py-0.5 rounded-full shadow-sm">
                 {nearbyStores.length} {isArabic ? "متجر نشط" : "Active stores"}
               </Badge>
@@ -1277,7 +1299,7 @@ function NearbyStores() {
 }
 
 // ============================================================
-// STORE CARD
+// STORE CARD - مع بوردر فوشي غامق مشرق
 // ============================================================
 
 interface StoreCardProps {
@@ -1297,14 +1319,20 @@ export function StoreCard({ store, badge }: StoreCardProps) {
   const rating = Number(store.avg_rating ?? 0).toFixed(1);
   const productsCount = store.listing_count ?? 0;
   const isVerified = store.is_verified || store.verified || true;
+  
+  const isActive = store.store_active !== false;
+  const statusText = isActive 
+    ? (isRtl ? "🟢 نشط" : "🟢 Active") 
+    : (isRtl ? "🔴 غير نشط" : "🔴 Inactive");
 
   return (
     <Link 
       to="/store/$id" 
       params={{ id: store.id }} 
-      className="group relative rounded-3xl bg-white dark:bg-slate-900 overflow-hidden border border-slate-200/80 dark:border-slate-800 hover:border-pink-300/60 shadow-lg hover:shadow-2xl hover:shadow-pink-500/20 transition-all duration-500 hover:-translate-y-2 flex flex-col h-[330px] select-none"
+      className="group relative rounded-2xl bg-white dark:bg-slate-900 overflow-hidden border-3 border-[#d81b60]/60 hover:border-[#c2185b] shadow-[0_0_35px_rgba(216,27,96,0.2)] hover:shadow-[0_0_55px_rgba(194,24,91,0.35)] transition-all duration-400 hover:-translate-y-1.5 flex flex-col h-[340px] select-none"
     >
-      <div className="relative h-[130px] w-full bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#3a8a82] overflow-hidden shrink-0">
+      {/* ===== COVER IMAGE ===== */}
+      <div className="relative h-[130px] w-full bg-gradient-to-r from-[#2a655f] to-[#3a8a82] overflow-hidden shrink-0">
         {coverUrl ? (
           <OptimizedImage
             src={coverUrl}
@@ -1313,29 +1341,42 @@ export function StoreCard({ store, badge }: StoreCardProps) {
             height={200}
             quality={80}
             objectFit="cover"
-            className="absolute inset-0 h-full w-full group-hover:scale-110 transition-transform duration-700"
+            className="absolute inset-0 h-full w-full group-hover:scale-105 transition-transform duration-700"
           />
         ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-300/20 via-transparent to-transparent opacity-60" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#2a655f]/80 to-[#3a8a82]/60" />
         )}
         
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
         <div className="absolute top-3 end-3 flex items-center gap-1.5 z-10">
           {badge}
           {isVerified && (
-            <Badge className="bg-pink-400/90 backdrop-blur-md text-white border-0 shadow-lg text-[10px] font-bold px-2 py-0.5 flex items-center gap-1 rounded-full">
+            <Badge className="bg-[#f9a8d4]/90 backdrop-blur-md text-[#2a655f] border-0 shadow-lg text-[10px] font-bold px-2 py-0.5 flex items-center gap-1 rounded-full">
               <Sparkles className="h-3 w-3" />
               {isRtl ? "موثوق" : "Verified"}
             </Badge>
           )}
+          <Badge className={cn(
+            "backdrop-blur-md text-white border border-white/20 text-[9px] font-bold px-2 py-0.5 rounded-full",
+            isActive ? "bg-emerald-600/70" : "bg-red-600/70"
+          )}>
+            {statusText}
+          </Badge>
+        </div>
+
+        <div className="absolute bottom-3 start-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full z-10">
+          <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+          <span className="text-xs font-bold text-white">{rating}</span>
         </div>
       </div>
 
-      <div className="px-5 pt-0 pb-4 flex-1 flex flex-col justify-between relative">
+      {/* ===== BODY ===== */}
+      <div className="px-4 pt-0 pb-4 flex-1 flex flex-col justify-between relative">
         
-        <div className="flex items-end justify-between -mt-9 mb-2 relative z-10">
-          <div className="h-16 w-16 rounded-2xl bg-white dark:bg-slate-900 p-1 shadow-xl border-2 border-white dark:border-slate-800 group-hover:border-pink-300 transition-all duration-300 group-hover:scale-105 shrink-0 overflow-hidden grid place-items-center">
+        {/* ✅ اللوغو */}
+        <div className="flex items-end justify-between -mt-10 mb-2 relative z-10">
+          <div className="h-16 w-16 rounded-2xl bg-white dark:bg-slate-900 p-1 shadow-xl border-2 border-white dark:border-slate-800 group-hover:border-[#2a655f] transition-all duration-300 group-hover:scale-105 shrink-0 overflow-hidden grid place-items-center">
             {logoUrl ? (
               <OptimizedImage
                 src={logoUrl}
@@ -1348,41 +1389,39 @@ export function StoreCard({ store, badge }: StoreCardProps) {
               />
             ) : (
               <div className="h-full w-full rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white font-black text-xl flex items-center justify-center">
-                {storeName[0]?.toUpperCase() || <Store className="h-6 w-6" />}
+                {storeName.charAt(0)?.toUpperCase() || <Store className="h-6 w-6" />}
               </div>
             )}
           </div>
-
-          <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/50 px-2.5 py-1 rounded-full shadow-sm">
-            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-            <span className="text-xs font-black text-amber-800 dark:text-amber-300">{rating}</span>
-          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100 line-clamp-1 group-hover:text-pink-600 transition-colors duration-300">
+        {/* ✅ اسم المتجر - خلفية وردية فاتحة */}
+        <div className="flex items-center justify-between gap-2 -mt-1">
+          <div className="flex-1 min-w-0 bg-[#fbcfe8]/60 dark:bg-[#fbcfe8]/20 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-[#f9a8d4]/30 shadow-sm">
+            <h3 className="font-extrabold text-base text-[#2a655f] dark:text-white line-clamp-1 group-hover:text-[#2a655f] transition-colors duration-300">
               {storeName}
             </h3>
-            
-            <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#2a655f]/10 dark:bg-[#2a655f]/20 text-[#2a655f] dark:text-[#3a8a82] border border-[#2a655f]/20 shadow-sm">
-              <Globe className="h-2.5 w-2.5" />
-              {isRtl ? "متجر إلكتروني" : "Online Store"}
-            </span>
           </div>
-
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed min-h-[32px]">
-            {storeDesc}
-          </p>
+          
+          <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#2a655f]/10 dark:bg-[#2a655f]/20 text-[#2a655f] dark:text-[#3a8a82] border border-[#2a655f]/20 shadow-sm">
+            <Globe className="h-2.5 w-2.5" />
+            {isRtl ? "متجر إلكتروني" : "Online Store"}
+          </span>
         </div>
 
+        {/* ✅ الوصف */}
+        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed min-h-[32px] mt-1">
+          {storeDesc}
+        </p>
+
+        {/* ✅ الفوتر */}
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs mt-2">
           <div className="flex items-center gap-1.5 font-semibold text-[#2a655f] dark:text-[#3a8a82]">
             <Package className="h-4 w-4" />
             <span>{productsCount} {t("products_tab") || (isRtl ? "منتج" : "Products")}</span>
           </div>
 
-          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 group-hover:text-pink-600 transition-colors">
+          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 group-hover:text-[#2a655f] transition-colors">
             <span>{isRtl ? "زيارة المتجر" : "Visit Store"}</span>
             {isRtl ? (
               <ChevronLeft className="h-3.5 w-3.5 group-hover:-translate-x-1 transition-transform" />

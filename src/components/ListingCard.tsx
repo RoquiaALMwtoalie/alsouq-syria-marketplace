@@ -1,4 +1,4 @@
-// src/components/ListingCard.tsx - الكود الكامل المصحح مع OptimizedImage
+// src/components/ListingCard.tsx - الكود الكامل مع بوردر فوشي غامق مطابق لـ StoreCard
 
 import { Link, useNavigate } from "@tanstack/react-router";
 import { 
@@ -23,6 +23,23 @@ import { useState, memo, useCallback, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { OptimizedImage } from "@/components/OptimizedImage";
 
+// ============================================================
+// 🎨 ZOOQ BRAND COLORS
+// ============================================================
+const ZOOQ_COLORS = {
+  olive: '#2a655f',
+  oliveLight: '#3a8a82',
+  oliveDark: '#1a4f4a',
+  oliveVeryLight: '#e8f0ee',
+  pink: '#f9a8d4',
+  pinkLight: '#fbcfe8',
+  pinkDark: '#f48fb1',
+  pinkVeryLight: '#fdf2f8',
+  glowOlive: 'rgba(42,101,95,0.15)',
+  glowPink: 'rgba(249,168,212,0.2)',
+  glowPinkStrong: 'rgba(249,168,212,0.35)',
+};
+
 interface ListingCardProps {
   item: any;
   variant?: "grid" | "list";
@@ -30,7 +47,7 @@ interface ListingCardProps {
 }
 
 // ============================================================
-// ✅ STORE CONFLICT MODAL - خارج ListingCard (لمنع الحلقات اللانهائية)
+// ✅ STORE CONFLICT MODAL
 // ============================================================
 function StoreConflictModalComponent({ 
   open, 
@@ -56,7 +73,7 @@ function StoreConflictModalComponent({
       <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-bold text-[#2a655f]">
-            <ShoppingCart className="h-5 w-5 text-amber-500" />
+            <ShoppingCart className="h-5 w-5 text-[#f9a8d4]" />
             {isArabic ? "⚠️ سلة من متجر آخر" : "⚠️ Cart from another store"}
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-500">
@@ -67,11 +84,11 @@ function StoreConflictModalComponent({
         </DialogHeader>
         
         <div className="py-3 space-y-3">
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/60 dark:border-amber-800/40 text-xs space-y-1.5">
-            <p className="text-amber-800 dark:text-amber-300 font-medium">
+          <div className="p-3 bg-[#fbcfe8]/45 dark:bg-[#2a655f]/10 rounded-xl border border-[#f9a8d4]/35 dark:border-[#2a655f]/35 text-xs space-y-1.5">
+            <p className="text-[#2a655f] dark:text-[#fbcfe8] font-medium">
               📦 {isArabic ? `سلتك الحالية تتبع لـ: ${currentStoreName}` : `Current cart: ${currentStoreName}`}
             </p>
-            <p className="text-amber-800 dark:text-amber-300 font-medium">
+            <p className="text-[#2a655f] dark:text-[#fbcfe8] font-medium">
               🛒 {isArabic ? `المنتج الجديد يتبع لـ: ${newStoreName}` : `New product: ${newStoreName}`}
             </p>
           </div>
@@ -125,19 +142,14 @@ export const ListingCard = memo(function ListingCard({
   const addToCartMutation = useAddToCart();
   const clearCartMutation = useClearCart();
   
-  // ✅ التحقق من نوع العنصر
   const isPromoOffer = item.is_promo_offer === true;
   const isDiscountOffer = item.is_offer === true && !isPromoOffer;
-  
-  // ✅ بيانات العرض الترويجي
   const promoOffer = item.promo_offer || item;
   
-  // ✅ State لجلب اسم المتجر من API للعروض الترويجية
   const [storeNameFromApi, setStoreNameFromApi] = useState<string>("");
   const [storeLogoFromApi, setStoreLogoFromApi] = useState<string>("");
   const [storeIdFromApi, setStoreIdFromApi] = useState<string | null>(null);
 
-  // ✅ useEffect لجلب اسم المتجر للعروض الترويجية
   useEffect(() => {
     const fetchStoreData = async () => {
       if (!isPromoOffer || !promoOffer?.store_id) return;
@@ -183,7 +195,6 @@ export const ListingCard = memo(function ListingCard({
     [item.cover_url, item.listing_images]
   );
   
-  // ✅ استخراج اسم المتجر - مع دعم الـ API
   const storeName = useMemo(() => {
     if (isPromoOffer) {
       if (storeNameFromApi) return storeNameFromApi;
@@ -214,7 +225,6 @@ export const ListingCard = memo(function ListingCard({
            "";
   }, [item, isPromoOffer, promoOffer, storeNameFromApi, app.lang]);
 
-  // ✅ صورة المتجر - مع دعم الـ API
   const storeCover = useMemo(() => {
     if (isPromoOffer) {
       if (storeLogoFromApi) return storeLogoFromApi;
@@ -240,7 +250,6 @@ export const ListingCard = memo(function ListingCard({
            "";
   }, [item, isPromoOffer, promoOffer, storeLogoFromApi]);
 
-  // ✅ storeId - مع دعم الـ API
   const storeId = useMemo(() => {
     if (isPromoOffer) {
       if (storeIdFromApi) return storeIdFromApi;
@@ -260,34 +269,17 @@ export const ListingCard = memo(function ListingCard({
 
   const price = useMemo(() => Number(item.price), [item.price]);
   
-// ✅ ✅ ✅ التحقق من وجود فيرنتات/خيارات من كل المصادر
-const hasVariations = useMemo(() => {
-  // 1. من item.variations
-  if (item.variations?.length > 0) return true;
-  
-  // 2. من item.variation_ids (للعروض الترويجية)
-  if (item.variation_ids?.length > 0) return true;
-  
-  // 3. من item.product_variations
-  if (item.product_variations?.length > 0) return true;
-  
-  // 4. من item.product_options (الألوان والخيارات)
-  if (item.product_options?.length > 0) return true;
-  
-  // 5. من item.options (الألوان والخيارات)
-  if (item.options?.length > 0) return true;
-  
-  // 6. من item.product_colors (الألوان)
-  if (item.product_colors?.length > 0) return true;
-  
-  // 7. من promoOffer (للعروض الترويجية)
-  if (isPromoOffer && promoOffer?.variation_ids?.length > 0) return true;
-  
-  // 8. من metadata
-  if (item.metadata?.variations && Object.keys(item.metadata.variations).length > 0) return true;
-  
-  return false;
-}, [item, isPromoOffer, promoOffer]);
+  const hasVariations = useMemo(() => {
+    if (item.variations?.length > 0) return true;
+    if (item.variation_ids?.length > 0) return true;
+    if (item.product_variations?.length > 0) return true;
+    if (item.product_options?.length > 0) return true;
+    if (item.options?.length > 0) return true;
+    if (item.product_colors?.length > 0) return true;
+    if (isPromoOffer && promoOffer?.variation_ids?.length > 0) return true;
+    if (item.metadata?.variations && Object.keys(item.metadata.variations).length > 0) return true;
+    return false;
+  }, [item, isPromoOffer, promoOffer]);
   
   const discountPercent = useMemo(() => 
     isDiscountOffer ? (item.discount_percent || 0) : 0,
@@ -360,16 +352,7 @@ const hasVariations = useMemo(() => {
       return;
     }
     
-    if (item.owner_id === app.user.id) {
-      toast.error(
-        app.lang === "ar" 
-          ? "❌ لا يمكنك إضافة منتجات من متجرك الخاص إلى السلة" 
-          : "❌ You cannot add products from your own store to cart"
-      );
-      return;
-    }
-    
-    if (item.profile?.id === app.user.id || item.profiles?.id === app.user.id) {
+    if (item.owner_id === app.user.id || item.profile?.id === app.user.id || item.profiles?.id === app.user.id) {
       toast.error(
         app.lang === "ar" 
           ? "❌ لا يمكنك إضافة منتجات من متجرك الخاص إلى السلة" 
@@ -451,37 +434,33 @@ const hasVariations = useMemo(() => {
     app.toggleFavorite(item.id);
   }, [app, item.id]);
 
-  // ✅ renderImage مع OptimizedImage
-const renderImage = useCallback(() => {
-  console.log('🔍 [ListingCard] renderImage called, cover:', cover);
-  if (cover) {
-    console.log('✅ [ListingCard] Rendering OptimizedImage with src:', cover);
+  const renderImage = useCallback(() => {
+    if (cover) {
+      return (
+        <OptimizedImage
+          src={cover}
+          alt={title}
+          width={400}
+          height={400}
+          quality={85}
+          objectFit="cover"
+          className="w-full h-full transition-transform duration-700 group-hover:scale-110"
+        />
+      );
+    }
     return (
-      <OptimizedImage
-        src={cover}
-        alt={title}
-        width={400}
-        height={400}
-        quality={85}
-        objectFit="cover"
-        className="w-full h-full transition-transform duration-700 group-hover:scale-110"
-      />
+      <div className="h-full w-full grid place-items-center">
+        <ImageIcon className="h-12 w-12 text-[#2a655f]/30" />
+      </div>
     );
-  }
-  console.log('❌ [ListingCard] No cover image');
-  return (
-    <div className="h-full w-full grid place-items-center">
-      <ImageIcon className="h-12 w-12 text-[#2a655f]/30" />
-    </div>
-  );
-}, [cover, title]);
+  }, [cover, title]);
 
   const renderPrice = useCallback(() => {
     if (isDiscountOffer && oldPrice) {
       return (
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-rose-500 line-through font-semibold">
+            <span className="text-xs text-[#2a655f]/55 dark:text-[#fbcfe8]/80 line-through font-semibold">
               {formatPrice(oldPrice, app.currency, app.lang)}
             </span>
           </div>
@@ -490,13 +469,13 @@ const renderImage = useCallback(() => {
             <span className="text-lg md:text-xl font-black text-[#2a655f] dark:text-[#3a8a82] tracking-tight">
               {formatPrice(price, app.currency, app.lang)}
             </span>
-            <span className="text-[10px] font-bold text-white bg-gradient-to-r from-red-600 to-orange-500 px-2 py-0.5 rounded-full shadow-md animate-pulse">
+            <span className="text-[10px] font-bold text-white bg-[#2a655f] px-2 py-0.5 rounded-full shadow-md">
               {discountPercent}% OFF
             </span>
           </div>
           
           {savings > 0 && (
-            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+            <div className="text-[10px] text-[#2a655f] dark:text-[#f9a8d4] font-medium">
               💰 {app.lang === "ar" ? "وفر" : "Save"} {formatPrice(savings, app.currency, app.lang)}
             </div>
           )}
@@ -512,17 +491,17 @@ const renderImage = useCallback(() => {
               {formatPrice(price, app.currency, app.lang)}
             </span>
             {promoDiscountPercent > 0 && (
-              <span className="text-[10px] font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-500 px-2 py-0.5 rounded-full shadow-md animate-pulse">
+              <span className="text-[10px] font-bold text-[#2a655f] bg-[#f9a8d4] px-2 py-0.5 rounded-full shadow-md">
                 🎁 {promoDiscountPercent}% OFF
               </span>
             )}
           </div>
           
           {promoSavings > 0 && (
-            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+            <div className="text-[10px] text-[#2a655f] dark:text-[#f9a8d4] font-medium flex items-center gap-1">
               <Gift className="h-3 w-3" />
               {app.lang === "ar" ? "وفر" : "Save"} {formatPrice(promoSavings, app.currency, app.lang)}
-              <span className="text-purple-500 font-bold text-[9px]">
+              <span className="text-[#2a655f] dark:text-[#f9a8d4] font-bold text-[9px]">
                 ({app.lang === "ar" ? "مجاناً" : "FREE"})
               </span>
             </div>
@@ -545,17 +524,17 @@ const renderImage = useCallback(() => {
     
     return (
       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-        <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 text-[9px] px-2 py-0.5 flex items-center gap-1">
+        <Badge className="bg-[#2a655f] text-white border-0 text-[9px] px-2 py-0.5 flex items-center gap-1">
           <Sparkles className="h-2.5 w-2.5" />
           {app.lang === "ar" ? "عرض ترويجي" : "Promo"}
         </Badge>
         {promoType && (
-          <Badge variant="outline" className="text-[9px] border-purple-300/50 text-purple-600 dark:text-purple-300 px-2 py-0.5 flex items-center gap-1">
+          <Badge variant="outline" className="text-[9px] border-[#f9a8d4]/60 text-[#2a655f] dark:border-[#fbcfe8]/50 dark:text-[#f9a8d4] px-2 py-0.5 flex items-center gap-1">
             {promoType.icon && <promoType.icon className="h-2.5 w-2.5" />}
             {promoType.label}
           </Badge>
         )}
-        <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium flex items-center gap-1">
+        <span className="text-[10px] text-[#2a655f] dark:text-[#f9a8d4] font-medium flex items-center gap-1">
           <Gift className="h-2.5 w-2.5" />
           {app.lang === "ar" ? "اشتري" : "Buy"} {promoOffer.buy_quantity || 2} 
           {app.lang === "ar" ? " واحصل على" : " get"} {promoOffer.get_quantity || 1} 
@@ -611,158 +590,153 @@ const renderImage = useCallback(() => {
     );
   }, [isPromoOffer, item.variations, item.variation_ids, item.price, app.currency, app.lang]);
 
-// ✅ ✅ ✅ عرض الألوان (نسخة محسنة مع ألوان افتراضية)
-// ✅ ✅ ✅ عرض الألوان (النسخة النهائية - بدون شرط hasVariations)
-const renderColors = useCallback((maxDisplay: number = 5) => {
-  const colors = item.product_colors || item.colors || [];
-  
-  if (!colors || colors.length === 0) return null;
-  
-  const isLightColor = (hex: string): boolean => {
-    if (!hex || hex === '#CCCCCC' || hex === '#cccccc') return true;
+  const renderColors = useCallback((maxDisplay: number = 5) => {
+    const colors = item.product_colors || item.colors || [];
     
-    let r: number, g: number, b: number;
-    const clean = hex.replace('#', '');
+    if (!colors || colors.length === 0) return null;
     
-    if (clean.length === 3) {
-      r = parseInt(clean[0] + clean[0], 16);
-      g = parseInt(clean[1] + clean[1], 16);
-      b = parseInt(clean[2] + clean[2], 16);
-    } else if (clean.length === 6) {
-      r = parseInt(clean.substring(0, 2), 16);
-      g = parseInt(clean.substring(2, 4), 16);
-      b = parseInt(clean.substring(4, 6), 16);
-    } else {
-      return true;
-    }
+    const isLightColor = (hex: string): boolean => {
+      if (!hex || hex === '#CCCCCC' || hex === '#cccccc') return true;
+      
+      let r: number, g: number, b: number;
+      const clean = hex.replace('#', '');
+      
+      if (clean.length === 3) {
+        r = parseInt(clean[0] + clean[0], 16);
+        g = parseInt(clean[1] + clean[1], 16);
+        b = parseInt(clean[2] + clean[2], 16);
+      } else if (clean.length === 6) {
+        r = parseInt(clean.substring(0, 2), 16);
+        g = parseInt(clean.substring(2, 4), 16);
+        b = parseInt(clean.substring(4, 6), 16);
+      } else {
+        return true;
+      }
+      
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      return luminance > 0.5;
+    };
     
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.5;
-  };
-  
-  const defaultColors: Record<string, string> = {
-    'أحمر': '#FF0000', 'احمر': '#FF0000',
-    'أزرق': '#0000FF', 'ازرق': '#0000FF',
-    'أخضر': '#00FF00', 'اخضر': '#00FF00',
-    'أسود': '#000000', 'اسود': '#000000',
-    'أبيض': '#FFFFFF', 'ابيض': '#FFFFFF',
-    'بني': '#8B4513',
-    'ذهبي': '#FFD700',
-    'فضي': '#C0C0C0',
-    'وردي': '#FF69B4',
-    'بنفسجي': '#800080',
-    'أصفر': '#FFFF00', 'اصفر': '#FFFF00',
-    'برتقالي': '#FF8C00',
-    'رمادي': '#808080',
-    'بيج': '#F5F5DC',
-    'نحاسي': '#B87333',
-    'تركواز': '#40E0D0',
-    'فيروزي': '#40E0D0',
-    'كحلي': '#000080',
-    'عسلي': '#C68E5E',
-    'كريمي': '#FFFDD0',
-    'خمري': '#722F37',
-    'نبيتي': '#722F37',
-    'عنابي': '#800000',
-    'زيتوني': '#808000',
-    'نعناعي': '#98FF98',
-    'لافندر': '#E6E6FA',
-    'موف': '#C8A2C8',
-    'مرجاني': '#FF7F50',
-    'قرمزي': '#DC143C',
-    'كرزي': '#DE3163',
-    'سماوي': '#00BFFF',
-    'ليموني': '#FFF44F',
-    'خوخي': '#FFDAB9',
-    'عنبري': '#FFBF00',
-    'زهري': '#FFB6C1',
-    'فوشي': '#FF00FF',
-    'أرجواني': '#800080',
-    'بشري': '#F5D0B8',
-    'خردلي': '#DAA520',
-    'مينت': '#98FF98',
-    'بيبي بينك': '#F4C2C2',
-    'نود': '#E8D5B7',
-    'رملي': '#D7C4A1',
-    'ثلجي': '#FFFAFA',
-    'أوف وايت': '#F8F8FF',
-    'ترابي': '#C4A882',
-    'قمحي': '#F5DEB3',
-    'حنطي': '#D4A574',
-    'سكري': '#FDF5E6',
-    'عاجي': '#FFFFF0',
-    'لؤلؤي': '#F5F5F5',
-    'قهوي': '#6F4E37',
-    'شوكولاتة': '#7B3F00',
-    'كاكي': '#C3B091',
-    'برونزي': '#CD7F32',
-  };
-  
-  return (
-    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-      <span className="text-[10px] text-muted-foreground font-medium">
-        {app.lang === "ar" ? "الألوان:" : "Colors:"}
-      </span>
-      {colors.slice(0, maxDisplay).map((color: any, idx: number) => {
-        let hexColor = color.color_hex;
-        if (!hexColor || hexColor === 'null' || hexColor === '') {
-          const name = (color.color_name_ar || color.color_name_en || '').toLowerCase();
-          hexColor = defaultColors[name] || '#CCCCCC';
-        }
-        
-        const imageUrl = color.image_url;
-        const colorName = app.lang === "ar" ? color.color_name_ar : (color.color_name_en || color.color_name_ar);
-        const isLight = isLightColor(hexColor);
-        
-        return (
-          <div
-            key={idx}
-            className="group relative h-6 w-6 rounded-full border-2 border-slate-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-110 cursor-pointer overflow-visible flex items-center justify-center"
-            style={{ 
-              backgroundColor: imageUrl ? 'transparent' : hexColor,
-              backgroundImage: imageUrl ? `url(${imageUrl})` : 'none',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          >
-            {/* ✅ Tooltip - يظهر عند تمرير الماوس على الدائرة */}
-            <div 
-              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 shadow-xl border border-white/20 pointer-events-none"
+    const defaultColors: Record<string, string> = {
+      'أحمر': '#FF0000', 'احمر': '#FF0000',
+      'أزرق': '#0000FF', 'ازرق': '#0000FF',
+      'أخضر': '#00FF00', 'اخضر': '#00FF00',
+      'أسود': '#000000', 'اسود': '#000000',
+      'أبيض': '#FFFFFF', 'ابيض': '#FFFFFF',
+      'بني': '#8B4513',
+      'ذهبي': '#FFD700',
+      'فضي': '#C0C0C0',
+      'وردي': '#FF69B4',
+      'بنفسجي': '#800080',
+      'أصفر': '#FFFF00', 'اصفر': '#FFFF00',
+      'برتقالي': '#FF8C00',
+      'رمادي': '#808080',
+      'بيج': '#F5F5DC',
+      'نحاسي': '#B87333',
+      'تركواز': '#40E0D0',
+      'فيروزي': '#40E0D0',
+      'كحلي': '#000080',
+      'عسلي': '#C68E5E',
+      'كريمي': '#FFFDD0',
+      'خمري': '#722F37',
+      'نبيتي': '#722F37',
+      'عنابي': '#800000',
+      'زيتوني': '#808000',
+      'نعناعي': '#98FF98',
+      'لافندر': '#E6E6FA',
+      'موف': '#C8A2C8',
+      'مرجاني': '#FF7F50',
+      'قرمزي': '#DC143C',
+      'كرزي': '#DE3163',
+      'سماوي': '#00BFFF',
+      'ليموني': '#FFF44F',
+      'خوخي': '#FFDAB9',
+      'عنبري': '#FFBF00',
+      'زهري': '#FFB6C1',
+      'فوشي': '#FF00FF',
+      'أرجواني': '#800080',
+      'بشري': '#F5D0B8',
+      'خردلي': '#DAA520',
+      'مينت': '#98FF98',
+      'بيبي بينك': '#F4C2C2',
+      'نود': '#E8D5B7',
+      'رملي': '#D7C4A1',
+      'ثلجي': '#FFFAFA',
+      'أوف وايت': '#F8F8FF',
+      'ترابي': '#C4A882',
+      'قمحي': '#F5DEB3',
+      'حنطي': '#D4A574',
+      'سكري': '#FDF5E6',
+      'عاجي': '#FFFFF0',
+      'لؤلؤي': '#F5F5F5',
+      'قهوي': '#6F4E37',
+      'شوكولاتة': '#7B3F00',
+      'كاكي': '#C3B091',
+      'برونزي': '#CD7F32',
+    };
+    
+    return (
+      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+        <span className="text-[10px] text-muted-foreground font-medium">
+          {app.lang === "ar" ? "الألوان:" : "Colors:"}
+        </span>
+        {colors.slice(0, maxDisplay).map((color: any, idx: number) => {
+          let hexColor = color.color_hex;
+          if (!hexColor || hexColor === 'null' || hexColor === '') {
+            const name = (color.color_name_ar || color.color_name_en || '').toLowerCase();
+            hexColor = defaultColors[name] || '#CCCCCC';
+          }
+          
+          const imageUrl = color.image_url;
+          const colorName = app.lang === "ar" ? color.color_name_ar : (color.color_name_en || color.color_name_ar);
+          const isLight = isLightColor(hexColor);
+          
+          return (
+            <div
+              key={idx}
+              className="group relative h-6 w-6 rounded-full border-2 border-[#f9a8d4]/30 shadow-sm transition-transform hover:scale-110 cursor-pointer overflow-visible flex items-center justify-center"
               style={{ 
-                backgroundColor: hexColor,
-                color: isLight ? '#1a1a1a' : '#ffffff',
-                boxShadow: `0 8px 25px ${hexColor}88, 0 2px 8px rgba(0,0,0,0.1)`,
+                backgroundColor: imageUrl ? 'transparent' : hexColor,
+                backgroundImage: imageUrl ? `url(${imageUrl})` : 'none',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
               }}
             >
-              {colorName || (app.lang === "ar" ? "لون" : "Color")}
-              
-              {/* ✅ السهم الصغير تحت الـ tooltip */}
               <div 
-                className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45"
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 shadow-xl border border-white/20 pointer-events-none"
                 style={{ 
                   backgroundColor: hexColor,
+                  color: isLight ? '#1a1a1a' : '#ffffff',
+                  boxShadow: `0 8px 25px ${hexColor}88, 0 2px 8px rgba(0,0,0,0.1)`,
                 }}
-              />
+              >
+                {colorName || (app.lang === "ar" ? "لون" : "Color")}
+                <div 
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45"
+                  style={{ 
+                    backgroundColor: hexColor,
+                  }}
+                />
+              </div>
+              
+              {!imageUrl && !hexColor && (
+                <span className="text-[8px] font-bold text-white">?</span>
+              )}
             </div>
-            
-            {!imageUrl && !hexColor && (
-              <span className="text-[8px] font-bold text-white">?</span>
-            )}
-          </div>
-        );
-      })}
-      {colors.length > maxDisplay && (
-        <span className="text-[9px] text-muted-foreground">
-          +{colors.length - maxDisplay}
-        </span>
-      )}
-    </div>
-  );
-}, [item.product_colors, item.colors, app.lang]);
+          );
+        })}
+        {colors.length > maxDisplay && (
+          <span className="text-[9px] text-muted-foreground">
+            +{colors.length - maxDisplay}
+          </span>
+        )}
+      </div>
+    );
+  }, [item.product_colors, item.colors, app.lang]);
+
   const isOfferCard = isDiscountOffer || isPromoOffer;
   const productLink = isPromoOffer ? "/offer/$id" : "/listing/$id";
 
-  // ✅ استخدام useMemo لمنع إعادة إنشاء الـ Modal في كل ريندر
   const storeConflictModal = useMemo(() => (
     <StoreConflictModalComponent
       open={showStoreConflictDialog}
@@ -775,18 +749,15 @@ const renderColors = useCallback((maxDisplay: number = 5) => {
     />
   ), [showStoreConflictDialog, currentStoreName, newStoreName, isProcessing, app.lang]);
 
+  // ✅ GRID VARIANT - بوردر فوشي غامق مطابق تماماً لـ StoreCard
   if (variant === "grid") {
     return (
       <>
         <div 
           onClick={() => navigate({ to: productLink, params: { id: item.id } })}
           className={cn(
-            "group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-md hover:shadow-2xl hover:shadow-[#2a655f]/30 transition-all duration-500 hover:-translate-y-1.5 flex flex-col min-h-[440px] cursor-pointer",
-            isOfferCard 
-              ? isPromoOffer 
-                ? "border-2 border-purple-500/80 glowing-offer-card" 
-                : "border-2 border-red-500/80 glowing-offer-card"
-              : "border-2 border-[#1b433e] dark:border-[#3a8a82]/80 hover:border-[#2a655f]"
+            "group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-[0_0_35px_rgba(216,27,96,0.2)] hover:shadow-[0_0_55px_rgba(194,24,91,0.35)] transition-all duration-400 hover:-translate-y-1.5 flex flex-col min-h-[440px] cursor-pointer border-3 border-[#d81b60]/60 hover:border-[#c2185b]",
+            isOfferCard && "border-3 border-[#d81b60]/60 hover:border-[#c2185b]"
           )}
         >
           <div className="flex flex-col h-full">
@@ -798,11 +769,11 @@ const renderColors = useCallback((maxDisplay: number = 5) => {
               {isDiscountOffer && discountPercent > 0 && (
                 <div className="absolute top-3 right-3 z-20">
                   <div className="relative">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-red-500 via-orange-500 to-red-500 bg-[length:300%_300%] blur-xl rounded-full animate-gradient-flow" />
-                    <div className="relative bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 text-white px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-1.5 border-2 border-white/40 font-black text-[10px] sm:text-xs animate-pulse bg-[length:300%_300%] animate-gradient-flow">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] blur-lg rounded-full opacity-60" />
+                    <div className="relative bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1.5 border-2 border-white/50 font-black text-[10px] sm:text-xs">
                       <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin-slow" />
                       <span className="tracking-wide">{discountPercent}%</span>
-                      <span className="text-[7px] sm:text-[8px] font-bold bg-white/30 px-1.5 py-0.5 rounded-full animate-pulse">OFF</span>
+                      <span className="text-[7px] sm:text-[8px] font-bold bg-white/25 px-1.5 py-0.5 rounded-full">OFF</span>
                     </div>
                   </div>
                 </div>
@@ -811,11 +782,11 @@ const renderColors = useCallback((maxDisplay: number = 5) => {
               {isPromoOffer && promoDiscountPercent > 0 && (
                 <div className="absolute top-3 right-3 z-20">
                   <div className="relative">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 bg-[length:300%_300%] blur-xl rounded-full animate-gradient-flow" />
-                    <div className="relative bg-gradient-to-r from-purple-600 via-rose-500 to-orange-500 text-white px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-1.5 border-2 border-white/40 font-black text-[10px] sm:text-xs animate-pulse bg-[length:300%_300%] animate-gradient-flow">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-[#f9a8d4] to-[#fbcfe8] blur-lg rounded-full opacity-60" />
+                    <div className="relative bg-gradient-to-r from-[#f9a8d4] to-[#fbcfe8] text-[#2a655f] px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1.5 border-2 border-[#2a655f]/20 font-black text-[10px] sm:text-xs">
                       <Gift className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin-slow" />
                       <span className="tracking-wide">{promoDiscountPercent}%</span>
-                      <span className="text-[7px] sm:text-[8px] font-bold bg-white/30 px-1.5 py-0.5 rounded-full animate-pulse">FREE</span>
+                      <span className="text-[7px] sm:text-[8px] font-bold bg-[#2a655f]/10 px-1.5 py-0.5 rounded-full">FREE</span>
                     </div>
                   </div>
                 </div>
@@ -887,7 +858,6 @@ const renderColors = useCallback((maxDisplay: number = 5) => {
               </div>
               
               {renderVariations(3)}
-              {/* ✅ ✅ ✅ عرض الألوان */}
               {renderColors()}
               
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
@@ -898,7 +868,7 @@ const renderColors = useCallback((maxDisplay: number = 5) => {
                 {hasVariations ? (
                   <Button
                     size="icon"
-                    className="h-10 w-10 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white shadow-md shadow-indigo-500/30 transition-all duration-300 hover:scale-105 shrink-0"
+                    className="h-10 w-10 rounded-xl bg-[#f9a8d4] hover:bg-[#fbcfe8] text-[#2a655f] shadow-md shadow-[#f9a8d4]/25 transition-all duration-300 hover:scale-105 shrink-0"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -930,17 +900,14 @@ const renderColors = useCallback((maxDisplay: number = 5) => {
     );
   }
 
+  // ✅ LIST VARIANT - بوردر فوشي غامق مطابق تماماً لـ StoreCard
   return (
     <>
       <div 
         onClick={() => navigate({ to: productLink, params: { id: item.id } })}
         className={cn(
-          "group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-md hover:shadow-2xl hover:shadow-[#2a655f]/30 transition-all duration-500 hover:-translate-y-1.5 flex flex-col min-h-[440px] cursor-pointer",
-          isOfferCard 
-            ? isPromoOffer 
-              ? "border-2 border-purple-500/80 glowing-offer-card" 
-              : "border-2 border-red-500/80 glowing-offer-card"
-            : "border-2 border-[#1b433e] dark:border-[#3a8a82]/80 hover:border-[#2a655f]"
+          "group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-[0_0_35px_rgba(216,27,96,0.2)] hover:shadow-[0_0_55px_rgba(194,24,91,0.35)] transition-all duration-400 hover:-translate-y-1.5 flex flex-col min-h-[440px] cursor-pointer border-3 border-[#d81b60]/60 hover:border-[#c2185b]",
+          isOfferCard && "border-3 border-[#d81b60]/60 hover:border-[#c2185b]"
         )}
       >
         <div className="flex flex-col sm:flex-row h-full">
@@ -950,11 +917,11 @@ const renderColors = useCallback((maxDisplay: number = 5) => {
             {isDiscountOffer && discountPercent > 0 && (
               <div className="absolute top-3 right-3 z-20">
                 <div className="relative">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-red-500 via-orange-500 to-red-500 bg-[length:300%_300%] blur-xl rounded-full animate-gradient-flow" />
-                  <div className="relative bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 text-white px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-1.5 border-2 border-white/40 font-black text-[10px] sm:text-xs animate-pulse bg-[length:300%_300%] animate-gradient-flow">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] blur-lg rounded-full opacity-60" />
+                  <div className="relative bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1.5 border-2 border-white/50 font-black text-[10px] sm:text-xs">
                     <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin-slow" />
                     <span className="tracking-wide">{discountPercent}%</span>
-                    <span className="text-[7px] sm:text-[8px] font-bold bg-white/30 px-1.5 py-0.5 rounded-full animate-pulse">OFF</span>
+                    <span className="text-[7px] sm:text-[8px] font-bold bg-white/25 px-1.5 py-0.5 rounded-full">OFF</span>
                   </div>
                 </div>
               </div>
@@ -963,11 +930,11 @@ const renderColors = useCallback((maxDisplay: number = 5) => {
             {isPromoOffer && promoDiscountPercent > 0 && (
               <div className="absolute top-3 right-3 z-20">
                 <div className="relative">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 bg-[length:300%_300%] blur-xl rounded-full animate-gradient-flow" />
-                  <div className="relative bg-gradient-to-r from-purple-600 via-rose-500 to-orange-500 text-white px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-1.5 border-2 border-white/40 font-black text-[10px] sm:text-xs animate-pulse bg-[length:300%_300%] animate-gradient-flow">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-[#f9a8d4] to-[#fbcfe8] blur-lg rounded-full opacity-60" />
+                  <div className="relative bg-gradient-to-r from-[#f9a8d4] to-[#fbcfe8] text-[#2a655f] px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1.5 border-2 border-[#2a655f]/20 font-black text-[10px] sm:text-xs">
                     <Gift className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin-slow" />
                     <span className="tracking-wide">{promoDiscountPercent}%</span>
-                    <span className="text-[7px] sm:text-[8px] font-bold bg-white/30 px-1.5 py-0.5 rounded-full animate-pulse">FREE</span>
+                    <span className="text-[7px] sm:text-[8px] font-bold bg-[#2a655f]/10 px-1.5 py-0.5 rounded-full">FREE</span>
                   </div>
                 </div>
               </div>
@@ -1041,7 +1008,6 @@ const renderColors = useCallback((maxDisplay: number = 5) => {
             </div>
             
             {renderVariations(4)}
-            {/* ✅ ✅ ✅ عرض الألوان */}
             {renderColors()}
             
             <div className="mt-2 flex flex-wrap items-end justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -1051,7 +1017,7 @@ const renderColors = useCallback((maxDisplay: number = 5) => {
               
               {hasVariations ? (
                 <Button
-                  className="h-10 px-5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-semibold text-xs flex items-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/30 hover:scale-105"
+                  className="h-10 px-5 rounded-xl bg-[#f9a8d4] hover:bg-[#fbcfe8] text-[#2a655f] font-semibold text-xs flex items-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-[#f9a8d4]/25 hover:scale-105"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1084,29 +1050,13 @@ const renderColors = useCallback((maxDisplay: number = 5) => {
   );
 });
 
+// ✅ ✅ ✅ CSS أنماط البوردر الفوشي الغامق المطابق لـ StoreCard
 const styleTag = typeof document !== 'undefined' ? document.createElement('style') : null;
 if (styleTag) {
   styleTag.innerHTML = `
-    @keyframes offer-glow {
-      0% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.4), 0 0 20px rgba(245, 158, 11, 0.2); }
-      50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.8), 0 0 40px rgba(245, 158, 11, 0.5); }
-      100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.4), 0 0 20px rgba(245, 158, 11, 0.2); }
-    }
-    @keyframes gradient-flow {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
     @keyframes spin-slow {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
-    }
-    .glowing-offer-card {
-      animation: offer-glow 2.5s infinite ease-in-out;
-    }
-    .animate-gradient-flow {
-      animation: gradient-flow 3s ease infinite;
-      background-size: 300% 300%;
     }
     .animate-spin-slow {
       animation: spin-slow 3s linear infinite;

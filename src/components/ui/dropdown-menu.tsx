@@ -27,7 +27,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+      "flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-[#fbcfe8] focus:text-[#d81b60] data-[state=open]:bg-[#fbcfe8] data-[state=open]:text-[#d81b60] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 dark:focus:bg-[#fbcfe8]/30 dark:focus:text-[#f9a8d4] dark:data-[state=open]:bg-[#fbcfe8]/30 dark:data-[state=open]:text-[#f9a8d4]",
       inset && "pl-8",
       className,
     )}
@@ -73,6 +73,9 @@ const DropdownMenuContent = React.forwardRef<
 ));
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
+// ============================================================
+// ✅✅✅ المُعدّل: DropdownMenuItem مع ألوان وردية
+// ============================================================
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
@@ -82,7 +85,16 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
+      "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
+      // ✅ HOVER & FOCUS - PINK THEME
+      "hover:bg-[#fbcfe8] hover:text-[#d81b60]",
+      "focus:bg-[#fbcfe8] focus:text-[#d81b60]",
+      // ✅ DARK MODE
+      "dark:hover:bg-[#fbcfe8]/30 dark:hover:text-[#f9a8d4]",
+      "dark:focus:bg-[#fbcfe8]/30 dark:focus:text-[#f9a8d4]",
+      // ✅ DISABLED
+      "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "[&>svg]:size-4 [&>svg]:shrink-0",
       inset && "pl-8",
       className,
     )}
@@ -91,6 +103,9 @@ const DropdownMenuItem = React.forwardRef<
 ));
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
+// ============================================================
+// ✅ المُعدّل: DropdownMenuCheckboxItem
+// ============================================================
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
@@ -98,7 +113,12 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors",
+      "hover:bg-[#fbcfe8] hover:text-[#d81b60]",
+      "focus:bg-[#fbcfe8] focus:text-[#d81b60]",
+      "dark:hover:bg-[#fbcfe8]/30 dark:hover:text-[#f9a8d4]",
+      "dark:focus:bg-[#fbcfe8]/30 dark:focus:text-[#f9a8d4]",
+      "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className,
     )}
     checked={checked}
@@ -114,6 +134,9 @@ const DropdownMenuCheckboxItem = React.forwardRef<
 ));
 DropdownMenuCheckboxItem.displayName = DropdownMenuPrimitive.CheckboxItem.displayName;
 
+// ============================================================
+// ✅ المُعدّل: DropdownMenuRadioItem
+// ============================================================
 const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
@@ -121,7 +144,12 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors",
+      "hover:bg-[#fbcfe8] hover:text-[#d81b60]",
+      "focus:bg-[#fbcfe8] focus:text-[#d81b60]",
+      "dark:hover:bg-[#fbcfe8]/30 dark:hover:text-[#f9a8d4]",
+      "dark:focus:bg-[#fbcfe8]/30 dark:focus:text-[#f9a8d4]",
+      "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className,
     )}
     {...props}

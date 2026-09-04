@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { ImageInput } from "@/components/ImageInput";
 import { useApp, useT } from "@/lib/i18n";
 import { useAllBanners, useSaveBanner, useDeleteBanner, type BannerRow } from "@/lib/queries";
@@ -20,7 +20,24 @@ import { cn } from "@/lib/utils";
 import { OptimizedImage } from "@/components/OptimizedImage";
 
 // ============================================================
-// ✅ مكون بطاقة البنر - احترافي
+// 🎨 ZOOQ BRAND COLORS
+// ============================================================
+const COLORS = {
+  olive: '#2a655f',
+  oliveLight: '#3a8a82',
+  oliveDark: '#1a4f4a',
+  oliveVeryLight: '#e8f0ee',
+  pink: '#f9a8d4',
+  pinkLight: '#fbcfe8',
+  pinkDark: '#f48fb1',
+  pinkVeryLight: '#fdf2f8',
+  fuchsia: '#d81b60',
+  fuchsiaDark: '#c2185b',
+  fuchsiaGlow: 'rgba(216,27,96,0.2)',
+};
+
+// ============================================================
+// ✅ مكون بطاقة البنر - بتصميم وردي احترافي
 // ============================================================
 const BannerCard = React.memo(({ 
   banner, 
@@ -29,7 +46,7 @@ const BannerCard = React.memo(({
   isArabic,
 }: any) => {
   return (
-    <div className="group bg-white dark:bg-[#1e293b] rounded-2xl border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 overflow-hidden shadow-lg shadow-[#0d2e2a]/5 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-500 hover:-translate-y-1">
+    <div className="group bg-gradient-to-br from-white to-[#fbcfe8]/40 dark:from-[#1e293b] dark:to-[#fbcfe8]/10 rounded-2xl border-3 border-[#f9a8d4]/60 dark:border-[#f9a8d4]/30 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#f9a8d4]/25 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02]">
       
       {/* ===== الصورة ===== */}
       <div className="relative h-48 overflow-hidden">
@@ -42,15 +59,15 @@ const BannerCard = React.memo(({
           objectFit="cover"
           className="w-full h-full group-hover:scale-105 transition-transform duration-700"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#2a655f]/60 via-[#2a655f]/20 to-transparent" />
         
-        {/* ✅ Badge الحالة */}
+        {/* ✅ Badge الحالة - بتصميم وردي */}
         <Badge
           className={cn(
-            "absolute top-3 right-3 border-0 px-3 py-1 text-xs font-medium backdrop-blur-sm",
+            "absolute top-3 right-3 border-2 px-3 py-1 text-xs font-medium backdrop-blur-sm",
             banner.active 
-              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
-              : "bg-slate-500/20 text-slate-400 border border-slate-500/30"
+              ? "bg-[#f9a8d4]/30 text-[#d81b60] border-[#f9a8d4]/50 shadow-lg shadow-[#f9a8d4]/20" 
+              : "bg-slate-500/20 text-slate-400 border-slate-500/30"
           )}
         >
           {banner.active ? (
@@ -66,14 +83,14 @@ const BannerCard = React.memo(({
           )}
         </Badge>
 
-        {/* ✅ أيقونة نوع البنر */}
+        {/* ✅ أيقونة نوع البنر - بتصميم وردي */}
         <div className="absolute bottom-3 left-3 flex items-center gap-2">
-          <Badge className="bg-black/40 backdrop-blur-sm border border-white/10 text-white text-[10px]">
+          <Badge className="bg-[#2a655f]/40 backdrop-blur-sm border-2 border-[#f9a8d4]/30 text-white text-[10px]">
             <Image className="h-3 w-3 mr-1" />
             Banner
           </Badge>
           {banner.link_url && (
-            <Badge className="bg-blue-500/30 backdrop-blur-sm border border-blue-500/20 text-white text-[10px]">
+            <Badge className="bg-[#d81b60]/40 backdrop-blur-sm border-2 border-[#f9a8d4]/30 text-white text-[10px]">
               <Link2 className="h-3 w-3 mr-1" />
               {isArabic ? "رابط" : "Link"}
             </Badge>
@@ -81,15 +98,15 @@ const BannerCard = React.memo(({
         </div>
       </div>
 
-      {/* ===== المحتوى ===== */}
+      {/* ===== المحتوى - مع ألوان وردية ===== */}
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-[#0d2e2a] dark:group-hover:text-[#4a9f95] transition-colors truncate">
+            <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors truncate">
               {banner.title_ar}
             </h3>
             {banner.subtitle_ar && (
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1 group-hover:text-[#2a655f] transition-colors">
                 {banner.subtitle_ar}
               </p>
             )}
@@ -100,39 +117,42 @@ const BannerCard = React.memo(({
             )}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 text-[10px]">
+            <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40 text-[10px]">
               #{banner.sort_order + 1}
             </Badge>
           </div>
         </div>
 
-      {/* ✅ أزرار الإجراءات */}
-<div className="mt-4 flex items-center gap-2">
-  <Button
-    size="sm"
-    className="rounded-xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 hover:scale-105 flex-1"
-    onClick={() => onEdit(banner)}
-  >
-    <Pencil className="h-3.5 w-3.5 mr-1.5" />
-    {isArabic ? "تعديل" : "Edit"}
-  </Button>
-  <Button
-    size="sm"
-    variant="ghost"
-    className="rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 transition-all duration-300 hover:scale-105"
-    onClick={() => onDelete(banner)}
-  >
-    <Trash2 className="h-3.5 w-3.5" />
-  </Button>
-</div>
+        {/* ✅ أزرار الإجراءات - بتصميم وردي */}
+        <div className="mt-4 flex items-center gap-2">
+          <Button
+            size="sm"
+            className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105 flex-1 border-2 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
+            onClick={() => onEdit(banner)}
+          >
+            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+            {isArabic ? "تعديل" : "Edit"}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 transition-all duration-300 hover:scale-105 border-2 border-transparent hover:border-rose-500/30"
+            onClick={() => onDelete(banner)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
+      
+      {/* ✅ خط زخرفي سفلي وردي */}
+      <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
     </div>
   );
 });
 BannerCard.displayName = 'BannerCard';
 
 // ============================================================
-// ✅ مكون إحصائيات سريعة
+// ✅ مكون إحصائيات سريعة - بتصميم وردي
 // ============================================================
 const StatsCards = React.memo(({ total, active, inactive, isArabic }: any) => {
   const items = [
@@ -140,57 +160,48 @@ const StatsCards = React.memo(({ total, active, inactive, isArabic }: any) => {
       key: 'total', 
       label: isArabic ? '📊 الإجمالي' : '📊 Total', 
       value: total, 
-      gradient: "from-[#0d2e2a] to-[#1a4f4a]",
       icon: LayoutDashboard,
-      desc: isArabic ? 'جميع البنرات' : 'All banners',
+      color: 'text-[#2a655f]',
     },
     { 
       key: 'active', 
       label: isArabic ? '✅ نشط' : '✅ Active', 
       value: active, 
-      gradient: "from-[#2d6b63] to-[#4a9f95]",
       icon: CheckCircle2,
-      desc: isArabic ? 'بنرات نشطة' : 'Active banners',
+      color: 'text-emerald-500',
     },
     { 
       key: 'inactive', 
       label: isArabic ? '⏸️ غير نشط' : '⏸️ Inactive', 
       value: inactive, 
-      gradient: "from-[#4a9f95] to-[#6bb5aa]",
       icon: Clock,
-      desc: isArabic ? 'بنرات غير نشطة' : 'Inactive banners',
+      color: 'text-[#d81b60]',
     },
   ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       {items.map((item) => (
-        <div
-          key={item.key}
-          className={cn(
-            "group bg-gradient-to-br p-4 rounded-2xl text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] relative overflow-hidden cursor-default",
-            item.gradient
-          )}
+        <div 
+          key={item.key} 
+          className="group relative bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
         >
-          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-            <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-white/10 blur-3xl animate-pulse" />
-          </div>
-          <div className="relative flex items-center justify-between">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute -top-8 -right-8 h-16 w-16 rounded-full bg-[#fbcfe8]/60 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative flex items-center justify-between p-3">
             <div>
-              <p className="text-[10px] opacity-80 font-medium tracking-wider uppercase">{item.label}</p>
-              <p className="text-2xl font-bold mt-0.5">{item.value}</p>
-              <p className="text-[10px] opacity-70 mt-0.5">{item.desc}</p>
+              <p className="text-[10px] font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">
+                {item.label}
+              </p>
+              <p className={`text-xl font-bold mt-0.5 ${item.color} group-hover:scale-110 transition-transform duration-300`}>
+                {item.value}
+              </p>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-              <item.icon className="h-5 w-5 text-white/80" />
+            <div className={`h-9 w-9 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
+              <item.icon className={`h-4 w-4 ${item.color}`} />
             </div>
           </div>
-          <div className="relative mt-2 h-0.5 w-full rounded-full bg-white/20 overflow-hidden">
-            <div 
-              className="h-full rounded-full bg-white/40 transition-all duration-1000" 
-              style={{ width: `${Math.min(100, (total > 0 ? (item.value / total) * 100 : 0))}%` }}
-            />
-          </div>
+          <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
         </div>
       ))}
     </div>
@@ -256,282 +267,339 @@ export function BannersAdminPage() {
   return (
     <div className="space-y-6">
       
-      {/* ===== HEADER ===== */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center shadow-lg shadow-[#0d2e2a]/30">
-              <Image className="h-5 w-5 text-white animate-float" />
+      {/* ===== HEADER - نفس تصميم باقي الصفحات ===== */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative">
+          <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
+          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#f9a8d4]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+          
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
+            <div className="relative group">
+              <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
+              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#f9a8d4]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                <Image className="h-5 w-5 group-hover:animate-bounce" />
+              </div>
             </div>
-            <span className="bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] bg-clip-text text-transparent">
-              {isArabic ? "البنرات" : "Banners"}
-            </span>
-            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 text-[10px]">
-              <Sparkles className="h-2.5 w-2.5 mr-1 animate-pulse" />
-              {isArabic ? 'مباشر' : 'Live'}
+            {isArabic ? "البنرات" : "Banners"}
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
+              {stats.total}
             </Badge>
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
-            {isArabic
-              ? `إدارة البنرات الظاهرة في الصفحة الرئيسية (${stats.total})`
-              : `Manage homepage banners (${stats.total})`}
-            <span className="h-1 w-1 rounded-full bg-[#0d2e2a]/30" />
-            <span className="text-xs text-[#2d6b63] flex items-center gap-1">
-              <Zap className="h-3 w-3 animate-pulse" />
-              {isArabic ? 'تحديث لحظي' : 'Real-time'}
+          </h1>
+          
+          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
+              <LayoutDashboard className="h-3.5 w-3.5 text-[#2a655f]" />
+              <span className="text-[#2a655f] font-medium">{stats.total}</span>
+              <span className="text-xs text-muted-foreground">{isArabic ? "إجمالي" : "total"}</span>
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30 transition-colors">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">{stats.active}</span>
+              <span className="text-xs text-muted-foreground">{isArabic ? "نشط" : "active"}</span>
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f9a8d4]/10 border border-[#f9a8d4]/20 hover:bg-[#f9a8d4]/20 transition-colors">
+              <Clock className="h-3.5 w-3.5 text-[#d81b60]" />
+              <span className="text-[#d81b60] font-medium">{stats.inactive}</span>
+              <span className="text-xs text-muted-foreground">{isArabic ? "غير نشط" : "inactive"}</span>
             </span>
           </p>
         </div>
-        
+
         <Button
           onClick={openNew}
-          className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#0d2e2a]/30 rounded-xl px-5"
+          className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-105 group border-2 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
         >
-          <Plus className="h-4 w-4 mr-1.5" />
+          <Plus className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
           {isArabic ? "إضافة بنر جديد" : "Add New Banner"}
         </Button>
       </div>
 
-      {/* ===== STATS ===== */}
+      {/* ===== STATS CARDS - بتصميم وردي ===== */}
       <StatsCards {...stats} isArabic={isArabic} />
 
-      {/* ===== BANNERS GRID ===== */}
+      {/* ===== BANNERS GRID - مع كروت وردية ===== */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="flex items-center gap-3">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#0d2e2a] border-t-transparent" />
-            <span className="text-slate-500">{isArabic ? "جار التحميل..." : "Loading..."}</span>
+        <div className="flex flex-col items-center justify-center py-32 space-y-6">
+          <div className="relative">
+            <div className="h-20 w-20 rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f] animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Image className="h-8 w-8 text-[#2a655f] animate-pulse" />
+            </div>
           </div>
+          <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 animate-pulse">
+            {isArabic ? "⏳ جاري تحميل البنرات..." : "⏳ Loading banners..."}
+          </p>
         </div>
       ) : banners.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border-2 border-dashed border-[#0d2e2a]/30 shadow-lg">
-          <div className="h-20 w-20 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
-            <Image className="h-10 w-10 text-[#0d2e2a]/40" />
+        <div className="relative rounded-3xl border-3 border-[#2a655f]/40 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-[#f9a8d4]/5 group hover:border-[#d81b60]/60 hover:shadow-[0_0_35px_rgba(216,27,96,0.2)] transition-all duration-500">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-[#f9a8d4] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative">
+            <div className="absolute -top-12 -left-12 h-32 w-32 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
+            <div className="absolute -bottom-12 -right-12 h-32 w-32 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+            <div className="relative inline-block">
+              <div className="h-24 w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto animate-bounce">
+                <Image className="h-12 w-12 text-[#2a655f]/60" />
+              </div>
+              <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#2a655f]/30">
+                <Plus className="h-4 w-4 text-white" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold mt-6 bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] bg-clip-text text-transparent">
+              {isArabic ? "🚀 لا توجد بنرات" : "🚀 No banners"}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+              {isArabic 
+                ? "قم بإضافة أول بنر لجعل الصفحة الرئيسية أكثر جاذبية" 
+                : "Add your first banner to make the homepage more attractive"}
+            </p>
+            <Button
+              onClick={openNew}
+              className="mt-6 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-105 group border-3 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
+            >
+              <Plus className="h-4 w-4 me-2 group-hover:rotate-90 transition-transform duration-300" />
+              {isArabic ? "إضافة بنر جديد" : "Add New Banner"}
+            </Button>
           </div>
-          <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
-            {isArabic ? "لا توجد بنرات" : "No banners"}
-          </h3>
-          <p className="text-sm text-muted-foreground mt-2">
-            {isArabic 
-              ? "قم بإضافة أول بنر لظهوره في الصفحة الرئيسية"
-              : "Add your first banner to appear on the homepage"}
-          </p>
-          <Button
-            onClick={openNew}
-            className="mt-4 bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#0d2e2a]/30 rounded-xl"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            {isArabic ? "إضافة بنر" : "Add Banner"}
-          </Button>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {banners.map((banner) => (
-            <BannerCard
-              key={banner.id}
-              banner={banner}
-              onEdit={(b: BannerRow) => setEditing(b)}
-              onDelete={(b: BannerRow) => {
-                setBannerToDelete(b);
-                setDeleteDialogOpen(true);
-              }}
-              isArabic={isArabic}
-            />
+          {banners.map((banner, index) => (
+            <div key={banner.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
+              <BannerCard
+                banner={banner}
+                onEdit={(b: BannerRow) => setEditing(b)}
+                onDelete={(b: BannerRow) => {
+                  setBannerToDelete(b);
+                  setDeleteDialogOpen(true);
+                }}
+                isArabic={isArabic}
+              />
+            </div>
           ))}
         </div>
       )}
 
-      {/* ===== DIALOG: إضافة/تعديل البنر ===== */}
+      {/* ============================================================
+      // ✅ DIALOG: إضافة/تعديل البنر - مع بوردرات وردية
+      // ============================================================ */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/10">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-3">
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center">
-                {editing?.id ? (
-                  <Pencil className="h-4 w-4 text-white" />
-                ) : (
-                  <Plus className="h-4 w-4 text-white" />
-                )}
-              </div>
-              {editing?.id ? (
-                isArabic ? "تعديل البنر" : "Edit Banner"
-              ) : (
-                isArabic ? "إضافة بنر جديد" : "Add New Banner"
-              )}
-            </DialogTitle>
-          </DialogHeader>
-          {editing && (
-            <div className="grid gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                    {isArabic ? "العنوان (AR) *" : "Title (AR) *"}
-                  </Label>
-                  <Input
-                    value={editing.title_ar || ""}
-                    onChange={(e) => setEditing({ ...editing, title_ar: e.target.value })}
-                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 mt-1.5"
-                    placeholder={isArabic ? "مثال: عرض الصيف" : "Example: Summer Sale"}
-                  />
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-3 border-[#f9a8d4]/40 shadow-2xl shadow-[#f9a8d4]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            onClick={() => setEditing(null)}
+          >
+            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+          </Button>
+
+          <div className="p-6">
+            <DialogHeader>
+              <div className="flex items-start gap-4 mb-2">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#f9a8d4]/30 border-2 border-[#f9a8d4]/40">
+                  {editing?.id ? (
+                    <Pencil className="h-6 w-6 text-white" />
+                  ) : (
+                    <Plus className="h-6 w-6 text-white" />
+                  )}
                 </div>
                 <div>
-                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                    {isArabic ? "العنوان (EN)" : "Title (EN)"}
-                  </Label>
-                  <Input
-                    value={editing.title_en || ""}
-                    onChange={(e) => setEditing({ ...editing, title_en: e.target.value })}
-                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 mt-1.5"
-                    placeholder="Example: Summer Sale"
-                  />
+                  <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                    {editing?.id ? (
+                      isArabic ? "تعديل البنر" : "Edit Banner"
+                    ) : (
+                      isArabic ? "إضافة بنر جديد" : "Add New Banner"
+                    )}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-slate-500 dark:text-slate-400">
+                    {editing?.id 
+                      ? isArabic ? "تعديل بيانات البنر" : "Edit banner details"
+                      : isArabic ? "أدخل معلومات البنر الجديد" : "Enter new banner details"}
+                  </DialogDescription>
                 </div>
               </div>
+            </DialogHeader>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                    {isArabic ? "العنوان الفرعي (AR)" : "Subtitle (AR)"}
+            {editing && (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                      <span className="text-[#2a655f]">📝</span>
+                      {isArabic ? "العنوان (AR) *" : "Title (AR) *"}
+                    </Label>
+                    <Input
+                      value={editing.title_ar || ""}
+                      onChange={(e) => setEditing({ ...editing, title_ar: e.target.value })}
+                      className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+                      placeholder={isArabic ? "مثال: عرض الصيف" : "Example: Summer Sale"}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                      <span className="text-[#2a655f]">🌐</span>
+                      {isArabic ? "العنوان (EN)" : "Title (EN)"}
+                    </Label>
+                    <Input
+                      value={editing.title_en || ""}
+                      onChange={(e) => setEditing({ ...editing, title_en: e.target.value })}
+                      className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+                      placeholder="Example: Summer Sale"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                      <span className="text-[#2a655f]">📝</span>
+                      {isArabic ? "العنوان الفرعي (AR)" : "Subtitle (AR)"}
+                    </Label>
+                    <Input
+                      value={editing.subtitle_ar || ""}
+                      onChange={(e) => setEditing({ ...editing, subtitle_ar: e.target.value })}
+                      className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+                      placeholder={isArabic ? "مثال: خصم يصل إلى 50%" : "Example: Up to 50% off"}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                      <span className="text-[#2a655f]">🌐</span>
+                      {isArabic ? "العنوان الفرعي (EN)" : "Subtitle (EN)"}
+                    </Label>
+                    <Input
+                      value={editing.subtitle_en || ""}
+                      onChange={(e) => setEditing({ ...editing, subtitle_en: e.target.value })}
+                      className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+                      placeholder="Example: Up to 50% off"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                    <Link2 className="h-4 w-4 text-[#2a655f]" />
+                    {isArabic ? "الرابط" : "Link URL"}
                   </Label>
                   <Input
-                    value={editing.subtitle_ar || ""}
-                    onChange={(e) => setEditing({ ...editing, subtitle_ar: e.target.value })}
-                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 mt-1.5"
-                    placeholder={isArabic ? "مثال: خصم يصل إلى 50%" : "Example: Up to 50% off"}
+                    value={editing.link_url || ""}
+                    onChange={(e) => setEditing({ ...editing, link_url: e.target.value })}
+                    placeholder={isArabic ? "/category/fashion" : "/category/fashion"}
+                    className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
                   />
                 </div>
-                <div>
-                  <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                    {isArabic ? "العنوان الفرعي (EN)" : "Subtitle (EN)"}
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                    <Image className="h-4 w-4 text-[#2a655f]" />
+                    {isArabic ? "صورة البنر *" : "Banner Image *"}
                   </Label>
-                  <Input
-                    value={editing.subtitle_en || ""}
-                    onChange={(e) => setEditing({ ...editing, subtitle_en: e.target.value })}
-                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 mt-1.5"
-                    placeholder="Example: Up to 50% off"
+                  <ImageInput
+                    value={editing.image_url || ""}
+                    onChange={(value) => setEditing({ ...editing, image_url: value })}
+                    userId={app.user?.id}
+                    folder="banners"
+                    lang={app.lang}
+                    label={isArabic ? "ارفع صورة البنر" : "Upload banner image"}
+                    required
+                    hint={
+                      isArabic
+                        ? "ارفع صورة البنر من جهازك أو ضع رابط URL"
+                        : "Upload a banner image or paste a URL"
+                    }
+                    previewClassName="aspect-[16/6] h-auto rounded-xl border-3 border-[#f9a8d4]/40"
                   />
                 </div>
-              </div>
 
-              <div>
-                <Label className="text-[#0d2e2a] dark:text-white font-semibold">
-                  {isArabic ? "الرابط" : "Link URL"}
-                </Label>
-                <Input
-                  value={editing.link_url || ""}
-                  onChange={(e) => setEditing({ ...editing, link_url: e.target.value })}
-                  placeholder={isArabic ? "/category/fashion" : "/category/fashion"}
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 mt-1.5"
-                />
+                <div className="flex items-center gap-4 p-4 bg-[#f9a8d4]/10 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 transition-colors">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editing.active ?? true}
+                      onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
+                      className="h-4 w-4 rounded border-[#f9a8d4]/40 text-[#2a655f] focus:ring-[#f9a8d4]/30 accent-[#2a655f]"
+                    />
+                    <span className="text-sm font-medium text-[#2a655f] dark:text-white">
+                      {isArabic ? "🟢 البنر نشط" : "🟢 Banner is active"}
+                    </span>
+                  </label>
+                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40 text-[10px]">
+                    {isArabic ? `ترتيب: ${editing.sort_order + 1}` : `Order: ${editing.sort_order + 1}`}
+                  </Badge>
+                </div>
               </div>
+            )}
 
-              <div>
-                <ImageInput
-                  value={editing.image_url || ""}
-                  onChange={(value) => setEditing({ ...editing, image_url: value })}
-                  userId={app.user?.id}
-                  folder="banners"
-                  lang={app.lang}
-                  label={isArabic ? "صورة البنر *" : "Banner Image *"}
-                  required
-                  hint={
-                    isArabic
-                      ? "ارفع صورة البنر من جهازك أو ضع رابط URL"
-                      : "Upload a banner image or paste a URL"
-                  }
-                  previewClassName="aspect-[16/6] h-auto rounded-xl border border-[#0d2e2a]/20"
-                />
-              </div>
-
-              <div className="flex items-center gap-4 p-4 bg-[#0d2e2a]/5 rounded-xl border border-[#0d2e2a]/20">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editing.active ?? true}
-                    onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
-                    className="h-4 w-4 rounded border-[#0d2e2a]/20 text-[#2d6b63] focus:ring-[#2d6b63]/20"
-                  />
-                  <span className="text-sm font-medium text-[#0d2e2a] dark:text-white">
-                    {isArabic ? "🟢 البنر نشط" : "🟢 Banner is active"}
+            <DialogFooter className="gap-3 pt-4 border-t-3 border-[#f9a8d4]/30">
+              <Button 
+                variant="outline" 
+                onClick={() => setEditing(null)}
+                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
+              >
+                <X className="h-4 w-4 mr-1" />
+                {isArabic ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={save.isPending}
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-[1.02] border-2 border-[#2a655f]/30"
+              >
+                {save.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                    {isArabic ? "جاري الحفظ..." : "Saving..."}
                   </span>
-                </label>
-                <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 text-[10px]">
-                  {isArabic ? `ترتيب: ${editing.sort_order + 1}` : `Order: ${editing.sort_order + 1}`}
-                </Badge>
-              </div>
-            </div>
-          )}
-          <DialogFooter className="gap-2 pt-4 border-t border-[#0d2e2a]/10">
-            <Button 
-              variant="outline" 
-              onClick={() => setEditing(null)}
-              className="rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300"
-            >
-              <X className="h-4 w-4 mr-1" />
-              {isArabic ? "إلغاء" : "Cancel"}
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={save.isPending}
-              className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#0d2e2a]/30 rounded-xl px-6"
-            >
-              {save.isPending ? (
-                <span className="flex items-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                  {isArabic ? "جاري الحفظ..." : "Saving..."}
-                </span>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                  {isArabic ? "حفظ البنر" : "Save Banner"}
-                </>
-              )}
-            </Button>
-          </DialogFooter>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                    {isArabic ? "حفظ البنر" : "Save Banner"}
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: تأكيد الحذف ===== */}
+      {/* ============================================================
+      // ✅ DIALOG: تأكيد الحذف - مع بوردرات وردية
+      // ============================================================ */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/10 bg-white dark:bg-[#1e293b]">
-          
-          {/* ===== HEADER ===== */}
-          <div className="sticky top-0 z-10 bg-gradient-to-r from-red-50/90 to-rose-50/90 dark:from-red-950/90 dark:to-rose-950/90 backdrop-blur-xl border-b border-red-200/30 dark:border-red-800/30 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/25">
-                  <AlertTriangle className="h-5 w-5 text-white animate-pulse" />
-                </div>
-                <div>
-                  <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white">
-                    {isArabic ? "تأكيد الحذف" : "Confirm Delete"}
-                  </DialogTitle>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {isArabic ? "هذا الإجراء لا يمكن التراجع عنه" : "This action cannot be undone"}
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300 hover:scale-105"
-                onClick={() => setDeleteDialogOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+        <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden border-3 border-[#d81b60]/40 shadow-2xl shadow-[#d81b60]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            onClick={() => setDeleteDialogOpen(false)}
+          >
+            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+          </Button>
 
-          {/* ===== BODY ===== */}
           <div className="p-6">
-            <div className="bg-red-50/50 dark:bg-red-950/20 rounded-xl p-4 border border-red-200/50 dark:border-red-800/30 mb-4">
-              <p className="text-sm text-red-700 dark:text-red-300 font-medium flex items-center gap-2">
-                <span className="text-lg">⚠️</span>
+            <div className="flex items-start gap-4 mb-4">
+              <div className="h-14 w-14 rounded-2xl bg-rose-500/10 border-2 border-rose-500/30 flex items-center justify-center flex-shrink-0 animate-pulse">
+                <AlertTriangle className="h-7 w-7 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                  {isArabic ? "تأكيد الحذف" : "Confirm Delete"}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  {isArabic ? "هذا الإجراء لا يمكن التراجع عنه" : "This action cannot be undone"}
+                </DialogDescription>
+              </div>
+            </div>
+
+            <div className="bg-rose-50/50 dark:bg-rose-950/20 rounded-2xl p-4 border-2 border-rose-200/50 dark:border-rose-800/30 mb-4">
+              <p className="text-sm text-rose-700 dark:text-rose-300 font-medium">
                 {isArabic
                   ? `هل أنت متأكد من حذف البنر "${bannerToDelete?.title_ar}"؟`
                   : `Are you sure you want to delete the banner "${bannerToDelete?.title_ar}"?`}
               </p>
               {bannerToDelete?.image_url && (
-                <div className="mt-3 rounded-lg overflow-hidden border border-red-200/30 dark:border-red-800/30">
+                <div className="mt-3 rounded-lg overflow-hidden border-2 border-rose-200/30 dark:border-rose-800/30">
                   <OptimizedImage
                     src={bannerToDelete.image_url}
                     alt={bannerToDelete.title_ar}
@@ -543,7 +611,7 @@ export function BannersAdminPage() {
                   />
                 </div>
               )}
-              <p className="text-xs text-red-600/70 dark:text-red-400/70 mt-2 flex items-center gap-1">
+              <p className="text-xs text-rose-600/70 dark:text-rose-400/70 mt-2 flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
                 {isArabic
                   ? "سيتم حذف هذا البنر نهائياً من النظام"
@@ -551,19 +619,27 @@ export function BannersAdminPage() {
               </p>
             </div>
 
-            {/* ===== FOOTER ===== */}
-            <DialogFooter className="flex gap-3">
+            <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-xl p-3 border-2 border-amber-200/50 dark:border-amber-800/30">
+              <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {isArabic
+                  ? "تحذير: حذف هذا البنر سيؤثر على واجهة الصفحة الرئيسية"
+                  : "Warning: Deleting this banner will affect the homepage layout"}
+              </p>
+            </div>
+
+            <DialogFooter className="flex gap-3 mt-6">
               <Button
                 variant="outline"
                 onClick={() => setDeleteDialogOpen(false)}
-                className="flex-1 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300"
+                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
               >
                 {isArabic ? "إلغاء" : "Cancel"}
               </Button>
               <Button
                 onClick={handleDeleteBanner}
                 disabled={del.isPending}
-                className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-600/25 hover:shadow-red-600/40 hover:scale-[1.02] transition-all duration-300"
+                className="flex-1 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-lg shadow-rose-500/30 hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-rose-400/50"
               >
                 {del.isPending ? (
                   <span className="flex items-center gap-2">
@@ -611,6 +687,20 @@ export function BannersAdminPage() {
         }
         .animate-float {
           animation: float 3s ease-in-out infinite;
+        }
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.5s ease-out forwards;
+          opacity: 0;
         }
       `}</style>
     </div>

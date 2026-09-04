@@ -19,6 +19,23 @@ import * as XLSX from 'xlsx';
 import pkg from 'file-saver';
 const { saveAs } = pkg;
 
+// ============================================================
+// 🎨 ZOOQ BRAND COLORS
+// ============================================================
+const COLORS = {
+  olive: '#2a655f',
+  oliveLight: '#3a8a82',
+  oliveDark: '#1a4f4a',
+  oliveVeryLight: '#e8f0ee',
+  pink: '#f9a8d4',
+  pinkLight: '#fbcfe8',
+  pinkDark: '#f48fb1',
+  pinkVeryLight: '#fdf2f8',
+  fuchsia: '#d81b60',
+  fuchsiaDark: '#c2185b',
+  fuchsiaGlow: 'rgba(216,27,96,0.2)',
+};
+
 export function CustomersPage() {
   const app = useApp();
   const t = useT();
@@ -123,7 +140,7 @@ export function CustomersPage() {
         <meta charset="UTF-8">
         <style>
           body { font-family: 'Arial', sans-serif; padding: 20px; }
-          h1 { color: #1e293b; text-align: center; border-bottom: 2px solid #2a655f; padding-bottom: 10px; }
+          h1 { color: #2a655f; text-align: center; border-bottom: 2px solid #f9a8d4; padding-bottom: 10px; }
           table { width: 100%; border-collapse: collapse; margin-top: 20px; }
           th { background: #2a655f; color: white; padding: 12px; text-align: right; }
           td { padding: 10px; border: 1px solid #e2e8f0; text-align: right; }
@@ -205,7 +222,7 @@ export function CustomersPage() {
           </p>
         </div>
         <div className="w-64 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-          <div className="h-full w-1/2 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] rounded-full animate-slide" />
+          <div className="h-full w-1/2 bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] rounded-full animate-slide" />
         </div>
       </div>
     );
@@ -217,31 +234,31 @@ export function CustomersPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="relative">
           <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
-          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#3a8a82]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#f9a8d4]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
           
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
             <div className="relative group">
               <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
-              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#2a655f]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#f9a8d4]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
                 <Users className="h-5 w-5 group-hover:animate-bounce" />
               </div>
             </div>
             {app.lang === "ar" ? "العملاء" : "Customers"}
-            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
               {stats.total}
             </Badge>
           </h1>
           
           <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
               <ShoppingCart className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
               <span className="text-[#2a655f] font-medium">{stats.totalOrders}</span>
               <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "طلب" : "orders"}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/50">
-                <Wallet className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-emerald-600 font-medium">{formatPrice(stats.totalSpend, app.currency, app.lang)}</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30 transition-colors">
+              <Wallet className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">{formatPrice(stats.totalSpend, app.currency, app.lang)}</span>
               <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "إنفاق" : "spend"}</span>
             </span>
           </p>
@@ -253,7 +270,7 @@ export function CustomersPage() {
             size="sm"
             onClick={exportToExcel}
             disabled={filteredCustomers.length === 0}
-            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105"
+            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
           >
             <FileSpreadsheet className="h-4 w-4 mr-1.5" />
             Excel
@@ -263,7 +280,7 @@ export function CustomersPage() {
             size="sm"
             onClick={exportToWord}
             disabled={filteredCustomers.length === 0}
-            className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105"
+            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
           >
             <FileText className="h-4 w-4 mr-1.5" />
             Word
@@ -272,7 +289,7 @@ export function CustomersPage() {
             variant="outline"
             size="sm"
             onClick={() => refetch()}
-            className="rounded-xl border-[#2a655f]/20 hover:border-[#2a655f]/40 hover:bg-[#2a655f]/5 transition-all duration-300 group"
+            className="rounded-xl border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 group"
           >
             <RefreshCw className="h-4 w-4 mr-1.5 group-hover:rotate-180 transition-transform duration-700" />
             {app.lang === "ar" ? "تحديث" : "Refresh"}
@@ -280,48 +297,53 @@ export function CustomersPage() {
         </div>
       </div>
 
-      {/* ===== إحصائيات سريعة ===== */}
+      {/* ===== إحصائيات سريعة - خلفية وردية وبوردر وردي ===== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { key: 'total', label: app.lang === 'ar' ? 'إجمالي العملاء' : 'Total Customers', value: stats.total, icon: Users, color: 'text-[#2a655f]', bg: 'bg-[#2a655f]/10' },
-          { key: 'orders', label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', value: stats.totalOrders, icon: ShoppingCart, color: 'text-[#3a8a82]', bg: 'bg-[#3a8a82]/10' },
-          { key: 'spend', label: app.lang === 'ar' ? 'إجمالي الإنفاق' : 'Total Spend', value: formatPrice(stats.totalSpend, app.currency, app.lang), icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-          { key: 'avg', label: app.lang === 'ar' ? 'متوسط الطلبات' : 'Avg Orders', value: stats.avgOrders, icon: Award, color: 'text-yellow-600', bg: 'bg-yellow-500/10' },
+          { key: 'total', label: app.lang === 'ar' ? 'إجمالي العملاء' : 'Total Customers', value: stats.total, icon: Users, color: 'text-[#2a655f]' },
+          { key: 'orders', label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', value: stats.totalOrders, icon: ShoppingCart, color: 'text-[#3a8a82]' },
+          { key: 'spend', label: app.lang === 'ar' ? 'إجمالي الإنفاق' : 'Total Spend', value: formatPrice(stats.totalSpend, app.currency, app.lang), icon: Wallet, color: 'text-emerald-600' },
+          { key: 'avg', label: app.lang === 'ar' ? 'متوسط الطلبات' : 'Avg Orders', value: stats.avgOrders, icon: Award, color: 'text-[#f9a8d4]' },
         ].map((stat) => (
           <div 
             key={stat.key} 
-            className="group relative bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-3 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
+            className="group relative bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
           >
-            <div className={`absolute inset-0 bg-gradient-to-br from-${stat.color.split('-')[1]}/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-            <div className="relative flex items-center justify-between">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute -top-8 -right-8 h-16 w-16 rounded-full bg-[#fbcfe8]/60 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative flex items-center justify-between p-3">
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
-                <p className={`text-xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors`}>{stat.value}</p>
+                <p className="text-[10px] font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">
+                  {stat.label}
+                </p>
+                <p className={`text-xl font-bold mt-0.5 ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                  {stat.value}
+                </p>
               </div>
-              <div className={`h-9 w-9 rounded-lg ${stat.bg} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
+              <div className={`h-9 w-9 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </div>
             </div>
-            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#2a655f] to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
+            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
           </div>
         ))}
       </div>
 
       {/* ===== أفضل عميل ===== */}
       {stats.topCustomer && (
-        <div className="bg-gradient-to-r from-[#2a655f]/10 via-[#2a655f]/5 to-[#3a8a82]/10 dark:from-[#2a655f]/20 dark:via-[#2a655f]/10 dark:to-[#3a8a82]/20 rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 p-5 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 group">
+        <div className="bg-gradient-to-r from-[#2a655f]/10 via-[#2a655f]/5 to-[#f9a8d4]/10 dark:from-[#2a655f]/20 dark:via-[#2a655f]/10 dark:to-[#f9a8d4]/20 rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-5 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 group">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform duration-500">
+              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 group-hover:scale-110 transition-transform duration-500">
                 <Crown className="h-7 w-7 text-white animate-bounce" />
               </div>
-              <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-amber-500 flex items-center justify-center text-[8px] font-bold text-white animate-pulse">
+              <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#f9a8d4] flex items-center justify-center text-[8px] font-bold text-[#2a655f] animate-pulse border-2 border-white">
                 🏆
               </div>
             </div>
             <div>
-              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1.5">
-                <Sparkles className="h-3 w-3 animate-pulse" />
+              <p className="text-xs text-[#2a655f] dark:text-[#f9a8d4] font-medium flex items-center gap-1.5">
+                <Sparkles className="h-3 w-3 animate-pulse text-[#f9a8d4]" />
                 {app.lang === 'ar' ? 'أفضل عميل' : 'Best Customer'}
               </p>
               <p className="font-bold text-slate-900 dark:text-white text-lg group-hover:text-[#2a655f] transition-colors">
@@ -329,7 +351,7 @@ export function CustomersPage() {
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
                 <span className="flex items-center gap-1">
-                 <Wallet className="h-3 w-3 text-emerald-500" />
+                  <Wallet className="h-3 w-3 text-emerald-500" />
                   {formatPrice(stats.topCustomer.spend || 0, app.currency, app.lang)}
                 </span>
                 <span className="w-px h-3 bg-slate-300 dark:bg-slate-600" />
@@ -340,7 +362,7 @@ export function CustomersPage() {
               </p>
             </div>
             <div className="mr-auto">
-              <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 shadow-lg shadow-amber-500/30 animate-pulse">
+              <Badge className="bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white border-2 border-white/30 shadow-lg shadow-[#2a655f]/30 animate-pulse">
                 ⭐ VIP
               </Badge>
             </div>
@@ -348,10 +370,10 @@ export function CustomersPage() {
         </div>
       )}
 
-      {/* ===== البحث والفلترة ===== */}
+      {/* ===== البحث والفلترة - بوردر وردي ===== */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 group">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors duration-300" />
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#f9a8d4] transition-colors duration-300" />
           <Input
             value={searchQuery}
             onChange={(e) => {
@@ -359,7 +381,7 @@ export function CustomersPage() {
               setPage(1);
             }}
             placeholder={app.lang === "ar" ? "🔍 بحث عن عميل..." : "🔍 Search customers..."}
-            className="ps-9 h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-[#1e293b] focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300"
+            className="ps-9 h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
           />
         </div>
 
@@ -370,16 +392,16 @@ export function CustomersPage() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-[#1e293b] hover:border-[#2a655f]/30 transition-all duration-300">
+          <SelectTrigger className="w-[140px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
+              <Filter className="h-4 w-4 text-slate-400 group-hover:text-[#f9a8d4]" />
               <SelectValue placeholder={app.lang === "ar" ? "ترتيب حسب" : "Sort by"} />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#2a655f]/20">
-            <SelectItem value="orders" className="hover:bg-[#2a655f]/10">{app.lang === "ar" ? "📦 عدد الطلبات" : "📦 Orders"}</SelectItem>
-            <SelectItem value="spend" className="hover:bg-[#2a655f]/10">💰 {app.lang === "ar" ? "الإنفاق" : "Spend"}</SelectItem>
-            <SelectItem value="name" className="hover:bg-[#2a655f]/10">👤 {app.lang === "ar" ? "الاسم" : "Name"}</SelectItem>
+          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <SelectItem value="orders" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📦 {app.lang === "ar" ? "عدد الطلبات" : "Orders"}</SelectItem>
+            <SelectItem value="spend" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">💰 {app.lang === "ar" ? "الإنفاق" : "Spend"}</SelectItem>
+            <SelectItem value="name" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">👤 {app.lang === "ar" ? "الاسم" : "Name"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -390,12 +412,12 @@ export function CustomersPage() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-[#1e293b] hover:border-[#2a655f]/30 transition-all duration-300">
+          <SelectTrigger className="w-[100px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
             <SelectValue placeholder={app.lang === "ar" ? "ترتيب" : "Order"} />
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#2a655f]/20">
-            <SelectItem value="desc" className="hover:bg-[#2a655f]/10">⬇️ {app.lang === "ar" ? "تنازلي" : "Descending"}</SelectItem>
-            <SelectItem value="asc" className="hover:bg-[#2a655f]/10">⬆️ {app.lang === "ar" ? "تصاعدي" : "Ascending"}</SelectItem>
+          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <SelectItem value="desc" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">⬇️ {app.lang === "ar" ? "تنازلي" : "Descending"}</SelectItem>
+            <SelectItem value="asc" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">⬆️ {app.lang === "ar" ? "تصاعدي" : "Ascending"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -406,18 +428,18 @@ export function CustomersPage() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-[#1e293b] hover:border-[#2a655f]/30 transition-all duration-300">
+          <SelectTrigger className="w-[100px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400">{app.lang === "ar" ? "عدد" : "Show"}</span>
               <SelectValue placeholder="10" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#2a655f]/20">
-            <SelectItem value="6">6</SelectItem>
-            <SelectItem value="10">10</SelectItem>
-            <SelectItem value="20">20</SelectItem>
-            <SelectItem value="50">50</SelectItem>
-            <SelectItem value="100">100</SelectItem>
+          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <SelectItem value="6" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">6</SelectItem>
+            <SelectItem value="10" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">10</SelectItem>
+            <SelectItem value="20" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">20</SelectItem>
+            <SelectItem value="50" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">50</SelectItem>
+            <SelectItem value="100" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">100</SelectItem>
           </SelectContent>
         </Select>
 
@@ -430,35 +452,35 @@ export function CustomersPage() {
             setSortOrder("desc");
             setPage(1);
           }}
-          className="h-10 rounded-xl border-slate-200/60 dark:border-slate-700/60 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 group"
+          className="h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 group"
         >
           <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
           {app.lang === "ar" ? "مسح الكل" : "Clear all"}
         </Button>
       </div>
 
-      {/* ===== جدول العملاء ===== */}
-      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
+      {/* ===== جدول العملاء - أعمدة فاصلة وردية ===== */}
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10">
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-right min-w-[180px]">
+              <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-gradient-to-r from-[#f9a8d4]/30 via-[#fbcfe8]/20 to-[#f9a8d4]/30 dark:from-[#f9a8d4]/20 dark:via-[#fbcfe8]/10 dark:to-[#f9a8d4]/20 border-b-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-right min-w-[180px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                   {app.lang === "ar" ? "الاسم" : "Name"}
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[140px]">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[140px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                   {app.lang === "ar" ? "رقم الهاتف" : "Phone"}
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[100px]">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[100px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                   {app.lang === "ar" ? "الطلبات" : "Orders"}
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[140px]">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[140px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                   {app.lang === "ar" ? "الإنفاق" : "Spend"}
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[120px]">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                   {app.lang === "ar" ? "آخر طلب" : "Last Order"}
                 </TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center min-w-[60px]">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[60px]">
                   {app.lang === "ar" ? "الترتيب" : "Rank"}
                 </TableHead>
               </TableRow>
@@ -483,16 +505,16 @@ export function CustomersPage() {
               ) : (
                 paginatedCustomers.map((c: any, index: number) => {
                   const rank = (page - 1) * limit + index + 1;
-                  const rankColor = rank === 1 ? 'text-amber-500' : rank === 2 ? 'text-slate-400' : rank === 3 ? 'text-orange-400' : 'text-slate-400';
+                  const rankColor = rank === 1 ? 'text-[#2a655f]' : rank === 2 ? 'text-slate-400' : rank === 3 ? 'text-[#f9a8d4]' : 'text-slate-400';
                   const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
-                  const rankBg = rank === 1 ? 'bg-amber-500/10' : rank === 2 ? 'bg-slate-300/10' : rank === 3 ? 'bg-orange-400/10' : 'bg-slate-100/30';
+                  const rankBg = rank === 1 ? 'bg-[#2a655f]/10' : rank === 2 ? 'bg-slate-300/10' : rank === 3 ? 'bg-[#f9a8d4]/20' : 'bg-slate-100/30';
                   
                   return (
                     <TableRow 
                       key={c.id} 
-                      className="border-slate-100 dark:border-slate-800 hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10 transition-colors duration-300 group"
+                      className="border-slate-100 dark:border-slate-800 hover:bg-[#f9a8d4]/15 dark:hover:bg-[#f9a8d4]/10 transition-colors duration-300 group border-b-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10"
                     >
-                      <TableCell className="font-semibold text-slate-900 dark:text-white text-right">
+                      <TableCell className="font-semibold text-slate-900 dark:text-white text-right border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
                         <div className="flex items-center gap-2 justify-end">
                           <span className="group-hover:text-[#2a655f] transition-colors">
                             {c.full_name || (app.lang === "ar" ? "عميل" : "Customer")}
@@ -502,18 +524,18 @@ export function CustomersPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-slate-600 dark:text-slate-300 text-center font-mono" dir="ltr">
+                      <TableCell className="text-slate-600 dark:text-slate-300 text-center font-mono border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10" dir="ltr">
                         {c.phone || "—"}
                       </TableCell>
-                      <TableCell className="font-medium text-slate-900 dark:text-white text-center">
-                        <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 group-hover:bg-[#2a655f]/20 transition-colors">
+                      <TableCell className="font-medium text-slate-900 dark:text-white text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                        <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 group-hover:bg-[#2a655f]/20 transition-colors">
                           {c.orders || 0}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-center group-hover:scale-110 transition-transform duration-300">
+                      <TableCell className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-center group-hover:scale-110 transition-transform duration-300 border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
                         {formatPrice(c.spend || 0, app.currency, app.lang)}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-500 text-center">
+                      <TableCell className="text-xs text-slate-500 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
                         {c.last_order ? new Date(c.last_order).toLocaleDateString(
                           app.lang === 'ar' ? 'ar-SA' : 'en-US',
                           { year: 'numeric', month: 'short', day: 'numeric' }
@@ -534,7 +556,7 @@ export function CustomersPage() {
 
         {/* ===== Pagination ===== */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="px-4 py-3 border-t-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-xs text-slate-500 dark:text-slate-400">
               {filteredCustomers.length === 0 ? (
                 <span>{app.lang === "ar" ? "لا يوجد عملاء" : "No customers"}</span>
@@ -553,7 +575,7 @@ export function CustomersPage() {
                 size="sm"
                 onClick={() => goToPage(1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
               >
                 <span className="text-xs font-bold">«</span>
               </Button>
@@ -562,7 +584,7 @@ export function CustomersPage() {
                 size="sm"
                 onClick={() => goToPage(page - 1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -584,10 +606,10 @@ export function CustomersPage() {
                       variant={page === pageNum ? "default" : "outline"}
                       size="sm"
                       onClick={() => goToPage(pageNum)}
-                      className={`h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all ${
+                      className={`h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300 ${
                         page === pageNum
-                          ? "bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-md shadow-[#2a655f]/25"
-                          : "border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 hover:text-[#2a655f]"
+                          ? "bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white shadow-md shadow-[#2a655f]/25 border-2 border-white/30"
+                          : "border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 hover:text-[#2a655f]"
                       }`}
                     >
                       {pageNum}
@@ -601,7 +623,7 @@ export function CustomersPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => goToPage(totalPages)}
-                      className="h-8 min-w-[32px] p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 text-xs"
+                      className="h-8 min-w-[32px] p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 text-xs"
                     >
                       {totalPages}
                     </Button>
@@ -613,7 +635,7 @@ export function CustomersPage() {
                 size="sm"
                 onClick={() => goToPage(page + 1)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -622,7 +644,7 @@ export function CustomersPage() {
                 size="sm"
                 onClick={() => goToPage(totalPages)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
               >
                 <span className="text-xs font-bold">»</span>
               </Button>
@@ -631,21 +653,21 @@ export function CustomersPage() {
         )}
 
         {/* ===== Footer ===== */}
-        <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-[#2a655f]/5">
+        <div className="px-4 py-2 border-t-3 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#f9a8d4]/15 via-[#fbcfe8]/10 to-[#f9a8d4]/15 dark:from-[#f9a8d4]/10 dark:via-[#fbcfe8]/5 dark:to-[#f9a8d4]/10">
           <span>
             {app.lang === "ar"
               ? `عرض ${paginatedCustomers.length} من ${filteredCustomers.length} عميل (إجمالي ${rows.length})`
               : `Showing ${paginatedCustomers.length} of ${filteredCustomers.length} customers (total ${rows.length})`}
           </span>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-[#2a655f]/10 text-[#2a655f] border-0">
+            <Badge variant="secondary" className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20">
               {sortBy === "orders" ? (app.lang === "ar" ? "📦 الطلبات" : "📦 Orders") :
                sortBy === "spend" ? (app.lang === "ar" ? "💰 الإنفاق" : "💰 Spend") :
                (app.lang === "ar" ? "👤 الاسم" : "👤 Name")}
               {sortOrder === "desc" ? " ↓" : " ↑"}
             </Badge>
             {searchQuery && (
-              <Badge variant="secondary" className="bg-[#2a655f]/10 text-[#2a655f] border-0">
+              <Badge variant="secondary" className="bg-[#f9a8d4]/10 text-[#2a655f] border-2 border-[#f9a8d4]/20">
                 🔍 {searchQuery}
               </Badge>
             )}

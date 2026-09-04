@@ -18,8 +18,9 @@ import {
   useDeliveryOrderDetails,
 } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
+import { ChevronDown, Check as CheckIcon } from "lucide-react";
 import {
-  Truck, Package, Users, Clock, CheckCircle, CheckCircle2, XCircle,  // ✅ أضف CheckCircle2 هنا
+  Truck, Package, Users, Clock, CheckCircle, CheckCircle2, XCircle,
   TrendingUp, DollarSign, MapPin, Phone, Mail,
   Calendar, ArrowRight, ChevronLeft, ChevronRight, Plus,
   Search, Filter, MoreVertical, Eye, Edit, Trash2,
@@ -117,6 +118,34 @@ import { DeliveryAccountMenu } from "@/components/dashboard/delivery/DeliveryAcc
 import { ImageInput } from "@/components/ImageInput";
 import { AddressPicker, type PickedLocation } from "@/components/AddressPicker";
 
+// ============================================================
+// 🎨 ZOOQ BRAND COLORS - زيتي ووردي فقط
+// ============================================================
+const COLORS = {
+  olive: '#2a655f',
+  oliveLight: '#3a8a82',
+  oliveDark: '#1a4f4a',
+  oliveVeryLight: '#e8f0ee',
+  oliveGlow: 'rgba(42,101,95,0.2)',
+  oliveGlowStrong: 'rgba(42,101,95,0.35)',
+  
+  pink: '#f9a8d4',
+  pinkLight: '#fbcfe8',
+  pinkDark: '#f48fb1',
+  pinkVeryLight: '#fdf2f8',
+  pinkGlow: 'rgba(249,168,212,0.25)',
+  pinkGlowStrong: 'rgba(249,168,212,0.4)',
+  
+  fuchsia: '#d81b60',
+  fuchsiaDark: '#c2185b',
+  fuchsiaGlow: 'rgba(216,27,96,0.2)',
+  fuchsiaGlowStrong: 'rgba(194,24,91,0.35)',
+  
+  glowOlive: 'rgba(42,101,95,0.15)',
+  glowPink: 'rgba(249,168,212,0.2)',
+  glowPinkStrong: 'rgba(249,168,212,0.35)',
+};
+
 const ICON_MAP: Record<string, any> = {
   'clock': Clock,
   'check-circle': CheckCircle,
@@ -152,7 +181,7 @@ export const Route = createFileRoute("/delivery/dashboard")({
   component: DeliveryDashboardPage,
   head: () => ({
     meta: [
-      { title: "لوحة تحكم شركة التوصيل - Souqi" },
+      { title: "لوحة تحكم شركة التوصيل - ذوق" },
       { name: "description", content: "إدارة طلبات التوصيل والموزعين" },
     ],
   }),
@@ -252,172 +281,79 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   const unreadNotificationsCount = notifications.filter((n: any) => !n.is_read).length;
 
   // ============================================================
-  // ✅ دوال الحصول على صورة الفيرنت (مطابقة لـ getProductImage في orders.tsx)
+  // ✅ دوال الحصول على صورة الفيرنت
   // ============================================================
-// ============================================================
-// ✅ دالة الحصول على صورة المنتج (محسّنة بالكامل)
-// ============================================================
-const getProductImage = (item: any) => {
-  const listing = item.listings || item;
-  
-  console.log("🖼️ [getProductImage] Input item:", {
-    id: item.id,
-    hasMetadata: !!item.metadata,
-    hasSelectedOptions: !!item.selected_options,
-    hasVariationSnapshot: !!item.variation_snapshot,
-    hasVariationCombination: !!item.variation_combination,
-    hasSelectedVariationId: !!item.selected_variation_id,
-    listingCover: listing?.cover_url,
-    variationsCount: listing?.variations?.length || 0,
-    colorsCount: listing?.colors?.length || 0,
-  });
-  
-  // ✅ 1. من metadata.variation_image
-  if (item.metadata?.variation_image) {
-    console.log("🖼️ [getProductImage] ✅ Found in metadata.variation_image:", item.metadata.variation_image);
-    return item.metadata.variation_image;
-  }
-  
-  // ✅ 2. من metadata.product_cover
-  if (item.metadata?.product_cover) {
-    console.log("🖼️ [getProductImage] ✅ Found in metadata.product_cover:", item.metadata.product_cover);
-    return item.metadata.product_cover;
-  }
-  
-  // ✅ 3. من selected_options.variation_image
-  if (item.selected_options?.variation_image) {
-    console.log("🖼️ [getProductImage] ✅ Found in selected_options.variation_image:", item.selected_options.variation_image);
-    return item.selected_options.variation_image;
-  }
-  
-  // ✅ 4. من variation_snapshot.image_url
-  if (item.variation_snapshot?.image_url) {
-    console.log("🖼️ [getProductImage] ✅ Found in variation_snapshot.image_url:", item.variation_snapshot.image_url);
-    return item.variation_snapshot.image_url;
-  }
-  
-  // ✅ 5. من selected_options.selected_variation_id
-  if (item.selected_options?.selected_variation_id) {
-    const variations = listing?.variations || [];
-    const variation = variations.find((v: any) => v.id === item.selected_options.selected_variation_id);
-    if (variation?.image_url) {
-      console.log("🖼️ [getProductImage] ✅ Found via selected_options.selected_variation_id -> variation.image_url:", variation.image_url);
-      return variation.image_url;
-    }
-    if (variation?.color_id) {
-      const colors = listing?.colors || [];
-      const color = colors.find((c: any) => c.id === variation.color_id);
-      if (color?.image_url) {
-        console.log("🖼️ [getProductImage] ✅ Found via selected_options.selected_variation_id -> color.image_url:", color.image_url);
-        return color.image_url;
-      }
-    }
-  }
-  
-  // ✅ 6. من selected_variation_id (القديم)
-  if (item.selected_variation_id) {
-    const variations = listing?.variations || [];
-    const variation = variations.find((v: any) => v.id === item.selected_variation_id);
-    if (variation?.image_url) {
-      console.log("🖼️ [getProductImage] ✅ Found via selected_variation_id -> variation.image_url:", variation.image_url);
-      return variation.image_url;
-    }
-    if (variation?.color_id) {
-      const colors = listing?.colors || [];
-      const color = colors.find((c: any) => c.id === variation.color_id);
-      if (color?.image_url) {
-        console.log("🖼️ [getProductImage] ✅ Found via selected_variation_id -> color.image_url:", color.image_url);
-        return color.image_url;
-      }
-    }
-    // محاولة استخراج اللون من combination
-    if (variation?.combination) {
-      const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
-      let colorValue = null;
-      for (const key of colorKeys) {
-        if (variation.combination[key]) {
-          colorValue = variation.combination[key];
-          break;
-        }
-      }
-      if (colorValue) {
+  const getProductImage = (item: any) => {
+    const listing = item.listings || item;
+    
+    if (item.metadata?.variation_image) return item.metadata.variation_image;
+    if (item.metadata?.product_cover) return item.metadata.product_cover;
+    if (item.selected_options?.variation_image) return item.selected_options.variation_image;
+    if (item.variation_snapshot?.image_url) return item.variation_snapshot.image_url;
+    if (item.selected_options?.selected_variation_id) {
+      const variations = listing?.variations || [];
+      const variation = variations.find((v: any) => v.id === item.selected_options.selected_variation_id);
+      if (variation?.image_url) return variation.image_url;
+      if (variation?.color_id) {
         const colors = listing?.colors || [];
-        const color = colors.find((c: any) => 
-          c.color_name_ar === colorValue || c.color_name_en === colorValue
-        );
-        if (color?.image_url) {
-          console.log("🖼️ [getProductImage] ✅ Found via selected_variation_id -> combination -> color.image_url:", color.image_url);
-          return color.image_url;
+        const color = colors.find((c: any) => c.id === variation.color_id);
+        if (color?.image_url) return color.image_url;
+      }
+    }
+    if (item.selected_variation_id) {
+      const variations = listing?.variations || [];
+      const variation = variations.find((v: any) => v.id === item.selected_variation_id);
+      if (variation?.image_url) return variation.image_url;
+      if (variation?.color_id) {
+        const colors = listing?.colors || [];
+        const color = colors.find((c: any) => c.id === variation.color_id);
+        if (color?.image_url) return color.image_url;
+      }
+      if (variation?.combination) {
+        const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+        let colorValue = null;
+        for (const key of colorKeys) {
+          if (variation.combination[key]) {
+            colorValue = variation.combination[key];
+            break;
+          }
+        }
+        if (colorValue) {
+          const colors = listing?.colors || [];
+          const color = colors.find((c: any) => 
+            c.color_name_ar === colorValue || c.color_name_en === colorValue
+          );
+          if (color?.image_url) return color.image_url;
         }
       }
     }
-  }
-  
-  // ✅ 7. من variation_combination
-  if (item.variation_combination) {
-    // محاولة استخراج اللون من variation_combination
-    const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
-    let colorValue = null;
-    for (const key of colorKeys) {
-      if (item.variation_combination[key]) {
-        colorValue = item.variation_combination[key];
-        break;
-      }
-    }
-    if (colorValue) {
+    if (item.variation_combination?.colors) {
+      const colorName = item.variation_combination.colors;
       const colors = listing?.colors || [];
       const color = colors.find((c: any) => 
-        c.color_name_ar === colorValue || c.color_name_en === colorValue
+        c.color_name_ar === colorName || c.color_name_en === colorName
       );
-      if (color?.image_url) {
-        console.log("🖼️ [getProductImage] ✅ Found via variation_combination -> color.image_url:", color.image_url);
-        return color.image_url;
+      if (color?.image_url) return color.image_url;
+    }
+    if (listing?.variations && listing.variations.length > 0) {
+      const firstVariation = listing.variations[0];
+      if (firstVariation.image_url) return firstVariation.image_url;
+      if (firstVariation.color_id) {
+        const colors = listing.colors || [];
+        const color = colors.find((c: any) => c.id === firstVariation.color_id);
+        if (color?.image_url) return color.image_url;
       }
     }
-  }
-  
-  // ✅ 8. من listing.variations (أول variation نشط)
-  if (listing?.variations && listing.variations.length > 0) {
-    const activeVariations = listing.variations.filter((v: any) => v.is_active !== false) || [];
-    const variations = activeVariations.length > 0 ? activeVariations : listing.variations;
-    const firstVariation = variations[0];
-    
-    if (firstVariation.image_url) {
-      console.log("🖼️ [getProductImage] ✅ Found in listing.variations[0].image_url:", firstVariation.image_url);
-      return firstVariation.image_url;
+    if (listing?.colors && listing.colors.length > 0) {
+      const firstColor = listing.colors[0];
+      if (firstColor.image_url) return firstColor.image_url;
     }
-    if (firstVariation.color_id) {
-      const colors = listing.colors || [];
-      const color = colors.find((c: any) => c.id === firstVariation.color_id);
-      if (color?.image_url) {
-        console.log("🖼️ [getProductImage] ✅ Found in listing.variations[0] -> color.image_url:", color.image_url);
-        return color.image_url;
-      }
+    if (listing?.listing_images && listing.listing_images.length > 0) {
+      const firstImage = listing.listing_images[0];
+      if (firstImage?.url) return firstImage.url;
     }
-  }
-  
-  // ✅ 9. من listing.colors
-  if (listing?.colors && listing.colors.length > 0) {
-    const firstColor = listing.colors[0];
-    if (firstColor.image_url) {
-      console.log("🖼️ [getProductImage] ✅ Found in listing.colors[0].image_url:", firstColor.image_url);
-      return firstColor.image_url;
-    }
-  }
-  
-  // ✅ 10. من listing_images
-  if (listing?.listing_images && listing.listing_images.length > 0) {
-    const firstImage = listing.listing_images[0];
-    if (firstImage?.url) {
-      console.log("🖼️ [getProductImage] ✅ Found in listing_images[0].url:", firstImage.url);
-      return firstImage.url;
-    }
-  }
-  
-  // ✅ 11. أخيراً: cover_url
-  console.log("🖼️ [getProductImage] ✅ Using cover_url (fallback):", listing?.cover_url);
-  return listing?.cover_url || null;
-};
+    return listing?.cover_url || null;
+  };
 
   // ============================================================
   // ✅ دالة الحصول على تركيبة الفيرنت
@@ -447,7 +383,7 @@ const getProductImage = (item: any) => {
   };
 
   // ============================================================
-  // ✅ دوال الحالة
+  // ✅ دوال الحالة - معدلة (وردية)
   // ============================================================
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
@@ -455,18 +391,20 @@ const getProductImage = (item: any) => {
       assigned: isArabic ? "تم التعيين" : "Assigned",
       picked_up: isArabic ? "تم الاستلام" : "Picked up",
       in_transit: isArabic ? "قيد التوصيل" : "In Transit",
-
+      delivered: isArabic ? "تم التوصيل" : "Delivered",
+      cancelled: isArabic ? "ملغي" : "Cancelled",
+      failed: isArabic ? "فشل" : "Failed",
     };
     return labels[status] || status;
   };
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-      assigned: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-      picked_up: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-      in_transit: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-      delivered: "bg-green-500/10 text-green-500 border-green-500/20",
+      pending: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
+      assigned: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
+      picked_up: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
+      in_transit: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
+      delivered: "bg-emerald-500/20 text-emerald-600 border-emerald-500/20",
       cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
       failed: "bg-red-500/10 text-red-500 border-red-500/20",
     };
@@ -474,7 +412,7 @@ const getProductImage = (item: any) => {
   };
 
   // ============================================================
-  // ✅ Realtime للإشعارات - بعد تعريف refetchNotifications
+  // ✅ Realtime للإشعارات
   // ============================================================
   const notificationChannelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
@@ -657,12 +595,12 @@ const getProductImage = (item: any) => {
           <title>${title}</title>
           <style>
             body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; direction: ${isArabic ? 'rtl' : 'ltr'}; }
-            h1 { color: #0d2e2a; border-bottom: 3px solid #2a655f; padding-bottom: 10px; }
+            h1 { color: #2a655f; border-bottom: 3px solid #f9a8d4; padding-bottom: 10px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th { background-color: #2a655f; color: white; padding: 12px 10px; text-align: ${isArabic ? 'right' : 'left'}; font-weight: bold; }
             td { padding: 10px; border: 1px solid #ddd; }
-            tr:nth-child(even) { background-color: #f5f5f5; }
-            tr:hover { background-color: #e8f0f0; }
+            tr:nth-child(even) { background-color: #fdf2f8; }
+            tr:hover { background-color: #fbcfe8; }
             .footer { margin-top: 30px; color: #666; font-size: 12px; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; }
             .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
             .badge-pending { background: #f59e0b; color: white; }
@@ -726,7 +664,8 @@ const getProductImage = (item: any) => {
               picked_up: isArabic ? 'تم الاستلام' : 'Picked up',
               in_transit: isArabic ? 'قيد التوصيل' : 'In Transit',
               delivered: isArabic ? 'تم التوصيل' : 'Delivered',
-              
+              cancelled: isArabic ? 'ملغي' : 'Cancelled',
+              failed: isArabic ? 'فشل' : 'Failed',
             };
             const label = statusLabels[value] || value;
             const colorClass = `badge-${value}`;
@@ -751,8 +690,8 @@ const getProductImage = (item: any) => {
             </tbody>
           </table>
           <div class="footer">
-            ${isArabic ? 'تم التصدير من لوحة تحكم شركة التوصيل - السوق لعندك' : 'Exported from Delivery Company Dashboard - Souq Le3ndak'}
-            <br>© ${new Date().getFullYear()} ${isArabic ? 'السوق لعندك. جميع الحقوق محفوظة' : 'Souq Le3ndak. All rights reserved.'}
+            ${isArabic ? 'تم التصدير من لوحة تحكم شركة التوصيل - ذوق' : 'Exported from Delivery Company Dashboard - Zooq'}
+            <br>© ${new Date().getFullYear()} ${isArabic ? 'ذوق. جميع الحقوق محفوظة' : 'Zooq. All rights reserved.'}
           </div>
         </body>
         </html>
@@ -918,43 +857,40 @@ useEffect(() => {
     };
   }, [orders]);
 
-  // ✅ فلترة الطلبات
-// ✅ فلترة الطلبات مع دعم البحث بالهاش
-const filteredOrders = useMemo(() => {
-  let result = orders;
-  
-  if (statusFilter !== "all") {
-    result = result.filter((o: any) => o.status === statusFilter);
-  }
-  
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase().trim();
-    // ✅ إزالة الهاش (#) من البحث
-    const cleanedQ = q.replace(/^#/, '');
+  // ✅ فلترة الطلبات مع دعم البحث بالهاش
+  const filteredOrders = useMemo(() => {
+    let result = orders;
     
-    result = result.filter((o: any) => {
-      const tracking = (o.tracking_number || '').toLowerCase();
-      const id = (o.id || '').toLowerCase();
-      const deliveryName = (o.delivery_name || '').toLowerCase();
-      const pickupName = (o.pickup_name || '').toLowerCase();
-      const deliveryAddress = (o.delivery_address || '').toLowerCase();
+    if (statusFilter !== "all") {
+      result = result.filter((o: any) => o.status === statusFilter);
+    }
+    
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const cleanedQ = q.replace(/^#/, '');
       
-      // ✅ البحث بالرقم مع وبدون الهاش
-      return tracking.includes(cleanedQ) ||
-             tracking.includes(q) ||
-             deliveryName.includes(q) ||
-             pickupName.includes(q) ||
-             deliveryAddress.includes(q) ||
-             id.includes(q);
+      result = result.filter((o: any) => {
+        const tracking = (o.tracking_number || '').toLowerCase();
+        const id = (o.id || '').toLowerCase();
+        const deliveryName = (o.delivery_name || '').toLowerCase();
+        const pickupName = (o.pickup_name || '').toLowerCase();
+        const deliveryAddress = (o.delivery_address || '').toLowerCase();
+        
+        return tracking.includes(cleanedQ) ||
+               tracking.includes(q) ||
+               deliveryName.includes(q) ||
+               pickupName.includes(q) ||
+               deliveryAddress.includes(q) ||
+               id.includes(q);
+      });
+    }
+    
+    result = [...result].sort((a, b) => {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-  }
-  
-  result = [...result].sort((a, b) => {
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
-  
-  return result;
-}, [orders, statusFilter, searchQuery]);
+    
+    return result;
+  }, [orders, statusFilter, searchQuery]);
   // ✅ حساب عدد الصفحات للـ Pagination
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = useMemo(() => {
@@ -1149,11 +1085,29 @@ const filteredOrders = useMemo(() => {
     }
   }, [app.user, getOrCreateConversation, navigate, isArabic]);
 
-  // ✅ تحديث الشركة
+  // ✅ تحديث الشركة - مع التحقق من الأرقام
   const handleUpdateCompany = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
+
+    const basePrice = parseFloat(formData.get("base_price") as string) || 0;
+    const pricePerKm = parseFloat(formData.get("price_per_km") as string) || 0;
+    const freeDeliveryThreshold = parseFloat(formData.get("free_delivery_threshold") as string) || 0;
+
+    // ✅ التحقق من أن القيم أكبر من الصفر
+    if (basePrice <= 0) {
+      toast.error(isArabic ? "❌ السعر الأساسي يجب أن يكون أكبر من صفر" : "❌ Base price must be greater than zero");
+      return;
+    }
+    if (pricePerKm <= 0) {
+      toast.error(isArabic ? "❌ سعر الكيلومتر يجب أن يكون أكبر من صفر" : "❌ Price per km must be greater than zero");
+      return;
+    }
+    if (freeDeliveryThreshold <= 0) {
+      toast.error(isArabic ? "❌ قيمة التوصيل المجاني يجب أن تكون أكبر من صفر" : "❌ Free delivery threshold must be greater than zero");
+      return;
+    }
 
     const patch: any = {
       name_ar: formData.get("name_ar") as string,
@@ -1161,11 +1115,11 @@ const filteredOrders = useMemo(() => {
       phone: formData.get("phone") as string,
       description_ar: formData.get("description_ar") as string,
       description_en: formData.get("description_en") as string,
-      base_price: parseFloat(formData.get("base_price") as string) || 0,
-      price_per_km: parseFloat(formData.get("price_per_km") as string) || 0,
-      free_delivery_threshold: parseFloat(formData.get("free_delivery_threshold") as string) || 0,
+      base_price: basePrice,
+      price_per_km: pricePerKm,
+      free_delivery_threshold: freeDeliveryThreshold,
       min_delivery_fee: parseFloat(formData.get("min_delivery_fee") as string) || 0,
-      max_delivery_fee: parseFloat(formData.get("max_delivery_fee") as string) || 999999,
+      max_delivery_fee: parseFloat(formData.get("max_delivery_fee") as string) || 1000000000,
       avg_delivery_time: parseInt(formData.get("avg_delivery_time") as string) || 60,
       has_tracking: formData.get("has_tracking") === "on",
       has_insurance: formData.get("has_insurance") === "on",
@@ -1242,9 +1196,20 @@ const filteredOrders = useMemo(() => {
     }
   }, [currentDistributor, updateDistributorMutation, isArabic, refetchDistributors]);
 
-  // ✅ دالة إنشاء موزع جديد
+  // ✅ دالة إنشاء موزع جديد - مع التحقق من رقم الهاتف
   const createNewDistributor = async (data: any) => {
     const { full_name_ar, full_name_en, phone, password, address_ar, address_en, governorate_id, is_available, distributor_type, avatar_url } = data;
+
+    // ✅ التحقق من صحة رقم الهاتف (رقم سوري: يبدأ بـ 09 أو 096 أو 095 أو 093 أو 094)
+    const phoneRegex = /^(09|096|095|093|094)[0-9]{7,8}$/;
+    if (!phoneRegex.test(phone)) {
+      toast.error(
+        isArabic 
+          ? "❌ رقم الهاتف غير صحيح. يجب أن يبدأ بـ 09 أو 096 أو 095 أو 093 أو 094 ويتكون من 9-10 أرقام"
+          : "❌ Invalid phone number. Must start with 09, 096, 095, 093, or 094 and be 9-10 digits"
+      );
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -1289,7 +1254,7 @@ const filteredOrders = useMemo(() => {
     }
   };
 
-  // ✅ إضافة موزع
+  // ✅ إضافة موزع - مع التحقق من رقم الهاتف
   const handleAddDistributor = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -1310,8 +1275,14 @@ const filteredOrders = useMemo(() => {
       return;
     }
 
-    if (!phone.trim() || phone.length < 9) {
-      toast.error(isArabic ? "رقم هاتف صحيح مطلوب" : "Valid phone number is required");
+    // ✅ التحقق من صحة رقم الهاتف (رقم سوري: يبدأ بـ 09 أو 096 أو 095 أو 093 أو 094)
+    const phoneRegex = /^(09|096|095|093|094)[0-9]{7,8}$/;
+    if (!phone.trim() || !phoneRegex.test(phone)) {
+      toast.error(
+        isArabic 
+          ? "❌ رقم الهاتف غير صحيح. يجب أن يبدأ بـ 09 أو 096 أو 095 أو 093 أو 094 ويتكون من 9-10 أرقام"
+          : "❌ Invalid phone number. Must start with 09, 096, 095, 093, or 094 and be 9-10 digits"
+      );
       return;
     }
 
@@ -1361,69 +1332,66 @@ const filteredOrders = useMemo(() => {
   }, [company, isArabic, avatarUrl, createNewDistributor]);
 
   // ✅ دالة تعطيل الموزع
-// ✅ دالة تعطيل الموزع (المُصحّحة)
-const handleDeactivateDistributor = async () => {
-  if (!deactivatingDistributor) return;
-  
-  setIsDeactivating(true);
-  
-  try {
-    const distributorId = deactivatingDistributor.id;
-    const distributorName = deactivatingDistributor.full_name_ar || deactivatingDistributor.full_name_en || 'الموزع';
+  const handleDeactivateDistributor = async () => {
+    if (!deactivatingDistributor) return;
     
-    // ✅ التحقق من وجود طلبات معلقة
-    const { data: pendingOrders, error: ordersError } = await supabase
-      .from("delivery_orders")
-      .select("id, status")
-      .eq("distributor_id", distributorId)
-      .in("status", ["pending", "assigned", "picked_up", "in_transit"]);
+    setIsDeactivating(true);
     
-    if (ordersError) throw ordersError;
-    
-    if (pendingOrders && pendingOrders.length > 0) {
+    try {
+      const distributorId = deactivatingDistributor.id;
+      const distributorName = deactivatingDistributor.full_name_ar || deactivatingDistributor.full_name_en || 'الموزع';
+      
+      const { data: pendingOrders, error: ordersError } = await supabase
+        .from("delivery_orders")
+        .select("id, status")
+        .eq("distributor_id", distributorId)
+        .in("status", ["pending", "assigned", "picked_up", "in_transit"]);
+      
+      if (ordersError) throw ordersError;
+      
+      if (pendingOrders && pendingOrders.length > 0) {
+        toast.error(
+          isArabic 
+            ? `❌ لا يمكن تعطيل الموزع لديه ${pendingOrders.length} طلبات معلقة`
+            : `❌ Cannot deactivate distributor with ${pendingOrders.length} pending orders`
+        );
+        setIsDeactivating(false);
+        return;
+      }
+      
+      const { error: updateError } = await supabase
+        .from("distributors")
+        .update({
+          is_available: false,
+          is_active: false,
+        })
+        .eq("id", distributorId);
+      
+      if (updateError) throw updateError;
+      
+      toast.success(
+        isArabic 
+          ? `✅ تم تعطيل الموزع "${distributorName}" بنجاح`
+          : `✅ Distributor "${distributorName}" deactivated successfully`
+      );
+      
+      setShowDeactivateDistributorDialog(false);
+      setDeactivatingDistributor(null);
+      setIsDeactivating(false);
+      
+      await refetchDistributors();
+      
+    } catch (error: any) {
+      console.error("❌ Error deactivating distributor:", error);
       toast.error(
         isArabic 
-          ? `❌ لا يمكن تعطيل الموزع لديه ${pendingOrders.length} طلبات معلقة`
-          : `❌ Cannot deactivate distributor with ${pendingOrders.length} pending orders`
+          ? `❌ فشل تعطيل الموزع: ${error.message || 'خطأ غير معروف'}`
+          : `❌ Failed to deactivate distributor: ${error.message || 'Unknown error'}`
       );
       setIsDeactivating(false);
-      return;
     }
-    
-    // ✅ تحديث الموزع (الأعمدة الموجودة فقط)
-    const { error: updateError } = await supabase
-      .from("distributors")
-      .update({
-        is_available: false,
-        is_active: false,
-        // ✅ تم إزالة deactivated_at و deactivated_by (غير موجودين)
-      })
-      .eq("id", distributorId);
-    
-    if (updateError) throw updateError;
-    
-    toast.success(
-      isArabic 
-        ? `✅ تم تعطيل الموزع "${distributorName}" بنجاح`
-        : `✅ Distributor "${distributorName}" deactivated successfully`
-    );
-    
-    setShowDeactivateDistributorDialog(false);
-    setDeactivatingDistributor(null);
-    setIsDeactivating(false);
-    
-    await refetchDistributors();
-    
-  } catch (error: any) {
-    console.error("❌ Error deactivating distributor:", error);
-    toast.error(
-      isArabic 
-        ? `❌ فشل تعطيل الموزع: ${error.message || 'خطأ غير معروف'}`
-        : `❌ Failed to deactivate distributor: ${error.message || 'Unknown error'}`
-    );
-    setIsDeactivating(false);
-  }
-};
+  };
+  
   // ✅ فتح ديالوج تعطيل الموزع
   const openDeactivateDistributorDialog = (distributor: any) => {
     setDeactivatingDistributor(distributor);
@@ -1489,7 +1457,7 @@ const handleDeactivateDistributor = async () => {
   if (app.authLoading || ordersLoading || distributorsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50/80 via-white to-[#0d2e2a]/5">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0d2e2a]/20 border-t-[#0d2e2a]" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f]" />
       </div>
     );
   }
@@ -1501,16 +1469,38 @@ const handleDeactivateDistributor = async () => {
   // ============================================================
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-[#0d2e2a]/5 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#0d2e2a]/10">
+      <div className="min-h-screen bg-gradient-to-br from-[#e8f0ee]/40 via-white to-[#fdf2f8] dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#1a4f4a]/10">
 
 {/* ============================================================
-    HEADER
+    HEADER - زيتي مع لمسات وردية
     ============================================================ */}
-<div className="relative bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] text-white overflow-hidden shadow-xl border-b border-white/10 sticky top-0 z-50">
+<div className="relative bg-gradient-to-r from-[#0d2e2a]/95 via-[#1a4f4a]/90 to-[#2a655f]/85 backdrop-blur-md text-white overflow-hidden shadow-2xl shadow-[#0d2e2a]/20 border-b border-white/10 sticky top-0 z-50">
   
   <div className="absolute inset-0 opacity-10">
     <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
     <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+  </div>
+
+  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+  
+  <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-8">
+    <div className="absolute top-1/2 -translate-y-1/2 animate-drive-across">
+      <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm px-8 py-4 rounded-full border border-white/10 shadow-lg">
+        <Truck className="h-12 w-12 text-white animate-bounce-truck" />
+        <div className="flex gap-1.5">
+          <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s' }} />
+          <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s', animationDelay: '0.3s' }} />
+          <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s', animationDelay: '0.6s' }} />
+          <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s', animationDelay: '0.9s' }} />
+        </div>
+        <span className="text-xs font-bold text-white/40 tracking-widest">● ● ●</span>
+        <div className="flex gap-1">
+          <div className="h-1.5 w-1.5 rounded-full bg-white/15 animate-pulse" />
+          <div className="h-1.5 w-1.5 rounded-full bg-white/15 animate-pulse" style={{ animationDelay: '0.5s' }} />
+          <div className="h-1.5 w-1.5 rounded-full bg-white/15 animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+      </div>
+    </div>
   </div>
 
   <div className="relative mx-auto max-w-7xl px-4 py-3 md:py-4">
@@ -1519,47 +1509,37 @@ const handleDeactivateDistributor = async () => {
 <div className="flex items-center gap-3 group flex-1 min-w-0">
   
   <div className="relative h-16 w-16 md:h-20 md:w-20 flex items-center justify-center group-hover:scale-110 transition-all duration-500 flex-shrink-0 animate-float-logo">
-    <div className="absolute inset-0 rounded-full bg-[#2a655f]/30 blur-2xl group-hover:bg-[#d4af37]/20 transition-all duration-700 animate-pulse-slow" />
-    <div className="absolute -inset-2 rounded-full border-2 border-[#d4af37]/20 animate-spin-slow" />
-    <div className="absolute -inset-4 rounded-full border border-[#d4af37]/10 animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '8s' }} />
+    
+    {/* ✅ دوائر وردية حول اللوغو */}
+    <div className="absolute inset-0 rounded-full bg-[#f9a8d4]/20 blur-2xl group-hover:bg-[#f9a8d4]/40 transition-all duration-700 animate-pulse-slow" />
+    <div className="absolute -inset-2 rounded-full border-2 border-[#f9a8d4]/40 animate-spin-slow" />
+    <div className="absolute -inset-4 rounded-full border border-[#f9a8d4]/20 animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '8s' }} />
+    <div className="absolute -inset-6 rounded-full border border-[#f9a8d4]/10 animate-spin-slow" style={{ animationDuration: '10s' }} />
+    <div className="absolute -inset-8 rounded-full border border-[#f9a8d4]/5 animate-spin-slow" style={{ animationDuration: '12s', animationDirection: 'reverse' }} />
+    
     <img 
       src="/images/Logo.png" 
-      alt="السوق لعندك"
+    
       className="h-14 w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl relative z-10 animate-pulse-glow"
       loading="eager"
     />
-    <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#2a655f] animate-ping" />
-    <div className="absolute -bottom-1 -left-1 h-2.5 w-2.5 rounded-full bg-[#d4af37] animate-ping" style={{ animationDelay: '0.5s' }} />
-    <div className="absolute top-1/2 -right-3 h-2 w-2 rounded-full bg-[#3a8a82] animate-pulse" style={{ animationDelay: '1s' }} />
-    <div className="absolute top-1/2 -left-3 h-2 w-2 rounded-full bg-[#f0d060] animate-pulse" style={{ animationDelay: '1.5s' }} />
-    <div className="absolute -top-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#4a9f95] animate-bounce" />
-    <div className="absolute -bottom-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#d4af37] animate-bounce" style={{ animationDelay: '0.7s' }} />
+    
+    {/* ✅ نقاط وردية حول اللوغو */}
+    <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#f9a8d4] animate-ping" />
+    <div className="absolute -bottom-1 -left-1 h-2.5 w-2.5 rounded-full bg-[#f9a8d4] animate-ping" style={{ animationDelay: '0.5s' }} />
+    <div className="absolute top-1/2 -right-3 h-2 w-2 rounded-full bg-[#f9a8d4] animate-pulse" style={{ animationDelay: '1s' }} />
+    <div className="absolute top-1/2 -left-3 h-2 w-2 rounded-full bg-[#f9a8d4] animate-pulse" style={{ animationDelay: '1.5s' }} />
+    <div className="absolute -top-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#f9a8d4] animate-bounce" />
+    <div className="absolute -bottom-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#f9a8d4] animate-bounce" style={{ animationDelay: '0.7s' }} />
   </div>
   
   <div className="flex flex-col min-w-0">
-    <h1 className="text-xl md:text-3xl font-black tracking-tight leading-tight">
-      <span className="bg-gradient-to-r from-[#f5d742] via-[#f0e68c] to-[#f5d742] bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(245,215,66,0.4)] whitespace-nowrap">
-        {isArabic ? "السوق لعندك" : "Souq Le3ndak"}
-      </span>
-    </h1>
-    <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-[10px] md:text-xs text-white/60 flex items-center gap-1">
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-        </span>
-        {isArabic ? "شركة توصيل • نشط" : "Delivery Company • Active"}
-      </span>
-      <span className="text-[8px] md:text-[10px] text-white/30">|</span>
-      <span className="text-[8px] md:text-[10px] text-white/40 flex items-center gap-1">
-        <Sparkles className="h-2.5 w-2.5 md:h-3 md:w-3 animate-spin-slow text-yellow-400/60" />
-        {isArabic ? "توصيل سريع" : "Fast Delivery"}
-      </span>
-    </div>
+    
+    
   </div>
 </div>
 
-{/* ✅ ✅ ✅ أزرار الإشعارات والرسائل واللغة */}
+{/* ✅ أزرار التحكم مع العبارة تحت DeliveryAccountMenu */}
 <div className="flex items-center gap-1 flex-wrap flex-shrink-0">
   
   <Tooltip>
@@ -1622,19 +1602,38 @@ const handleDeactivateDistributor = async () => {
 
   <div className="w-px h-6 bg-white/10 mx-0.5" />
 
-  <DeliveryAccountMenu
-    userData={{
-      id: app.user?.id || '',
-      full_name: company?.name_ar || app.user?.name || (isArabic ? 'مدير شركة' : 'Company Manager'),
-      phone: company?.phone || app.user?.phone || '',
-      avatar_url: company?.logo_url || '',
-      role: 'delivery_company'
-    }}
-    companyName={company?.name_ar}
-    isArabic={isArabic}
-    companyId={company?.id}
-    onCompanyUpdated={refetchCompany}
-  />
+  {/* ✅ DeliveryAccountMenu مع العبارة تحته */}
+  <div className="flex flex-col items-center">
+    <DeliveryAccountMenu
+      userData={{
+        id: app.user?.id || '',
+        full_name: company?.name_ar || app.user?.name || (isArabic ? 'مدير شركة' : 'Company Manager'),
+        phone: company?.phone || app.user?.phone || '',
+        avatar_url: company?.logo_url || '',
+        role: 'delivery_company'
+      }}
+      companyName={company?.name_ar}
+      isArabic={isArabic}
+      companyId={company?.id}
+      onCompanyUpdated={refetchCompany}
+    />
+    
+    {/* ✅ ✅ ✅ العبارة تحت DeliveryAccountMenu */}
+    <div className="flex items-center gap-2 mt-0.5">
+      <span className="text-[8px] md:text-[10px] text-white/70 flex items-center gap-1">
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+        </span>
+        {isArabic ? "شركة توصيل • متاحة" : "Delivery Company • Available"}
+      </span>
+      <span className="text-[8px] md:text-[10px] text-white/30">|</span>
+      <span className="text-[8px] md:text-[10px] text-white/50 flex items-center gap-0.5">
+        <Sparkles className="h-2 w-2 md:h-2.5 md:w-2.5 animate-spin-slow text-[#f9a8d4]" />
+        {isArabic ? "توصيل سريع" : "Fast Delivery"}
+      </span>
+    </div>
+  </div>
 
   <div className="w-px h-6 bg-white/10 mx-0.5" />
 
@@ -1661,16 +1660,16 @@ const handleDeactivateDistributor = async () => {
   </div>
 </div>
 
-{/* ✅✅✅ DIALOG: الإشعارات */}
+{/* ✅ DIALOG: الإشعارات - وردي */}
 <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-  <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 shadow-2xl">
+  <DialogContent className="max-w-md rounded-2xl border-[#f9a8d4]/30 shadow-2xl">
     <DialogHeader>
       <div className="flex items-center justify-between">
-        <DialogTitle className="flex items-center gap-2 text-[#0d2e2a] dark:text-white">
-          <Bell className="h-5 w-5 text-[#2a655f]" />
+        <DialogTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
+          <Bell className="h-5 w-5 text-[#d81b60]" />
           {isArabic ? "الإشعارات" : "Notifications"}
           {unreadNotificationsCount > 0 && (
-            <Badge className="bg-red-500 text-white border-0 text-[10px]">
+            <Badge className="bg-[#d81b60] text-white border-0 text-[10px]">
               {unreadNotificationsCount}
             </Badge>
           )}
@@ -1680,7 +1679,7 @@ const handleDeactivateDistributor = async () => {
             variant="ghost"
             size="sm"
             onClick={handleMarkAllAsRead}
-            className="text-xs text-[#2a655f] hover:bg-[#2a655f]/10 rounded-xl"
+            className="text-xs text-[#d81b60] hover:bg-[#f9a8d4]/20 rounded-xl"
           >
             {isArabic ? "تحديد الكل كمقروء" : "Mark all as read"}
           </Button>
@@ -1708,20 +1707,20 @@ const handleDeactivateDistributor = async () => {
                 "p-3 rounded-xl border cursor-pointer transition-all duration-200 hover:shadow-md",
                 isRead 
                   ? "bg-white dark:bg-slate-900 border-slate-200/50 dark:border-slate-700/50" 
-                  : "bg-[#2a655f]/5 border-[#2a655f]/30 hover:bg-[#2a655f]/10"
+                  : "bg-[#fbcfe8]/30 border-[#f9a8d4]/40 hover:bg-[#fbcfe8]/50"
               )}
             >
               <div className="flex items-start gap-3">
                 <div className={cn(
                   "h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0",
-                  isRead ? "bg-slate-100 dark:bg-slate-800" : "bg-[#2a655f]/20"
+                  isRead ? "bg-slate-100 dark:bg-slate-800" : "bg-[#f9a8d4]/30"
                 )}>
-                  <Icon className="h-4 w-4 text-[#2a655f]" />
+                  <Icon className="h-4 w-4 text-[#d81b60]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={cn(
                     "text-sm font-semibold",
-                    isRead ? "text-slate-700 dark:text-slate-300" : "text-[#0d2e2a] dark:text-white"
+                    isRead ? "text-slate-700 dark:text-slate-300" : "text-[#d81b60]"
                   )}>
                     {isArabic ? notification.title_ar : notification.title_en || notification.title_ar}
                   </p>
@@ -1733,7 +1732,7 @@ const handleDeactivateDistributor = async () => {
                   </p>
                 </div>
                 {!isRead && (
-                  <div className="h-2 w-2 rounded-full bg-[#2a655f] animate-pulse flex-shrink-0 mt-1" />
+                  <div className="h-2 w-2 rounded-full bg-[#d81b60] animate-pulse flex-shrink-0 mt-1" />
                 )}
               </div>
             </div>
@@ -1746,7 +1745,7 @@ const handleDeactivateDistributor = async () => {
       <Button 
         variant="outline" 
         onClick={() => setNotificationsOpen(false)} 
-        className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10"
+        className="rounded-xl border-[#f9a8d4]/30 text-[#d81b60] hover:bg-[#fbcfe8]/30"
       >
         {isArabic ? "إغلاق" : "Close"}
       </Button>
@@ -1754,12 +1753,12 @@ const handleDeactivateDistributor = async () => {
   </DialogContent>
 </Dialog>
 
-{/* ✅✅✅ DIALOG: حساب الموزع */}
+{/* ✅ DIALOG: حساب الموزع - وردي */}
 <Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
-  <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/20 shadow-2xl">
+  <DialogContent className="max-w-md rounded-2xl border-[#f9a8d4]/30 shadow-2xl">
     <DialogHeader>
-      <DialogTitle className="flex items-center gap-2 text-[#0d2e2a] dark:text-white">
-        <UserCircle className="h-5 w-5 text-[#2a655f]" />
+      <DialogTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
+        <UserCircle className="h-5 w-5 text-[#d81b60]" />
         {isArabic ? "حساب الموزع" : "Distributor Account"}
       </DialogTitle>
       <DialogDescription>
@@ -1770,8 +1769,8 @@ const handleDeactivateDistributor = async () => {
     <div className="space-y-4 py-4">
       {currentDistributor && (
         <>
-          <div className="flex items-center gap-4 p-3 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
-            <div className="h-12 w-12 rounded-full bg-[#2a655f]/10 flex items-center justify-center overflow-hidden">
+          <div className="flex items-center gap-4 p-3 bg-[#fbcfe8]/20 rounded-xl border border-[#f9a8d4]/30">
+            <div className="h-12 w-12 rounded-full bg-[#f9a8d4]/30 flex items-center justify-center overflow-hidden">
               {currentDistributor.avatar_url ? (
                 <img 
                   src={currentDistributor.avatar_url} 
@@ -1779,11 +1778,11 @@ const handleDeactivateDistributor = async () => {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <User className="h-6 w-6 text-[#2a655f]" />
+                <User className="h-6 w-6 text-[#d81b60]" />
               )}
             </div>
             <div>
-              <p className="font-bold text-[#0d2e2a] dark:text-white">
+              <p className="font-bold text-[#d81b60] dark:text-[#f9a8d4]">
                 {currentDistributor.full_name_ar || currentDistributor.full_name_en}
               </p>
               <p className="text-xs text-muted-foreground" dir="ltr">
@@ -1793,24 +1792,24 @@ const handleDeactivateDistributor = async () => {
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            <div className="p-3 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30">
               <p className="text-xs text-muted-foreground">{isArabic ? "الحالة" : "Status"}</p>
-              <p className="font-semibold text-[#0d2e2a] dark:text-white">
+              <p className="font-semibold text-[#d81b60] dark:text-[#f9a8d4]">
                 {currentDistributor.is_available 
                   ? (isArabic ? "🟢 متاح" : "🟢 Available") 
                   : (isArabic ? "🔴 غير متاح" : "🔴 Unavailable")}
               </p>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            <div className="p-3 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30">
               <p className="text-xs text-muted-foreground">{isArabic ? "التقييم" : "Rating"}</p>
-              <p className="font-semibold text-[#0d2e2a] dark:text-white flex items-center gap-1">
+              <p className="font-semibold text-[#d81b60] dark:text-[#f9a8d4] flex items-center gap-1">
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                 {currentDistributor.rating || 0}
               </p>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl col-span-2">
+            <div className="p-3 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30 col-span-2">
               <p className="text-xs text-muted-foreground">{isArabic ? "العنوان" : "Address"}</p>
-              <p className="font-semibold text-[#0d2e2a] dark:text-white text-sm">
+              <p className="font-semibold text-[#d81b60] dark:text-[#f9a8d4] text-sm">
                 {currentDistributor.address_ar || currentDistributor.address_en || (isArabic ? "غير محدد" : "Not specified")}
               </p>
             </div>
@@ -1823,7 +1822,7 @@ const handleDeactivateDistributor = async () => {
       <Button 
         variant="outline" 
         onClick={() => setShowDistributorDialog(false)} 
-        className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10"
+        className="rounded-xl border-[#f9a8d4]/30 text-[#d81b60] hover:bg-[#fbcfe8]/30"
       >
         {isArabic ? "إغلاق" : "Close"}
       </Button>
@@ -1831,1377 +1830,1497 @@ const handleDeactivateDistributor = async () => {
   </DialogContent>
 </Dialog>
 
-        {/* ===== STATS ===== */}
-        <div className="mx-auto max-w-7xl px-4 py-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            <ModernStatCard
-              icon={Package}
-              label={isArabic ? "الطلبات" : "Orders"}
-              value={stats.total}
-              gradient="from-[#0d2e2a] to-[#1a4f4a]"
-              isArabic={isArabic}
-            />
-            <ModernStatCard
-              icon={Clock}
-              label={isArabic ? "قيد المراجعة" : "Pending"}
-              value={stats.pending}
-              gradient="from-amber-600 to-orange-500"
-              isArabic={isArabic}
-            />
-            <ModernStatCard
-              icon={UserCheck}
-              label={isArabic ? "تم التعيين" : "Assigned"}
-              value={stats.assigned}
-              gradient="from-purple-600 to-violet-500"
-              isArabic={isArabic}
-            />
-            <ModernStatCard
-              icon={Truck}
-              label={isArabic ? "قيد التوصيل" : "In Transit"}
-              value={stats.inTransit}
-              gradient="from-blue-600 to-cyan-500"
-              isArabic={isArabic}
-            />
-            <ModernStatCard
-              icon={CheckCircle}
-              label={isArabic ? "تم التوصيل" : "Delivered"}
-              value={stats.delivered}
-              gradient="from-emerald-600 to-teal-500"
-              isArabic={isArabic}
-            />
-           <ModernStatCard
- icon={Coins}  // ✅ الجديد
-  label={isArabic ? "الإيرادات" : "Revenue"}
-  value={stats.totalRevenue.toLocaleString()}
-  gradient="from-rose-600 to-pink-500"
-  isArabic={isArabic}
-/>
-            <ModernStatCard
-              icon={TrendingUp}
-              label={isArabic ? "نسبة الإنجاز" : "Completion"}
-              value={`${stats.completionRate}%`}
-              gradient="from-indigo-600 to-blue-500"
-              isArabic={isArabic}
-            />
-          </div>
+{/* ===== STATS - وردية (StatCard بدلاً من ModernStatCard) ===== */}
+<div className="mx-auto max-w-7xl px-4 py-6">
+  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+    <StatCard
+      icon={Package}
+      label={isArabic ? "الطلبات" : "Orders"}
+      value={stats.total}
+      color="olive"
+    />
+    <StatCard
+      icon={Clock}
+      label={isArabic ? "قيد المراجعة" : "Pending"}
+      value={stats.pending}
+      color="pink"
+    />
+    <StatCard
+      icon={UserCheck}
+      label={isArabic ? "تم التعيين" : "Assigned"}
+      value={stats.assigned}
+      color="pink"
+    />
+    <StatCard
+      icon={Truck}
+      label={isArabic ? "قيد التوصيل" : "In Transit"}
+      value={stats.inTransit}
+      color="pink"
+    />
+    <StatCard
+      icon={CheckCircle}
+      label={isArabic ? "تم التوصيل" : "Delivered"}
+      value={stats.delivered}
+      color="olive"
+    />
+    <StatCard
+      icon={Coins}
+      label={isArabic ? "الإيرادات" : "Revenue"}
+      value={stats.totalRevenue.toLocaleString()}
+      color="pink"
+    />
+    <StatCard
+      icon={TrendingUp}
+      label={isArabic ? "نسبة الإنجاز" : "Completion"}
+      value={`${stats.completionRate}%`}
+      color="olive"
+    />
+  </div>
+</div>
+
+{/* ===== TABS - زيتي ووردي مع أيقونات احترافية ===== */}
+<div className="mx-auto max-w-7xl px-4">
+  <div className="flex items-center gap-2 border-b border-[#f9a8d4]/30 mb-6 overflow-x-auto">
+    {[
+      { 
+        id: "orders", 
+        label: isArabic ? "الطلبات" : "Orders", 
+        icon: ShoppingBag,
+        iconBg: "from-[#d81b60] to-[#f48fb1]",
+        iconColor: "text-[#d81b60]"
+      },
+      { 
+        id: "distributors", 
+        label: isArabic ? "الموزعين" : "Distributors", 
+        icon: Users,
+        iconBg: "from-[#2a655f] to-[#3a8a82]",
+        iconColor: "text-[#2a655f]"
+      },
+      { 
+        id: "analytics", 
+        label: isArabic ? "التحليلات" : "Analytics", 
+        icon: TrendingUp,
+        iconBg: "from-[#d81b60] to-[#f9a8d4]",
+        iconColor: "text-[#d81b60]"
+      },
+      { 
+        id: "admins", 
+        label: isArabic ? "المدراء" : "Managers", 
+        icon: Crown,
+        iconBg: "from-amber-500 to-yellow-500",
+        iconColor: "text-amber-500"
+      },
+    ].map((tab) => (
+      <button
+        key={tab.id}
+        onClick={() => setActiveTab(tab.id as any)}
+        className={`flex items-center gap-3 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 whitespace-nowrap group ${
+          activeTab === tab.id
+            ? "border-[#d81b60] text-[#d81b60] dark:text-[#f9a8d4]"
+            : "border-transparent text-muted-foreground hover:text-[#d81b60] hover:border-[#f9a8d4]/50"
+        }`}
+      >
+        <div className={cn(
+          "h-8 w-8 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6",
+          activeTab === tab.id
+            ? `bg-gradient-to-br ${tab.iconBg} text-white shadow-lg shadow-[#d81b60]/25`
+            : "bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:bg-[#fbcfe8]/30 group-hover:text-[#d81b60]"
+        )}>
+          <tab.icon className="h-4 w-4" />
+        </div>
+        <span className="transition-all duration-300 group-hover:translate-x-0.5">
+          {tab.label}
+        </span>
+        {activeTab === tab.id && (
+          <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60] animate-pulse" />
+        )}
+      </button>
+    ))}
+  </div>
+
+  {/* ===== ORDERS TAB ===== */}
+  {activeTab === "orders" && (
+    <div className="animate-in slide-in-from-top-5 duration-300">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="relative flex-1 min-w-[200px] max-w-sm group">
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#d81b60] transition-colors duration-300" />
+          <Input
+            placeholder={isArabic ? "🔍 بحث عن طلب..." : "🔍 Search orders..."}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="ps-9 h-10 rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 transition-all duration-300"
+          />
         </div>
 
-        {/* ===== TABS ===== */}
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="flex items-center gap-2 border-b border-[#0d2e2a]/10 mb-6 overflow-x-auto">
-            {[
-              { id: "orders", label: isArabic ? "📦 الطلبات" : "📦 Orders", icon: Package },
-              { id: "distributors", label: isArabic ? "👤 الموزعين" : "👤 Distributors", icon: Users },
-              { id: "analytics", label: isArabic ? "📊 التحليلات" : "📊 Analytics", icon: BarChart3 },
-              { id: "admins", label: isArabic ? "👑 المدراء" : "👑 Managers", icon: Shield },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "border-[#0d2e2a] text-[#0d2e2a] dark:text-[#4a9f95]"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-[#0d2e2a]/30"
-                }`}
+      <div className="flex items-center gap-2">
+  <Filter className="h-4 w-4 text-[#d81b60] animate-pulse" />
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button 
+        variant="outline" 
+        className="h-10 px-4 rounded-xl border-2 border-[#f9a8d4]/40 hover:border-[#d81b60]/50 hover:bg-[#fbcfe8]/30 transition-all duration-300 flex items-center gap-2 min-w-[160px] justify-between"
+      >
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          {statusFilter === "all" ? (isArabic ? "📋 جميع الحالات" : "📋 All status") :
+           statusFilter === "pending" ? (isArabic ? "⏳ قيد المراجعة" : "⏳ Pending") :
+           statusFilter === "assigned" ? (isArabic ? "📌 تم التعيين" : "📌 Assigned") :
+           statusFilter === "picked_up" ? (isArabic ? "📦 تم الاستلام" : "📦 Picked up") :
+           statusFilter === "in_transit" ? (isArabic ? "🚚 قيد التوصيل" : "🚚 In transit") :
+           statusFilter === "delivered" ? (isArabic ? "✅ تم التوصيل" : "✅ Delivered") :
+           (isArabic ? "جميع الحالات" : "All status")}
+        </span>
+        <ChevronDown className="h-4 w-4 text-[#d81b60]" />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="start" className="w-[220px] rounded-xl border-2 border-[#f9a8d4]/30 shadow-xl p-1">
+      
+      <DropdownMenuItem 
+        onClick={() => setStatusFilter("all")}
+        className={cn(
+          "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+          statusFilter === "all" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+        )}
+      >
+        <span className="flex items-center gap-2 w-full">
+          <span className="text-base">📋</span>
+          <span className="flex-1">{isArabic ? "جميع الحالات" : "All status"}</span>
+          {statusFilter === "all" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+        </span>
+      </DropdownMenuItem>
+      
+      <DropdownMenuItem 
+        onClick={() => setStatusFilter("pending")}
+        className={cn(
+          "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+          statusFilter === "pending" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+        )}
+      >
+        <span className="flex items-center gap-2 w-full">
+          <span className="text-base">⏳</span>
+          <span className="flex-1">{isArabic ? "قيد المراجعة" : "Pending"}</span>
+          {statusFilter === "pending" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+        </span>
+      </DropdownMenuItem>
+      
+      <DropdownMenuItem 
+        onClick={() => setStatusFilter("assigned")}
+        className={cn(
+          "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+          statusFilter === "assigned" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+        )}
+      >
+        <span className="flex items-center gap-2 w-full">
+          <span className="text-base">📌</span>
+          <span className="flex-1">{isArabic ? "تم التعيين" : "Assigned"}</span>
+          {statusFilter === "assigned" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+        </span>
+      </DropdownMenuItem>
+      
+      <DropdownMenuItem 
+        onClick={() => setStatusFilter("picked_up")}
+        className={cn(
+          "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+          statusFilter === "picked_up" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+        )}
+      >
+        <span className="flex items-center gap-2 w-full">
+          <span className="text-base">📦</span>
+          <span className="flex-1">{isArabic ? "تم الاستلام" : "Picked up"}</span>
+          {statusFilter === "picked_up" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+        </span>
+      </DropdownMenuItem>
+      
+      <DropdownMenuItem 
+        onClick={() => setStatusFilter("in_transit")}
+        className={cn(
+          "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+          statusFilter === "in_transit" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+        )}
+      >
+        <span className="flex items-center gap-2 w-full">
+          <span className="text-base">🚚</span>
+          <span className="flex-1">{isArabic ? "قيد التوصيل" : "In transit"}</span>
+          {statusFilter === "in_transit" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+        </span>
+      </DropdownMenuItem>
+      
+      <DropdownMenuItem 
+        onClick={() => setStatusFilter("delivered")}
+        className={cn(
+          "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+          statusFilter === "delivered" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+        )}
+      >
+        <span className="flex items-center gap-2 w-full">
+          <span className="text-base">✅</span>
+          <span className="flex-1">{isArabic ? "تم التوصيل" : "Delivered"}</span>
+          {statusFilter === "delivered" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+        </span>
+      </DropdownMenuItem>
+      
+    </DropdownMenuContent>
+  </DropdownMenu>
+</div>
+
+        <div className="flex items-center gap-2 ml-auto">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportToCSV(filteredOrders, 'الطلبات')}
+                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
               >
-                <tab.icon className="h-4 w-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300" />
-                {tab.label}
-              </button>
+                <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "Excel" : "Excel"}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{isArabic ? "تصدير إلى Excel" : "Export to Excel"}</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportToWord(filteredOrders, 'تقرير الطلبات')}
+                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+              >
+                <FileText className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "Word" : "Word"}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{isArabic ? "تصدير إلى Word" : "Export to Word"}</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+              >
+                <Printer className="h-4 w-4 text-[#d81b60] group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "طباعة" : "Print"}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{isArabic ? "طباعة التقرير" : "Print Report"}</TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+
+      {ordersLoading ? (
+        <div className="space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))}
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border-2 border-dashed border-[#f9a8d4]/40">
+          <div className="h-20 w-20 rounded-full bg-[#fbcfe8]/30 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
+            <Package className="h-10 w-10 text-[#d81b60]/40" />
+          </div>
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
+            {isArabic ? "لا توجد طلبات" : "No orders"}
+          </h3>
+          <p className="text-muted-foreground text-sm">
+            {isArabic ? "لم يتم استلام أي طلبات توصيل بعد" : "No delivery orders received yet"}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-3">
+            {paginatedOrders.map((order: any) => (
+              <OrderCard 
+                key={order.id} 
+                order={order} 
+                isArabic={isArabic}
+                onAccept={() => {
+                  console.log("📦 Order data:", order);
+                  console.log("🆔 order.id:", order.id);
+                  console.log("🆔 order.order_id:", order.order_id);
+                  console.log("🔍 order_id exists?", !!order.order_id);
+                  setSelectedDeliveryOrderId(order.id);
+                  setSelectedOrderId(order.order_id);
+                  setSelectedDistributorId("");
+                  setDistributorSearch("");
+                  setAcceptDialogOpen(true);
+                }}
+                onReject={() => {
+                  setSelectedDeliveryOrderId(order.id);
+                  setSelectedOrderId(order.order_id);
+                  setRejectReason("");
+                  setRejectDialogOpen(true);
+                }}
+                onViewDetails={(details) => {
+                  setSelectedOrderForDetails(details);
+                  setShowOrderDetails(true);
+                }}
+              />
             ))}
           </div>
 
-          {/* ===== ORDERS TAB ===== */}
-          {activeTab === "orders" && (
-            <div className="animate-in slide-in-from-top-5 duration-300">
-              <div className="flex flex-wrap items-center gap-3 mb-6">
-                <div className="relative flex-1 min-w-[200px] max-w-sm group">
-                  <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#0d2e2a] transition-colors duration-300" />
-                  <Input
-                    placeholder={isArabic ? "🔍 بحث عن طلب..." : "🔍 Search orders..."}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="ps-9 h-10 rounded-xl border-slate-200/50 dark:border-slate-800/50 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 transition-all duration-300"
+          {filteredOrders.length > 0 && totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-[#f9a8d4]/30">
+              <p className="text-sm text-muted-foreground">
+                {isArabic 
+                  ? `عرض ${(currentPage - 1) * itemsPerPage + 1} - ${Math.min(currentPage * itemsPerPage, filteredOrders.length)} من ${filteredOrders.length} طلب`
+                  : `Showing ${(currentPage - 1) * itemsPerPage + 1} - ${Math.min(currentPage * itemsPerPage, filteredOrders.length)} of ${filteredOrders.length} orders`}
+              </p>
+              <div className="flex flex-wrap items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-xl h-9 w-9 p-0 border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
+                >
+                  <ChevronLeft className="h-4 w-4 text-[#d81b60]" />
+                </Button>
+                {[...Array(Math.min(totalPages, 7))].map((_, i) => {
+                  let pageNum;
+                  if (totalPages <= 7) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 4) {
+                    pageNum = i + 1;
+                    if (i === 6) pageNum = totalPages;
+                  } else if (currentPage >= totalPages - 3) {
+                    pageNum = totalPages - 6 + i;
+                  } else {
+                    pageNum = currentPage - 3 + i;
+                  }
+                  
+                  if (i === 0 && pageNum > 1) {
+                    return (
+                      <Button
+                        key="first"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(1)}
+                        className="rounded-xl h-9 min-w-[36px] px-2 text-xs border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
+                      >
+                        1
+                      </Button>
+                    );
+                  }
+                  
+                  if (i === 0 && pageNum > 2) {
+                    return (
+                      <span key="dots1" className="px-1 text-muted-foreground">…</span>
+                    );
+                  }
+                  
+                  if (i === 6 && pageNum < totalPages - 1) {
+                    return (
+                      <span key="dots2" className="px-1 text-muted-foreground">…</span>
+                    );
+                  }
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={cn(
+                        "rounded-xl h-9 min-w-[36px] px-2 text-xs",
+                        currentPage === pageNum && "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white shadow-md shadow-[#d81b60]/30"
+                      )}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-xl h-9 w-9 p-0 border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
+                >
+                  <ChevronRight className="h-4 w-4 text-[#d81b60]" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="h-9 px-2 rounded-xl border border-[#f9a8d4]/30 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>  
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                </select>
+                <span className="text-xs text-muted-foreground">
+                  {isArabic ? "لكل صفحة" : "per page"}
+                </span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )}
+
+  {/* ===== DISTRIBUTORS TAB ===== */}
+  {activeTab === "distributors" && (
+    <div>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h3 className="text-xl font-bold text-[#d81b60] dark:text-[#f9a8d4] flex items-center gap-2">
+            <Users className="h-5 w-5 text-[#d81b60]" />
+            {isArabic ? "الموزعين" : "Distributors"}
+            <span className="text-sm font-normal text-muted-foreground">
+              ({allDistributors.length})
+            </span>
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {isArabic ? "إدارة الموزعين وحالتهم" : "Manage distributors and their status"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportToCSV(allDistributors, 'الموزعين')}
+                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+              >
+                <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "Excel" : "Excel"}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{isArabic ? "تصدير الموزعين إلى Excel" : "Export distributors to Excel"}</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportToWord(allDistributors, 'تقرير الموزعين')}
+                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+              >
+                <FileText className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "Word" : "Word"}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{isArabic ? "تصدير الموزعين إلى Word" : "Export distributors to Word"}</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+              >
+                <Printer className="h-4 w-4 text-[#d81b60] group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "طباعة" : "Print"}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{isArabic ? "طباعة تقرير الموزعين" : "Print distributors report"}</TooltipContent>
+          </Tooltip>
+
+          <Dialog open={showAddDistributorDialog} onOpenChange={setShowAddDistributorDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] transition-all duration-300 hover:scale-105 shadow-lg shadow-[#d81b60]/30">
+                <UserPlus className="h-4 w-4 mr-1" />
+                {isArabic ? "إضافة موزع" : "Add Distributor"}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-2xl max-h-[90vh] overflow-y-auto border-[#f9a8d4]/30">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-[#d81b60] dark:text-[#f9a8d4] flex items-center gap-2">
+                  <UserPlus className="h-6 w-6 text-[#d81b60]" />
+                  {isArabic ? "➕ إضافة موزع جديد" : "➕ Add New Distributor"}
+                </DialogTitle>
+                <DialogDescription>
+                  {isArabic
+                    ? "سيتم إنشاء حساب للموزع مع رقم هاتف وكلمة مرور"
+                    : "A new distributor account will be created with phone and password"}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddDistributor} className="space-y-4 py-4">
+                <div className="flex flex-col items-center gap-3 p-4 bg-[#fbcfe8]/20 rounded-xl border border-[#f9a8d4]/30">
+                  <ImageInput
+                    value={avatarUrl || ""}
+                    onChange={(value) => setAvatarUrl(value)}
+                    userId={app.user?.id}
+                    folder="distributors"
+                    lang={app.lang}
+                    label={isArabic ? "صورة الموزع" : "Distributor Photo"}
+                    previewClassName="h-24 w-24 rounded-full object-cover border-4 border-[#f9a8d4]/50"
+                    hint={isArabic ? "اضغط لرفع صورة الموزع" : "Click to upload distributor photo"}
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="h-10 px-3 rounded-xl border border-slate-200/50 dark:border-slate-800/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300"
-                  >
-                    <option value="all">{isArabic ? "جميع الحالات" : "All status"}</option>
-                    <option value="pending">{isArabic ? "قيد المراجعة" : "Pending"}</option>
-                    <option value="assigned">{isArabic ? "تم التعيين" : "Assigned"}</option>
-                    <option value="picked_up">{isArabic ? "تم الاستلام" : "Picked up"}</option>
-                    <option value="in_transit">{isArabic ? "قيد التوصيل" : "In transit"}</option>
-                      <option value="delivered">{isArabic ? "تم التوصيل" : "Delivered"}</option> 
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2 ml-auto">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => exportToCSV(filteredOrders, 'الطلبات')}
-                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
-                      >
-                        <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "إكسل" : "Excel"}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{isArabic ? "تصدير إلى Excel" : "Export to Excel"}</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => exportToWord(filteredOrders, 'تقرير الطلبات')}
-                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
-                      >
-                        <FileText className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "Word" : "Word"}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{isArabic ? "تصدير إلى Word" : "Export to Word"}</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handlePrint}
-                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
-                      >
-                        <Printer className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
-                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "طباعة" : "Print"}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{isArabic ? "طباعة التقرير" : "Print Report"}</TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-
-              {ordersLoading ? (
-                <div className="space-y-4">
-                  {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-24 rounded-2xl" />
-                  ))}
-                </div>
-              ) : filteredOrders.length === 0 ? (
-                <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border border-dashed border-[#0d2e2a]/30">
-                  <div className="h-20 w-20 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
-                    <Package className="h-10 w-10 text-[#0d2e2a]/40" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
-                    {isArabic ? "لا توجد طلبات" : "No orders"}
-                  </h3>
-                  <p className="text-muted-foreground text-sm">
-                    {isArabic ? "لم يتم استلام أي طلبات توصيل بعد" : "No delivery orders received yet"}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-3">
-                    {paginatedOrders.map((order: any) => (
-                      <OrderCard 
-                        key={order.id} 
-                        order={order} 
-                        isArabic={isArabic}
-                        onAccept={() => {
-                          console.log("📦 Order data:", order);
-                          console.log("🆔 order.id:", order.id);
-                          console.log("🆔 order.order_id:", order.order_id);
-                          console.log("🔍 order_id exists?", !!order.order_id);
-                          setSelectedDeliveryOrderId(order.id);
-                          setSelectedOrderId(order.order_id);
-                          setSelectedDistributorId("");
-                          setDistributorSearch("");
-                          setAcceptDialogOpen(true);
-                        }}
-                        onReject={() => {
-                          setSelectedDeliveryOrderId(order.id);
-                          setSelectedOrderId(order.order_id);
-                          setRejectReason("");
-                          setRejectDialogOpen(true);
-                        }}
-                        onViewDetails={(details) => {
-                          // ✅ ✅ ✅ استخدم البيانات الكاملة
-                          setSelectedOrderForDetails(details);
-                          setShowOrderDetails(true);
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  {filteredOrders.length > 0 && totalPages > 1 && (
-                    <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
-                      <p className="text-sm text-muted-foreground">
-                        {isArabic 
-                          ? `عرض ${(currentPage - 1) * itemsPerPage + 1} - ${Math.min(currentPage * itemsPerPage, filteredOrders.length)} من ${filteredOrders.length} طلب`
-                          : `Showing ${(currentPage - 1) * itemsPerPage + 1} - ${Math.min(currentPage * itemsPerPage, filteredOrders.length)} of ${filteredOrders.length} orders`}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                          disabled={currentPage === 1}
-                          className="rounded-xl h-9 w-9 p-0"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        {[...Array(Math.min(totalPages, 7))].map((_, i) => {
-                          let pageNum;
-                          if (totalPages <= 7) {
-                            pageNum = i + 1;
-                          } else if (currentPage <= 4) {
-                            pageNum = i + 1;
-                            if (i === 6) pageNum = totalPages;
-                          } else if (currentPage >= totalPages - 3) {
-                            pageNum = totalPages - 6 + i;
-                          } else {
-                            pageNum = currentPage - 3 + i;
-                          }
-                          
-                          if (i === 0 && pageNum > 1) {
-                            return (
-                              <Button
-                                key="first"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(1)}
-                                className="rounded-xl h-9 min-w-[36px] px-2 text-xs"
-                              >
-                                1
-                              </Button>
-                            );
-                          }
-                          
-                          if (i === 0 && pageNum > 2) {
-                            return (
-                              <span key="dots1" className="px-1 text-muted-foreground">…</span>
-                            );
-                          }
-                          
-                          if (i === 6 && pageNum < totalPages - 1) {
-                            return (
-                              <span key="dots2" className="px-1 text-muted-foreground">…</span>
-                            );
-                          }
-                          
-                          return (
-                            <Button
-                              key={pageNum}
-                              variant={currentPage === pageNum ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setCurrentPage(pageNum)}
-                              className={cn(
-                                "rounded-xl h-9 min-w-[36px] px-2 text-xs",
-                                currentPage === pageNum && "bg-[#0d2e2a] text-white hover:bg-[#1a4f4a]"
-                              )}
-                            >
-                              {pageNum}
-                            </Button>
-                          );
-                        })}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                          disabled={currentPage === totalPages}
-                          className="rounded-xl h-9 w-9 p-0"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                   <div className="flex items-center gap-2">
-  <select
-    value={itemsPerPage}
-    onChange={(e) => {
-      setItemsPerPage(Number(e.target.value));
-      setCurrentPage(1);
-    }}
-    className="h-9 px-2 rounded-xl border border-slate-200/50 dark:border-slate-800/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#0d2e2a]/20"
-  >
-    <option value="5">5</option>
-    <option value="10">10</option>  
-    <option value="25">25</option>
-    <option value="50">50</option>
-  </select>
-  <span className="text-xs text-muted-foreground">
-    {isArabic ? "لكل صفحة" : "per page"}
-  </span>
-</div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-
-          {/* ===== DISTRIBUTORS TAB ===== */}
-          {activeTab === "distributors" && (
-            <div>
-              <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-                <div>
-                  <h3 className="text-xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
-                    <Users className="h-5 w-5 text-[#0d2e2a]" />
-                    {isArabic ? "الموزعين" : "Distributors"}
-                    <span className="text-sm font-normal text-muted-foreground">
-                      ({allDistributors.length})
-                    </span>
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {isArabic ? "إدارة الموزعين وحالتهم" : "Manage distributors and their status"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => exportToCSV(allDistributors, 'الموزعين')}
-                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
-                      >
-                        <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "إكسل" : "Excel"}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{isArabic ? "تصدير الموزعين إلى Excel" : "Export distributors to Excel"}</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => exportToWord(allDistributors, 'تقرير الموزعين')}
-                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
-                      >
-                        <FileText className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "Word" : "Word"}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{isArabic ? "تصدير الموزعين إلى Word" : "Export distributors to Word"}</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handlePrint}
-                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
-                      >
-                        <Printer className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
-                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "طباعة" : "Print"}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{isArabic ? "طباعة تقرير الموزعين" : "Print distributors report"}</TooltipContent>
-                  </Tooltip>
-
-                  <Dialog open={showAddDistributorDialog} onOpenChange={setShowAddDistributorDialog}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white hover:from-[#1a4f4a] hover:to-[#0d2e2a] transition-all duration-300 hover:scale-105">
-                        <UserPlus className="h-4 w-4 mr-1" />
-                        {isArabic ? "إضافة موزع" : "Add Distributor"}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="rounded-2xl max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
-                          <UserPlus className="h-6 w-6 text-[#0d2e2a]" />
-                          {isArabic ? "➕ إضافة موزع جديد" : "➕ Add New Distributor"}
-                        </DialogTitle>
-                        <DialogDescription>
-                          {isArabic
-                            ? "سيتم إنشاء حساب للموزع مع رقم هاتف وكلمة مرور"
-                            : "A new distributor account will be created with phone and password"}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <form onSubmit={handleAddDistributor} className="space-y-4 py-4">
-                        <div className="flex flex-col items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
-                          <ImageInput
-                            value={avatarUrl || ""}
-                            onChange={(value) => setAvatarUrl(value)}
-                            userId={app.user?.id}
-                            folder="distributors"
-                            lang={app.lang}
-                            label={isArabic ? "صورة الموزع" : "Distributor Photo"}
-                            previewClassName="h-24 w-24 rounded-full object-cover"
-                            hint={isArabic ? "اضغط لرفع صورة الموزع" : "Click to upload distributor photo"}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <Label>{isArabic ? "الاسم (عربي) *" : "Name (Arabic) *"}</Label>
-                            <Input
-                              name="full_name_ar"
-                              placeholder={isArabic ? "أحمد محمد" : "Ahmed"}
-                              dir="rtl"
-                              required
-                              className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label>{isArabic ? "الاسم (إنجليزي)" : "Name (English)"}</Label>
-                            <Input
-                              name="full_name_en"
-                              placeholder="Ahmed Mohamad"
-                              className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label>{isArabic ? "رقم الهاتف *" : "Phone *"}</Label>
-                          <Input
-                            name="phone"
-                            placeholder="0962XXXXXX"
-                            dir="ltr"
-                            required
-                            className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            {isArabic ? "سيستخدم هذا الرقم لتسجيل الدخول" : "This number will be used for login"}
-                          </p>
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label>{isArabic ? "كلمة المرور *" : "Password *"}</Label>
-                          <div className="relative">
-                            <Input
-                              name="password"
-                              type={showDistributorPassword ? "text" : "password"}
-                              placeholder="********"
-                              required
-                              minLength={6}
-                              className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 pe-10"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowDistributorPassword(!showDistributorPassword)}
-                              className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              {showDistributorPassword ? <EyeOff className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-                            </button>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {isArabic ? "6 أحرف على الأقل" : "At least 6 characters"}
-                          </p>
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label>{isArabic ? "المحافظة" : "Governorate"}</Label>
-                          <Select
-                            onValueChange={(value) => {
-                              const form = document.querySelector('form');
-                              if (form) {
-                                const existingInput = form.querySelector('input[name="governorate_id"]');
-                                if (existingInput) existingInput.remove();
-                                const input = document.createElement('input');
-                                input.type = 'hidden';
-                                input.name = 'governorate_id';
-                                input.value = value;
-                                form.appendChild(input);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20">
-                              <SelectValue placeholder={isArabic ? "اختر المحافظة" : "Select governorate"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {governorates.map((g: any) => (
-                                <SelectItem key={g.id} value={g.id}>
-                                  {isArabic ? g.name_ar : g.name_en}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <Label>{isArabic ? "العنوان (عربي)" : "Address (Arabic)"}</Label>
-                            <Input
-                              name="address_ar"
-                              placeholder={isArabic ? "دمشق" : "Damascus"}
-                              dir="rtl"
-                              className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label>{isArabic ? "العنوان (إنجليزي)" : "Address (English)"}</Label>
-                            <Input
-                              name="address_en"
-                              placeholder="Damascus"
-                              className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <Label>{isArabic ? "نوع الموزع" : "Distributor Type"}</Label>
-                            <Select
-                              defaultValue="freelance"
-                              onValueChange={(value) => {
-                                const form = document.querySelector('form');
-                                if (form) {
-                                  const existingInput = form.querySelector('input[name="distributor_type"]');
-                                  if (existingInput) existingInput.remove();
-                                  const input = document.createElement('input');
-                                  input.type = 'hidden';
-                                  input.name = 'distributor_type';
-                                  input.value = value;
-                                  form.appendChild(input);
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="freelance">{isArabic ? "🆓 مستقل" : "🆓 Freelance"}</SelectItem>
-                                <SelectItem value="company_employee">{isArabic ? "🏢 موظف شركة" : "🏢 Company Employee"}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label>{isArabic ? "متاح للعمل" : "Available"}</Label>
-                            <Select
-                              defaultValue="available"
-                              onValueChange={(value) => {
-                                const form = document.querySelector('form');
-                                if (form) {
-                                  const existingInput = form.querySelector('input[name="is_available"]');
-                                  if (existingInput) existingInput.remove();
-                                  const input = document.createElement('input');
-                                  input.type = 'hidden';
-                                  input.name = 'is_available';
-                                  input.value = value;
-                                  form.appendChild(input);
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="available">✅ {isArabic ? "متاح" : "Available"}</SelectItem>
-                                <SelectItem value="unavailable">❌ {isArabic ? "غير متاح" : "Unavailable"}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        {company && (
-                          <div className="text-xs text-muted-foreground bg-[#0d2e2a]/10 p-3 rounded-xl border border-[#0d2e2a]/20">
-                            {isArabic
-                              ? `🔗 سيتم ربط الموزع بشركة "${company.name_ar}"`
-                              : `🔗 Distributor will be linked to company "${company.name_en}"`}
-                          </div>
-                        )}
-
-                        <DialogFooter className="gap-2 pt-4 border-t border-[#0d2e2a]/10">
-                          <Button type="button" variant="outline" onClick={() => setShowAddDistributorDialog(false)}>
-                            <X className="h-4 w-4 mr-1" />
-                            {isArabic ? "إلغاء" : "Cancel"}
-                          </Button>
-                          <Button
-                            type="submit"
-                            className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white hover:from-[#1a4f4a] hover:to-[#0d2e2a] transition-all duration-300"
-                          >
-                            <UserPlus className="h-4 w-4 mr-1" />
-                            {isArabic ? "إضافة الموزع" : "Add Distributor"}
-                          </Button>
-                        </DialogFooter>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-
-                  <Link to="/delivery/distributors" className="inline-block">
-                    <Button variant="outline" className="border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300">
-                      <Users className="h-4 w-4 mr-1" />
-                      {isArabic ? "إدارة الموزعين" : "Manage Distributors"}
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              {distributorsLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-40 rounded-2xl" />
-                  ))}
-                </div>
-              ) : allDistributors.length === 0 ? (
-                <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border border-dashed border-[#0d2e2a]/30">
-                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <h3 className="text-xl font-semibold">
-                    {isArabic ? "لا يوجد موزعين" : "No distributors"}
-                  </h3>
-                  <p className="text-muted-foreground text-sm">
-                    {isArabic ? "قم بإضافة موزعين لشركتك" : "Add distributors to your company"}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {allDistributors.map((dist: any) => (
-                    <DistributorCard 
-                      key={dist.id} 
-                      distributor={dist} 
-                      isArabic={isArabic}
-                      onDeactivate={openDeactivateDistributorDialog}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>     
-          )}        
-
-          {/* ===== ANALYTICS TAB ===== */}
-          {activeTab === "analytics" && (
-            <div className="animate-in slide-in-from-top-5 duration-300">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-[#0d2e2a]" />
-                    {isArabic ? "📊 التحليلات" : "📊 Analytics"}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {isArabic ? "إحصائيات وتقارير الأداء" : "Statistics and performance reports"}
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const analyticsData = [
-                            { 
-                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'إجمالي الطلبات' : 'Total Orders',
-                              [isArabic ? 'القيمة' : 'Value']: stats.total 
-                            },
-                            { 
-                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'قيد المراجعة' : 'Pending',
-                              [isArabic ? 'القيمة' : 'Value']: stats.pending 
-                            },
-                            { 
-                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'تم التعيين' : 'Assigned',
-                              [isArabic ? 'القيمة' : 'Value']: stats.assigned 
-                            },
-                            { 
-                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'قيد التوصيل' : 'In Transit',
-                              [isArabic ? 'القيمة' : 'Value']: stats.inTransit 
-                            },
-                            { 
-                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'تم التوصيل' : 'Delivered',
-                              [isArabic ? 'القيمة' : 'Value']: stats.delivered 
-                            },
-                            { 
-                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'ملغي' : 'Cancelled',
-                              [isArabic ? 'القيمة' : 'Value']: stats.cancelled 
-                            },
-                            { 
-                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'الإيرادات' : 'Revenue',
-                              [isArabic ? 'القيمة' : 'Value']: stats.totalRevenue 
-                            },
-                            { 
-                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'نسبة الإنجاز' : 'Completion Rate',
-                              [isArabic ? 'القيمة' : 'Value']: `${stats.completionRate}%` 
-                            },
-                            { 
-                              [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'متوسط وقت التوصيل' : 'Avg Delivery Time',
-                              [isArabic ? 'القيمة' : 'Value']: `${stats.avgDeliveryTime} ${isArabic ? 'دقيقة' : 'min'}` 
-                            },
-                          ];
-                          exportToCSV(analyticsData, 'التقارير_التحليلية');
-                        }}
-                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
-                      >
-                        <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "إكسل" : "Excel"}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{isArabic ? "تصدير التحليلات إلى Excel" : "Export analytics to Excel"}</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handlePrint}
-                        className="h-9 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 transition-all duration-300 group"
-                      >
-                        <Printer className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
-                        <span className="hidden sm:inline text-xs mr-1">{isArabic ? "طباعة" : "Print"}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{isArabic ? "طباعة التحليلات" : "Print analytics"}</TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="border-2 border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 transition-all duration-300 shadow-xl shadow-[#0d2e2a]/5">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-[#0d2e2a] dark:text-white">
-             <Coins className="h-5 w-5 text-emerald-500" />
-                      {isArabic ? "📈 الإيرادات" : "📈 Revenue"}
-                    </CardTitle>
-                    <CardDescription>
-                      {isArabic ? "إجمالي إيرادات التوصيل" : "Total delivery revenue"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-4xl font-bold text-emerald-500 animate-in slide-in-from-left-5 duration-500">
-                      {stats.totalRevenue.toLocaleString()} {app.currency}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
-                      <Package className="h-4 w-4" />
-                      {isArabic ? `من ${stats.delivered} طلب تم توصيله` : `from ${stats.delivered} delivered orders`}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-2 border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 transition-all duration-300 shadow-xl shadow-[#0d2e2a]/5">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-[#0d2e2a] dark:text-white">
-                      <BarChart3 className="h-5 w-5 text-[#0d2e2a]" />
-                      {isArabic ? "📊 توزيع الطلبات" : "📊 Orders Distribution"}
-                    </CardTitle>
-                    <CardDescription>
-                      {isArabic ? "حالة الطلبات الحالية" : "Current order status"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {[
-                        { label: isArabic ? "قيد المراجعة" : "Pending", value: stats.pending, color: "bg-yellow-500" },
-                        { label: isArabic ? "تم التعيين" : "Assigned", value: stats.assigned, color: "bg-purple-500" },
-                        { label: isArabic ? "قيد التوصيل" : "In Transit", value: stats.inTransit, color: "bg-orange-500" },
-                        { label: isArabic ? "تم التوصيل" : "Delivered", value: stats.delivered, color: "bg-green-500" },
-                        { label: isArabic ? "ملغي" : "Cancelled", value: stats.cancelled, color: "bg-red-500" },
-                      ].map((item) => (
-                        <div key={item.label} className="flex items-center gap-2">
-                          <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                            <div
-                              className={cn("h-full rounded-full", item.color)}
-                              style={{
-                                width: stats.total > 0 ? `${(item.value / stats.total) * 100}%` : '0%'
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium min-w-[80px]">{item.label}</span>
-                          <span className="text-sm text-muted-foreground min-w-[40px] text-end">{item.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="md:col-span-2 border-2 border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 transition-all duration-300 shadow-xl shadow-[#0d2e2a]/5">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-[#0d2e2a] dark:text-white">
-                      <Activity className="h-5 w-5 text-[#0d2e2a]" />
-                      {isArabic ? "⚡ مقاييس الأداء" : "⚡ Performance Metrics"}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl hover:shadow-md transition-all group hover:scale-105">
-                        <Activity className="h-6 w-6 text-[#0d2e2a] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
-                        <p className="text-2xl font-bold">{stats.completionRate}%</p>
-                        <p className="text-xs text-muted-foreground">{isArabic ? "نسبة الإنجاز" : "Completion Rate"}</p>
-                      </div>
-                      <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl hover:shadow-md transition-all group hover:scale-105">
-                        <Clock className="h-6 w-6 text-[#0d2e2a] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
-                        <p className="text-2xl font-bold">{stats.avgDeliveryTime} {isArabic ? "د" : "min"}</p>
-                        <p className="text-xs text-muted-foreground">{isArabic ? "متوسط وقت التوصيل" : "Avg Delivery Time"}</p>
-                      </div>
-                      <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl hover:shadow-md transition-all group hover:scale-105">
-                        <Package className="h-6 w-6 text-[#0d2e2a] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
-                        <p className="text-2xl font-bold">{stats.delivered}</p>
-                        <p className="text-xs text-muted-foreground">{isArabic ? "تم التوصيل" : "Delivered"}</p>
-                      </div>
-                      <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl hover:shadow-md transition-all group hover:scale-105">
-                        <DollarSign className="h-6 w-6 text-[#0d2e2a] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
-                        <p className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">{isArabic ? "إجمالي الإيرادات" : "Total Revenue"}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          )}
-
-          {/* ===== ADMINS TAB ===== */}
-          {activeTab === "admins" && company && (
-            <div className="animate-in slide-in-from-top-5 duration-300">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-[#0d2e2a]" />
-                    {isArabic ? "👑 المدراء" : "👑 Managers"}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {isArabic ? "إدارة مدراء شركة التوصيل" : "Manage delivery company managers"}
-                  </p>
-                </div>
-              </div>
-              <DeliveryAdminsManager
-                companyId={company.id}
-                companyName={company.name_ar}
-                isArabic={isArabic}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* ===== ACCEPT DELIVERY DIALOG ===== */}
-        <Dialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
-          <DialogContent className="max-w-lg rounded-2xl border-emerald-200/50 dark:border-emerald-800/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-emerald-500/10 overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                  <Truck className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <DialogTitle className="text-xl font-bold">
-                    {isArabic ? "🚚 قبول طلب التوصيل" : "🚚 Accept Delivery Order"}
-                  </DialogTitle>
-                  <p className="text-white/80 text-sm mt-0.5">
-                    {isArabic
-                      ? "اختر موزعاً من شركتك وحدد وقت التوصيل"
-                      : "Select a distributor from your company and set delivery time"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-5 flex-1 overflow-y-auto">
-              {distributorsLoading ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500/20 border-t-emerald-500" />
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {isArabic ? "جاري تحميل الموزعين..." : "Loading distributors..."}
-                  </p>
-                </div>
-              ) : !allDistributors || allDistributors.length === 0 ? (
-                <div className="text-center py-8">
-                  <Users className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
-                  <p className="font-medium text-slate-700 dark:text-slate-300">
-                    {isArabic ? "❌ لا يوجد موزعين في شركتك" : "❌ No distributors in your company"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {isArabic
-                      ? "قم بإضافة موزعين للشركة من تبويب الموزعين"
-                      : "Add distributors to your company from the Distributors tab"}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="relative mb-4">
-                    <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "الاسم (عربي) *" : "Name (Arabic) *"}</Label>
                     <Input
-                      placeholder={isArabic ? "🔍 ابحث باسم أو رقم الموزع..." : "🔍 Search by name or phone..."}
-                      value={distributorSearch}
-                      onChange={(e) => setDistributorSearch(e.target.value)}
-                      className="ps-9 h-10 rounded-xl border-slate-200/50 dark:border-slate-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                      name="full_name_ar"
+                      placeholder={isArabic ? "أحمد محمد" : "Ahmed"}
+                      dir="rtl"
+                      required
+                      className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                     />
-                    {distributorSearch && (
-                      <button
-                        onClick={() => setDistributorSearch("")}
-                        className="absolute inset-y-0 end-3 flex items-center text-muted-foreground hover:text-foreground"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "الاسم (إنجليزي)" : "Name (English)"}</Label>
+                    <Input
+                      name="full_name_en"
+                      placeholder="Ahmed Mohamad"
+                      className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                    />
+                  </div>
+                </div>
 
-                  <p className="text-xs text-muted-foreground mb-3">
-                    {isArabic
-                      ? `🟢 ${allDistributors.length} موزع في شركتك`
-                      : `🟢 ${allDistributors.length} distributors in your company`}
+                <div className="space-y-1">
+                  <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "رقم الهاتف *" : "Phone *"}</Label>
+                  <Input
+                    name="phone"
+                    placeholder="0962XXXXXX"
+                    dir="ltr"
+                    required
+                    className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {isArabic ? "سيستخدم هذا الرقم لتسجيل الدخول" : "This number will be used for login"}
                   </p>
-
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-  {allDistributors
-    .filter((dist: any) => {
-      const search = distributorSearch.toLowerCase().trim();
-      if (!search) return true;
-      const nameAr = dist.full_name_ar?.toLowerCase() || "";
-      const nameEn = dist.full_name_en?.toLowerCase() || "";
-      const phone = dist.phone?.toLowerCase() || "";
-      return nameAr.includes(search) || nameEn.includes(search) || phone.includes(search);
-    })
-    .map((dist: any) => {
-      const stats = distributorStats[dist.id] || { pending: 0, completed: 0, total: 0 };
-      const hasActiveOrders = stats.pending > 0;
-      
-      return (
-        <div
-          key={dist.id}
-          onClick={() => setSelectedDistributorId(dist.id)}
-          className={cn(
-            "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-md",
-            selectedDistributorId === dist.id
-              ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-md shadow-emerald-500/20"
-              : "border-slate-200/50 dark:border-slate-700/50 hover:border-emerald-300/50 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/10"
-          )}
-        >
-          {/* صورة الموزع */}
-          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-emerald-200 dark:border-emerald-800/50">
-            {dist.avatar_url ? (
-              <img 
-                src={dist.avatar_url} 
-                alt={dist.full_name_ar || dist.full_name_en || "موزع"}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            ) : (
-              <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
-                {dist.full_name_ar?.charAt(0) || dist.full_name_en?.charAt(0) || "M"}
-              </span>
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold text-slate-900 dark:text-white">
-                {isArabic ? dist.full_name_ar : dist.full_name_en || dist.full_name_ar}
-              </p>
-              {dist.is_available ? (
-                <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 text-[9px]">
-                  ● {isArabic ? "متاح" : "Available"}
-                </Badge>
-              ) : (
-                <Badge className="bg-red-500/20 text-red-600 dark:text-red-400 border-0 text-[9px]">
-                  ● {isArabic ? "غير متاح" : "Unavailable"}
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-              <span className="flex items-center gap-1">
-                <Phone className="h-3 w-3" />
-                {dist.phone || (isArabic ? "غير متوفر" : "Not available")}
-              </span>
-              <span className="text-muted-foreground/30">|</span>
-              <span className="flex items-center gap-1">
-                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                {Number(dist.rating || 0).toFixed(1)}
-              </span>
-            </div>
-          </div>
-
-          {/* ✅ ✅ ✅ إحصائيات الموزع (الجارية والمكتملة) */}
-          <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-            {isLoadingStats ? (
-              <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
-            ) : (
-              <>
-                {/* ✅ الطلبات الجارية */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                    {isArabic ? "جارية:" : "Active:"}
-                  </span>
-                  <span className={cn(
-                    "text-xs font-bold",
-                    stats.pending > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
-                  )}>
-                    {stats.pending}
-                  </span>
-                  {stats.pending > 0 && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  )}
                 </div>
-                
-                {/* ✅ الطلبات المكتملة */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                    {isArabic ? "مكتملة:" : "Completed:"}
-                  </span>
-                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                    {stats.completed}
-                  </span>
-                  {stats.completed > 0 && (
-                    <CheckCircle className="h-3 w-3 text-emerald-500" />
-                  )}
-                </div>
-              </>
-            )}
-          </div>
 
-          {/* زر الاختيار */}
-          <div className={cn(
-            "h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
-            selectedDistributorId === dist.id
-              ? "border-emerald-500 bg-emerald-500"
-              : "border-slate-300 dark:border-slate-600"
-          )}>
-            {selectedDistributorId === dist.id && (
-              <Check className="h-4 w-4 text-white" />
-            )}
-          </div>
+                <div className="space-y-1">
+                  <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "كلمة المرور *" : "Password *"}</Label>
+                  <div className="relative">
+                    <Input
+                      name="password"
+                      type={showDistributorPassword ? "text" : "password"}
+                      placeholder="********"
+                      required
+                      minLength={6}
+                      className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 pe-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowDistributorPassword(!showDistributorPassword)}
+                      className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-[#d81b60] transition-colors"
+                    >
+                      {showDistributorPassword ? <EyeOff className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {isArabic ? "6 أحرف على الأقل" : "At least 6 characters"}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "المحافظة" : "Governorate"}</Label>
+                  <Select
+                    onValueChange={(value) => {
+                      const form = document.querySelector('form');
+                      if (form) {
+                        const existingInput = form.querySelector('input[name="governorate_id"]');
+                        if (existingInput) existingInput.remove();
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'governorate_id';
+                        input.value = value;
+                        form.appendChild(input);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20">
+                      <SelectValue placeholder={isArabic ? "اختر المحافظة" : "Select governorate"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {governorates.map((g: any) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          {isArabic ? g.name_ar : g.name_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "العنوان (عربي)" : "Address (Arabic)"}</Label>
+                    <Input
+                      name="address_ar"
+                      placeholder={isArabic ? "دمشق" : "Damascus"}
+                      dir="rtl"
+                      className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "العنوان (إنجليزي)" : "Address (English)"}</Label>
+                    <Input
+                      name="address_en"
+                      placeholder="Damascus"
+                      className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "نوع الموزع" : "Distributor Type"}</Label>
+                    <Select
+                      defaultValue="freelance"
+                      onValueChange={(value) => {
+                        const form = document.querySelector('form');
+                        if (form) {
+                          const existingInput = form.querySelector('input[name="distributor_type"]');
+                          if (existingInput) existingInput.remove();
+                          const input = document.createElement('input');
+                          input.type = 'hidden';
+                          input.name = 'distributor_type';
+                          input.value = value;
+                          form.appendChild(input);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="freelance">{isArabic ? "🆓 مستقل" : "🆓 Freelance"}</SelectItem>
+                        <SelectItem value="company_employee">{isArabic ? "🏢 موظف شركة" : "🏢 Company Employee"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "متاح للعمل" : "Available"}</Label>
+                    <Select
+                      defaultValue="available"
+                      onValueChange={(value) => {
+                        const form = document.querySelector('form');
+                        if (form) {
+                          const existingInput = form.querySelector('input[name="is_available"]');
+                          if (existingInput) existingInput.remove();
+                          const input = document.createElement('input');
+                          input.type = 'hidden';
+                          input.name = 'is_available';
+                          input.value = value;
+                          form.appendChild(input);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="available">✅ {isArabic ? "متاح" : "Available"}</SelectItem>
+                        <SelectItem value="unavailable">❌ {isArabic ? "غير متاح" : "Unavailable"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {company && (
+                  <div className="text-xs text-muted-foreground bg-[#fbcfe8]/20 p-3 rounded-xl border border-[#f9a8d4]/30">
+                    {isArabic
+                      ? `🔗 سيتم ربط الموزع بشركة "${company.name_ar}"`
+                      : `🔗 Distributor will be linked to company "${company.name_en}"`}
+                  </div>
+                )}
+
+                <DialogFooter className="gap-2 pt-4 border-t border-[#f9a8d4]/30">
+                  <Button type="button" variant="outline" onClick={() => setShowAddDistributorDialog(false)} className="border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30">
+                    <X className="h-4 w-4 mr-1" />
+                    {isArabic ? "إلغاء" : "Cancel"}
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] transition-all duration-300 shadow-lg shadow-[#d81b60]/30"
+                  >
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    {isArabic ? "إضافة الموزع" : "Add Distributor"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Link to="/delivery/distributors" className="inline-block">
+            <Button variant="outline" className="border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 text-[#d81b60]">
+              <Users className="h-4 w-4 mr-1" />
+              {isArabic ? "إدارة الموزعين" : "Manage Distributors"}
+            </Button>
+          </Link>
         </div>
-      );
-    })}
+      </div>
+
+      {distributorsLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-40 rounded-2xl" />
+          ))}
+        </div>
+      ) : allDistributors.length === 0 ? (
+        <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border-2 border-dashed border-[#f9a8d4]/40">
+          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <h3 className="text-xl font-semibold text-[#d81b60] dark:text-[#f9a8d4]">
+            {isArabic ? "لا يوجد موزعين" : "No distributors"}
+          </h3>
+          <p className="text-muted-foreground text-sm">
+            {isArabic ? "قم بإضافة موزعين لشركتك" : "Add distributors to your company"}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {allDistributors.map((dist: any) => (
+            <DistributorCard 
+              key={dist.id} 
+              distributor={dist} 
+              isArabic={isArabic}
+              onDeactivate={openDeactivateDistributorDialog}
+            />
+          ))}
+        </div>
+      )}
+    </div>     
+  )}        
+
+  {/* ===== ANALYTICS TAB ===== */}
+  {activeTab === "analytics" && (
+    <div className="animate-in slide-in-from-top-5 duration-300">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-xl font-bold text-[#d81b60] dark:text-[#f9a8d4] flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-[#d81b60]" />
+            {isArabic ? "📈 التحليلات" : "📈 Analytics"}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {isArabic ? "إحصائيات وتقارير الأداء" : "Statistics and performance reports"}
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const analyticsData = [
+                    { 
+                      [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'إجمالي الطلبات' : 'Total Orders',
+                      [isArabic ? 'القيمة' : 'Value']: stats.total 
+                    },
+                    { 
+                      [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'قيد المراجعة' : 'Pending',
+                      [isArabic ? 'القيمة' : 'Value']: stats.pending 
+                    },
+                    { 
+                      [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'تم التعيين' : 'Assigned',
+                      [isArabic ? 'القيمة' : 'Value']: stats.assigned 
+                    },
+                    { 
+                      [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'قيد التوصيل' : 'In Transit',
+                      [isArabic ? 'القيمة' : 'Value']: stats.inTransit 
+                    },
+                    { 
+                      [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'تم التوصيل' : 'Delivered',
+                      [isArabic ? 'القيمة' : 'Value']: stats.delivered 
+                    },
+                    { 
+                      [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'ملغي' : 'Cancelled',
+                      [isArabic ? 'القيمة' : 'Value']: stats.cancelled 
+                    },
+                    { 
+                      [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'الإيرادات' : 'Revenue',
+                      [isArabic ? 'القيمة' : 'Value']: stats.totalRevenue 
+                    },
+                    { 
+                      [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'نسبة الإنجاز' : 'Completion Rate',
+                      [isArabic ? 'القيمة' : 'Value']: `${stats.completionRate}%` 
+                    },
+                    { 
+                      [isArabic ? 'المؤشر' : 'Metric']: isArabic ? 'متوسط وقت التوصيل' : 'Avg Delivery Time',
+                      [isArabic ? 'القيمة' : 'Value']: `${stats.avgDeliveryTime} ${isArabic ? 'دقيقة' : 'min'}` 
+                    },
+                  ];
+                  exportToCSV(analyticsData, 'التقارير_التحليلية');
+                }}
+                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+              >
+                <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "Excel" : "Excel"}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{isArabic ? "تصدير التحليلات إلى Excel" : "Export analytics to Excel"}</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+              >
+                <Printer className="h-4 w-4 text-[#d81b60] group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "طباعة" : "Print"}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{isArabic ? "طباعة التحليلات" : "Print analytics"}</TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="border-2 border-[#f9a8d4]/40 hover:border-[#d81b60]/60 transition-all duration-300 shadow-xl shadow-[#f9a8d4]/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
+              <Coins className="h-5 w-5 text-emerald-500" />
+              {isArabic ? "📈 الإيرادات" : "📈 Revenue"}
+            </CardTitle>
+            <CardDescription>
+              {isArabic ? "إجمالي إيرادات التوصيل" : "Total delivery revenue"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold text-emerald-500 animate-in slide-in-from-left-5 duration-500">
+              {stats.totalRevenue.toLocaleString()} {app.currency}
+            </div>
+            <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
+              <Package className="h-4 w-4" />
+              {isArabic ? `من ${stats.delivered} طلب تم توصيله` : `from ${stats.delivered} delivered orders`}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-2 border-[#f9a8d4]/40 hover:border-[#d81b60]/60 transition-all duration-300 shadow-xl shadow-[#f9a8d4]/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
+              <TrendingUp className="h-5 w-5 text-[#d81b60]" />
+              {isArabic ? "📊 توزيع الطلبات" : "📊 Orders Distribution"}
+            </CardTitle>
+            <CardDescription>
+              {isArabic ? "حالة الطلبات الحالية" : "Current order status"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {[
+                { label: isArabic ? "قيد المراجعة" : "Pending", value: stats.pending, color: "bg-[#f9a8d4]" },
+                { label: isArabic ? "تم التعيين" : "Assigned", value: stats.assigned, color: "bg-[#f48fb1]" },
+                { label: isArabic ? "قيد التوصيل" : "In Transit", value: stats.inTransit, color: "bg-[#d81b60]" },
+                { label: isArabic ? "تم التوصيل" : "Delivered", value: stats.delivered, color: "bg-emerald-500" },
+                { label: isArabic ? "ملغي" : "Cancelled", value: stats.cancelled, color: "bg-red-500" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-2">
+                  <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                    <div
+                      className={cn("h-full rounded-full", item.color)}
+                      style={{
+                        width: stats.total > 0 ? `${(item.value / stats.total) * 100}%` : '0%'
+                      }}
+                    />
+                  </div>
+                  <span className="text-sm font-medium min-w-[80px]">{item.label}</span>
+                  <span className="text-sm text-muted-foreground min-w-[40px] text-end">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2 border-2 border-[#f9a8d4]/40 hover:border-[#d81b60]/60 transition-all duration-300 shadow-xl shadow-[#f9a8d4]/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
+              <Activity className="h-5 w-5 text-[#d81b60]" />
+              {isArabic ? "⚡ مقاييس الأداء" : "⚡ Performance Metrics"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-[#fbcfe8]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
+                <Activity className="h-6 w-6 text-[#d81b60] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
+                <p className="text-2xl font-bold text-[#d81b60]">{stats.completionRate}%</p>
+                <p className="text-xs text-muted-foreground">{isArabic ? "نسبة الإنجاز" : "Completion Rate"}</p>
+              </div>
+              <div className="text-center p-4 bg-[#fbcfe8]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
+                <Clock className="h-6 w-6 text-[#d81b60] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
+                <p className="text-2xl font-bold text-[#d81b60]">{stats.avgDeliveryTime} {isArabic ? "د" : "min"}</p>
+                <p className="text-xs text-muted-foreground">{isArabic ? "متوسط وقت التوصيل" : "Avg Delivery Time"}</p>
+              </div>
+              <div className="text-center p-4 bg-[#fbcfe8]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
+                <Package className="h-6 w-6 text-[#d81b60] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
+                <p className="text-2xl font-bold text-[#d81b60]">{stats.delivered}</p>
+                <p className="text-xs text-muted-foreground">{isArabic ? "تم التوصيل" : "Delivered"}</p>
+              </div>
+              <div className="text-center p-4 bg-[#fbcfe8]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
+                <DollarSign className="h-6 w-6 text-[#d81b60] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
+                <p className="text-2xl font-bold text-[#d81b60]">{stats.totalRevenue.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">{isArabic ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )}
+
+  {/* ===== ADMINS TAB ===== */}
+  {activeTab === "admins" && company && (
+    <div className="animate-in slide-in-from-top-5 duration-300">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-xl font-bold text-[#d81b60] dark:text-[#f9a8d4] flex items-center gap-2">
+            <Crown className="h-5 w-5 text-amber-500" />
+            {isArabic ? " المدراء" : " Managers"}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {isArabic ? "إدارة مدراء شركة التوصيل" : "Manage delivery company managers"}
+          </p>
+        </div>
+      </div>
+      <DeliveryAdminsManager
+        companyId={company.id}
+        companyName={company.name_ar}
+        isArabic={isArabic}
+      />
+    </div>
+  )}
 </div>
 
-                  {allDistributors.filter((dist: any) => {
-                    const search = distributorSearch.toLowerCase().trim();
-                    if (!search) return true;
-                    const nameAr = dist.full_name_ar?.toLowerCase() || "";
-                    const nameEn = dist.full_name_en?.toLowerCase() || "";
-                    const phone = dist.phone?.toLowerCase() || "";
-                    return nameAr.includes(search) || nameEn.includes(search) || phone.includes(search);
-                  }).length === 0 && distributorSearch && (
-                    <div className="text-center py-4">
-                      <AlertCircle className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        {isArabic 
-                          ? `❌ لا توجد نتائج لـ "${distributorSearch}"`
-                          : `❌ No results for "${distributorSearch}"`}
-                      </p>
-                    </div>
-                  )}
+{/* ===== ACCEPT DELIVERY DIALOG - وردي ===== */}
+<Dialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
+  <DialogContent className="max-w-lg rounded-2xl border-[#f9a8d4]/40 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-[#d81b60]/20 overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] p-5 text-white flex-shrink-0">
+      <div className="flex items-center gap-3">
+        <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+          <Truck className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <DialogTitle className="text-xl font-bold">
+            {isArabic ? "🚚 قبول طلب التوصيل" : "🚚 Accept Delivery Order"}
+          </DialogTitle>
+          <p className="text-white/80 text-sm mt-0.5">
+            {isArabic
+              ? "اختر موزعاً من شركتك وحدد وقت التوصيل"
+              : "Select a distributor from your company and set delivery time"}
+          </p>
+        </div>
+      </div>
+    </div>
 
-                  <div className="mt-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-3">
-                      <Clock className="h-3.5 w-3.5 text-[#0d2e2a]" />
-                      {isArabic ? "⏰ الوقت المتوقع للوصول" : "⏰ Estimated Delivery Time"}
-                    </p>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs text-slate-600 dark:text-slate-300">
-                          {isArabic ? "عدد الساعات حتى الوصول" : "Hours until delivery"}
-                        </Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Input
-                            type="number"
-                            min={0.5}
-                            step={0.5}
-                            value={estimatedDeliveryHours}
-                            onChange={(e) => setEstimatedDeliveryHours(parseFloat(e.target.value) || 0)}
-                            className="h-9 rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 w-full"
-                          />
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {isArabic ? "ساعة" : "hrs"}
-                          </span>
-                        </div>
-                        {estimatedDeliveryHours > 0 && (
-                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1">
-                            🕐 {new Date(Date.now() + estimatedDeliveryHours * 60 * 60 * 1000).toLocaleTimeString(
-                              isArabic ? 'ar-SA' : 'en-US',
-                              { hour: '2-digit', minute: '2-digit' }
-                            )}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs text-slate-600 dark:text-slate-300">
-                          {isArabic ? "وقت الاستلام المتوقع" : "Estimated pickup time"}
-                        </Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Input
-                            type="number"
-                            min={0.25}
-                            step={0.25}
-                            value={estimatedPickupHours}
-                            onChange={(e) => setEstimatedPickupHours(parseFloat(e.target.value) || 0)}
-                            className="h-9 rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 w-full"
-                          />
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {isArabic ? "ساعة" : "hrs"}
-                          </span>
-                        </div>
-                        {estimatedPickupHours > 0 && (
-                          <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1">
-                            🕐 {new Date(Date.now() + estimatedPickupHours * 60 * 60 * 1000).toLocaleTimeString(
-                              isArabic ? 'ar-SA' : 'en-US',
-                              { hour: '2-digit', minute: '2-digit' }
-                            )}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+    <div className="p-5 flex-1 overflow-y-auto">
+      {distributorsLoading ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#d81b60]/20 border-t-[#d81b60]" />
+          <p className="text-sm text-muted-foreground mt-2">
+            {isArabic ? "جاري تحميل الموزعين..." : "Loading distributors..."}
+          </p>
+        </div>
+      ) : !allDistributors || allDistributors.length === 0 ? (
+        <div className="text-center py-8">
+          <Users className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="font-medium text-slate-700 dark:text-slate-300">
+            {isArabic ? "❌ لا يوجد موزعين في شركتك" : "❌ No distributors in your company"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {isArabic
+              ? "قم بإضافة موزعين للشركة من تبويب الموزعين"
+              : "Add distributors to your company from the Distributors tab"}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="relative mb-4">
+            <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={isArabic ? "🔍 ابحث باسم أو رقم الموزع..." : "🔍 Search by name or phone..."}
+              value={distributorSearch}
+              onChange={(e) => setDistributorSearch(e.target.value)}
+              className="ps-9 h-10 rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+            />
+            {distributorSearch && (
+              <button
+                onClick={() => setDistributorSearch("")}
+                className="absolute inset-y-0 end-3 flex items-center text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
 
-            <div className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setAcceptDialogOpen(false);
-                    setSelectedDeliveryOrderId(null);
-                    setSelectedOrderId(null);
-                    setSelectedDistributorId("");
-                    setDistributorSearch("");
-                  }}
-                  className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-                >
-                  <X className="h-4 w-4 mr-1.5" />
-                  {isArabic ? "إلغاء" : "Cancel"}
-                </Button>
-                <Button
-                  onClick={handleAcceptDelivery}
-                  disabled={!selectedDistributorId || isProcessing}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  {isProcessing ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      {isArabic ? "جاري..." : "Processing..."}
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      {isArabic ? "تأكيد القبول" : "Confirm Accept"}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+          <p className="text-xs text-muted-foreground mb-3">
+            {isArabic
+              ? `🟢 ${allDistributors.length} موزع في شركتك`
+              : `🟢 ${allDistributors.length} distributors in your company`}
+          </p>
 
-        {/* ===== REJECT DELIVERY DIALOG ===== */}
-        <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-          <DialogContent className="max-w-md rounded-2xl border-red-200/50 dark:border-red-800/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-red-500/10 overflow-hidden">
-            <div className="bg-gradient-to-r from-red-600 to-rose-600 p-5 text-white">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                  <XCircle className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <DialogTitle className="text-xl font-bold">
-                    {isArabic ? "❌ رفض طلب التوصيل" : "❌ Reject Delivery Order"}
-                  </DialogTitle>
-                  <p className="text-white/80 text-sm mt-0.5">
-                    {isArabic
-                      ? "أدخل سبب الرفض لإرساله للعميل والبائع"
-                      : "Enter the rejection reason to send to customer and seller"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-5">
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
-                <p className="text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <span>
-                    {isArabic
-                      ? "سيتم إرسال سبب الرفض إلى البائع والعميل"
-                      : "The rejection reason will be sent to the seller and customer"}
-                  </span>
-                </p>
-              </div>
-
-              <div className="mt-4">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1.5">
-                  {isArabic ? "سبب الرفض" : "Rejection Reason"}
-                  <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder={isArabic
-                    ? "اكتب سبب رفض الطلب (مثال: لا يوجد موزع متاح، المنطقة غير مغطاة، ...)"
-                    : "Write the reason for rejecting the order (e.g., no distributor available, area not covered, ...)"
-                  }
-                  className="w-full min-h-[100px] p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-red-400 focus:ring-2 focus:ring-red-400/20 transition-all duration-200 resize-none"
-                  dir={isArabic ? "rtl" : "ltr"}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {rejectReason.length}/500
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-2 mt-3">
-                {[
-                  isArabic ? "لا يوجد موزع متاح" : "No distributor available",
-                  isArabic ? "المنطقة غير مغطاة" : "Area not covered",
-                  isArabic ? "الطلب خارج أوقات العمل" : "Order outside working hours",
-                  isArabic ? "مشكلة في العنوان" : "Address issue",
-                  isArabic ? "العميل غير متاح" : "Customer unavailable",
-                  isArabic ? "سبب آخر" : "Other reason",
-                ].map((reason, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setRejectReason(reason)}
-                    className="px-3 py-1.5 text-xs rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-800 transition-all duration-200"
+          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+            {allDistributors
+              .filter((dist: any) => {
+                const search = distributorSearch.toLowerCase().trim();
+                if (!search) return true;
+                const nameAr = dist.full_name_ar?.toLowerCase() || "";
+                const nameEn = dist.full_name_en?.toLowerCase() || "";
+                const phone = dist.phone?.toLowerCase() || "";
+                return nameAr.includes(search) || nameEn.includes(search) || phone.includes(search);
+              })
+              .map((dist: any) => {
+                const stats = distributorStats[dist.id] || { pending: 0, completed: 0, total: 0 };
+                const hasActiveOrders = stats.pending > 0;
+                
+                return (
+                  <div
+                    key={dist.id}
+                    onClick={() => setSelectedDistributorId(dist.id)}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-md",
+                      selectedDistributorId === dist.id
+                        ? "border-[#d81b60] bg-[#fbcfe8]/30 shadow-md shadow-[#d81b60]/20"
+                        : "border-[#f9a8d4]/30 hover:border-[#d81b60]/50 hover:bg-[#fbcfe8]/20"
+                    )}
                   >
-                    {reason}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setRejectDialogOpen(false);
-                  setSelectedDeliveryOrderId(null);
-                  setSelectedOrderId(null);
-                  setRejectReason("");
-                }}
-                className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-              >
-                <X className="h-4 w-4 mr-1.5" />
-                {isArabic ? "إلغاء" : "Cancel"}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleRejectDelivery}
-                disabled={!rejectReason.trim() || isProcessing}
-                className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-              >
-                {isProcessing ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    {isArabic ? "جاري الرفض..." : "Rejecting..."}
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="h-4 w-4 mr-2" />
-                    {isArabic ? "تأكيد الرفض" : "Confirm Reject"}
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* ===== ديالوج تعطيل الموزع ===== */}
-        <Dialog open={showDeactivateDistributorDialog} onOpenChange={setShowDeactivateDistributorDialog}>
-          <DialogContent className="max-w-md rounded-2xl border-0 p-0 overflow-hidden shadow-2xl bg-white dark:bg-slate-900">
-            <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-6 text-white">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg">
-                    <PowerOff className="h-7 w-7 text-white" />
-                  </div>
-                  <div className="absolute -inset-1 rounded-2xl bg-amber-400/30 blur-lg animate-pulse" />
-                </div>
-                <div>
-                  <DialogTitle className="text-2xl font-bold">
-                    {isArabic ? "⚠️ تعطيل الموزع" : "⚠️ Deactivate Distributor"}
-                  </DialogTitle>
-                  <p className="text-white/80 text-sm mt-0.5">
-                    {isArabic 
-                      ? "لن يتمكن الموزع من استلام طلبات جديدة" 
-                      : "Distributor will not be able to receive new orders"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div className="flex items-start gap-3 p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border-2 border-amber-200/50 dark:border-amber-800/30">
-                <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                  <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div>
-                  <p className="font-semibold text-amber-700 dark:text-amber-300">
-                    {isArabic ? "هل أنت متأكد؟" : "Are you sure?"}
-                  </p>
-                  <p className="text-sm text-amber-600/80 dark:text-amber-400/70">
-                    {isArabic
-                      ? `سيتم تعطيل "${deactivatingDistributor?.full_name_ar || deactivatingDistributor?.full_name_en || ''}" ولن يتمكن من استلام طلبات جديدة`
-                      : `"${deactivatingDistributor?.full_name_en || deactivatingDistributor?.full_name_ar || ''}" will be deactivated and won't receive new orders`}
-                  </p>
-                </div>
-              </div>
-
-              {deactivatingDistributor && (
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">{isArabic ? "الاسم" : "Name"}</span>
-                      <span className="font-medium">
-                        {deactivatingDistributor.full_name_ar || deactivatingDistributor.full_name_en || '-'}
-                      </span>
+                    {/* صورة الموزع */}
+                    <div className="h-12 w-12 rounded-full bg-[#fbcfe8]/40 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-[#f9a8d4]/40">
+                      {dist.avatar_url ? (
+                        <img 
+                          src={dist.avatar_url} 
+                          alt={dist.full_name_ar || dist.full_name_en || "موزع"}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <span className="text-lg font-bold text-[#d81b60]">
+                          {dist.full_name_ar?.charAt(0) || dist.full_name_en?.charAt(0) || "M"}
+                        </span>
+                      )}
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">{isArabic ? "رقم الهاتف" : "Phone"}</span>
-                      <span className="font-medium" dir="ltr">{deactivatingDistributor.phone || '-'}</span>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-slate-900 dark:text-white">
+                          {isArabic ? dist.full_name_ar : dist.full_name_en || dist.full_name_ar}
+                        </p>
+                        {dist.is_available ? (
+                          <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 text-[9px]">
+                            ● {isArabic ? "متاح" : "Available"}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-red-500/20 text-red-600 dark:text-red-400 border-0 text-[9px]">
+                            ● {isArabic ? "غير متاح" : "Unavailable"}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {dist.phone || (isArabic ? "غير متوفر" : "Not available")}
+                        </span>
+                        <span className="text-muted-foreground/30">|</span>
+                        <span className="flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          {Number(dist.rating || 0).toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* ✅ إحصائيات الموزع */}
+                    <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                      {isLoadingStats ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-[#d81b60]" />
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                              {isArabic ? "جارية:" : "Active:"}
+                            </span>
+                            <span className={cn(
+                              "text-xs font-bold",
+                              stats.pending > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
+                            )}>
+                              {stats.pending}
+                            </span>
+                            {stats.pending > 0 && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                              {isArabic ? "مكتملة:" : "Completed:"}
+                            </span>
+                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                              {stats.completed}
+                            </span>
+                            {stats.completed > 0 && (
+                              <CheckCircle className="h-3 w-3 text-emerald-500" />
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* زر الاختيار */}
+                    <div className={cn(
+                      "h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
+                      selectedDistributorId === dist.id
+                        ? "border-[#d81b60] bg-[#d81b60]"
+                        : "border-[#f9a8d4]/50"
+                    )}>
+                      {selectedDistributorId === dist.id && (
+                        <Check className="h-4 w-4 text-white" />
+                      )}
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })}
+          </div>
 
-              <div className="flex items-center gap-2 p-3 bg-blue-50/50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800/30">
-                <Info className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                <p className="text-xs text-blue-700 dark:text-blue-400">
-                  {isArabic
-                    ? "💡 يمكنك تفعيل الموزع مرة أخرى في أي وقت"
-                    : "💡 You can reactivate the distributor at any time"}
-                </p>
+          {allDistributors.filter((dist: any) => {
+            const search = distributorSearch.toLowerCase().trim();
+            if (!search) return true;
+            const nameAr = dist.full_name_ar?.toLowerCase() || "";
+            const nameEn = dist.full_name_en?.toLowerCase() || "";
+            const phone = dist.phone?.toLowerCase() || "";
+            return nameAr.includes(search) || nameEn.includes(search) || phone.includes(search);
+          }).length === 0 && distributorSearch && (
+            <div className="text-center py-4">
+              <AlertCircle className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                {isArabic 
+                  ? `❌ لا توجد نتائج لـ "${distributorSearch}"`
+                  : `❌ No results for "${distributorSearch}"`}
+              </p>
+            </div>
+          )}
+
+          <div className="mt-4 p-4 bg-[#fbcfe8]/20 rounded-xl border border-[#f9a8d4]/30">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-3">
+              <Clock className="h-3.5 w-3.5 text-[#d81b60]" />
+              {isArabic ? "⏰ الوقت المتوقع للوصول" : "⏰ Estimated Delivery Time"}
+            </p>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-slate-600 dark:text-slate-300">
+                  {isArabic ? "عدد الساعات حتى الوصول" : "Hours until delivery"}
+                </Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    type="number"
+                    min={0.5}
+                    step={0.5}
+                    value={estimatedDeliveryHours}
+                    onChange={(e) => setEstimatedDeliveryHours(parseFloat(e.target.value) || 0)}
+                    className="h-9 rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 w-full"
+                  />
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {isArabic ? "ساعة" : "hrs"}
+                  </span>
+                </div>
+                {estimatedDeliveryHours > 0 && (
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1">
+                    🕐 {new Date(Date.now() + estimatedDeliveryHours * 60 * 60 * 1000).toLocaleTimeString(
+                      isArabic ? 'ar-SA' : 'en-US',
+                      { hour: '2-digit', minute: '2-digit' }
+                    )}
+                  </p>
+                )}
+              </div>
+              
+              <div>
+                <Label className="text-xs text-slate-600 dark:text-slate-300">
+                  {isArabic ? "وقت الاستلام المتوقع" : "Estimated pickup time"}
+                </Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    type="number"
+                    min={0.25}
+                    step={0.25}
+                    value={estimatedPickupHours}
+                    onChange={(e) => setEstimatedPickupHours(parseFloat(e.target.value) || 0)}
+                    className="h-9 rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 w-full"
+                  />
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {isArabic ? "ساعة" : "hrs"}
+                  </span>
+                </div>
+                {estimatedPickupHours > 0 && (
+                  <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1">
+                    🕐 {new Date(Date.now() + estimatedPickupHours * 60 * 60 * 1000).toLocaleTimeString(
+                      isArabic ? 'ar-SA' : 'en-US',
+                      { hour: '2-digit', minute: '2-digit' }
+                    )}
+                  </p>
+                )}
               </div>
             </div>
+          </div>
+        </>
+      )}
+    </div>
 
-            <DialogFooter className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDeactivateDistributorDialog(false);
-                  setDeactivatingDistributor(null);
-                }}
-                className="flex-1 rounded-xl"
-                disabled={isDeactivating}
-              >
-                <X className="h-4 w-4 mr-1.5" />
-                {isArabic ? "إلغاء" : "Cancel"}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeactivateDistributor}
-                disabled={isDeactivating}
-                className="flex-1 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-600/30 transition-all duration-300"
-              >
-                {isDeactivating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {isArabic ? "جاري التعطيل..." : "Deactivating..."}
-                  </>
-                ) : (
-                  <>
-                    <PowerOff className="h-4 w-4 mr-2" />
-                    {isArabic ? "تأكيد التعطيل" : "Confirm Deactivate"}
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+    <div className="p-4 border-t border-[#f9a8d4]/30 bg-[#fbcfe8]/20 flex-shrink-0">
+      <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setAcceptDialogOpen(false);
+            setSelectedDeliveryOrderId(null);
+            setSelectedOrderId(null);
+            setSelectedDistributorId("");
+            setDistributorSearch("");
+          }}
+          className="flex-1 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
+        >
+          <X className="h-4 w-4 mr-1.5" />
+          {isArabic ? "إلغاء" : "Cancel"}
+        </Button>
+        <Button
+          onClick={handleAcceptDelivery}
+          disabled={!selectedDistributorId || isProcessing}
+          className="flex-1 rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] shadow-lg shadow-[#d81b60]/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+        >
+          {isProcessing ? (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              {isArabic ? "جاري..." : "Processing..."}
+            </>
+          ) : (
+            <>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              {isArabic ? "تأكيد القبول" : "Confirm Accept"}
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
 
- {/* ===== ORDER DETAILS DIALOG ===== */}
+{/* ===== REJECT DELIVERY DIALOG - وردي ===== */}
+<Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+  <DialogContent className="max-w-md rounded-2xl border-red-200/50 dark:border-red-800/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-red-500/10 overflow-hidden">
+    <div className="bg-gradient-to-r from-red-600 to-rose-600 p-5 text-white">
+      <div className="flex items-center gap-3">
+        <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+          <XCircle className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <DialogTitle className="text-xl font-bold">
+            {isArabic ? "❌ رفض طلب التوصيل" : "❌ Reject Delivery Order"}
+          </DialogTitle>
+          <p className="text-white/80 text-sm mt-0.5">
+            {isArabic
+              ? "أدخل سبب الرفض لإرساله للعميل والبائع"
+              : "Enter the rejection reason to send to customer and seller"}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div className="p-5">
+      <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
+        <p className="text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <span>
+            {isArabic
+              ? "سيتم إرسال سبب الرفض إلى البائع والعميل"
+              : "The rejection reason will be sent to the seller and customer"}
+          </span>
+        </p>
+      </div>
+
+      <div className="mt-4">
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1.5">
+          {isArabic ? "سبب الرفض" : "Rejection Reason"}
+          <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          placeholder={isArabic
+            ? "اكتب سبب رفض الطلب (مثال: لا يوجد موزع متاح، المنطقة غير مغطاة، ...)"
+            : "Write the reason for rejecting the order (e.g., no distributor available, area not covered, ...)"
+          }
+          className="w-full min-h-[100px] p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-red-400 focus:ring-2 focus:ring-red-400/20 transition-all duration-200 resize-none"
+          dir={isArabic ? "rtl" : "ltr"}
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          {rejectReason.length}/500
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mt-3">
+        {[
+          isArabic ? "لا يوجد موزع متاح" : "No distributor available",
+          isArabic ? "المنطقة غير مغطاة" : "Area not covered",
+          isArabic ? "الطلب خارج أوقات العمل" : "Order outside working hours",
+          isArabic ? "مشكلة في العنوان" : "Address issue",
+          isArabic ? "العميل غير متاح" : "Customer unavailable",
+          isArabic ? "سبب آخر" : "Other reason",
+        ].map((reason, idx) => (
+          <button
+            key={idx}
+            onClick={() => setRejectReason(reason)}
+            className="px-3 py-1.5 text-xs rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-800 transition-all duration-200"
+          >
+            {reason}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 flex gap-3">
+      <Button
+        variant="outline"
+        onClick={() => {
+          setRejectDialogOpen(false);
+          setSelectedDeliveryOrderId(null);
+          setSelectedOrderId(null);
+          setRejectReason("");
+        }}
+        className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+      >
+        <X className="h-4 w-4 mr-1.5" />
+        {isArabic ? "إلغاء" : "Cancel"}
+      </Button>
+      <Button
+        variant="destructive"
+        onClick={handleRejectDelivery}
+        disabled={!rejectReason.trim() || isProcessing}
+        className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+      >
+        {isProcessing ? (
+          <>
+            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            {isArabic ? "جاري الرفض..." : "Rejecting..."}
+          </>
+        ) : (
+          <>
+            <XCircle className="h-4 w-4 mr-2" />
+            {isArabic ? "تأكيد الرفض" : "Confirm Reject"}
+          </>
+        )}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
+
+{/* ===== DEACTIVATE DISTRIBUTOR DIALOG - زيتي ووردي ===== */}
+<Dialog open={showDeactivateDistributorDialog} onOpenChange={setShowDeactivateDistributorDialog}>
+  <DialogContent className="max-w-md rounded-2xl border-0 p-0 overflow-hidden shadow-2xl bg-white dark:bg-slate-900">
+    <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-6 text-white">
+      <div className="flex items-center gap-4">
+        <div className="relative">
+          <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg">
+            <PowerOff className="h-7 w-7 text-white" />
+          </div>
+          <div className="absolute -inset-1 rounded-2xl bg-amber-400/30 blur-lg animate-pulse" />
+        </div>
+        <div>
+          <DialogTitle className="text-2xl font-bold">
+            {isArabic ? "⚠️ تعطيل الموزع" : "⚠️ Deactivate Distributor"}
+          </DialogTitle>
+          <p className="text-white/80 text-sm mt-0.5">
+            {isArabic 
+              ? "لن يتمكن الموزع من استلام طلبات جديدة" 
+              : "Distributor will not be able to receive new orders"}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div className="p-6 space-y-4">
+      <div className="flex items-start gap-3 p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border-2 border-amber-200/50 dark:border-amber-800/30">
+        <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div>
+          <p className="font-semibold text-amber-700 dark:text-amber-300">
+            {isArabic ? "هل أنت متأكد؟" : "Are you sure?"}
+          </p>
+          <p className="text-sm text-amber-600/80 dark:text-amber-400/70">
+            {isArabic
+              ? `سيتم تعطيل "${deactivatingDistributor?.full_name_ar || deactivatingDistributor?.full_name_en || ''}" ولن يتمكن من استلام طلبات جديدة`
+              : `"${deactivatingDistributor?.full_name_en || deactivatingDistributor?.full_name_ar || ''}" will be deactivated and won't receive new orders`}
+          </p>
+        </div>
+      </div>
+
+      {deactivatingDistributor && (
+        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">{isArabic ? "الاسم" : "Name"}</span>
+              <span className="font-medium">
+                {deactivatingDistributor.full_name_ar || deactivatingDistributor.full_name_en || '-'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">{isArabic ? "رقم الهاتف" : "Phone"}</span>
+              <span className="font-medium" dir="ltr">{deactivatingDistributor.phone || '-'}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 p-3 bg-blue-50/50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800/30">
+        <Info className="h-4 w-4 text-blue-500 flex-shrink-0" />
+        <p className="text-xs text-blue-700 dark:text-blue-400">
+          {isArabic
+            ? "💡 يمكنك تفعيل الموزع مرة أخرى في أي وقت"
+            : "💡 You can reactivate the distributor at any time"}
+        </p>
+      </div>
+    </div>
+
+    <DialogFooter className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30 gap-2">
+      <Button
+        variant="outline"
+        onClick={() => {
+          setShowDeactivateDistributorDialog(false);
+          setDeactivatingDistributor(null);
+        }}
+        className="flex-1 rounded-xl"
+        disabled={isDeactivating}
+      >
+        <X className="h-4 w-4 mr-1.5" />
+        {isArabic ? "إلغاء" : "Cancel"}
+      </Button>
+      <Button
+        variant="destructive"
+        onClick={handleDeactivateDistributor}
+        disabled={isDeactivating}
+        className="flex-1 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-600/30 transition-all duration-300"
+      >
+        {isDeactivating ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            {isArabic ? "جاري التعطيل..." : "Deactivating..."}
+          </>
+        ) : (
+          <>
+            <PowerOff className="h-4 w-4 mr-2" />
+            {isArabic ? "تأكيد التعطيل" : "Confirm Deactivate"}
+          </>
+        )}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
+{/* ===== ORDER DETAILS DIALOG - يبقى كما هو مع تعديل الألوان ===== */}
 <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#2a655f]/20 bg-white dark:bg-slate-900 p-6">
+  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#f9a8d4]/30 bg-white dark:bg-slate-900 p-6 shadow-2xl">
     <Button
       variant="ghost"
       size="icon"
@@ -3217,18 +3336,42 @@ const handleDeactivateDistributor = async () => {
       if (!orderData) {
         return (
           <div className="py-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2a655f]" />
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#d81b60]" />
+            <p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p>
+          </div>
+        );
+      }
+
+      {/* ===== ORDER DETAILS DIALOG - وردي وزيتي ===== */}
+<Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
+  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#f9a8d4]/30 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+    <Button
+      variant="ghost"
+      size="icon"
+      className="absolute top-4 end-4 h-9 w-9 rounded-full bg-black/50 hover:bg-black/70 text-white z-30"
+      onClick={() => setShowOrderDetails(false)}
+    >
+      <X className="h-5 w-5" />
+    </Button>
+
+    {(() => {
+      const orderData = selectedOrderForDetails;
+      
+      if (!orderData) {
+        return (
+          <div className="py-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#d81b60]" />
             <p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p>
           </div>
         );
       }
 
       // ✅ استخراج البيانات
-     const orderItems = orderData?.order_items || [];
-  const orderObj = orderData?.order || null;
-  
-  console.log("📦 [OrderDetailsDialog] orderItems:", orderItems);
-  console.log("📦 [OrderDetailsDialog] orderItems length:", orderItems.length);
+      const orderItems = orderData?.order_items || [];
+      const orderObj = orderData?.order || null;
+      
+      console.log("📦 [OrderDetailsDialog] orderItems:", orderItems);
+      console.log("📦 [OrderDetailsDialog] orderItems length:", orderItems.length);
       
       // ✅ اسم العميل مع صورة
       const buyerName = orderObj?.buyer_name || orderData?.buyer?.name || (isArabic ? "غير معروف" : "Unknown");
@@ -3282,7 +3425,7 @@ const handleDeactivateDistributor = async () => {
       const statusColor = getStatusColor(orderData.status);
       const isActive = orderData.status === 'pending' || orderData.status === 'assigned' || orderData.status === 'in_transit';
       
-      // ✅ دوال الفيرنتات (نفس الموجودة في OrdersPage)
+      // ✅ دوال الفيرنتات
       const getVariationImage = (item: any) => {
         const listing = item.listings || item;
         
@@ -3365,13 +3508,13 @@ const handleDeactivateDistributor = async () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                <div className="p-2 rounded-2xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white shadow-lg shadow-[#0d2e2a]/30">
+                <div className="p-2 rounded-2xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/30">
                   <ShoppingBag className="h-5 w-5" />
                 </div>
                 {isArabic ? "تفاصيل الطلب" : "Order Details"}
               </h2>
               <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60]" />
                 {isArabic ? `طلب #${orderData.id?.substring(0, 8) || 'غير معروف'}` : `Order #${orderData.id?.substring(0, 8) || 'Unknown'}`}
               </p>
             </div>
@@ -3413,23 +3556,23 @@ const handleDeactivateDistributor = async () => {
           </div>
 
           {/* ===== معلومات المتجر والعميل ===== */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30 mb-4">
             {/* ✅ المتجر */}
             <div className="flex items-center gap-3">
               {storeLogo ? (
                 <img 
                   src={storeLogo} 
                   alt={storeName}
-                  className="h-12 w-12 rounded-xl object-cover border-2 border-[#2a655f]/20"
+                  className="h-12 w-12 rounded-xl object-cover border-2 border-[#f9a8d4]/30"
                 />
               ) : (
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white font-bold text-lg">
+                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white font-bold text-lg">
                   {storeName.charAt(0).toUpperCase()}
                 </div>
               )}
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                  <Store className="h-3 w-3 text-[#2a655f]" />
+                  <Store className="h-3 w-3 text-[#d81b60]" />
                   {isArabic ? "المتجر" : "Store"}
                 </p>
                 <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{storeName}</p>
@@ -3445,7 +3588,7 @@ const handleDeactivateDistributor = async () => {
             {/* ✅ العميل */}
             <div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                <User className="h-3 w-3 text-[#2a655f]" />
+                <User className="h-3 w-3 text-[#d81b60]" />
                 {isArabic ? "العميل" : "Customer"}
               </p>
               <div className="mt-1 flex items-center gap-2">
@@ -3453,11 +3596,11 @@ const handleDeactivateDistributor = async () => {
                   <img 
                     src={buyerAvatar} 
                     alt={buyerName}
-                    className="h-8 w-8 rounded-full object-cover border-2 border-[#2a655f]/20"
+                    className="h-8 w-8 rounded-full object-cover border-2 border-[#f9a8d4]/30"
                   />
                 ) : (
-                  <div className="h-8 w-8 rounded-full bg-[#2a655f]/10 flex items-center justify-center border-2 border-[#2a655f]/20">
-                    <User className="h-4 w-4 text-[#2a655f]" />
+                  <div className="h-8 w-8 rounded-full bg-[#fbcfe8]/30 flex items-center justify-center border-2 border-[#f9a8d4]/30">
+                    <User className="h-4 w-4 text-[#d81b60]" />
                   </div>
                 )}
                 <div>
@@ -3474,236 +3617,212 @@ const handleDeactivateDistributor = async () => {
           </div>
 
           {/* ===== عنوان التوصيل ===== */}
-          <div className="p-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50 mb-4">
+          <div className="p-3 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30 mb-4">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-              <MapPin className="h-3 w-3 text-[#2a655f]" />
+              <MapPin className="h-3 w-3 text-[#d81b60]" />
               {isArabic ? "عنوان التوصيل" : "Delivery Address"}
             </p>
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mt-1">{deliveryAddress}</p>
           </div>
-{/* ===== المنتجات مع تفاصيل الفيرنتات (مطابق لـ orders.tsx) ===== */}
-<div className="border-t border-[#2a655f]/20 pt-4">
-  <h4 className="font-bold text-sm flex items-center gap-2 mb-3">
-    <Package className="h-4 w-4 text-[#2a655f]" />
-    {isArabic ? "المنتجات" : "Products"}
-    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
-      {orderItems.length}
-    </Badge>
-  </h4>
-  
-  {orderItems.length > 0 ? (
-    <div className="space-y-3">
-      {orderItems.map((item: any, index: number) => {
-        const listing = item.listings || item;
-        
-        // ✅ استخدم الدوال المطابقة لـ orders.tsx
-        const imageUrl = getProductImage(item);
-        const variationCombination = getVariationCombination(item);
-        const hasVariation = !!(variationCombination && Object.keys(variationCombination).length > 0);
-        const variationDisplay = getVariationDisplay(variationCombination);
-        
-        const itemPrice = Number(item.price) || 0;
-        const itemQuantity = item.quantity || 1;
-        const totalPrice = itemPrice * itemQuantity;
 
-        // ✅ للتصحيح
-        console.log("📦 [OrderDetails] Item:", {
-          id: item.id,
-          title: listing?.title_ar,
-          variationCombination,
-          hasVariation,
-          variationDisplay,
-          imageUrl,
-          metadata: item.metadata,
-          selected_options: item.selected_options,
-          variation_combination: item.variation_combination
-        });
-
-        return (
-          <div 
-            key={item.id || index} 
-            className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300"
-          >
-            <div className="flex items-center gap-4">
-              {/* ✅ صورة المنتج */}
-              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-                {imageUrl ? (
-                  <img 
-                    src={imageUrl} 
-                    alt=""
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      console.log("❌ Image failed to load:", imageUrl);
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                    <Package className="h-6 w-6 text-slate-400" />
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-slate-800 dark:text-white">
-                  {isArabic ? listing?.title_ar || 'منتج' : listing?.title_en || listing?.title_ar || 'Product'}
-                </p>
-                
-                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
-                  {/* ✅ الكمية */}
-                  <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
-                    <span className="font-medium text-slate-600 dark:text-slate-400">{isArabic ? "الكمية:" : "Qty:"}</span>
-                    <span className="font-bold text-slate-800 dark:text-white">{itemQuantity}</span>
-                  </span>
-                  
-                  <span className="text-muted-foreground/30">•</span>
-                  
-                  {/* ✅ سعر الوحدة */}
-                  <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "سعر الوحدة:" : "Unit:"}</span>
-                    <span className="font-bold text-emerald-700 dark:text-emerald-300">{formatPrice(itemPrice, currency || app.currency, app.lang)}</span>
-                  </span>
-                  
-                  {/* ✅ الإجمالي (إذا كان أكثر من 1) */}
-                  {itemQuantity > 1 && (
-                    <>
-                      <span className="text-muted-foreground/30">|</span>
-                      <span className="flex items-center gap-1 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 px-2 py-0.5 rounded-full border border-[#2a655f]/20 dark:border-[#2a655f]/30">
-                        <span className="font-medium text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "الإجمالي:" : "Total:"}</span>
-                        <span className="font-bold text-[#2a655f] dark:text-[#3a8a82]">{formatPrice(totalPrice, currency || app.currency, app.lang)}</span>
-                      </span>
-                    </>
-                  )}
-                  
-                  {/* ✅ ✅ ✅ تركيبة الفيرنت (مطابق لـ orders.tsx) */}
-                  {hasVariation && variationDisplay && (
-                    <>
-                      <span className="text-muted-foreground/30">•</span>
-                      <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
-                        <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
-                        {variationDisplay}
-                        {imageUrl && (
-                          <img 
-                            src={imageUrl} 
-                            alt=""
-                            className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
-                          />
-                        )}
-                      </span>
-                    </>
-                  )}
-                  
-                  {/* ✅ ✅ ✅ بيانات الفيرنت من metadata (احتياطي) */}
-                  {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
-                    <>
-                      <span className="text-muted-foreground/30">•</span>
-                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                        <Layers className="h-2.5 w-2.5" />
-                        {Object.values(item.metadata.variation_combination).join(' • ')}
-                      </span>
-                    </>
-                  )}
-                  
-                  {/* ✅ ✅ ✅ عرض selected_options (مثل orders.tsx) */}
-                  {item.selected_options?.selected_color && (
-                    <>
-                      <span className="text-muted-foreground/30">•</span>
-                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full">
-                        <span className="font-medium text-[#2a655f]">🎨</span>
-                        {item.selected_options.selected_color}
-                        {item.selected_options.selected_size && ` (${item.selected_options.selected_size})`}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-              
+          {/* ===== المنتجات مع تفاصيل الفيرنتات ===== */}
+          <div className="border-t border-[#f9a8d4]/30 pt-4">
+            <h4 className="font-bold text-sm flex items-center gap-2 mb-3 text-[#d81b60]">
+              <Package className="h-4 w-4 text-[#d81b60]" />
+              {isArabic ? "المنتجات" : "Products"}
+              <Badge className="bg-[#fbcfe8]/30 text-[#d81b60] border-0 text-[10px]">
+                {orderItems.length}
+              </Badge>
+            </h4>
             
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  ) : (
-    // ✅ حالة عدم وجود order_items - حاول جلب من orders.listing_id (مثل orders.tsx)
-    (() => {
-      const oldOrder = orderData?.order || orderData?.orders || null;
-      const oldListing = oldOrder?.listings || orderData?.listings || null;
-      
-      if (oldListing) {
-        const oldQuantity = oldOrder?.quantity || 1;
-        const oldTotal = oldOrder?.total || 0;
-        
-        const oldImageUrl = oldOrder?.metadata?.variation_image || 
-                           oldOrder?.metadata?.product_cover ||
-                           oldListing?.cover_url || null;
-        
-        const oldVariationCombination = oldOrder?.metadata?.variation_combination ||
-                                       oldOrder?.variation_combination ||
-                                       null;
-        
-        const oldHasVariation = !!(oldVariationCombination && Object.keys(oldVariationCombination).length > 0);
-        const oldVariationDisplay = getVariationDisplay(oldVariationCombination);
-        
-        return (
-          <div className="space-y-3">
-            <div className="flex items-center gap-4 p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/30 transition-all duration-300">
-              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-                {oldImageUrl ? (
-                  <img src={oldImageUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                    <Package className="h-6 w-6 text-slate-400" />
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-slate-800 dark:text-white">
-                  {isArabic ? oldListing?.title_ar || 'منتج' : oldListing?.title_en || oldListing?.title_ar || 'Product'}
-                </p>
-                
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                  <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
-                    <span className="font-medium">{isArabic ? "الكمية:" : "Qty:"}</span>
-                    <span className="font-bold text-slate-800 dark:text-white">{oldQuantity}</span>
-                  </span>
-                  <span className="text-muted-foreground/30">•</span>
-                  <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "الإجمالي:" : "Total:"}</span>
-                    <span className="font-bold text-emerald-700 dark:text-emerald-300">
-                      {formatPrice(oldTotal, currency || app.currency, app.lang)}
-                    </span>
-                  </span>
+            {orderItems.length > 0 ? (
+              <div className="space-y-3">
+                {orderItems.map((item: any, index: number) => {
+                  const listing = item.listings || item;
+                  const imageUrl = getProductImage(item);
+                  const variationCombination = getVariationCombination(item);
+                  const hasVariation = !!(variationCombination && Object.keys(variationCombination).length > 0);
+                  const variationDisplay = getVariationDisplay(variationCombination);
                   
-                  {oldHasVariation && oldVariationDisplay && (
-                    <>
-                      <span className="text-muted-foreground/30">•</span>
-                      <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
-                        <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
-                        {oldVariationDisplay}
-                        {oldImageUrl && (
-                          <img src={oldImageUrl} alt="" className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5" />
-                        )}
-                      </span>
-                    </>
-                  )}
-                </div>
+                  const itemPrice = Number(item.price) || 0;
+                  const itemQuantity = item.quantity || 1;
+                  const totalPrice = itemPrice * itemQuantity;
+
+                  return (
+                    <div 
+                      key={item.id || index} 
+                      className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#f9a8d4]/50 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                          {imageUrl ? (
+                            <img 
+                              src={imageUrl} 
+                              alt=""
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                              <Package className="h-6 w-6 text-slate-400" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                            {isArabic ? listing?.title_ar || 'منتج' : listing?.title_en || listing?.title_ar || 'Product'}
+                          </p>
+                          
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
+                            <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
+                              <span className="font-medium text-slate-600 dark:text-slate-400">{isArabic ? "الكمية:" : "Qty:"}</span>
+                              <span className="font-bold text-slate-800 dark:text-white">{itemQuantity}</span>
+                            </span>
+                            
+                            <span className="text-muted-foreground/30">•</span>
+                            
+                            <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
+                              <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "سعر الوحدة:" : "Unit:"}</span>
+                              <span className="font-bold text-emerald-700 dark:text-emerald-300">{formatPrice(itemPrice, currency || app.currency, app.lang)}</span>
+                            </span>
+                            
+                            {itemQuantity > 1 && (
+                              <>
+                                <span className="text-muted-foreground/30">|</span>
+                                <span className="flex items-center gap-1 bg-[#fbcfe8]/30 px-2 py-0.5 rounded-full border border-[#f9a8d4]/30">
+                                  <span className="font-medium text-[#d81b60]">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                                  <span className="font-bold text-[#d81b60]">{formatPrice(totalPrice, currency || app.currency, app.lang)}</span>
+                                </span>
+                              </>
+                            )}
+                            
+                            {hasVariation && variationDisplay && (
+                              <>
+                                <span className="text-muted-foreground/30">•</span>
+                                <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#fbcfe8]/20 px-2 py-0.5 rounded-full border border-[#f9a8d4]/20">
+                                  <Layers className="h-3 w-3 text-[#d81b60]" />
+                                  {variationDisplay}
+                                  {imageUrl && (
+                                    <img 
+                                      src={imageUrl} 
+                                      alt=""
+                                      className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
+                                    />
+                                  )}
+                                </span>
+                              </>
+                            )}
+                            
+                            {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
+                              <>
+                                <span className="text-muted-foreground/30">•</span>
+                                <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                                  <Layers className="h-2.5 w-2.5" />
+                                  {Object.values(item.metadata.variation_combination).join(' • ')}
+                                </span>
+                              </>
+                            )}
+                            
+                            {item.selected_options?.selected_color && (
+                              <>
+                                <span className="text-muted-foreground/30">•</span>
+                                <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#fbcfe8]/20 px-2 py-0.5 rounded-full">
+                                  <span className="font-medium text-[#d81b60]">🎨</span>
+                                  {item.selected_options.selected_color}
+                                  {item.selected_options.selected_size && ` (${item.selected_options.selected_size})`}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            ) : (
+              // ✅ حالة عدم وجود order_items
+              (() => {
+                const oldOrder = orderData?.order || orderData?.orders || null;
+                const oldListing = oldOrder?.listings || orderData?.listings || null;
+                
+                if (oldListing) {
+                  const oldQuantity = oldOrder?.quantity || 1;
+                  const oldTotal = oldOrder?.total || 0;
+                  
+                  const oldImageUrl = oldOrder?.metadata?.variation_image || 
+                                     oldOrder?.metadata?.product_cover ||
+                                     oldListing?.cover_url || null;
+                  
+                  const oldVariationCombination = oldOrder?.metadata?.variation_combination ||
+                                                 oldOrder?.variation_combination ||
+                                                 null;
+                  
+                  const oldHasVariation = !!(oldVariationCombination && Object.keys(oldVariationCombination).length > 0);
+                  const oldVariationDisplay = getVariationDisplay(oldVariationCombination);
+                  
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-4 p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#f9a8d4]/50 transition-all duration-300">
+                        <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                          {oldImageUrl ? (
+                            <img src={oldImageUrl} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                              <Package className="h-6 w-6 text-slate-400" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                            {isArabic ? oldListing?.title_ar || 'منتج' : oldListing?.title_en || oldListing?.title_ar || 'Product'}
+                          </p>
+                          
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                            <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
+                              <span className="font-medium">{isArabic ? "الكمية:" : "Qty:"}</span>
+                              <span className="font-bold text-slate-800 dark:text-white">{oldQuantity}</span>
+                            </span>
+                            <span className="text-muted-foreground/30">•</span>
+                            <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
+                              <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                              <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                                {formatPrice(oldTotal, currency || app.currency, app.lang)}
+                              </span>
+                            </span>
+                            
+                            {oldHasVariation && oldVariationDisplay && (
+                              <>
+                                <span className="text-muted-foreground/30">•</span>
+                                <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#fbcfe8]/20 px-2 py-0.5 rounded-full border border-[#f9a8d4]/20">
+                                  <Layers className="h-3 w-3 text-[#d81b60]" />
+                                  {oldVariationDisplay}
+                                  {oldImageUrl && (
+                                    <img src={oldImageUrl} alt="" className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5" />
+                                  )}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">{isArabic ? "لا توجد منتجات في هذا الطلب" : "No products in this order"}</p>
+                    </div>
+                  );
+                }
+              })()
+            )}
           </div>
-        );
-      } else {
-        return (
-          <div className="text-center py-8 text-muted-foreground">
-            <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">{isArabic ? "لا توجد منتجات في هذا الطلب" : "No products in this order"}</p>
-          </div>
-        );
-      }
-    })()
-  )}
-</div>
 
           {/* ===== ملاحظات الطلب ===== */}
           {orderObj?.notes && (
@@ -3728,19 +3847,17 @@ const handleDeactivateDistributor = async () => {
           )}
 
           {/* ===== إجمالي الطلب ===== */}
-          <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border border-[#2a655f]/20 dark:border-[#2a655f]/30">
-            {/* المجموع الفرعي */}
+          <div className="p-4 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">
                 {isArabic ? "المجموع الفرعي" : "Subtotal"}
               </span>
-              <span className="text-lg font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+              <span className="text-lg font-bold text-[#d81b60] dark:text-[#f9a8d4]">
                 {formatPrice(subtotal, currency || app.currency, app.lang)}
               </span>
             </div>
             
-            {/* سعر التوصيل */}
-            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
+            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#f9a8d4]/20">
               <span className="text-sm text-muted-foreground">
                 {isArabic ? "سعر التوصيل" : "Delivery Fee"}
               </span>
@@ -3748,7 +3865,7 @@ const handleDeactivateDistributor = async () => {
                 "text-sm font-medium",
                 deliveryFee === 0 
                   ? "text-emerald-500 font-bold" 
-                  : "text-[#0d2e2a] dark:text-[#3a8a82]"
+                  : "text-[#d81b60]"
               )}>
                 {deliveryFee === 0 
                   ? (isArabic ? "🆓 مجاني" : "🆓 Free")
@@ -3757,9 +3874,8 @@ const handleDeactivateDistributor = async () => {
               </span>
             </div>
             
-            {/* الخصم */}
             {promoDiscount > 0 && (
-              <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
+              <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#f9a8d4]/20 text-emerald-500">
                 <span className="text-sm">
                   {isArabic ? "💚 الخصم" : "💚 Discount"}
                 </span>
@@ -3769,12 +3885,11 @@ const handleDeactivateDistributor = async () => {
               </div>
             )}
             
-            {/* الإجمالي الكامل */}
-            <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
-              <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
+            <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#f9a8d4]/30">
+              <span className="text-sm font-semibold text-[#d81b60] dark:text-white">
                 {isArabic ? "الإجمالي الكامل" : "Total"}
               </span>
-              <span className="text-2xl font-bold text-[#0d2e2a] dark:text-[#3a8a82]">
+              <span className="text-2xl font-bold text-[#d81b60] dark:text-[#f9a8d4]">
                 {formatPrice(totalWithDelivery, currency || app.currency, app.lang)}
               </span>
             </div>
@@ -3792,12 +3907,12 @@ const handleDeactivateDistributor = async () => {
             </div>
           </div>
 
-         {/* ===== أزرار الإجراءات ===== */}
+          {/* ===== أزرار الإجراءات ===== */}
           <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 flex flex-wrap items-center justify-between gap-3">
             <Button
               variant="outline"
               onClick={() => setShowOrderDetails(false)}
-              className="rounded-xl border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10"
+              className="rounded-xl border-[#f9a8d4]/30 text-[#d81b60] hover:bg-[#fbcfe8]/30"
             >
               {isArabic ? "إغلاق" : "Close"}
             </Button>
@@ -3806,22 +3921,14 @@ const handleDeactivateDistributor = async () => {
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
-                  className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 transition-all duration-300 hover:scale-105"
+                  className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] shadow-lg shadow-[#d81b60]/30 transition-all duration-300 hover:scale-105"
                   onClick={() => {
-                    // ✅ إغلاق الـ Dialog أولاً
                     setShowOrderDetails(false);
-                    
-                    // ✅ فتح ديالوج القبول مع بيانات الطلب
                     const orderId = orderData.order?.id || orderData.id;
-                    console.log("📦 [OrderDetails] Accepting order:", orderId);
-                    
-                    // ✅ تعيين البيانات المطلوبة لديالوج القبول
                     setSelectedDeliveryOrderId(orderData.id);
                     setSelectedOrderId(orderId);
                     setSelectedDistributorId("");
                     setDistributorSearch("");
-                    
-                    // ✅ فتح ديالوج القبول
                     setAcceptDialogOpen(true);
                   }}
                 >
@@ -3834,19 +3941,11 @@ const handleDeactivateDistributor = async () => {
                   variant="destructive"
                   className="rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-105"
                   onClick={() => {
-                    // ✅ إغلاق الـ Dialog أولاً
                     setShowOrderDetails(false);
-                    
-                    // ✅ فتح ديالوج الرفض مع بيانات الطلب
                     const orderId = orderData.order?.id || orderData.id;
-                    console.log("📦 [OrderDetails] Rejecting order:", orderId);
-                    
-                    // ✅ تعيين البيانات المطلوبة لديالوج الرفض
                     setSelectedDeliveryOrderId(orderData.id);
                     setSelectedOrderId(orderId);
                     setRejectReason("");
-                    
-                    // ✅ فتح ديالوج الرفض
                     setRejectDialogOpen(true);
                   }}
                 >
@@ -3861,161 +3960,143 @@ const handleDeactivateDistributor = async () => {
     })()}
   </DialogContent>
 </Dialog>
+      return (
+        <div>
+          {/* المحتوى */}
+        </div>
+      );
+    })()}
+  </DialogContent>
+</Dialog>
 
-        <style>{`
-          @keyframes spin-slow {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-          .animate-spin-slow {
-            animation: spin-slow 4s linear infinite;
-          }
-          
-          @keyframes bounce-slow {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-6px); }
-          }
-          .animate-bounce-slow {
-            animation: bounce-slow 2s ease-in-out infinite;
-          }
-          
-          @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            25% { transform: translateY(-4px) rotate(-2deg); }
-            75% { transform: translateY(-4px) rotate(2deg); }
-          }
-          .animate-float {
-            animation: float 3s ease-in-out infinite;
-          }
-          
-          @keyframes drive-across {
-            0% { transform: translateX(-20%); }
-            100% { transform: translateX(120%); }
-          }
-          .animate-drive-across {
-            animation: drive-across 14s linear infinite;
-          }
-          
-          @keyframes bounce-truck {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-4px) rotate(-1deg); }
-            75% { transform: translateY(-4px) rotate(1deg); }
-          }
-          .animate-bounce-truck {
-            animation: bounce-truck 2.5s ease-in-out infinite;
-          }
-          
-          @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
-          .animate-shimmer {
-            animation: shimmer 3s ease-in-out infinite;
-          }
-          
-          @keyframes float-truck {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            25% { transform: translateY(-3px) rotate(-2deg); }
-            75% { transform: translateY(-3px) rotate(2deg); }
-          }
-          .animate-float-truck {
-            animation: float-truck 3s ease-in-out infinite;
-          }
-          
-          @keyframes slide-in-from-top-5 {
-            0% { transform: translateY(-5px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-          }
-          .animate-in.slide-in-from-top-5 {
-            animation: slide-in-from-top-5 0.3s ease-out;
-          }
-          
-          @keyframes slide-in-from-left-5 {
-            0% { transform: translateX(-5px); opacity: 0; }
-            100% { transform: translateX(0); opacity: 1; }
-          }
-          .animate-in.slide-in-from-left-5 {
-            animation: slide-in-from-left-5 0.5s ease-out;
-          }
+<style>{`
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin-slow {
+    animation: spin-slow 4s linear infinite;
+  }
+  
+  @keyframes bounce-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .animate-bounce-slow {
+    animation: bounce-slow 2s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    25% { transform: translateY(-4px) rotate(-2deg); }
+    75% { transform: translateY(-4px) rotate(2deg); }
+  }
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  @keyframes drive-across {
+    0% { transform: translateX(-20%); }
+    100% { transform: translateX(120%); }
+  }
+  .animate-drive-across {
+    animation: drive-across 14s linear infinite;
+  }
+  
+  @keyframes bounce-truck {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-4px) rotate(-1deg); }
+    75% { transform: translateY(-4px) rotate(1deg); }
+  }
+  .animate-bounce-truck {
+    animation: bounce-truck 2.5s ease-in-out infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .animate-shimmer {
+    animation: shimmer 3s ease-in-out infinite;
+  }
+  
+  @keyframes float-truck {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    25% { transform: translateY(-3px) rotate(-2deg); }
+    75% { transform: translateY(-3px) rotate(2deg); }
+  }
+  .animate-float-truck {
+    animation: float-truck 3s ease-in-out infinite;
+  }
+  
+  @keyframes slide-in-from-top-5 {
+    0% { transform: translateY(-5px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  .animate-in.slide-in-from-top-5 {
+    animation: slide-in-from-top-5 0.3s ease-out;
+  }
+  
+  @keyframes slide-in-from-left-5 {
+    0% { transform: translateX(-5px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+  }
+  .animate-in.slide-in-from-left-5 {
+    animation: slide-in-from-left-5 0.5s ease-out;
+  }
 
-          @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(13, 46, 42, 0.1); }
-            50% { box-shadow: 0 0 40px rgba(13, 46, 42, 0.2); }
-          }
-          .animate-pulse-glow {
-            animation: pulse-glow 3s ease-in-out infinite;
-          }
-            @keyframes float-logo {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  25% { transform: translateY(-6px) rotate(-2deg); }
-  75% { transform: translateY(4px) rotate(2deg); }
-}
-.animate-float-logo {
-  animation: float-logo 4s ease-in-out infinite;
-}
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(216,27,96,0.1); }
+    50% { box-shadow: 0 0 40px rgba(216,27,96,0.2); }
+  }
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  
+  @keyframes float-logo {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    25% { transform: translateY(-6px) rotate(-2deg); }
+    75% { transform: translateY(4px) rotate(2deg); }
+  }
+  .animate-float-logo {
+    animation: float-logo 4s ease-in-out infinite;
+  }
 
-@keyframes pulse-glow {
-  0%, 100% { filter: drop-shadow(0 0 15px rgba(212,175,55,0.3)); }
-  50% { filter: drop-shadow(0 0 30px rgba(212,175,55,0.6)); }
-}
-.animate-pulse-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
-}
+  @keyframes pulse-glow {
+    0%, 100% { filter: drop-shadow(0 0 15px rgba(249,168,212,0.3)); }
+    50% { filter: drop-shadow(0 0 30px rgba(249,168,212,0.6)); }
+  }
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
 
-@keyframes pulse-slow {
-  0%, 100% { opacity: 0.3; transform: scale(0.95); }
-  50% { opacity: 0.6; transform: scale(1.05); }
-}
-.animate-pulse-slow {
-  animation: pulse-slow 3s ease-in-out infinite;
-}
-        `}</style>
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 0.3; transform: scale(0.95); }
+    50% { opacity: 0.6; transform: scale(1.05); }
+  }
+  .animate-pulse-slow {
+    animation: pulse-slow 3s ease-in-out infinite;
+  }
+`}</style>
+
       </div>
     </TooltipProvider>
   );
 }
 
 // ============================================================
-// 📦 ModernStatCard
+// 📦 StatCard - وردية (مطابقة لصفحة الموزع)
 // ============================================================
-function ModernStatCard({
-  icon: Icon,
-  label,
-  value,
-  gradient,
-  isArabic
-}: {
-  icon: any;
-  label: string;
-  value: string | number;
-  gradient: string;
-  isArabic: boolean;
-}) {
+function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: "olive" | "pink"; }) {
   return (
-    <div className={cn(
-      "group relative overflow-hidden rounded-2xl p-4 shadow-md transition-all duration-500 hover:shadow-xl hover:scale-[1.03]",
-      "bg-gradient-to-br",
-      gradient
-    )}>
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-white rounded-full blur-2xl" />
-        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white rounded-full blur-2xl" />
-      </div>
-
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
-
-      <div className="relative flex items-start justify-between">
+    <div className="bg-[#fbcfe8] dark:bg-[#fbcfe8]/30 rounded-xl p-4 shadow-sm border-2 border-[#f9a8d4]/60 dark:border-[#f9a8d4]/30 hover:shadow-lg hover:border-[#d81b60]/60 transition-all duration-300 hover:scale-[1.03] group cursor-pointer">
+      <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium text-white/80">{label}</p>
-          <p className="text-2xl font-bold mt-1 text-white group-hover:scale-105 transition-transform duration-300">
-            {value}
-          </p>
+          <p className="text-xs font-medium text-[#2a655f] dark:text-[#f9a8d4] group-hover:text-[#d81b60] transition-colors duration-300">{label}</p>
+          <p className="text-xl font-bold mt-1 text-slate-900 dark:text-white group-hover:scale-105 transition-transform duration-300">{value}</p>
         </div>
-        <div className={cn(
-          "h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-300",
-          "bg-white/20 backdrop-blur group-hover:scale-110 group-hover:rotate-12 group-hover:shadow-lg"
-        )}>
-          <Icon className={cn("h-5 w-5 text-white transition-all duration-300 group-hover:scale-110 group-hover:rotate-6")} />
+        <div className="h-8 w-8 rounded-lg bg-[#f9a8d4]/50 dark:bg-[#f9a8d4]/30 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 group-hover:bg-[#f9a8d4]/70">
+          <Icon className="h-4 w-4 text-[#d81b60]" />
         </div>
       </div>
     </div>
@@ -4023,10 +4104,7 @@ function ModernStatCard({
 }
 
 // ============================================================
-// 📦 OrderCard
-// ============================================================
-// ============================================================
-// 📦 OrderCard Component - المعدل
+// 📦 OrderCard - وردي
 // ============================================================
 function OrderCard({ 
   order, 
@@ -4044,14 +4122,12 @@ function OrderCard({
   const app = useApp();
   const navigate = useNavigate();
 
-  // ✅ استخدام الدالة الجديدة
   const { 
     data: orderDetails, 
     isLoading: loadingDetails,
     isError: detailsError
   } = useDeliveryOrderDetails(order.id);
 
-  // ✅ دالة تنسيق الوقت
   const formatTime = (dateString: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -4061,7 +4137,6 @@ function OrderCard({
     });
   };
 
-  // ✅ دالة تنسيق التاريخ
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -4072,7 +4147,6 @@ function OrderCard({
     });
   };
 
-  // ✅ دالة الحصول على إجمالي الطلب
   const getTotal = () => {
     if (orderDetails?.totals) {
       return orderDetails.totals.total_with_delivery || 
@@ -4082,7 +4156,6 @@ function OrderCard({
     return order.delivery_fee || 0;
   };
 
-  // ✅ دالة الحصول على سعر التوصيل
   const getDeliveryFee = () => {
     if (orderDetails?.totals) {
       return orderDetails.totals.delivery_fee || 0;
@@ -4090,7 +4163,6 @@ function OrderCard({
     return 0;
   };
 
-  // ✅ دالة الحصول على اسم العميل
   const getCustomerName = () => {
     if (orderDetails?.buyer?.name) {
       return orderDetails.buyer.name;
@@ -4105,11 +4177,11 @@ function OrderCard({
   };
 
   const statusColors: Record<string, string> = {
-    pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-    assigned: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-    picked_up: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-    in_transit: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-    delivered: "bg-green-500/10 text-green-500 border-green-500/20",
+    pending: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
+    assigned: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
+    picked_up: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
+    in_transit: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
+    delivered: "bg-emerald-500/20 text-emerald-600 border-emerald-500/20",
     cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
     failed: "bg-red-500/10 text-red-500 border-red-500/20",
   };
@@ -4119,49 +4191,50 @@ function OrderCard({
     assigned: isArabic ? "تم التعيين" : "Assigned",
     picked_up: isArabic ? "تم الاستلام" : "Picked up",
     in_transit: isArabic ? "قيد التوصيل" : "In Transit",
-
+    delivered: isArabic ? "تم التوصيل" : "Delivered",
+    cancelled: isArabic ? "ملغي" : "Cancelled",
+    failed: isArabic ? "فشل" : "Failed",
   };
 
   const isPending = order.status === "pending";
   const itemsCount = orderDetails?.order_items?.length || 0;
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-[#0d2e2a]/30 transition-all duration-300 hover:scale-[1.01] group">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-[#f9a8d4]/60 transition-all duration-300 hover:scale-[1.01] group">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          <div className="h-10 w-10 rounded-xl bg-[#0d2e2a]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-            <Package className="h-5 w-5 text-[#0d2e2a] dark:text-[#4a9f95]" />
+          <div className="h-10 w-10 rounded-xl bg-[#fbcfe8]/40 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+            <Package className="h-5 w-5 text-[#d81b60] dark:text-[#f9a8d4]" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-bold text-slate-900 dark:text-white">
+              <p className="font-bold text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors duration-300">
                 #{order.tracking_number || order.id.substring(0, 8)}
               </p>
-              <Badge className={cn("border", statusColors[order.status] || "bg-slate-500/10 text-slate-500")}>
+              <Badge className={cn("border transition-all duration-300 hover:scale-105", statusColors[order.status] || "bg-slate-500/10 text-slate-500")}>
                 {statusLabels[order.status] || order.status}
               </Badge>
               {itemsCount > 0 && (
-                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[9px]">
+                <Badge className="bg-[#fbcfe8]/30 text-[#d81b60] border-0 text-[9px]">
                   {itemsCount} {isArabic ? "منتج" : "items"}
                 </Badge>
               )}
             </div>
             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-              {/* ✅ اسم العميل */}
               <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
-                <User className="h-3 w-3 text-[#2a655f]" />
+                <User className="h-3 w-3 text-[#d81b60]" />
                 {getCustomerName()}
               </span>
               
               <span className="text-muted-foreground/30">|</span>
               
-              <span className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
+              <span className="flex items-center gap-1 group-hover:text-[#d81b60] transition-colors duration-300">
+                <MapPin className="h-3 w-3 group-hover:scale-110 transition-transform duration-300" />
                 {order.delivery_address?.substring(0, 30) || (isArabic ? "عنوان غير محدد" : "No address")}
               </span>
               <span className="text-muted-foreground/30">|</span>
               
-              <span className="flex items-center gap-1 text-[#2a655f] dark:text-[#4a9f95]">
+              <span className="flex items-center gap-1 text-[#d81b60]">
                 <Clock className="h-3 w-3" />
                 {formatTime(order.created_at)}
               </span>
@@ -4172,16 +4245,15 @@ function OrderCard({
               </span>
               
               {loadingDetails ? (
-                <span className="flex items-center gap-1 text-[#2a655f]">
+                <span className="flex items-center gap-1 text-[#d81b60]">
                   <Loader2 className="h-3 w-3 animate-spin" />
                 </span>
               ) : detailsError ? (
                 <span className="text-red-500 text-[10px]">⚠️</span>
               ) : orderDetails ? (
                 <>
-                  {/* ✅ سعر التوصيل - يظهر دائماً */}
                   <span className="text-muted-foreground/30">|</span>
-                  <span className="font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                  <span className="font-medium text-[#d81b60] flex items-center gap-1">
                     <Truck className="h-3 w-3" />
                     {isArabic ? "توصيل:" : "Delivery:"}
                     {getDeliveryFee() === 0 
@@ -4189,20 +4261,16 @@ function OrderCard({
                       : formatPrice(getDeliveryFee(), app.currency, app.lang)
                     }
                   </span>
-                  
-                  {/* ❌ الخصم - غير موجود (مخفي تماماً) */}
 
-                  {/* ✅ الإجمالي الكامل */}
                   <span className="text-muted-foreground/30">|</span>
-               <span className="font-bold text-[#0d2e2a] dark:text-[#3a8a82] flex items-center gap-1">
-  <Wallet className="h-3 w-3" />
-  {isArabic ? "الإجمالي:" : "Total:"}
-  {formatPrice(getTotal(), app.currency, app.lang)}
-</span>
-
+                  <span className="font-bold text-[#d81b60] flex items-center gap-1">
+                    <Wallet className="h-3 w-3" />
+                    {isArabic ? "الإجمالي:" : "Total:"}
+                    {formatPrice(getTotal(), app.currency, app.lang)}
+                  </span>
                 </>
               ) : (
-                <span className="font-medium text-[#0d2e2a] dark:text-[#4a9f95]">
+                <span className="font-medium text-[#d81b60]">
                   {order.delivery_fee?.toLocaleString()} {app.currency}
                 </span>
               )}
@@ -4215,7 +4283,7 @@ function OrderCard({
             <div className="flex items-center gap-1.5">
               <Button
                 size="sm"
-                className="h-7 px-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold shadow-md shadow-emerald-500/30 transition-all duration-300 hover:scale-105"
+                className="h-7 px-2.5 rounded-lg bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white text-[10px] font-bold shadow-md shadow-[#d81b60]/30 transition-all duration-300 hover:scale-105"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAccept();
@@ -4243,7 +4311,7 @@ function OrderCard({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-3 rounded-xl hover:bg-[#0d2e2a]/10 transition-all duration-300 group-hover:scale-110"
+            className="h-8 px-3 rounded-xl hover:bg-[#fbcfe8]/30 transition-all duration-300 group-hover:scale-110 text-[#d81b60]"
             onClick={() => {
               onViewDetails(orderDetails || order);
             }}
@@ -4257,10 +4325,10 @@ function OrderCard({
 }
 
 // ============================================================
-// 📦 DistributorCard
+// 📦 DistributorCard - وردي
 // ============================================================
 // ============================================================
-// 📦 DistributorCard
+// 📦 DistributorCard - وردي مع بوردر ملفت
 // ============================================================
 function DistributorCard({ 
   distributor, 
@@ -4274,18 +4342,18 @@ function DistributorCard({
   const isActive = distributor.is_active !== false;
   
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-[#0d2e2a]/30 transition-all duration-300 hover:scale-[1.02] group">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border-3 border-[#d81b60]/40 hover:border-[#d81b60] hover:shadow-xl shadow-[#d81b60]/10 transition-all duration-300 hover:scale-[1.03] group">
       <div className="flex items-start gap-4">
-        <div className="h-12 w-12 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all duration-300">
+        <div className="h-12 w-12 rounded-full bg-[#fbcfe8]/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all duration-300 border-2 border-[#f9a8d4]/50">
           {distributor.avatar_url ? (
             <img src={distributor.avatar_url} alt="" className="h-full w-full object-cover rounded-full" />
           ) : (
-            <Users className="h-6 w-6 text-[#0d2e2a]" />
+            <Users className="h-6 w-6 text-[#d81b60]" />
           )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-bold text-slate-900 dark:text-white group-hover:text-[#0d2e2a] transition-colors duration-300 line-clamp-1">
+            <p className="font-bold text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors duration-300 line-clamp-1">
               {isArabic ? distributor.full_name_ar : distributor.full_name_en || distributor.full_name_ar}
             </p>
             {isActive ? (

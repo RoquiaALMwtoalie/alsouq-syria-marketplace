@@ -19,7 +19,14 @@ import {
   Eye, Edit, Trash2, ArrowLeft,
   Truck, RefreshCw, AlertCircle,
   UserCheck, EyeOff, Lock, Unlock,
-  Package, Clock, CheckCircle2
+  Package, Clock, CheckCircle2,
+  UserRoundPlus,
+  UserPen,
+  UserX as UserXIcon,
+  UsersRound,
+  BadgeCheck,
+  Crown,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,11 +84,27 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ImageInput } from "@/components/ImageInput";
 
+// ============================================================
+// 🎨 ZOOQ BRAND COLORS - زيتي ووردي
+// ============================================================
+const COLORS = {
+  olive: '#2a655f',
+  oliveLight: '#3a8a82',
+  oliveDark: '#1a4f4a',
+  oliveVeryLight: '#e8f0ee',
+  pink: '#f9a8d4',
+  pinkLight: '#fbcfe8',
+  pinkDark: '#f48fb1',
+  pinkVeryLight: '#fdf2f8',
+  fuchsia: '#d81b60',
+  fuchsiaDark: '#c2185b',
+};
+
 export const Route = createFileRoute("/delivery/distributors")({
   component: DistributorsManagementPage,
   head: () => ({
     meta: [
-      { title: "إدارة الموزعين - Souqi" },
+      { title: "إدارة الموزعين - ذوق" },
       { name: "description", content: "إدارة الموزعين التابعين لشركتك" },
     ],
   }),
@@ -131,7 +154,6 @@ function DistributorsManagementPage() {
       const statsMap: Record<string, any> = {};
       
       for (const dist of distributors) {
-        // جلب كل طلبات الموزع
         const { data: orders, error } = await supabase
           .from("delivery_orders")
           .select("status, order_id")
@@ -164,7 +186,6 @@ function DistributorsManagementPage() {
     const { full_name_ar, full_name_en, phone, address_ar, address_en, governorate_id, is_available, distributor_type, avatar_url, rating } = pendingFormData;
 
     try {
-      // ✅ تحديث الاسم
       if (full_name_ar && full_name_ar !== existingUserData.full_name) {
         await supabase
           .from("profiles")
@@ -172,13 +193,11 @@ function DistributorsManagementPage() {
           .eq("id", userId);
       }
 
-      // ✅ إضافة دور الموزع
       await supabase.from("user_roles").insert({
         user_id: userId,
         role: "distributor"
       });
 
-      // ✅ إضافة الموزع - باستخدام RPC
       const { data: distributorId, error: distributorError } = await supabase.rpc('add_distributor', {
         p_user_id: userId,
         p_full_name_ar: full_name_ar || existingUserData.full_name || `موزع ${phone}`,
@@ -192,7 +211,7 @@ function DistributorsManagementPage() {
         p_distributor_type: distributor_type || 'freelance',
         p_avatar_url: avatar_url || existingUserData.avatar_url || null,
         p_delivery_company_id: companyId || null,
-        p_rating: rating || 0, // ✅ إضافة التقييم
+        p_rating: rating || 0,
       });
 
       if (distributorError) {
@@ -264,32 +283,36 @@ function DistributorsManagementPage() {
   }, [distributors]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-[#e8f0ee]/40 via-white to-[#fdf2f8] dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#1a4f4a]/10">
       
-      {/* ===== HEADER ===== */}
-      <div className="relative bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] text-white overflow-hidden">
+      {/* ===== HEADER - زيتي مع لمسات وردية ===== */}
+      <div className="relative bg-gradient-to-r from-[#0d2e2a]/95 via-[#1a4f4a]/90 to-[#2a655f]/85 backdrop-blur-md text-white overflow-hidden shadow-2xl shadow-[#0d2e2a]/20 border-b border-white/10 sticky top-0 z-50">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
         </div>
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
         
         <div className="relative mx-auto max-w-7xl px-4 py-6 md:py-8">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
-              <Link to="/delivery/dashboard" className="text-white/70 hover:text-white transition text-sm flex items-center gap-1">
-                <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+              <Link to="/delivery/dashboard" className="text-white/70 hover:text-white transition text-sm flex items-center gap-1 group">
+                <ArrowLeft className="h-4 w-4 rtl:rotate-180 group-hover:-translate-x-1 transition-transform" />
                 {isArabic ? "العودة للوحة" : "Back to Dashboard"}
               </Link>
               <span className="text-white/30">|</span>
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur grid place-items-center">
-                  <Users className="h-5 w-5" />
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#f9a8d4] to-[#f48fb1] grid place-items-center shadow-lg shadow-[#f9a8d4]/30">
+                  <UsersRound className="h-5 w-5 text-white" />
                 </div>
                 <div>
                   <h1 className="text-xl md:text-2xl font-bold">
-                    {isArabic ? "👤 إدارة الموزعين" : "👤 Distributors Management"}
+                    <span className="bg-gradient-to-r from-[#f9a8d4] via-[#fbcfe8] to-[#f9a8d4] bg-clip-text text-transparent">
+                      {isArabic ? "إدارة الموزعين" : "Distributors Management"}
+                    </span>
                   </h1>
-                  <p className="text-white/80 text-xs">
+                  <p className="text-white/80 text-xs flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-[#f9a8d4]" />
                     {isArabic ? `إدارة ${distributors.length} موزع` : `Managing ${distributors.length} distributors`}
                   </p>
                 </div>
@@ -298,15 +321,15 @@ function DistributorsManagementPage() {
             
             <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-white text-[#2a655f] hover:bg-white/90">
-                  <UserPlus className="h-4 w-4 mr-1" />
+                <Button className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] transition-all duration-300 hover:scale-105 shadow-lg shadow-[#d81b60]/30 rounded-xl">
+                  <UserRoundPlus className="h-4 w-4 mr-1.5" />
                   {isArabic ? "إضافة موزع" : "Add Distributor"}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border-[#f9a8d4]/30 shadow-2xl rounded-2xl">
                 <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <UserPlus className="h-5 w-5 text-[#2a655f]" />
+                  <DialogTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
+                    <UserRoundPlus className="h-5 w-5 text-[#d81b60]" />
                     {isArabic ? "إضافة موزع جديد" : "Add New Distributor"}
                   </DialogTitle>
                 </DialogHeader>
@@ -330,35 +353,35 @@ function DistributorsManagementPage() {
         </div>
       </div>
 
-      {/* ===== STATS ===== */}
+      {/* ===== STATS - وردية ===== */}
       <div className="mx-auto max-w-7xl px-4 py-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <StatCard icon={Users} label={isArabic ? "الإجمالي" : "Total"} value={stats.total} color="blue" />
-          <StatCard icon={CheckCircle} label={isArabic ? "نشط" : "Active"} value={stats.active} color="green" />
-          <StatCard icon={UserCheck} label={isArabic ? "متاح" : "Available"} value={stats.available} color="emerald" />
-          <StatCard icon={Star} label={isArabic ? "متوسط التقييم" : "Avg Rating"} value={stats.avgRating.toFixed(1)} color="yellow" />
-          <StatCard icon={Truck} label={isArabic ? "إجمالي الطلبات" : "Total Orders"} value={stats.totalOrders} color="purple" />
+          <StatCard icon={UsersRound} label={isArabic ? "الإجمالي" : "Total"} value={stats.total} color="pink" />
+          <StatCard icon={CheckCircle} label={isArabic ? "نشط" : "Active"} value={stats.active} color="pink" />
+          <StatCard icon={UserCheck} label={isArabic ? "متاح" : "Available"} value={stats.available} color="pink" />
+          <StatCard icon={Star} label={isArabic ? "متوسط التقييم" : "Avg Rating"} value={stats.avgRating.toFixed(1)} color="pink" />
+          <StatCard icon={Truck} label={isArabic ? "إجمالي الطلبات" : "Total Orders"} value={stats.totalOrders} color="olive" />
         </div>
       </div>
 
-      {/* ===== FILTERS ===== */}
+      {/* ===== FILTERS - وردية ===== */}
       <div className="mx-auto max-w-7xl px-4 py-4">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border">
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border-2 border-[#f9a8d4]/30 hover:border-[#f9a8d4]/60 transition-all duration-300">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
+            <div className="relative flex-1 min-w-[200px] group">
+              <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#d81b60] transition-colors duration-300" />
               <Input
                 placeholder={isArabic ? "🔍 بحث عن موزع..." : "🔍 Search distributor..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="ps-9 h-10 rounded-xl"
+                className="ps-9 h-10 rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 transition-all duration-300"
               />
             </div>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-10 px-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#2a655f]/20"
+              className="h-10 px-3 rounded-xl border border-[#f9a8d4]/30 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/50"
             >
               <option value="all">{isArabic ? "جميع الحالات" : "All status"}</option>
               <option value="active">{isArabic ? "✅ نشط" : "✅ Active"}</option>
@@ -368,7 +391,7 @@ function DistributorsManagementPage() {
             <select
               value={availabilityFilter}
               onChange={(e) => setAvailabilityFilter(e.target.value)}
-              className="h-10 px-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#2a655f]/20"
+              className="h-10 px-3 rounded-xl border border-[#f9a8d4]/30 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/50"
             >
               <option value="all">{isArabic ? "التوفر" : "Availability"}</option>
               <option value="available">{isArabic ? "✅ متاح" : "✅ Available"}</option>
@@ -384,6 +407,7 @@ function DistributorsManagementPage() {
                   setStatusFilter("all");
                   setAvailabilityFilter("all");
                 }}
+                className="text-[#d81b60] hover:bg-[#fbcfe8]/30 rounded-xl"
               >
                 <X className="h-4 w-4 mr-1" />
                 {isArabic ? "مسح" : "Clear"}
@@ -393,7 +417,7 @@ function DistributorsManagementPage() {
         </div>
       </div>
 
-      {/* ===== TABLE ===== */}
+      {/* ===== TABLE - وردية ===== */}
       <div className="mx-auto max-w-7xl px-4 pb-12">
         {isLoading ? (
           <div className="space-y-4">
@@ -402,9 +426,9 @@ function DistributorsManagementPage() {
             ))}
           </div>
         ) : filteredDistributors.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border">
-            <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-2xl font-semibold">
+          <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border-2 border-dashed border-[#f9a8d4]/40">
+            <UsersRound className="h-16 w-16 text-[#d81b60]/40 mx-auto mb-4" />
+            <h3 className="text-2xl font-semibold text-[#d81b60] dark:text-[#f9a8d4]">
               {isArabic ? "لا يوجد موزعين" : "No distributors found"}
             </h3>
             <p className="text-muted-foreground mt-2">
@@ -414,27 +438,41 @@ function DistributorsManagementPage() {
             </p>
             {!searchQuery && (
               <Button 
-                className="mt-4 bg-[#2a655f] hover:bg-[#3a8a82] text-white"
+                className="mt-4 bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] shadow-lg shadow-[#d81b60]/30 rounded-xl"
                 onClick={() => setIsAddModalOpen(true)}
               >
-                <UserPlus className="h-4 w-4 mr-1" />
+                <UserRoundPlus className="h-4 w-4 mr-1.5" />
                 {isArabic ? "إضافة موزع" : "Add Distributor"}
               </Button>
             )}
           </div>
         ) : (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border overflow-hidden shadow-lg">
+          <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#f9a8d4]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gradient-to-r from-[#2a655f]/5 to-[#3a8a82]/5 dark:from-[#2a655f]/20 dark:to-[#3a8a82]/20">
-                    <TableHead className="text-right min-w-[180px]">{isArabic ? "الموزع" : "Distributor"}</TableHead>
-                    <TableHead className="text-center min-w-[120px]">{isArabic ? "رقم الهاتف" : "Phone"}</TableHead>
-                    <TableHead className="text-center min-w-[120px]">{isArabic ? "المحافظة" : "Governorate"}</TableHead>
-                    <TableHead className="text-center min-w-[100px]">{isArabic ? "التقييم" : "Rating"}</TableHead>
-                    <TableHead className="text-center min-w-[160px]">{isArabic ? "الطلبات" : "Orders"}</TableHead>
-                    <TableHead className="text-center min-w-[180px]">{isArabic ? "الحالة" : "Status"}</TableHead>
-                    <TableHead className="text-center min-w-[120px]">{isArabic ? "إجراءات" : "Actions"}</TableHead>
+                  <TableRow className="bg-gradient-to-r from-[#f9a8d4]/30 via-[#fbcfe8]/20 to-[#f9a8d4]/30 dark:from-[#f9a8d4]/20 dark:via-[#fbcfe8]/10 dark:to-[#f9a8d4]/20 border-b-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30">
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-right min-w-[180px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                      {isArabic ? "الموزع" : "Distributor"}
+                    </TableHead>
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                      {isArabic ? "رقم الهاتف" : "Phone"}
+                    </TableHead>
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                      {isArabic ? "المحافظة" : "Governorate"}
+                    </TableHead>
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[100px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                      {isArabic ? "التقييم" : "Rating"}
+                    </TableHead>
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[160px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                      {isArabic ? "الطلبات" : "Orders"}
+                    </TableHead>
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[180px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                      {isArabic ? "الحالة" : "Status"}
+                    </TableHead>
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px]">
+                      {isArabic ? "إجراءات" : "Actions"}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -487,12 +525,12 @@ function DistributorsManagementPage() {
         )}
       </div>
 
-      {/* ===== EDIT MODAL ===== */}
+      {/* ===== EDIT MODAL - وردي ===== */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border-[#f9a8d4]/30 shadow-2xl rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Edit className="h-5 w-5 text-[#2a655f]" />
+            <DialogTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
+              <UserPen className="h-5 w-5 text-[#d81b60]" />
               {isArabic ? "تعديل بيانات الموزع" : "Edit Distributor"}
             </DialogTitle>
           </DialogHeader>
@@ -509,9 +547,9 @@ function DistributorsManagementPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DELETE CONFIRMATION ===== */}
+      {/* ===== DELETE CONFIRMATION - وردي ===== */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md border-[#f9a8d4]/30 shadow-2xl rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-500">
               <AlertCircle className="h-5 w-5" />
@@ -525,12 +563,12 @@ function DistributorsManagementPage() {
                 : `Are you sure you want to delete "${selectedDistributor?.full_name_ar}"? This action cannot be undone.`}
             </p>
             <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setIsDeleteDialogOpen(false)}>
+              <Button variant="outline" className="flex-1 border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30" onClick={() => setIsDeleteDialogOpen(false)}>
                 {isArabic ? "إلغاء" : "Cancel"}
               </Button>
               <Button 
                 variant="destructive" 
-                className="flex-1"
+                className="flex-1 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/30"
                 onClick={async () => {
                   if (!selectedDistributor) return;
                   try {
@@ -550,31 +588,44 @@ function DistributorsManagementPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+          animation: shimmer 3s infinite;
+        }
+      `}</style>
     </div>
   );
 }
 
 // ============================================================
-// 📦 StatCard Component
+// 📦 StatCard Component - وردي/زيتي
 // ============================================================
-function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: string }) {
-  const colors: Record<string, string> = {
-    blue: "bg-blue-500/10 text-blue-500",
-    green: "bg-green-500/10 text-green-500",
-    emerald: "bg-emerald-500/10 text-emerald-500",
-    yellow: "bg-yellow-500/10 text-yellow-500",
-    purple: "bg-purple-500/10 text-purple-500",
+function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: "pink" | "olive" }) {
+  const colors = {
+    pink: "bg-[#fbcfe8] dark:bg-[#fbcfe8]/30 border-[#f9a8d4]/60 dark:border-[#f9a8d4]/30 text-[#d81b60]",
+    olive: "bg-[#e8f0ee] dark:bg-[#e8f0ee]/20 border-[#2a655f]/40 dark:border-[#2a655f]/30 text-[#2a655f]",
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border">
+    <div className={cn(
+      "rounded-xl p-4 shadow-sm border-2 hover:shadow-lg hover:border-[#d81b60]/60 transition-all duration-300 hover:scale-[1.03] group cursor-pointer",
+      colors[color]
+    )}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold mt-1">{value}</p>
+          <p className="text-xs text-muted-foreground group-hover:text-[#d81b60] transition-colors">{label}</p>
+          <p className="text-2xl font-bold mt-1 text-slate-900 dark:text-white group-hover:scale-105 transition-transform">{value}</p>
         </div>
-        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", colors[color])}>
-          <Icon className="h-4 w-4" />
+        <div className={cn(
+          "h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-12",
+          color === "pink" ? "bg-[#f9a8d4]/50 dark:bg-[#f9a8d4]/30 group-hover:bg-[#f9a8d4]/70" : "bg-[#2a655f]/20 group-hover:bg-[#2a655f]/30"
+        )}>
+          <Icon className="h-4 w-4 text-[#d81b60]" />
         </div>
       </div>
     </div>
@@ -582,7 +633,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
 }
 
 // ============================================================
-// 📦 DistributorRow Component (مع تقييم منفصل)
+// 📦 DistributorRow Component - وردي
 // ============================================================
 function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, onToggleAvailability }: { 
   distributor: any;
@@ -595,7 +646,6 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
   const app = useApp();
   const isArabic = app.lang === "ar";
 
-  // ✅ تعريف tooltips
   const tooltips = {
     total: isArabic ? "📦 إجمالي جميع الطلبات الموكلة للموزع" : "📦 Total all orders assigned to distributor",
     pending: isArabic ? "⏳ طلبات قيد المراجعة أو منتظرة التنفيذ" : "⏳ Orders pending review or waiting for execution",
@@ -604,7 +654,6 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
     cancelled: isArabic ? "❌ طلبات ملغية أو فشل توصيلها" : "❌ Cancelled or failed orders",
   };
 
-  // ✅ دالة لتحديد لون التقييم
   const getRatingColor = (rating: number) => {
     if (rating >= 4.5) return "text-emerald-500";
     if (rating >= 3.5) return "text-blue-500";
@@ -613,7 +662,6 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
     return "text-red-500";
   };
 
-  // ✅ دالة لتحديد خلفية التقييم
   const getRatingBg = (rating: number) => {
     if (rating >= 4.5) return "bg-emerald-500/10";
     if (rating >= 3.5) return "bg-blue-500/10";
@@ -623,41 +671,37 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
   };
 
   return (
-    <TableRow className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors border-b border-slate-100/50 dark:border-slate-800/50">
+    <TableRow className="hover:bg-[#f9a8d4]/15 dark:hover:bg-[#f9a8d4]/10 transition-colors duration-300 border-b-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10 group">
       
-      {/* ✅ عمود الموزع - مع صورة واسم محاذاة يمين */}
-      <TableCell className="text-right align-middle">
+      <TableCell className="text-right align-middle border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
         <div className="flex items-center gap-3 justify-end">
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm truncate">
+            <p className="font-medium text-sm truncate group-hover:text-[#d81b60] transition-colors">
               {isArabic ? distributor.full_name_ar : distributor.full_name_en || distributor.full_name_ar}
             </p>
           </div>
-          <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-[#2a655f]/20">
+          <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-[#f9a8d4]/30 group-hover:ring-[#d81b60]/50 transition-all duration-300">
             <AvatarImage src={distributor.avatar_url || ""} className="object-cover" />
-            <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-sm font-bold">
+            <AvatarFallback className="bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white text-sm font-bold">
               {distributor.full_name_ar?.charAt(0) || distributor.full_name_en?.charAt(0) || 'U'}
             </AvatarFallback>
           </Avatar>
         </div>
       </TableCell>
       
-      {/* ✅ رقم الهاتف - محاذاة وسط */}
-      <TableCell className="text-center align-middle text-sm" dir="ltr">
-        <span className="font-mono bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-lg text-xs">
+      <TableCell className="text-center align-middle text-sm border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10" dir="ltr">
+        <span className="font-mono bg-[#fbcfe8]/30 dark:bg-[#fbcfe8]/20 px-2 py-1 rounded-lg text-xs border border-[#f9a8d4]/20">
           {distributor.phone}
         </span>
       </TableCell>
       
-      {/* ✅ المحافظة - محاذاة وسط */}
-      <TableCell className="text-center align-middle text-sm">
+      <TableCell className="text-center align-middle text-sm border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
         {distributor.governorates 
           ? (isArabic ? distributor.governorates.name_ar : distributor.governorates.name_en)
           : '-'}
       </TableCell>
       
-      {/* ✅ التقييم - عمود منفصل مع نجوم */}
-      <TableCell className="text-center align-middle">
+      <TableCell className="text-center align-middle border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
         <div className="flex flex-col items-center gap-0.5">
           <div className="flex items-center gap-1">
             <Star className={cn(
@@ -671,13 +715,9 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
               {Number(distributor.rating || 0).toFixed(1)}
             </span>
           </div>
-          {/* ✅ شريط تقييم بصري */}
           <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
             <div 
-              className={cn(
-                "h-full rounded-full transition-all duration-300",
-                getRatingBg(Number(distributor.rating || 0))
-              )}
+              className="h-full rounded-full transition-all duration-300"
               style={{ 
                 width: `${Math.min((Number(distributor.rating || 0) / 5) * 100, 100)}%`,
                 backgroundColor: Number(distributor.rating || 0) >= 4.5 ? '#10b981' :
@@ -690,26 +730,22 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
         </div>
       </TableCell>
       
-      {/* ✅ الطلبات - مع Tooltips */}
-      <TableCell className="text-center align-middle">
+      <TableCell className="text-center align-middle border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
         <div className="flex items-center justify-center gap-1.5 flex-wrap">
-          
-          {/* 📦 الإجمالي */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-0 text-[10px] px-2 py-1 cursor-help hover:scale-105 transition-transform">
+                <Badge className="bg-[#2a655f]/10 text-[#2a655f] dark:text-[#3a8a82] border-0 text-[10px] px-2 py-1 cursor-help hover:scale-105 transition-transform border border-[#2a655f]/20">
                   <Package className="h-3 w-3 mr-0.5" />
                   {stats.total || 0}
                 </Badge>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs bg-slate-800 text-white dark:bg-slate-900 dark:text-white border-slate-700">
+              <TooltipContent side="top" className="max-w-xs bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
                 <p className="text-xs">{tooltips.total}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
-          {/* ⏳ قيد المراجعة */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -718,13 +754,12 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
                   {stats.pending || 0}
                 </Badge>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs bg-slate-800 text-white dark:bg-slate-900 dark:text-white border-slate-700">
+              <TooltipContent side="top" className="max-w-xs bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
                 <p className="text-xs">{tooltips.pending}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
-          {/* 🚚 قيد التوصيل */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -733,13 +768,12 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
                   {stats.in_transit || 0}
                 </Badge>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs bg-slate-800 text-white dark:bg-slate-900 dark:text-white border-slate-700">
+              <TooltipContent side="top" className="max-w-xs bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
                 <p className="text-xs">{tooltips.in_transit}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
-          {/* ✅ تم التوصيل */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -748,13 +782,12 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
                   {stats.delivered || 0}
                 </Badge>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs bg-slate-800 text-white dark:bg-slate-900 dark:text-white border-slate-700">
+              <TooltipContent side="top" className="max-w-xs bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
                 <p className="text-xs">{tooltips.delivered}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
-          {/* ❌ ملغي */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -763,7 +796,7 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
                   {stats.cancelled || 0}
                 </Badge>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs bg-slate-800 text-white dark:bg-slate-900 dark:text-white border-slate-700">
+              <TooltipContent side="top" className="max-w-xs bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
                 <p className="text-xs">{tooltips.cancelled}</p>
               </TooltipContent>
             </Tooltip>
@@ -771,40 +804,43 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
         </div>
       </TableCell>
       
-      {/* ✅ الحالة - محاذاة وسط */}
-      <TableCell className="text-center align-middle">
+      <TableCell className="text-center align-middle border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
         <div className="flex flex-col items-center gap-1">
-          <Badge className={distributor.is_active ? "bg-emerald-500/10 text-emerald-600 border-0" : "bg-red-500/10 text-red-500 border-0"}>
+          <Badge className={distributor.is_active ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0" : "bg-red-500/20 text-red-500 dark:text-red-400 border-0"}>
             {distributor.is_active ? (isArabic ? "✅ نشط" : "✅ Active") : (isArabic ? "❌ غير نشط" : "❌ Inactive")}
           </Badge>
-          <Badge className={distributor.is_available ? "bg-blue-500/10 text-blue-600 border-0" : "bg-slate-500/10 text-slate-500 border-0"}>
+          <Badge className={distributor.is_available ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-0" : "bg-slate-500/20 text-slate-500 dark:text-slate-400 border-0"}>
             {distributor.is_available ? (isArabic ? "● متاح" : "● Available") : (isArabic ? "○ غير متاح" : "○ Unavailable")}
           </Badge>
         </div>
       </TableCell>
       
-      {/* ✅ الإجراءات - محاذاة وسط */}
       <TableCell className="text-center align-middle">
         <div className="flex items-center justify-center gap-1">
-          <Button variant="ghost" size="sm" className="h-8 w-8 rounded-lg hover:bg-[#2a655f]/10" onClick={onEdit}>
-            <Edit className="h-4 w-4 text-[#2a655f]" />
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 w-8 rounded-xl hover:bg-[#fbcfe8]/30 transition-all duration-300 group-hover:scale-110 text-[#d81b60]"
+            onClick={onEdit}
+          >
+            <UserPen className="h-4 w-4" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 rounded-lg">
-                <MoreVertical className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="h-8 w-8 rounded-xl hover:bg-[#fbcfe8]/30 transition-all duration-300">
+                <MoreVertical className="h-4 w-4 text-[#d81b60]" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onToggleStatus}>
+            <DropdownMenuContent align="end" className="rounded-xl p-1 border-[#f9a8d4]/30">
+              <DropdownMenuItem onClick={onToggleStatus} className="rounded-lg cursor-pointer hover:bg-[#fbcfe8]/30">
                 {distributor.is_active ? (isArabic ? "تعطيل" : "Deactivate") : (isArabic ? "تفعيل" : "Activate")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onToggleAvailability}>
+              <DropdownMenuItem onClick={onToggleAvailability} className="rounded-lg cursor-pointer hover:bg-[#fbcfe8]/30">
                 {distributor.is_available ? (isArabic ? "إيقاف التوفر" : "Disable availability") : (isArabic ? "تفعيل التوفر" : "Enable availability")}
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-500" onClick={onDelete}>
-                <Trash2 className="h-4 w-4 mr-2" />
+              <DropdownMenuSeparator className="bg-[#f9a8d4]/20" />
+              <DropdownMenuItem className="rounded-lg cursor-pointer gap-2 text-red-500 hover:bg-red-50/50" onClick={onDelete}>
+                <Trash2 className="h-4 w-4" />
                 {isArabic ? "حذف" : "Delete"}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -816,7 +852,7 @@ function DistributorRow({ distributor, stats, onEdit, onDelete, onToggleStatus, 
 }
 
 // ============================================================
-// 📦 AddDistributorForm Component (مع حقل التقييم)
+// 📦 AddDistributorForm Component - وردي
 // ============================================================
 function AddDistributorForm({ 
   companyId, 
@@ -857,14 +893,11 @@ function AddDistributorForm({
     governorate_id: "",
     is_available: true,
     distributor_type: "freelance" as "freelance" | "company_employee",
-    rating: 0, // ✅ إضافة حقل التقييم
+    rating: 0,
   });
 
-  // ✅ دالة إنشاء موزع جديد - باستخدام Edge Function
   const createNewDistributor = async (data: any) => {
     const { full_name_ar, full_name_en, phone, password, address_ar, address_en, governorate_id, is_available, distributor_type, avatar_url, rating } = data;
-
-    console.log("📝 [createNewDistributor] Starting...");
 
     try {
       const response = await fetch(
@@ -884,7 +917,7 @@ function AddDistributorForm({
             address_en,
             governorate_id,
             company_id: companyId || null,
-            rating: rating || 0, // ✅ إضافة التقييم
+            rating: rating || 0,
           }),
         }
       );
@@ -912,7 +945,6 @@ function AddDistributorForm({
     }
   };
 
-  // ✅ دالة handleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -974,7 +1006,6 @@ function AddDistributorForm({
     }
   };
 
-  // ✅ دالة تغيير التقييم
   const handleRatingChange = (value: string) => {
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue >= 0 && numValue <= 5) {
@@ -985,8 +1016,7 @@ function AddDistributorForm({
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4 py-4">
-        {/* ✅ صورة الموزع */}
-        <div className="flex flex-col items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+        <div className="flex flex-col items-center gap-3 p-4 bg-[#fbcfe8]/20 rounded-xl border border-[#f9a8d4]/30">
           <ImageInput
             value={avatarUrl || ""}
             onChange={(value) => setAvatarUrl(value)}
@@ -994,51 +1024,51 @@ function AddDistributorForm({
             folder="distributors"
             lang={app.lang}
             label={isArabic ? "صورة الموزع" : "Distributor Photo"}
-            previewClassName="h-24 w-24 rounded-full object-cover"
+            previewClassName="h-24 w-24 rounded-full object-cover border-4 border-[#f9a8d4]/50"
             hint={isArabic ? "اضغط لرفع صورة الموزع" : "Click to upload distributor photo"}
           />
         </div>
 
-        {/* ✅ الاسم */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label>{isArabic ? "الاسم (عربي) *" : "Name (Arabic) *"}</Label>
+            <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "الاسم (عربي) *" : "Name (Arabic) *"}</Label>
             <Input
               value={formData.full_name_ar}
               onChange={(e) => setFormData({ ...formData, full_name_ar: e.target.value })}
               placeholder={isArabic ? "أحمد محمد" : "Ahmed"}
               dir="rtl"
               required
+              className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl"
             />
           </div>
           <div className="space-y-1">
-            <Label>{isArabic ? "الاسم (إنجليزي)" : "Name (English)"}</Label>
+            <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "الاسم (إنجليزي)" : "Name (English)"}</Label>
             <Input
               value={formData.full_name_en}
               onChange={(e) => setFormData({ ...formData, full_name_en: e.target.value })}
               placeholder="Ahmed Mohamad"
+              className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl"
             />
           </div>
         </div>
 
-        {/* ✅ رقم الهاتف */}
         <div className="space-y-1">
-          <Label>{isArabic ? "رقم الهاتف *" : "Phone *"}</Label>
+          <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "رقم الهاتف *" : "Phone *"}</Label>
           <Input
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             placeholder="0962XXXXXX"
             dir="ltr"
             required
+            className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl"
           />
           <p className="text-xs text-muted-foreground">
             {isArabic ? "سيستخدم هذا الرقم لتسجيل الدخول" : "This number will be used for login"}
           </p>
         </div>
 
-        {/* ✅ كلمة المرور */}
         <div className="space-y-1">
-          <Label>{isArabic ? "كلمة المرور *" : "Password *"}</Label>
+          <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "كلمة المرور *" : "Password *"}</Label>
           <div className="relative">
             <Input
               value={formData.password}
@@ -1047,12 +1077,12 @@ function AddDistributorForm({
               placeholder="********"
               required
               minLength={6}
-              className="pe-10"
+              className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl pe-10"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-[#d81b60] transition-colors"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
             </button>
@@ -1062,14 +1092,13 @@ function AddDistributorForm({
           </p>
         </div>
 
-        {/* ✅ المحافظة */}
         <div className="space-y-1">
-          <Label>{isArabic ? "المحافظة" : "Governorate"}</Label>
+          <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "المحافظة" : "Governorate"}</Label>
           <Select
             value={formData.governorate_id}
             onValueChange={(value) => setFormData({ ...formData, governorate_id: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl">
               <SelectValue placeholder={isArabic ? "اختر المحافظة" : "Select governorate"} />
             </SelectTrigger>
             <SelectContent>
@@ -1082,30 +1111,30 @@ function AddDistributorForm({
           </Select>
         </div>
 
-        {/* ✅ العنوان */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label>{isArabic ? "العنوان (عربي)" : "Address (Arabic)"}</Label>
+            <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "العنوان (عربي)" : "Address (Arabic)"}</Label>
             <Input
               value={formData.address_ar}
               onChange={(e) => setFormData({ ...formData, address_ar: e.target.value })}
               placeholder={isArabic ? "دمشق" : "Damascus"}
               dir="rtl"
+              className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl"
             />
           </div>
           <div className="space-y-1">
-            <Label>{isArabic ? "العنوان (إنجليزي)" : "Address (English)"}</Label>
+            <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "العنوان (إنجليزي)" : "Address (English)"}</Label>
             <Input
               value={formData.address_en}
               onChange={(e) => setFormData({ ...formData, address_en: e.target.value })}
               placeholder="Damascus"
+              className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl"
             />
           </div>
         </div>
 
-        {/* ✅ التقييم - حقل جديد */}
         <div className="space-y-1">
-          <Label className="flex items-center gap-2">
+          <Label className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
             <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
             {isArabic ? "تقييم الموزع" : "Distributor Rating"}
           </Label>
@@ -1118,11 +1147,11 @@ function AddDistributorForm({
                 min="0"
                 max="5"
                 step="0.1"
-                className="w-full"
+                className="w-full border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl"
                 placeholder="0 - 5"
               />
             </div>
-            <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcfe8]/30 rounded-lg border border-[#f9a8d4]/30">
               <Star className={cn(
                 "h-4 w-4",
                 formData.rating >= 4.5 ? "text-emerald-500 fill-emerald-500" :
@@ -1131,7 +1160,7 @@ function AddDistributorForm({
                 formData.rating >= 1.5 ? "text-orange-500 fill-orange-500" :
                 "text-slate-400"
               )} />
-              <span className="font-bold text-sm">
+              <span className="font-bold text-sm text-[#d81b60]">
                 {formData.rating.toFixed(1)}
               </span>
               <span className="text-xs text-muted-foreground">/ 5</span>
@@ -1142,15 +1171,14 @@ function AddDistributorForm({
           </p>
         </div>
 
-        {/* ✅ النوع والحالة */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label>{isArabic ? "نوع الموزع" : "Distributor Type"}</Label>
+            <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "نوع الموزع" : "Distributor Type"}</Label>
             <Select
               value={formData.distributor_type}
               onValueChange={(value: any) => setFormData({ ...formData, distributor_type: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1160,12 +1188,12 @@ function AddDistributorForm({
             </Select>
           </div>
           <div className="space-y-1">
-            <Label>{isArabic ? "متاح للعمل" : "Available"}</Label>
+            <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "متاح للعمل" : "Available"}</Label>
             <Select
               value={formData.is_available ? "available" : "unavailable"}
               onValueChange={(value) => setFormData({ ...formData, is_available: value === "available" })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1176,12 +1204,11 @@ function AddDistributorForm({
           </div>
         </div>
 
-        {/* ✅ أزرار الإرسال */}
-        <div className="flex gap-3 pt-4 border-t">
-          <Button type="button" variant="outline" onClick={onSuccess} className="flex-1">
+        <div className="flex gap-3 pt-4 border-t border-[#f9a8d4]/30">
+          <Button type="button" variant="outline" onClick={onSuccess} className="flex-1 border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 rounded-xl">
             {isArabic ? "إلغاء" : "Cancel"}
           </Button>
-          <Button type="submit" disabled={loading} className="flex-1 bg-[#2a655f] hover:bg-[#3a8a82] text-white">
+          <Button type="submit" disabled={loading} className="flex-1 bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] shadow-lg shadow-[#d81b60]/30 rounded-xl">
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1189,7 +1216,7 @@ function AddDistributorForm({
               </>
             ) : (
               <>
-                <UserPlus className="h-4 w-4 mr-2" />
+                <UserRoundPlus className="h-4 w-4 mr-2" />
                 {isArabic ? "إضافة موزع" : "Add Distributor"}
               </>
             )}
@@ -1197,14 +1224,13 @@ function AddDistributorForm({
         </div>
       </form>
 
-      {/* ===== ✅ Dialog تحويل المستخدم إلى موزع ===== */}
+      {/* ===== ✅ Dialog تحويل المستخدم إلى موزع - وردي ===== */}
       <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
-        <DialogContent className="max-w-md rounded-2xl overflow-hidden p-0">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] p-6 text-white">
+        <DialogContent className="max-w-md rounded-2xl overflow-hidden p-0 shadow-2xl border-[#f9a8d4]/30">
+          <div className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] p-6 text-white">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                <UserPlus className="h-6 w-6 text-white" />
+                <UserRoundPlus className="h-6 w-6 text-white" />
               </div>
               <div>
                 <DialogTitle className="text-xl font-bold">
@@ -1219,21 +1245,19 @@ function AddDistributorForm({
             </div>
           </div>
 
-          {/* Body */}
           <div className="p-6 space-y-4">
-            {/* معلومات المستخدم */}
-            <div className="flex items-center gap-3 p-4 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
-              <div className="h-14 w-14 rounded-full bg-[#2a655f]/10 flex items-center justify-center overflow-hidden">
+            <div className="flex items-center gap-3 p-4 bg-[#fbcfe8]/20 rounded-xl border border-[#f9a8d4]/30">
+              <div className="h-14 w-14 rounded-full bg-[#fbcfe8]/40 flex items-center justify-center overflow-hidden border-2 border-[#f9a8d4]/30">
                 {existingUserData?.avatar_url ? (
                   <img src={existingUserData.avatar_url} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="text-2xl font-bold text-[#2a655f]">
+                  <span className="text-2xl font-bold text-[#d81b60]">
                     {existingUserData?.full_name?.charAt(0) || 'U'}
                   </span>
                 )}
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-[#2a655f] dark:text-white">
+                <p className="font-semibold text-[#d81b60] dark:text-[#f9a8d4]">
                   {existingUserData?.full_name || (isArabic ? "مستخدم" : "User")}
                 </p>
                 <p className="text-sm text-muted-foreground" dir="ltr">
@@ -1243,12 +1267,11 @@ function AddDistributorForm({
                   {isArabic ? "🆔 مستخدم مسجل في النظام" : "🆔 Registered user"}
                 </p>
               </div>
-              <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+              <Badge className="bg-blue-500/20 text-blue-600 border-blue-500/20">
                 {isArabic ? "عميل" : "Customer"}
               </Badge>
             </div>
 
-            {/* تحذير */}
             <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/30 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
               <div>
@@ -1263,26 +1286,25 @@ function AddDistributorForm({
               </div>
             </div>
 
-            {/* معلومات الموزع الجديدة */}
-            <div className="p-4 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10">
+            <div className="p-4 bg-[#fbcfe8]/20 rounded-xl border border-[#f9a8d4]/30">
               <p className="text-xs font-medium text-muted-foreground mb-2">
                 {isArabic ? "📋 بيانات الموزع الجديدة" : "📋 New Distributor Data"}
               </p>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{isArabic ? "الاسم" : "Name"}</span>
-                  <span className="font-medium">{pendingFormData?.full_name_ar || pendingFormData?.full_name_en || '-'}</span>
+                  <span className="font-medium text-[#d81b60]">{pendingFormData?.full_name_ar || pendingFormData?.full_name_en || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{isArabic ? "الهاتف" : "Phone"}</span>
-                  <span className="font-medium" dir="ltr">{pendingFormData?.phone}</span>
+                  <span className="font-medium text-[#d81b60]" dir="ltr">{pendingFormData?.phone}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-1">
                     <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
                     {isArabic ? "التقييم" : "Rating"}
                   </span>
-                  <span className="font-medium">{pendingFormData?.rating?.toFixed(1) || '0.0'}</span>
+                  <span className="font-medium text-[#d81b60]">{pendingFormData?.rating?.toFixed(1) || '0.0'}</span>
                 </div>
               </div>
             </div>
@@ -1294,8 +1316,7 @@ function AddDistributorForm({
             </p>
           </div>
 
-          {/* Footer */}
-          <DialogFooter className="p-4 border-t border-[#2a655f]/10 bg-slate-50/50 dark:bg-slate-900/50 gap-2">
+          <DialogFooter className="p-4 border-t border-[#f9a8d4]/30 bg-[#fbcfe8]/20 gap-2">
             <Button
               variant="outline"
               onClick={() => {
@@ -1308,16 +1329,16 @@ function AddDistributorForm({
                     : "📱 You can use another number to add a new distributor"
                 );
               }}
-              className="flex-1"
+              className="flex-1 border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 rounded-xl"
             >
               <X className="h-4 w-4 mr-1.5" />
               {isArabic ? "استخدام رقم آخر" : "Use Another Number"}
             </Button>
             <Button
               onClick={onConvertUser}
-              className="flex-1 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white hover:from-[#3a8a82] hover:to-[#2a655f]"
+              className="flex-1 bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] shadow-lg shadow-[#d81b60]/30 rounded-xl"
             >
-              <UserPlus className="h-4 w-4 mr-1.5" />
+              <UserRoundPlus className="h-4 w-4 mr-1.5" />
               {isArabic ? "تحويل إلى موزع" : "Convert to Distributor"}
             </Button>
           </DialogFooter>
@@ -1328,7 +1349,7 @@ function AddDistributorForm({
 }
 
 // ============================================================
-// 📦 EditDistributorForm Component (مع حقل التقييم)
+// 📦 EditDistributorForm Component - وردي
 // ============================================================
 function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onSuccess: () => void }) {
   const app = useApp();
@@ -1347,10 +1368,9 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
     governorate_id: distributor.governorate_id || "",
     is_available: distributor.is_available ?? true,
     distributor_type: distributor.distributor_type || "freelance",
-    rating: distributor.rating || 0, // ✅ إضافة التقييم
+    rating: distributor.rating || 0,
   });
 
-  // ✅ دالة تغيير التقييم
   const handleRatingChange = (value: string) => {
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue >= 0 && numValue <= 5) {
@@ -1380,7 +1400,7 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
           is_available: formData.is_available,
           distributor_type: formData.distributor_type || 'freelance',
           avatar_url: avatarUrl,
-          rating: formData.rating, // ✅ إضافة التقييم
+          rating: formData.rating,
         },
       });
       
@@ -1396,7 +1416,7 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 py-4">
-      <div className="flex flex-col items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+      <div className="flex flex-col items-center gap-3 p-4 bg-[#fbcfe8]/20 rounded-xl border border-[#f9a8d4]/30">
         <ImageInput
           value={avatarUrl || ""}
           onChange={(value) => setAvatarUrl(value)}
@@ -1404,45 +1424,48 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
           folder="distributors"
           lang={app.lang}
           label={isArabic ? "صورة الموزع" : "Distributor Photo"}
-          previewClassName="h-24 w-24 rounded-full object-cover"
+          previewClassName="h-24 w-24 rounded-full object-cover border-4 border-[#f9a8d4]/50"
           hint={isArabic ? "اضغط لرفع صورة الموزع" : "Click to upload distributor photo"}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
-          <Label>{isArabic ? "الاسم (عربي) *" : "Name (Arabic) *"}</Label>
+          <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "الاسم (عربي) *" : "Name (Arabic) *"}</Label>
           <Input
             value={formData.full_name_ar}
             onChange={(e) => setFormData({ ...formData, full_name_ar: e.target.value })}
             dir="rtl"
+            className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl"
           />
         </div>
         <div className="space-y-1">
-          <Label>{isArabic ? "الاسم (إنجليزي)" : "Name (English)"}</Label>
+          <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "الاسم (إنجليزي)" : "Name (English)"}</Label>
           <Input
             value={formData.full_name_en}
             onChange={(e) => setFormData({ ...formData, full_name_en: e.target.value })}
+            className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
-          <Label>{isArabic ? "رقم الهاتف *" : "Phone *"}</Label>
+          <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "رقم الهاتف *" : "Phone *"}</Label>
           <Input
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             dir="ltr"
+            className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl"
           />
         </div>
         <div className="space-y-1">
-          <Label>{isArabic ? "المحافظة" : "Governorate"}</Label>
+          <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "المحافظة" : "Governorate"}</Label>
           <Select
             value={formData.governorate_id}
             onValueChange={(value) => setFormData({ ...formData, governorate_id: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1456,9 +1479,8 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
         </div>
       </div>
 
-      {/* ✅ التقييم - حقل جديد في التعديل */}
       <div className="space-y-1">
-        <Label className="flex items-center gap-2">
+        <Label className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
           <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
           {isArabic ? "تقييم الموزع" : "Distributor Rating"}
         </Label>
@@ -1471,11 +1493,11 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
               min="0"
               max="5"
               step="0.1"
-              className="w-full"
+              className="w-full border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl"
               placeholder="0 - 5"
             />
           </div>
-          <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
+          <div className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcfe8]/30 rounded-lg border border-[#f9a8d4]/30">
             <Star className={cn(
               "h-4 w-4",
               formData.rating >= 4.5 ? "text-emerald-500 fill-emerald-500" :
@@ -1484,7 +1506,7 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
               formData.rating >= 1.5 ? "text-orange-500 fill-orange-500" :
               "text-slate-400"
             )} />
-            <span className="font-bold text-sm">
+            <span className="font-bold text-sm text-[#d81b60]">
               {formData.rating.toFixed(1)}
             </span>
             <span className="text-xs text-muted-foreground">/ 5</span>
@@ -1497,12 +1519,12 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
-          <Label>{isArabic ? "نوع الموزع" : "Distributor Type"}</Label>
+          <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "نوع الموزع" : "Distributor Type"}</Label>
           <Select
             value={formData.distributor_type}
             onValueChange={(value: any) => setFormData({ ...formData, distributor_type: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1512,12 +1534,12 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
           </Select>
         </div>
         <div className="space-y-1">
-          <Label>{isArabic ? "الحالة" : "Status"}</Label>
+          <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "الحالة" : "Status"}</Label>
           <Select
             value={formData.is_available ? "available" : "unavailable"}
             onValueChange={(value) => setFormData({ ...formData, is_available: value === "available" })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 rounded-xl">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1528,11 +1550,11 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
         </div>
       </div>
 
-      <div className="flex gap-3 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onSuccess} className="flex-1">
+      <div className="flex gap-3 pt-4 border-t border-[#f9a8d4]/30">
+        <Button type="button" variant="outline" onClick={onSuccess} className="flex-1 border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 rounded-xl">
           {isArabic ? "إلغاء" : "Cancel"}
         </Button>
-        <Button type="submit" disabled={loading} className="flex-1 bg-[#2a655f] hover:bg-[#3a8a82] text-white">
+        <Button type="submit" disabled={loading} className="flex-1 bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] shadow-lg shadow-[#d81b60]/30 rounded-xl">
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1540,7 +1562,7 @@ function EditDistributorForm({ distributor, onSuccess }: { distributor: any; onS
             </>
           ) : (
             <>
-              <Edit className="h-4 w-4 mr-2" />
+              <UserPen className="h-4 w-4 mr-2" />
               {isArabic ? "حفظ التغييرات" : "Save Changes"}
             </>
           )}

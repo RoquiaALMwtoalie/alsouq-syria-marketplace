@@ -377,11 +377,11 @@ export function Footer() {
             </span>
 
             <span className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-pink-400" />
-              {app.lang === "ar"
-                ? "🛡️ ضمان استرجاع الأموال بنسبة 100%"
-                : "🛡️ 100% Money Back Guarantee"}
-            </span>
+  <Shield className="h-4 w-4 text-pink-400" />
+  {app.lang === "ar"
+    ? "💎 منضمن انو كلشي يكون ع ذوقك · ذوق اسم ع مسمى للذوق عنوان"
+    : "💎 We guarantee everything is to your taste · Zooq, the name says it all"}
+</span>
 
             <span className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-pink-400 animate-pulse" />
@@ -404,34 +404,20 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-12 mb-12">
 
           {/* =========================================================
-              العمود الأول: هوية ذوق
+              العمود الأول: هوية ذوق - لوغو مع خلفية بيضاء
              ========================================================= */}
           <div className="md:col-span-4 space-y-5">
 
-            {/* هوية العلامة */}
-            <div className="flex items-center gap-4 group">
+            {/* هوية العلامة - لوغو مع خلفية بيضاء شفافة */}
+            <div className="flex items-center gap-5 group">
 
-              {/* ===== اللوغو الشفاف ===== */}
-              <div className="relative shrink-0 flex items-center justify-center">
+              {/* ===== حاوية اللوغو مع خلفية بيضاء وتأثيرات ===== */}
+              <div className="relative shrink-0 flex items-center justify-center p-2 rounded-2xl bg-white/95 backdrop-blur-sm border border-pink-400/30 shadow-xl shadow-pink-500/20 group-hover:shadow-pink-500/40 transition-all duration-500">
 
-                {/* توهج خفيف خلف اللوغو - بدون خلفية فعلية */}
-                <div
-                  className="
-                    absolute
-                    -inset-4
-                    rounded-full
-                    bg-gradient-to-r
-                    from-[#f9a8d4]/20
-                    via-transparent
-                    to-[#2a655f]/20
-                    blur-2xl
-                    opacity-0
-                    group-hover:opacity-100
-                    transition-opacity duration-500
-                  "
-                />
+                {/* توهج خلف اللوغو */}
+                <div className="absolute -inset-3 rounded-2xl bg-gradient-to-r from-[#f9a8d4]/30 via-[#2a655f]/20 to-[#f9a8d4]/30 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                {/* اللوغو الحقيقي */}
+                {/* اللوغو */}
                 <img
                   src="/images/Logo.png"
                   alt="ذوق | zooq"
@@ -441,77 +427,49 @@ export function Footer() {
                     h-16 w-16
                     md:h-[72px] md:w-[72px]
                     object-contain
-                    drop-shadow-[0_5px_16px_rgba(249,168,212,0.22)]
+                    drop-shadow-[0_4px_12px_rgba(0,0,0,0.15)]
                     group-hover:scale-110
-                    group-hover:drop-shadow-[0_7px_24px_rgba(249,168,212,0.38)]
+                    group-hover:drop-shadow-[0_8px_24px_rgba(42,101,95,0.3)]
                     transition-all duration-500
                   "
                 />
               </div>
 
-              {/* ===== اسم العلامة التجارية ===== */}
+              {/* ===== النص الجانبي ===== */}
               <div className="flex flex-col leading-none">
 
-                {/* الاسم العربي */}
-                <div
-                  className="
-                    font-black
-                    text-3xl
-                    md:text-[34px]
-                    tracking-tight
-                    bg-gradient-to-l
-                    from-white
-                    via-[#fbcfe8]
-                    to-[#f9a8d4]
-                    bg-clip-text
-                    text-transparent
-                    transition-all duration-300
-                  "
-                >
-                  ذوق
+                {/* ✅ الشعار النصي - "كلشي ع ذوقك" */}
+                <div className="flex items-center gap-2">
+
+                  <span className="h-px w-4 bg-gradient-to-r from-transparent to-pink-400/60" />
+
+                  <span className="text-sm md:text-base font-black tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
+                    {app.lang === "ar"
+                      ? "كلشي ع ذوقك"
+                      : "Exactly your taste"}
+                  </span>
+
+                  <span className="h-px w-4 bg-gradient-to-l from-transparent to-pink-400/60" />
+
                 </div>
 
-                {/* الاسم الإنكليزي */}
-                <div
-                  className="
-                    mt-2
-                    text-sm
-                    md:text-[15px]
-                    font-extrabold
-                    tracking-[0.34em]
-                    lowercase
-                    bg-gradient-to-r
-                    from-[#f9a8d4]
-                    via-[#fbcfe8]
-                    to-white
-                    bg-clip-text
-                    text-transparent
-                    transition-all duration-300
-                    group-hover:tracking-[0.40em]
-                  "
-                >
+                {/* اسم zooq الصغير */}
+                <div className="mt-1.5 text-[10px] font-extrabold tracking-[0.3em] uppercase text-pink-300/70 text-center drop-shadow-[0_1px_4px_rgba(0,0,0,0.2)]">
                   zooq
                 </div>
 
-                {/* الشعار النصي */}
-                <div className="mt-2.5 flex items-center gap-2">
-
-                  <span className="h-px w-5 bg-[#f9a8d4]/70" />
-
-                  <span className="text-[10px] font-semibold tracking-wide text-pink-200/80">
-                    {app.lang === "ar"
-                      ? "مفهوم جديد للتسوق"
-                      : "A new way to shop"}
-                  </span>
-
-                  <span className="h-px w-5 bg-[#f9a8d4]/70" />
-
+                {/* خط فاصل مزخرف */}
+                <div className="mt-2 flex justify-center gap-1.5">
+                  <span className="h-0.5 w-6 rounded-full bg-pink-400/40" />
+                  <span className="h-0.5 w-2 rounded-full bg-pink-400/60" />
+                  <span className="h-0.5 w-6 rounded-full bg-pink-400/40" />
                 </div>
+
               </div>
             </div>
 
             {/* وصف المنصة */}
-            <p className="text-xs text-white/80 leading-relaxed max-w-sm font-medium">
+            <p className="text-xs text-white/70 leading-relaxed max-w-sm font-medium">
               {app.lang === "ar"
                 ? "منصتك التجارية المتكاملة لاكتشاف المنتجات والمتاجر والتسوق بطريقة أذكى وأسهل."
                 : "Your complete marketplace to discover products, stores, and shop smarter and easier."}
@@ -815,18 +773,14 @@ export function Footer() {
         {/* ===== الفوتر السفلي ===== */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/80">
 
-          {/* الحقوق */}
+          {/* الحقوق - بدون اسم ذوق */}
           <div className="flex items-center gap-2 font-medium flex-wrap justify-center">
 
             <span className="text-pink-400 font-bold text-xs">
               © {year}
             </span>
 
-            <span className="font-black text-white text-sm">
-              ذوق
-            </span>
-
-            <span className="font-extrabold tracking-[0.18em] text-pink-300 lowercase">
+            <span className="font-extrabold tracking-[0.18em] text-pink-300 lowercase text-sm">
               zooq
             </span>
 

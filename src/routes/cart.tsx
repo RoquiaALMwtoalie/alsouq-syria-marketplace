@@ -1,4 +1,4 @@
-// src/routes/cart.tsx - الكود المُصحّح بالكامل
+// src/routes/cart.tsx - الكود المُصحّح بالكامل مع تصميم أنيق
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { 
@@ -106,7 +106,6 @@ function CartPage() {
   const previousCartState = useRef<string>("");
   
   // ✅ تعريف items مع دعم الفيرنتات بشكل كامل
-// ✅ تعريف items مع دعم الفيرنتات والعروض التخفيضية
 const items = useMemo(() => {
   if (!cart?.items) return [];
   
@@ -1358,7 +1357,7 @@ const orderItems = itemsList.map((item: any) => {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-[#2a655f] border-t-transparent rounded-full mx-auto" />
+          <div className="animate-spin h-12 w-12 border-4 border-[#d81b60] border-t-transparent rounded-full mx-auto" />
           <p className="mt-4 text-muted-foreground">
             {app.lang === "ar" ? "جاري تحميل السلة..." : "Loading cart..."}
           </p>
@@ -1372,10 +1371,10 @@ const orderItems = itemsList.map((item: any) => {
       <div className="min-h-[70vh] bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
         <div className="mx-auto max-w-lg px-4 text-center">
           <div className="relative inline-block">
-            <div className="h-32 w-32 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto animate-bounce-slow">
-              <ShoppingBag className="h-16 w-16 text-[#2a655f]/40" />
+            <div className="h-32 w-32 rounded-full bg-gradient-to-r from-[#d81b60]/10 to-[#1b433e]/10 flex items-center justify-center mx-auto animate-bounce-slow">
+              <ShoppingBag className="h-16 w-16 text-[#d81b60]/40" />
             </div>
-            <div className="absolute -top-2 -right-2 h-10 w-10 rounded-full bg-[#2a655f] flex items-center justify-center text-white text-sm font-bold animate-pulse">
+            <div className="absolute -top-2 -right-2 h-10 w-10 rounded-full bg-gradient-to-r from-[#d81b60] to-[#1b433e] flex items-center justify-center text-white text-sm font-bold animate-pulse">
               0
             </div>
           </div>
@@ -1388,7 +1387,7 @@ const orderItems = itemsList.map((item: any) => {
               : "Start shopping and add the products you want to your cart"}
           </p>
           <Link to="/">
-            <Button className="mt-6 h-12 px-8 rounded-2xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105">
+            <Button className="mt-6 h-12 px-8 rounded-2xl bg-gradient-to-r from-[#d81b60] to-[#1b433e] hover:from-[#c2185b] hover:to-[#2a655f] text-white shadow-lg shadow-[#d81b60]/30 transition-all duration-300 hover:scale-105">
               <ShoppingBag className="h-4 w-4 mr-2" />
               {app.lang === "ar" ? "ابدأ التسوق" : "Start Shopping"}
               <ArrowRight className="h-4 w-4 ml-2" />
@@ -1400,72 +1399,74 @@ const orderItems = itemsList.map((item: any) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-white via-[#fdf2f8] to-[#f0faf8] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 py-8">
       <div className="mx-auto max-w-7xl px-4">
         
-        {/* HEADER */}
+        {/* HEADER - PINK & GREEN مع بوردرات أنيقة */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3 text-[#2a655f] dark:text-white">
-              <div className="p-2 rounded-2xl bg-[#2a655f] text-white shadow-lg shadow-[#2a655f]/20">
+            <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-gradient-to-br from-[#d81b60] via-[#f48fb1] to-[#1b433e] text-white shadow-lg shadow-[#d81b60]/30">
                 <ShoppingBag className="h-6 w-6" />
               </div>
-              {app.lang === "ar" ? "سلة التسوق" : "Shopping Cart"}
-              <Badge className="bg-[#2a655f] text-white text-sm px-3 py-1">
+              <span className="bg-gradient-to-r from-[#d81b60] to-[#1b433e] bg-clip-text text-transparent">
+                {app.lang === "ar" ? "سلة التسوق" : "Shopping Cart"}
+              </span>
+              <Badge className="bg-gradient-to-r from-[#d81b60] to-[#1b433e] text-white text-sm px-4 py-1.5 rounded-full shadow-md shadow-[#d81b60]/20 border-0">
                 {totals.itemCount} {app.lang === "ar" ? "منتجات" : "items"}
               </Badge>
             </h1>
             
-            <div className="mt-2 flex items-center gap-3 p-2.5 bg-[#2a655f]/5 rounded-xl border border-[#2a655f]/10 hover:border-[#2a655f]/30 transition-all duration-300 max-w-md">
-              <div className="h-9 w-9 rounded-lg overflow-hidden border-2 border-[#2a655f]/20 flex-shrink-0 bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a]">
-                {storeInfo.logo ? (
-                  <OptimizedImage
-                    src={storeInfo.logo}
-                    alt={storeInfo.name}
-                    width={36}
-                    height={36}
-                    quality={80}
-                    objectFit="cover"
-                    className="h-full w-full"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-white font-bold text-sm">
-                    {storeInfo.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-800 dark:text-white truncate">
-                  {storeInfo.name}
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <Shield className="h-3 w-3 text-emerald-500" />
-                  <span className="text-[10px] text-muted-foreground">
-                    {app.lang === "ar" ? "متجر موثوق" : "Trusted Store"}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/30">•</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {items.length} {app.lang === "ar" ? "منتج" : "products"}
-                  </span>
-                </div>
-              </div>
-              <Link to={`/store/${items[0]?.listing?.owner_id || items[0]?.listing_id}`}>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 px-3 rounded-lg text-[10px] text-[#2a655f] hover:bg-[#2a655f]/10 hover:text-[#2a655f] hover:scale-105 transition-all duration-300"
-                >
-                  {app.lang === "ar" ? "زيارة" : "Visit"}
-                  <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
-              </Link>
-            </div>
+          <div className="mt-3 flex items-center gap-3 p-3 bg-gradient-to-r from-[#d81b60]/10 via-[#f48fb1]/20 to-[#1b433e]/10 dark:from-[#d81b60]/20 dark:via-[#f48fb1]/10 dark:to-[#1b433e]/20 backdrop-blur-sm rounded-2xl border-2 border-[#d81b60]/30 hover:border-[#d81b60]/60 shadow-lg shadow-[#d81b60]/10 transition-all duration-300 max-w-md">
+  <div className="h-10 w-10 rounded-xl overflow-hidden border-2 border-[#d81b60]/30 flex-shrink-0 bg-gradient-to-br from-[#d81b60]/20 to-[#1b433e]/20">
+    {storeInfo.logo ? (
+      <OptimizedImage
+        src={storeInfo.logo}
+        alt={storeInfo.name}
+        width={40}
+        height={40}
+        quality={80}
+        objectFit="cover"
+        className="h-full w-full"
+      />
+    ) : (
+      <div className="h-full w-full flex items-center justify-center text-[#d81b60] font-bold text-sm">
+        {storeInfo.name.charAt(0).toUpperCase()}
+      </div>
+    )}
+  </div>
+  <div className="flex-1 min-w-0">
+    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">
+      {storeInfo.name}
+    </p>
+    <div className="flex items-center gap-2">
+      <Shield className="h-3 w-3 text-emerald-500" />
+      <span className="text-[10px] text-muted-foreground font-medium">
+        {app.lang === "ar" ? "متجر موثوق" : "Trusted Store"}
+      </span>
+      <span className="w-1 h-1 rounded-full bg-[#d81b60]/30" />
+      <span className="text-[10px] text-muted-foreground font-medium">
+        {items.length} {app.lang === "ar" ? "منتج" : "products"}
+      </span>
+    </div>
+  </div>
+  <Link to={`/store/${items[0]?.listing?.owner_id || items[0]?.listing_id}`}>
+    <Button 
+      variant="ghost" 
+      size="sm" 
+      className="h-8 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] shadow-md shadow-[#d81b60]/30 hover:shadow-lg hover:shadow-[#d81b60]/40 hover:scale-105 transition-all duration-300 border-0"
+    >
+      {app.lang === "ar" ? "زيارة المتجر" : "Visit Store"}
+      <ArrowRight className="h-3 w-3 ml-1.5" />
+    </Button>
+  </Link>
+</div>
           </div>
           
           <div className="flex items-center gap-3">
             <Button 
               variant="outline" 
-              className="border-[#2a655f]/20 hover:bg-[#2a655f]/10 text-[#2a655f] rounded-xl"
+              className="border-2 border-[#d81b60]/30 hover:border-[#d81b60]/60 hover:bg-[#d81b60]/10 text-[#d81b60] rounded-xl font-bold transition-all duration-300"
               onClick={handleClearCart}
               disabled={clearCart.isPending}
             >
@@ -1477,7 +1478,7 @@ const orderItems = itemsList.map((item: any) => {
               {app.lang === "ar" ? "تفريغ السلة" : "Clear Cart"}
             </Button>
             <Link to="/">
-              <Button variant="ghost" className="text-[#2a655f] hover:bg-[#2a655f]/10 rounded-xl">
+              <Button variant="ghost" className="text-[#d81b60] hover:bg-[#d81b60]/10 rounded-xl font-bold">
                 {app.lang === "ar" ? "متابعة التسوق" : "Continue Shopping"}
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -1486,32 +1487,32 @@ const orderItems = itemsList.map((item: any) => {
         </div>
 
         {/* MAIN CONTENT */}
-        <div className="grid lg:grid-cols-[1fr_380px] gap-8">
+        <div className="grid lg:grid-cols-[1fr_400px] gap-8">
           
           {/* CART ITEMS */}
           <div className="space-y-4">
-            {/* عنوان التوصيل */}
-            <div className="bg-white dark:bg-slate-900/80 rounded-2xl border border-[#2a655f]/20 p-4 shadow-sm">
+            {/* عنوان التوصيل - بوردر أنيق */}
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-2xl border-2 border-[#d81b60]/20 hover:border-[#d81b60]/40 shadow-lg shadow-[#d81b60]/5 p-5 transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-[#2a655f]/10">
-                    <MapPin className="h-5 w-5 text-[#2a655f]" />
+                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#d81b60]/10 to-[#1b433e]/10 border border-[#d81b60]/20">
+                    <MapPin className="h-5 w-5 text-[#d81b60]" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs font-semibold text-muted-foreground">
                       {app.lang === "ar" ? "📍 عنوان التوصيل" : "📍 Delivery Address"}
                     </p>
                     {selectedAddress ? (
-                      <div className="font-medium text-sm text-slate-800 dark:text-white line-clamp-1">
+                      <div className="font-bold text-sm text-slate-800 dark:text-white line-clamp-1">
                         {selectedAddress.address_text}
                         {selectedAddress.label && (
-                          <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px] ml-2">
+                          <Badge className="bg-gradient-to-r from-[#d81b60]/20 to-[#1b433e]/20 text-[#d81b60] border-0 text-[10px] ml-2 px-2 py-0.5">
                             {selectedAddress.label}
                           </Badge>
                         )}
                       </div>
                     ) : (
-                      <p className="text-sm text-amber-500 font-medium">
+                      <p className="text-sm text-amber-500 font-bold">
                         {app.lang === "ar" ? "⚠️ لم يتم اختيار عنوان" : "⚠️ No address selected"}
                       </p>
                     )}
@@ -1521,7 +1522,7 @@ const orderItems = itemsList.map((item: any) => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowAddressDialog(true)}
-                  className="text-[#2a655f] hover:bg-[#2a655f]/10 rounded-xl"
+                  className="text-[#d81b60] hover:bg-[#d81b60]/10 rounded-xl font-bold border border-[#d81b60]/20"
                 >
                   <Edit2 className="h-4 w-4 mr-1.5" />
                   {app.lang === "ar" ? "تغيير" : "Change"}
@@ -1529,16 +1530,16 @@ const orderItems = itemsList.map((item: any) => {
               </div>
               
               {selectedAddress && (
-                <div className="mt-3 pt-3 border-t border-[#2a655f]/10 flex items-center justify-between">
+                <div className="mt-4 pt-4 border-t-2 border-[#d81b60]/10 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Truck className="h-4 w-4 text-[#2a655f]" />
+                    <Truck className="h-4 w-4 text-[#d81b60]" />
                     {isCalculatingDelivery ? (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 font-medium">
                         <Loader2 className="h-3 w-3 animate-spin" />
                         {app.lang === "ar" ? "جاري الحساب..." : "Calculating..."}
                       </span>
                     ) : (
-                      <span>
+                      <span className="font-medium">
                         {deliveryFee === 0 
                           ? (app.lang === "ar" ? "🆓 توصيل مجاني" : "🆓 Free Delivery")
                           : `${app.lang === "ar" ? "توصيل" : "Delivery"}: ${formatPrice(deliveryFee, app.currency, app.lang)}`
@@ -1547,7 +1548,7 @@ const orderItems = itemsList.map((item: any) => {
                     )}
                   </div>
                   {deliveryCompany && (
-                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                    <Badge className="bg-gradient-to-r from-[#d81b60]/10 to-[#1b433e]/10 text-[#d81b60] border-2 border-[#d81b60]/20 text-[10px] px-3 py-1 rounded-full">
                       {deliveryCompany.name_ar || "شركة توصيل"}
                     </Badge>
                   )}
@@ -1555,7 +1556,7 @@ const orderItems = itemsList.map((item: any) => {
               )}
             </div>
 
-            {/* ✅ قائمة المنتجات مع عرض الفيرنتات المختارة وأزرار التحكم */}
+            {/* ✅ قائمة المنتجات مع بوردرات أنيقة وخطوط منظمة */}
             {items.map((item: any) => {
               const listing = item.listing || item;
               
@@ -1575,21 +1576,23 @@ const orderItems = itemsList.map((item: any) => {
                 <div 
                   key={item.id} 
                   className={cn(
-                    "group bg-white dark:bg-slate-900/80 rounded-2xl border p-4 hover:shadow-xl transition-all duration-300 hover:scale-[1.01]",
-                    isPromoOffer && "border-purple-500/50 hover:border-purple-500/80 hover:shadow-purple-500/20"
+                    "group bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-2xl border-2 p-5 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]",
+                    isPromoOffer 
+                      ? "border-[#d81b60]/40 hover:border-[#d81b60]/70 shadow-[#d81b60]/10" 
+                      : "border-[#d81b60]/20 hover:border-[#d81b60]/50 shadow-[#d81b60]/5"
                   )}
                 >
                   {/* ===== عرض العرض الترويجي ===== */}
                   {isPromoOffer && (
                     <>
                       {/* شارة العرض الترويجي */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 px-3 py-1 rounded-full text-xs font-bold">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Badge className="bg-gradient-to-r from-[#d81b60] via-[#f48fb1] to-[#1b433e] text-white border-0 px-4 py-1.5 rounded-full text-xs font-bold shadow-md shadow-[#d81b60]/20">
                           <Gift className="h-3.5 w-3.5 inline mr-1.5" />
-                          {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
+                          {app.lang === "ar" ? "عرض ترويجي مميز" : "Special Promo Offer"}
                         </Badge>
                         
-                        <Badge variant="outline" className="border-purple-300 text-purple-600 text-[10px]">
+                        <Badge variant="outline" className="border-2 border-[#d81b60]/30 text-[#d81b60] text-[10px] font-bold px-3 py-1 rounded-full">
                           {offerData?.offer_type === 'bogo' ? '🎁 نفس المنتج' : 
                            offerData?.offer_type === 'cross_sell' ? '🔄 منتج مختلف' : '📦 باقة'}
                         </Badge>
@@ -1597,16 +1600,18 @@ const orderItems = itemsList.map((item: any) => {
 
                       {/* نص العرض */}
                       {offerData?.display_text_ar && (
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-                          {app.lang === "ar" ? offerData.display_text_ar : offerData.display_text_en}
-                        </p>
+                        <div className="p-3 bg-gradient-to-r from-[#d81b60]/5 to-[#1b433e]/5 rounded-xl border border-[#d81b60]/20 mb-4">
+                          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 text-center">
+                            {app.lang === "ar" ? offerData.display_text_ar : offerData.display_text_en}
+                          </p>
+                        </div>
                       )}
 
                       {/* المنتجات المطلوبة */}
                       {hasRequired && (
-                        <div className="space-y-2 mb-3">
-                          <p className="text-xs font-semibold text-slate-500 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
+                        <div className="space-y-2 mb-4">
+                          <p className="text-xs font-bold text-slate-500 flex items-center gap-2">
+                            <span className="w-1.5 h-6 bg-[#d81b60] rounded-full"></span>
                             🛒 المنتجات المطلوبة ({Object.keys(requiredVariations).length})
                           </p>
                           {Object.entries(requiredVariations).map(([id, data]: any) => {
@@ -1618,28 +1623,28 @@ const orderItems = itemsList.map((item: any) => {
                                                   null;
                             
                             return (
-                              <div key={id} className="flex items-center gap-3 p-2.5 bg-white/70 rounded-xl border border-purple-100/50">
+                              <div key={id} className="flex items-center gap-3 p-3 bg-white/80 dark:bg-slate-800/50 rounded-xl border-2 border-[#d81b60]/20 hover:border-[#d81b60]/40 transition-all duration-300">
                                 {variationImage ? (
                                   <img 
                                     src={variationImage} 
                                     alt={comboText} 
-                                    className="w-10 h-10 rounded-lg object-cover border border-purple-100"
+                                    className="w-12 h-12 rounded-lg object-cover border-2 border-[#d81b60]/20"
                                     onError={(e) => {
                                       (e.target as HTMLImageElement).src = '/placeholder.png';
                                     }}
                                   />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center text-purple-400">
-                                    <Package className="h-5 w-5" />
+                                  <div className="w-12 h-12 rounded-lg bg-[#d81b60]/10 flex items-center justify-center text-[#d81b60]/40 border-2 border-[#d81b60]/20">
+                                    <Package className="h-6 w-6" />
                                   </div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                                  <p className="text-sm font-bold text-slate-700 truncate">{comboText || 'فيرنت'}</p>
                                   <p className="text-xs text-muted-foreground">الكمية: {data.quantity}</p>
                                 </div>
-                             <p className="text-sm font-bold text-[#0d2e2a] whitespace-nowrap">
-  {formatPrice(data.price * data.quantity, app.currency, app.lang)}
-</p>
+                                <p className="text-sm font-bold text-[#d81b60] whitespace-nowrap">
+                                  {formatPrice(data.price * data.quantity, app.currency, app.lang)}
+                                </p>
                               </div>
                             );
                           })}
@@ -1648,9 +1653,9 @@ const orderItems = itemsList.map((item: any) => {
 
                       {/* الهدية */}
                       {hasGift && (
-                        <div className="space-y-2">
-                          <p className="text-xs font-semibold text-emerald-500 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
+                        <div className="space-y-2 mb-4">
+                          <p className="text-xs font-bold text-emerald-500 flex items-center gap-2">
+                            <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
                             🎁 الهدية ({Object.keys(giftVariations).length})
                           </p>
                           {Object.entries(giftVariations).map(([id, data]: any) => {
@@ -1662,27 +1667,27 @@ const orderItems = itemsList.map((item: any) => {
                                              null;
                             
                             return (
-                              <div key={id} className="flex items-center gap-3 p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-100/50">
+                              <div key={id} className="flex items-center gap-3 p-3 bg-emerald-50/80 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-200/50 hover:border-emerald-400/50 transition-all duration-300">
                                 {giftImage ? (
                                   <img 
                                     src={giftImage} 
                                     alt={comboText} 
-                                    className="w-10 h-10 rounded-lg object-cover border border-emerald-100"
+                                    className="w-12 h-12 rounded-lg object-cover border-2 border-emerald-200/50"
                                     onError={(e) => {
                                       (e.target as HTMLImageElement).src = '/placeholder.png';
                                     }}
                                   />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400">
-                                    <Gift className="h-5 w-5" />
+                                  <div className="w-12 h-12 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400 border-2 border-emerald-200/50">
+                                    <Gift className="h-6 w-6" />
                                   </div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                                  <p className="text-sm font-bold text-slate-700 truncate">{comboText || 'فيرنت'}</p>
                                   <p className="text-xs text-muted-foreground">الكمية: {data.quantity}</p>
                                 </div>
-                                <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-xs font-bold px-3 py-1 rounded-full">
-                                  مجاناً 🎁
+                                <Badge className="bg-emerald-500/20 text-emerald-600 border-2 border-emerald-300/50 text-xs font-bold px-4 py-1.5 rounded-full">
+                                  🎁 مجاناً
                                 </Badge>
                               </div>
                             );
@@ -1691,30 +1696,30 @@ const orderItems = itemsList.map((item: any) => {
                       )}
 
                       {/* ✅ إجمالي السعر مع أزرار التحكم بالكمية */}
-                      <div className="mt-3 pt-3 border-t border-purple-200/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">إجمالي المنتجات المطلوبة</span>
-                     <span className="text-lg font-bold text-[#0d2e2a]">
-  {formatPrice(Number(item.price), app.currency, app.lang)}
-</span>
+                      <div className="mt-4 pt-4 border-t-2 border-[#d81b60]/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-semibold text-muted-foreground">إجمالي المنتجات</span>
+                          <span className="text-xl font-bold text-[#d81b60]">
+                            {formatPrice(Number(item.price), app.currency, app.lang)}
+                          </span>
                         </div>
                         
-                        {/* ✅ أزرار التحكم بالكمية للعرض الترويجي */}
+                        {/* ✅ أزرار التحكم بالكمية */}
                         <div className="flex items-center gap-2">
-                          <div className="flex items-center border-2 rounded-xl overflow-hidden shadow-sm border-[#2a655f]/20">
+                          <div className="flex items-center border-2 rounded-xl overflow-hidden shadow-sm border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50">
                             <button
                               onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                              className="h-10 w-10 flex items-center justify-center hover:bg-[#2a655f]/10 transition text-[#2a655f]"
+                              className="h-10 w-10 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-[#d81b60] font-bold"
                               disabled={updateCartItem.isPending || item.quantity <= 1}
                             >
                               <Minus className="h-4 w-4" />
                             </button>
-                            <span className="w-12 text-center font-bold text-lg text-[#2a655f]">
+                            <span className="w-14 text-center font-bold text-lg text-[#d81b60]">
                               {item.quantity}
                             </span>
                             <button
                               onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                              className="h-10 w-10 flex items-center justify-center hover:bg-[#2a655f]/10 transition text-[#2a655f]"
+                              className="h-10 w-10 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-[#d81b60] font-bold"
                               disabled={updateCartItem.isPending}
                             >
                               <Plus className="h-4 w-4" />
@@ -1723,7 +1728,7 @@ const orderItems = itemsList.map((item: any) => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-10 w-10 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition"
+                            className="h-10 w-10 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition border border-red-200/30 hover:border-red-400/50"
                             onClick={() => handleUpdateQuantity(item.id, 0)}
                             disabled={updateCartItem.isPending}
                           >
@@ -1738,23 +1743,23 @@ const orderItems = itemsList.map((item: any) => {
                     </>
                   )}
 
-                  {/* ===== عرض المنتج العادي والعرض التخفيضي ===== */}
+                  {/* ===== عرض المنتج العادي ===== */}
                   {!isPromoOffer && (
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex flex-col sm:flex-row gap-5">
                       {/* صورة المنتج */}
-                      <div className="relative h-28 w-28 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 mx-auto sm:mx-0">
+                      <div className="relative h-32 w-32 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 mx-auto sm:mx-0 border-2 border-[#d81b60]/20 group-hover:border-[#d81b60]/50 transition-all duration-300">
                         <OptimizedImage
                           src={item.displayImage || listing?.cover_url || '/placeholder.png'}
                           alt={app.lang === "ar" ? listing.title_ar : listing.title_en || listing.title_ar}
-                          width={112}
-                          height={112}
+                          width={128}
+                          height={128}
                           quality={80}
                           objectFit="cover"
                           className="h-full w-full group-hover:scale-105 transition-transform duration-500"
                         />
                         {/* شارة العرض التخفيضي */}
                         {item.isDiscountOffer && listing.discount_percent && (
-                          <Badge className="absolute top-2 start-2 bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[9px] px-1.5 py-0.5">
+                          <Badge className="absolute top-2 start-2 bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[10px] px-2 py-0.5 rounded-full shadow-md">
                             -{listing.discount_percent}%
                           </Badge>
                         )}
@@ -1762,43 +1767,43 @@ const orderItems = itemsList.map((item: any) => {
                       
                       {/* معلومات المنتج */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors line-clamp-1">
+                        <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors line-clamp-1">
                           {app.lang === "ar" ? listing.title_ar : (listing.title_en || listing.title_ar)}
                         </h3>
                         
                         {/* ✅ الفيرنت المختار مع صورة وسعر وكمية */}
                         {item.variationName && (
-                          <div className="mt-2 p-3 bg-gradient-to-r from-[#2a655f]/5 to-[#3a8a82]/5 rounded-xl border border-[#2a655f]/20">
+                          <div className="mt-3 p-3 bg-gradient-to-r from-[#d81b60]/5 to-[#1b433e]/5 rounded-xl border-2 border-[#d81b60]/20 hover:border-[#d81b60]/40 transition-all duration-300">
                             <div className="flex items-center gap-3">
                               {/* صورة الفيرنت */}
                               {item.displayImage && item.displayImage !== '/placeholder.png' ? (
                                 <img 
                                   src={item.displayImage} 
                                   alt={item.variationName} 
-                                  className="w-12 h-12 rounded-lg object-cover border-2 border-[#2a655f]/30"
+                                  className="w-14 h-14 rounded-lg object-cover border-2 border-[#d81b60]/30"
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src = '/placeholder.png';
                                   }}
                                 />
                               ) : (
-                                <div className="w-12 h-12 rounded-lg bg-[#2a655f]/10 flex items-center justify-center text-[#2a655f]/40">
-                                  <Layers className="h-6 w-6" />
+                                <div className="w-14 h-14 rounded-lg bg-[#d81b60]/10 flex items-center justify-center text-[#d81b60]/40 border-2 border-[#d81b60]/20">
+                                  <Layers className="h-7 w-7" />
                                 </div>
                               )}
                               
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                  <Layers className="h-4 w-4 text-[#2a655f]" />
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                  <Layers className="h-4 w-4 text-[#d81b60]" />
                                   {app.lang === "ar" ? "الفيرنت المختار:" : "Selected variation:"}
-                                  <span className="font-bold text-[#2a655f]">{item.variationName}</span>
+                                  <span className="text-[#d81b60]">{item.variationName}</span>
                                 </p>
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                                  <span className="flex items-center gap-1">
-                                    <span className="text-[#2a655f] font-bold">×</span>
-                                    <span className="font-medium">{item.quantity}</span>
+                                  <span className="flex items-center gap-1 font-semibold">
+                                    <span className="text-[#d81b60]">×</span>
+                                    <span>{item.quantity}</span>
                                   </span>
                                   <span className="text-muted-foreground/30">|</span>
-                                  <span className="font-bold text-[#2a655f]">
+                                  <span className="font-bold text-[#d81b60]">
                                     {formatPrice(Number(item.price), app.currency, app.lang)}
                                   </span>
                                   {item.isDiscountOffer && listing.old_price && (
@@ -1810,7 +1815,7 @@ const orderItems = itemsList.map((item: any) => {
                               </div>
                               
                               {item.isDiscountOffer && (
-                                <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[9px]">
+                                <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[10px] px-3 py-1 rounded-full shadow-md">
                                   🔥 {app.lang === "ar" ? "تخفيض" : "Sale"}
                                 </Badge>
                               )}
@@ -1820,8 +1825,8 @@ const orderItems = itemsList.map((item: any) => {
                         
                         {/* ✅ إذا كان المنتج ليس لديه فيرنتات */}
                         {!item.variationName && (
-                          <div className="mt-2 flex items-center gap-3 flex-wrap">
-                            <span className="text-xl font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                          <div className="mt-3 flex items-center gap-3 flex-wrap">
+                            <span className="text-2xl font-bold text-[#d81b60] dark:text-[#f48fb1]">
                               {formatPrice(Number(item.price), app.currency, app.lang)}
                             </span>
                             {item.isDiscountOffer && listing.old_price && (
@@ -1830,7 +1835,7 @@ const orderItems = itemsList.map((item: any) => {
                               </span>
                             )}
                             {item.isDiscountOffer && listing.discount_percent && (
-                              <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[10px]">
+                              <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[10px] px-3 py-1 rounded-full shadow-md">
                                 -{listing.discount_percent}%
                               </Badge>
                             )}
@@ -1838,21 +1843,21 @@ const orderItems = itemsList.map((item: any) => {
                         )}
                         
                         {/* ✅ أزرار التحكم بالكمية */}
-                        <div className="mt-3 flex items-center gap-2">
-                          <div className="flex items-center border-2 rounded-xl overflow-hidden shadow-sm border-[#2a655f]/20">
+                        <div className="mt-4 flex items-center gap-2">
+                          <div className="flex items-center border-2 rounded-xl overflow-hidden shadow-sm border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50">
                             <button
                               onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                              className="h-10 w-10 flex items-center justify-center hover:bg-[#2a655f]/10 transition text-[#2a655f]"
+                              className="h-10 w-10 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-[#d81b60] font-bold"
                               disabled={updateCartItem.isPending || item.quantity <= 1}
                             >
                               <Minus className="h-4 w-4" />
                             </button>
-                            <span className="w-12 text-center font-bold text-lg text-[#2a655f]">
+                            <span className="w-14 text-center font-bold text-lg text-[#d81b60]">
                               {item.quantity}
                             </span>
                             <button
                               onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                              className="h-10 w-10 flex items-center justify-center hover:bg-[#2a655f]/10 transition text-[#2a655f]"
+                              className="h-10 w-10 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-[#d81b60] font-bold"
                               disabled={updateCartItem.isPending}
                             >
                               <Plus className="h-4 w-4" />
@@ -1861,7 +1866,7 @@ const orderItems = itemsList.map((item: any) => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-10 w-10 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition"
+                            className="h-10 w-10 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition border border-red-200/30 hover:border-red-400/50"
                             onClick={() => handleUpdateQuantity(item.id, 0)}
                             disabled={updateCartItem.isPending}
                           >
@@ -1880,49 +1885,49 @@ const orderItems = itemsList.map((item: any) => {
             })}
           </div>
 
-          {/* ===== SUMMARY ===== */}
+          {/* ===== SUMMARY - PINK & GREEN مع بوردر أنيق ===== */}
           <div className="lg:sticky lg:top-32 h-fit">
-            <div className="bg-white dark:bg-slate-900/90 rounded-2xl border border-[#2a655f]/20 p-6 shadow-xl shadow-[#2a655f]/5">
-              <h2 className="text-lg font-bold text-[#2a655f] dark:text-white flex items-center gap-2 mb-4">
-                <Sparkles className="h-5 w-5 text-[#2a655f]" />
-                {app.lang === "ar" ? "ملخص الطلب" : "Order Summary"}
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-2xl border-2 border-[#d81b60]/30 shadow-xl shadow-[#d81b60]/10 p-6 transition-all duration-300 hover:border-[#d81b60]/50">
+              <h2 className="text-lg font-bold text-[#d81b60] dark:text-white flex items-center gap-2 mb-5">
+                <Sparkles className="h-5 w-5 text-[#d81b60]" />
+                {app.lang === "ar" ? "📋 ملخص الطلب" : "📋 Order Summary"}
               </h2>
               
               <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
+                <div className="flex justify-between text-sm py-1">
+                  <span className="text-muted-foreground font-medium">
                     {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
                   </span>
-                  <span className="font-medium">{formatPrice(totals.subtotal, app.currency, app.lang)}</span>
+                  <span className="font-bold text-[#d81b60]">{formatPrice(totals.subtotal, app.currency, app.lang)}</span>
                 </div>
                 
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
+                <div className="flex justify-between text-sm py-1 border-b border-[#d81b60]/10">
+                  <span className="text-muted-foreground font-medium">
                     {app.lang === "ar" ? "التوصيل" : "Delivery"}
                   </span>
                   {deliveryFee === 0 ? (
-                    <span className="font-semibold text-emerald-500">
+                    <span className="font-bold text-emerald-500">
                       {app.lang === "ar" ? "🆓 مجاني" : "🆓 Free"}
                     </span>
                   ) : (
-                    <span className="font-medium">{formatPrice(deliveryFee, app.currency, app.lang)}</span>
+                    <span className="font-bold text-[#d81b60]">{formatPrice(deliveryFee, app.currency, app.lang)}</span>
                   )}
                 </div>
 
                 {/* كود الخصم */}
-                <div className="border-t border-[#2a655f]/10 pt-3">
+                <div className="pt-3">
                   {promoApplied ? (
-                    <div className="flex items-center justify-between p-2 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800/30">
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[#d81b60]/10 to-emerald-50/50 rounded-xl border-2 border-[#d81b60]/30">
                       <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-emerald-500" />
-                        <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                        <Tag className="h-4 w-4 text-[#d81b60]" />
+                        <span className="text-sm font-bold text-[#d81b60]">
                           {promoMessage}
                         </span>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 rounded-full hover:bg-emerald-200/50"
+                        className="h-7 w-7 rounded-full hover:bg-[#d81b60]/20 border border-[#d81b60]/20"
                         onClick={removePromoCode}
                       >
                         <X className="h-3.5 w-3.5" />
@@ -1931,12 +1936,12 @@ const orderItems = itemsList.map((item: any) => {
                   ) : (
                     <div className="flex gap-2">
                       <div className="relative flex-1">
-                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d81b60]/50" />
                         <Input
                           placeholder={app.lang === "ar" ? "🎫 كود الخصم" : "🎫 Promo code"}
                           value={promoCode}
                           onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                          className="pl-9 h-10 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20 text-sm"
+                          className="pl-9 h-11 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 text-sm font-medium bg-white/50 dark:bg-slate-800/50"
                           onKeyDown={(e) => e.key === "Enter" && applyPromoCode()}
                           disabled={isApplyingPromo}
                         />
@@ -1944,7 +1949,7 @@ const orderItems = itemsList.map((item: any) => {
                       <Button
                         onClick={applyPromoCode}
                         disabled={isApplyingPromo}
-                        className="h-10 px-4 rounded-xl bg-[#2a655f] text-white hover:bg-[#1a4f4a] transition-all duration-300"
+                        className="h-11 px-5 rounded-xl bg-gradient-to-r from-[#d81b60] to-[#1b433e] hover:from-[#c2185b] hover:to-[#2a655f] text-white font-bold shadow-lg shadow-[#d81b60]/30 transition-all duration-300"
                       >
                         {isApplyingPromo ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -1955,34 +1960,34 @@ const orderItems = itemsList.map((item: any) => {
                     </div>
                   )}
                   {promoMessage && !promoApplied && (
-                    <p className="text-xs text-red-500 mt-1">{promoMessage}</p>
+                    <p className="text-xs text-red-500 mt-1 font-medium">{promoMessage}</p>
                   )}
                 </div>
                 
                 {promoDiscount > 0 && (
-                  <div className="flex justify-between text-sm text-emerald-500">
-                    <span>{app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}</span>
+                  <div className="flex justify-between text-sm text-emerald-500 py-1 border-b border-emerald-200/30">
+                    <span className="font-bold">{app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}</span>
                     <span className="font-bold">-{formatPrice(promoDiscount, app.currency, app.lang)}</span>
                   </div>
                 )}
                 
-                <div className="border-t border-[#2a655f]/10 my-3 pt-3">
+                <div className="pt-3 border-t-2 border-[#d81b60]/20">
                   <div className="flex justify-between text-lg font-bold">
-                    <span className="text-[#2a655f] dark:text-white">
+                    <span className="text-[#d81b60] dark:text-white">
                       {app.lang === "ar" ? "الإجمالي" : "Total"}
                     </span>
-                    <span className="text-[#2a655f] dark:text-[#3a8a82]">
+                    <span className="text-[#d81b60]">
                       {formatPrice(totals.total, app.currency, app.lang)}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1 text-right">
+                  <p className="text-xs text-muted-foreground mt-1 text-right font-medium">
                     {app.lang === "ar" ? "شامل جميع الرسوم" : "All fees included"}
                   </p>
                 </div>
                 
                 <Button 
                   size="lg" 
-                  className="w-full h-14 rounded-2xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-base font-bold"
+                  className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#d81b60] via-[#f48fb1] to-[#1b433e] hover:from-[#c2185b] hover:via-[#f9a8d4] hover:to-[#2a655f] text-white shadow-lg shadow-[#d81b60]/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-base font-bold border-0"
                   onClick={checkout}
                   disabled={createOrder.isPending || !selectedAddress}
                 >
@@ -1995,7 +2000,7 @@ const orderItems = itemsList.map((item: any) => {
                     <>
                       <ShoppingBag className="h-5 w-5 mr-2" />
                       {app.lang === "ar" ? "إتمام الطلب" : "Place Order"}
-                      <Badge className="bg-white/20 text-white border-0 ml-2">
+                      <Badge className="bg-white/20 text-white border-0 ml-2 px-3 py-1 rounded-full">
                         {formatPrice(totals.total, app.currency, app.lang)}
                       </Badge>
                     </>
@@ -2003,23 +2008,23 @@ const orderItems = itemsList.map((item: any) => {
                 </Button>
                 
                 {!selectedAddress && (
-                  <p className="text-xs text-amber-500 text-center">
+                  <p className="text-xs text-amber-500 text-center font-bold">
                     {app.lang === "ar" ? "⚠️ يرجى اختيار عنوان التوصيل" : "⚠️ Please select a delivery address"}
                   </p>
                 )}
                 
-                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground mt-3">
-                  <span className="flex items-center gap-1">
+                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground mt-4 pt-3 border-t border-[#d81b60]/10">
+                  <span className="flex items-center gap-1.5 font-medium">
                     <Shield className="h-3.5 w-3.5 text-emerald-500" />
                     {app.lang === "ar" ? "دفع آمن" : "Secure"}
                   </span>
-                  <span className="text-muted-foreground/30">|</span>
-                  <span className="flex items-center gap-1">
-                    <Truck className="h-3.5 w-3.5 text-[#2a655f]" />
+                  <span className="w-px h-4 bg-[#d81b60]/20" />
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Truck className="h-3.5 w-3.5 text-[#d81b60]" />
                     {app.lang === "ar" ? "توصيل سريع" : "Fast"}
                   </span>
-                  <span className="text-muted-foreground/30">|</span>
-                  <span className="flex items-center gap-1">
+                  <span className="w-px h-4 bg-[#d81b60]/20" />
+                  <span className="flex items-center gap-1.5 font-medium">
                     <Award className="h-3.5 w-3.5 text-amber-500" />
                     {app.lang === "ar" ? "ضمان الجودة" : "Quality"}
                   </span>
@@ -2030,19 +2035,19 @@ const orderItems = itemsList.map((item: any) => {
         </div>
       </div>
 
-      {/* ===== DIALOG: تغيير العنوان ===== */}
+      {/* ===== DIALOG: تغيير العنوان - PINK & GREEN ===== */}
       <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
-        <DialogContent className="rounded-2xl max-w-md border-[#2a655f]/20 shadow-2xl shadow-[#2a655f]/10">
+        <DialogContent className="rounded-2xl max-w-md border-2 border-[#d81b60]/30 shadow-2xl shadow-[#d81b60]/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-[#2a655f]/10 flex items-center justify-center">
-                <MapPin className="h-5 w-5 text-[#2a655f]" />
+              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-[#d81b60]/10 to-[#1b433e]/10 border-2 border-[#d81b60]/20 flex items-center justify-center">
+                <MapPin className="h-5 w-5 text-[#d81b60]" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold text-[#2a655f]">
+                <DialogTitle className="text-xl font-bold text-[#d81b60]">
                   {app.lang === "ar" ? "📍 اختيار عنوان التوصيل" : "📍 Select Delivery Address"}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="font-medium">
                   {app.lang === "ar" 
                     ? "اختر عنواناً من قائمتك أو أضف عنواناً جديداً" 
                     : "Choose an address from your list or add a new one"}
@@ -2062,16 +2067,16 @@ const orderItems = itemsList.map((item: any) => {
                       setShowAddressDialog(false);
                     }}
                     className={cn(
-                      "w-full text-start p-3 rounded-xl border-2 transition-all duration-300 hover:border-[#2a655f]/50",
+                      "w-full text-start p-3.5 rounded-xl border-2 transition-all duration-300",
                       selectedAddressId === addr.id
-                        ? "border-[#2a655f] bg-[#2a655f]/5"
-                        : "border-slate-200/50 dark:border-slate-700/50 hover:bg-[#2a655f]/5"
+                        ? "border-[#d81b60] bg-[#d81b60]/5 shadow-md shadow-[#d81b60]/10"
+                        : "border-slate-200/50 dark:border-slate-700/50 hover:border-[#d81b60]/40 hover:bg-[#d81b60]/5"
                     )}
                   >
                     <div className="flex items-start gap-3">
                       <div className={cn(
                         "p-1.5 rounded-lg",
-                        selectedAddressId === addr.id ? "bg-[#2a655f] text-white" : "bg-slate-100 dark:bg-slate-800"
+                        selectedAddressId === addr.id ? "bg-[#d81b60] text-white" : "bg-slate-100 dark:bg-slate-800"
                       )}>
                         {addr.is_default ? (
                           <Home className="h-4 w-4" />
@@ -2080,21 +2085,21 @@ const orderItems = itemsList.map((item: any) => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm flex items-center gap-2">
+                        <div className="font-bold text-sm flex items-center gap-2">
                           {addr.label || (app.lang === "ar" ? "عنوان" : "Address")}
                           {addr.is_default && (
-                            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[9px]">
+                            <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-2 border-[#d81b60]/20 text-[9px] px-2 py-0.5">
                               {app.lang === "ar" ? "افتراضي" : "Default"}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-1">{addr.address_text}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1 font-medium">{addr.address_text}</p>
                         {addr.details && (
                           <p className="text-xs text-muted-foreground/70 line-clamp-1">{addr.details}</p>
                         )}
                       </div>
                       {selectedAddressId === addr.id && (
-                        <CheckCircle2 className="h-5 w-5 text-[#2a655f] flex-shrink-0" />
+                        <CheckCircle2 className="h-5 w-5 text-[#d81b60] flex-shrink-0" />
                       )}
                     </div>
                   </button>
@@ -2102,8 +2107,8 @@ const orderItems = itemsList.map((item: any) => {
               </div>
             ) : (
               <div className="text-center py-6 text-muted-foreground">
-                <MapPin className="h-12 w-12 mx-auto mb-2 text-[#2a655f]/30" />
-                <p>{app.lang === "ar" ? "لا توجد عناوين محفوظة" : "No saved addresses"}</p>
+                <MapPin className="h-12 w-12 mx-auto mb-2 text-[#d81b60]/30" />
+                <p className="font-medium">{app.lang === "ar" ? "لا توجد عناوين محفوظة" : "No saved addresses"}</p>
               </div>
             )}
             
@@ -2113,7 +2118,7 @@ const orderItems = itemsList.map((item: any) => {
                 setShowAddressDialog(false);
                 setShowAddAddressDialog(true);
               }}
-              className="w-full rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300"
+              className="w-full rounded-xl border-2 border-[#d81b60]/30 text-[#d81b60] font-bold hover:bg-[#d81b60]/10 hover:border-[#d81b60]/50 transition-all duration-300"
             >
               <PlusCircle className="h-4 w-4 mr-2" />
               {app.lang === "ar" ? "إضافة عنوان جديد" : "Add New Address"}
@@ -2124,7 +2129,7 @@ const orderItems = itemsList.map((item: any) => {
             <Button
               variant="ghost"
               onClick={() => setShowAddressDialog(false)}
-              className="rounded-xl"
+              className="rounded-xl font-bold hover:bg-[#d81b60]/10"
             >
               {app.lang === "ar" ? "إغلاق" : "Close"}
             </Button>
@@ -2132,7 +2137,7 @@ const orderItems = itemsList.map((item: any) => {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: إضافة عنوان جديد ===== */}
+      {/* ===== DIALOG: إضافة عنوان جديد - PINK & GREEN ===== */}
       <Dialog open={showAddAddressDialog} onOpenChange={(open) => {
         setShowAddAddressDialog(open);
         if (!open) {
@@ -2141,17 +2146,17 @@ const orderItems = itemsList.map((item: any) => {
           setNewAddressDetails("");
         }
       }}>
-        <DialogContent className="rounded-2xl max-w-md max-h-[90vh] border-[#2a655f]/20 shadow-2xl shadow-[#2a655f]/10 flex flex-col">
+        <DialogContent className="rounded-2xl max-w-md max-h-[90vh] border-2 border-[#d81b60]/30 shadow-2xl shadow-[#d81b60]/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <PlusCircle className="h-5 w-5 text-emerald-500" />
+              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-[#d81b60]/10 to-[#1b433e]/10 border-2 border-[#d81b60]/20 flex items-center justify-center">
+                <PlusCircle className="h-5 w-5 text-[#d81b60]" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold text-[#2a655f]">
+                <DialogTitle className="text-xl font-bold text-[#d81b60]">
                   {app.lang === "ar" ? "📍 إضافة عنوان جديد" : "📍 Add New Address"}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="font-medium">
                   {app.lang === "ar" 
                     ? "اختر موقعك على الخريطة وأدخل تفاصيل العنوان" 
                     : "Choose your location on the map and enter address details"}
@@ -2164,8 +2169,8 @@ const orderItems = itemsList.map((item: any) => {
             
             {/* حقل اسم العنوان */}
             <div>
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                <Home className="h-4 w-4 text-[#2a655f]" />
+              <Label className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+                <Home className="h-4 w-4 text-[#d81b60]" />
                 {app.lang === "ar" ? "اسم العنوان" : "Address Label"}
                 <span className="text-red-500">*</span>
               </Label>
@@ -2173,10 +2178,10 @@ const orderItems = itemsList.map((item: any) => {
                 value={newAddressLabel}
                 onChange={(e) => setNewAddressLabel(e.target.value)}
                 placeholder={app.lang === "ar" ? "مثال: المنزل، العمل، المكتب" : "e.g. Home, Work, Office"}
-                className="mt-1.5 h-11 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
+                className="mt-1.5 h-12 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 font-medium"
               />
               {!newAddressLabel.trim() && (
-                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium">
                   <AlertCircle className="h-3 w-3" />
                   {app.lang === "ar" ? "⚠️ هذا الحقل مطلوب" : "⚠️ This field is required"}
                 </p>
@@ -2192,8 +2197,8 @@ const orderItems = itemsList.map((item: any) => {
             
             {/* حقل التفاصيل الإضافية */}
             <div>
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                <MapPin className="h-4 w-4 text-[#2a655f]" />
+              <Label className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+                <MapPin className="h-4 w-4 text-[#d81b60]" />
                 {app.lang === "ar" ? "تفاصيل إضافية" : "Additional Details"}
                 <span className="text-red-500">*</span>
                 <span className="text-xs text-muted-foreground">({app.lang === "ar" ? "مطلوب" : "Required"})</span>
@@ -2205,10 +2210,10 @@ const orderItems = itemsList.map((item: any) => {
                   ? "رقم الطابق، رقم الشقة، معلم قريب..." 
                   : "Floor number, apartment number, nearby landmark..."}
                 rows={2}
-                className="mt-1.5 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20 resize-none"
+                className="mt-1.5 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 resize-none font-medium"
               />
               {!newAddressDetails.trim() && (
-                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium">
                   <AlertCircle className="h-3 w-3" />
                   {app.lang === "ar" ? "⚠️ هذا الحقل مطلوب" : "⚠️ This field is required"}
                 </p>
@@ -2217,17 +2222,17 @@ const orderItems = itemsList.map((item: any) => {
             
             {/* عرض الموقع المختار */}
             {newLocation && (
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+              <div className="p-3 bg-gradient-to-r from-[#d81b60]/10 to-emerald-50/50 rounded-xl border-2 border-[#d81b60]/30">
+                <p className="text-sm font-bold text-[#d81b60] flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4" />
                   {app.lang === "ar" ? "✅ تم اختيار الموقع" : "✅ Location selected"}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{newLocation.address}</p>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-1 font-medium">{newLocation.address}</p>
               </div>
             )}
           </div>
           
-          <DialogFooter className="flex-shrink-0 gap-3 pt-4 border-t border-[#2a655f]/10">
+          <DialogFooter className="flex-shrink-0 gap-3 pt-4 border-t-2 border-[#d81b60]/20">
             <Button
               variant="outline"
               onClick={() => {
@@ -2236,14 +2241,14 @@ const orderItems = itemsList.map((item: any) => {
                 setNewAddressLabel("");
                 setNewAddressDetails("");
               }}
-              className="rounded-xl border-slate-200/50 dark:border-slate-700/50"
+              className="rounded-xl border-2 border-slate-200/50 dark:border-slate-700/50 font-bold hover:bg-[#d81b60]/10"
             >
               {app.lang === "ar" ? "إلغاء" : "Cancel"}
             </Button>
             <Button
               onClick={handleAddAddress}
               disabled={!newLocation || !newAddressLabel.trim() || !newAddressDetails.trim()}
-              className="rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-[1.02]"
+              className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#1b433e] hover:from-[#c2185b] hover:to-[#2a655f] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 hover:scale-[1.02] font-bold"
             >
               <PlusCircle className="h-4 w-4 mr-2" />
               {app.lang === "ar" ? "إضافة العنوان" : "Add Address"}
@@ -2252,19 +2257,19 @@ const orderItems = itemsList.map((item: any) => {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: تأكيد تفريغ السلة ===== */}
+      {/* ===== DIALOG: تأكيد تفريغ السلة - PINK & GREEN ===== */}
       <AlertDialog open={showClearCartDialog} onOpenChange={setShowClearCartDialog}>
-        <AlertDialogContent className="rounded-2xl border-[#2a655f]/20 shadow-2xl shadow-[#2a655f]/10 max-w-md">
+        <AlertDialogContent className="rounded-2xl border-2 border-[#d81b60]/30 shadow-2xl shadow-[#d81b60]/10 max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
           <AlertDialogHeader>
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center animate-pulse">
+              <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center animate-pulse border-2 border-red-200/50">
                 <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <AlertDialogTitle className="text-xl font-bold text-[#2a655f] dark:text-white">
+                <AlertDialogTitle className="text-xl font-bold text-[#d81b60] dark:text-white">
                   {app.lang === "ar" ? "🗑️ تفريغ السلة" : "🗑️ Clear Cart"}
                 </AlertDialogTitle>
-                <AlertDialogDescription className="text-sm text-muted-foreground">
+                <AlertDialogDescription className="text-sm text-muted-foreground font-medium">
                   {app.lang === "ar" 
                     ? "هل أنت متأكد من رغبتك في تفريغ سلة التسوق؟ هذا الإجراء لا يمكن التراجع عنه."
                     : "Are you sure you want to clear your shopping cart? This action cannot be undone."}
@@ -2274,51 +2279,51 @@ const orderItems = itemsList.map((item: any) => {
           </AlertDialogHeader>
 
           <div className="my-4 max-h-48 overflow-y-auto space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">
+            <p className="text-xs font-bold text-muted-foreground">
               {app.lang === "ar" ? `📦 سيتم حذف ${items.length} منتج` : `📦 ${items.length} items will be removed`}
             </p>
             {items.slice(0, 5).map((item: any) => {
               const listing = item.listing || item;
               return (
-                <div key={item.id} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                <div key={item.id} className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                   <OptimizedImage
                     src={item.displayImage || '/placeholder.png'}
                     alt={listing.title_ar}
-                    width={40}
-                    height={40}
+                    width={44}
+                    height={44}
                     quality={80}
                     objectFit="cover"
-                    className="h-10 w-10 rounded-lg object-cover"
+                    className="h-11 w-11 rounded-lg object-cover border border-slate-200/50 dark:border-slate-700/50"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium line-clamp-1">
+                    <p className="text-sm font-bold line-clamp-1">
                       {app.lang === "ar" ? listing.title_ar : (listing.title_en || listing.title_ar)}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground font-medium">
                       {app.lang === "ar" ? "الكمية" : "Qty"}: {item.quantity} × {formatPrice(Number(item.price), app.currency, app.lang)}
                     </p>
                   </div>
-                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-0">
+                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-0 font-bold px-3 py-1">
                     {formatPrice(item.subtotal, app.currency, app.lang)}
                   </Badge>
                 </div>
               );
             })}
             {items.length > 5 && (
-              <p className="text-xs text-muted-foreground text-center">
+              <p className="text-xs text-muted-foreground text-center font-medium">
                 {app.lang === "ar" ? `و ${items.length - 5} منتجات أخرى` : `and ${items.length - 5} more items`}
               </p>
             )}
           </div>
 
           <AlertDialogFooter className="gap-3">
-            <AlertDialogCancel className="rounded-xl border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300">
+            <AlertDialogCancel className="rounded-xl border-2 border-slate-200/50 dark:border-slate-700/50 font-bold hover:bg-[#d81b60]/10 transition-all duration-300">
               {app.lang === "ar" ? "إلغاء" : "Cancel"}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmClearCart}
               disabled={clearCart.isPending}
-              className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/25 hover:shadow-red-600/40 transition-all duration-300 hover:scale-[1.02]"
+              className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/25 hover:shadow-red-600/40 transition-all duration-300 hover:scale-[1.02] font-bold"
             >
               {clearCart.isPending ? (
                 <div className="flex items-center gap-2">

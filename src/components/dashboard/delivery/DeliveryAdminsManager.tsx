@@ -28,6 +28,27 @@ import {
   Save,
   CheckCircle as CheckCircleIcon,
   Sparkles,
+  // ✅ أيقونات جديدة احترافية
+  BadgeCheck,
+  UserCog,
+  Briefcase,
+  Building2,
+  UserRound,
+  UserRoundCog,
+  UserCheck,
+  UserRoundCheck,
+  UsersRound,
+  UserCog2,
+  ShieldHalf,
+  ShieldQuestion,
+  ShieldX,
+  UserPen,
+  UserRoundPen,
+  UserCircle,
+  CircleUser,
+  CircleUserRound,
+  UserSquare,
+  UserRoundPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +70,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-// ✅ ✅ ✅ أضف استيراد Tooltip
 import {
   Tooltip,
   TooltipContent,
@@ -58,6 +78,22 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+// ============================================================
+// 🎨 ZOOQ BRAND COLORS - زيتي ووردي
+// ============================================================
+const COLORS = {
+  olive: '#2a655f',
+  oliveLight: '#3a8a82',
+  oliveDark: '#1a4f4a',
+  oliveVeryLight: '#e8f0ee',
+  pink: '#f9a8d4',
+  pinkLight: '#fbcfe8',
+  pinkDark: '#f48fb1',
+  pinkVeryLight: '#fdf2f8',
+  fuchsia: '#d81b60',
+  fuchsiaDark: '#c2185b',
+};
 
 interface DeliveryAdminsManagerProps {
   companyId: string;
@@ -439,31 +475,36 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
   }, [fetchAdmins]);
 
   // ============================================================
-  // التصميم
+  // التصميم - زيتي ووردي مع أيقونات احترافية
   // ============================================================
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Header - مع أيقونة BadgeCheck احترافية */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h3 className="text-xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
-            <Shield className="h-5 w-5 text-[#0d2e2a]" />
-            {isArabic ? "👑 مدراء الشركة" : "👑 Company Managers"}
-            <span className="text-sm font-normal text-muted-foreground">
-              ({admins.length})
-            </span>
-          </h3>
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1] flex items-center justify-center text-white shadow-lg shadow-[#d81b60]/25">
+              <BadgeCheck className="h-5 w-5" />
+            </div>
+            <h3 className="text-xl font-bold text-[#d81b60] dark:text-[#f9a8d4]">
+              {isArabic ? "مدراء الشركة" : "Company Managers"}
+            </h3>
+            <Badge className="bg-[#fbcfe8]/30 text-[#d81b60] border-[#f9a8d4]/30">
+              {admins.length}
+            </Badge>
+          </div>
           {companyName && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-2">
+              <span className="h-1 w-1 rounded-full bg-[#d81b60]" />
               {isArabic ? `إدارة مدراء شركة "${companyName}"` : `Manage managers of "${companyName}"`}
             </p>
           )}
         </div>
         <Button 
-          className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white hover:from-[#1a4f4a] hover:to-[#0d2e2a] transition-all duration-300 hover:scale-105"
+          className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] transition-all duration-300 hover:scale-105 shadow-lg shadow-[#d81b60]/30 rounded-xl"
           onClick={() => setShowAddDialog(true)}
         >
-          <UserPlus className="h-4 w-4 mr-1" />
+          <UserRoundPlus className="h-4 w-4 mr-1.5" />
           {isArabic ? "إضافة مدير" : "Add Manager"}
         </Button>
       </div>
@@ -476,11 +517,11 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
           ))}
         </div>
       ) : admins.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border border-dashed border-[#0d2e2a]/30">
-          <div className="h-20 w-20 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center mx-auto mb-4">
-            <Shield className="h-10 w-10 text-[#0d2e2a]/40" />
+        <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border-2 border-dashed border-[#f9a8d4]/40">
+          <div className="h-20 w-20 rounded-full bg-[#fbcfe8]/30 flex items-center justify-center mx-auto mb-4">
+            <UsersRound className="h-10 w-10 text-[#d81b60]/40" />
           </div>
-          <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
+          <h3 className="text-xl font-semibold text-[#d81b60] dark:text-[#f9a8d4]">
             {isArabic ? "لا يوجد مدراء" : "No managers"}
           </h3>
           <p className="text-muted-foreground text-sm">
@@ -494,21 +535,21 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
             return (
               <div
                 key={admin.id}
-                className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-[#0d2e2a]/30 transition-all duration-300 group"
+                className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-[#f9a8d4]/60 transition-all duration-300 hover:scale-[1.02] group"
               >
                 <div className="flex items-start gap-4">
-                  <div className="h-14 w-14 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center shrink-0">
+                  <div className="h-14 w-14 rounded-full bg-[#fbcfe8]/40 flex items-center justify-center shrink-0 border-2 border-[#f9a8d4]/30 group-hover:border-[#d81b60]/50 transition-all duration-300">
                     {admin.avatar_url ? (
                       <img src={admin.avatar_url} alt="" className="h-full w-full object-cover rounded-full" />
                     ) : (
-                      <span className="text-2xl font-bold text-[#0d2e2a]">
+                      <span className="text-2xl font-bold text-[#d81b60]">
                         {admin.full_name?.charAt(0) || 'M'}
                       </span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-bold text-slate-900 dark:text-white line-clamp-1">
+                      <p className="font-bold text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors duration-300 line-clamp-1">
                         {admin.full_name || admin.phone}
                       </p>
                       {isOwner && (
@@ -534,46 +575,46 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
                       </span>
                     </div>
                   </div>
-                {/* ✅ ✅ ✅ أزرار الإجراءات (تعديل + حذف) */}
-{!isOwner && admin.admin_id && (
-  <TooltipProvider>
-    <div className="flex items-center gap-1.5 shrink-0">
-      {/* ✅ زر تعديل */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-600/10 hover:from-emerald-500/30 hover:to-emerald-600/25 border border-emerald-500/20 hover:border-emerald-500/40 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-emerald-500/25 group"
-            onClick={() => openEditAdminDialog(admin)}
-          >
-            <Edit3 className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30 text-xs font-medium">
-          {isArabic ? "تعديل المدير" : "Edit Manager"}
-        </TooltipContent>
-      </Tooltip>
+                  {/* ✅ ✅ ✅ أزرار الإجراءات - وردي */}
+                  {!isOwner && admin.admin_id && (
+                    <TooltipProvider>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {/* ✅ زر تعديل - وردي */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#fbcfe8]/50 to-[#f9a8d4]/30 hover:from-[#fbcfe8]/70 hover:to-[#f9a8d4]/50 border border-[#f9a8d4]/30 hover:border-[#d81b60]/50 text-[#d81b60] hover:text-[#c2185b] dark:text-[#f9a8d4] dark:hover:text-white transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-[#d81b60]/25 group"
+                              onClick={() => openEditAdminDialog(admin)}
+                            >
+                              <UserPen className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30 text-xs font-medium">
+                            {isArabic ? "تعديل المدير" : "Edit Manager"}
+                          </TooltipContent>
+                        </Tooltip>
 
-      {/* ✅ زر حذف */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 w-9 rounded-xl bg-gradient-to-br from-red-500/15 to-rose-600/10 hover:from-red-500/30 hover:to-rose-600/25 border border-red-500/20 hover:border-red-500/40 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-red-500/25 group"
-            onClick={() => openDeleteDialog(admin)}
-          >
-            <Trash2 className="h-4 w-4 group-hover:rotate-6 group-hover:scale-110 transition-all duration-300" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30 text-xs font-medium">
-          {isArabic ? "حذف المدير" : "Delete Manager"}
-        </TooltipContent>
-      </Tooltip>
-    </div>
-  </TooltipProvider>
-)}
+                        {/* ✅ زر حذف - أحمر */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 w-9 rounded-xl bg-gradient-to-br from-red-500/15 to-rose-600/10 hover:from-red-500/30 hover:to-rose-600/25 border border-red-500/20 hover:border-red-500/40 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-red-500/25 group"
+                              onClick={() => openDeleteDialog(admin)}
+                            >
+                              <UserX className="h-4 w-4 group-hover:rotate-6 group-hover:scale-110 transition-all duration-300" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30 text-xs font-medium">
+                            {isArabic ? "حذف المدير" : "Delete Manager"}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TooltipProvider>
+                  )}
                 </div>
               </div>
             );
@@ -581,35 +622,41 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
         </div>
       )}
 
-      {/* ===== DIALOG: إضافة مدير ===== */}
+      {/* ===== DIALOG: إضافة مدير - وردي ===== */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-md rounded-2xl border-[#f9a8d4]/30 shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
-              <UserPlus className="h-6 w-6 text-[#0d2e2a]" />
-              {isArabic ? "➕ إضافة مدير شركة" : "➕ Add Company Manager"}
-            </DialogTitle>
-            <DialogDescription>
-              {isArabic 
-                ? "سيتم إنشاء حساب جديد لمدير الشركة برقم هاتف وكلمة مرور" 
-                : "A new company manager account will be created with phone and password"}
-            </DialogDescription>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1] flex items-center justify-center text-white shadow-lg shadow-[#d81b60]/20">
+                <UserRoundPlus className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-[#d81b60] dark:text-[#f9a8d4]">
+                  {isArabic ? "➕ إضافة مدير شركة" : "➕ Add Company Manager"}
+                </DialogTitle>
+                <DialogDescription>
+                  {isArabic 
+                    ? "سيتم إنشاء حساب جديد لمدير الشركة برقم هاتف وكلمة مرور" 
+                    : "A new company manager account will be created with phone and password"}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
           <form onSubmit={handleAddAdmin} className="space-y-4">
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                   {isArabic ? "الاسم الكامل (اختياري)" : "Full Name (Optional)"}
                 </Label>
                 <Input 
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder={isArabic ? "مدير الشركة" : "Company Manager"}
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                   {isArabic ? "رقم الهاتف" : "Phone Number"} *
                 </Label>
                 <Input 
@@ -618,14 +665,14 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
                   type="tel" 
                   placeholder="09XXXXXXXX"
                   required
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                 />
                 <p className="text-xs text-muted-foreground">
                   {isArabic ? "سيتم استخدام هذا الرقم لتسجيل الدخول" : "This number will be used for login"}
                 </p>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                   {isArabic ? "كلمة المرور" : "Password"} *
                 </Label>
                 <div className="relative">
@@ -636,12 +683,12 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
                     placeholder="********"
                     required 
                     minLength={6}
-                    className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 pe-10"
+                    className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 pe-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-[#0d2e2a] transition-colors"
+                    className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-[#d81b60] transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -650,7 +697,7 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
                   {isArabic ? "6 أحرف على الأقل" : "At least 6 characters"}
                 </p>
               </div>
-              <div className="text-xs text-muted-foreground bg-[#0d2e2a]/5 p-3 rounded-xl border border-[#0d2e2a]/20">
+              <div className="text-xs text-muted-foreground bg-[#fbcfe8]/20 p-3 rounded-xl border border-[#f9a8d4]/30">
                 {isArabic 
                   ? `🔗 سيتم ربط المدير بشركة "${companyName || ''}"`
                   : `🔗 Manager will be linked to company "${companyName || ''}"`
@@ -658,20 +705,20 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
               </div>
             </div>
             
-            <DialogFooter className="gap-2 pt-4 border-t border-[#0d2e2a]/10">
-              <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
+            <DialogFooter className="gap-2 pt-4 border-t border-[#f9a8d4]/30">
+              <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)} className="border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30">
                 <X className="h-4 w-4 mr-1" />
                 {isArabic ? "إلغاء" : "Cancel"}
               </Button>
               <Button 
                 type="submit" 
-                className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white hover:from-[#1a4f4a] hover:to-[#0d2e2a] transition-all duration-300"
+                className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] transition-all duration-300 shadow-lg shadow-[#d81b60]/30"
                 disabled={isAdding}
               >
                 {isAdding ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
                 ) : (
-                  <UserPlus className="h-4 w-4 mr-1.5" />
+                  <UserRoundPlus className="h-4 w-4 mr-1.5" />
                 )}
                 {isArabic ? "إضافة مدير" : "Add Manager"}
               </Button>
@@ -680,24 +727,30 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
         </DialogContent>
       </Dialog>
 
-      {/* ===== ✅✅✅ DIALOG: تعديل المدير ✅✅✅ ===== */}
+      {/* ===== ✅✅✅ DIALOG: تعديل المدير - وردي ✅✅✅ ===== */}
       <Dialog open={showEditAdminDialog} onOpenChange={setShowEditAdminDialog}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-md rounded-2xl border-[#f9a8d4]/30 shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#0d2e2a] dark:text-white flex items-center gap-2">
-              <Edit3 className="h-6 w-6 text-[#0d2e2a]" />
-              {isArabic ? "✏️ تعديل معلومات المدير" : "✏️ Edit Manager Info"}
-            </DialogTitle>
-            <DialogDescription>
-              {isArabic 
-                ? "تحديث اسم ورقم هاتف المدير" 
-                : "Update manager name and phone number"}
-            </DialogDescription>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1] flex items-center justify-center text-white shadow-lg shadow-[#d81b60]/20">
+                <UserPen className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-[#d81b60] dark:text-[#f9a8d4]">
+                  {isArabic ? "✏️ تعديل معلومات المدير" : "✏️ Edit Manager Info"}
+                </DialogTitle>
+                <DialogDescription>
+                  {isArabic 
+                    ? "تحديث اسم ورقم هاتف المدير" 
+                    : "Update manager name and phone number"}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
           <form onSubmit={handleUpdateAdmin} className="space-y-4">
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                   {isArabic ? "الاسم الكامل" : "Full Name"} *
                 </Label>
                 <Input 
@@ -705,11 +758,11 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
                   onChange={(e) => setEditFullName(e.target.value)}
                   placeholder={isArabic ? "اسم المدير" : "Manager name"}
                   required
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                   {isArabic ? "رقم الهاتف" : "Phone Number"} *
                 </Label>
                 <div className="relative">
@@ -730,14 +783,14 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
                     placeholder="09XXXXXXXX"
                     required
                     className={cn(
-                      "rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20",
+                      "rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20",
                       isPhoneChanged && phoneAvailable === false && "border-red-500 focus-visible:ring-red-500",
                       isPhoneChanged && phoneAvailable === true && "border-emerald-500 focus-visible:ring-emerald-500"
                     )}
                   />
                   {isPhoneChanged && phoneCheckLoading && (
                     <div className="absolute inset-y-0 end-3 flex items-center">
-                      <Loader2 className="h-4 w-4 animate-spin text-[#0d2e2a]" />
+                      <Loader2 className="h-4 w-4 animate-spin text-[#d81b60]" />
                     </div>
                   )}
                   {isPhoneChanged && !phoneCheckLoading && phoneAvailable === false && (
@@ -769,7 +822,7 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
               </div>
             </div>
             
-            <DialogFooter className="gap-2 pt-4 border-t border-[#0d2e2a]/10">
+            <DialogFooter className="gap-2 pt-4 border-t border-[#f9a8d4]/30">
               <Button type="button" variant="outline" onClick={() => {
                 setShowEditAdminDialog(false);
                 setEditingAdmin(null);
@@ -777,13 +830,13 @@ export function DeliveryAdminsManager({ companyId, companyName, isArabic, onAdmi
                 setEditFullName("");
                 setIsPhoneChanged(false);
                 setPhoneAvailable(null);
-              }}>
+              }} className="border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30">
                 <X className="h-4 w-4 mr-1" />
                 {isArabic ? "إلغاء" : "Cancel"}
               </Button>
               <Button 
                 type="submit" 
-                className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white hover:from-[#1a4f4a] hover:to-[#0d2e2a] transition-all duration-300"
+                className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] transition-all duration-300 shadow-lg shadow-[#d81b60]/30"
                 disabled={isEditing || (isPhoneChanged && phoneAvailable === false)}
               >
                 {isEditing ? (

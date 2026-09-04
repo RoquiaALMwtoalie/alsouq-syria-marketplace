@@ -10,6 +10,7 @@ import {
   Megaphone, Tags, Bell, FileSpreadsheet, FileText, Download,
   Sparkles, Printer, Zap, Rocket, Gem, Crown, Activity,
   PieChart as PieChartIcon, LineChart as LineChartIcon, ShoppingBag, Star, Clock, CheckCircle,
+  Layers, Percent, AlertTriangle,
 } from "lucide-react";
 import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { 
@@ -31,20 +32,52 @@ import * as XLSX from 'xlsx';
 import * as fileSaver from 'file-saver';
 const { saveAs } = fileSaver;
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // ============================================================
-// 🟢 COLORS - فقط تدرجات الأخضر المعتمدة في النظام
+// 🎨 ZOOQ BRAND COLORS - نفس ألوان ProductsPage
+// ============================================================
+const COLORS = {
+  olive: '#2a655f',
+  oliveLight: '#3a8a82',
+  oliveDark: '#1a4f4a',
+  oliveVeryLight: '#e8f0ee',
+  oliveGlow: 'rgba(42,101,95,0.2)',
+  oliveGlowStrong: 'rgba(42,101,95,0.35)',
+  
+  pink: '#f9a8d4',
+  pinkLight: '#fbcfe8',
+  pinkDark: '#f48fb1',
+  pinkVeryLight: '#fdf2f8',
+  pinkGlow: 'rgba(249,168,212,0.25)',
+  pinkGlowStrong: 'rgba(249,168,212,0.4)',
+  
+  fuchsia: '#d81b60',
+  fuchsiaDark: '#c2185b',
+  fuchsiaGlow: 'rgba(216,27,96,0.2)',
+  fuchsiaGlowStrong: 'rgba(194,24,91,0.35)',
+  
+  glowOlive: 'rgba(42,101,95,0.15)',
+  glowPink: 'rgba(249,168,212,0.2)',
+  glowPinkStrong: 'rgba(249,168,212,0.35)',
+};
+
+// ============================================================
+// 🟢 CHART COLORS - تدرجات الزيتي والوردي
 // ============================================================
 const CHART_COLORS = {
-  green: ['#0d2e2a', '#1a4f4a', '#2d6b63', '#4a9f95', '#6bb5aa', '#8dcfc6'],
-  light: ['#e8f5f3', '#d0ece8', '#b8e3dd', '#a0dad2', '#88d1c7'],
+  green: ['#2a655f', '#3a8a82', '#1a4f4a', '#4a9f95', '#6bb5aa', '#8dcfc6'],
+  pink: ['#f9a8d4', '#fbcfe8', '#f48fb1', '#fdf2f8', '#f9a8d4'],
+  fuchsia: ['#d81b60', '#c2185b', '#f48fb1', '#fbcfe8'],
 };
 
 const GRADIENT_COLORS = {
-  primary: 'from-[#0d2e2a] to-[#1a4f4a]',
-  secondary: 'from-[#1a4f4a] to-[#2d6b63]',
-  tertiary: 'from-[#2d6b63] to-[#4a9f95]',
+  primary: 'from-[#2a655f] to-[#1a4f4a]',
+  secondary: 'from-[#1a4f4a] to-[#3a8a82]',
+  tertiary: 'from-[#3a8a82] to-[#4a9f95]',
   accent: 'from-[#4a9f95] to-[#6bb5aa]',
+  pink: 'from-[#f9a8d4] to-[#fbcfe8]',
+  fuchsia: 'from-[#d81b60] to-[#f48fb1]',
 };
 
 interface AdminOverviewProps {
@@ -170,8 +203,8 @@ const stores = storesData?.data || [];
     const archived = all.filter((p: any) => p.status === 'archived').length;
     return [
       { name: app.lang === 'ar' ? 'منشور' : 'Published', value: published, color: CHART_COLORS.green[0] },
-      { name: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: pendingCount, color: CHART_COLORS.green[2] },
-      { name: app.lang === 'ar' ? 'مؤرشف' : 'Archived', value: archived, color: CHART_COLORS.green[4] },
+      { name: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: pendingCount, color: CHART_COLORS.pink[0] },
+      { name: app.lang === 'ar' ? 'مؤرشف' : 'Archived', value: archived, color: CHART_COLORS.green[2] },
     ];
   }, [all, app.lang]);
 
@@ -180,7 +213,7 @@ const stores = storesData?.data || [];
     const banned = stores.filter((s: any) => s.store_active === false).length;
     return [
       { name: app.lang === 'ar' ? 'نشط' : 'Active', value: active, color: CHART_COLORS.green[0] },
-      { name: app.lang === 'ar' ? 'محظور' : 'Banned', value: banned, color: CHART_COLORS.green[4] },
+      { name: app.lang === 'ar' ? 'محظور' : 'Banned', value: banned, color: CHART_COLORS.fuchsia[0] },
     ];
   }, [stores, app.lang]);
 
@@ -212,19 +245,18 @@ const stores = storesData?.data || [];
     total: filteredAll.length + filteredStores.length + filteredApps.length
   };
 
-  // ===== إحصائيات سريعة - كلها باللون الأخضر =====
+  // ===== إحصائيات سريعة - نفس تصميم ProductsPage مع خلفية وردية =====
   const quickStats = [
-   
     { 
       label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', 
       value: totalOrders,
       icon: ShoppingCart,
       change: `${totalOrders > 0 ? '+' : ''}${totalOrders > 0 ? Math.round((totalOrders / (sellerOrdersRaw.length || 1)) * 100) : 0}%`,
       changeType: totalOrders > 0 ? 'up' : 'down',
-      color: 'text-[#1a4f4a]',
-      bg: 'bg-[#1a4f4a]/10',
-      border: 'border-[#1a4f4a]/20',
-      gradient: 'from-[#1a4f4a] to-[#2d6b63]',
+      color: 'text-[#2a655f]',
+      bg: 'bg-[#fbcfe8]/60',
+      border: 'border-[#f9a8d4]/70',
+      gradient: 'from-[#2a655f] to-[#f9a8d4]',
     },
     { 
       label: app.lang === 'ar' ? 'إجمالي المستخدمين' : 'Total Users', 
@@ -232,10 +264,10 @@ const stores = storesData?.data || [];
       icon: Users,
       change: `${stores.length > 0 ? '+' : ''}${stores.length > 0 ? Math.round((stores.length / (all.length || 1)) * 100) : 0}%`,
       changeType: stores.length > 0 ? 'up' : 'down',
-      color: 'text-[#2d6b63]',
-      bg: 'bg-[#2d6b63]/10',
-      border: 'border-[#2d6b63]/20',
-      gradient: 'from-[#2d6b63] to-[#4a9f95]',
+      color: 'text-[#3a8a82]',
+      bg: 'bg-[#fbcfe8]/60',
+      border: 'border-[#f9a8d4]/70',
+      gradient: 'from-[#3a8a82] to-[#f9a8d4]',
     },
     { 
       label: app.lang === 'ar' ? 'متوسط الطلب' : 'Avg Order', 
@@ -243,35 +275,35 @@ const stores = storesData?.data || [];
       icon: Target,
       change: `${totalOrders > 0 ? '+' : ''}${totalOrders > 0 ? Math.round(((totalRevenue / totalOrders) / (totalRevenue / (totalOrders || 1))) * 100) : 0}%`,
       changeType: totalOrders > 0 ? 'up' : 'down',
-      color: 'text-[#4a9f95]',
-      bg: 'bg-[#4a9f95]/10',
-      border: 'border-[#4a9f95]/20',
-      gradient: 'from-[#4a9f95] to-[#6bb5aa]',
+      color: 'text-[#1a4f4a]',
+      bg: 'bg-[#fbcfe8]/60',
+      border: 'border-[#f9a8d4]/70',
+      gradient: 'from-[#1a4f4a] to-[#f9a8d4]',
     },
   ];
 
-  // ===== إحصائيات إضافية - كلها باللون الأخضر =====
+  // ===== إحصائيات إضافية - نفس تصميم ProductsPage =====
   const additionalStats = [
     {
       label: app.lang === 'ar' ? 'البنرات النشطة' : 'Active Banners',
       value: activeBanners.length,
       icon: LayoutDashboard,
-      gradient: 'from-[#0d2e2a] to-[#1a4f4a]',
-      bg: 'bg-[#0d2e2a]/10',
+      gradient: 'from-[#2a655f] to-[#1a4f4a]',
+      bg: 'bg-[#2a655f]/10',
     },
     {
       label: app.lang === 'ar' ? 'الإعلانات النشطة' : 'Active Announcements',
       value: activeAnnouncements.length,
       icon: Megaphone,
-      gradient: 'from-[#1a4f4a] to-[#2d6b63]',
+      gradient: 'from-[#1a4f4a] to-[#3a8a82]',
       bg: 'bg-[#1a4f4a]/10',
     },
     {
       label: app.lang === 'ar' ? 'التصنيفات' : 'Categories',
       value: categories.length,
       icon: Tags,
-      gradient: 'from-[#2d6b63] to-[#4a9f95]',
-      bg: 'bg-[#2d6b63]/10',
+      gradient: 'from-[#3a8a82] to-[#4a9f95]',
+      bg: 'bg-[#3a8a82]/10',
     },
     {
       label: app.lang === 'ar' ? 'الإشعارات غير المقروءة' : 'Unread Notifications',
@@ -279,6 +311,46 @@ const stores = storesData?.data || [];
       icon: Bell,
       gradient: 'from-[#4a9f95] to-[#6bb5aa]',
       bg: 'bg-[#4a9f95]/10',
+    },
+  ];
+
+  // ===== حالة المنصة - نفس تصميم ProductsPage =====
+  const platformStats = [
+    { 
+      label: app.lang === 'ar' ? 'منتجات بانتظار الموافقة' : 'Products Pending', 
+      value: pending.length, 
+      icon: Package,
+      gradient: 'from-[#2a655f] to-[#1a4f4a]',
+      bg: 'bg-[#2a655f]/10',
+      to: 'listings',
+      glow: 'shadow-[#2a655f]/20',
+    },
+    { 
+      label: app.lang === 'ar' ? 'طلبات بائعين جديدة' : 'Seller Applications', 
+      value: pendingApps.length, 
+      icon: ShieldCheck,
+      gradient: 'from-[#1a4f4a] to-[#3a8a82]',
+      bg: 'bg-[#1a4f4a]/10',
+      to: 'applications',
+      glow: 'shadow-[#1a4f4a]/20',
+    },
+    { 
+      label: app.lang === 'ar' ? 'إجمالي المتاجر' : 'Total Stores', 
+      value: stores.length, 
+      icon: Store,
+      gradient: 'from-[#3a8a82] to-[#4a9f95]',
+      bg: 'bg-[#3a8a82]/10',
+      to: 'stores',
+      glow: 'shadow-[#3a8a82]/20',
+    },
+    { 
+      label: app.lang === 'ar' ? 'إجمالي المنتجات' : 'Total Products', 
+      value: all.length, 
+      icon: LayoutDashboard,
+      gradient: 'from-[#4a9f95] to-[#6bb5aa]',
+      bg: 'bg-[#4a9f95]/10',
+      to: 'listings',
+      glow: 'shadow-[#4a9f95]/20',
     },
   ];
 
@@ -354,18 +426,18 @@ const stores = storesData?.data || [];
       <head><meta charset="UTF-8">
       <style>
         body { font-family: 'Arial', sans-serif; padding: 30px; background: #f8fafc; }
-        .header { text-align: center; padding: 20px; background: linear-gradient(135deg, #0d2e2a, #1a4f4a); color: white; border-radius: 12px; margin-bottom: 30px; }
+        .header { text-align: center; padding: 20px; background: linear-gradient(135deg, #2a655f, #1a4f4a); color: white; border-radius: 12px; margin-bottom: 30px; }
         .header h1 { margin: 0; font-size: 28px; }
         .header p { margin: 5px 0 0; opacity: 0.8; }
         .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 30px; }
-        .stat-card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-right: 4px solid #0d2e2a; }
+        .stat-card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-right: 4px solid #2a655f; }
         .stat-card .label { font-size: 12px; color: #94a3b8; text-transform: uppercase; }
         .stat-card .value { font-size: 24px; font-weight: bold; color: #1e293b; margin: 4px 0; }
         .stat-card .change { font-size: 13px; }
-        .stat-card .change.up { color: #2d6b63; }
+        .stat-card .change.up { color: #2a655f; }
         .stat-card .change.down { color: #ef4444; }
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        th { background: #0d2e2a; color: white; padding: 12px; text-align: right; }
+        th { background: #2a655f; color: white; padding: 12px; text-align: right; }
         td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; text-align: right; }
         tr:hover { background: #f8fafc; }
         .footer { text-align: center; margin-top: 30px; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
@@ -420,54 +492,65 @@ const stores = storesData?.data || [];
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-700">
       
-      {/* ===== العنوان مع أزرار التصدير ===== */}
+      {/* ===== العنوان مع أزرار التصدير - نفس تصميم ProductsPage ===== */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
             {searchQuery.trim() ? (
               <span className="flex items-center gap-3">
                 <span>{app.lang === "ar" ? 'نتائج البحث' : 'Search Results'}</span>
-                <Badge className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white text-sm px-3 py-1 shadow-lg shadow-[#0d2e2a]/30">
+                <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white text-sm px-3 py-1 shadow-lg shadow-[#2a655f]/30">
                   {searchResults.total} {app.lang === 'ar' ? 'نتيجة' : 'results'}
                 </Badge>
               </span>
             ) : (
               <>
-                <span className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] bg-clip-text text-transparent">
                   {app.lang === "ar" ? "نظرة عامة" : "Overview"}
                 </span>
-                <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 text-[10px]">
+                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20 text-[10px]">
                   <Activity className="h-2.5 w-2.5 mr-1 text-emerald-500 animate-pulse" />
                   {app.lang === 'ar' ? 'مباشر' : 'Live'}
                 </Badge>
               </>
             )}
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
             {searchQuery.trim() ? (
               <span>{app.lang === 'ar' ? `نتائج البحث عن "${searchQuery}"` : `Results for "${searchQuery}"`}</span>
             ) : (
               <>
-                <span>{app.lang === "ar" ? "إحصائيات وتحليلات المنصة" : "Platform statistics & analytics"}</span>
-                <span className="h-1 w-1 rounded-full bg-[#0d2e2a]/30" />
-                <span className="text-xs text-[#2d6b63] flex items-center gap-1">
-                  <Zap className="h-3 w-3 animate-pulse" />
-                  {app.lang === 'ar' ? 'تحديث لحظي' : 'Real-time'}
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
+                  <DollarSign className="h-3.5 w-3.5 text-[#2a655f]" />
+                  <span className="text-[#2a655f] font-medium">{formatPrice(totalRevenue, app.currency, app.lang)}</span>
+                  <span className="text-xs text-muted-foreground">{app.lang === 'ar' ? 'إيرادات' : 'revenue'}</span>
+                </span>
+                <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f9a8d4]/10 border border-[#f9a8d4]/20 hover:bg-[#f9a8d4]/20 transition-colors">
+                  <ShoppingCart className="h-3.5 w-3.5 text-[#f9a8d4]" />
+                  <span className="text-[#f9a8d4] font-medium">{totalOrders}</span>
+                  <span className="text-xs text-muted-foreground">{app.lang === 'ar' ? 'طلبات' : 'orders'}</span>
+                </span>
+                <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30 transition-colors">
+                  <Users className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">{stores.length + all.length}</span>
+                  <span className="text-xs text-muted-foreground">{app.lang === 'ar' ? 'مستخدم' : 'users'}</span>
                 </span>
               </>
             )}
           </p>
         </div>
 
-        {/* ✅ أزرار التصدير */}
+        {/* ✅ أزرار التصدير - نفس تصميم ProductsPage */}
         {!searchQuery.trim() && (
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-[#0d2e2a]/20 shadow-sm">
+            <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-[#2a655f]/20 shadow-sm">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={exportOverviewToExcel}
-                className="rounded-lg h-9 px-4 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:text-[#0d2e2a] gap-2 transition-all duration-300 hover:scale-105"
+                className="rounded-lg h-9 px-4 text-[#2a655f] hover:bg-[#2a655f]/10 hover:text-[#2a655f] gap-2 transition-all duration-300 hover:scale-105"
               >
                 <FileSpreadsheet className="h-4 w-4" />
                 <span className="hidden sm:inline text-xs font-medium">Excel</span>
@@ -481,17 +564,17 @@ const stores = storesData?.data || [];
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline text-xs font-medium">Word</span>
               </Button>
-              <div className="w-px h-6 bg-[#0d2e2a]/20" />
+              <div className="w-px h-6 bg-[#2a655f]/20" />
               <Button
                 variant="ghost"
                 size="sm"
-                className="rounded-lg h-9 px-3 text-slate-500 hover:bg-[#0d2e2a]/10 transition-all duration-300"
+                className="rounded-lg h-9 px-3 text-slate-500 hover:bg-[#2a655f]/10 transition-all duration-300"
                 onClick={() => window.print()}
               >
                 <Printer className="h-4 w-4" />
               </Button>
             </div>
-            <Badge className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#0d2e2a]/30 animate-pulse">
+            <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#2a655f]/30 animate-pulse">
               <Sparkles className="h-3 w-3 mr-1" />
               {app.lang === 'ar' ? 'تقرير لحظي' : 'Live Report'}
             </Badge>
@@ -499,13 +582,13 @@ const stores = storesData?.data || [];
         )}
       </div>
 
-      {/* ===== عرض نتائج البحث ===== */}
+      {/* ===== عرض نتائج البحث - نفس تصميم ProductsPage ===== */}
       {searchQuery.trim() && (
-        <div className="grid grid-cols-3 gap-4 animate-in slide-in-from-top-5 duration-300">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-in slide-in-from-top-5 duration-300">
           {[
-            { key: 'products', label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package, gradient: 'from-[#0d2e2a] to-[#1a4f4a]' },
-            { key: 'stores', label: app.lang === 'ar' ? 'المتاجر' : 'Stores', count: searchResults.stores, icon: Store, gradient: 'from-[#1a4f4a] to-[#2d6b63]' },
-            { key: 'applications', label: app.lang === 'ar' ? 'طلبات البائعين' : 'Applications', count: searchResults.applications, icon: ShieldCheck, gradient: 'from-[#2d6b63] to-[#4a9f95]' },
+            { key: 'products', label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package, gradient: 'from-[#2a655f] to-[#1a4f4a]' },
+            { key: 'stores', label: app.lang === 'ar' ? 'المتاجر' : 'Stores', count: searchResults.stores, icon: Store, gradient: 'from-[#1a4f4a] to-[#3a8a82]' },
+            { key: 'applications', label: app.lang === 'ar' ? 'طلبات البائعين' : 'Applications', count: searchResults.applications, icon: ShieldCheck, gradient: 'from-[#3a8a82] to-[#4a9f95]' },
           ].map((item) => (
             <button
               key={item.key}
@@ -514,10 +597,10 @@ const stores = storesData?.data || [];
                 else if (item.key === 'stores') onGoto('stores');
                 else if (item.key === 'applications') onGoto('applications');
               }}
-              className="group bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 p-4 text-center hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all hover:scale-[1.02]"
+              className="group bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-4 text-center hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all hover:scale-[1.02]"
             >
               <div className="flex items-center justify-center gap-3">
-                <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg shadow-[#0d2e2a]/20 group-hover:scale-110 transition-all duration-300`}>
+                <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg shadow-[#2a655f]/20 group-hover:scale-110 transition-all duration-300`}>
                   <item.icon className="h-5 w-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -526,7 +609,7 @@ const stores = storesData?.data || [];
                 </div>
               </div>
               {item.count > 0 && (
-                <div className="mt-2 text-xs text-[#2d6b63] font-medium group-hover:translate-x-1 transition-transform duration-300">
+                <div className="mt-2 text-xs text-[#2a655f] font-medium group-hover:translate-x-1 transition-transform duration-300">
                   {app.lang === 'ar' ? 'عرض الكل' : 'View all'} →
                 </div>
               )}
@@ -537,9 +620,9 @@ const stores = storesData?.data || [];
 
       {/* ===== إذا لم يتم العثور على نتائج ===== */}
       {searchQuery.trim() && searchResults.total === 0 && (
-        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-[#0d2e2a]/20 p-12 text-center">
-          <div className="h-20 w-20 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
-            <Search className="h-10 w-10 text-[#0d2e2a]/40" />
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-[#2a655f]/20 p-12 text-center">
+          <div className="h-20 w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
+            <Search className="h-10 w-10 text-[#2a655f]/40" />
           </div>
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
             {app.lang === 'ar' ? 'لا توجد نتائج' : 'No results found'}
@@ -552,94 +635,57 @@ const stores = storesData?.data || [];
         </div>
       )}
 
-      {/* ===== بطاقات الإحصائيات السريعة ===== */}
+      {/* ===== بطاقات الإحصائيات السريعة - نفس تصميم ProductsPage مع خلفية وردية ===== */}
       {!searchQuery.trim() && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {quickStats.map((stat, i) => (
               <div 
                 key={i} 
-                className="group bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-[#0d2e2a]/20 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all hover:scale-[1.02] relative overflow-hidden"
+                className="group bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
               >
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#0d2e2a]/5 blur-3xl animate-pulse" />
+                  <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" />
                 </div>
-                <div className={`flex items-start justify-between ${isRTL ? 'flex-row-reverse' : ''} relative`}>
+                <div className={`flex items-start justify-between ${isRTL ? 'flex-row-reverse' : ''} relative p-5`}>
                   <div className={isRTL ? 'text-right' : ''}>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stat.value}</p>
+                    <p className="text-xs font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">{stat.label}</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1 group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
                     <div className={`flex items-center gap-1 mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
                       {stat.changeType === 'up' ? (
-                        <ArrowUpRight className="h-3 w-3 text-[#2d6b63] animate-bounce-slow" />
+                        <ArrowUpRight className="h-3 w-3 text-[#2a655f] animate-bounce-slow" />
                       ) : (
-                        <ArrowDownRight className="h-3 w-3 text-red-500" />
+                        <ArrowDownRight className="h-3 w-3 text-[#d81b60]" />
                       )}
-                      <span className={`text-xs font-medium ${stat.changeType === 'up' ? 'text-[#2d6b63]' : 'text-red-500'}`}>
+                      <span className={`text-xs font-medium ${stat.changeType === 'up' ? 'text-[#2a655f]' : 'text-[#d81b60]'}`}>
                         {stat.change}
                       </span>
                     </div>
                   </div>
-                  <div className={`h-12 w-12 rounded-xl ${stat.bg} border ${stat.border} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                  <div className={`h-12 w-12 rounded-xl bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
                     <stat.icon className={`h-5 w-5 ${stat.color}`} />
                   </div>
                 </div>
-                <div className="mt-3 h-1 w-full rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                <div className="mt-0 h-1 w-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
                   <div 
-                    className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000`} 
-                    style={{ width: `${Math.min(Math.abs(parseFloat(stat.change) || 0) * 2, 100)}%` }}
+                    className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000 animate-shimmer`} 
+                    style={{ width: `${Math.min(Math.abs(parseFloat(stat.change) || 0) * 4, 100)}%` }}
                   />
                 </div>
               </div>
             ))}
           </div>
 
-          {/* ===== بطاقات حالة المنصة ===== */}
+          {/* ===== بطاقات حالة المنصة - نفس تصميم ProductsPage ===== */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { 
-                label: app.lang === 'ar' ? 'منتجات بانتظار الموافقة' : 'Products Pending', 
-                value: pending.length, 
-                icon: Package,
-                gradient: 'from-[#0d2e2a] to-[#1a4f4a]',
-                bg: 'bg-[#0d2e2a]/10',
-                to: 'listings',
-                glow: 'shadow-[#0d2e2a]/20',
-              },
-              { 
-                label: app.lang === 'ar' ? 'طلبات بائعين جديدة' : 'Seller Applications', 
-                value: pendingApps.length, 
-                icon: ShieldCheck,
-                gradient: 'from-[#1a4f4a] to-[#2d6b63]',
-                bg: 'bg-[#1a4f4a]/10',
-                to: 'applications',
-                glow: 'shadow-[#1a4f4a]/20',
-              },
-              { 
-                label: app.lang === 'ar' ? 'إجمالي المتاجر' : 'Total Stores', 
-                value: stores.length, 
-                icon: Store,
-                gradient: 'from-[#2d6b63] to-[#4a9f95]',
-                bg: 'bg-[#2d6b63]/10',
-                to: 'stores',
-                glow: 'shadow-[#2d6b63]/20',
-              },
-              { 
-                label: app.lang === 'ar' ? 'إجمالي المنتجات' : 'Total Products', 
-                value: all.length, 
-                icon: LayoutDashboard,
-                gradient: 'from-[#4a9f95] to-[#6bb5aa]',
-                bg: 'bg-[#4a9f95]/10',
-                to: 'listings',
-                glow: 'shadow-[#4a9f95]/20',
-              },
-            ].map((item) => (
+            {platformStats.map((item) => (
               <button
                 key={item.label}
                 onClick={() => onGoto(item.to as any)}
-                className="group bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-[#0d2e2a]/20 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all hover:scale-[1.02] text-start relative overflow-hidden"
+                className="group bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-[#2a655f]/20 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all hover:scale-[1.02] text-start relative overflow-hidden"
               >
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className={`absolute -right-20 -bottom-20 h-48 w-48 rounded-full bg-[#0d2e2a]/5 blur-3xl animate-pulse`} />
+                  <div className={`absolute -right-20 -bottom-20 h-48 w-48 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse`} />
                 </div>
                 <div className="flex items-center justify-between relative">
                   <div>
@@ -658,30 +704,30 @@ const stores = storesData?.data || [];
                     style={{ width: `${Math.min(100, (item.value / (all.length || 1)) * 100)}%` }}
                   />
                 </div>
-                <div className="mt-1 text-[10px] text-[#2d6b63] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="mt-1 text-[10px] text-[#2a655f] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   {app.lang === 'ar' ? 'اضغط للعرض' : 'Click to view'} →
                 </div>
               </button>
             ))}
           </div>
 
-          {/* ===== الرسوم البيانية - كلها بتدرجات الأخضر ===== */}
+          {/* ===== الرسوم البيانية - نفس تصميم ProductsPage مع ألوان وردية وزيتية ===== */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* ✅ مخطط المبيعات الشهرية */}
-            <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 p-5 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#0d2e2a]/5 blur-3xl animate-pulse" />
+            {/* ✅ مخطط المبيعات الشهرية - مع ألوان وردية وزيتية */}
+            <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-5 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all duration-300 relative overflow-hidden">
+              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
               <div className={`flex items-center justify-between mb-4 ${isRTL ? 'flex-row-reverse' : ''} relative`}>
                 <div className={isRTL ? 'text-right' : ''}>
                   <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                    <LineChartIcon className="h-4 w-4 text-[#0d2e2a] animate-float" />
+                    <LineChartIcon className="h-4 w-4 text-[#2a655f] animate-float" />
                     {app.lang === 'ar' ? "تحليل المبيعات" : "Sales Analytics"}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {app.lang === 'ar' ? "الإيرادات والطلبات الشهرية" : "Monthly revenue & orders"}
                   </p>
                 </div>
-                <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20">
+                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20">
                   <TrendingUp className="h-3 w-3 mr-1 animate-pulse" />
                   {growthData.isPositive ? '+' : ''}{growthData.growth}%
                 </Badge>
@@ -692,13 +738,13 @@ const stores = storesData?.data || [];
                     <ComposedChart data={monthlySalesData}>
                       <defs>
                         <linearGradient id="revenueGradientGreen" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#0d2e2a" stopOpacity={0.3}/>
+                          <stop offset="0%" stopColor="#2a655f" stopOpacity={0.3}/>
                           <stop offset="50%" stopColor="#1a4f4a" stopOpacity={0.1}/>
-                          <stop offset="100%" stopColor="#2d6b63" stopOpacity={0}/>
+                          <stop offset="100%" stopColor="#f9a8d4" stopOpacity={0}/>
                         </linearGradient>
                         <linearGradient id="orderGradientGreen" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#4a9f95" stopOpacity={0.2}/>
-                          <stop offset="100%" stopColor="#4a9f95" stopOpacity={0}/>
+                          <stop offset="0%" stopColor="#f9a8d4" stopOpacity={0.2}/>
+                          <stop offset="100%" stopColor="#f9a8d4" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="4 4" stroke="#e2e8f0" opacity={0.3} vertical={false} />
@@ -708,7 +754,7 @@ const stores = storesData?.data || [];
                       <Tooltip 
                         contentStyle={{ 
                           borderRadius: '12px', 
-                          border: '1px solid #0d2e2a/20', 
+                          border: '1px solid #2a655f/20', 
                           boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
                           background: 'rgba(255,255,255,0.95)'
                         }}
@@ -720,11 +766,11 @@ const stores = storesData?.data || [];
                         type="monotone" 
                         dataKey="revenue" 
                         name={app.lang === 'ar' ? "الإيرادات" : "Revenue"} 
-                        stroke="#0d2e2a" 
+                        stroke="#2a655f" 
                         strokeWidth={2.5} 
                         fill="url(#revenueGradientGreen)"
-                        dot={{ fill: '#0d2e2a', r: 4 }}
-                        activeDot={{ r: 6, fill: '#1a4f4a' }}
+                        dot={{ fill: '#2a655f', r: 4 }}
+                        activeDot={{ r: 6, fill: '#f9a8d4' }}
                         animationDuration={2000}
                         animationEasing="ease-in-out"
                       />
@@ -732,7 +778,7 @@ const stores = storesData?.data || [];
                         yAxisId="right" 
                         dataKey="orders" 
                         name={app.lang === 'ar' ? "الطلبات" : "Orders"} 
-                        fill="#4a9f95" 
+                        fill="#f9a8d4" 
                         radius={[4,4,0,0]} 
                         barSize={24}
                         animationDuration={2000}
@@ -748,12 +794,12 @@ const stores = storesData?.data || [];
               </div>
             </div>
 
-            {/* ✅ مخطط توزيع المنتجات */}
-            <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 p-5 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-[#2d6b63]/5 blur-3xl animate-pulse delay-700" />
+            {/* ✅ مخطط توزيع المنتجات - مع ألوان وردية وزيتية */}
+            <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-5 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all duration-300 relative overflow-hidden">
+              <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse delay-700" />
               <div className={isRTL ? 'text-right' : ''}>
                 <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                  <PieChartIcon className="h-4 w-4 text-[#2d6b63] animate-spin-slow" />
+                  <PieChartIcon className="h-4 w-4 text-[#f9a8d4] animate-spin-slow" />
                   {app.lang === 'ar' ? "توزيع المنتجات" : "Product Distribution"}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -785,7 +831,7 @@ const stores = storesData?.data || [];
                         formatter={(v: any) => v}
                         contentStyle={{ 
                           borderRadius: '12px', 
-                          border: '1px solid #0d2e2a/20', 
+                          border: '1px solid #2a655f/20', 
                           boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
                           background: 'rgba(255,255,255,0.95)'
                         }}
@@ -806,7 +852,7 @@ const stores = storesData?.data || [];
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* ✅ حالة المتاجر */}
-            <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 p-5 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-300 relative overflow-hidden">
+            <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-5 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all duration-300 relative overflow-hidden">
               <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#1a4f4a]/5 blur-3xl animate-pulse delay-500" />
               <div className={isRTL ? 'text-right' : ''}>
                 <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
@@ -839,7 +885,7 @@ const stores = storesData?.data || [];
                       <Tooltip 
                         contentStyle={{ 
                           borderRadius: '12px', 
-                          border: '1px solid #0d2e2a/20', 
+                          border: '1px solid #2a655f/20', 
                           boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
                           background: 'rgba(255,255,255,0.95)'
                         }}
@@ -856,11 +902,11 @@ const stores = storesData?.data || [];
             </div>
 
             {/* ✅ أفضل البائعين */}
-            <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 p-5 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-[#4a9f95]/5 blur-3xl animate-pulse delay-1000" />
+            <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-5 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all duration-300 relative overflow-hidden">
+              <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse delay-1000" />
               <div className={isRTL ? 'text-right' : ''}>
                 <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                  <Award className="h-4 w-4 text-[#4a9f95] animate-bounce-slow" />
+                  <Award className="h-4 w-4 text-[#f9a8d4] animate-bounce-slow" />
                   {app.lang === 'ar' ? "أفضل البائعين" : "Top Sellers"}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -873,9 +919,9 @@ const stores = storesData?.data || [];
                     <BarChart data={topSellers} layout="vertical">
                       <defs>
                         <linearGradient id="sellerGradientGreen" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="#0d2e2a" />
+                          <stop offset="0%" stopColor="#2a655f" />
                           <stop offset="50%" stopColor="#1a4f4a" />
-                          <stop offset="100%" stopColor="#2d6b63" />
+                          <stop offset="100%" stopColor="#f9a8d4" />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="4 4" stroke="#e2e8f0" opacity={0.3} horizontal={false} />
@@ -891,7 +937,7 @@ const stores = storesData?.data || [];
                       <Tooltip 
                         contentStyle={{ 
                           borderRadius: '12px', 
-                          border: '1px solid #0d2e2a/20', 
+                          border: '1px solid #2a655f/20', 
                           boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
                           background: 'rgba(255,255,255,0.95)'
                         }}
@@ -916,18 +962,18 @@ const stores = storesData?.data || [];
             </div>
           </div>
 
-          {/* ===== إحصائيات إضافية - كلها بتدرجات الأخضر ===== */}
+          {/* ===== إحصائيات إضافية - نفس تصميم ProductsPage ===== */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {additionalStats.map((stat, i) => (
               <div 
                 key={i} 
-                className="group bg-white dark:bg-[#1e293b] rounded-xl p-4 border border-[#0d2e2a]/20 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all hover:scale-[1.02] relative overflow-hidden"
+                className="group bg-white dark:bg-[#1e293b] rounded-xl p-4 border border-[#2a655f]/20 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all hover:scale-[1.02] relative overflow-hidden"
               >
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#0d2e2a]/5 blur-3xl animate-pulse" />
+                  <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
                 </div>
                 <div className="flex items-center gap-3 relative">
-                  <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg shadow-[#0d2e2a]/10`}>
+                  <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg shadow-[#2a655f]/10`}>
                     <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
                       <stat.icon className="h-3.5 w-3.5 text-white" />
                     </div>
@@ -947,21 +993,21 @@ const stores = storesData?.data || [];
             ))}
           </div>
 
-          {/* ===== شريط سفلي متحرك ===== */}
-          <div className="relative w-full overflow-hidden rounded-xl border border-[#0d2e2a]/20 bg-gradient-to-r from-[#0d2e2a]/5 via-[#1a4f4a]/5 to-[#2d6b63]/5 p-3">
+          {/* ===== شريط سفلي متحرك - نفس تصميم ProductsPage ===== */}
+          <div className="relative w-full overflow-hidden rounded-xl border border-[#2a655f]/20 bg-gradient-to-r from-[#2a655f]/5 via-[#1a4f4a]/5 to-[#f9a8d4]/5 p-3">
             <div className="flex items-center justify-center gap-6 animate-marquee-slow">
               <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                <Rocket className="h-4 w-4 text-[#0d2e2a] animate-float" />
+                <Rocket className="h-4 w-4 text-[#2a655f] animate-float" />
                 {app.lang === 'ar' ? '🚀 السوق لعندك - منصة متكاملة' : '🚀 Souqi - Integrated Platform'}
               </span>
-              <span className="text-[#0d2e2a]/20">|</span>
+              <span className="text-[#2a655f]/20">|</span>
               <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                <Gem className="h-4 w-4 text-[#2d6b63] animate-spin-slow" />
+                <Gem className="h-4 w-4 text-[#f9a8d4] animate-spin-slow" />
                 {app.lang === 'ar' ? '💎 أداء عالي وسرعة فائقة' : '💎 High Performance & Speed'}
               </span>
-              <span className="text-[#0d2e2a]/20">|</span>
+              <span className="text-[#2a655f]/20">|</span>
               <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                <ShieldCheck className="h-4 w-4 text-[#4a9f95] animate-pulse" />
+                <ShieldCheck className="h-4 w-4 text-[#3a8a82] animate-pulse" />
                 {app.lang === 'ar' ? '🛡️ آمن وموثوق' : '🛡️ Secure & Reliable'}
               </span>
             </div>
@@ -1017,6 +1063,13 @@ const stores = storesData?.data || [];
         }
         .animate-marquee-slow:hover {
           animation-play-state: paused;
+        }
+        @keyframes slide {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        .animate-slide {
+          animation: slide 1.5s ease-in-out infinite;
         }
       `}</style>
     </div>

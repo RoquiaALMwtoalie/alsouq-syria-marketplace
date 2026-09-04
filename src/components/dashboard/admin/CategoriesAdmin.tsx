@@ -24,6 +24,23 @@ import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // ============================================================
+// 🎨 ZOOQ BRAND COLORS
+// ============================================================
+const COLORS = {
+  olive: '#2a655f',
+  oliveLight: '#3a8a82',
+  oliveDark: '#1a4f4a',
+  oliveVeryLight: '#e8f0ee',
+  pink: '#f9a8d4',
+  pinkLight: '#fbcfe8',
+  pinkDark: '#f48fb1',
+  pinkVeryLight: '#fdf2f8',
+  fuchsia: '#d81b60',
+  fuchsiaDark: '#c2185b',
+  fuchsiaGlow: 'rgba(216,27,96,0.2)',
+};
+
+// ============================================================
 // 📦 قائمة الأيقونات الكاملة للتصنيفات
 // ============================================================
 const CATEGORY_ICONS = [
@@ -205,61 +222,38 @@ const getIconCategory = (value: string) => {
 };
 
 // ============================================================
-// ✅ مؤشر حيوي
-// ============================================================
-const LiveIndicator = () => (
-  <span className="relative flex h-2.5 w-2.5">
-    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2d6b63] opacity-75" />
-    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#0d2e2a]" />
-  </span>
-);
-
-// ============================================================
-// ✅ Stat Card بألوان النظام
+// ✅ Stat Card بتصميم وردي
 // ============================================================
 const StatCard = ({ 
   label, 
   value, 
-  gradient,
-  bg,
-  glow,
   icon: Icon, 
-  animation 
+  color,
+  gradient,
 }: { 
   label: string; 
   value: number; 
-  gradient: string;
-  bg: string;
-  glow: string;
   icon: any; 
-  animation?: string;
+  color: string;
+  gradient: string;
 }) => (
-  <div className={cn(
-    "group bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 p-4 shadow-lg hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden"
-  )}>
-    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-      <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#0d2e2a]/5 blur-3xl animate-pulse" />
-    </div>
-    <div className="flex items-center justify-between relative">
+  <div className="group relative bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <div className="absolute -top-8 -right-8 h-16 w-16 rounded-full bg-[#fbcfe8]/60 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <div className="relative flex items-center justify-between p-3">
       <div>
-        <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-        <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#0d2e2a] transition-colors">{value}</p>
+        <p className="text-[10px] font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">
+          {label}
+        </p>
+        <p className={`text-xl font-bold mt-0.5 ${color} group-hover:scale-110 transition-transform duration-300`}>
+          {value}
+        </p>
       </div>
-      <div className={`h-10 w-10 rounded-xl ${bg} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg ${glow}`}>
-        <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-          <Icon className={cn(
-            "h-3.5 w-3.5 text-white",
-            animation || "animate-float"
-          )} />
-        </div>
+      <div className={`h-9 w-9 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
+        <Icon className={`h-4 w-4 ${color}`} />
       </div>
     </div>
-    <div className="mt-2 h-0.5 w-full rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-      <div 
-        className={`h-full rounded-full bg-gradient-to-r ${gradient} transition-all duration-1000 animate-shimmer`} 
-        style={{ width: `${Math.min(100, value / 10 * 100)}%` }}
-      />
-    </div>
+    <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
   </div>
 );
 
@@ -325,10 +319,10 @@ function IconDropdown({ value, onChange, lang, searchTerm, onSearchChange }: any
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          w-full h-11 px-4 rounded-xl border transition-all duration-200 flex items-center gap-3
+          w-full h-11 px-4 rounded-xl border-3 transition-all duration-200 flex items-center gap-3
           ${isOpen 
-            ? 'border-[#0d2e2a] ring-2 ring-[#0d2e2a]/20 bg-white dark:bg-slate-800' 
-            : 'border-[#0d2e2a]/20 bg-white/50 dark:border-[#0d2e2a]/30 dark:bg-slate-900/50 hover:border-[#0d2e2a]/40'
+            ? 'border-[#d81b60] ring-2 ring-[#f9a8d4]/30 bg-white dark:bg-slate-800' 
+            : 'border-[#f9a8d4]/40 bg-white/50 dark:border-[#f9a8d4]/30 dark:bg-slate-900/50 hover:border-[#d81b60]/50'
           }
         `}
       >
@@ -352,16 +346,16 @@ function IconDropdown({ value, onChange, lang, searchTerm, onSearchChange }: any
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-800 rounded-xl border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 shadow-2xl shadow-[#0d2e2a]/10 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-800 rounded-xl border-3 border-[#f9a8d4]/40 shadow-2xl shadow-[#f9a8d4]/20 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
           
-          <div className="sticky top-0 bg-white dark:bg-slate-800 p-3 border-b border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20">
+          <div className="sticky top-0 bg-white dark:bg-slate-800 p-3 border-b-3 border-[#f9a8d4]/30">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder={lang === "ar" ? "ابحث عن أيقونة..." : "Search icons..."}
-                className="pl-9 h-9 rounded-lg border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-slate-50/50 dark:bg-slate-900/50 text-sm focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20"
+                className="pl-9 h-9 rounded-lg border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 bg-slate-50/50 dark:bg-slate-900/50 text-sm focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30"
                 autoFocus
               />
             </div>
@@ -379,7 +373,7 @@ function IconDropdown({ value, onChange, lang, searchTerm, onSearchChange }: any
                 <p className="text-sm">{lang === "ar" ? "لم نجد أيقونة تطابق بحثك" : "No icons match your search"}</p>
                 <button
                   onClick={() => onSearchChange('')}
-                  className="text-xs text-[#2d6b63] hover:underline mt-1"
+                  className="text-xs text-[#d81b60] hover:underline mt-1"
                 >
                   {lang === "ar" ? "مسح البحث" : "Clear search"}
                 </button>
@@ -408,14 +402,14 @@ function IconDropdown({ value, onChange, lang, searchTerm, onSearchChange }: any
                             className={`
                               flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150
                               ${isSelected 
-                                ? 'bg-[#0d2e2a]/10 text-[#0d2e2a] dark:bg-[#0d2e2a]/30 dark:text-[#4a9f95] ring-1 ring-[#0d2e2a]/30' 
-                                : 'hover:bg-[#0d2e2a]/5 dark:hover:bg-[#0d2e2a]/10 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#f9a8d4]/30 text-[#d81b60] dark:bg-[#f9a8d4]/30 dark:text-[#f9a8d4] ring-2 ring-[#d81b60]/40' 
+                                : 'hover:bg-[#f9a8d4]/20 dark:hover:bg-[#f9a8d4]/10 text-slate-700 dark:text-slate-300'
                               }
                             `}
                           >
                             <span className="text-xl leading-none">{icon.label}</span>
                             <span className="flex-1 text-start truncate">{icon.name}</span>
-                            {isSelected && <Check className="h-3.5 w-3.5 text-[#0d2e2a] dark:text-[#4a9f95] flex-shrink-0" />}
+                            {isSelected && <Check className="h-3.5 w-3.5 text-[#d81b60] dark:text-[#f9a8d4] flex-shrink-0" />}
                           </button>
                         );
                       })}
@@ -569,187 +563,190 @@ export function CategoriesAdmin() {
   // ✅ حالة التحميل
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center justify-center py-32 space-y-6">
         <div className="relative">
-          <div className="h-12 w-12 rounded-full border-4 border-[#0d2e2a]/20 border-t-[#0d2e2a] animate-spin" />
+          <div className="h-20 w-20 rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f] animate-spin" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <Layers className="h-5 w-5 text-[#0d2e2a] animate-pulse" />
+            <Layers className="h-8 w-8 text-[#2a655f] animate-pulse" />
           </div>
         </div>
+        <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 animate-pulse">
+          {isRTL ? "⏳ جاري تحميل التصنيفات..." : "⏳ Loading categories..."}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       
       {/* ============================================================
-      // ✅ HEADER
+      // ✅ HEADER - نفس تصميم باقي الصفحات
       // ============================================================ */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] flex items-center justify-center shadow-lg shadow-[#0d2e2a]/30">
-              <Layers className="h-5 w-5 text-white animate-float" />
+        <div className="relative">
+          <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
+          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#f9a8d4]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+          
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
+            <div className="relative group">
+              <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
+              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#f9a8d4]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                <Layers className="h-5 w-5 group-hover:animate-bounce" />
+              </div>
             </div>
-            <span className="bg-gradient-to-r from-[#0d2e2a] to-[#2d6b63] bg-clip-text text-transparent">
-              {isRTL ? "التصنيفات" : "Categories"}
-            </span>
-            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20 text-[10px]">
-              <Sparkles className="h-2.5 w-2.5 mr-1 animate-pulse" />
-              {isRTL ? 'مباشر' : 'Live'}
+            {isRTL ? "التصنيفات" : "Categories"}
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
+              {stats.total}
             </Badge>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
-            {isRTL
-              ? `إدارة جميع التصنيفات (${filteredCategories.length} من ${categories.length})`
-              : `Manage all categories (${filteredCategories.length} of ${categories.length})`}
-            <span className="h-1 w-1 rounded-full bg-[#0d2e2a]/30" />
-            <span className="text-xs text-[#2d6b63] flex items-center gap-1">
-              <Zap className="h-3 w-3 animate-pulse" />
-              {isRTL ? 'تحديث لحظي' : 'Real-time'}
+          
+          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
+              <FolderOpen className="h-3.5 w-3.5 text-[#2a655f]" />
+              <span className="text-[#2a655f] font-medium">{stats.active}</span>
+              <span className="text-xs text-muted-foreground">{isRTL ? "نشط" : "active"}</span>
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f9a8d4]/10 border border-[#f9a8d4]/20 hover:bg-[#f9a8d4]/20 transition-colors">
+              <Star className="h-3.5 w-3.5 text-[#d81b60]" />
+              <span className="text-[#d81b60] font-medium">{stats.featured}</span>
+              <span className="text-xs text-muted-foreground">{isRTL ? "مميز" : "featured"}</span>
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-800/30 hover:bg-red-100/50 dark:hover:bg-red-950/30 transition-colors">
+              <EyeOff className="h-3.5 w-3.5 text-red-500" />
+              <span className="text-red-600 dark:text-red-400 font-medium">{stats.hidden}</span>
+              <span className="text-xs text-muted-foreground">{isRTL ? "مخفي" : "hidden"}</span>
             </span>
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-[#0d2e2a]/20 shadow-sm">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => refetch()}
-              className="rounded-lg h-9 px-3 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 transition-all duration-300 hover:scale-105"
-            >
-              <RefreshCw className="h-4 w-4 animate-spin-slow" />
-            </Button>
-          </div>
+       
           <Button
             onClick={openNew}
-            className="gap-2 bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#0d2e2a]/30 hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-105"
+            className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-105 group border-2 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
             {isRTL ? "تصنيف جديد" : "New Category"}
           </Button>
-          <Badge className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#0d2e2a]/30 animate-pulse">
-            <Sparkles className="h-3 w-3 mr-1" />
-            {isRTL ? 'لوحة تحكم' : 'Dashboard'}
-          </Badge>
         </div>
       </div>
 
       {/* ============================================================
-      // ✅ STATS CARDS
+      // ✅ STATS CARDS - بتصميم وردي
       // ============================================================ */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard 
-          label={isRTL ? 'إجمالي التصنيفات' : 'Total Categories'} 
+          label={isRTL ? 'الإجمالي' : 'Total'} 
           value={stats.total} 
-          gradient="from-[#0d2e2a] to-[#1a4f4a]"
-          bg="bg-[#0d2e2a]/10"
-          glow="shadow-[#0d2e2a]/20"
           icon={FolderOpen}
-          animation="animate-float"
+          color="text-[#2a655f]"
+          gradient="from-[#2a655f] to-[#f9a8d4]"
         />
         <StatCard 
-          label={isRTL ? 'نشطة' : 'Active'} 
+          label={isRTL ? 'نشط' : 'Active'} 
           value={stats.active} 
-          gradient="from-[#2d6b63] to-[#4a9f95]"
-          bg="bg-[#2d6b63]/10"
-          glow="shadow-[#2d6b63]/20"
           icon={CheckCircle2}
-          animation="animate-bounce-slow"
+          color="text-emerald-500"
+          gradient="from-emerald-500 to-teal-500"
         />
         <StatCard 
-          label={isRTL ? 'مخفية' : 'Hidden'} 
+          label={isRTL ? 'مخفي' : 'Hidden'} 
           value={stats.hidden} 
-          gradient="from-[#6bb5aa] to-[#4a9f95]"
-          bg="bg-[#6bb5aa]/10"
-          glow="shadow-[#6bb5aa]/20"
           icon={EyeOff}
-          animation="animate-float"
+          color="text-[#d81b60]"
+          gradient="from-[#d81b60] to-[#f9a8d4]"
         />
         <StatCard 
-          label={isRTL ? 'مميزة' : 'Featured'} 
+          label={isRTL ? 'مميز' : 'Featured'} 
           value={stats.featured} 
-          gradient="from-[#0d2e2a] to-[#2d6b63]"
-          bg="bg-[#0d2e2a]/10"
-          glow="shadow-[#0d2e2a]/20"
           icon={Star}
-          animation="animate-pulse-slow"
+          color="text-yellow-500"
+          gradient="from-yellow-500 to-amber-500"
         />
       </div>
 
       {/* ============================================================
-      // ✅ SEARCH
+      // ✅ SEARCH - مع بوردرات وردية
       // ============================================================ */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 group">
-          <Search className={`absolute inset-y-0 my-auto ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-focus-within:text-[#0d2e2a] transition-colors duration-300`} />
+          <Search className={`absolute inset-y-0 my-auto ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors duration-300`} />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={isRTL ? "🔍 بحث عن تصنيف..." : "🔍 Search categories..."}
-            className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 bg-white dark:bg-[#1e293b] focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300`}
+            className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300`}
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className={`absolute inset-y-0 ${isRTL ? 'left-3' : 'right-3'} flex items-center text-slate-400 hover:text-[#f9a8d4] transition-colors`}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <Button
           variant="outline"
           size="sm"
           onClick={() => setSearchQuery("")}
-          className="h-10 rounded-xl border-[#0d2e2a]/20 text-[#0d2e2a] hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300 hover:scale-105"
+          className="h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 group"
         >
-          <X className="h-4 w-4 mr-1.5" />
+          <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
           {isRTL ? "مسح البحث" : "Clear"}
         </Button>
       </div>
 
       {/* ============================================================
-      // ✅ TABLE - مع أزرار متحركة وأيقونات متحركة
+      // ✅ TABLE - مع هوفر وردي ونفس تصميم ProductsPage
       // ============================================================ */}
-      <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 overflow-hidden shadow-lg shadow-[#0d2e2a]/5 hover:shadow-xl hover:shadow-[#0d2e2a]/10 transition-all duration-300">
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 hover:bg-transparent bg-gradient-to-r from-[#0d2e2a]/5 to-[#1a4f4a]/5">
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-right min-w-[200px]">
+              <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-gradient-to-r from-[#f9a8d4]/30 via-[#fbcfe8]/20 to-[#f9a8d4]/30 dark:from-[#f9a8d4]/20 dark:via-[#fbcfe8]/10 dark:to-[#f9a8d4]/20 border-b-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-right min-w-[200px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                   <div className="flex items-center gap-2">
-                    <FolderOpen className="h-3.5 w-3.5" />
+                    <FolderOpen className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
                     {isRTL ? "التصنيف" : "Category"}
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[120px]">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                   <div className="flex items-center justify-center gap-2">
-                    <Hash className="h-3.5 w-3.5" />
+                    <Hash className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
                     Slug
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[80px]">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[80px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                   <div className="flex items-center justify-center gap-2">
-                    <Tag className="h-3.5 w-3.5" />
+                    <Tag className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
                     {isRTL ? "أيقونة" : "Icon"}
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[80px]">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[80px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                   <div className="flex items-center justify-center gap-2">
-                    <GripVertical className="h-3.5 w-3.5" />
+                    <GripVertical className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
                     {isRTL ? "الترتيب" : "Order"}
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[100px]">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[100px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
                   <div className="flex items-center justify-center gap-2">
-                    <Shield className="h-3.5 w-3.5" />
+                    <Shield className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
                     {isRTL ? "الحالة" : "Status"}
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[130px]">
-                  <div className="flex items-center justify-center gap-2 group cursor-pointer">
-                    <Star className="h-3.5 w-3.5 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 text-yellow-500" />
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[130px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                  <div className="flex items-center justify-center gap-2">
+                    <Star className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4] group-hover:rotate-12 transition-all duration-300" />
                     {isRTL ? "مميز" : "Featured"}
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-medium text-[#0d2e2a] dark:text-[#4a9f95] text-center min-w-[160px]">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[160px]">
                   <div className="flex items-center justify-center gap-2">
-                    <Zap className="h-3.5 w-3.5 animate-pulse" />
+                    <Zap className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4] animate-pulse" />
                     {isRTL ? "إجراءات" : "Actions"}
                   </div>
                 </TableHead>
@@ -760,8 +757,8 @@ export function CategoriesAdmin() {
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-12">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="h-16 w-16 rounded-full bg-[#0d2e2a]/10 flex items-center justify-center animate-bounce-slow">
-                        <FolderOpen className="h-8 w-8 text-[#0d2e2a]/40" />
+                      <div className="h-16 w-16 rounded-full bg-[#2a655f]/10 flex items-center justify-center animate-bounce">
+                        <FolderOpen className="h-8 w-8 text-[#2a655f]/40" />
                       </div>
                       <p className="font-medium text-slate-900 dark:text-white">
                         {isRTL ? "لا توجد تصنيفات" : "No categories"}
@@ -771,9 +768,9 @@ export function CategoriesAdmin() {
                       </p>
                       <Button
                         onClick={openNew}
-                        className="mt-2 gap-2 bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white rounded-xl transition-all duration-300 hover:scale-105"
+                        className="mt-2 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105 group border-2 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
                         {isRTL ? "إضافة تصنيف" : "Add Category"}
                       </Button>
                     </div>
@@ -788,34 +785,34 @@ export function CategoriesAdmin() {
                     <TableRow 
                       key={c.id} 
                       className={cn(
-                        "border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/5 dark:hover:bg-[#0d2e2a]/10 transition-all duration-300 group",
+                        "border-slate-100 dark:border-slate-800 hover:bg-[#f9a8d4]/15 dark:hover:bg-[#f9a8d4]/10 transition-colors duration-300 group border-b-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10",
                         isFeatured && "bg-yellow-50/30 dark:bg-yellow-950/10"
                       )}
                     >
-                      {/* ✅ عمود التصنيف مع صورة وأيقونة متحركة */}
-                      <TableCell>
-                        <div className="flex items-center gap-3 group">
+                      {/* ✅ عمود التصنيف */}
+                      <TableCell className="border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                        <div className="flex items-center gap-3">
                           {c.image_url ? (
                             <div className="relative flex-shrink-0">
                               <img
                                 src={c.image_url}
-                                className="h-14 w-14 rounded-xl object-cover border-2 border-[#0d2e2a]/10 group-hover:border-[#0d2e2a]/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-md group-hover:shadow-lg"
+                                className="h-14 w-14 rounded-xl object-cover border-2 border-[#f9a8d4]/30 group-hover:border-[#d81b60]/50 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-md group-hover:shadow-lg"
                                 alt=""
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).style.display = 'none';
                                 }}
                               />
-                              <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-[#0d2e2a]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                              <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-[#f9a8d4]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             </div>
                           ) : (
-                            <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-[#0d2e2a]/10 to-[#1a4f4a]/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 border-2 border-[#0d2e2a]/10 group-hover:border-[#0d2e2a]/30">
+                            <div className="h-14 w-14 rounded-xl bg-[#f9a8d4]/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 border-2 border-[#f9a8d4]/30 group-hover:border-[#d81b60]/50">
                               <span className="text-3xl animate-float-slow" style={{ animationDelay: `${Math.random() * 2}s` }}>
                                 {getIconEmoji(c.icon)}
                               </span>
                             </div>
                           )}
                           <div>
-                            <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 group-hover:text-[#0d2e2a] transition-colors duration-300">
+                            <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 group-hover:text-[#d81b60] transition-colors duration-300">
                               {c.icon && <span className="text-xl group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-500 inline-block">{getIconEmoji(c.icon)}</span>}
                               {c.name_ar}
                               {isFeatured && (
@@ -827,14 +824,14 @@ export function CategoriesAdmin() {
                         </div>
                       </TableCell>
                       
-                      <TableCell dir="ltr" className="text-sm text-slate-500 text-center font-mono">
-                        <Badge className="bg-[#0d2e2a]/5 text-[#0d2e2a] border border-[#0d2e2a]/20 text-[10px]">
+                      <TableCell dir="ltr" className="text-sm text-slate-500 text-center font-mono border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                        <Badge className="bg-[#2a655f]/5 text-[#2a655f] border-2 border-[#2a655f]/20 text-[10px]">
                           {c.slug}
                         </Badge>
                       </TableCell>
                       
                       {/* ✅ أيقونة التصنيف - متحركة */}
-                      <TableCell className="text-center">
+                      <TableCell className="text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
                         {c.icon ? (
                           <div className="relative inline-flex group">
                             <span className="text-3xl group-hover:scale-125 group-hover:-translate-y-1 transition-all duration-500 inline-block animate-float-slow" 
@@ -843,28 +840,28 @@ export function CategoriesAdmin() {
                             >
                               {getIconEmoji(c.icon)}
                             </span>
-                            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-[#0d2e2a] group-hover:w-full transition-all duration-500" />
+                            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-[#d81b60] group-hover:w-full transition-all duration-500" />
                           </div>
                         ) : (
                           <span className="text-slate-400">—</span>
                         )}
                       </TableCell>
                       
-                      <TableCell className="text-slate-900 dark:text-white text-center font-bold">
-                        <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20">
+                      <TableCell className="text-slate-900 dark:text-white text-center font-bold border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                        <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20">
                           #{c.sort_order}
                         </Badge>
                       </TableCell>
                       
-                      {/* ✅ حالة التصنيف - متحركة */}
-                      <TableCell className="text-center">
+                      {/* ✅ حالة التصنيف */}
+                      <TableCell className="text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
                         {c.active !== false ? (
-                          <Badge className="bg-[#2d6b63]/10 text-[#2d6b63] border border-[#2d6b63]/20 group hover:scale-105 transition-all duration-300">
+                          <Badge className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-2 border-emerald-500/20 group hover:scale-105 transition-all duration-300">
                             <CheckCircle2 className="h-3 w-3 mr-1 animate-pulse-slow" />
                             {isRTL ? "نشط" : "Active"}
                           </Badge>
                         ) : (
-                          <Badge className="bg-[#6bb5aa]/10 text-[#6bb5aa] border border-[#6bb5aa]/20 group hover:scale-105 transition-all duration-300">
+                          <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400 border-2 border-red-500/20 group hover:scale-105 transition-all duration-300">
                             <EyeOff className="h-3 w-3 mr-1 animate-float-slow" />
                             {isRTL ? "مخفي" : "Hidden"}
                           </Badge>
@@ -872,7 +869,7 @@ export function CategoriesAdmin() {
                       </TableCell>
                       
                       {/* ✅ عمود المميز */}
-                      <TableCell className="text-center">
+                      <TableCell className="text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
                         <div className="flex items-center justify-center gap-1">
                           <Button
                             size="sm"
@@ -899,20 +896,20 @@ export function CategoriesAdmin() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="rounded-xl h-7 w-7 p-0 text-slate-400 hover:text-[#0d2e2a] hover:bg-[#0d2e2a]/10 text-xs transition-all duration-300 hover:scale-110"
+                                className="rounded-xl h-7 w-7 p-0 text-slate-400 hover:text-[#2a655f] hover:bg-[#2a655f]/10 text-xs transition-all duration-300 hover:scale-110"
                                 onClick={() => handleUpdateFeaturedSort(c.id, featuredSort - 1)}
                                 disabled={featuredSort <= 1}
                                 title={isRTL ? "رفع" : "Up"}
                               >
                                 ↑
                               </Button>
-                              <span className="text-xs font-mono text-[#0d2e2a] min-w-[16px] text-center">
+                              <span className="text-xs font-mono text-[#2a655f] min-w-[16px] text-center">
                                 {featuredSort}
                               </span>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="rounded-xl h-7 w-7 p-0 text-slate-400 hover:text-[#0d2e2a] hover:bg-[#0d2e2a]/10 text-xs transition-all duration-300 hover:scale-110"
+                                className="rounded-xl h-7 w-7 p-0 text-slate-400 hover:text-[#2a655f] hover:bg-[#2a655f]/10 text-xs transition-all duration-300 hover:scale-110"
                                 onClick={() => handleUpdateFeaturedSort(c.id, featuredSort + 1)}
                                 title={isRTL ? "خفض" : "Down"}
                               >
@@ -923,35 +920,31 @@ export function CategoriesAdmin() {
                         </div>
                       </TableCell>
                       
-                 {/* ✅ أزرار الإجراءات - بنفس تصميم AnnouncementsAdmin */}
-<TableCell className="text-center">
-  <div className="flex items-center justify-center gap-1.5">
-    {/* ✅ زر تعديل - تدرج أخضر النظام */}
-    <Button
-      size="sm"
-      className="rounded-xl h-8 px-3 bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2d6b63] text-white shadow-lg shadow-[#0d2e2a]/30 transition-all duration-300 hover:scale-105 group"
-      onClick={() => {
-        setEditing({ ...c });
-        setIconSearchTerm("");
-      }}
-      title={isRTL ? "تعديل" : "Edit"}
-    >
-      <Pencil className="h-3.5 w-3.5 group-hover:rotate-12 transition-transform duration-300" />
-      <span className="sr-only">{isRTL ? "تعديل" : "Edit"}</span>
-    </Button>
+                      {/* ✅ أزرار الإجراءات - بنفس تصميم ProductsPage */}
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Button
+                            size="sm"
+                            className="rounded-xl h-8 px-3 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105 group border-2 border-[#2a655f]/30"
+                            onClick={() => {
+                              setEditing({ ...c });
+                              setIconSearchTerm("");
+                            }}
+                            title={isRTL ? "تعديل" : "Edit"}
+                          >
+                            <Pencil className="h-3.5 w-3.5 group-hover:rotate-12 transition-transform duration-300" />
+                          </Button>
 
-    {/* ✅ زر حذف - تدرج أحمر احترافي */}
-    <Button
-      size="sm"
-      className="rounded-xl h-8 px-3 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-lg shadow-rose-500/30 transition-all duration-300 hover:scale-105 group"
-      onClick={() => openDeleteDialog(c)}
-      title={isRTL ? "حذف" : "Delete"}
-    >
-      <Trash2 className="h-3.5 w-3.5 group-hover:scale-110 transition-transform duration-300" />
-      <span className="sr-only">{isRTL ? "حذف" : "Delete"}</span>
-    </Button>
-  </div>
-</TableCell>
+                          <Button
+                            size="sm"
+                            className="rounded-xl h-8 px-3 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-lg shadow-rose-500/30 transition-all duration-300 hover:scale-105 group border-2 border-rose-400/50"
+                            onClick={() => openDeleteDialog(c)}
+                            title={isRTL ? "حذف" : "Delete"}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 group-hover:scale-110 transition-transform duration-300" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   );
                 })
@@ -960,26 +953,26 @@ export function CategoriesAdmin() {
           </Table>
         </div>
 
-        {/* ✅ Footer */}
-        <div className="px-4 py-2 border-t border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+        {/* ✅ Footer - بنفس تصميم ProductsPage */}
+        <div className="px-4 py-2 border-t-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#f9a8d4]/10 to-[#fbcfe8]/10">
           <span className="flex items-center gap-2">
-            <Badge className="bg-[#0d2e2a]/10 text-[#0d2e2a] border border-[#0d2e2a]/20">
+            <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
               {isRTL
                 ? `عرض ${filteredCategories.length} من ${categories.length} تصنيف`
                 : `Showing ${filteredCategories.length} of ${categories.length} categories`}
             </Badge>
-            <span className="text-[10px] text-[#2d6b63]">
+            <span className="text-[10px] text-[#d81b60]">
               {isRTL ? `إجمالي ${categories.length}` : `Total ${categories.length}`}
             </span>
           </span>
           <div className="flex items-center gap-2">
-            <Badge className="bg-[#0d2e2a]/5 text-[#0d2e2a] border border-[#0d2e2a]/20">
-              <Layers className="h-3 w-3 mr-1" />
+            <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
+              <Layers className="h-3 w-3 mr-1 text-[#d81b60]" />
               {filteredCategories.length}
             </Badge>
             {searchQuery && (
-              <Badge className="bg-[#1a4f4a]/10 text-[#1a4f4a] border border-[#1a4f4a]/20">
-                <Search className="h-3 w-3 mr-1" />
+              <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
+                <Search className="h-3 w-3 mr-1 text-[#d81b60]" />
                 {searchQuery}
               </Badge>
             )}
@@ -988,214 +981,228 @@ export function CategoriesAdmin() {
       </div>
 
       {/* ============================================================
-      // ✅ DIALOG - إنشاء/تعديل التصنيف
+      // ✅ DIALOG - إنشاء/تعديل التصنيف - مع بوردرات وردية
       // ============================================================ */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/20 p-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-3 border-[#f9a8d4]/40 shadow-2xl shadow-[#f9a8d4]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#0d2e2a]/10 z-20 transition-all duration-300 hover:scale-110"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
             onClick={() => setEditing(null)}
           >
-            <X className="h-4 w-4 text-slate-400 hover:text-[#0d2e2a]" />
+            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
           </Button>
 
-          <div className="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 p-6 rounded-t-2xl">
+          <div className="p-6">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold tracking-tight flex items-center gap-2 text-[#0d2e2a]">
-                <Sparkles className="h-5 w-5 text-[#0d2e2a] animate-pulse" />
-                {editing?.id
-                  ? isRTL ? "تعديل التصنيف" : "Edit Category"
-                  : isRTL ? "تصنيف جديد" : "New Category"}
-              </DialogTitle>
-              <p className="text-sm text-muted-foreground">
-                {editing?.id
-                  ? isRTL ? "قم بتعديل بيانات التصنيف" : "Edit category details"
-                  : isRTL ? "أضف تصنيفاً جديداً للقسم" : "Add a new category"}
-              </p>
+              <div className="flex items-start gap-4 mb-2">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#f9a8d4]/30 border-2 border-[#f9a8d4]/40">
+                  {editing?.id ? (
+                    <Pencil className="h-6 w-6 text-white" />
+                  ) : (
+                    <Plus className="h-6 w-6 text-white" />
+                  )}
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                    {editing?.id
+                      ? isRTL ? "تعديل التصنيف" : "Edit Category"
+                      : isRTL ? "تصنيف جديد" : "New Category"}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-slate-500 dark:text-slate-400">
+                    {editing?.id
+                      ? isRTL ? "قم بتعديل بيانات التصنيف" : "Edit category details"
+                      : isRTL ? "أضف تصنيفاً جديداً للقسم" : "Add a new category"}
+                  </DialogDescription>
+                </div>
+              </div>
             </DialogHeader>
-          </div>
 
-          {editing && (
-            <div className="p-6 space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-[#0d2e2a]">
-                    {isRTL ? "الاسم بالعربية" : "Arabic Name"} <span className="text-[#6bb5aa]">*</span>
-                  </Label>
-                  <Input
-                    value={editing.name_ar}
-                    onChange={(e) => setEditing({ ...editing, name_ar: e.target.value })}
-                    placeholder={isRTL ? "مثلاً: أزياء" : "e.g. Fashion"}
-                    className="mt-1.5 rounded-xl border-[#0d2e2a]/20 bg-white/50 dark:border-[#0d2e2a]/30 dark:bg-slate-900/50 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-[#0d2e2a]">
-                    {isRTL ? "الاسم بالإنكليزية" : "English Name"} <span className="text-[#6bb5aa]">*</span>
-                  </Label>
-                  <Input
-                    value={editing.name_en}
-                    onChange={(e) => setEditing({ ...editing, name_en: e.target.value })}
-                    dir="ltr"
-                    placeholder="e.g. Fashion"
-                    className="mt-1.5 rounded-xl border-[#0d2e2a]/20 bg-white/50 dark:border-[#0d2e2a]/30 dark:bg-slate-900/50 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-[#0d2e2a]">
-                  Slug <span className="text-[#6bb5aa]">*</span>
-                </Label>
-                <Input
-                  value={editing.slug}
-                  onChange={(e) =>
-                    setEditing({
-                      ...editing,
-                      slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-                    })
-                  }
-                  dir="ltr"
-                  placeholder="fashion"
-                  className="mt-1.5 rounded-xl border-[#0d2e2a]/20 bg-white/50 dark:border-[#0d2e2a]/30 dark:bg-slate-900/50 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300 font-mono"
-                />
-                <p className="text-xs text-slate-400 mt-1">
-                  {isRTL ? "يستخدم في الرابط، أحرف صغيرة وشرطات فقط" : "Used in URL, lowercase letters and hyphens only"}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-[#0d2e2a]">
-                    {isRTL ? "الأيقونة" : "Icon"} 
-                    <span className="text-xs text-slate-400 block font-normal">
-                      {isRTL ? "اختر أيقونة من القائمة المنسدلة" : "Select an icon from the dropdown"}
-                    </span>
-                  </Label>
-                  <div className="mt-1.5">
-                    <IconDropdown
-                      value={editing.icon || ""}
-                      onChange={(value: string) => setEditing({ ...editing, icon: value })}
-                      lang={app.lang}
-                      searchTerm={iconSearchTerm}
-                      onSearchChange={setIconSearchTerm}
+            {editing && (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                      <span className="text-[#2a655f]">📝</span>
+                      {isRTL ? "الاسم بالعربية *" : "Arabic Name *"}
+                    </Label>
+                    <Input
+                      value={editing.name_ar}
+                      onChange={(e) => setEditing({ ...editing, name_ar: e.target.value })}
+                      placeholder={isRTL ? "مثلاً: أزياء" : "e.g. Fashion"}
+                      className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
                     />
-                    
-                    {editing.icon && (
-                      <div className="mt-2 flex items-center gap-3 p-3 bg-[#0d2e2a]/5 dark:bg-[#0d2e2a]/10 rounded-xl border border-[#0d2e2a]/10">
-                        <span className="text-3xl">{getIconEmoji(editing.icon)}</span>
-                        <div>
-                          <p className="text-sm font-medium text-[#0d2e2a] dark:text-slate-300">
-                            {isRTL ? "الأيقونة المختارة" : "Selected Icon"}
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {getIconName(editing.icon)} 
-                            <span className="text-slate-300 dark:text-slate-600 mx-1">·</span>
-                            <span className="font-mono text-[10px]">{editing.icon}</span>
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                      <span className="text-[#2a655f]">🌐</span>
+                      {isRTL ? "الاسم بالإنكليزية *" : "English Name *"}
+                    </Label>
+                    <Input
+                      value={editing.name_en}
+                      onChange={(e) => setEditing({ ...editing, name_en: e.target.value })}
+                      dir="ltr"
+                      placeholder="e.g. Fashion"
+                      className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+                    />
                   </div>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium text-[#0d2e2a]">
-                    <Hash className="h-4 w-4 inline mr-1" />
-                    {isRTL ? "الترتيب" : "Sort Order"}
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                    <Hash className="h-4 w-4 text-[#2a655f]" />
+                    Slug <span className="text-[#d81b60]">*</span>
                   </Label>
                   <Input
-                    type="number"
-                    value={editing.sort_order ?? 0}
+                    value={editing.slug}
                     onChange={(e) =>
-                      setEditing({ ...editing, sort_order: Number(e.target.value) })
+                      setEditing({
+                        ...editing,
+                        slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+                      })
                     }
-                    className="mt-1.5 rounded-xl border-[#0d2e2a]/20 bg-white/50 dark:border-[#0d2e2a]/30 dark:bg-slate-900/50 focus:border-[#0d2e2a] focus:ring-2 focus:ring-[#0d2e2a]/20 transition-all duration-300"
+                    dir="ltr"
+                    placeholder="fashion"
+                    className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 font-mono"
                   />
+                  <p className="text-xs text-slate-400">
+                    {isRTL ? "يستخدم في الرابط، أحرف صغيرة وشرطات فقط" : "Used in URL, lowercase letters and hyphens only"}
+                  </p>
                 </div>
-              </div>
 
-              <div>
-            
-<ImageInput
-  folder="uploads/categories"  // ✅ هذا هو المطلوب
-  value={editing.image_url || ""}
-  onChange={(value) => setEditing({ ...editing, image_url: value })}
-  userId={app.user?.id}
-  lang={app.lang}
-  label={isRTL ? "صورة التصنيف" : "Category Image"}
-  hint={isRTL ? "ارفع صورة احترافية — الأبعاد المفضلة 1200×800" : "Upload a professional image — 1200×800 preferred"}
-  previewClassName="aspect-video h-auto rounded-xl border border-[#0d2e2a]/20"
-/>
-              </div>
-
-              {/* ✅ تحكم التصنيف المميز */}
-              <div className="border-t border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 pt-4">
-                <label className="flex items-center gap-3 text-sm font-medium text-[#0d2e2a] dark:text-slate-300 cursor-pointer p-3 rounded-xl border-2 border-[#0d2e2a]/20 hover:border-yellow-500/30 transition-all duration-300">
-                  <input
-                    type="checkbox"
-                    checked={editing.is_featured ?? false}
-                    onChange={(e) => setEditing({ ...editing, is_featured: e.target.checked })}
-                    className="h-4 w-4 rounded border-[#0d2e2a]/30 accent-yellow-500"
-                  />
-                  <span className="flex items-center gap-2">
-                    <Star className={`h-4 w-4 ${editing.is_featured ? 'text-yellow-500 fill-yellow-400 animate-pulse' : 'text-slate-400'}`} />
-                    {isRTL ? "تصنيف مميز (يظهر في الصفحة الرئيسية)" : "Featured Category (appears on homepage)"}
-                  </span>
-                </label>
-                
-                {editing.is_featured && (
-                  <div className="mt-3 p-3 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200/50 dark:border-yellow-800/30">
-                    <Label className="text-sm font-medium flex items-center gap-2 text-[#0d2e2a]">
-                      <GripVertical className="h-4 w-4 text-slate-400" />
-                      {isRTL ? "ترتيب المميز" : "Featured Order"}
-                      <span className="text-xs text-slate-400 font-normal">
-                        ({isRTL ? "الأقل أولاً" : "Lower is first"})
-                      </span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                      <Tag className="h-4 w-4 text-[#2a655f]" />
+                      {isRTL ? "الأيقونة" : "Icon"}
+                    </Label>
+                    <div className="mt-1.5">
+                      <IconDropdown
+                        value={editing.icon || ""}
+                        onChange={(value: string) => setEditing({ ...editing, icon: value })}
+                        lang={app.lang}
+                        searchTerm={iconSearchTerm}
+                        onSearchChange={setIconSearchTerm}
+                      />
+                      
+                      {editing.icon && (
+                        <div className="mt-2 flex items-center gap-3 p-3 bg-[#f9a8d4]/10 rounded-xl border-2 border-[#f9a8d4]/30">
+                          <span className="text-3xl">{getIconEmoji(editing.icon)}</span>
+                          <div>
+                            <p className="text-sm font-medium text-[#2a655f] dark:text-slate-300">
+                              {isRTL ? "الأيقونة المختارة" : "Selected Icon"}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {getIconName(editing.icon)} 
+                              <span className="text-slate-300 dark:text-slate-600 mx-1">·</span>
+                              <span className="font-mono text-[10px]">{editing.icon}</span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                      <GripVertical className="h-4 w-4 text-[#2a655f]" />
+                      {isRTL ? "الترتيب" : "Sort Order"}
                     </Label>
                     <Input
                       type="number"
-                      min="0"
-                      value={editing.featured_sort ?? 0}
-                      onChange={(e) => setEditing({ ...editing, featured_sort: Number(e.target.value) })}
-                      className="mt-1.5 rounded-xl border-yellow-200/50 bg-white/50 dark:border-yellow-800/30 dark:bg-slate-900/50 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-300"
+                      value={editing.sort_order ?? 0}
+                      onChange={(e) =>
+                        setEditing({ ...editing, sort_order: Number(e.target.value) })
+                      }
+                      className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
                     />
-                    <p className="text-xs text-slate-400 mt-1">
-                      {isRTL ? "الرقم الأقل يظهر أولاً في قائمة التصنيفات المميزة" : "Lower numbers appear first in featured list"}
-                    </p>
                   </div>
-                )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-[#2a655f] flex items-center gap-1">
+                    <Image className="h-4 w-4 text-[#2a655f]" />
+                    {isRTL ? "صورة التصنيف" : "Category Image"}
+                  </Label>
+                  <ImageInput
+                    folder="uploads/categories"
+                    value={editing.image_url || ""}
+                    onChange={(value) => setEditing({ ...editing, image_url: value })}
+                    userId={app.user?.id}
+                    lang={app.lang}
+                    label={isRTL ? "ارفع صورة التصنيف" : "Upload category image"}
+                    hint={isRTL ? "ارفع صورة احترافية — الأبعاد المفضلة 1200×800" : "Upload a professional image — 1200×800 preferred"}
+                    previewClassName="aspect-video h-auto rounded-xl border-3 border-[#f9a8d4]/40"
+                  />
+                </div>
+
+                {/* ✅ تحكم التصنيف المميز */}
+                <div className="border-t-3 border-[#f9a8d4]/30 pt-4">
+                  <label className="flex items-center gap-3 text-sm font-medium text-[#2a655f] dark:text-slate-300 cursor-pointer p-3 rounded-xl border-3 border-[#f9a8d4]/40 hover:border-yellow-500/50 transition-all duration-300">
+                    <input
+                      type="checkbox"
+                      checked={editing.is_featured ?? false}
+                      onChange={(e) => setEditing({ ...editing, is_featured: e.target.checked })}
+                      className="h-4 w-4 rounded border-[#f9a8d4]/40 accent-yellow-500"
+                    />
+                    <span className="flex items-center gap-2">
+                      <Star className={`h-4 w-4 ${editing.is_featured ? 'text-yellow-500 fill-yellow-400 animate-pulse' : 'text-slate-400'}`} />
+                      {isRTL ? "تصنيف مميز (يظهر في الصفحة الرئيسية)" : "Featured Category (appears on homepage)"}
+                    </span>
+                  </label>
+                  
+                  {editing.is_featured && (
+                    <div className="mt-3 p-3 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border-2 border-yellow-200/50 dark:border-yellow-800/30">
+                      <Label className="text-sm font-medium flex items-center gap-2 text-[#2a655f]">
+                        <GripVertical className="h-4 w-4 text-slate-400" />
+                        {isRTL ? "ترتيب المميز" : "Featured Order"}
+                        <span className="text-xs text-slate-400 font-normal">
+                          ({isRTL ? "الأقل أولاً" : "Lower is first"})
+                        </span>
+                      </Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={editing.featured_sort ?? 0}
+                        onChange={(e) => setEditing({ ...editing, featured_sort: Number(e.target.value) })}
+                        className="mt-1.5 rounded-xl border-yellow-200/50 bg-white/50 dark:border-yellow-800/30 dark:bg-slate-900/50 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-300"
+                      />
+                      <p className="text-xs text-slate-400 mt-1">
+                        {isRTL ? "الرقم الأقل يظهر أولاً في قائمة التصنيفات المميزة" : "Lower numbers appear first in featured list"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* ✅ تفعيل التصنيف */}
+                <label className="flex items-center gap-3 text-sm font-medium text-[#2a655f] dark:text-slate-300 cursor-pointer p-3 rounded-xl border-3 border-[#f9a8d4]/40 hover:border-[#d81b60]/50 transition-all duration-300">
+                  <input
+                    type="checkbox"
+                    checked={editing.active ?? true}
+                    onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
+                    className="h-4 w-4 rounded border-[#f9a8d4]/40 accent-[#2a655f]"
+                  />
+                  <span className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-[#2a655f]" />
+                    {isRTL ? "مفعّل ويظهر للجميع" : "Active & visible to everyone"}
+                  </span>
+                </label>
               </div>
+            )}
 
-              <label className="flex items-center gap-2 text-sm font-medium text-[#0d2e2a] dark:text-slate-300 cursor-pointer p-3 rounded-xl border-2 border-[#0d2e2a]/20 hover:border-[#0d2e2a]/40 transition-all duration-300">
-                <input
-                  type="checkbox"
-                  checked={editing.active ?? true}
-                  onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
-                  className="h-4 w-4 rounded border-[#0d2e2a]/30 accent-[#0d2e2a]"
-                />
-                <span className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-[#4a9f95]" />
-                  {isRTL ? "مفعّل ويظهر للجميع" : "Active & visible to everyone"}
-                </span>
-              </label>
-            </div>
-          )}
-
-          <div className="sticky bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20 p-6 rounded-b-2xl">
-            <DialogFooter className="flex gap-3">
+            <DialogFooter className="gap-3 pt-4 border-t-3 border-[#f9a8d4]/30">
               <Button
                 variant="outline"
                 onClick={() => setEditing(null)}
-                className="flex-1 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300"
+                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
               >
+                <X className="h-4 w-4 mr-1" />
                 {isRTL ? "إلغاء" : "Cancel"}
               </Button>
               <Button
                 onClick={handleSave}
                 disabled={save.isPending}
-                className="flex-1 rounded-xl bg-[#0d2e2a] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#0d2e2a]/30 hover:shadow-xl transition-all duration-300 hover:scale-105"
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-[1.02] border-2 border-[#2a655f]/30"
               >
                 {save.isPending ? (
                   <span className="flex items-center gap-2">
@@ -1204,7 +1211,7 @@ export function CategoriesAdmin() {
                   </span>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-4 w-4 me-2" />
+                    <CheckCircle2 className="h-4 w-4 mr-1.5" />
                     {isRTL ? "حفظ" : "Save"}
                   </>
                 )}
@@ -1215,22 +1222,22 @@ export function CategoriesAdmin() {
       </Dialog>
 
       {/* ============================================================
-      // ✅ DELETE CONFIRMATION DIALOG
+      // ✅ DELETE CONFIRMATION DIALOG - مع بوردرات وردية
       // ============================================================ */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl border border-[#0d2e2a]/20 shadow-2xl shadow-[#0d2e2a]/20 p-0 overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
+        <DialogContent className="max-w-md rounded-2xl border-3 border-[#d81b60]/40 shadow-2xl shadow-[#d81b60]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0 overflow-hidden">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#0d2e2a]/10 z-20 transition-all duration-300 hover:scale-110"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
             onClick={() => setDeleteDialogOpen(false)}
           >
-            <X className="h-4 w-4 text-slate-400 hover:text-[#0d2e2a]" />
+            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
           </Button>
 
           <div className="p-6">
             <div className="flex items-start gap-4 mb-4">
-              <div className="h-14 w-14 rounded-2xl bg-rose-500/10 flex items-center justify-center flex-shrink-0 animate-pulse">
+              <div className="h-14 w-14 rounded-2xl bg-rose-500/10 border-2 border-rose-500/30 flex items-center justify-center flex-shrink-0 animate-pulse">
                 <AlertTriangle className="h-7 w-7 text-rose-600 dark:text-rose-400" />
               </div>
               <div>
@@ -1243,7 +1250,7 @@ export function CategoriesAdmin() {
               </div>
             </div>
 
-            <div className="bg-rose-50/50 dark:bg-rose-950/20 rounded-2xl p-4 border border-rose-200/50 dark:border-rose-800/30 mb-4">
+            <div className="bg-rose-50/50 dark:bg-rose-950/20 rounded-2xl p-4 border-2 border-rose-200/50 dark:border-rose-800/30 mb-4">
               <p className="text-sm text-rose-700 dark:text-rose-300 font-medium">
                 {isRTL
                   ? `هل أنت متأكد من حذف التصنيف "${categoryToDelete?.name_ar}"؟`
@@ -1262,7 +1269,7 @@ export function CategoriesAdmin() {
               )}
             </div>
 
-            <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-xl p-3 border border-amber-200/50 dark:border-amber-800/30">
+            <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-xl p-3 border-2 border-amber-200/50 dark:border-amber-800/30">
               <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 {isRTL
@@ -1275,14 +1282,14 @@ export function CategoriesAdmin() {
               <Button
                 variant="outline"
                 onClick={() => setDeleteDialogOpen(false)}
-                className="flex-1 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10 hover:border-[#0d2e2a]/40 transition-all duration-300"
+                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
               >
                 {isRTL ? "إلغاء" : "Cancel"}
               </Button>
               <Button
                 onClick={handleDelete}
                 disabled={del.isPending}
-                className="flex-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-500/30 hover:shadow-xl transition-all duration-300 hover:scale-105"
+                className="flex-1 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-lg shadow-rose-500/30 hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-rose-400/50"
               >
                 {del.isPending ? (
                   <span className="flex items-center gap-2">
@@ -1291,7 +1298,7 @@ export function CategoriesAdmin() {
                   </span>
                 ) : (
                   <>
-                    <Trash2 className="h-4 w-4 me-2" />
+                    <Trash2 className="h-4 w-4 mr-1.5" />
                     {isRTL ? "تأكيد الحذف" : "Confirm Delete"}
                   </>
                 )}
@@ -1301,9 +1308,6 @@ export function CategoriesAdmin() {
         </DialogContent>
       </Dialog>
 
-      {/* ============================================================
-      // ✅ CSS Animations
-      // ============================================================ */}
       <style>{`
         @keyframes shimmer {
           0% { background-position: -200% 0; }
@@ -1348,6 +1352,20 @@ export function CategoriesAdmin() {
         }
         .animate-pulse-slow {
           animation: pulse-slow 2s ease-in-out infinite;
+        }
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.5s ease-out forwards;
+          opacity: 0;
         }
       `}</style>
     </div>

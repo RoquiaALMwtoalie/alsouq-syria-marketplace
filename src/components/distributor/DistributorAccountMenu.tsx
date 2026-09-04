@@ -109,32 +109,24 @@ export function DistributorAccountMenu({
   const [governorates, setGovernorates] = useState<any[]>([]);
 
   // ✅ دالة جلب الرابط العام للصورة
- // ✅ دالة جلب الرابط العام للصورة - النسخة المُصحّحة
-const getPublicAvatarUrl = (path: string | null) => {
-  if (!path) return null;
-  
-  // ✅ إذا كان الرابط كاملاً (يبدأ بـ http)، استخدمه مباشرة
-  if (path.startsWith('http')) {
-    console.log("📸 [getPublicAvatarUrl] Using full URL:", path);
-    return path;
-  }
-  
-  // ✅ إذا كان المسار يحتوي على مجلدات، استخرج اسم الملف فقط
-  let fileName = path;
-  if (path.includes('/')) {
-    fileName = path.split('/').pop() || path;
-  }
-  
-  // ✅ بناء الرابط الصحيح باستخدام Bucket 'uploads'
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const publicUrl = `${baseUrl}/storage/v1/object/public/uploads/${fileName}`;
-  
-  console.log("📸 [getPublicAvatarUrl] path:", path);
-  console.log("📸 [getPublicAvatarUrl] fileName:", fileName);
-  console.log("📸 [getPublicAvatarUrl] publicUrl:", publicUrl);
-  
-  return publicUrl;
-};
+  const getPublicAvatarUrl = (path: string | null) => {
+    if (!path) return null;
+    
+    if (path.startsWith('http')) {
+      return path;
+    }
+    
+    let fileName = path;
+    if (path.includes('/')) {
+      fileName = path.split('/').pop() || path;
+    }
+    
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const publicUrl = `${baseUrl}/storage/v1/object/public/uploads/${fileName}`;
+    
+    return publicUrl;
+  };
+
   // ✅ جلب المحافظات
   useEffect(() => {
     const fetchGovernorates = async () => {
@@ -157,20 +149,17 @@ const getPublicAvatarUrl = (path: string | null) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-const handleLogout = async () => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    toast.success(isArabic ? "✅ تم تسجيل الخروج بنجاح" : "✅ Logged out successfully");
-    
-    // ✅ ✅ ✅ خذني لصفحة تسجيل الدخول
-    window.location.href = "/auth/login";
-    
-  } catch (error) {
-    toast.error(isArabic ? "❌ فشل تسجيل الخروج" : "❌ Logout failed");
-    console.error(error);
-  }
-};
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success(isArabic ? "✅ تم تسجيل الخروج بنجاح" : "✅ Logged out successfully");
+      window.location.href = "/auth/login";
+    } catch (error) {
+      toast.error(isArabic ? "❌ فشل تسجيل الخروج" : "❌ Logout failed");
+      console.error(error);
+    }
+  };
 
   // ✅ جلب بيانات الموزع مع الرابط العام للصورة
   useEffect(() => {
@@ -188,10 +177,8 @@ const handleLogout = async () => {
         if (data) {
           console.log("📝 [DistributorAccountMenu] Fetched data:", data);
           
-          // ✅ الحصول على الرابط العام للصورة
           const publicAvatarUrl = getPublicAvatarUrl(data.avatar_url);
           
-          // ✅ تحديث الـ state المحلي مع الرابط العام
           setLocalUserData(prev => ({
             ...prev,
             full_name: data.full_name_ar || userData.full_name || "",
@@ -231,7 +218,6 @@ const handleLogout = async () => {
 
     setProfileLoading(true);
     try {
-      // ✅ تحديث الموزع في جدول distributors
       const { error: distributorError } = await supabase
         .from("distributors")
         .update({
@@ -241,7 +227,7 @@ const handleLogout = async () => {
           address_ar: profileData.address_ar || null,
           address_en: profileData.address_en || null,
           governorate_id: profileData.governorate_id || null,
-          avatar_url: localUserData.avatar_url, // حفظ الرابط في قاعدة البيانات
+          avatar_url: localUserData.avatar_url,
         })
         .eq("user_id", userData.id);
 
@@ -250,7 +236,6 @@ const handleLogout = async () => {
         throw distributorError;
       }
 
-      // ✅ تحديث الـ profile
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -286,61 +271,55 @@ const handleLogout = async () => {
   };
 
   // ✅ دالة معالجة تغيير الصورة
-// ✅ دالة معالجة تغيير الصورة - مع تحديث الـ State
-const handleImageChange = (value: string) => {
-  console.log("📸 [handleImageChange] value received:", value);
-  
-  // ✅ إذا كان الرابط يحتوي على http، استخدمه مباشرة
-  let publicUrl = value;
-  let storagePath = value;
-  
-  if (value?.startsWith('http')) {
-    // ✅ استخراج اسم الملف من الرابط (وليس المسار الكامل)
-    const match = value.match(/\/uploads\/([^/]+)$/); // ✅ يستخرج اسم الملف فقط
-    if (match) {
-      storagePath = match[1]; // ✅ تخزين اسم الملف فقط في قاعدة البيانات
-      publicUrl = value; // ✅ استخدام الرابط الكامل للعرض
+  const handleImageChange = (value: string) => {
+    console.log("📸 [handleImageChange] value received:", value);
+    
+    let publicUrl = value;
+    let storagePath = value;
+    
+    if (value?.startsWith('http')) {
+      const match = value.match(/\/uploads\/([^/]+)$/);
+      if (match) {
+        storagePath = match[1];
+        publicUrl = value;
+      }
     }
-  }
-  
-  // ✅ ✅ ✅ تحديث الـ State المحلي فوراً (مهم جداً)
-  setLocalUserData(prev => ({
-    ...prev,
-    avatar_url: publicUrl  // ✅ استخدم الرابط الكامل للعرض
-  }));
-  
-  // ✅ تحديث في قاعدة البيانات (باسم الملف فقط)
-  const updateAvatarInDB = async () => {
-    try {
-      console.log("📸 [handleImageChange] updating DB with path:", storagePath);
-      
-      // تحديث في جدول distributors
-      const { error: distError } = await supabase
-        .from("distributors")
-        .update({ avatar_url: storagePath })  // ✅ نخزن اسم الملف فقط
-        .eq("user_id", userData.id);
-      
-      if (distError) throw distError;
-      
-      // تحديث في جدول profiles
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: storagePath })  // ✅ نخزن اسم الملف فقط
-        .eq("id", userData.id);
-      
-      if (profileError) throw profileError;
-      
-      console.log("✅ [handleImageChange] avatar updated successfully!");
-      toast.success(isArabic ? "✅ تم تحديث الصورة بنجاح" : "✅ Image updated successfully");
-      
-    } catch (error) {
-      console.error("❌ [handleImageChange] error:", error);
-      toast.error(isArabic ? "❌ فشل تحديث الصورة" : "❌ Failed to update image");
-    }
+    
+    setLocalUserData(prev => ({
+      ...prev,
+      avatar_url: publicUrl
+    }));
+    
+    const updateAvatarInDB = async () => {
+      try {
+        console.log("📸 [handleImageChange] updating DB with path:", storagePath);
+        
+        const { error: distError } = await supabase
+          .from("distributors")
+          .update({ avatar_url: storagePath })
+          .eq("user_id", userData.id);
+        
+        if (distError) throw distError;
+        
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ avatar_url: storagePath })
+          .eq("id", userData.id);
+        
+        if (profileError) throw profileError;
+        
+        console.log("✅ [handleImageChange] avatar updated successfully!");
+        toast.success(isArabic ? "✅ تم تحديث الصورة بنجاح" : "✅ Image updated successfully");
+        
+      } catch (error) {
+        console.error("❌ [handleImageChange] error:", error);
+        toast.error(isArabic ? "❌ فشل تحديث الصورة" : "❌ Failed to update image");
+      }
+    };
+    
+    updateAvatarInDB();
   };
-  
-  updateAvatarInDB();
-};
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -392,18 +371,18 @@ const handleImageChange = (value: string) => {
 
   return (
     <>
-      {/* ===== DROPDOWN MENU ===== */}
+      {/* ===== DROPDOWN MENU - PINK THEME ===== */}
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 group">
             <div className="relative">
-              <Avatar className="h-10 w-10 border-2 border-white/20 group-hover:border-white/40 transition-all duration-300">
+              <Avatar className="h-10 w-10 border-2 border-[#f9a8d4]/30 group-hover:border-[#f9a8d4]/60 transition-all duration-300">
                 <AvatarImage src={localUserData.avatar_url || undefined} />
-                <AvatarFallback className="bg-[#0d2e2a] text-white text-sm font-bold">
+                <AvatarFallback className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white text-sm font-bold">
                   {getInitials(localUserData.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[#0d2e2a]" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[#f9a8d4]" />
             </div>
             <div className="hidden md:block text-right">
               <p className="text-xs font-medium text-white truncate max-w-[100px]">
@@ -421,11 +400,11 @@ const handleImageChange = (value: string) => {
           </button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-80 rounded-2xl p-1 border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 shadow-2xl overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-[#0d2e2a] to-[#2a655f] p-4 text-white border-b border-white/10">
+        <DropdownMenuContent align="end" className="w-80 rounded-2xl p-1 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 shadow-2xl overflow-hidden">
+          {/* Header - PINK GRADIENT */}
+          <div className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] p-4 text-white border-b border-white/10">
             <div className="flex items-center gap-3">
-              <Avatar className="h-14 w-14 border-2 border-white/20 shadow-lg">
+              <Avatar className="h-14 w-14 border-2 border-white/30 shadow-lg">
                 <AvatarImage src={localUserData.avatar_url || undefined} />
                 <AvatarFallback className="bg-white/20 text-white text-xl font-bold">
                   {getInitials(localUserData.full_name)}
@@ -444,7 +423,7 @@ const handleImageChange = (value: string) => {
                   📱 {localUserData.phone || (isArabic ? "غير متاح" : "Not available")}
                 </p>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Badge className="bg-blue-500/30 text-white border-0 text-[9px]">
+                  <Badge className="bg-white/20 text-white border-0 text-[9px]">
                     <Truck className="h-2.5 w-2.5 inline mr-0.5" />
                     {isArabic ? "موزع" : "Distributor"}
                   </Badge>
@@ -459,10 +438,10 @@ const handleImageChange = (value: string) => {
             </div>
           </div>
 
-          {/* ✅ الأرباح والطلبات والتقييم */}
+          {/* ✅ الأرباح والطلبات والتقييم - PINK THEME */}
           {showEarnings && (
-            <div className="grid grid-cols-3 gap-1.5 p-3 border-b border-[#0d2e2a]/10 dark:border-[#0d2e2a]/20">
-              <div className="text-center p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg hover:bg-[#0d2e2a]/5 transition">
+            <div className="grid grid-cols-3 gap-1.5 p-3 border-b border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+              <div className="text-center p-2 bg-[#fbcfe8]/30 dark:bg-[#fbcfe8]/20 rounded-lg hover:bg-[#fbcfe8]/50 transition">
                 <DollarSign className="h-4 w-4 text-emerald-500 mx-auto mb-0.5" />
                 <p className="text-sm font-bold text-slate-900 dark:text-white">
                   {earnings.toLocaleString()}
@@ -471,7 +450,7 @@ const handleImageChange = (value: string) => {
                   {isArabic ? "الأرباح" : "Earnings"}
                 </p>
               </div>
-              <div className="text-center p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg hover:bg-[#0d2e2a]/5 transition">
+              <div className="text-center p-2 bg-[#fbcfe8]/30 dark:bg-[#fbcfe8]/20 rounded-lg hover:bg-[#fbcfe8]/50 transition">
                 <Package className="h-4 w-4 text-blue-500 mx-auto mb-0.5" />
                 <p className="text-sm font-bold text-slate-900 dark:text-white">
                   {ordersCount}
@@ -480,7 +459,7 @@ const handleImageChange = (value: string) => {
                   {isArabic ? "الطلبات" : "Orders"}
                 </p>
               </div>
-              <div className="text-center p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg hover:bg-[#0d2e2a]/5 transition">
+              <div className="text-center p-2 bg-[#fbcfe8]/30 dark:bg-[#fbcfe8]/20 rounded-lg hover:bg-[#fbcfe8]/50 transition">
                 <Star className="h-4 w-4 text-yellow-500 mx-auto mb-0.5 fill-yellow-400" />
                 <p className="text-sm font-bold text-slate-900 dark:text-white">
                   {rating.toFixed(1)}
@@ -492,13 +471,13 @@ const handleImageChange = (value: string) => {
             </div>
           )}
 
-          {/* ✅ تعديل الملف الشخصي */}
+          {/* ✅ تعديل الملف الشخصي - PINK THEME */}
           <DropdownMenuItem 
             onClick={() => {
               setShowProfileDialog(true);
               setIsOpen(false);
             }}
-            className="rounded-xl cursor-pointer py-2.5 px-3 hover:bg-[#0d2e2a]/10 dark:hover:bg-[#0d2e2a]/30 group"
+            className="rounded-xl cursor-pointer py-2.5 px-3 hover:bg-[#fbcfe8]/30 dark:hover:bg-[#fbcfe8]/20 group"
           >
             <div className="flex items-center gap-3 w-full">
               <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition">
@@ -518,13 +497,13 @@ const handleImageChange = (value: string) => {
 
           <DropdownMenuSeparator className="my-1.5" />
 
-          {/* ✅ تغيير كلمة المرور */}
+          {/* ✅ تغيير كلمة المرور - PINK THEME */}
           <DropdownMenuItem 
             onClick={() => {
               setShowPasswordDialog(true);
               setIsOpen(false);
             }}
-            className="rounded-xl cursor-pointer py-2.5 px-3 hover:bg-[#0d2e2a]/10 dark:hover:bg-[#0d2e2a]/30 group"
+            className="rounded-xl cursor-pointer py-2.5 px-3 hover:bg-[#fbcfe8]/30 dark:hover:bg-[#fbcfe8]/20 group"
           >
             <div className="flex items-center gap-3 w-full">
               <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition">
@@ -563,11 +542,11 @@ const handleImageChange = (value: string) => {
             </div>
           </DropdownMenuItem>
 
-          {/* Footer */}
-          <div className="px-4 py-2 bg-slate-50/50 dark:bg-slate-800/30 border-t border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30">
+          {/* Footer - PINK THEME */}
+          <div className="px-4 py-2 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 border-t border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
               <span className="flex items-center gap-1">
-                <Shield className="h-3 w-3 text-emerald-500" />
+                <Shield className="h-3 w-3 text-[#d81b60]" />
                 {isArabic ? "حساب نشط" : "Active account"}
               </span>
               <span className="flex items-center gap-1">
@@ -579,11 +558,11 @@ const handleImageChange = (value: string) => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* ===== DIALOG: تعديل الملف الشخصي ===== */}
+      {/* ===== DIALOG: تعديل الملف الشخصي - PINK THEME ===== */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-0">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-[#0d2e2a] to-[#2a655f] p-6 text-white sticky top-0 z-10">
+          {/* Header - PINK GRADIENT */}
+          <div className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] p-6 text-white sticky top-0 z-10">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
                 <UserCog className="h-6 w-6 text-white" />
@@ -604,7 +583,7 @@ const handleImageChange = (value: string) => {
           {/* Body */}
           <form onSubmit={handleUpdateProfile} className="p-6 space-y-4">
             {/* ✅ صورة الموزع */}
-            <div className="flex flex-col items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+            <div className="flex flex-col items-center gap-3 p-4 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
               <ImageInput
                 value={localUserData.avatar_url || ""}
                 onChange={handleImageChange}
@@ -612,7 +591,7 @@ const handleImageChange = (value: string) => {
                 folder="distributors"
                 lang={isArabic ? "ar" : "en"}
                 label={isArabic ? "صورة الموزع" : "Distributor Photo"}
-                previewClassName="h-24 w-24 rounded-full object-cover"
+                previewClassName="h-24 w-24 rounded-full object-cover border-4 border-[#f9a8d4]/50"
                 hint={isArabic ? "اضغط لرفع صورة الموزع" : "Click to upload distributor photo"}
               />
               <p className="text-xs text-muted-foreground">
@@ -623,7 +602,7 @@ const handleImageChange = (value: string) => {
             {/* ✅ الاسم */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                   {isArabic ? "الاسم (عربي)" : "Name (Arabic)"} *
                 </Label>
                 <Input
@@ -631,25 +610,25 @@ const handleImageChange = (value: string) => {
                   onChange={(e) => setProfileData({ ...profileData, full_name_ar: e.target.value })}
                   placeholder={isArabic ? "أحمد محمد" : "Ahmed Mohamad"}
                   required
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                   {isArabic ? "الاسم (إنجليزي)" : "Name (English)"}
                 </Label>
                 <Input
                   value={profileData.full_name_en}
                   onChange={(e) => setProfileData({ ...profileData, full_name_en: e.target.value })}
                   placeholder="Ahmed Mohamad"
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                 />
               </div>
             </div>
 
             {/* ✅ رقم الهاتف */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+              <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                 {isArabic ? "رقم الهاتف" : "Phone Number"} *
               </Label>
               <Input
@@ -658,46 +637,46 @@ const handleImageChange = (value: string) => {
                 type="tel"
                 placeholder="09XXXXXXXX"
                 required
-                className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
               />
             </div>
 
             {/* ✅ العنوان */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                   {isArabic ? "العنوان (عربي)" : "Address (Arabic)"}
                 </Label>
                 <Input
                   value={profileData.address_ar}
                   onChange={(e) => setProfileData({ ...profileData, address_ar: e.target.value })}
                   placeholder={isArabic ? "دمشق، سوريا" : "Damascus, Syria"}
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                   {isArabic ? "العنوان (إنجليزي)" : "Address (English)"}
                 </Label>
                 <Input
                   value={profileData.address_en}
                   onChange={(e) => setProfileData({ ...profileData, address_en: e.target.value })}
                   placeholder="Damascus, Syria"
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                 />
               </div>
             </div>
 
             {/* ✅ المحافظة */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+              <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                 {isArabic ? "المحافظة" : "Governorate"}
               </Label>
               <Select
                 value={profileData.governorate_id}
                 onValueChange={(value) => setProfileData({ ...profileData, governorate_id: value })}
               >
-                <SelectTrigger className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20">
+                <SelectTrigger className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20">
                   <SelectValue placeholder={isArabic ? "اختر المحافظة" : "Select governorate"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -710,13 +689,13 @@ const handleImageChange = (value: string) => {
               </Select>
             </div>
 
-            {/* ✅ أزرار الإرسال */}
-            <DialogFooter className="pt-4 border-t border-[#0d2e2a]/10 gap-2 sticky bottom-0 bg-white dark:bg-slate-900 py-4">
+            {/* ✅ أزرار الإرسال - PINK THEME */}
+            <DialogFooter className="pt-4 border-t border-[#f9a8d4]/20 gap-2 sticky bottom-0 bg-white dark:bg-slate-900 py-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setShowProfileDialog(false)}
-                className="flex-1 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10"
+                className="flex-1 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
               >
                 <X className="h-4 w-4 mr-1.5" />
                 {isArabic ? "إلغاء" : "Cancel"}
@@ -724,7 +703,7 @@ const handleImageChange = (value: string) => {
               <Button
                 type="submit"
                 disabled={profileLoading}
-                className="flex-1 bg-gradient-to-r from-[#0d2e2a] to-[#2a655f] text-white hover:from-[#2a655f] hover:to-[#0d2e2a] rounded-xl"
+                className="flex-1 bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] rounded-xl shadow-lg shadow-[#d81b60]/30"
               >
                 {profileLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
@@ -741,10 +720,10 @@ const handleImageChange = (value: string) => {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: تغيير كلمة المرور ===== */}
+      {/* ===== DIALOG: تغيير كلمة المرور - PINK THEME ===== */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <DialogContent className="max-w-md rounded-2xl overflow-hidden p-0">
-          <div className="bg-gradient-to-r from-[#0d2e2a] to-[#2a655f] p-6 text-white">
+          <div className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] p-6 text-white">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
                 <KeyRound className="h-6 w-6 text-white" />
@@ -764,7 +743,7 @@ const handleImageChange = (value: string) => {
 
           <form onSubmit={handleChangePassword} className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+              <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                 {isArabic ? "كلمة المرور الحالية" : "Current Password"} *
               </Label>
               <div className="relative">
@@ -774,13 +753,13 @@ const handleImageChange = (value: string) => {
                   onChange={(e) => setOldPassword(e.target.value)}
                   placeholder={isArabic ? "أدخل كلمة المرور الحالية" : "Enter current password"}
                   required
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+              <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                 {isArabic ? "كلمة المرور الجديدة" : "New Password"} *
               </Label>
               <div className="relative">
@@ -791,12 +770,12 @@ const handleImageChange = (value: string) => {
                   placeholder={isArabic ? "أدخل كلمة المرور الجديدة" : "Enter new password"}
                   required
                   minLength={6}
-                  className="rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20 pe-10"
+                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 pe-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-[#0d2e2a] transition-colors"
+                  className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-[#d81b60] transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -807,7 +786,7 @@ const handleImageChange = (value: string) => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#0d2e2a] dark:text-white">
+              <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
                 {isArabic ? "تأكيد كلمة المرور" : "Confirm Password"} *
               </Label>
               <Input
@@ -818,7 +797,7 @@ const handleImageChange = (value: string) => {
                 required
                 minLength={6}
                 className={cn(
-                  "rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20",
+                  "rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20",
                   confirmPassword && newPassword !== confirmPassword && "border-red-500 focus-visible:ring-red-500"
                 )}
               />
@@ -830,7 +809,7 @@ const handleImageChange = (value: string) => {
               )}
             </div>
 
-            <DialogFooter className="pt-4 border-t border-[#0d2e2a]/10 gap-2">
+            <DialogFooter className="pt-4 border-t border-[#f9a8d4]/20 gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -840,7 +819,7 @@ const handleImageChange = (value: string) => {
                   setNewPassword("");
                   setConfirmPassword("");
                 }}
-                className="flex-1 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/10"
+                className="flex-1 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
               >
                 <X className="h-4 w-4 mr-1.5" />
                 {isArabic ? "إلغاء" : "Cancel"}
@@ -848,7 +827,7 @@ const handleImageChange = (value: string) => {
               <Button
                 type="submit"
                 disabled={loading || !oldPassword || !newPassword || newPassword !== confirmPassword}
-                className="flex-1 bg-gradient-to-r from-[#0d2e2a] to-[#2a655f] text-white hover:from-[#2a655f] hover:to-[#0d2e2a] rounded-xl"
+                className="flex-1 bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] rounded-xl shadow-lg shadow-[#d81b60]/30"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />

@@ -1,4 +1,4 @@
-// src/components/dashboard/AddBogoOfferDialog.tsx - الكود المُصحح بالكامل مع دعم الألوان
+// src/components/dashboard/AddBogoOfferDialog.tsx - الكود المُصحح بالكامل مع الألوان الوردية والزيتية
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -835,10 +835,10 @@ function AddBogoOfferDialogComponent({
     // ============================================================
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto border-[#2a655f]/20 shadow-2xl shadow-[#2a655f]/10">
+            <DialogContent className="max-w-2xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 shadow-2xl shadow-[#d81b60]/20 bg-white dark:bg-slate-900">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-xl text-[#0d2e2a]">
-                        <div className="p-2 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25">
+                    <DialogTitle className="flex items-center gap-2 text-xl text-[#d81b60]">
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/25">
                             <Gift className="h-5 w-5" />
                         </div>
                         {existingOffer 
@@ -849,10 +849,10 @@ function AddBogoOfferDialogComponent({
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
-                    {/* ===== التصنيف مع بحث ذكي ===== */}
+                    {/* ===== التصنيف مع بحث ذكي - وردي/زيتي ===== */}
                     <div className="space-y-2">
                         <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                            <Layers className="h-4 w-4 text-[#2a655f]" />
+                            <Layers className="h-4 w-4 text-[#d81b60]" />
                             {isArabic ? "التصنيف" : "Category"}
                             <span className="text-red-500">*</span>
                         </Label>
@@ -869,7 +869,7 @@ function AddBogoOfferDialogComponent({
                                     }}
                                     onFocus={() => setIsCategoryOpen(true)}
                                     placeholder={isArabic ? "🔍 ابحث عن تصنيف..." : "🔍 Search category..."}
-                                    className="ps-9 h-11 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 bg-white dark:bg-slate-900"
+                                    className="ps-9 h-11 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 bg-white dark:bg-slate-900"
                                 />
                                 {categorySearch && (
                                     <button
@@ -877,7 +877,7 @@ function AddBogoOfferDialogComponent({
                                             setCategorySearch("");
                                             setSelectedCategoryId("");
                                         }}
-                                        className="absolute inset-y-0 end-3 flex items-center text-muted-foreground hover:text-[#2a655f] transition-colors"
+                                        className="absolute inset-y-0 end-3 flex items-center text-muted-foreground hover:text-[#d81b60] transition-colors"
                                     >
                                         <X className="h-4 w-4" />
                                     </button>
@@ -885,7 +885,7 @@ function AddBogoOfferDialogComponent({
                             </div>
                             
                             {isCategoryOpen && (
-                                <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-slate-900 shadow-xl shadow-[#2a655f]/10">
+                                <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#d81b60]/20">
                                     {filteredCategories.length === 0 ? (
                                         <div className="p-4 text-sm text-muted-foreground text-center">
                                             {isArabic ? "❌ لا توجد تصنيفات تطابق البحث" : "❌ No categories match search"}
@@ -897,8 +897,8 @@ function AddBogoOfferDialogComponent({
                                                 <button
                                                     key={cat.id}
                                                     className={cn(
-                                                        "w-full text-start px-4 py-3 text-sm hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
-                                                        isSelected && "bg-[#2a655f]/10 dark:bg-[#2a655f]/30"
+                                                        "w-full text-start px-4 py-3 text-sm hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
+                                                        isSelected && "bg-[#d81b60]/10 dark:bg-[#d81b60]/30"
                                                     )}
                                                     onClick={() => {
                                                         setSelectedCategoryId(cat.id);
@@ -907,12 +907,12 @@ function AddBogoOfferDialogComponent({
                                                     }}
                                                 >
                                                     {isSelected && (
-                                                        <CheckCircle2 className="h-4 w-4 text-[#2a655f] flex-shrink-0" />
+                                                        <CheckCircle2 className="h-4 w-4 text-[#d81b60] flex-shrink-0" />
                                                     )}
                                                     <div className="flex-1 flex items-center gap-2">
                                                         <span>{isArabic ? cat.name_ar : cat.name_en}</span>
                                                         {cat.is_featured && (
-                                                            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[8px]">
+                                                            <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[8px]">
                                                                 ⭐ {isArabic ? "مميز" : "Featured"}
                                                             </Badge>
                                                         )}
@@ -929,12 +929,12 @@ function AddBogoOfferDialogComponent({
                         </div>
                         
                         {selectedCategoryId && (
-                            <div className="flex items-center gap-2 p-2 bg-[#2a655f]/5 rounded-lg border border-[#2a655f]/10">
+                            <div className="flex items-center gap-2 p-2 bg-[#d81b60]/5 rounded-lg border border-[#d81b60]/20">
                                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                                 <span className="text-sm text-muted-foreground">
                                     {isArabic ? "التصنيف المختار:" : "Selected category:"}
                                 </span>
-                                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0">
+                                <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0">
                                     {categories.find((c: any) => c.id === selectedCategoryId)?.[isArabic ? 'name_ar' : 'name_en'] || ""}
                                 </Badge>
                             </div>
@@ -946,7 +946,7 @@ function AddBogoOfferDialogComponent({
                         </p>
                     </div>
 
-                    {/* ===== نوع العرض ===== */}
+                    {/* ===== نوع العرض - وردي/زيتي ===== */}
                     <div className="space-y-2">
                         <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                             {isArabic ? "📌 نوع العرض" : "📌 Offer Type"}
@@ -956,10 +956,10 @@ function AddBogoOfferDialogComponent({
                                 type="button"
                                 onClick={() => setOfferType('bogo')}
                                 className={cn(
-                                    "p-3 rounded-xl border-2 text-sm font-medium transition-all duration-300 text-center cursor-pointer",
+                                    "p-3 rounded-xl border-3 text-sm font-medium transition-all duration-300 text-center cursor-pointer",
                                     offerType === 'bogo'
-                                        ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f] shadow-sm"
-                                        : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-[#2a655f]/5"
+                                        ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60] shadow-sm shadow-[#d81b60]/10"
+                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600 hover:bg-[#d81b60]/5"
                                 )}
                             >
                                 🎁 {isArabic ? "نفس المنتج" : "Same Product"}
@@ -971,10 +971,10 @@ function AddBogoOfferDialogComponent({
                                     setOfferType('cross_sell');
                                 }}
                                 className={cn(
-                                    "p-3 rounded-xl border-2 text-sm font-medium transition-all duration-300 text-center cursor-pointer",
+                                    "p-3 rounded-xl border-3 text-sm font-medium transition-all duration-300 text-center cursor-pointer",
                                     offerType === 'cross_sell'
-                                        ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f] shadow-sm"
-                                        : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-[#2a655f]/5"
+                                        ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60] shadow-sm shadow-[#d81b60]/10"
+                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600 hover:bg-[#d81b60]/5"
                                 )}
                             >
                                 🔄 {isArabic ? "منتج مختلف" : "Different Product"}
@@ -986,10 +986,10 @@ function AddBogoOfferDialogComponent({
                                     setOfferType('bundle');
                                 }}
                                 className={cn(
-                                    "p-3 rounded-xl border-2 text-sm font-medium transition-all duration-300 text-center cursor-pointer",
+                                    "p-3 rounded-xl border-3 text-sm font-medium transition-all duration-300 text-center cursor-pointer",
                                     offerType === 'bundle'
-                                        ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f] shadow-sm"
-                                        : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-[#2a655f]/5"
+                                        ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60] shadow-sm shadow-[#d81b60]/10"
+                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600 hover:bg-[#d81b60]/5"
                                 )}
                             >
                                 📦 {isArabic ? "باقة منتجات" : "Bundle"}
@@ -997,13 +997,13 @@ function AddBogoOfferDialogComponent({
                         </div>
                     </div>
 
-                    {/* ===== الشروط (المنتجات المطلوبة) ===== */}
-                    <div className="space-y-3 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                    {/* ===== الشروط (المنتجات المطلوبة) - وردي/زيتي ===== */}
+                    <div className="space-y-3 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
                         <div className="flex items-center justify-between">
                             <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                                 🛍️ {isArabic ? "الشروط (المنتجات المطلوبة)" : "Requirements (Required Products)"}
                                 {offerType === 'bundle' && (
-                                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                                    <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[10px]">
                                         {isArabic ? "باقة" : "Bundle"}
                                     </Badge>
                                 )}
@@ -1012,7 +1012,7 @@ function AddBogoOfferDialogComponent({
                                 <Button
                                     size="sm"
                                     variant="outline"
-                                    className="h-7 px-2 text-[10px] border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
+                                    className="h-7 px-2 text-[10px] border-3 border-[#d81b60]/30 text-[#d81b60] hover:bg-[#d81b60]/10"
                                     onClick={addRequirement}
                                     type="button"
                                 >
@@ -1033,7 +1033,7 @@ function AddBogoOfferDialogComponent({
                             const hasSelectedVariations = req.variations.mode === 'selected' && req.variations.ids.length > 0;
 
                             return (
-                                <div key={index} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                <div key={index} className="p-3 bg-white dark:bg-slate-900 rounded-xl border-3 border-slate-200/50 dark:border-slate-700/50">
                                     <div className="flex items-start gap-3">
                                         <div className="flex-1 space-y-3">
                                             <div>
@@ -1045,7 +1045,7 @@ function AddBogoOfferDialogComponent({
                                                     value={req.listing_id}
                                                     onValueChange={(v) => updateRequirement(index, 'listing_id', v)}
                                                 >
-                                                    <SelectTrigger className="mt-1 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20">
+                                                    <SelectTrigger className="mt-1 rounded-xl border-3 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20">
                                                         <SelectValue placeholder={isArabic ? "اختر المنتج" : "Select product"} />
                                                     </SelectTrigger>
                                                     <SelectContent className="rounded-xl max-h-40">
@@ -1071,10 +1071,10 @@ function AddBogoOfferDialogComponent({
                                                             type="button"
                                                             onClick={() => setVariationMode('requirements', index, 'all')}
                                                             className={cn(
-                                                                "px-2 py-0.5 rounded-lg border text-[10px] transition-all duration-300",
+                                                                "px-2 py-0.5 rounded-lg border-3 text-[10px] transition-all duration-300",
                                                                 req.variations.mode === 'all'
-                                                                    ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f]"
-                                                                    : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600"
+                                                                    ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60]"
+                                                                    : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600"
                                                             )}
                                                         >
                                                             ✅ {isArabic ? "كل الخيارات" : "All"}
@@ -1083,10 +1083,10 @@ function AddBogoOfferDialogComponent({
                                                             type="button"
                                                             onClick={() => setVariationMode('requirements', index, 'selected')}
                                                             className={cn(
-                                                                "px-2 py-0.5 rounded-lg border text-[10px] transition-all duration-300",
+                                                                "px-2 py-0.5 rounded-lg border-3 text-[10px] transition-all duration-300",
                                                                 req.variations.mode === 'selected'
-                                                                    ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f]"
-                                                                    : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600"
+                                                                    ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60]"
+                                                                    : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600"
                                                             )}
                                                         >
                                                             🎯 {isArabic ? "خيارات محددة" : "Specific"}
@@ -1111,10 +1111,10 @@ function AddBogoOfferDialogComponent({
                                                                         type="button"
                                                                         onClick={() => toggleVariation('requirements', index, v.id)}
                                                                         className={cn(
-                                                                            "px-2 py-0.5 rounded-lg border text-[10px] transition-all duration-300 flex items-center gap-1",
+                                                                            "px-2 py-0.5 rounded-lg border-3 text-[10px] transition-all duration-300 flex items-center gap-1",
                                                                             isSelected
-                                                                                ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f]"
-                                                                                : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-slate-100/50"
+                                                                                ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60]"
+                                                                                : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600 hover:bg-slate-100/50"
                                                                         )}
                                                                     >
                                                                         {isColor && v.combination?.hex && (
@@ -1162,7 +1162,7 @@ function AddBogoOfferDialogComponent({
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
-                                                        className="h-7 w-7 rounded-full hover:bg-[#2a655f]/10"
+                                                        className="h-7 w-7 rounded-full hover:bg-[#d81b60]/10 border-3 border-[#d81b60]/30"
                                                         onClick={() => {
                                                             const newReqs = [...requirements];
                                                             const newQty = Math.max(1, req.quantity - 1);
@@ -1176,13 +1176,13 @@ function AddBogoOfferDialogComponent({
                                                     >
                                                         -
                                                     </Button>
-                                                    <span className="w-8 text-center font-bold text-[#2a655f]">
+                                                    <span className="w-8 text-center font-bold text-[#d81b60]">
                                                         {req.quantity}
                                                     </span>
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
-                                                        className="h-7 w-7 rounded-full hover:bg-[#2a655f]/10"
+                                                        className="h-7 w-7 rounded-full hover:bg-[#d81b60]/10 border-3 border-[#d81b60]/30"
                                                         onClick={() => {
                                                             const newReqs = [...requirements];
                                                             const newQty = req.quantity + 1;
@@ -1199,9 +1199,9 @@ function AddBogoOfferDialogComponent({
                                                 </div>
                                             </div>
 
-                                            {/* ✅ توزيع الكميات على التشكيلات */}
+                                            {/* ✅ توزيع الكميات على التشكيلات - وردي/زيتي */}
                                             {hasSelectedVariations && (
-                                                <div className="mt-3 p-3 bg-white/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                                <div className="mt-3 p-3 bg-white/50 dark:bg-slate-800/30 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <Label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                                                             📊 {isArabic ? "توزيع الكميات على الخيارات" : "Variation Quantity Distribution"}
@@ -1226,7 +1226,7 @@ function AddBogoOfferDialogComponent({
                                                                     index,
                                                                     variations.filter((v: any) => req.variations.ids.includes(v.id))
                                                                 )}
-                                                                className="text-[10px] text-[#2a655f] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border border-[#2a655f]/20 rounded-lg hover:bg-[#2a655f]/5"
+                                                                className="text-[10px] text-[#d81b60] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border-3 border-[#d81b60]/30 rounded-lg hover:bg-[#d81b60]/5"
                                                             >
                                                                 <Zap className="h-3 w-3" />
                                                                 {isArabic ? `وزع ${remaining}` : `Distribute ${remaining}`}
@@ -1247,7 +1247,7 @@ function AddBogoOfferDialogComponent({
                                                             const isColor = variation._type === 'color';
                                                             
                                                             return (
-                                                                <div key={id} className="flex items-center gap-2 p-2 border rounded-xl border-slate-200/50 bg-white/50 dark:bg-slate-800/50">
+                                                                <div key={id} className="flex items-center gap-2 p-2 border-3 rounded-xl border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50">
                                                                     {isColor && combo?.hex && (
                                                                         <span 
                                                                             className="w-3 h-3 rounded-full border border-slate-200 flex-shrink-0"
@@ -1265,26 +1265,26 @@ function AddBogoOfferDialogComponent({
                                                                             type="button"
                                                                             onClick={() => handleRequirementVariationQuantityChange(index, id, -1)}
                                                                             className={cn(
-                                                                                "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                                                                                "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-3",
                                                                                 currentQty > 0 
-                                                                                    ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600"
-                                                                                    : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800"
+                                                                                    ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 border-slate-300"
+                                                                                    : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800 border-slate-200"
                                                                             )}
                                                                             disabled={currentQty === 0}
                                                                         >
                                                                             -
                                                                         </button>
-                                                                        <span className="w-8 text-center font-bold text-[#0d2e2a] text-sm">
+                                                                        <span className="w-8 text-center font-bold text-[#d81b60] text-sm">
                                                                             {currentQty}
                                                                         </span>
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleRequirementVariationQuantityChange(index, id, 1)}
                                                                             className={cn(
-                                                                                "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                                                                                "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-3",
                                                                                 distributedTotal < totalQty
-                                                                                    ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white"
-                                                                                    : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700"
+                                                                                    ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white border-[#d81b60] shadow-sm shadow-[#d81b60]/30"
+                                                                                    : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 border-slate-300"
                                                                             )}
                                                                             disabled={distributedTotal >= totalQty}
                                                                         >
@@ -1316,8 +1316,8 @@ function AddBogoOfferDialogComponent({
                         })}
                     </div>
 
-                    {/* ===== النتيجة (الهدية) ===== */}
-                    <div className="space-y-3 p-4 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30">
+                    {/* ===== النتيجة (الهدية) - وردي/زيتي ===== */}
+                    <div className="space-y-3 p-4 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl border-3 border-emerald-200/50 dark:border-emerald-800/30">
                         <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                             🎁 {isArabic ? "النتيجة (الهدية)" : "Result (Gift)"}
                             <span className="text-red-500">*</span>
@@ -1344,7 +1344,7 @@ function AddBogoOfferDialogComponent({
                                     });
                                 }}
                             >
-                                <SelectTrigger className="mt-1 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20">
+                                <SelectTrigger className="mt-1 rounded-xl border-3 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20">
                                     <SelectValue placeholder={isArabic ? "اختر منتج الهدية" : "Select gift product"} />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl max-h-40">
@@ -1402,10 +1402,10 @@ function AddBogoOfferDialogComponent({
                                                         type="button"
                                                         onClick={() => setVariationMode('result', null, 'selected')}
                                                         className={cn(
-                                                            "px-2 py-0.5 rounded-lg border text-[10px] transition-all duration-300",
+                                                            "px-2 py-0.5 rounded-lg border-3 text-[10px] transition-all duration-300",
                                                             result.variations.mode === 'selected'
-                                                                ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f]"
-                                                                : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600"
+                                                                ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60]"
+                                                                : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600"
                                                         )}
                                                     >
                                                         🎯 {isArabic ? "خيار محدد" : "Specific Option"}
@@ -1429,10 +1429,10 @@ function AddBogoOfferDialogComponent({
                                                                 type="button"
                                                                 onClick={() => toggleVariation('result', null, v.id)}
                                                                 className={cn(
-                                                                    "px-2 py-0.5 rounded-lg border text-[10px] transition-all duration-300 flex items-center gap-1",
+                                                                    "px-2 py-0.5 rounded-lg border-3 text-[10px] transition-all duration-300 flex items-center gap-1",
                                                                     isSelected
-                                                                        ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f]"
-                                                                        : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-slate-100/50"
+                                                                        ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60]"
+                                                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600 hover:bg-slate-100/50"
                                                                 )}
                                                             >
                                                                 {isColor && v.combination?.hex && (
@@ -1475,9 +1475,9 @@ function AddBogoOfferDialogComponent({
                                         </p>
                                     )}
 
-                                    {/* ===== توزيع الكميات على التشكيلات ===== */}
+                                    {/* ===== توزيع الكميات على التشكيلات - وردي/زيتي ===== */}
                                     {giftHasVarsOrColors && result.variations.mode === 'selected' && result.variations.ids.length > 0 && (
-                                        <div className="mt-3 p-3 bg-white/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                        <div className="mt-3 p-3 bg-white/50 dark:bg-slate-800/30 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
                                             <div className="flex items-center justify-between mb-2">
                                                 <Label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                                                     📊 {isArabic ? "توزيع الكميات" : "Quantity Distribution"}
@@ -1501,7 +1501,7 @@ function AddBogoOfferDialogComponent({
                                                         onClick={() => distributeRemainingGiftQuantity(
                                                             resultVariations.filter((v: any) => result.variations.ids.includes(v.id))
                                                         )}
-                                                        className="text-[10px] text-[#2a655f] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border border-[#2a655f]/20 rounded-lg hover:bg-[#2a655f]/5"
+                                                        className="text-[10px] text-[#d81b60] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border-3 border-[#d81b60]/30 rounded-lg hover:bg-[#d81b60]/5"
                                                     >
                                                         <Zap className="h-3 w-3" />
                                                         {isArabic ? `وزع ${remaining}` : `Distribute ${remaining}`}
@@ -1522,7 +1522,7 @@ function AddBogoOfferDialogComponent({
                                                     const isColor = variation._type === 'color';
                                                     
                                                     return (
-                                                        <div key={id} className="flex items-center gap-2 p-2 border rounded-xl border-slate-200/50 bg-white/50 dark:bg-slate-800/50">
+                                                        <div key={id} className="flex items-center gap-2 p-2 border-3 rounded-xl border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50">
                                                             {isColor && combo?.hex && (
                                                                 <span 
                                                                     className="w-3 h-3 rounded-full border border-slate-200 flex-shrink-0"
@@ -1540,26 +1540,26 @@ function AddBogoOfferDialogComponent({
                                                                     type="button"
                                                                     onClick={() => handleGiftVariationQuantityChange(id, -1)}
                                                                     className={cn(
-                                                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                                                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-3",
                                                                         currentQty > 0 
-                                                                            ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600"
-                                                                            : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800"
+                                                                            ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 border-slate-300"
+                                                                            : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800 border-slate-200"
                                                                     )}
                                                                     disabled={currentQty === 0}
                                                                 >
                                                                     -
                                                                 </button>
-                                                                <span className="w-8 text-center font-bold text-[#0d2e2a] text-sm">
+                                                                <span className="w-8 text-center font-bold text-[#d81b60] text-sm">
                                                                     {currentQty}
                                                                 </span>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleGiftVariationQuantityChange(id, 1)}
                                                                     className={cn(
-                                                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                                                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-3",
                                                                         distributedTotal < totalQty
-                                                                            ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white"
-                                                                            : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700"
+                                                                            ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white border-[#d81b60] shadow-sm shadow-[#d81b60]/30"
+                                                                            : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 border-slate-300"
                                                                     )}
                                                                     disabled={distributedTotal >= totalQty}
                                                                 >
@@ -1584,7 +1584,7 @@ function AddBogoOfferDialogComponent({
                                 <Button
                                     size="sm"
                                     variant="outline"
-                                    className="h-7 w-7 rounded-full hover:bg-[#2a655f]/10"
+                                    className="h-7 w-7 rounded-full hover:bg-[#d81b60]/10 border-3 border-[#d81b60]/30"
                                     onClick={() => {
                                         const newQty = Math.max(1, result.quantity - 1);
                                         let newVariationQuantities = { ...(result.variationQuantities || {}) };
@@ -1597,13 +1597,13 @@ function AddBogoOfferDialogComponent({
                                 >
                                     -
                                 </Button>
-                                <span className="w-8 text-center font-bold text-[#2a655f]">
+                                <span className="w-8 text-center font-bold text-[#d81b60]">
                                     {result.quantity}
                                 </span>
                                 <Button
                                     size="sm"
                                     variant="outline"
-                                    className="h-7 w-7 rounded-full hover:bg-[#2a655f]/10"
+                                    className="h-7 w-7 rounded-full hover:bg-[#d81b60]/10 border-3 border-[#d81b60]/30"
                                     onClick={() => {
                                         const newQty = result.quantity + 1;
                                         let newVariationQuantities = { ...(result.variationQuantities || {}) };
@@ -1620,8 +1620,8 @@ function AddBogoOfferDialogComponent({
                         </div>
                     </div>
 
-                    {/* ===== المدة ===== */}
-                    <div className="space-y-3 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                    {/* ===== المدة - وردي/زيتي ===== */}
+                    <div className="space-y-3 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
                         <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                             ⏰ {isArabic ? "المدة" : "Duration"}
                         </Label>
@@ -1630,10 +1630,10 @@ function AddBogoOfferDialogComponent({
                                 type="button"
                                 onClick={() => { setIsPermanent(true); setError(null); setExpiresAt(""); }}
                                 className={cn(
-                                    "px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-300 flex-1 cursor-pointer",
+                                    "px-4 py-2 rounded-xl border-3 text-sm font-medium transition-all duration-300 flex-1 cursor-pointer",
                                     isPermanent
-                                        ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f] shadow-sm"
-                                        : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-[#2a655f]/5"
+                                        ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60] shadow-sm shadow-[#d81b60]/10"
+                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600 hover:bg-[#d81b60]/5"
                                 )}
                                 disabled={isSubmitting}
                             >
@@ -1644,10 +1644,10 @@ function AddBogoOfferDialogComponent({
                                 type="button"
                                 onClick={() => { setIsPermanent(false); setError(null); }}
                                 className={cn(
-                                    "px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-300 flex-1 cursor-pointer",
+                                    "px-4 py-2 rounded-xl border-3 text-sm font-medium transition-all duration-300 flex-1 cursor-pointer",
                                     !isPermanent
-                                        ? "border-[#2a655f] bg-[#2a655f]/10 text-[#2a655f] shadow-sm"
-                                        : "border-slate-200/50 hover:border-[#2a655f]/30 text-slate-600 hover:bg-[#2a655f]/5"
+                                        ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60] shadow-sm shadow-[#d81b60]/10"
+                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600 hover:bg-[#d81b60]/5"
                                 )}
                                 disabled={isSubmitting}
                             >
@@ -1660,7 +1660,7 @@ function AddBogoOfferDialogComponent({
                                 type="datetime-local"
                                 value={expiresAt}
                                 onChange={(e) => { setExpiresAt(e.target.value); setError(null); }}
-                                className="mt-1 rounded-xl border-[#2a655f]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
+                                className="mt-1 rounded-xl border-3 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                                 disabled={isSubmitting}
                                 min={new Date().toISOString().slice(0, 16)}
                             />
@@ -1668,17 +1668,18 @@ function AddBogoOfferDialogComponent({
                     </div>
 
                     {error && (
-                        <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-200 dark:border-red-800/30 flex items-start gap-2">
+                        <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-xl border-3 border-red-200 dark:border-red-800/30 flex items-start gap-2">
                             <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
                             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                         </div>
                     )}
 
-                    <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800/30">
-                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300 text-center">
+                    {/* ===== معاينة العرض - وردي/زيتي ===== */}
+                    <div className="p-4 bg-gradient-to-r from-[#d81b60]/10 to-[#f48fb1]/10 dark:from-[#d81b60]/20 dark:to-[#f48fb1]/10 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
+                        <p className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1] text-center">
                             🎯 {getPreviewText()}
                         </p>
-                        <div className="text-xs text-emerald-600/70 dark:text-emerald-400/70 text-center mt-1 space-y-0.5">
+                        <div className="text-xs text-[#d81b60]/70 dark:text-[#f48fb1]/70 text-center mt-1 space-y-0.5">
                             <p>
                                 {isArabic 
                                     ? `💰 عند شراء ${requirements.reduce((sum, r) => sum + r.quantity, 0)}، تحصل على ${result.quantity} مجاناً`
@@ -1727,18 +1728,18 @@ function AddBogoOfferDialogComponent({
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                <DialogFooter className="gap-2 pt-2 border-t-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
                     <Button 
                         variant="outline" 
                         onClick={() => onOpenChange(false)}
-                        className="rounded-xl border-slate-200/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50"
+                        className="rounded-xl border-3 border-[#d81b60]/30 text-[#d81b60] hover:bg-[#d81b60]/10 dark:hover:bg-[#d81b60]/20"
                         disabled={isSubmitting}
                     >
                         <X className="h-4 w-4 mr-1.5" />
                         {isArabic ? "إلغاء" : "Cancel"}
                     </Button>
                     <Button
-                        className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/30 hover:shadow-[#2a655f]/50 transition-all duration-300 hover:scale-[1.02] disabled:opacity-50"
+                        className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/30 hover:shadow-[#d81b60]/50 transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 border-3 border-[#d81b60]/30"
                         onClick={handleSubmit}
                         disabled={isSubmitting}
                     >

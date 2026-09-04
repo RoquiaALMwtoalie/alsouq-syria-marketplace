@@ -109,7 +109,7 @@ const AnimatedIcon = ({
   );
 };
 
-// ✅ Mega Menu Component مع أيقونات متحركة ملونة
+// ✅ Mega Menu Component مع أيقونات متحركة ملونة - مع بوردر فوشي غامق
 function MegaMenu({ categories }: { categories: any[] }) {
   const app = useApp();
   const t = useT();
@@ -188,7 +188,8 @@ function MegaMenu({ categories }: { categories: any[] }) {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full start-0 mt-2 w-[900px] max-w-[95vw] bg-card rounded-2xl shadow-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 p-6 grid grid-cols-4 gap-6 animate-in slide-in-from-top-5 duration-200 z-50 bg-gradient-to-br from-white via-emerald-50/20 to-[#2a655f]/10 dark:from-gray-950 dark:via-[#173d38]/20 dark:to-[#2a655f]/20 max-h-[80vh] overflow-y-auto">
+        // ✅ ✅ ✅ بوردر فوشي غامق مطابق لـ StoreCard
+        <div className="absolute top-full start-0 mt-2 w-[900px] max-w-[95vw] bg-card rounded-2xl shadow-2xl border-3 border-[#d81b60]/60 hover:border-[#c2185b] shadow-[0_0_35px_rgba(216,27,96,0.2)] hover:shadow-[0_0_55px_rgba(194,24,91,0.35)] transition-all duration-400 p-6 grid grid-cols-4 gap-6 animate-in slide-in-from-top-5 duration-200 z-50 bg-gradient-to-br from-white via-emerald-50/20 to-[#2a655f]/10 dark:from-gray-950 dark:via-[#173d38]/20 dark:to-[#2a655f]/20 max-h-[80vh] overflow-y-auto">
           
           <div className="col-span-3 grid grid-cols-3 gap-x-4 gap-y-1.5">
             {mainCategories.map((c, index) => {
@@ -210,7 +211,6 @@ function MegaMenu({ categories }: { categories: any[] }) {
                     className={`h-10 w-10 rounded-xl ${!customBg ? 'bg-gradient-to-br from-[#2a655f]/15 to-[#3a8a82]/15 border border-[#2a655f]/20' : 'text-white'} group-hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-sm overflow-hidden`}
                   >
                     {c.image_url ? (
-                      // ✅ ✅ ✅ استبدال img بـ OptimizedImage
                       <OptimizedImage
                         src={c.image_url}
                         alt={app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
@@ -260,7 +260,6 @@ function MegaMenu({ categories }: { categories: any[] }) {
                 >
                   <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white shadow-md animate-special-dance shrink-0 overflow-hidden">
                     {c.image_url ? (
-                      // ✅ ✅ ✅ استبدال img بـ OptimizedImage
                       <OptimizedImage
                         src={c.image_url}
                         alt={app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
@@ -693,188 +692,50 @@ export const Header = memo(function Header() {
   <TooltipTrigger asChild>
     <button
       onClick={goHome}
-      className="flex items-center gap-3.5 shrink-0 group cursor-pointer relative"
+      className="flex items-center shrink-0 group cursor-pointer relative"
       aria-label={app.lang === "ar" ? "الرئيسية - ذوق" : "Home - zooq"}
     >
-      {/* ✦ Subtle brand glow - بدون أي خلفية للوغو */}
-      <div
-        className="
-          absolute -inset-4
-          rounded-full
-          bg-gradient-to-r
-          from-[#f9a8d4]/0
-          via-[#f9a8d4]/15
-          to-[#2a655f]/0
-          blur-2xl
-          opacity-0
-          group-hover:opacity-100
-          transition-all duration-700
-          pointer-events-none
-        "
-      />
+      {/* Glow */}
+      <div className="absolute -inset-6 rounded-full bg-gradient-to-r from-[#f9a8d4]/0 via-[#f9a8d4]/15 to-[#2a655f]/0 blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none" />
 
-      {/* ═══════════════════════════════════════
-          LOGO — Transparent / No Background
-         ═══════════════════════════════════════ */}
+      {/* LOGO - أصغر قليلاً */}
       <div className="relative flex items-center justify-center shrink-0">
-        {/* Soft glow behind logo only */}
-        <div
-          className="
-            absolute
-            -inset-3
-            rounded-full
-            bg-[#f9a8d4]/15
-            blur-xl
-            opacity-0
-            group-hover:opacity-100
-            scale-75
-            group-hover:scale-100
-            transition-all duration-500
-          "
-        />
-
-        {/* ✦ Logo itself — completely transparent & larger */}
+        <div className="absolute -inset-4 rounded-full bg-[#f9a8d4]/15 blur-xl opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-500" />
         <img
           src="/images/Logo.png"
           alt="ذوق | zooq"
           draggable={false}
           className="
-            relative z-10
-            h-[64px] w-[64px]
-            sm:h-[72px] sm:w-[72px]
+            relative z-10            h-[36px] w-[36px]
+            xs:h-[40px] xs:w-[40px]
+            sm:h-[56px] sm:w-[56px]
+            md:h-[68px] md:w-[68px]
+            lg:h-[78px] lg:w-[78px]
             object-contain
-            drop-shadow-[0_4px_16px_rgba(42,101,95,0.25)]
+            drop-shadow-[0_4px_20px_rgba(42,101,95,0.3)]
             group-hover:scale-110
-            group-hover:drop-shadow-[0_6px_24px_rgba(249,168,212,0.45)]
+            group-hover:drop-shadow-[0_8px_32px_rgba(249,168,212,0.5)]
             transition-all duration-500
           "
         />
       </div>
-
-      {/* ═══════════════════════════════════════
-          BRAND TYPOGRAPHY
-         ═══════════════════════════════════════ */}
-      <div className="hidden sm:flex flex-col justify-center leading-none">
-
-        {/* Arabic Brand Name - Larger & Clearer */}
-        <div
-          className="
-            relative
-            font-black
-            text-[28px]
-            md:text-[31px]
-            tracking-[-0.02em]
-            bg-gradient-to-l
-            from-[#2a655f]
-            via-[#f9a8d4]
-            to-[#2a655f]
-            bg-clip-text
-            text-transparent
-            bg-[length:200%_auto]
-            animate-[shimmer-gold_5s_linear_infinite]
-            transition-all duration-300
-            group-hover:scale-[1.02]
-            origin-right
-          "
-        >
-          ذوق
-        </div>
-
-        {/* English Brand Name */}
-        <div
-          className="
-            mt-1.5
-            text-[14px]
-            md:text-[15px]
-            font-extrabold
-            tracking-[0.3em]
-            lowercase
-            bg-gradient-to-r
-            from-[#2a655f]
-            via-[#3a8a82]
-            to-[#f9a8d4]
-            bg-clip-text
-            text-transparent
-            transition-all duration-300
-            group-hover:tracking-[0.36em]
-          "
-        >
-          zooq
-        </div>
-
-        {/* Premium Tagline */}
-        <div
-          className="
-            mt-2
-            flex items-center gap-1.5
-            text-[10px]
-            md:text-[11px]
-            font-bold
-            tracking-wide
-            text-muted-foreground
-            group-hover:text-[#2a655f]
-            transition-colors duration-300
-            whitespace-nowrap
-          "
-        >
-          <span
-            className="
-              h-1.5 w-1.5
-              rounded-full
-              bg-[#f9a8d4]
-              shadow-[0_0_10px_rgba(249,168,212,0.8)]
-            "
-          />
-
-          <span>
-            {app.lang === "ar"
-              ? "كلشي ع ذوقك"
-              : "Exactly your taste"}
-          </span>
-
-          <span
-            className="
-              h-1.5 w-1.5
-              rounded-full
-              bg-[#2a655f]
-              shadow-[0_0_10px_rgba(42,101,95,0.6)]
-            "
-          />
-        </div>
-      </div>
     </button>
   </TooltipTrigger>
 
-  {/* Premium Tooltip */}
   <TooltipContent
     side="bottom"
     sideOffset={10}
-    className="
-      bg-[#071f1c]
-      text-white
-      border
-      border-[#f9a8d4]/30
-      rounded-xl
-      px-4 py-2.5
-      shadow-[0_10px_40px_rgba(7,31,28,0.45)]
-    "
+    className="bg-[#071f1c] text-white border border-[#f9a8d4]/30 rounded-xl px-4 py-2.5 shadow-[0_10px_40px_rgba(7,31,28,0.45)]"
   >
     <div className="flex flex-col items-center gap-1">
       <div className="flex items-center gap-2">
         <span className="text-[#f9a8d4] text-xs">✦</span>
-
         <span className="text-sm font-bold tracking-wide">
-          {app.lang === "ar"
-            ? "ذوق · كلشي ع ذوقك"
-            : "zooq · Exactly your taste"}
+          {app.lang === "ar" ? "ذوق · كلشي ع ذوقك" : "zooq · Exactly your taste"}
         </span>
-
         <span className="text-[#f9a8d4] text-xs">✦</span>
       </div>
-
-      <span className="text-[10px] text-white/60 tracking-[0.2em] lowercase font-medium">
-        zooq marketplace
-      </span>
+      <span className="text-[10px] text-white/60 tracking-[0.2em] lowercase font-medium">zooq marketplace</span>
     </div>
   </TooltipContent>
 </Tooltip>
@@ -887,28 +748,28 @@ export const Header = memo(function Header() {
           <div className="flex-1 max-w-3xl mx-2 hidden lg:flex items-center gap-1.5">
             <div className="relative flex-1 min-w-[160px] group">
               <Search className={`absolute inset-y-0 my-auto start-3 h-4 w-4 transition-colors duration-300 ${searchFocused ? 'text-pink-500 dark:text-pink-400' : 'text-muted-foreground'}`} />
-              <input
-                type="text"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && doSearch()}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                placeholder={t("search_placeholder")}
-                className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
-                  searchFocused
-                    ? 'border-pink-400 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
-                    : 'border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-pink-300/50'
-                }`}
-              />
+           <input
+  type="text"
+  value={q}
+  onChange={(e) => setQ(e.target.value)}
+  onKeyDown={(e) => e.key === "Enter" && doSearch()}
+  onFocus={() => setSearchFocused(true)}
+  onBlur={() => setSearchFocused(false)}
+  placeholder={t("search_placeholder")}
+  className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
+    searchFocused
+      ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
+      : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
+  }`}
+/>
             </div>
             
             <VoiceSearch
-              onResult={handleVoiceSearch}
-              lang={isRTL ? "ar-SA" : "en-US"}
-              buttonSize="md"
-              className="border-[#2a655f]/20 hover:border-pink-400 transition-colors duration-300"
-            />
+  onResult={handleVoiceSearch}
+  lang={isRTL ? "ar-SA" : "en-US"}
+  buttonSize="md"
+  className="border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/20"
+/>
             
             <button
               onClick={doSearch}
@@ -936,21 +797,21 @@ export const Header = memo(function Header() {
                   <p>{app.lang === "ar" ? "تصفية حسب الموقع" : "Filter by location"}</p>
                 </TooltipContent>
               </Tooltip>
-              <DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
-                <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
-                  <Globe className="h-4 w-4 text-muted-foreground" />
-                  {t("all_governorates")}
-                  {gov === "all" && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {govs.map((g) => (
-                  <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                    {app.lang === "ar" ? g.name_ar : g.name_en}
-                    {gov === g.slug && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
+<DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
+  <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
+    <Globe className="h-4 w-4 text-muted-foreground group-hover:text-white" />
+    {t("all_governorates")}
+    {gov === "all" && <Check className="h-4 w-4 ms-auto text-pink-500" />}
+  </DropdownMenuItem>
+  <DropdownMenuSeparator />
+  {govs.map((g) => (
+    <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
+      <MapPin className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white" />
+      {app.lang === "ar" ? g.name_ar : g.name_en}
+      {gov === g.slug && <Check className="h-4 w-4 ms-auto text-pink-500" />}
+    </DropdownMenuItem>
+  ))}
+</DropdownMenuContent>
             </DropdownMenu>
           </div>
 
@@ -958,22 +819,28 @@ export const Header = memo(function Header() {
           <div className="flex-1 max-w-lg mx-1.5 hidden md:flex lg:hidden items-center gap-1.5">
             <div className="relative flex-1">
               <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && doSearch()}
-                placeholder={t("search_placeholder")}
-                className="w-full h-10 ps-9 pe-3 bg-muted/50 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 rounded-xl focus:border-pink-400 focus:bg-card focus:shadow-lg focus:outline-none transition-all text-sm"
-              />
+            <input
+  type="text"
+  value={q}
+  onChange={(e) => setQ(e.target.value)}
+  onKeyDown={(e) => e.key === "Enter" && doSearch()}
+  onFocus={() => setSearchFocused(true)}
+  onBlur={() => setSearchFocused(false)}
+  placeholder={t("search_placeholder")}
+  className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
+    searchFocused
+      ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
+      : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
+  }`}
+/>
             </div>
             
-            <VoiceSearch
-              onResult={handleVoiceSearch}
-              lang={isRTL ? "ar-SA" : "en-US"}
-              buttonSize="sm"
-              className="border-[#2a655f]/20 hover:border-pink-400 transition-colors duration-300"
-            />
+           <VoiceSearch
+  onResult={handleVoiceSearch}
+  lang={isRTL ? "ar-SA" : "en-US"}
+  buttonSize="sm"
+  className="border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/20"
+/>
             
             <button
               onClick={doSearch}
@@ -991,21 +858,21 @@ export const Header = memo(function Header() {
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
-                <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
-                  <Globe className="h-4 w-4 text-muted-foreground" />
-                  {t("all_governorates")}
-                  {gov === "all" && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {govs.map((g) => (
-                  <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                    {app.lang === "ar" ? g.name_ar : g.name_en}
-                    {gov === g.slug && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
+<DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
+  <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
+    <Globe className="h-4 w-4 text-muted-foreground group-hover:text-white" />
+    {t("all_governorates")}
+    {gov === "all" && <Check className="h-4 w-4 ms-auto text-pink-500" />}
+  </DropdownMenuItem>
+  <DropdownMenuSeparator />
+  {govs.map((g) => (
+    <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
+      <MapPin className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white" />
+      {app.lang === "ar" ? g.name_ar : g.name_en}
+      {gov === g.slug && <Check className="h-4 w-4 ms-auto text-pink-500" />}
+    </DropdownMenuItem>
+  ))}
+</DropdownMenuContent>
             </DropdownMenu>
           </div>
 
@@ -1377,7 +1244,7 @@ export const Header = memo(function Header() {
               </Dialog>
             )}
 
-            {/* Favorites - ✅ مع لون وردي وحركة نبض */}
+            {/* ✅ Favorites - قلب معبى بلون زهري دائماً */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link to="/favorites" className="relative group shrink-0">
@@ -1388,9 +1255,8 @@ export const Header = memo(function Header() {
                   >
                     <Heart className={cn(
                       "h-4 w-4 group-hover:scale-110 transition-transform",
-                      favoritesCount > 0 
-                        ? "text-pink-500 fill-pink-500 animate-heartbeat" 
-                        : "text-[#2a655f] dark:text-[#3a8a82] group-hover:text-pink-500"
+                      // ✅ ✅ ✅ قلب معبى بلون زهري دائماً
+                      "text-pink-500 fill-pink-500"
                     )} />
                     {favoritesCount > 0 && (
                       <Badge 
@@ -1441,237 +1307,246 @@ export const Header = memo(function Header() {
               </TooltipContent>
             </Tooltip>
 
-            {/* User Menu */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-[#2a655f]/20 dark:hover:bg-[#2a655f]/30 transition-all duration-300 group relative shrink-0 border border-[#2a655f]/30 shadow-[0_0_15px_rgba(42,101,95,0.15)] hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] cursor-pointer overflow-hidden p-0">
-                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none z-10" />
-                      
-                      {app.user && profile?.avatar_url ? (
-                        <div className="h-full w-full rounded-2xl overflow-hidden relative">
-                          <OptimizedImage 
-                            src={profile.avatar_url} 
-                            alt={app.user.name} 
-                            width={40}
-                            height={40}
-                            quality={85}
-                            objectFit="cover"
-                            className="h-full w-full group-hover:scale-110 transition-transform duration-300"
-                          />
-                        </div>
-                      ) : (
-                        <User className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300 relative z-10 animate-icon-dance" />
-                      )}
-                      
-                      {app.user && (
-                        <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-background animate-ping z-20" />
-                      )}
-                      {app.user && (
-                        <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background z-20 shadow-[0_0_8px_rgba(16,185,129,1)]" />
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
+        {/* User Menu */}
+<Tooltip>
+  <TooltipTrigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-[#d81b60]/20 dark:hover:bg-[#d81b60]/30 transition-all duration-300 group relative shrink-0 border-2 border-[#d81b60]/60 dark:border-[#d81b60]/50 hover:border-[#d81b60] shadow-[0_0_15px_rgba(216,27,96,0.2)] hover:shadow-[0_0_30px_rgba(216,27,96,0.4)] cursor-pointer overflow-hidden p-0">
+          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none z-10" />
+          
+          {app.user && profile?.avatar_url ? (
+            <div className="h-full w-full rounded-2xl overflow-hidden relative">
+              <OptimizedImage 
+                src={profile.avatar_url} 
+                alt={app.user.name} 
+                width={40}
+                height={40}
+                quality={85}
+                objectFit="cover"
+                className="h-full w-full group-hover:scale-110 transition-transform duration-300"
+              />
+            </div>
+          ) : (
+            <User className="h-4 w-4 text-[#d81b60] dark:text-[#f48fb1] group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300 relative z-10 animate-icon-dance" />
+          )}
+          
+          {app.user && (
+            <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-background animate-ping z-20" />
+          )}
+          {app.user && (
+            <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background z-20 shadow-[0_0_8px_rgba(16,185,129,1)]" />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
 
-                  <DropdownMenuContent align="end" className="w-80 rounded-[28px] p-0 border border-[#2a655f]/30 dark:border-[#2a655f]/40 shadow-[0_20px_50px_rgba(23,61,56,0.3)] overflow-hidden bg-gradient-to-b from-white via-emerald-50/20 to-white dark:from-slate-950 dark:via-[#173d38]/30 dark:to-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300">
-                    
-                    <style>{`
-                      @keyframes icon-dance-glow {
-                        0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(52,211,153,0.5)); }
-                        50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(52,211,153,0.9)); }
-                      }
-                      .animate-icon-dance {
-                        animation: icon-dance-glow 2s ease-in-out infinite;
-                      }
-                      @keyframes pulse-slow {
-                        0%, 100% { opacity: 0.4; transform: scale(1); }
-                        50% { opacity: 0.8; transform: scale(1.05); }
-                      }
-                      .animate-pulse-slow {
-                        animation: pulse-slow 4s ease-in-out infinite;
-                      }
-                    `}</style>
+      <DropdownMenuContent align="end" className="w-80 rounded-[28px] p-0 border-2 border-[#d81b60]/60 dark:border-[#d81b60]/50 shadow-[0_20px_50px_rgba(216,27,96,0.25)] overflow-hidden bg-gradient-to-b from-white via-pink-50/30 to-white dark:from-slate-950 dark:via-[#d81b60]/10 dark:to-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300">
+        
+        <style>{`
+          @keyframes icon-dance-glow {
+            0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(216,27,96,0.5)); }
+            50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(216,27,96,0.9)); }
+          }
+          .animate-icon-dance {
+            animation: icon-dance-glow 2s ease-in-out infinite;
+          }
+          @keyframes pulse-slow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+          }
+          .animate-pulse-slow {
+            animation: pulse-slow 4s ease-in-out infinite;
+          }
+          @keyframes shimmer-pink {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+          .animate-shimmer-pink {
+            background: linear-gradient(90deg, transparent, rgba(216,27,96,0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer-pink 3s ease-in-out infinite;
+          }
+        `}</style>
 
-                    {app.user ? (
-                      <>
-                        <div className="bg-gradient-to-br from-[#173d38]/30 via-[#2a655f]/20 to-[#3a8a82]/20 dark:from-[#173d38]/60 dark:via-[#2a655f]/40 dark:to-slate-900 p-5 border-b border-[#2a655f]/30 relative overflow-hidden">
-                          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-400/20 blur-2xl animate-pulse-slow pointer-events-none" />
-                          <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-[#3a8a82]/20 blur-2xl animate-pulse-slow pointer-events-none" style={{ animationDelay: '2s' }} />
+        {app.user ? (
+          <>
+            <div className="bg-gradient-to-br from-[#d81b60]/20 via-[#f48fb1]/15 to-[#d81b60]/10 dark:from-[#d81b60]/30 dark:via-[#f48fb1]/10 dark:to-[#d81b60]/20 p-5 border-b-2 border-[#d81b60]/30 relative overflow-hidden">
+              <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#d81b60]/30 blur-2xl animate-pulse-slow pointer-events-none" />
+              <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-[#f48fb1]/20 blur-2xl animate-pulse-slow pointer-events-none" style={{ animationDelay: '2s' }} />
 
-                          <div className="flex items-center gap-4 relative z-10">
-                            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-[#2a655f]/40 overflow-hidden flex-shrink-0 ring-4 ring-white/60 dark:ring-slate-800/80 transform hover:scale-105 transition-transform duration-300">
-                              {profile?.avatar_url ? (
-                                <OptimizedImage 
-                                  src={profile.avatar_url} 
-                                  alt={app.user.name} 
-                                  width={56}
-                                  height={56}
-                                  quality={85}
-                                  objectFit="cover"
-                                  className="h-full w-full"
-                                />
-                              ) : (
-                                <span className="text-white font-black drop-shadow-md">
-                                  {app.user.name?.charAt(0).toUpperCase() || 'U'}
-                                </span>
-                              )}
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-black text-base text-slate-900 dark:text-white truncate drop-shadow-sm">
-                                  {app.user.name}
-                                </p>
-                              </div>
-                              <p className="text-xs text-muted-foreground truncate font-semibold mt-0.5 tracking-wide" dir="ltr">
-                                {profile?.phone || app.user.phone || (app.lang === 'ar' ? "رقم غير متاح" : "No phone")}
-                              </p>
-                            </div>
-                            
-                            <Badge variant="outline" className="text-[10px] border-emerald-400/60 text-emerald-600 dark:text-emerald-300 bg-emerald-500/15 flex-shrink-0 font-black px-2.5 py-1 rounded-full shadow-sm animate-pulse">
-                              {isAdmin ? (app.lang === 'ar' ? '⭐ أدمن' : '⭐ Admin') : 
-                               isSeller ? (app.lang === 'ar' ? '🛍️ بائع' : '🛍️ Seller') : 
-                               (app.lang === 'ar' ? '👤 عميل' : '👤 Customer')}
-                            </Badge>
-                          </div>
-                          
-                          <div className="mt-4 pt-3 border-t border-[#2a655f]/25 flex items-center justify-between relative z-10">
-                            <Link 
-                              to="/settings" 
-                              className="text-xs text-[#2a655f] dark:text-[#3a8a82] hover:text-pink-500 flex items-center gap-1.5 font-bold transition-colors group/link"
-                            >
-                              <div className="h-6 w-6 rounded-xl bg-[#2a655f]/15 flex items-center justify-center group-hover/link:bg-pink-500/20 group-hover/link:scale-110 transition-all shadow-inner">
-                                <Camera className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] group-hover/link:text-pink-500" />
-                              </div>
-                              {profile?.avatar_url 
-                                ? (app.lang === "ar" ? "تغيير الصورة الشخصية" : "Change photo")
-                                : (app.lang === "ar" ? "إضافة صورة شخصية" : "Add photo")
-                              }
-                            </Link>
-                            <span className="text-[10px] text-muted-foreground font-bold bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full">
-                              {app.lang === "ar" ? "عضو منذ" : "Since"} {new Date(app.user.created_at || Date.now()).getFullYear()}
-                            </span>
-                          </div>
-                          
-                          {app.user.address && (
-                            <div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground font-medium relative z-10">
-                              <MapPin className="h-3.5 w-3.5 text-[#2a655f] flex-shrink-0 animate-bounce" />
-                              <span className="truncate">{app.user.address}</span>
-                            </div>
-                          )}
-                        </div>
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-[#d81b60]/40 overflow-hidden flex-shrink-0 ring-4 ring-white/60 dark:ring-slate-800/80 transform hover:scale-105 transition-transform duration-300">
+                  {profile?.avatar_url ? (
+                    <OptimizedImage 
+                      src={profile.avatar_url} 
+                      alt={app.user.name} 
+                      width={56}
+                      height={56}
+                      quality={85}
+                      objectFit="cover"
+                      className="h-full w-full"
+                    />
+                  ) : (
+                    <span className="text-white font-black drop-shadow-md">
+                      {app.user.name?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-black text-base text-slate-900 dark:text-white truncate drop-shadow-sm">
+                      {app.user.name}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate font-semibold mt-0.5 tracking-wide" dir="ltr">
+                    {profile?.phone || app.user.phone || (app.lang === 'ar' ? "رقم غير متاح" : "No phone")}
+                  </p>
+                </div>
+                
+                <Badge variant="outline" className="text-[10px] border-[#d81b60]/60 text-[#d81b60] dark:text-[#f48fb1] bg-[#d81b60]/15 flex-shrink-0 font-black px-2.5 py-1 rounded-full shadow-sm animate-pulse">
+                  {isAdmin ? (app.lang === 'ar' ? '⭐ أدمن' : '⭐ Admin') : 
+                   isSeller ? (app.lang === 'ar' ? '🛍️ بائع' : '🛍️ Seller') : 
+                   (app.lang === 'ar' ? '👤 عميل' : '👤 Customer')}
+                </Badge>
+              </div>
+              
+              <div className="mt-4 pt-3 border-t-2 border-[#d81b60]/25 flex items-center justify-between relative z-10">
+                <Link 
+                  to="/settings" 
+                  className="text-xs text-[#d81b60] dark:text-[#f48fb1] hover:text-[#c2185b] flex items-center gap-1.5 font-bold transition-colors group/link"
+                >
+                  <div className="h-6 w-6 rounded-xl bg-[#d81b60]/15 flex items-center justify-center group-hover/link:bg-[#d81b60]/20 group-hover/link:scale-110 transition-all shadow-inner">
+                    <Camera className="h-3.5 w-3.5 text-[#d81b60] dark:text-[#f48fb1] group-hover/link:text-[#c2185b]" />
+                  </div>
+                  {profile?.avatar_url 
+                    ? (app.lang === "ar" ? "تغيير الصورة الشخصية" : "Change photo")
+                    : (app.lang === "ar" ? "إضافة صورة شخصية" : "Add photo")
+                  }
+                </Link>
+                <span className="text-[10px] text-muted-foreground font-bold bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full">
+                  {app.lang === "ar" ? "عضو منذ" : "Since"} {new Date(app.user.created_at || Date.now()).getFullYear()}
+                </span>
+              </div>
+              
+              {app.user.address && (
+                <div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground font-medium relative z-10">
+                  <MapPin className="h-3.5 w-3.5 text-[#d81b60] flex-shrink-0 animate-bounce" />
+                  <span className="truncate">{app.user.address}</span>
+                </div>
+              )}
+            </div>
 
-                        <div className="p-2.5 space-y-1.5">
-                          <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
-                            <Link to="/orders" className="flex items-center gap-3.5 w-full">
-                              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm border border-[#2a655f]/20">
-                                <Package className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-emerald-300 transition-colors">
-                                  {app.lang === "ar" ? "📦 طلباتي" : "📦 My Orders"}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground font-medium">
-                                  {app.lang === "ar" ? "تتبع حالة الطلبات" : "Track orders"}
-                                </p>
-                              </div>
-                              <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                            </Link>
-                          </DropdownMenuItem>
+            <div className="p-2.5 space-y-1.5">
+              <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#d81b60]/20 hover:bg-[#d81b60]/15 dark:focus:bg-[#d81b60]/30 dark:hover:bg-[#d81b60]/20 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+                <Link to="/orders" className="flex items-center gap-3.5 w-full">
+                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#d81b60]/20 to-[#f48fb1]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm border-2 border-[#d81b60]/30">
+                    <Package className="h-5 w-5 text-[#d81b60] dark:text-[#f48fb1]" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#d81b60] dark:group-hover:text-[#f48fb1] transition-colors">
+                      {app.lang === "ar" ? "📦 طلباتي" : "📦 My Orders"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-medium">
+                      {app.lang === "ar" ? "تتبع حالة الطلبات" : "Track orders"}
+                    </p>
+                  </div>
+                  <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                </Link>
+              </DropdownMenuItem>
 
-                          <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
-                            <Link to="/settings" className="flex items-center gap-3.5 w-full">
-                              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 shadow-sm border border-[#2a655f]/20">
-                                <Settings className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-emerald-300 transition-colors">
-                                  {app.lang === "ar" ? "⚙️ الإعدادات" : "⚙️ Settings"}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground font-medium">
-                                  {app.lang === "ar" ? "تعديل الملف الشخصي" : "Edit profile"}
-                                </p>
-                              </div>
-                              <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                            </Link>
-                          </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#d81b60]/20 hover:bg-[#d81b60]/15 dark:focus:bg-[#d81b60]/30 dark:hover:bg-[#d81b60]/20 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+                <Link to="/settings" className="flex items-center gap-3.5 w-full">
+                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#d81b60]/20 to-[#f48fb1]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 shadow-sm border-2 border-[#d81b60]/30">
+                    <Settings className="h-5 w-5 text-[#d81b60] dark:text-[#f48fb1]" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#d81b60] dark:group-hover:text-[#f48fb1] transition-colors">
+                      {app.lang === "ar" ? "⚙️ الإعدادات" : "⚙️ Settings"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-medium">
+                      {app.lang === "ar" ? "تعديل الملف الشخصي" : "Edit profile"}
+                    </p>
+                  </div>
+                  <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                </Link>
+              </DropdownMenuItem>
 
-                          <DropdownMenuSeparator className="my-2 bg-[#2a655f]/20" />
+              <DropdownMenuSeparator className="my-2 bg-[#d81b60]/30" />
 
-                          <DropdownMenuItem onClick={app.logout} className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/20 dark:focus:bg-[#173d38]/50 dark:hover:bg-[#173d38]/50 cursor-pointer py-3 px-3.5 group transition-all duration-300">
-                            <div className="flex items-center gap-3.5 w-full">
-                              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#2a655f]/30 to-[#173d38]/40 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300 shadow-sm border border-[#2a655f]/40">
-                                <LogOut className="h-5 w-5 text-[#2a655f] dark:text-emerald-300" />
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-black text-[#2a655f] dark:text-emerald-300 group-hover:text-emerald-600 transition-colors">
-                                  {t("logout")}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground font-medium">
-                                  {app.lang === "ar" ? "تسجيل الخروج الآمن" : "Sign out securely"}
-                                </p>
-                              </div>
-                            </div>
-                          </DropdownMenuItem>
-                        </div>
+              <DropdownMenuItem onClick={app.logout} className="rounded-2xl focus:bg-[#d81b60]/20 hover:bg-[#d81b60]/20 dark:focus:bg-[#d81b60]/30 dark:hover:bg-[#d81b60]/20 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+                <div className="flex items-center gap-3.5 w-full">
+                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#d81b60]/30 to-[#f48fb1]/30 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300 shadow-sm border-2 border-[#d81b60]/40">
+                    <LogOut className="h-5 w-5 text-[#d81b60] dark:text-[#f48fb1]" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-[#d81b60] dark:text-[#f48fb1] group-hover:text-[#c2185b] transition-colors">
+                      {t("logout")}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-medium">
+                      {app.lang === "ar" ? "تسجيل الخروج الآمن" : "Sign out securely"}
+                    </p>
+                  </div>
+                </div>
+              </DropdownMenuItem>
+            </div>
 
-                        <div className="px-5 py-3 bg-slate-50/90 dark:bg-slate-900/60 border-t border-[#2a655f]/25">
-                          <div className="flex items-center justify-between text-xs font-bold text-muted-foreground">
-                            <span>
-                              {app.lang === "ar" ? "الحالة" : "Status"}: <strong className="text-emerald-600 dark:text-emerald-400">آمن ومحمي</strong>
-                            </span>
-                            <span className="flex items-center gap-1.5 bg-pink-500/10 px-2.5 py-1 rounded-full border border-pink-400/30">
-                              <span className="h-2 w-2 rounded-full bg-pink-500 animate-ping" />
-                              <span className="text-pink-600 dark:text-pink-300 font-black">{app.lang === "ar" ? "متصل الآن" : "Online"}</span>
-                            </span>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="p-7 text-center border-b border-[#2a655f]/20 bg-gradient-to-b from-[#2a655f]/10 via-emerald-50/10 to-transparent">
-                          <div className="h-18 w-18 rounded-3xl bg-[#2a655f]/15 border-2 border-[#2a655f]/30 flex items-center justify-center mx-auto mb-3.5 shadow-xl animate-icon-dance">
-                            <User className="h-9 w-9 text-[#2a655f]" />
-                          </div>
-                          <p className="font-black text-lg text-slate-900 dark:text-white">
-                            {app.lang === "ar" ? "أهلاً بك" : "Welcome"}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1 font-medium">
-                            {app.lang === "ar" ? "سجل الدخول للميزات الفاخرة" : "Sign in to access luxury features"}
-                          </p>
-                        </div>
-                        
-                        <div className="p-3 space-y-2">
-                          <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3.5 px-4 transition-all group">
-                            <Link to="/auth/$mode" params={{ mode: "login" }} className="flex items-center gap-3.5 w-full">
-                              <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <LogIn className="h-5 w-5 text-[#2a655f]" />
-                              </div>
-                              <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("login")}</span>
-                            </Link>
-                          </DropdownMenuItem>
-                          
-                          <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#2a655f]/20 hover:bg-[#2a655f]/15 dark:focus:bg-[#2a655f]/30 dark:hover:bg-[#2a655f]/30 cursor-pointer py-3.5 px-4 transition-all group">
-                            <Link to="/auth/$mode" params={{ mode: "register" }} className="flex items-center gap-3.5 w-full">
-                              <div className="h-10 w-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <UserPlus className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                              </div>
-                              <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("register")}</span>
-                            </Link>
-                          </DropdownMenuItem>
-                        </div>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="rounded-2xl bg-[#173d38] text-white border border-[#2a655f]/50 px-4 py-2 shadow-xl font-bold">
-                <p>{app.user ? (app.lang === "ar" ? "حسابي" : "My Account") : (app.lang === "ar" ? "تسجيل الدخول" : "Login")}</p>
-              </TooltipContent>
-            </Tooltip>
+            <div className="px-5 py-3 bg-pink-50/90 dark:bg-slate-900/60 border-t-2 border-[#d81b60]/30">
+              <div className="flex items-center justify-between text-xs font-bold text-muted-foreground">
+                <span>
+                  {app.lang === "ar" ? "الحالة" : "Status"}: <strong className="text-[#d81b60] dark:text-[#f48fb1]">آمن ومحمي</strong>
+                </span>
+                <span className="flex items-center gap-1.5 bg-[#d81b60]/10 px-2.5 py-1 rounded-full border-2 border-[#d81b60]/40">
+                  <span className="h-2 w-2 rounded-full bg-[#d81b60] animate-ping" />
+                  <span className="text-[#d81b60] dark:text-[#f48fb1] font-black">{app.lang === "ar" ? "متصل الآن" : "Online"}</span>
+                </span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="p-7 text-center border-b-2 border-[#d81b60]/30 bg-gradient-to-b from-[#d81b60]/10 via-pink-50/10 to-transparent">
+              <div className="h-18 w-18 rounded-3xl bg-[#d81b60]/15 border-2 border-[#d81b60]/30 flex items-center justify-center mx-auto mb-3.5 shadow-xl animate-icon-dance">
+                <User className="h-9 w-9 text-[#d81b60]" />
+              </div>
+              <p className="font-black text-lg text-slate-900 dark:text-white">
+                {app.lang === "ar" ? "أهلاً بك" : "Welcome"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">
+                {app.lang === "ar" ? "سجل الدخول للميزات الفاخرة" : "Sign in to access luxury features"}
+              </p>
+            </div>
+            
+            <div className="p-3 space-y-2">
+              <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#d81b60]/20 hover:bg-[#d81b60]/15 dark:focus:bg-[#d81b60]/30 dark:hover:bg-[#d81b60]/20 cursor-pointer py-3.5 px-4 transition-all group">
+                <Link to="/auth/$mode" params={{ mode: "login" }} className="flex items-center gap-3.5 w-full">
+                  <div className="h-10 w-10 rounded-2xl bg-[#d81b60]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <LogIn className="h-5 w-5 text-[#d81b60]" />
+                  </div>
+                  <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("login")}</span>
+                </Link>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#d81b60]/20 hover:bg-[#d81b60]/15 dark:focus:bg-[#d81b60]/30 dark:hover:bg-[#d81b60]/20 cursor-pointer py-3.5 px-4 transition-all group">
+                <Link to="/auth/$mode" params={{ mode: "register" }} className="flex items-center gap-3.5 w-full">
+                  <div className="h-10 w-10 rounded-2xl bg-[#d81b60]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <UserPlus className="h-5 w-5 text-[#d81b60]" />
+                  </div>
+                  <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("register")}</span>
+                </Link>
+              </DropdownMenuItem>
+            </div>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </TooltipTrigger>
+  <TooltipContent side="bottom" className="rounded-2xl bg-[#d81b60] text-white border-2 border-[#f48fb1]/50 px-4 py-2 shadow-xl font-bold">
+    <p>{app.user ? (app.lang === "ar" ? "حسابي" : "My Account") : (app.lang === "ar" ? "تسجيل الدخول" : "Login")}</p>
+  </TooltipContent>
+</Tooltip>
 
-          {/* Role Button */}
+{/* Role Button */}
 {(() => {
   if (isAuthLoading) {
     return <div className="ms-1 px-2 py-0.5 rounded-lg bg-[#2a655f]/20 animate-pulse h-5 w-16" />;
@@ -1682,10 +1557,10 @@ export const Header = memo(function Header() {
       return (
         <Link 
           to="/admin" 
-          className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+          className="ms-1 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-pink-500/10 to-pink-600/10 hover:from-pink-500/20 hover:to-pink-600/20 text-pink-600 dark:text-pink-300 shadow-sm shadow-pink-500/20 hover:shadow-md hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1.5 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 animate-pulse-slow cursor-pointer shrink-0"
         >
-          <LayoutDashboard className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-          {app.lang === "ar" ? "لوحة الأدمن" : "Admin"}
+          <LayoutDashboard className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-pink-500 group-hover:rotate-12 transition-transform" />
+          {app.lang === "ar" ? "👑 لوحة الأدمن" : "👑 Admin"}
         </Link>
       );
     }
@@ -1693,10 +1568,10 @@ export const Header = memo(function Header() {
       return (
         <Link 
           to="/dashboard" 
-          className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+          className="ms-1 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-pink-500/10 to-pink-600/10 hover:from-pink-500/20 hover:to-pink-600/20 text-pink-600 dark:text-pink-300 shadow-sm shadow-pink-500/20 hover:shadow-md hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1.5 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 animate-pulse-slow cursor-pointer shrink-0"
         >
-          <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-          {app.lang === "ar" ? "لوحة البائع" : "Seller"}
+          <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-pink-500 group-hover:rotate-12 transition-transform" />
+          {app.lang === "ar" ? "🛍️ لوحة البائع" : "🛍️ Seller"}
         </Link>
       );
     }
@@ -1704,10 +1579,10 @@ export const Header = memo(function Header() {
     return (
       <Link 
         to="/become-seller"
-        className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+        className="ms-1 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-pink-500/10 to-pink-600/10 hover:from-pink-500/20 hover:to-pink-600/20 text-pink-600 dark:text-pink-300 shadow-sm shadow-pink-500/20 hover:shadow-md hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1.5 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 animate-pulse-slow cursor-pointer shrink-0"
       >
-        <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-        {app.lang === "ar" ? "طلب فتح متجر" : "Open Store Request"}
+        <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-pink-500 group-hover:rotate-12 transition-transform" />
+        {app.lang === "ar" ? "🚀 طلب فتح متجر" : "🚀 Open Store"}
       </Link>
     );
   }
@@ -1716,10 +1591,10 @@ export const Header = memo(function Header() {
   return (
     <Link 
       to="/become-seller"
-      className="ms-1 px-1.5 py-0.5 rounded-lg text-[7px] xs:text-[10px] sm:text-[10px] font-semibold bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-sm shadow-[#2a655f]/20 hover:shadow-md hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 xs:gap-1 border border-[#2a655f]/20 shrink-0"
+      className="ms-1 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-pink-500/10 to-pink-600/10 hover:from-pink-500/20 hover:to-pink-600/20 text-pink-600 dark:text-pink-300 shadow-sm shadow-pink-500/20 hover:shadow-md hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1.5 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 animate-pulse-slow cursor-pointer shrink-0"
     >
-      <Store className="h-2 w-2 xs:h-2.5 xs:w-2.5 sm:h-3 sm:w-3" />
-      {app.lang === "ar" ? "طلب فتح متجر" : "Open Store Request"}
+      <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-pink-500 group-hover:rotate-12 transition-transform" />
+      {app.lang === "ar" ? "🚀 طلب فتح متجر" : "🚀 Open Store"}
     </Link>
   );
 })()}
@@ -1730,21 +1605,28 @@ export const Header = memo(function Header() {
         <div className="md:hidden px-3 pb-2.5 flex gap-1.5">
           <div className="relative flex-1">
             <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && doSearch()}
-              placeholder={t("search_placeholder")}
-              className="ps-9 h-10 w-full bg-muted/50 border-[#2a655f]/20 dark:border-[#2a655f]/30 rounded-xl focus-visible:border-pink-400 transition text-sm"
-            />
+           <input
+  type="text"
+  value={q}
+  onChange={(e) => setQ(e.target.value)}
+  onKeyDown={(e) => e.key === "Enter" && doSearch()}
+  onFocus={() => setSearchFocused(true)}
+  onBlur={() => setSearchFocused(false)}
+  placeholder={t("search_placeholder")}
+  className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
+    searchFocused
+      ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
+      : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
+  }`}
+/>
           </div>
           
-          <VoiceSearch
-            onResult={handleVoiceSearch}
-            lang={isRTL ? "ar-SA" : "en-US"}
-            buttonSize="sm"
-            className="border-[#2a655f]/20 hover:border-pink-400 transition-colors duration-300"
-          />
+         <VoiceSearch
+  onResult={handleVoiceSearch}
+  lang={isRTL ? "ar-SA" : "en-US"}
+  buttonSize="sm"
+  className="border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/20"
+/>
           
           <Button 
             onClick={doSearch}
@@ -1763,192 +1645,211 @@ export const Header = memo(function Header() {
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
-              <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
-                <Globe className="h-4 w-4 text-muted-foreground" />
-                {t("all_governorates")}
-                {gov === "all" && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {govs.map((g) => (
-                <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 cursor-pointer flex items-center gap-2 text-sm">
-                  <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                  {app.lang === "ar" ? g.name_ar : g.name_en}
-                  {gov === g.slug && <Check className="h-4 w-4 ms-auto text-[#2a655f]" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
+<DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
+  <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
+    <Globe className="h-4 w-4 text-muted-foreground group-hover:text-white" />
+    {t("all_governorates")}
+    {gov === "all" && <Check className="h-4 w-4 ms-auto text-pink-500" />}
+  </DropdownMenuItem>
+  <DropdownMenuSeparator />
+  {govs.map((g) => (
+    <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
+      <MapPin className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white" />
+      {app.lang === "ar" ? g.name_ar : g.name_en}
+      {gov === g.slug && <Check className="h-4 w-4 ms-auto text-pink-500" />}
+    </DropdownMenuItem>
+  ))}
+</DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        {/* ✅ Category Strip */}
-        <div className="relative border-t border-[#2a655f]/30 bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#173d38] backdrop-blur-md overflow-hidden py-3 shadow-2xl">
-          
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-200/20 via-transparent to-transparent animate-pulse pointer-events-none" />
-          
-          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-pink-200 to-transparent shadow-[0_0_12px_rgba(244,114,182,0.6)]" />
+     {/* ✅ Category Strip - بوردر وردي */}
+<div className="relative border-t-2 border-pink-400/50 bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#173d38] backdrop-blur-md overflow-hidden py-3 shadow-2xl">
+  
+  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-200/20 via-transparent to-transparent animate-pulse pointer-events-none" />
+  
+  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-pink-200 to-transparent shadow-[0_0_12px_rgba(244,114,182,0.6)]" />
 
-          <style>{`
-            @keyframes marquee-scroll {
-              0% { transform: translateX(0); }
-              100% { transform: translateX(-50%); }
-            }
-            .marquee-track {
-              display: flex;
-              width: max-content;
-              animation: marquee-scroll 180s linear infinite;
-              will-change: transform;
-            }
-            .marquee-track.paused {
-              animation-play-state: paused !important;
-            }
-            
-            @keyframes shimmerAnimation {
-              100% { transform: translateX(200%); }
-            }
-            .animate-shimmer {
-              animation: shimmerAnimation 2s infinite;
-            }
+  <style>{`
+    @keyframes marquee-scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .marquee-track {
+      display: flex;
+      width: max-content;
+      animation: marquee-scroll 180s linear infinite;
+      will-change: transform;
+    }
+    .marquee-track.paused {
+      animation-play-state: paused !important;
+    }
+    
+    @keyframes shimmerAnimation {
+      100% { transform: translateX(200%); }
+    }
+    .animate-shimmer {
+      animation: shimmerAnimation 2s infinite;
+    }
 
-            @keyframes offer-icon-dance {
-              0%, 100% { transform: scale(1) rotate(0deg); }
-              25% { transform: scale(1.25) rotate(-10deg); }
-              50% { transform: scale(1.1) rotate(10deg); }
-              75% { transform: scale(1.25) rotate(-5deg); }
-            }
-            .offer-icon-special {
-              animation: offer-icon-dance 1.2s ease-in-out infinite;
-            }
+    @keyframes offer-icon-dance {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      25% { transform: scale(1.25) rotate(-10deg); }
+      50% { transform: scale(1.1) rotate(10deg); }
+      75% { transform: scale(1.25) rotate(-5deg); }
+    }
+    .offer-icon-special {
+      animation: offer-icon-dance 1.2s ease-in-out infinite;
+    }
 
-            @keyframes float-icon {
-              0%, 100% { transform: translateY(0px) rotate(0deg); }
-              50% { transform: translateY(-4px) rotate(2deg); }
-            }
-            .float-icon {
-              animation: float-icon 3s ease-in-out infinite;
-            }
+    @keyframes float-icon {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-4px) rotate(2deg); }
+    }
+    .float-icon {
+      animation: float-icon 3s ease-in-out infinite;
+    }
 
-            .category-scrollbar::-webkit-scrollbar {
-              height: 4px;
-            }
-            .category-scrollbar::-webkit-scrollbar-track {
-              background: rgba(42, 101, 95, 0.2);
-              border-radius: 10px;
-              margin: 0 16px;
-            }
-            .category-scrollbar::-webkit-scrollbar-thumb {
-              background: #f9a8d4;
-              border-radius: 10px;
-            }
-            .category-scrollbar::-webkit-scrollbar-thumb:hover {
-              background: #fbcfe8;
-            }
-          `}</style>
+    .category-scrollbar::-webkit-scrollbar {
+      height: 4px;
+    }
+    .category-scrollbar::-webkit-scrollbar-track {
+      background: rgba(42, 101, 95, 0.2);
+      border-radius: 10px;
+      margin: 0 16px;
+    }
+    .category-scrollbar::-webkit-scrollbar-thumb {
+      background: #f9a8d4;
+      border-radius: 10px;
+    }
+    .category-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #fbcfe8;
+    }
+    @keyframes pulse-slow {
+      0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 0 10px rgba(236,72,153,0.2);
+      }
+      50% { 
+        transform: scale(1.02);
+        box-shadow: 0 0 25px rgba(236,72,153,0.4);
+      }
+    }
+    .animate-pulse-slow {
+      animation: pulse-slow 2s ease-in-out infinite;
+    }
+    
+    @keyframes float-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    .animate-float-bounce {
+      animation: float-bounce 1.5s ease-in-out infinite;
+    }
+  `}</style>
 
-          <div 
-            className="mx-auto max-w-7xl px-4 overflow-x-auto category-scrollbar select-none pb-2" 
-            dir="ltr"
-            onMouseEnter={(e) => {
-              const trackElem = e.currentTarget.querySelector(".marquee-track");
-              if (trackElem) trackElem.classList.add("paused");
-            }}
-            onMouseLeave={(e) => {
-              const trackElem = e.currentTarget.querySelector(".marquee-track");
-              if (trackElem) trackElem.classList.remove("paused");
-            }}
+  <div 
+    className="mx-auto max-w-7xl px-4 overflow-x-auto category-scrollbar select-none pb-2" 
+    dir="ltr"
+    onMouseEnter={(e) => {
+      const trackElem = e.currentTarget.querySelector(".marquee-track");
+      if (trackElem) trackElem.classList.add("paused");
+    }}
+    onMouseLeave={(e) => {
+      const trackElem = e.currentTarget.querySelector(".marquee-track");
+      if (trackElem) trackElem.classList.remove("paused");
+    }}
+  >
+    
+    <div className="marquee-track gap-3 py-1.5">
+      
+      {[...categories, ...categories].map((c: any, index: number) => {
+        const Icon = getCategoryIcon(c.icon);
+        const totalCategories = categories.length;
+        const originalIndex = index % totalCategories;
+        const isRtl = app.lang === "ar";
+        
+        const isOffer = c.slug === "offers" || c.slug === "deals" || c.name_ar?.includes("عروض") || c.name_en?.toLowerCase().includes("offers") || c.name_en?.toLowerCase().includes("deals");
+        
+        if (isOffer) {
+          return (
+            <Link
+              key={`${c.id}-${index}`}
+              to="/category/$slug"
+              params={{ slug: c.slug }}
+              className="group relative shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl font-bold text-xs transition-all duration-300 bg-gradient-to-r from-pink-100 via-pink-200 to-pink-300 text-pink-800 shadow-[0_0_35px_rgba(216,27,96,0.2)] hover:shadow-[0_0_55px_rgba(194,24,91,0.35)] hover:scale-105 hover:-translate-y-1 cursor-pointer overflow-hidden border-3 border-[#d81b60]/60 hover:border-[#c2185b] animate-pulse"
+            >
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/70 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
+              
+              <div className="relative flex items-center justify-center h-8 w-8 rounded-full bg-pink-300/30 border-2 border-pink-300 shadow-lg overflow-hidden offer-icon-special">
+                {c.image_url ? (
+                  <OptimizedImage
+                    src={c.image_url}
+                    alt={isRtl ? c.name_ar : (c.name_en || c.name_ar)}
+                    width={32}
+                    height={32}
+                    quality={80}
+                    objectFit="cover"
+                    className="h-full w-full object-cover rounded-full"
+                  />
+                ) : (
+                  <Icon className="h-4 w-4 text-pink-600" />
+                )}
+              </div>
+
+              <div className="flex flex-col relative z-10">
+                <span className="whitespace-nowrap font-black text-sm tracking-wide text-pink-800 drop-shadow-md" dir={isRtl ? "rtl" : "ltr"}>
+                  {isRtl ? c.name_ar : (c.name_en || c.name_ar)}
+                </span>
+                <span className="text-[9px] text-pink-500 font-extrabold uppercase tracking-widest animate-bounce">
+                  {isRtl ? "🌸 عروض رائعة" : "🌸 SPECIAL OFFERS"}
+                </span>
+              </div>
+
+              <span className="relative z-10 ml-2 text-[9px] uppercase bg-white text-pink-500 px-2.5 py-1 rounded-full font-black tracking-wider shadow-lg border border-pink-200 animate-bounce">
+                {isRtl ? "💕 تخفيضات" : "💕 SALE"}
+              </span>
+            </Link>
+          );
+        }
+        
+        return (
+          <Link
+            key={`${c.id}-${index}`}
+            to="/category/$slug"
+            params={{ slug: c.slug }}
+            className="group relative shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl font-medium text-xs transition-all duration-300 bg-white/10 hover:bg-pink-500/20 text-white shadow-lg border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 hover:scale-105 hover:-translate-y-0.5 cursor-pointer backdrop-blur-sm"
           >
+            <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
             
-            <div className="marquee-track gap-3 py-1.5">
-              
-              {[...categories, ...categories].map((c: any, index: number) => {
-                const Icon = getCategoryIcon(c.icon);
-                const totalCategories = categories.length;
-                const originalIndex = index % totalCategories;
-                const isRtl = app.lang === "ar";
-                
-                const isOffer = c.slug === "offers" || c.slug === "deals" || c.name_ar?.includes("عروض") || c.name_en?.toLowerCase().includes("offers") || c.name_en?.toLowerCase().includes("deals");
-                
-                if (isOffer) {
-                  return (
-                    <Link
-                      key={`${c.id}-${index}`}
-                      to="/category/$slug"
-                      params={{ slug: c.slug }}
-                      className="group relative shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl font-bold text-xs transition-all duration-300 bg-gradient-to-r from-pink-100 via-pink-200 to-pink-300 text-pink-800 shadow-[0_0_25px_rgba(244,114,182,0.3)] hover:scale-105 hover:-translate-y-1 cursor-pointer overflow-hidden border-2 border-pink-200 animate-pulse"
-                    >
-                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/70 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
-                      
-                      <div className="relative flex items-center justify-center h-8 w-8 rounded-full bg-pink-300/30 border-2 border-pink-300 shadow-lg overflow-hidden offer-icon-special">
-                        {c.image_url ? (
-                          // ✅ ✅ ✅ استبدال img بـ OptimizedImage
-                          <OptimizedImage
-                            src={c.image_url}
-                            alt={isRtl ? c.name_ar : (c.name_en || c.name_ar)}
-                            width={32}
-                            height={32}
-                            quality={80}
-                            objectFit="cover"
-                            className="h-full w-full object-cover rounded-full"
-                          />
-                        ) : (
-                          <Icon className="h-4 w-4 text-pink-600" />
-                        )}
-                      </div>
-
-                      <div className="flex flex-col relative z-10">
-                        <span className="whitespace-nowrap font-black text-sm tracking-wide text-pink-800 drop-shadow-md" dir={isRtl ? "rtl" : "ltr"}>
-                          {isRtl ? c.name_ar : (c.name_en || c.name_ar)}
-                        </span>
-                        <span className="text-[9px] text-pink-500 font-extrabold uppercase tracking-widest animate-bounce">
-                          {isRtl ? "🌸 عروض رائعة" : "🌸 SPECIAL OFFERS"}
-                        </span>
-                      </div>
-
-                      <span className="relative z-10 ml-2 text-[9px] uppercase bg-white text-pink-500 px-2.5 py-1 rounded-full font-black tracking-wider shadow-lg border border-pink-200 animate-bounce">
-                        {isRtl ? "💕 تخفيضات" : "💕 SALE"}
-                      </span>
-                    </Link>
-                  );
-                }
-                
-                return (
-                  <Link
-                    key={`${c.id}-${index}`}
-                    to="/category/$slug"
-                    params={{ slug: c.slug }}
-                    className="group relative shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl font-medium text-xs transition-all duration-300 bg-white/10 hover:bg-pink-500/20 text-white shadow-lg border border-white/15 hover:border-pink-400 hover:scale-105 hover:-translate-y-0.5 cursor-pointer backdrop-blur-sm"
-                  >
-                    <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
-                    
-                    <div className="relative flex items-center justify-center h-7 w-7 rounded-full bg-black/30 border border-white/25 shadow-inner overflow-hidden group-hover:scale-110 transition-transform float-icon">
-                      {c.image_url ? (
-                        // ✅ ✅ ✅ استبدال img بـ OptimizedImage
-                        <OptimizedImage
-                          src={c.image_url}
-                          alt={isRtl ? c.name_ar : (c.name_en || c.name_ar)}
-                          width={28}
-                          height={28}
-                          quality={80}
-                          objectFit="cover"
-                          className="h-full w-full object-cover rounded-full"
-                        />
-                      ) : (
-                        <Icon className="h-3.5 w-3.5 text-emerald-300 group-hover:text-white transition-colors" />
-                      )}
-                    </div>
-                    
-                    <span className="whitespace-nowrap font-semibold tracking-wide text-white/95 group-hover:text-white" dir={isRtl ? "rtl" : "ltr"}>
-                      {isRtl ? c.name_ar : (c.name_en || c.name_ar)}
-                    </span>
-                    
-                    <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-pink-400 shadow-[0_0_6px_rgba(244,114,182,1)]" />
-                  </Link>
-                );
-              })}
-              
+            <div className="relative flex items-center justify-center h-7 w-7 rounded-full bg-black/30 border border-white/25 shadow-inner overflow-hidden group-hover:scale-110 transition-transform float-icon">
+              {c.image_url ? (
+                <OptimizedImage
+                  src={c.image_url}
+                  alt={isRtl ? c.name_ar : (c.name_en || c.name_ar)}
+                  width={28}
+                  height={28}
+                  quality={80}
+                  objectFit="cover"
+                  className="h-full w-full object-cover rounded-full"
+                />
+              ) : (
+                <Icon className="h-3.5 w-3.5 text-emerald-300 group-hover:text-white transition-colors" />
+              )}
             </div>
-          </div>
-        </div>
+            
+            <span className="whitespace-nowrap font-semibold tracking-wide text-white/95 group-hover:text-white" dir={isRtl ? "rtl" : "ltr"}>
+              {isRtl ? c.name_ar : (c.name_en || c.name_ar)}
+            </span>
+            
+            <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-pink-400 shadow-[0_0_6px_rgba(244,114,182,1)]" />
+          </Link>
+        );
+      })}
+      
+    </div>
+  </div>
+</div>
       </header>
     </TooltipProvider>
   );

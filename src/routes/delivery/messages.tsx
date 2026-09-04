@@ -53,7 +53,7 @@ function DeliveryMessagesPage() {
   // ============================================================
   
  const app = useApp();
-const isArabic = app.lang === "ar"; // ✅ أضف هذا
+const isArabic = app.lang === "ar";
   const navigate = useNavigate();
   
   // ====== State ======
@@ -355,7 +355,7 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
   
   const getUserAvatar = useCallback((user: any) => {
     return user?.store_logo_url || user?.avatar_url || 
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName(user))}&background=0d2e2a&color=fff&size=128`;
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName(user))}&background=d81b60&color=fff&size=128`;
   }, [getUserName]);
   
   // ✅✅✅ الدالة المحسنة لجلب الرول ✅✅✅
@@ -417,7 +417,7 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
       case "distributor": return "bg-blue-500/20 text-blue-600 border-blue-500/30";
       case "delivery_company": return "bg-purple-500/20 text-purple-600 border-purple-500/30";
       case "admin": return "bg-yellow-500/20 text-yellow-600 border-yellow-500/30";
-      case "company_admin": return "bg-indigo-500/20 text-indigo-600 border-indigo-500/30";
+      case "company_admin": return "bg-pink-500/20 text-pink-600 border-pink-500/30";
       default: return "bg-slate-500/20 text-slate-600 border-slate-500/30";
     }
   }, []);
@@ -488,8 +488,8 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
   
   if (app.authLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0d2e2a]/5 via-white to-[#0d2e2a]/10">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0d2e2a]/20 border-t-[#0d2e2a]" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#d81b60]/5 via-white to-[#d81b60]/10">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#d81b60]/20 border-t-[#d81b60]" />
       </div>
     );
   }
@@ -497,14 +497,14 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
   if (!app.user) return null;
   
   // ============================================================
-  // ✅ ✅ ✅ التصميم (JSX) ✅ ✅ ✅
+  // ✅ ✅ ✅ التصميم (JSX) مع الألوان الوردية ✅ ✅ ✅
   // ============================================================
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0d2e2a]/5 via-white to-[#0d2e2a]/10 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#0d2e2a]/10">
+    <div className="min-h-screen bg-gradient-to-br from-[#d81b60]/5 via-white to-[#d81b60]/10 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#d81b60]/10">
       
       {/* ===== الهيدر ===== */}
-      <div className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-[#0d2e2a]/10 dark:border-[#0d2e2a]/30">
+      <div className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b-2 border-[#d81b60]/20 dark:border-[#d81b60]/30">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             
@@ -515,7 +515,7 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
   <Button
     variant="ghost"
     size="icon"
-    className="h-10 w-10 rounded-xl bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 text-[#0d2e2a] hover:text-[#0d2e2a] transition-all duration-300 group border border-[#0d2e2a]/10 hover:border-[#0d2e2a]/20"
+    className="h-10 w-10 rounded-xl bg-[#d81b60]/10 hover:bg-[#d81b60]/20 text-[#d81b60] hover:text-[#d81b60] transition-all duration-300 group border-2 border-[#d81b60]/30 hover:border-[#d81b60]/60"
     onClick={goBack}
   >
     {isArabic ? (
@@ -528,22 +528,24 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
   <Button
     variant="ghost"
     size="icon"
-    className="h-10 w-10 rounded-xl bg-[#0d2e2a]/5 hover:bg-[#0d2e2a]/10 text-[#0d2e2a] hover:text-[#0d2e2a] transition-all duration-300 group border border-[#0d2e2a]/10 hover:border-[#0d2e2a]/20"
+    className="h-10 w-10 rounded-xl bg-[#d81b60]/10 hover:bg-[#d81b60]/20 text-[#d81b60] hover:text-[#d81b60] transition-all duration-300 group border-2 border-[#d81b60]/30 hover:border-[#d81b60]/60"
     onClick={goBack}
   >
     <LayoutDashboard className="h-4 w-4 group-hover:scale-110 transition-transform" />
   </Button>
-  <div className="w-px h-6 bg-[#0d2e2a]/10 mx-1" />
+  <div className="w-px h-6 bg-[#d81b60]/30 mx-1" />
 </div>
               
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3 text-[#0d2e2a] dark:text-white">
-                  <div className="p-2.5 rounded-2xl bg-[#0d2e2a] text-white shadow-lg shadow-[#0d2e2a]/20">
+                <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
+                  <div className="p-2.5 rounded-2xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/30">
                     <MessageCircle className="h-5 w-5" />
                   </div>
-                  {app.lang === "ar" ? "المراسلات" : "Messages"}
+                  <span className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] bg-clip-text text-transparent">
+                    {app.lang === "ar" ? "المراسلات" : "Messages"}
+                  </span>
                   {isDeliveryCompany && (
-                    <Badge className="bg-[#0d2e2a] text-white text-[10px] px-2 py-0.5 flex items-center gap-1">
+                    <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white text-[10px] px-2 py-0.5 flex items-center gap-1 border-0">
                       <Building2 className="h-3 w-3" />
                       {app.lang === "ar" ? "شركة توصيل" : "Delivery Co."}
                     </Badge>
@@ -556,11 +558,11 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                       : `${stats.total} conversations`}
                   </p>
                   {stats.unread > 0 && (
-                    <Badge className="bg-red-500 text-white rounded-full px-3 py-1 animate-pulse">
+                    <Badge className="bg-[#d81b60] text-white rounded-full px-3 py-1 animate-pulse border-0">
                       {stats.unread} {app.lang === "ar" ? "غير مقروءة" : "unread"}
                     </Badge>
                   )}
-                  <span className="text-muted-foreground/30">|</span>
+                  <span className="text-[#d81b60]/30">|</span>
                   <span className="text-xs text-muted-foreground">
                     {stats.customers} {app.lang === "ar" ? "عملاء" : "customers"} · 
                     {stats.distributors} {app.lang === "ar" ? "موزعين" : "distributors"} ·
@@ -577,7 +579,7 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
               {!loadingAdmin && systemAdmin && systemAdmin.id !== app.user?.id && (
                 <Button 
                   variant="outline"
-                  className="h-10 px-3 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/5 text-[#0d2e2a] transition-all duration-300 hover:scale-105 hover:border-[#0d2e2a]/40"
+                  className="h-10 px-3 rounded-xl border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60] transition-all duration-300 hover:scale-105 hover:border-[#d81b60]/60"
                   onClick={startAdminChat}
                   disabled={isCreating}
                 >
@@ -597,23 +599,23 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                 <DialogTrigger asChild>
                   <Button 
                     variant="outline"
-                    className="h-10 px-3 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/5 text-[#0d2e2a] transition-all duration-300 hover:scale-105 hover:border-[#0d2e2a]/40"
+                    className="h-10 px-3 rounded-xl border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60] transition-all duration-300 hover:scale-105 hover:border-[#d81b60]/60"
                   >
-                    <ShieldCheck className="h-4 w-4 mr-1.5 text-indigo-500" />
+                    <ShieldCheck className="h-4 w-4 mr-1.5 text-pink-500" />
                     <span className="hidden sm:inline">
                       {app.lang === "ar" ? "أدمن الشركة" : "Company Admin"}
                     </span>
                     {companyAdmins.length > 0 && (
-                      <Badge className="bg-indigo-500/20 text-indigo-600 text-[8px] px-1.5 py-0 ml-1">
+                      <Badge className="bg-pink-500/20 text-pink-600 text-[8px] px-1.5 py-0 ml-1 border-0">
                         {companyAdmins.length}
                       </Badge>
                     )}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="rounded-2xl max-w-md">
+                <DialogContent className="rounded-2xl max-w-md border-2 border-[#d81b60]/30">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-[#0d2e2a]">
-                      <ShieldCheck className="h-5 w-5 text-indigo-500" />
+                    <DialogTitle className="flex items-center gap-2 text-[#d81b60]">
+                      <ShieldCheck className="h-5 w-5 text-pink-500" />
                       {app.lang === "ar" ? "محادثة مع أدمن الشركة" : "Chat with Company Admin"}
                     </DialogTitle>
                     <DialogDescription>
@@ -624,19 +626,19 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                   </DialogHeader>
                   
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d81b60]/50" />
                     <Input
                       placeholder={app.lang === "ar" ? "🔍 بحث عن أدمن (اسم أو رقم)..." : "🔍 Search admin (name or phone)..."}
                       value={adminSearch}
                       onChange={(e) => setAdminSearch(e.target.value)}
-                      className="pl-9 rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                      className="pl-9 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                     />
                   </div>
                   
-                  <div className="max-h-60 overflow-y-auto space-y-1.5 border rounded-xl p-1.5">
+                  <div className="max-h-60 overflow-y-auto space-y-1.5 border-2 rounded-xl p-1.5 border-[#d81b60]/20">
                     {loadingCompanyAdmins ? (
                       <div className="text-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin text-[#0d2e2a] mx-auto" />
+                        <Loader2 className="h-6 w-6 animate-spin text-[#d81b60] mx-auto" />
                       </div>
                     ) : companyAdmins.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground text-sm">
@@ -659,12 +661,12 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                       filteredCompanyAdmins.map((admin: any) => (
                         <div
                           key={admin.id}
-                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#0d2e2a]/5 cursor-pointer transition-all hover:border-[#0d2e2a]/20 border border-transparent"
+                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#d81b60]/10 cursor-pointer transition-all hover:border-[#d81b60]/40 border-2 border-transparent hover:border-[#d81b60]/30"
                           onClick={() => startCompanyAdminChat(admin)}
                         >
                           <Avatar className="h-10 w-10">
                             <OptimizedImage
-                              src={admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.full_name || 'A')}&background=0d2e2a&color=fff`}
+                              src={admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.full_name || 'A')}&background=d81b60&color=fff`}
                               alt={admin.full_name || 'Admin'}
                               width={40}
                               height={40}
@@ -672,7 +674,7 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                               objectFit="cover"
                               className="h-full w-full object-cover"
                             />
-                            <AvatarFallback className="bg-[#0d2e2a] text-white">
+                            <AvatarFallback className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white">
                               {(admin.full_name || 'A').charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
@@ -683,7 +685,7 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <Phone className="h-3 w-3" />
                               <span>{admin.phone || (app.lang === "ar" ? "رقم غير متاح" : "No phone")}</span>
-                              <Badge className="bg-indigo-500/20 text-indigo-600 text-[8px] px-1.5 py-0 flex items-center gap-0.5">
+                              <Badge className="bg-pink-500/20 text-pink-600 text-[8px] px-1.5 py-0 flex items-center gap-0.5 border-0">
                                 <ShieldCheck className="h-2.5 w-2.5" />
                                 {app.lang === "ar" ? "أدمن" : "Admin"}
                               </Badge>
@@ -692,9 +694,9 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                           <Button 
                             variant="ghost" 
                             size="icon"
-                            className="h-8 w-8 rounded-full hover:bg-[#0d2e2a]/10"
+                            className="h-8 w-8 rounded-full hover:bg-[#d81b60]/20 text-[#d81b60]"
                           >
-                            <ChevronRight className="h-4 w-4 text-[#0d2e2a]" />
+                            <ChevronRight className="h-4 w-4" />
                           </Button>
                         </div>
                       ))
@@ -702,7 +704,7 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                   </div>
                   
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowAdminDialog(false)}>
+                    <Button variant="outline" onClick={() => setShowAdminDialog(false)} className="border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60]">
                       {app.lang === "ar" ? "إلغاء" : "Cancel"}
                     </Button>
                   </DialogFooter>
@@ -715,20 +717,20 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                   <DialogTrigger asChild>
                     <Button 
                       variant="outline"
-                      className="h-10 px-3 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/5 text-[#0d2e2a] transition-all duration-300 hover:scale-105 hover:border-[#0d2e2a]/40"
+                      className="h-10 px-3 rounded-xl border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60] transition-all duration-300 hover:scale-105 hover:border-[#d81b60]/60"
                     >
                       <Truck className="h-4 w-4 mr-1.5 text-blue-500" />
                       <span className="hidden sm:inline">
                         {app.lang === "ar" ? "موزع" : "Distributor"}
                       </span>
-                      <Badge className="bg-blue-500/20 text-blue-600 text-[8px] px-1.5 py-0 ml-1">
+                      <Badge className="bg-blue-500/20 text-blue-600 text-[8px] px-1.5 py-0 ml-1 border-0">
                         {companyDistributors.length}
                       </Badge>
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="rounded-2xl max-w-md">
+                  <DialogContent className="rounded-2xl max-w-md border-2 border-[#d81b60]/30">
                     <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2 text-[#0d2e2a]">
+                      <DialogTitle className="flex items-center gap-2 text-[#d81b60]">
                         <Truck className="h-5 w-5 text-blue-500" />
                         {app.lang === "ar" ? "محادثة مع موزع" : "Chat with Distributor"}
                       </DialogTitle>
@@ -740,16 +742,16 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                     </DialogHeader>
                     
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d81b60]/50" />
                       <Input
                         placeholder={app.lang === "ar" ? "🔍 بحث عن موزع (اسم أو رقم)..." : "🔍 Search distributor (name or phone)..."}
                         value={distributorSearch}
                         onChange={(e) => setDistributorSearch(e.target.value)}
-                        className="pl-9 rounded-xl border-[#0d2e2a]/20 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                        className="pl-9 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                       />
                     </div>
                     
-                    <div className="max-h-60 overflow-y-auto space-y-1.5 border rounded-xl p-1.5">
+                    <div className="max-h-60 overflow-y-auto space-y-1.5 border-2 rounded-xl p-1.5 border-[#d81b60]/20">
                       {filteredDistributors.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground text-sm">
                           {distributorSearch
@@ -764,14 +766,14 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                         filteredDistributors.map((dist: any) => (
                           <div
                             key={dist.id}
-                            className={`flex items-center gap-3 p-3 rounded-xl hover:bg-[#0d2e2a]/5 cursor-pointer transition-all hover:border-[#0d2e2a]/20 border border-transparent ${
+                            className={`flex items-center gap-3 p-3 rounded-xl hover:bg-[#d81b60]/10 cursor-pointer transition-all hover:border-[#d81b60]/40 border-2 border-transparent hover:border-[#d81b60]/30 ${
                               !dist.user_id ? 'opacity-50 cursor-not-allowed' : ''
                             }`}
                             onClick={() => dist.user_id && startDistributorChat(dist)}
                           >
                             <Avatar className="h-10 w-10">
                               <OptimizedImage
-                                src={dist.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(dist.full_name_ar || dist.full_name_en || 'D')}&background=0d2e2a&color=fff`}
+                                src={dist.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(dist.full_name_ar || dist.full_name_en || 'D')}&background=d81b60&color=fff`}
                                 alt={dist.full_name_ar || dist.full_name_en || 'Distributor'}
                                 width={40}
                                 height={40}
@@ -779,7 +781,7 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                                 objectFit="cover"
                                 className="h-full w-full object-cover"
                               />
-                              <AvatarFallback className="bg-[#0d2e2a] text-white">
+                              <AvatarFallback className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white">
                                 {(dist.full_name_ar || dist.full_name_en || 'D').charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
@@ -791,12 +793,12 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                                 <Phone className="h-3 w-3" />
                                 <span>{dist.phone}</span>
                                 {dist.is_available && (
-                                  <Badge className="bg-emerald-500/20 text-emerald-600 text-[8px] px-1.5 py-0">
+                                  <Badge className="bg-emerald-500/20 text-emerald-600 text-[8px] px-1.5 py-0 border-0">
                                     ● {app.lang === "ar" ? "متاح" : "Available"}
                                   </Badge>
                                 )}
                                 {!dist.user_id && (
-                                  <Badge className="bg-red-500/20 text-red-600 text-[8px] px-1.5 py-0">
+                                  <Badge className="bg-red-500/20 text-red-600 text-[8px] px-1.5 py-0 border-0">
                                     ⚠️ {app.lang === "ar" ? "بدون حساب" : "No account"}
                                   </Badge>
                                 )}
@@ -805,10 +807,10 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                             <Button 
                               variant="ghost" 
                               size="icon"
-                              className={`h-8 w-8 rounded-full ${dist.user_id ? 'hover:bg-[#0d2e2a]/10' : 'opacity-50 cursor-not-allowed'}`}
+                              className={`h-8 w-8 rounded-full ${dist.user_id ? 'hover:bg-[#d81b60]/20 text-[#d81b60]' : 'opacity-50 cursor-not-allowed'}`}
                               disabled={!dist.user_id}
                             >
-                              <ChevronRight className="h-4 w-4 text-[#0d2e2a]" />
+                              <ChevronRight className="h-4 w-4" />
                             </Button>
                           </div>
                         ))
@@ -816,7 +818,7 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                     </div>
                     
                     <DialogFooter>
-                      <Button variant="outline" onClick={() => setShowDistributorDialog(false)}>
+                      <Button variant="outline" onClick={() => setShowDistributorDialog(false)} className="border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60]">
                         {app.lang === "ar" ? "إلغاء" : "Cancel"}
                       </Button>
                     </DialogFooter>
@@ -824,16 +826,16 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                 </Dialog>
               )}
 
-              <div className="w-px h-8 bg-[#0d2e2a]/10 mx-1 hidden sm:block" />
+              <div className="w-px h-8 bg-[#d81b60]/30 mx-1 hidden sm:block" />
 
               {/* بحث + فلتر */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d81b60]/50" />
                 <Input
                   placeholder={app.lang === "ar" ? "بحث في المحادثات..." : "Search conversations..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 w-full md:w-56 rounded-xl border-[#0d2e2a]/20 dark:border-[#0d2e2a]/30 focus:border-[#0d2e2a] focus:ring-[#0d2e2a]/20"
+                  className="pl-9 w-full md:w-56 rounded-xl border-2 border-[#d81b60]/30 dark:border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
                 />
               </div>
 
@@ -841,55 +843,48 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="h-10 px-3 rounded-xl border-[#0d2e2a]/20 hover:bg-[#0d2e2a]/5"
+                    className="h-10 px-3 rounded-xl border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60]"
                   >
-                    <Filter className="h-4 w-4 text-[#0d2e2a]" />
+                    <Filter className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="rounded-xl p-1">
+                <DropdownMenuContent align="end" className="rounded-xl p-1 border-2 border-[#d81b60]/20">
                   <DropdownMenuItem 
                     onClick={() => setFilterType("all")}
-                    className="rounded-lg flex items-center gap-2 cursor-pointer"
+                    className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#d81b60]/10"
                   >
                     <Users className="h-4 w-4" />
                     {app.lang === "ar" ? "الكل" : "All"}
-                    {filterType === "all" && <Check className="h-4 w-4 text-[#0d2e2a] mr-auto" />}
+                    {filterType === "all" && <Check className="h-4 w-4 text-[#d81b60] mr-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setFilterType("orders")}
-                    className="rounded-lg flex items-center gap-2 cursor-pointer"
+                    className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#d81b60]/10"
                   >
                     <Package className="h-4 w-4" />
                     {app.lang === "ar" ? "العملاء" : "Customers"}
-                    {filterType === "orders" && <Check className="h-4 w-4 text-[#0d2e2a] mr-auto" />}
+                    {filterType === "orders" && <Check className="h-4 w-4 text-[#d81b60] mr-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setFilterType("distributors")}
-                    className="rounded-lg flex items-center gap-2 cursor-pointer"
+                    className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#d81b60]/10"
                   >
                     <Truck className="h-4 w-4" />
                     {app.lang === "ar" ? "الموزعين" : "Distributors"}
-                    {filterType === "distributors" && <Check className="h-4 w-4 text-[#0d2e2a] mr-auto" />}
+                    {filterType === "distributors" && <Check className="h-4 w-4 text-[#d81b60] mr-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setFilterType("admins")}
-                    className="rounded-lg flex items-center gap-2 cursor-pointer"
+                    className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#d81b60]/10"
                   >
                     <ShieldCheck className="h-4 w-4" />
                     {app.lang === "ar" ? "الأدمن" : "Admins"}
-                    {filterType === "admins" && <Check className="h-4 w-4 text-[#0d2e2a] mr-auto" />}
+                    {filterType === "admins" && <Check className="h-4 w-4 text-[#d81b60] mr-auto" />}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-xl hover:bg-[#0d2e2a]/10"
-                onClick={() => refetch()}
-              >
-                <RefreshCw className="h-4 w-4 text-[#0d2e2a]" />
-              </Button>
+        
             </div>
           </div>
         </div>
@@ -899,14 +894,14 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
       <div className="container mx-auto px-4 py-6">
         {isCreating ? (
           <div className="flex items-center justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0d2e2a]/20 border-t-[#0d2e2a]" />
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#d81b60]/20 border-t-[#d81b60]" />
           </div>
         ) : filteredConversations.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900/50 rounded-3xl border border-[#0d2e2a]/10 dark:border-[#0d2e2a]/30 p-12 text-center shadow-sm">
-            <div className="h-20 w-20 rounded-full bg-[#0d2e2a]/5 dark:bg-[#0d2e2a]/20 flex items-center justify-center mx-auto mb-4">
-              <MessageCircle className="h-10 w-10 text-[#0d2e2a]/40" />
+          <div className="bg-white dark:bg-slate-900/50 rounded-3xl border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30 p-12 text-center shadow-sm">
+            <div className="h-20 w-20 rounded-full bg-[#d81b60]/10 dark:bg-[#d81b60]/20 flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="h-10 w-10 text-[#d81b60]/40" />
             </div>
-            <h3 className="text-xl font-semibold text-[#0d2e2a] dark:text-white">
+            <h3 className="text-xl font-semibold text-[#d81b60] dark:text-white">
               {searchQuery
                 ? app.lang === "ar"
                   ? "لا توجد نتائج"
@@ -946,18 +941,18 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                 >
                   <div
                     className={`
-                      bg-white dark:bg-slate-900 rounded-2xl border p-4 hover:shadow-lg transition-all 
-                      hover:border-[#0d2e2a]/30 hover:scale-[1.01]
+                      bg-white dark:bg-slate-900 rounded-2xl border-2 p-4 hover:shadow-xl transition-all 
+                      hover:border-[#d81b60]/50 hover:scale-[1.01]
                       ${
                         unread
-                          ? "border-[#0d2e2a]/30 dark:border-[#0d2e2a]/50 bg-[#0d2e2a]/5 dark:bg-[#0d2e2a]/10"
-                          : "border-slate-200/60 dark:border-slate-700/60"
+                          ? "border-[#d81b60]/40 dark:border-[#d81b60]/50 bg-[#d81b60]/5 dark:bg-[#d81b60]/10"
+                          : "border-[#d81b60]/20 dark:border-[#d81b60]/30"
                       }
                     `}
                   >
                     <div className="flex items-center gap-4">
                       <div className="relative">
-                        <Avatar className="h-14 w-14 ring-2 ring-slate-200 dark:ring-slate-700 group-hover:ring-[#0d2e2a] transition">
+                        <Avatar className="h-14 w-14 ring-2 ring-[#d81b60]/30 dark:ring-[#d81b60]/40 group-hover:ring-[#d81b60] transition">
                           <OptimizedImage
                             src={avatar}
                             alt={name}
@@ -967,7 +962,7 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                             objectFit="cover"
                             className="h-full w-full object-cover"
                           />
-                          <AvatarFallback className="bg-gradient-to-br from-[#0d2e2a] to-[#2a655f] text-white text-sm font-bold">
+                          <AvatarFallback className="bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white text-sm font-bold">
                             {name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -987,8 +982,8 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                           </div>
                         )}
                         {role === "company_admin" && (
-                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-indigo-500/20 border-2 border-white dark:border-slate-900 flex items-center justify-center">
-                            <ShieldCheck className="h-2.5 w-2.5 text-indigo-500" />
+                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-pink-500/20 border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                            <ShieldCheck className="h-2.5 w-2.5 text-pink-500" />
                           </div>
                         )}
                       </div>
@@ -1024,12 +1019,12 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                       </div>
 
                       {unread && (
-                        <Badge className="bg-[#0d2e2a] text-white rounded-full px-2.5 py-0.5 text-xs font-bold animate-pulse">
+                        <Badge className="bg-[#d81b60] text-white rounded-full px-2.5 py-0.5 text-xs font-bold animate-pulse border-0">
                           {conv.unread_count_participant1 || conv.unread_count_participant2}
                         </Badge>
                       )}
 
-                      <ChevronRight className="h-4 w-4 text-muted-foreground/50 group-hover:translate-x-1 transition-transform" />
+                      <ChevronRight className="h-4 w-4 text-[#d81b60]/50 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
 
@@ -1039,12 +1034,12 @@ const isArabic = app.lang === "ar"; // ✅ أضف هذا
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                          className="h-8 w-8 rounded-full hover:bg-[#d81b60]/10 text-[#d81b60] border-2 border-[#d81b60]/20 hover:border-[#d81b60]/50"
                         >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-xl">
+                      <DropdownMenuContent align="end" className="rounded-xl border-2 border-[#d81b60]/20">
                         <DropdownMenuItem
                           className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
                           onClick={(e) => handleDeleteConversation(conv.id, e)}

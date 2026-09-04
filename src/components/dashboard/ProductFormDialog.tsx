@@ -210,8 +210,8 @@ export function ProductFormDialog({
         placeholderDesc: lang === "ar" ? "✏️ وصف العرض بالتفصيل..." : "✏️ Detailed offer description...",
         badge: lang === "ar" ? "عرض" : "Offer",
         icon: Gift,
-        iconColor: "text-emerald-500",
-        bgGradient: "from-emerald-500/5 to-emerald-500/10 dark:from-emerald-500/20 dark:to-emerald-500/10",
+        iconColor: "text-[#d81b60]",
+        bgGradient: "from-[#d81b60]/5 to-[#d81b60]/10 dark:from-[#d81b60]/20 dark:to-[#d81b60]/10",
       };
     }
     return {
@@ -824,7 +824,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
 };
 
   const getProductIcon = () => {
-    if (productType === "offer") return <Gift className="h-6 w-6 text-emerald-500" />;
+    if (productType === "offer") return <Gift className="h-6 w-6 text-[#d81b60]" />;
     return <Package className="h-6 w-6 text-[#2a655f]" />;
   };
 
@@ -893,17 +893,17 @@ const handleSizesUpdate = (newSizes: string[]) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto rounded-2xl border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-[#2a655f]/10">
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-[#d81b60]/20">
         
         {/* ===== Header ===== */}
-        <div className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4 md:p-6">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#2a655f] to-transparent animate-pulse" />
+        <div className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 p-4 md:p-6">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#d81b60] to-transparent animate-pulse" />
           
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
               <div className="relative group">
-                <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
-                <div className="relative p-3 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#2a655f]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                <div className="absolute inset-0 rounded-2xl bg-[#d81b60]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
+                <div className="relative p-3 rounded-2xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/25 group-hover:shadow-[#d81b60]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
                   {getProductIcon()}
                 </div>
               </div>
@@ -911,16 +911,16 @@ const handleSizesUpdate = (newSizes: string[]) => {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   {getProductTitle()}
                   {productType === "offer" && (
-                    <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 animate-pulse">
+                    <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-0 animate-pulse">
                       🔥 عرض
                     </Badge>
                   )}
                 </h2>
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
+                  <Sparkles className="h-3.5 w-3.5 text-[#d81b60] animate-pulse" />
                   {getProductSubtitle()}
-                  <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-                  <span className="text-xs text-[#2a655f] font-medium">
+                  <span className="w-1 h-1 rounded-full bg-[#d81b60]/30" />
+                  <span className="text-xs text-[#d81b60] font-medium">
                     {product ? (lang === "ar" ? "تعديل" : "Edit") : (lang === "ar" ? "جديد" : "New")}
                   </span>
                 </p>
@@ -929,10 +929,10 @@ const handleSizesUpdate = (newSizes: string[]) => {
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 hover:rotate-90 hover:scale-110"
+              className="h-10 w-10 rounded-full hover:bg-[#d81b60]/10 dark:hover:bg-[#d81b60]/30 transition-all duration-300 hover:rotate-90 hover:scale-110"
               onClick={() => onOpenChange(false)}
             >
-              <X className="h-5 w-5 text-[#2a655f]" />
+              <X className="h-5 w-5 text-[#d81b60]" />
             </Button>
           </div>
           
@@ -940,10 +940,10 @@ const handleSizesUpdate = (newSizes: string[]) => {
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-medium text-[#2a655f]">
+                <span className="font-medium text-[#d81b60]">
                   {getTabLabel(activeTab)}
                 </span>
-                <span className="text-[10px] text-[#2a655f]/60">
+                <span className="text-[10px] text-[#d81b60]/60">
                   {currentIndex + 1} / {TAB_ORDER.length}
                 </span>
               </div>
@@ -956,8 +956,8 @@ const handleSizesUpdate = (newSizes: string[]) => {
                       key={tab}
                       className={cn(
                         "h-1.5 rounded-full transition-all duration-500 cursor-pointer",
-                        isActive ? "w-8 bg-[#2a655f] shadow-lg shadow-[#2a655f]/30" : 
-                        isCompleted ? "w-4 bg-[#2a655f]/60" : "w-4 bg-slate-200 dark:bg-slate-700"
+                        isActive ? "w-8 bg-[#d81b60] shadow-lg shadow-[#d81b60]/30" : 
+                        isCompleted ? "w-4 bg-[#d81b60]/60" : "w-4 bg-slate-200 dark:bg-slate-700"
                       )}
                       onClick={() => goToTab(tab)}
                     />
@@ -971,7 +971,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
           <div className="mt-3">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList 
-                className="grid grid-cols-4 gap-1.5 bg-[#2a655f]/5 dark:bg-[#2a655f]/20 p-1.5 rounded-2xl border border-[#2a655f]/10 dark:border-[#2a655f]/20"
+                className="grid grid-cols-4 gap-1.5 bg-[#fbcfe8]/30 dark:bg-[#d81b60]/20 p-1.5 rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40"
                 dir={lang === "ar" ? "rtl" : "ltr"}
               >
                 {TAB_ORDER.map((tab) => {
@@ -981,15 +981,15 @@ const handleSizesUpdate = (newSizes: string[]) => {
                     <TabsTrigger 
                       key={tab}
                       value={tab} 
-                      className="rounded-xl text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-lg data-[state=active]:shadow-[#2a655f]/20 data-[state=active]:border-[#2a655f]/30 transition-all duration-300 group"
+                      className="rounded-xl text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-lg data-[state=active]:shadow-[#d81b60]/20 data-[state=active]:border-2 data-[state=active]:border-[#d81b60]/40 transition-all duration-300 group"
                     >
                       <Icon className={cn(
                         "h-3.5 w-3.5 ml-1.5 transition-all duration-300",
-                        isActive ? "text-[#2a655f] animate-pulse" : "text-muted-foreground group-hover:text-[#2a655f]"
+                        isActive ? "text-[#d81b60] animate-pulse" : "text-muted-foreground group-hover:text-[#d81b60]"
                       )} />
                       {getTabLabel(tab)}
                       {isActive && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f] animate-pulse ml-1" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60] animate-pulse ml-1" />
                       )}
                     </TabsTrigger>
                   );
@@ -1005,14 +1005,14 @@ const handleSizesUpdate = (newSizes: string[]) => {
           {/* ===== TAB: Basic ===== */}
           {activeTab === "basic" && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-5 duration-300">
-              <div className="relative overflow-hidden rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 p-5">
-                <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#2a655f]/5 blur-3xl" />
+              <div className="relative overflow-hidden rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-gradient-to-r from-[#d81b60]/5 to-[#d81b60]/10 dark:from-[#d81b60]/20 dark:to-[#d81b60]/10 p-5">
+                <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#d81b60]/5 blur-3xl" />
                 <div className="flex items-start gap-3 relative">
-                  <div className="p-2.5 rounded-xl bg-[#2a655f]/10">
-                    <Info className="h-5 w-5 text-[#2a655f]" />
+                  <div className="p-2.5 rounded-xl bg-[#d81b60]/10">
+                    <Info className="h-5 w-5 text-[#d81b60]" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                    <p className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1]">
                       {lang === "ar" ? `📝 ${productType === "offer" ? "معلومات العرض" : "المعلومات الأساسية"}` : `📝 ${productType === "offer" ? "Offer Information" : "Basic Information"}`}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -1029,23 +1029,23 @@ const handleSizesUpdate = (newSizes: string[]) => {
                   <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     {labels.name}
                     <span className="text-red-500">*</span>
-                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px] animate-pulse">
+                    <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[10px] animate-pulse">
                       {lang === "ar" ? "مطلوب" : "Required"}
                     </Badge>
                   </Label>
                   <div className="relative mt-1.5">
                     <div className="absolute inset-y-0 start-3 flex items-center">
                       {productType === "offer" ? (
-                        <Gift className="h-4 w-4 text-[#2a655f]/60" />
+                        <Gift className="h-4 w-4 text-[#d81b60]/60" />
                       ) : (
-                        <Package className="h-4 w-4 text-[#2a655f]/60" />
+                        <Package className="h-4 w-4 text-[#d81b60]/60" />
                       )}
                     </div>
                     <Input
                       value={form.title_ar}
                       onChange={(e) => setForm({ ...form, title_ar: e.target.value })}
                       placeholder={labels.placeholderName}
-                      className="ps-10 h-12 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                      className="ps-10 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
                     />
                   </div>
                 </div>
@@ -1063,10 +1063,10 @@ const handleSizesUpdate = (newSizes: string[]) => {
                       value={form.description_ar}
                       onChange={(e) => setForm({ ...form, description_ar: e.target.value })}
                       placeholder={labels.placeholderDesc}
-                      className="rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 resize-none hover:border-[#2a655f]/30"
+                      className="rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 resize-none hover:border-[#d81b60]/30"
                     />
                     <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                      <Info className="h-3 w-3 text-[#2a655f]" />
+                      <Info className="h-3 w-3 text-[#d81b60]" />
                       {lang === "ar" 
                         ? "💡 وصف واضح وشامل يزيد من فرص البيع" 
                         : "💡 Clear and comprehensive description increases sales chances"}
@@ -1083,25 +1083,25 @@ const handleSizesUpdate = (newSizes: string[]) => {
                     </Label>
                     <div className="relative mt-1.5">
                       <div className="relative">
-                        <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#2a655f]/60" />
+                        <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#d81b60]/60" />
                         <Input
                           value={categorySearch}
                           onChange={(e) => setCategorySearch(e.target.value)}
                           onFocus={() => setIsCategoryOpen(true)}
                           placeholder={lang === "ar" ? "🔍 ابحث عن تصنيف..." : "🔍 Search category..."}
-                          className="ps-9 h-12 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                          className="ps-9 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
                         />
                         {categorySearch && (
                           <button
                             onClick={() => setCategorySearch("")}
-                            className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
+                            className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#d81b60] transition-colors"
                           >
                             <X className="h-4 w-4" />
                           </button>
                         )}
                       </div>
                       {isCategoryOpen && (
-                        <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-slate-900 shadow-xl shadow-[#2a655f]/10">
+                        <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#d81b60]/20">
                           {filteredCategories.length === 0 ? (
                             <div className="p-4 text-sm text-muted-foreground text-center">
                               {lang === "ar" ? "لا توجد نتائج" : "No results found"}
@@ -1111,8 +1111,8 @@ const handleSizesUpdate = (newSizes: string[]) => {
                               <button
                                 key={c.id}
                                 className={cn(
-                                  "w-full text-start px-4 py-3 text-sm hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
-                                  form.category_id === c.id && "bg-[#2a655f]/10 dark:bg-[#2a655f]/30 text-[#2a655f]"
+                                  "w-full text-start px-4 py-3 text-sm hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
+                                  form.category_id === c.id && "bg-[#d81b60]/10 dark:bg-[#d81b60]/30 text-[#d81b60]"
                                 )}
                                 onClick={() => {
                                   setForm({ ...form, category_id: c.id });
@@ -1121,7 +1121,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
                                 }}
                               >
                                 {form.category_id === c.id && (
-                                  <CheckCircle2 className="h-4 w-4 text-[#2a655f] flex-shrink-0" />
+                                  <CheckCircle2 className="h-4 w-4 text-[#d81b60] flex-shrink-0" />
                                 )}
                                 <span>{lang === "ar" ? c.name_ar : c.name_en}</span>
                               </button>
@@ -1139,25 +1139,25 @@ const handleSizesUpdate = (newSizes: string[]) => {
                     </Label>
                     <div className="relative mt-1.5">
                       <div className="relative">
-                        <MapPin className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#2a655f]/60" />
+                        <MapPin className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#d81b60]/60" />
                         <Input
                           value={governorateSearch}
                           onChange={(e) => setGovernorateSearch(e.target.value)}
                           onFocus={() => setIsGovernorateOpen(true)}
                           placeholder={lang === "ar" ? "🔍 ابحث عن محافظة..." : "🔍 Search governorate..."}
-                          className="ps-9 h-12 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                          className="ps-9 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
                         />
                         {governorateSearch && (
                           <button
                             onClick={() => setGovernorateSearch("")}
-                            className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
+                            className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#d81b60] transition-colors"
                           >
                             <X className="h-4 w-4" />
                           </button>
                         )}
                       </div>
                       {isGovernorateOpen && (
-                        <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-slate-900 shadow-xl shadow-[#2a655f]/10">
+                        <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#d81b60]/20">
                           {filteredGovernorates.length === 0 ? (
                             <div className="p-4 text-sm text-muted-foreground text-center">
                               {lang === "ar" ? "لا توجد نتائج" : "No results found"}
@@ -1167,8 +1167,8 @@ const handleSizesUpdate = (newSizes: string[]) => {
                               <button
                                 key={g.id}
                                 className={cn(
-                                  "w-full text-start px-4 py-3 text-sm hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
-                                  form.governorate_id === g.id && "bg-[#2a655f]/10 dark:bg-[#2a655f]/30 text-[#2a655f]"
+                                  "w-full text-start px-4 py-3 text-sm hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
+                                  form.governorate_id === g.id && "bg-[#d81b60]/10 dark:bg-[#d81b60]/30 text-[#d81b60]"
                                 )}
                                 onClick={() => {
                                   setForm({ ...form, governorate_id: g.id });
@@ -1177,7 +1177,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
                                 }}
                               >
                                 {form.governorate_id === g.id && (
-                                  <CheckCircle2 className="h-4 w-4 text-[#2a655f] flex-shrink-0" />
+                                  <CheckCircle2 className="h-4 w-4 text-[#d81b60] flex-shrink-0" />
                                 )}
                                 <span>{lang === "ar" ? g.name_ar : g.name_en}</span>
                               </button>
@@ -1194,7 +1194,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
                   <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     {lang === "ar" ? "حالة التوفر" : "Availability"}
                   </Label>
-                  <div className="mt-1.5 p-4 bg-gradient-to-r from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10 dark:to-transparent rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                  <div className="mt-1.5 p-4 bg-gradient-to-r from-[#d81b60]/5 to-transparent dark:from-[#d81b60]/10 dark:to-transparent rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
                     <label className="flex items-center gap-3 text-sm cursor-pointer group">
                       <div className="relative">
                         <input
@@ -1204,7 +1204,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
                             const newValue = e.target.checked;
                             setForm(prev => ({ ...prev, is_available: newValue }));
                           }}
-                          className="h-5 w-5 rounded border-slate-300/50 accent-[#2a655f] cursor-pointer transition-all duration-300 group-hover:scale-110"
+                          className="h-5 w-5 rounded border-slate-300/50 accent-[#d81b60] cursor-pointer transition-all duration-300 group-hover:scale-110"
                         />
                       </div>
                       <div className="flex items-center gap-2">
@@ -1226,7 +1226,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
                           </Badge>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground group-hover:text-[#2a655f] transition-colors">
+                      <span className="text-xs text-muted-foreground group-hover:text-[#d81b60] transition-colors">
                         {form.is_available === true
                           ? (lang === "ar" ? "🟢 العملاء يمكنهم الشراء" : "🟢 Customers can purchase")
                           : (lang === "ar" ? "🔴 غير متاح للشراء حالياً" : "🔴 Not available for purchase")}
@@ -1241,14 +1241,14 @@ const handleSizesUpdate = (newSizes: string[]) => {
           {/* ===== TAB: Pricing ===== */}
           {activeTab === "pricing" && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-5 duration-300">
-              <div className="relative overflow-hidden rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-gradient-to-r from-emerald-500/5 to-emerald-500/10 dark:from-emerald-500/20 dark:to-emerald-500/10 p-5">
-                <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-emerald-500/5 blur-3xl" />
+              <div className="relative overflow-hidden rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-gradient-to-r from-[#d81b60]/5 to-[#d81b60]/10 dark:from-[#d81b60]/20 dark:to-[#d81b60]/10 p-5">
+                <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#d81b60]/5 blur-3xl" />
                 <div className="flex items-start gap-3 relative">
-                  <div className="p-2.5 rounded-xl bg-emerald-500/10">
-                    <Coins className="h-5 w-5 text-emerald-500" />
+                  <div className="p-2.5 rounded-xl bg-[#d81b60]/10">
+                    <Coins className="h-5 w-5 text-[#d81b60]" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    <p className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1]">
                       {lang === "ar" ? `💰 ${productType === "offer" ? "تسعير العرض" : "تسعير المنتج"}` : `💰 ${productType === "offer" ? "Offer Pricing" : "Product Pricing"}`}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -1264,13 +1264,13 @@ const handleSizesUpdate = (newSizes: string[]) => {
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <Coins className="h-3.5 w-3.5 text-[#2a655f]" />
+                    <Coins className="h-3.5 w-3.5 text-[#d81b60]" />
                     {lang === "ar" ? `السعر (ل.س)` : `Price (SYP)`}
                     <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative mt-1.5">
                     <div className="absolute inset-y-0 start-3 flex items-center">
-                      <span className="text-sm font-bold text-[#2a655f]/60">ل.س</span>
+                      <span className="text-sm font-bold text-[#d81b60]/60">ل.س</span>
                     </div>
                     <Input
                       type="number"
@@ -1278,7 +1278,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
                       value={form.price}
                       onChange={(e) => handlePriceChange(e.target.value, "price")}
                       placeholder="0"
-                      className="ps-12 h-12 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                      className="ps-12 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
                     />
                   </div>
                 </div>
@@ -1287,15 +1287,15 @@ const handleSizesUpdate = (newSizes: string[]) => {
               {/* ✅ للعروض فقط: حقل السعر القديم */}
               {productType === "offer" && (
                 <>
-                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-yellow-50 to-yellow-100/30 dark:from-yellow-950/30 dark:to-yellow-950/10 rounded-2xl border border-yellow-200/50 dark:border-yellow-800/30">
-                    <div className="p-2 rounded-xl bg-yellow-500/10 animate-pulse">
-                      <Gift className="h-5 w-5 text-yellow-500" />
+                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#d81b60]/10 to-[#f48fb1]/10 dark:from-[#d81b60]/30 dark:to-[#f48fb1]/10 rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
+                    <div className="p-2 rounded-xl bg-[#d81b60]/10 animate-pulse">
+                      <Gift className="h-5 w-5 text-[#d81b60]" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-yellow-700 dark:text-yellow-300">
+                      <p className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1]">
                         {lang === "ar" ? "🛍️ هذا المنتج هو عرض خاص" : "🛍️ This product is a special offer"}
                       </p>
-                      <p className="text-xs text-yellow-600/70 dark:text-yellow-400/70">
+                      <p className="text-xs text-[#d81b60]/70 dark:text-[#f48fb1]/70">
                         {lang === "ar" 
                           ? "أدخل السعر القديم لعرض الخصم للعملاء" 
                           : "Enter the old price to show the discount to customers"}
@@ -1306,13 +1306,13 @@ const handleSizesUpdate = (newSizes: string[]) => {
                   <div className="grid grid-cols-1 gap-4">
                     <div>
                       <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <Coins className="h-3.5 w-3.5 text-[#2a655f]" />
+                        <Coins className="h-3.5 w-3.5 text-[#d81b60]" />
                         {lang === "ar" ? "السعر القديم (ل.س)" : "Old Price (SYP)"}
                         <span className="text-red-500">*</span>
                       </Label>
                       <div className="relative mt-1.5">
                         <div className="absolute inset-y-0 start-3 flex items-center">
-                          <span className="text-sm font-bold text-[#2a655f]/60">ل.س</span>
+                          <span className="text-sm font-bold text-[#d81b60]/60">ل.س</span>
                         </div>
                         <Input
                           type="number"
@@ -1320,15 +1320,15 @@ const handleSizesUpdate = (newSizes: string[]) => {
                           value={form.old_price}
                           onChange={(e) => handlePriceChange(e.target.value, "old_price")}
                           placeholder="0"
-                          className="ps-12 h-12 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                          className="ps-12 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
                         />
                       </div>
                     </div>
                   </div>
 
                   {form.old_price > form.price && form.old_price > 0 && (
-                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-50 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-950/10 rounded-2xl border-2 border-emerald-200/50 dark:border-emerald-800/30 animate-in fade-in slide-in-from-top-5 duration-300">
-                      <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0 text-sm px-4 py-2 rounded-xl shadow-lg shadow-emerald-500/30 animate-pulse">
+                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-50 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-950/10 rounded-2xl border-3 border-emerald-200/50 dark:border-emerald-800/30 animate-in fade-in slide-in-from-top-5 duration-300">
+                      <Badge className="bg-gradient-to-r from-[#1a4f4a] to-[#2a655f] text-white border-0 text-sm px-4 py-2 rounded-xl shadow-lg shadow-[#2a655f]/30 animate-pulse">
                         🎯 {Math.round(((form.old_price - form.price) / form.old_price) * 100)}% {lang === "ar" ? "خصم" : "OFF"}
                       </Badge>
                       <span className="text-sm text-muted-foreground flex items-center gap-1">
@@ -1347,7 +1347,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
           {/* ===== TAB: Images ===== */}
           {activeTab === "images" && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-5 duration-300">
-              <div className="relative overflow-hidden rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-gradient-to-r from-purple-500/5 to-purple-500/10 dark:from-purple-500/20 dark:to-purple-500/10 p-5">
+              <div className="relative overflow-hidden rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-gradient-to-r from-purple-500/5 to-purple-500/10 dark:from-purple-500/20 dark:to-purple-500/10 p-5">
                 <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-purple-500/5 blur-3xl" />
                 <div className="flex items-start gap-3 relative">
                   <div className="p-2.5 rounded-xl bg-purple-500/10">
@@ -1370,7 +1370,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
                 <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   {lang === "ar" ? "الصورة الرئيسية" : "Main Image"}
                   <span className="text-red-500">*</span>
-                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px] animate-pulse">
+                  <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[10px] animate-pulse">
                     {lang === "ar" ? "مطلوبة" : "Required"}
                   </Badge>
                 </Label>
@@ -1383,17 +1383,17 @@ const handleSizesUpdate = (newSizes: string[]) => {
                     lang={app.lang}
                     label={lang === "ar" ? "📸 اضغط لرفع الصورة الرئيسية" : "📸 Click to upload main image"}
                     hint={lang === "ar" ? "صورة واحدة على الأقل مطلوبة" : "At least one image is required"}
-                    previewClassName="aspect-video h-auto rounded-2xl max-h-[300px] border-2 border-[#2a655f]/20"
+                    previewClassName="aspect-video h-auto rounded-2xl max-h-[300px] border-3 border-[#d81b60]/30"
                     required
                   />
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-2xl bg-gradient-to-r from-slate-50/50 to-slate-100/30 dark:from-slate-800/30 dark:to-slate-800/10 p-5 border-2 border-slate-200/50 dark:border-slate-800/50">
+              <div className="space-y-3 rounded-2xl bg-gradient-to-r from-slate-50/50 to-slate-100/30 dark:from-slate-800/30 dark:to-slate-800/10 p-5 border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-[#2a655f]/10">
-                      <ImageIcon className="h-4 w-4 text-[#2a655f]" />
+                    <div className="p-1.5 rounded-lg bg-[#d81b60]/10">
+                      <ImageIcon className="h-4 w-4 text-[#d81b60]" />
                     </div>
                     <Label className="font-semibold text-slate-700 dark:text-slate-300">
                       {lang === "ar" ? "صور إضافية" : "Additional Images"}
@@ -1401,7 +1401,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
                     <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-600 border-slate-200">
                       {lang === "ar" ? "اختيارية" : "Optional"}
                     </Badge>
-                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                    <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[10px]">
                       {form.image_urls.length}/6
                     </Badge>
                   </div>
@@ -1411,7 +1411,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
                     variant="outline"
                     onClick={() => setForm({ ...form, image_urls: [...form.image_urls, ""] })}
                     disabled={form.image_urls.length >= 6}
-                    className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105"
+                    className="rounded-xl border-3 border-[#d81b60]/30 text-[#d81b60] hover:bg-[#d81b60]/10 hover:border-[#d81b60]/50 transition-all duration-300 hover:scale-105"
                   >
                     <Plus className="h-4 w-4 me-1" /> {lang === "ar" ? "إضافة" : "Add"}
                   </Button>
@@ -1431,7 +1431,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
                       lang={app.lang}
                       label={`${lang === "ar" ? "صورة" : "Image"} ${index + 1}`}
                       hint={lang === "ar" ? "اختيارية" : "Optional"}
-                      previewClassName="aspect-video h-auto rounded-2xl border-2 border-slate-200/50"
+                      previewClassName="aspect-video h-auto rounded-2xl border-3 border-slate-200/50"
                     />
                   ))}
                 </div>
@@ -1442,7 +1442,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
           {/* ===== TAB: Options ===== */}
           {activeTab === "options" && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-5 duration-300">
-              <div className="relative overflow-hidden rounded-2xl border border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-gradient-to-r from-indigo-500/5 to-indigo-500/10 dark:from-indigo-500/20 dark:to-indigo-500/10 p-5">
+              <div className="relative overflow-hidden rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-gradient-to-r from-indigo-500/5 to-indigo-500/10 dark:from-indigo-500/20 dark:to-indigo-500/10 p-5">
                 <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-indigo-500/5 blur-3xl" />
                 <div className="flex items-start gap-3 relative">
                   <div className="p-2.5 rounded-xl bg-indigo-500/10">
@@ -1479,13 +1479,13 @@ const handleSizesUpdate = (newSizes: string[]) => {
         </div>
 
        {/* ===== Footer ===== */}
-<div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4 md:p-6 rounded-b-2xl">
+<div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 p-4 md:p-6 rounded-b-2xl">
   <div className="flex items-center justify-between gap-3">
     <Button
       variant="outline"
       onClick={goToPrevTab}
       disabled={isFirstTab}
-      className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 h-12 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="rounded-xl border-3 border-[#d81b60]/30 text-[#d81b60] hover:bg-[#d81b60]/10 hover:border-[#d81b60]/50 transition-all duration-300 h-12 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isRTL ? (
         <ArrowRight className="h-4 w-4 ml-2" />
@@ -1508,7 +1508,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
         <Button
           onClick={validateAndSubmit}
           disabled={!isFormValid() || isSaving || isSubmitting}
-          className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#2a655f]/40 hover:scale-[1.02] hover:from-[#3a8a82] hover:to-[#4a9f95] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#d81b60]/40 hover:scale-[1.02] hover:from-[#c2185b] hover:to-[#f9a8d4] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSaving || isSubmitting ? (
             <span className="flex items-center gap-2">
@@ -1532,7 +1532,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
         <Button
           onClick={goToNextTab}
           disabled={!isTabValid(activeTab)}
-          className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#2a655f]/40 hover:scale-[1.02] hover:from-[#3a8a82] hover:to-[#4a9f95] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#d81b60]/40 hover:scale-[1.02] hover:from-[#c2185b] hover:to-[#f9a8d4] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {lang === "ar" ? "التالي" : "Next"}
           {isRTL ? (
