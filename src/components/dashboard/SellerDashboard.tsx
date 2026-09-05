@@ -1,6 +1,6 @@
 // src/components/dashboard/SellerDashboard.tsx
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import {
   LayoutDashboard, Package, Calendar as CalendarIcon, Users, Star, BarChart3, Settings,
   ShoppingCart, DollarSign, Store, Clock, CheckCircle2, XCircle, TrendingUp,
@@ -132,6 +132,36 @@ export function SellerDashboard({}: SellerDashboardProps) {
     }
     window.history.pushState({}, '', url.toString());
   }, []);
+
+  // ============================================================
+  // ✅ الحفاظ على موضع التمرير عند تغيير التاب
+  // ============================================================
+  const scrollPositionRef = useRef<{ [key: string]: number }>({
+    overview: 0,
+    products: 0,
+    orders: 0,
+    customers: 0,
+    stats: 0,
+    settings: 0,
+  });
+
+  // ============================================================
+  // ✅ دالة تغيير التاب مع الحفاظ على موضع التمرير
+  // ============================================================
+  const handleTabChangeWithScroll = useCallback((newTab: string) => {
+    // حفظ موضع التمرير الحالي للتاب الحالي
+    const currentScroll = window.scrollY;
+    scrollPositionRef.current[tab] = currentScroll;
+    
+    // تغيير التاب
+    handleTabChange(newTab);
+    
+    // ✅ استعادة موضع التمرير بعد تغيير التاب (بتأخير بسيط)
+    requestAnimationFrame(() => {
+      const savedPosition = scrollPositionRef.current[newTab] || 0;
+      window.scrollTo({ top: savedPosition, behavior: 'instant' });
+    });
+  }, [tab, handleTabChange]);
 
   // ============================================================
   // ✅ قراءة التاب من الـ URL عند تحميل الصفحة
@@ -352,7 +382,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
       setShowSearchResultsPage(true);
       const bestTab = getBestTab();
       if (bestTab.count > 0) {
-        handleTabChange(bestTab.tab);
+        handleTabChangeWithScroll(bestTab.tab);
       }
     }
   };
@@ -1425,7 +1455,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
-                      handleTabChange(item.key);
+                      handleTabChangeWithScroll(item.key);
                       setShowSearchResultsPage(false);
                     }}
                     className={`bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 p-3 text-center hover:shadow-xl transition-all duration-300 hover:scale-[1.03] group ${isActive ? 'ring-2 ring-[#f9a8d4] border-[#f9a8d4] shadow-lg shadow-[#f9a8d4]/20' : ''} cursor-pointer`}
@@ -1485,7 +1515,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                handleTabChange(n.id);
+                handleTabChangeWithScroll(n.id);
               }}
               className={`
                 relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-500 whitespace-nowrap flex-1 text-center justify-center group cursor-pointer z-50
@@ -1524,7 +1554,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  handleTabChange(n.id);
+                  handleTabChangeWithScroll(n.id);
                 }}
                 className={`
                   relative flex flex-col items-center gap-1 p-2.5 rounded-xl text-xs font-medium transition-all duration-500 cursor-pointer z-50
@@ -1638,7 +1668,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                         variant="ghost" 
                         size="sm" 
                         className="text-xs text-[#2a655f] hover:text-[#f9a8d4] hover:bg-[#f9a8d4]/10 transition-all"
-                        onClick={() => handleTabChange('products')}
+                        onClick={() => handleTabChangeWithScroll('products')}
                       >
                         {app.lang === 'ar' ? "عرض الكل" : "View all"} 
                         <ChevronRight className={`h-3 w-3 ${isRTL ? 'rotate-180' : ''}`} />
@@ -1686,7 +1716,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                         variant="ghost" 
                         size="sm" 
                         className="text-xs text-[#2a655f] hover:text-[#f9a8d4] hover:bg-[#f9a8d4]/10 transition-all"
-                        onClick={() => handleTabChange('orders')}
+                        onClick={() => handleTabChangeWithScroll('orders')}
                       >
                         {app.lang === 'ar' ? "عرض الكل" : "View all"} 
                         <ChevronRight className={`h-3 w-3 ${isRTL ? 'rotate-180' : ''}`} />
@@ -1772,7 +1802,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                           variant="ghost" 
                           size="sm" 
                           className="text-[10px] text-[#f9a8d4] hover:text-[#f9a8d4] hover:bg-[#f9a8d4]/10 transition-all"
-                          onClick={() => handleTabChange('customers')}
+                          onClick={() => handleTabChangeWithScroll('customers')}
                         >
                           {app.lang === 'ar' ? "عرض الكل" : "View all"} 
                           <ChevronRight className={`h-3 w-3 ${isRTL ? 'rotate-180' : ''}`} />

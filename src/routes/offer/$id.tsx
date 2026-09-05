@@ -1563,6 +1563,48 @@ const handleAddToCart = useCallback(async () => {
     return;
   }
 
+  // ✅ ✅ ✅ التحقق من تجاوز الكميات المطلوبة (المنتجات)
+  if (selectionStats.hasOver) {
+    toast.error(
+      app.lang === "ar" 
+        ? `⚠️ الكمية المختارة (${totalSelectedQuantity}) تتجاوز المطلوب (${totalRequiredQuantity})`
+        : `⚠️ Selected quantity (${totalSelectedQuantity}) exceeds required (${totalRequiredQuantity})`
+    );
+    return;
+  }
+
+  // ✅ ✅ ✅ التحقق من تجاوز كمية الهدية
+  if (giftStats.isOver) {
+    toast.error(
+      app.lang === "ar" 
+        ? `⚠️ كمية الهدية المختارة (${giftStats.selected}) تتجاوز المسموح (${giftStats.total})`
+        : `⚠️ Gift quantity (${giftStats.selected}) exceeds allowed (${giftStats.total})`
+    );
+    return;
+  }
+
+  // ✅ ✅ ✅ التحقق من أن المنتجات كاملة (ليس هناك نقص)
+  if (!selectionStats.allComplete) {
+    const remaining = totalRequiredQuantity - totalSelectedQuantity;
+    toast.warning(
+      app.lang === "ar" 
+        ? `⚠️ متبقي ${remaining} منتج${remaining > 1 ? 'ات' : ''} لاستكمال الكميات`
+        : `⚠️ ${remaining} product${remaining > 1 ? 's' : ''} remaining to complete quantities`
+    );
+    return;
+  }
+
+  // ✅ ✅ ✅ التحقق من أن الهدية مكتملة (إذا كان هناك خيارات للهدية)
+  if (offer?.result_variation_ids?.length > 0 && !giftStats.isComplete) {
+    const remaining = giftStats.total - giftStats.selected;
+    toast.warning(
+      app.lang === "ar" 
+        ? `⚠️ متبقي ${remaining} من الهدية لاستكمال الكميات`
+        : `⚠️ ${remaining} remaining from gift to complete quantities`
+    );
+    return;
+  }
+
   if (offer.store_id === app.user.id || mainProduct?.owner_id === app.user.id) {
     toast.error(
       app.lang === "ar" 
@@ -1849,7 +1891,7 @@ const handleAddToCart = useCallback(async () => {
       listingId: mainListingId,
       quantity: 1,
       price: totalPrice,
-      currency: app.currency || "SYP", // ✅ ✅ ✅ العملة الصحيحة
+      currency: app.currency || "SYP",
       variationPrice: totalPrice,
       selectedVariationId: null,
       selectedColor: null,
@@ -1862,48 +1904,44 @@ const handleAddToCart = useCallback(async () => {
         offer_data: offerData,
         required_variations: requiredVariationsDetails,
         gift_variations: giftVariationsDetails,
-        currency: app.currency || "SYP", // ✅ العملة في extraData أيضاً
+        currency: app.currency || "SYP",
       },
     });
 
-    // ✅ عرض رسالة نجاح
-    const totalSelected = Object.keys(requiredVariationsDetails).length;
-    const totalGift = Object.keys(giftVariationsDetails).length;
-    
-   toast.success(
-  app.lang === "ar" 
-    ? `✅ تم إضافة العرض للسلة بنجاح! ${offer.display_text_ar}`
-    : `✅ Offer added to cart successfully! ${offer.display_text_en}`,
-  { 
-    duration: 4000,
-    icon: '🛒',
-    style: {
-      background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',
-      color: '#831843',
-      borderRadius: '16px',
-      border: '1px solid #f9a8d4',
-      boxShadow: '0 20px 60px rgba(236, 72, 153, 0.25)',
-    },
-    className: 'font-bold',
-    action: {
-      label: app.lang === "ar" ? "🛒 عرض السلة 🛒" : "🛒 View Cart 🛒",
-      onClick: () => {
-        navigate({ to: "/cart" });
-        toast.dismiss();
+    toast.success(
+      app.lang === "ar" 
+        ? `✅ تم إضافة العرض للسلة بنجاح! ${offer.display_text_ar}`
+        : `✅ Offer added to cart successfully! ${offer.display_text_en}`,
+      { 
+        duration: 4000,
+        icon: '🛒',
+        style: {
+          background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',
+          color: '#831843',
+          borderRadius: '16px',
+          border: '1px solid #f9a8d4',
+          boxShadow: '0 20px 60px rgba(236, 72, 153, 0.25)',
+        },
+        className: 'font-bold',
+        action: {
+          label: app.lang === "ar" ? "🛒 عرض السلة 🛒" : "🛒 View Cart 🛒",
+          onClick: () => {
+            navigate({ to: "/cart" });
+            toast.dismiss();
+          }
+        },
+        actionButtonStyle: {
+          background: 'linear-gradient(135deg, #f472b6, #ec4899, #db2777)',
+          color: 'white',
+          fontWeight: 'bold',
+          borderRadius: '12px',
+          padding: '8px 24px',
+          boxShadow: '0 8px 30px rgba(236, 72, 153, 0.4)',
+          border: 'none',
+          fontSize: '14px',
+        }
       }
-    },
-    actionButtonStyle: {
-      background: 'linear-gradient(135deg, #f472b6, #ec4899, #db2777)',
-      color: 'white',
-      fontWeight: 'bold',
-      borderRadius: '12px',
-      padding: '8px 24px',
-      boxShadow: '0 8px 30px rgba(236, 72, 153, 0.4)',
-      border: 'none',
-      fontSize: '14px',
-    }
-  }
-);
+    );
 
   } catch (error: any) {
     console.error(`❌ [handleAddToCart] Error:`, error);
@@ -1931,9 +1969,13 @@ const handleAddToCart = useCallback(async () => {
 }, [
   app.user,
   app.lang,
-  app.currency, // ✅ أضف هذا
+  app.currency,
   offer,
   isVariationSelected,
+  selectionStats,
+  giftStats,
+  totalSelectedQuantity,
+  totalRequiredQuantity,
   mainProduct,
   selectedVariations,
   selectedGiftVariations,

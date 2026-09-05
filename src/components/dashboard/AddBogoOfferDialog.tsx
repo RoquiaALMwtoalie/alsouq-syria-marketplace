@@ -215,62 +215,86 @@ function AddBogoOfferDialogComponent({
     };
 
     // ✅ ✅ ✅ دالة توليد اسم العرض بشكل احترافي
-    const generateProfessionalDisplayText = () => {
-        const isArabic = app.lang === "ar";
-        const mainProduct = listings.find((l: any) => l.id === requirements[0]?.listing_id);
-        const productName = mainProduct?.title_ar || (isArabic ? "المنتج" : "Product");
-        
-        const buyQty = requirements.reduce((sum, r) => sum + r.quantity, 0);
-        const getQty = result.quantity;
-        const giftProduct = listings.find((l: any) => l.id === result.listing_id);
-        const giftName = giftProduct?.title_ar || (isArabic ? "منتج آخر" : "another product");
+ const generateProfessionalDisplayText = () => {
+    const isArabic = app.lang === "ar";
+    const mainProduct = listings.find((l: any) => l.id === requirements[0]?.listing_id);
+    
+    // ✅ اسم المنتج الرئيسي حسب اللغة
+    const productName = isArabic 
+        ? mainProduct?.title_ar || "المنتج"
+        : mainProduct?.title_en || mainProduct?.title_ar || "Product";
+    
+    const buyQty = requirements.reduce((sum, r) => sum + r.quantity, 0);
+    const getQty = result.quantity;
+    const giftProduct = listings.find((l: any) => l.id === result.listing_id);
+    
+    // ✅ اسم الهدية حسب اللغة
+    const giftName = isArabic 
+        ? giftProduct?.title_ar || "منتج آخر"
+        : giftProduct?.title_en || giftProduct?.title_ar || "another product";
 
-        if (offerType === 'bogo') {
-            if (mainProduct && productName !== (isArabic ? "المنتج" : "Product")) {
-                return isArabic 
-                    ? `اشتري ${buyQty} من ${productName} + ${getQty} مجاناً`
-                    : `Buy ${buyQty} ${productName} + ${getQty} Free`;
-            }
+    // ============================================================
+    // 🎯 BOGO (نفس المنتج) - Buy One Get One
+    // ============================================================
+    if (offerType === 'bogo') {
+        if (mainProduct && productName !== (isArabic ? "المنتج" : "Product")) {
             return isArabic 
-                ? `اشتري ${buyQty} واحصل على ${getQty} مجاناً`
-                : `Buy ${buyQty} Get ${getQty} Free`;
+                ? `🛒 عرض مزدوج: اشتري ${buyQty} من "${productName}" واحصل على ${getQty} مجاناً ✨`
+                : `🛒 Double Deal: Buy ${buyQty} "${productName}" & Get ${getQty} Free ✨`;
         }
-
-        if (offerType === 'cross_sell') {
-            if (mainProduct && giftProduct) {
-                return isArabic 
-                    ? `اشتري ${productName} واحصل على ${giftName} مجاناً`
-                    : `Buy ${productName} & Get ${giftName} Free`;
-            }
-            return isArabic 
-                ? `اشتري منتج واحصل على منتج آخر مجاناً`
-                : `Buy One Get One Free`;
-        }
-
-        if (offerType === 'bundle') {
-            const productNames = requirements
-                .map((r) => {
-                    const p = listings.find((l: any) => l.id === r.listing_id);
-                    return p?.title_ar || (isArabic ? "منتج" : "Product");
-                })
-                .slice(0, 2)
-                .join(isArabic ? " + " : " + ");
-            
-            const extraCount = requirements.length - 2;
-            let bundleText = productNames;
-            if (extraCount > 0) {
-                bundleText += isArabic ? ` + ${extraCount} أخرى` : ` + ${extraCount} more`;
-            }
-            
-            return isArabic 
-                ? `باقة ${bundleText} + ${getQty} مجاناً`
-                : `Bundle ${bundleText} + ${getQty} Free`;
-        }
-
         return isArabic 
-            ? `عرض خاص: ${buyQty} + ${getQty} مجاناً`
-            : `Special Offer: ${buyQty} + ${getQty} Free`;
-    };
+            ? `🎁 عرض مميز: اشتري ${buyQty} واحصل على ${getQty} مجاناً`
+            : `🎁 Special Offer: Buy ${buyQty} Get ${getQty} Free`;
+    }
+
+    // ============================================================
+    // 🎯 Cross-sell (منتج مختلف) - Buy Product Get Another
+    // ============================================================
+    if (offerType === 'cross_sell') {
+        if (mainProduct && giftProduct) {
+            return isArabic 
+                ? `🛍️ صفقة رائعة: ${productName} + ${giftName} مجاناً 🎉`
+                : `🛍️ Great Deal: ${productName} + ${giftName} Free 🎉`;
+        }
+        return isArabic 
+            ? `💎 عرض حصري: منتج + آخر مجاناً`
+            : `💎 Exclusive: Buy One Get One Free`;
+    }
+
+    // ============================================================
+    // 🎯 Bundle (باقة منتجات) - Products Bundle
+    // ============================================================
+    if (offerType === 'bundle') {
+        const productNames = requirements
+            .map((r) => {
+                const p = listings.find((l: any) => l.id === r.listing_id);
+                return isArabic 
+                    ? p?.title_ar || "منتج"
+                    : p?.title_en || p?.title_ar || "Product";
+            })
+            .slice(0, 2)
+            .join(isArabic ? " + " : " + ");
+        
+        const extraCount = requirements.length - 2;
+        let bundleText = productNames;
+        if (extraCount > 0) {
+            bundleText += isArabic 
+                ? ` + ${extraCount} منتجات` 
+                : ` + ${extraCount} products`;
+        }
+        
+        return isArabic 
+            ? `📦 باقة ${bundleText} + ${getQty} مجاناً 🎁`
+            : `📦 Bundle ${bundleText} + ${getQty} Free 🎁`;
+    }
+
+    // ============================================================
+    // 🎯 الوضع الافتراضي
+    // ============================================================
+    return isArabic 
+        ? `🏷️ عرض خاص: ${buyQty} + ${getQty} مجاناً`
+        : `🏷️ Special Offer: ${buyQty} + ${getQty} Free`;
+};
 
     // ============================================================
     // ✅ معاينة العرض

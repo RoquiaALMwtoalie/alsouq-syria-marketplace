@@ -1,5 +1,5 @@
 // src/components/dashboard/CustomersPage.tsx
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   Search, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, 
   RefreshCw, X, Filter, Users, User, Phone, ShoppingCart, DollarSign,
@@ -48,6 +48,49 @@ export function CustomersPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
+  // ============================================================
+  // ✅ منع التمرير التلقائي عند تحميل المكون
+  // ============================================================
+  useEffect(() => {
+    // ✅ حفظ موضع التمرير الحالي
+    const currentScroll = window.scrollY;
+    
+    // ✅ منع أي تمرير تلقائي لمدة 300ms
+    let isBlocking = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    const preventScroll = () => {
+      if (isBlocking) {
+        window.scrollTo({ top: currentScroll, behavior: 'instant' });
+      }
+    };
+    
+    // ✅ إضافة مستمعين للأحداث
+    window.addEventListener('scroll', preventScroll, { passive: true });
+    window.addEventListener('wheel', preventScroll, { passive: true });
+    window.addEventListener('touchmove', preventScroll, { passive: true });
+    
+    // ✅ تنفيذ فوري
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: currentScroll, behavior: 'instant' });
+    });
+    
+    // ✅ إلغاء الحظر بعد 300ms
+    timeoutId = setTimeout(() => {
+      isBlocking = false;
+      // ✅ استعادة الموضع النهائي
+      window.scrollTo({ top: currentScroll, behavior: 'instant' });
+    }, 300);
+    
+    return () => {
+      isBlocking = false;
+      if (timeoutId) clearTimeout(timeoutId);
+      window.removeEventListener('scroll', preventScroll);
+      window.removeEventListener('wheel', preventScroll);
+      window.removeEventListener('touchmove', preventScroll);
+    };
+  }, []);
+
   // ===== فلترة وترتيب العملاء =====
   const filteredCustomers = useMemo(() => {
     let result = rows;
@@ -95,11 +138,10 @@ export function CustomersPage() {
     topCustomer: rows.length > 0 ? rows.reduce((a: any, b: any) => (a.spend || 0) > (b.spend || 0) ? a : b) : null,
   };
 
-  // ===== تغيير الصفحة =====
+  // ===== تغيير الصفحة (تم إزالة window.scrollTo) =====
   const goToPage = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setPage(newPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 

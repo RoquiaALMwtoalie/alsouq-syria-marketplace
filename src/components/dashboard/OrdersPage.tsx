@@ -1,6 +1,6 @@
 // src/components/dashboard/OrdersPage.tsx
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { 
   ShoppingBag, Package, Truck, CheckCircle2, XCircle, Clock, 
   Search, Filter, RefreshCw, FileSpreadsheet, FileText,
@@ -9,7 +9,7 @@ import {
   Calendar, User, Phone, MessageCircle,
   TrendingUp, Star, Users, Clock as ClockIcon,
   MapPin, Store,
-  Wallet, Trash2, Info, ChevronDown, ChevronUp, Zap, 
+  Wallet, Trash2, Info, ChevronDown, ChevronUp, Zap, Gift
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,36 @@ const generateTrackingNumber = () => {
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `${prefix}-${timestamp}-${random}`;
 };
+
+// ✅ ✅ ✅ دوال العروض الترويجية
+function getPromoOfferData(item: any) {
+  // ✅ من metadata
+  if (item.metadata?.promo_offer_data) {
+    return item.metadata.promo_offer_data;
+  }
+  
+  // ✅ من variation_snapshot
+  if (item.variation_snapshot?.offer_data) {
+    return item.variation_snapshot.offer_data;
+  }
+  
+  // ✅ من offer_data مباشرة
+  if (item.offer_data) {
+    return item.offer_data;
+  }
+  
+  return null;
+}
+
+function isPromoOffer(item: any) {
+  if (item.is_promo_offer === true) return true;
+  if (item.offer_id !== null && item.offer_id !== undefined) return true;
+  if (item.variation_snapshot?.is_promo_offer === true) return true;
+  if (item.metadata?.promo_offer_data) return true;
+  if (item.offer_data) return true;
+  if (!!getPromoOfferData(item)) return true;
+  return false;
+}
 
 // ============================================================
 // ✅ دوال حالة الطلب (للمتجر) - getOrderStatus
@@ -125,6 +155,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
   const app = useApp();
   
   // ===== STATES =====
+  // ===== STATES =====
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   
@@ -144,6 +175,49 @@ export const OrdersPage = React.memo(function OrdersPage() {
   const [rejectOrderId, setRejectOrderId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
+
+  // ============================================================
+  // ✅ منع التمرير التلقائي عند تحميل المكون
+  // ============================================================
+  useEffect(() => {
+    // ✅ حفظ موضع التمرير الحالي
+    const currentScroll = window.scrollY;
+    
+    // ✅ منع أي تمرير تلقائي لمدة 300ms
+    let isBlocking = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    const preventScroll = () => {
+      if (isBlocking) {
+        window.scrollTo({ top: currentScroll, behavior: 'instant' });
+      }
+    };
+    
+    // ✅ إضافة مستمعين للأحداث
+    window.addEventListener('scroll', preventScroll, { passive: true });
+    window.addEventListener('wheel', preventScroll, { passive: true });
+    window.addEventListener('touchmove', preventScroll, { passive: true });
+    
+    // ✅ تنفيذ فوري
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: currentScroll, behavior: 'instant' });
+    });
+    
+    // ✅ إلغاء الحظر بعد 300ms
+    timeoutId = setTimeout(() => {
+      isBlocking = false;
+      // ✅ استعادة الموضع النهائي
+      window.scrollTo({ top: currentScroll, behavior: 'instant' });
+    }, 300);
+    
+    return () => {
+      isBlocking = false;
+      if (timeoutId) clearTimeout(timeoutId);
+      window.removeEventListener('scroll', preventScroll);
+      window.removeEventListener('wheel', preventScroll);
+      window.removeEventListener('touchmove', preventScroll);
+    };
+  }, []);
 
   // ===== API - useStoreOrders =====
   const { 
@@ -1573,7 +1647,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
         </>
       )}
 
-      {/* ===== ORDER DETAIL DIALOG ===== */}
+      {/* ===== ORDER DETAIL DIALOG مع دعم العروض الترويجية ===== */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 bg-white dark:bg-slate-900 p-6 shadow-2xl shadow-[#f9a8d4]/10">
           <Button
@@ -1708,6 +1782,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                 </div>
 
+                {/* ===== PRODUCTS WITH PROMO OFFER SUPPORT ===== */}
                 <div className="mb-4">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                     <Package className="h-3.5 w-3.5" />
@@ -1721,6 +1796,12 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
                       selectedOrder.order_items.map((item: any, index: number) => {
                         const listing = item.listings || item;
+                        const isPromo = isPromoOffer(item);
+                        const offerData = getPromoOfferData(item);
+                        const requiredVariations = offerData?.required_products?.variations || {};
+                        const giftVariations = offerData?.free_product?.variations || {};
+                        const hasRequired = Object.keys(requiredVariations).length > 0;
+                        const hasGift = Object.keys(giftVariations).length > 0;
                         
                         const getVariationImage = (item: any) => {
                           if (item.metadata?.variation_image) return item.metadata.variation_image;
@@ -1806,90 +1887,200 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         return (
                           <div 
                             key={item.id || index}
-                            className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border-2 border-slate-200/50 dark:border-slate-700/50 hover:border-[#f9a8d4]/50 transition-all duration-300"
+                            className={cn(
+                              "p-3 rounded-xl border-2 transition-all duration-300",
+                              isPromo 
+                                ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50 hover:border-purple-400/70" 
+                                : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50 hover:border-[#f9a8d4]/50"
+                            )}
                           >
-                            <div className="flex items-center gap-4">
-                              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border-2 border-slate-200/50 dark:border-slate-700/50">
-                                {imageUrl ? (
-                                  <img 
-                                    src={imageUrl} 
-                                    alt=""
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                                    <Package className="h-6 w-6 text-slate-400" />
+                            {isPromo ? (
+                              <div className="space-y-3">
+                                {/* شارة العرض الترويجي */}
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 px-3 py-1 rounded-full text-xs font-bold">
+                                    <Gift className="h-3.5 w-3.5 inline mr-1.5" />
+                                    {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
+                                  </Badge>
+                                  <Badge variant="outline" className="border-purple-300 text-purple-600 text-[10px]">
+                                    {offerData?.offer_type === 'bogo' ? '🎁 نفس المنتج' : 
+                                     offerData?.offer_type === 'cross_sell' ? '🔄 منتج مختلف' : '📦 باقة'}
+                                  </Badge>
+                                </div>
+                                
+                                {/* نص العرض */}
+                                {offerData?.display_text_ar && (
+                                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    {app.lang === "ar" ? offerData.display_text_ar : offerData.display_text_en}
+                                  </p>
+                                )}
+                                
+                                {/* المنتجات المطلوبة */}
+                                {hasRequired && (
+                                  <div className="space-y-2">
+                                    <p className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                      <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
+                                      🛒 {app.lang === "ar" ? "المنتجات المطلوبة" : "Required Products"} ({Object.keys(requiredVariations).length})
+                                    </p>
+                                    {Object.entries(requiredVariations).map(([id, data]: any) => {
+                                      const comboText = Object.values(data.combination || {}).join(' • ');
+                                      const variationImage = data.image_url || 
+                                                            offerData?.required_products?.main_product?.cover_url || 
+                                                            null;
+                                      return (
+                                        <div key={id} className="flex items-center gap-3 p-2 bg-white/70 rounded-xl border border-purple-100/50">
+                                          {variationImage ? (
+                                            <img 
+                                              src={variationImage} 
+                                              alt={comboText} 
+                                              className="w-10 h-10 rounded-lg object-cover border border-purple-100"
+                                              onError={(e) => {
+                                                (e.target as HTMLImageElement).src = '/placeholder.png';
+                                              }}
+                                            />
+                                          ) : (
+                                            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center text-purple-400">
+                                              <Package className="h-5 w-5" />
+                                            </div>
+                                          )}
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                                            <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
+                                          </div>
+                                          <p className="text-sm font-bold text-purple-600 whitespace-nowrap">
+                                            {(data.price * data.quantity).toLocaleString()} SYP
+                                          </p>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                                
+                                {/* الهدية */}
+                                {hasGift && (
+                                  <div className="space-y-2">
+                                    <p className="text-xs font-semibold text-emerald-500 flex items-center gap-2">
+                                      <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
+                                      🎁 {app.lang === "ar" ? "الهدية" : "Gift"} ({Object.keys(giftVariations).length})
+                                    </p>
+                                    {Object.entries(giftVariations).map(([id, data]: any) => {
+                                      const comboText = Object.values(data.combination || {}).join(' • ');
+                                      const giftImage = data.image_url || 
+                                                       offerData?.free_product?.cover_url || 
+                                                       null;
+                                      return (
+                                        <div key={id} className="flex items-center gap-3 p-2 bg-emerald-50/70 rounded-xl border border-emerald-100/50">
+                                          {giftImage ? (
+                                            <img 
+                                              src={giftImage} 
+                                              alt={comboText} 
+                                              className="w-10 h-10 rounded-lg object-cover border border-emerald-100"
+                                              onError={(e) => {
+                                                (e.target as HTMLImageElement).src = '/placeholder.png';
+                                              }}
+                                            />
+                                          ) : (
+                                            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400">
+                                              <Gift className="h-5 w-5" />
+                                            </div>
+                                          )}
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                                            <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
+                                          </div>
+                                          <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-xs font-bold px-3 py-1 rounded-full">
+                                            🎁 {app.lang === "ar" ? "مجاناً" : "Free"}
+                                          </Badge>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 )}
                               </div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm text-slate-800 dark:text-white">
-                                  {app.lang === "ar" 
-                                    ? listing?.title_ar || 'منتج'
-                                    : listing?.title_en || listing?.title_ar || 'Product'}
-                                </p>
-                                
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
-                                  <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
-                                    <span className="font-medium text-slate-600 dark:text-slate-400">
-                                      {app.lang === "ar" ? "الكمية:" : "Qty:"}
-                                    </span>
-                                    <span className="font-bold text-slate-800 dark:text-white">
-                                      {item.quantity || 1}
-                                    </span>
-                                  </span>
-                                  
-                                  <span className="text-muted-foreground/30">•</span>
-                                  
-                                  <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
-                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                                      {app.lang === "ar" ? "السعر:" : "Price:"}
-                                    </span>
-                                    <span className="font-bold text-emerald-700 dark:text-emerald-300">
-                                      {formatPrice(
-                                        item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
-                                        app.currency, 
-                                        app.lang
-                                      )}
-                                    </span>
-                                  </span>
-                                  
-                                  {hasVariation && variationDisplay && (
-                                    <>
-                                      <span className="text-muted-foreground/30">•</span>
-                                      <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
-                                        <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
-                                        {variationDisplay}
-                                        {imageUrl && (
-                                          <img 
-                                            src={imageUrl} 
-                                            alt=""
-                                            className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
-                                          />
-                                        )}
-                                      </span>
-                                    </>
-                                  )}
-                                  
-                                  {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
-                                    <>
-                                      <span className="text-muted-foreground/30">•</span>
-                                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                                        <Layers className="h-2.5 w-2.5" />
-                                        {Object.values(item.metadata.variation_combination).join(' • ')}
-                                      </span>
-                                    </>
+                            ) : (
+                              <div className="flex items-center gap-4">
+                                <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border-2 border-slate-200/50 dark:border-slate-700/50">
+                                  {imageUrl ? (
+                                    <img 
+                                      src={imageUrl} 
+                                      alt=""
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                                      <Package className="h-6 w-6 text-slate-400" />
+                                    </div>
                                   )}
                                 </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                                    {app.lang === "ar" 
+                                      ? listing?.title_ar || 'منتج'
+                                      : listing?.title_en || listing?.title_ar || 'Product'}
+                                  </p>
+                                  
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
+                                    <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
+                                      <span className="font-medium text-slate-600 dark:text-slate-400">
+                                        {app.lang === "ar" ? "الكمية:" : "Qty:"}
+                                      </span>
+                                      <span className="font-bold text-slate-800 dark:text-white">
+                                        {item.quantity || 1}
+                                      </span>
+                                    </span>
+                                    
+                                    <span className="text-muted-foreground/30">•</span>
+                                    
+                                    <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
+                                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                                        {app.lang === "ar" ? "السعر:" : "Price:"}
+                                      </span>
+                                      <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                                        {formatPrice(
+                                          item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
+                                          app.currency, 
+                                          app.lang
+                                        )}
+                                      </span>
+                                    </span>
+                                    
+                                    {hasVariation && variationDisplay && (
+                                      <>
+                                        <span className="text-muted-foreground/30">•</span>
+                                        <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 px-2 py-0.5 rounded-full border border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                                          <Layers className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
+                                          {variationDisplay}
+                                          {imageUrl && (
+                                            <img 
+                                              src={imageUrl} 
+                                              alt=""
+                                              className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
+                                            />
+                                          )}
+                                        </span>
+                                      </>
+                                    )}
+                                    
+                                    {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
+                                      <>
+                                        <span className="text-muted-foreground/30">•</span>
+                                        <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                                          <Layers className="h-2.5 w-2.5" />
+                                          {Object.values(item.metadata.variation_combination).join(' • ')}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 hover:scale-110">
+                                    <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
+                                  </Button>
+                                </Link>
                               </div>
-                              
-                              <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 hover:scale-110">
-                                  <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
-                                </Button>
-                              </Link>
-                            </div>
+                            )}
                           </div>
                         );
                       })

@@ -146,6 +146,39 @@ const COLORS = {
   glowPinkStrong: 'rgba(249,168,212,0.35)',
 };
 
+// ============================================================
+// ✅ ✅ ✅ دوال العروض الترويجية
+// ============================================================
+
+function getPromoOfferData(item: any) {
+  // ✅ من metadata
+  if (item.metadata?.promo_offer_data) {
+    return item.metadata.promo_offer_data;
+  }
+  
+  // ✅ من variation_snapshot
+  if (item.variation_snapshot?.offer_data) {
+    return item.variation_snapshot.offer_data;
+  }
+  
+  // ✅ من offer_data مباشرة
+  if (item.offer_data) {
+    return item.offer_data;
+  }
+  
+  return null;
+}
+
+function isPromoOffer(item: any) {
+  if (item.is_promo_offer === true) return true;
+  if (item.offer_id !== null && item.offer_id !== undefined) return true;
+  if (item.variation_snapshot?.is_promo_offer === true) return true;
+  if (item.metadata?.promo_offer_data) return true;
+  if (item.offer_data) return true;
+  if (!!getPromoOfferData(item)) return true;
+  return false;
+}
+
 const ICON_MAP: Record<string, any> = {
   'clock': Clock,
   'check-circle': CheckCircle,
@@ -672,7 +705,8 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
             html += `<td><span class="badge ${colorClass}">${label}</span></td>`;
           } 
           else if (header === 'created_at' || header === 'updated_at' || header === 'delivered_at' || header === 'picked_up_at' || header === 'cancelled_at') {
-            html += `<td>${value ? new Date(value).toLocaleString(isArabic ? 'ar-SA' : 'en-US') : '-'}</td>`;          }
+            html += `<td>${value ? new Date(value).toLocaleString(isArabic ? 'ar-SA' : 'en-US') : '-'}</td>`;
+          }
           else if (header === 'delivery_fee' || header === 'total' || header === 'cod_amount') {
             html += `<td>${Number(value).toLocaleString()} SYP</td>`;
           }
@@ -775,55 +809,57 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   console.log("🔍 [DELIVERY DASHBOARD] isDeliveryCompany:", isDeliveryCompany);
   console.log("🔍 [DELIVERY DASHBOARD] userRoles:", userRoles);
   console.log("🔍 [DELIVERY DASHBOARD] company:", company);
-// ✅ ✅ ✅ جلب إحصائيات الموزعين عند فتح نافذة القبول
-useEffect(() => {
-  if (!acceptDialogOpen || !allDistributors || allDistributors.length === 0) return;
-  
-  const fetchStats = async () => {
-    setIsLoadingStats(true);
-    try {
-      const stats: Record<string, { pending: number; completed: number; total: number }> = {};
-      
-      for (const dist of allDistributors) {
-        // ✅ جلب عدد الطلبات المعلقة (الجارية) لهذا الموزع
-        const { data: pendingOrders, error: pendingError } = await supabase
-          .from("delivery_orders")
-          .select("id", { count: 'exact' })
-          .eq("distributor_id", dist.id)
-          .in("status", ["pending", "assigned", "picked_up", "in_transit"]);
+
+  // ✅ ✅ ✅ جلب إحصائيات الموزعين عند فتح نافذة القبول
+  useEffect(() => {
+    if (!acceptDialogOpen || !allDistributors || allDistributors.length === 0) return;
+    
+    const fetchStats = async () => {
+      setIsLoadingStats(true);
+      try {
+        const stats: Record<string, { pending: number; completed: number; total: number }> = {};
         
-        if (pendingError) {
-          console.error("❌ Error fetching pending orders:", pendingError);
+        for (const dist of allDistributors) {
+          // ✅ جلب عدد الطلبات المعلقة (الجارية) لهذا الموزع
+          const { data: pendingOrders, error: pendingError } = await supabase
+            .from("delivery_orders")
+            .select("id", { count: 'exact' })
+            .eq("distributor_id", dist.id)
+            .in("status", ["pending", "assigned", "picked_up", "in_transit"]);
+          
+          if (pendingError) {
+            console.error("❌ Error fetching pending orders:", pendingError);
+          }
+          
+          // ✅ جلب عدد الطلبات المكتملة لهذا الموزع
+          const { data: completedOrders, error: completedError } = await supabase
+            .from("delivery_orders")
+            .select("id", { count: 'exact' })
+            .eq("distributor_id", dist.id)
+            .in("status", ["delivered", "completed"]);
+          
+          if (completedError) {
+            console.error("❌ Error fetching completed orders:", completedError);
+          }
+          
+          stats[dist.id] = {
+            pending: pendingOrders?.length || 0,
+            completed: completedOrders?.length || 0,
+            total: (pendingOrders?.length || 0) + (completedOrders?.length || 0),
+          };
         }
         
-        // ✅ جلب عدد الطلبات المكتملة لهذا الموزع
-        const { data: completedOrders, error: completedError } = await supabase
-          .from("delivery_orders")
-          .select("id", { count: 'exact' })
-          .eq("distributor_id", dist.id)
-          .in("status", ["delivered", "completed"]);
-        
-        if (completedError) {
-          console.error("❌ Error fetching completed orders:", completedError);
-        }
-        
-        stats[dist.id] = {
-          pending: pendingOrders?.length || 0,
-          completed: completedOrders?.length || 0,
-          total: (pendingOrders?.length || 0) + (completedOrders?.length || 0),
-        };
+        setDistributorStats(stats);
+      } catch (error) {
+        console.error("❌ Error fetching distributor stats:", error);
+      } finally {
+        setIsLoadingStats(false);
       }
-      
-      setDistributorStats(stats);
-    } catch (error) {
-      console.error("❌ Error fetching distributor stats:", error);
-    } finally {
-      setIsLoadingStats(false);
-    }
-  };
-  
-  fetchStats();
-}, [acceptDialogOpen, allDistributors]);
+    };
+    
+    fetchStats();
+  }, [acceptDialogOpen, allDistributors]);
+
   // ✅ إحصائيات الطلبات
   const stats = useMemo(() => {
     const total = orders.length;
@@ -891,6 +927,7 @@ useEffect(() => {
     
     return result;
   }, [orders, statusFilter, searchQuery]);
+
   // ✅ حساب عدد الصفحات للـ Pagination
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = useMemo(() => {
@@ -3318,31 +3355,7 @@ useEffect(() => {
   </DialogContent>
 </Dialog>
 
-{/* ===== ORDER DETAILS DIALOG - يبقى كما هو مع تعديل الألوان ===== */}
-<Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#f9a8d4]/30 bg-white dark:bg-slate-900 p-6 shadow-2xl">
-    <Button
-      variant="ghost"
-      size="icon"
-      className="absolute top-4 end-4 h-9 w-9 rounded-full bg-black/50 hover:bg-black/70 text-white z-30"
-      onClick={() => setShowOrderDetails(false)}
-    >
-      <X className="h-5 w-5" />
-    </Button>
-
-    {(() => {
-      const orderData = selectedOrderForDetails;
-      
-      if (!orderData) {
-        return (
-          <div className="py-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#d81b60]" />
-            <p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p>
-          </div>
-        );
-      }
-
-      {/* ===== ORDER DETAILS DIALOG - وردي وزيتي ===== */}
+{/* ===== ORDER DETAILS DIALOG - مع دعم العروض الترويجية ===== */}
 <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#f9a8d4]/30 bg-white dark:bg-slate-900 p-6 shadow-2xl">
     <Button
@@ -3625,7 +3638,7 @@ useEffect(() => {
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mt-1">{deliveryAddress}</p>
           </div>
 
-          {/* ===== المنتجات مع تفاصيل الفيرنتات ===== */}
+          {/* ===== المنتجات مع تفاصيل الفيرنتات والعروض الترويجية ===== */}
           <div className="border-t border-[#f9a8d4]/30 pt-4">
             <h4 className="font-bold text-sm flex items-center gap-2 mb-3 text-[#d81b60]">
               <Package className="h-4 w-4 text-[#d81b60]" />
@@ -3639,6 +3652,8 @@ useEffect(() => {
               <div className="space-y-3">
                 {orderItems.map((item: any, index: number) => {
                   const listing = item.listings || item;
+                  const isPromo = isPromoOffer(item);
+                  const offerData = getPromoOfferData(item);
                   const imageUrl = getProductImage(item);
                   const variationCombination = getVariationCombination(item);
                   const hasVariation = !!(variationCombination && Object.keys(variationCombination).length > 0);
@@ -3651,94 +3666,210 @@ useEffect(() => {
                   return (
                     <div 
                       key={item.id || index} 
-                      className="p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#f9a8d4]/50 transition-all duration-300"
+                      className={cn(
+                        "p-3 rounded-xl border-2 transition-all duration-300",
+                        isPromo 
+                          ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50 hover:border-purple-400/70" 
+                          : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50 hover:border-[#f9a8d4]/50"
+                      )}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-                          {imageUrl ? (
-                            <img 
-                              src={imageUrl} 
-                              alt=""
-                              className="h-full w-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                              <Package className="h-6 w-6 text-slate-400" />
+                      {/* ===== عرض العرض الترويجي ===== */}
+                      {isPromo && (
+                        <div className="space-y-3">
+                          {/* شارة العرض الترويجي */}
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 px-3 py-1 rounded-full text-xs font-bold">
+                              <Gift className="h-3.5 w-3.5 inline mr-1.5" />
+                              {isArabic ? "عرض ترويجي" : "Promo Offer"}
+                            </Badge>
+                            <Badge variant="outline" className="border-purple-300 text-purple-600 text-[10px]">
+                              {offerData?.offer_type === 'bogo' ? '🎁 نفس المنتج' : 
+                               offerData?.offer_type === 'cross_sell' ? '🔄 منتج مختلف' : '📦 باقة'}
+                            </Badge>
+                          </div>
+                          
+                          {/* نص العرض */}
+                          {offerData?.display_text_ar && (
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                              {isArabic ? offerData.display_text_ar : offerData.display_text_en}
+                            </p>
+                          )}
+                          
+                          {/* المنتجات المطلوبة */}
+                          {Object.keys(offerData?.required_products?.variations || {}).length > 0 && (
+                            <div className="space-y-2">
+                              <p className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
+                                🛒 {isArabic ? "المنتجات المطلوبة" : "Required Products"} 
+                                ({Object.keys(offerData?.required_products?.variations || {}).length})
+                              </p>
+                              {Object.entries(offerData?.required_products?.variations || {}).map(([id, data]: any) => {
+                                const comboText = Object.values(data.combination || {}).join(' • ');
+                                const variationImage = data.image_url || 
+                                                      offerData?.required_products?.main_product?.cover_url || 
+                                                      null;
+                                return (
+                                  <div key={id} className="flex items-center gap-3 p-2 bg-white/70 rounded-xl border border-purple-100/50">
+                                    {variationImage ? (
+                                      <img 
+                                        src={variationImage} 
+                                        alt={comboText} 
+                                        className="w-10 h-10 rounded-lg object-cover border border-purple-100"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = '/placeholder.png';
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center text-purple-400">
+                                        <Package className="h-5 w-5" />
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                                      <p className="text-xs text-muted-foreground">{isArabic ? "الكمية" : "Qty"}: {data.quantity}</p>
+                                    </div>
+                                    <p className="text-sm font-bold text-purple-600 whitespace-nowrap">
+                                      {(data.price * data.quantity).toLocaleString()} SYP
+                                    </p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          
+                          {/* الهدية */}
+                          {Object.keys(offerData?.free_product?.variations || {}).length > 0 && (
+                            <div className="space-y-2">
+                              <p className="text-xs font-semibold text-emerald-500 flex items-center gap-2">
+                                <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
+                                🎁 {isArabic ? "الهدية" : "Gift"} 
+                                ({Object.keys(offerData?.free_product?.variations || {}).length})
+                              </p>
+                              {Object.entries(offerData?.free_product?.variations || {}).map(([id, data]: any) => {
+                                const comboText = Object.values(data.combination || {}).join(' • ');
+                                const giftImage = data.image_url || 
+                                                 offerData?.free_product?.cover_url || 
+                                                 null;
+                                return (
+                                  <div key={id} className="flex items-center gap-3 p-2 bg-emerald-50/70 rounded-xl border border-emerald-100/50">
+                                    {giftImage ? (
+                                      <img 
+                                        src={giftImage} 
+                                        alt={comboText} 
+                                        className="w-10 h-10 rounded-lg object-cover border border-emerald-100"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = '/placeholder.png';
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400">
+                                        <Gift className="h-5 w-5" />
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                                      <p className="text-xs text-muted-foreground">{isArabic ? "الكمية" : "Qty"}: {data.quantity}</p>
+                                    </div>
+                                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-xs font-bold px-3 py-1 rounded-full">
+                                      🎁 {isArabic ? "مجاناً" : "Free"}
+                                    </Badge>
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-slate-800 dark:text-white">
-                            {isArabic ? listing?.title_ar || 'منتج' : listing?.title_en || listing?.title_ar || 'Product'}
-                          </p>
-                          
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
-                            <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
-                              <span className="font-medium text-slate-600 dark:text-slate-400">{isArabic ? "الكمية:" : "Qty:"}</span>
-                              <span className="font-bold text-slate-800 dark:text-white">{itemQuantity}</span>
-                            </span>
-                            
-                            <span className="text-muted-foreground/30">•</span>
-                            
-                            <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
-                              <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "سعر الوحدة:" : "Unit:"}</span>
-                              <span className="font-bold text-emerald-700 dark:text-emerald-300">{formatPrice(itemPrice, currency || app.currency, app.lang)}</span>
-                            </span>
-                            
-                            {itemQuantity > 1 && (
-                              <>
-                                <span className="text-muted-foreground/30">|</span>
-                                <span className="flex items-center gap-1 bg-[#fbcfe8]/30 px-2 py-0.5 rounded-full border border-[#f9a8d4]/30">
-                                  <span className="font-medium text-[#d81b60]">{isArabic ? "الإجمالي:" : "Total:"}</span>
-                                  <span className="font-bold text-[#d81b60]">{formatPrice(totalPrice, currency || app.currency, app.lang)}</span>
-                                </span>
-                              </>
-                            )}
-                            
-                            {hasVariation && variationDisplay && (
-                              <>
-                                <span className="text-muted-foreground/30">•</span>
-                                <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#fbcfe8]/20 px-2 py-0.5 rounded-full border border-[#f9a8d4]/20">
-                                  <Layers className="h-3 w-3 text-[#d81b60]" />
-                                  {variationDisplay}
-                                  {imageUrl && (
-                                    <img 
-                                      src={imageUrl} 
-                                      alt=""
-                                      className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
-                                    />
-                                  )}
-                                </span>
-                              </>
-                            )}
-                            
-                            {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
-                              <>
-                                <span className="text-muted-foreground/30">•</span>
-                                <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                                  <Layers className="h-2.5 w-2.5" />
-                                  {Object.values(item.metadata.variation_combination).join(' • ')}
-                                </span>
-                              </>
-                            )}
-                            
-                            {item.selected_options?.selected_color && (
-                              <>
-                                <span className="text-muted-foreground/30">•</span>
-                                <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#fbcfe8]/20 px-2 py-0.5 rounded-full">
-                                  <span className="font-medium text-[#d81b60]">🎨</span>
-                                  {item.selected_options.selected_color}
-                                  {item.selected_options.selected_size && ` (${item.selected_options.selected_size})`}
-                                </span>
-                              </>
+                      )}
+
+                      {/* ===== عرض المنتج العادي (إذا لم يكن عرضاً ترويجياً) ===== */}
+                      {!isPromo && (
+                        <div className="flex items-center gap-4">
+                          <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                            {imageUrl ? (
+                              <img 
+                                src={imageUrl} 
+                                alt=""
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                                <Package className="h-6 w-6 text-slate-400" />
+                              </div>
                             )}
                           </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                              {isArabic ? listing?.title_ar || 'منتج' : listing?.title_en || listing?.title_ar || 'Product'}
+                            </p>
+                            
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
+                              <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
+                                <span className="font-medium text-slate-600 dark:text-slate-400">{isArabic ? "الكمية:" : "Qty:"}</span>
+                                <span className="font-bold text-slate-800 dark:text-white">{itemQuantity}</span>
+                              </span>
+                              
+                              <span className="text-muted-foreground/30">•</span>
+                              
+                              <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
+                                <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "سعر الوحدة:" : "Unit:"}</span>
+                                <span className="font-bold text-emerald-700 dark:text-emerald-300">{formatPrice(itemPrice, currency || app.currency, app.lang)}</span>
+                              </span>
+                              
+                              {itemQuantity > 1 && (
+                                <>
+                                  <span className="text-muted-foreground/30">|</span>
+                                  <span className="flex items-center gap-1 bg-[#fbcfe8]/30 px-2 py-0.5 rounded-full border border-[#f9a8d4]/30">
+                                    <span className="font-medium text-[#d81b60]">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                                    <span className="font-bold text-[#d81b60]">{formatPrice(totalPrice, currency || app.currency, app.lang)}</span>
+                                  </span>
+                                </>
+                              )}
+                              
+                              {hasVariation && variationDisplay && (
+                                <>
+                                  <span className="text-muted-foreground/30">•</span>
+                                  <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#fbcfe8]/20 px-2 py-0.5 rounded-full border border-[#f9a8d4]/20">
+                                    <Layers className="h-3 w-3 text-[#d81b60]" />
+                                    {variationDisplay}
+                                    {imageUrl && (
+                                      <img 
+                                        src={imageUrl} 
+                                        alt=""
+                                        className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
+                                      />
+                                    )}
+                                  </span>
+                                </>
+                              )}
+                              
+                              {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
+                                <>
+                                  <span className="text-muted-foreground/30">•</span>
+                                  <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                                    <Layers className="h-2.5 w-2.5" />
+                                    {Object.values(item.metadata.variation_combination).join(' • ')}
+                                  </span>
+                                </>
+                              )}
+                              
+                              {item.selected_options?.selected_color && (
+                                <>
+                                  <span className="text-muted-foreground/30">•</span>
+                                  <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#fbcfe8]/20 px-2 py-0.5 rounded-full">
+                                    <span className="font-medium text-[#d81b60]">🎨</span>
+                                    {item.selected_options.selected_color}
+                                    {item.selected_options.selected_size && ` (${item.selected_options.selected_size})`}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
@@ -3955,14 +4086,6 @@ useEffect(() => {
               </div>
             )}
           </div>
-        </div>
-      );
-    })()}
-  </DialogContent>
-</Dialog>
-      return (
-        <div>
-          {/* المحتوى */}
         </div>
       );
     })()}
@@ -4324,9 +4447,6 @@ function OrderCard({
   );
 }
 
-// ============================================================
-// 📦 DistributorCard - وردي
-// ============================================================
 // ============================================================
 // 📦 DistributorCard - وردي مع بوردر ملفت
 // ============================================================

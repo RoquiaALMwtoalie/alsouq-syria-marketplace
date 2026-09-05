@@ -77,6 +77,49 @@ export function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [seeded, setSeeded] = useState(false);
 
+  // ============================================================
+  // ✅ منع التمرير التلقائي عند تحميل المكون
+  // ============================================================
+  useEffect(() => {
+    // ✅ حفظ موضع التمرير الحالي
+    const currentScroll = window.scrollY;
+    
+    // ✅ منع أي تمرير تلقائي لمدة 300ms
+    let isBlocking = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    const preventScroll = () => {
+      if (isBlocking) {
+        window.scrollTo({ top: currentScroll, behavior: 'instant' });
+      }
+    };
+    
+    // ✅ إضافة مستمعين للأحداث
+    window.addEventListener('scroll', preventScroll, { passive: true });
+    window.addEventListener('wheel', preventScroll, { passive: true });
+    window.addEventListener('touchmove', preventScroll, { passive: true });
+    
+    // ✅ تنفيذ فوري
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: currentScroll, behavior: 'instant' });
+    });
+    
+    // ✅ إلغاء الحظر بعد 300ms
+    timeoutId = setTimeout(() => {
+      isBlocking = false;
+      // ✅ استعادة الموضع النهائي
+      window.scrollTo({ top: currentScroll, behavior: 'instant' });
+    }, 300);
+    
+    return () => {
+      isBlocking = false;
+      if (timeoutId) clearTimeout(timeoutId);
+      window.removeEventListener('scroll', preventScroll);
+      window.removeEventListener('wheel', preventScroll);
+      window.removeEventListener('touchmove', preventScroll);
+    };
+  }, []);
+
   // ===== تحميل البيانات من قاعدة البيانات =====
   useEffect(() => {
     if (profile) {

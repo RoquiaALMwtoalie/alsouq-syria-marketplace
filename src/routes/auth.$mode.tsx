@@ -1,5 +1,4 @@
-
-// src/routes/auth.$mode.tsx - مع العبارات الجانبية + لوغو جانبي متحرك
+// src/routes/auth.$mode.tsx - نسخة محسّنة مع إصلاح مشكلة التجميد والرفريش
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
@@ -420,7 +419,7 @@ function AuthPage() {
     useState(false);
 
   // ============================================================
-  // Slider auto-play
+  // ✅ SLIDER AUTO-PLAY
   // ============================================================
   useEffect(() => {
     const id = setInterval(() => {
@@ -430,23 +429,57 @@ function AuthPage() {
     return () => clearInterval(id);
   }, []);
 
+  // ============================================================
+  // ✅✅✅ CHECK SESSION - مُحسّن بدون تجميد أو رفريش مزدوج ✅✅✅
+  // ============================================================
   useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout | null = null;
 
-      if (session) {
-        window.location.href = "/";
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
+        if (session?.user) {
+          // ✅ تحقق من الأدوار لتحديد وجهة التوجيه الصحيحة
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id);
+          
+          const userRoles = roles?.map(r => r.role) || [];
+          
+          let redirectPath = "/";
+          if (userRoles.includes("admin")) redirectPath = "/admin";
+          else if (userRoles.includes("delivery_company")) redirectPath = "/delivery/dashboard";
+          else if (userRoles.includes("distributor")) redirectPath = "/distributor/dashboard";
+          else if (userRoles.includes("seller")) redirectPath = "/dashboard";
+          
+          // ✅ استخدام replace بدلاً من href لتجنب الرفريش المزدوج
+          window.location.replace(redirectPath);
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
       }
     };
 
-    checkSession();
+    // ✅ تأخير بسيط لتجنب تعارض التحميل
+    timeoutId = setTimeout(checkSession, 150);
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   const isLogin = mode === "login";
   const isRegister = mode === "register";
 
+  // ============================================================
+  // ✅ CHECK PHONE AVAILABILITY
+  // ============================================================
   useEffect(() => {
     if (!isRegister) return;
 
@@ -484,6 +517,9 @@ function AuthPage() {
     return () => clearTimeout(timer);
   }, [phone, isRegister]);
 
+  // ============================================================
+  // ✅ EXTRACT GOVERNORATE
+  // ============================================================
   useEffect(() => {
     const extractGovernorate = async () => {
       if (!location) {
@@ -989,7 +1025,7 @@ function AuthPage() {
         }, 500);
       } else {
         setTimeout(() => {
-          window.location.href = "/";
+          window.location.replace("/");
         }, 500);
       }
     } catch (err: any) {
@@ -2757,4 +2793,3 @@ function SupportButton() {
     </>
   );
 }
-
