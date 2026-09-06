@@ -21,28 +21,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ImageInput } from "@/components/ImageInput";
-
-// ============================================================
-// 📦 جميع أنواع الخيارات المتاحة
-// ============================================================
-const OPTION_TYPES = [
-  { id: 'colors', label: 'الألوان', icon: Palette, color: '#2a655f', emoji: '🎨', description: 'أضف ألوان المنتج مع صور' },
-  { id: 'sizes', label: 'المقاسات', icon: Ruler, color: '#2a655f', emoji: '📏', description: 'أضف المقاسات المتوفرة' },
-  { id: 'models', label: 'النماذج', icon: Box, color: '#2a655f', emoji: '📐', description: 'أضف النماذج المختلفة' },
-  { id: 'materials', label: 'المواد', icon: Droplet, color: '#2a655f', emoji: '🧵', description: 'أضف أنواع المواد' },
-  { id: 'fabric', label: 'نوع القماش', icon: Shirt, color: '#2a655f', emoji: '👕', description: 'أضف أنواع الأقمشة' },
-  { id: 'style', label: 'النمط', icon: Sparkles, color: '#2a655f', emoji: '✨', description: 'أضف أنماط التصميم' },
-  { id: 'season', label: 'الموسم', icon: Calendar, color: '#2a655f', emoji: '🌤️', description: 'أضف المواسم' },
-  { id: 'gender', label: 'الجنس', icon: User, color: '#2a655f', emoji: '👫', description: 'أضف الفئات الجنسية' },
-  { id: 'brand', label: 'الماركة', icon: Tag, color: '#2a655f', emoji: '🏷️', description: 'أضف الماركات' },
-  { id: 'storage', label: 'سعة التخزين', icon: HardDrive, color: '#2a655f', emoji: '💾', description: 'أضف سعات التخزين' },
-  { id: 'ram', label: 'الذاكرة (RAM)', icon: Cpu, color: '#2a655f', emoji: '🧠', description: 'أضف سعات الذاكرة' },
-  { id: 'processor', label: 'المعالج', icon: Cpu, color: '#2a655f', emoji: '⚡', description: 'أضف أنواع المعالجات' },
-  { id: 'battery', label: 'سعة البطارية', icon: Battery, color: '#2a655f', emoji: '🔋', description: 'أضف سعات البطارية' },
-  { id: 'screen_size', label: 'حجم الشاشة', icon: Smartphone, color: '#2a655f', emoji: '📱', description: 'أضف أحجام الشاشات' },
-  { id: 'camera', label: 'دقة الكاميرا', icon: Camera, color: '#2a655f', emoji: '📷', description: 'أضف دقات الكاميرا' },
-  { id: 'connectivity', label: 'الاتصال', icon: Wifi, color: '#2a655f', emoji: '📶', description: 'أضف أنواع الاتصال' },
-];
+import { useApp } from "@/lib/i18n";
 
 // ============================================================
 // 📦 واجهات
@@ -75,7 +54,7 @@ interface ProductOptionsManagerProps {
   externalColorImages?: Record<string, string>;
   sizes?: string[];
   onSizesChange?: (sizes: string[]) => void;
-  isOffer?: boolean; // ✅ جديد: يحدد إذا كان المنتج عرضاً
+  isOffer?: boolean;
 }
 
 export function ProductOptionsManager({ 
@@ -90,8 +69,36 @@ export function ProductOptionsManager({
   externalColorImages = {},
   sizes = [],
   onSizesChange,
-  isOffer = false, // ✅ جديد
+  isOffer = false,
 }: ProductOptionsManagerProps) {
+  const app = useApp();
+  
+  // ✅ دالة ترجمة الخيارات حسب اللغة
+  const getTranslatedOptions = useCallback(() => {
+    const isArabic = app.lang === 'ar';
+    
+    return [
+      { id: 'colors', label: isArabic ? 'الألوان' : 'Colors', icon: Palette, color: '#2a655f', emoji: '🎨', description: isArabic ? 'أضف ألوان المنتج مع صور' : 'Add product colors with images' },
+      { id: 'sizes', label: isArabic ? 'المقاسات' : 'Sizes', icon: Ruler, color: '#2a655f', emoji: '📏', description: isArabic ? 'أضف المقاسات المتوفرة' : 'Add available sizes' },
+      { id: 'models', label: isArabic ? 'النماذج' : 'Models', icon: Box, color: '#2a655f', emoji: '📐', description: isArabic ? 'أضف النماذج المختلفة' : 'Add different models' },
+      { id: 'materials', label: isArabic ? 'المواد' : 'Materials', icon: Droplet, color: '#2a655f', emoji: '🧵', description: isArabic ? 'أضف أنواع المواد' : 'Add material types' },
+      { id: 'fabric', label: isArabic ? 'نوع القماش' : 'Fabric', icon: Shirt, color: '#2a655f', emoji: '👕', description: isArabic ? 'أضف أنواع الأقمشة' : 'Add fabric types' },
+      { id: 'style', label: isArabic ? 'النمط' : 'Style', icon: Sparkles, color: '#2a655f', emoji: '✨', description: isArabic ? 'أضف أنماط التصميم' : 'Add design styles' },
+      { id: 'season', label: isArabic ? 'الموسم' : 'Season', icon: Calendar, color: '#2a655f', emoji: '🌤️', description: isArabic ? 'أضف المواسم' : 'Add seasons' },
+      { id: 'gender', label: isArabic ? 'الجنس' : 'Gender', icon: User, color: '#2a655f', emoji: '👫', description: isArabic ? 'أضف الفئات الجنسية' : 'Add gender categories' },
+      { id: 'brand', label: isArabic ? 'الماركة' : 'Brand', icon: Tag, color: '#2a655f', emoji: '🏷️', description: isArabic ? 'أضف الماركات' : 'Add brands' },
+      { id: 'storage', label: isArabic ? 'سعة التخزين' : 'Storage', icon: HardDrive, color: '#2a655f', emoji: '💾', description: isArabic ? 'أضف سعات التخزين' : 'Add storage capacities' },
+      { id: 'ram', label: isArabic ? 'الذاكرة (RAM)' : 'RAM', icon: Cpu, color: '#2a655f', emoji: '🧠', description: isArabic ? 'أضف سعات الذاكرة' : 'Add RAM capacities' },
+      { id: 'processor', label: isArabic ? 'المعالج' : 'Processor', icon: Cpu, color: '#2a655f', emoji: '⚡', description: isArabic ? 'أضف أنواع المعالجات' : 'Add processor types' },
+      { id: 'battery', label: isArabic ? 'سعة البطارية' : 'Battery', icon: Battery, color: '#2a655f', emoji: '🔋', description: isArabic ? 'أضف سعات البطارية' : 'Add battery capacities' },
+      { id: 'screen_size', label: isArabic ? 'حجم الشاشة' : 'Screen Size', icon: Smartphone, color: '#2a655f', emoji: '📱', description: isArabic ? 'أضف أحجام الشاشات' : 'Add screen sizes' },
+      { id: 'camera', label: isArabic ? 'دقة الكاميرا' : 'Camera', icon: Camera, color: '#2a655f', emoji: '📷', description: isArabic ? 'أضف دقات الكاميرا' : 'Add camera resolutions' },
+      { id: 'connectivity', label: isArabic ? 'الاتصال' : 'Connectivity', icon: Wifi, color: '#2a655f', emoji: '📶', description: isArabic ? 'أضف أنواع الاتصال' : 'Add connectivity types' },
+    ];
+  }, [app.lang]);
+
+  const OPTION_TYPES = getTranslatedOptions();
+
   const [newValue, setNewValue] = useState("");
   const [activeType, setActiveType] = useState<string>("colors");
   const [searchTerm, setSearchTerm] = useState("");
@@ -101,7 +108,6 @@ export function ProductOptionsManager({
   const [editingVariation, setEditingVariation] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(true);
   
-  // ✅ متغيرات التحكم
   const isGeneratingRef = useRef(false);
   const isDeletingRef = useRef(false);
   const lastManualActionRef = useRef<{ type: 'delete' | 'generate' | null; timestamp: number }>({
@@ -113,12 +119,10 @@ export function ProductOptionsManager({
   const [showRestoreButton, setShowRestoreButton] = useState(false);
   const isInitialLoadRef = useRef(true);
 
-  // ✅ دالة مساعدة للتحقق من عدد الخيارات النشطة
   const getActiveOptionsCount = (options: Record<string, string[]>): number => {
     return Object.values(options).filter(arr => arr && arr.length > 0).length;
   };
 
-  // ✅ مزامنة الـ variations مع الـ props
   useEffect(() => {
     console.log("🔍 [ProductOptionsManager] Syncing variations from props:", variations.length);
     if (variations.length > 0) {
@@ -129,12 +133,10 @@ export function ProductOptionsManager({
     }
   }, [variations]);
 
-  // ✅ مزامنة الصور الخارجية
   useEffect(() => {
     setColorImages(externalColorImages);
   }, [externalColorImages]);
 
-  // ✅ إعلام المكون الأب بتغيير الألوان
   const notifyColorsChange = (colors: string[], images: Record<string, string>) => {
     if (onColorsWithImagesChange) {
       const colorData = colors.map(name => ({
@@ -145,7 +147,6 @@ export function ProductOptionsManager({
     }
   };
 
-  // ✅ دالة تسجيل الإجراءات اليدوية
   const recordManualAction = useCallback((type: 'delete' | 'generate') => {
     lastManualActionRef.current = {
       type,
@@ -153,7 +154,6 @@ export function ProductOptionsManager({
     };
   }, []);
 
-  // ✅ دالة التحقق من الإجراء اليدوي
   const isManualAction = useCallback((currentState: Variation[]): boolean => {
     const now = Date.now();
     const timeSinceLastAction = now - lastManualActionRef.current.timestamp;
@@ -169,14 +169,7 @@ export function ProductOptionsManager({
     return false;
   }, []);
 
-  // ============================================================
-  // 🔥🔥🔥 useEffect للتوليد التلقائي المحسن - النسخة النهائية
-  // ============================================================
   useEffect(() => {
-    // ============================================================
-    // 🛡️ 1. منع التوليد في الحالات الاستثنائية
-    // ============================================================
-    
     if (isGeneratingRef.current) {
       console.log('⏳ [Auto-Generate] Generation in progress, skipping...');
       return;
@@ -193,16 +186,11 @@ export function ProductOptionsManager({
       return;
     }
 
-    // ============================================================
-    // ✅ 2. التحقق من عدد الخيارات النشطة
-    // ============================================================
-    
     const activeTypes = Object.keys(value).filter(key => value[key] && value[key].length > 0);
     const activeOptionsCount = activeTypes.length;
     
     console.log(`📊 [Auto-Generate] Active options: ${activeOptionsCount}`, activeTypes);
 
-    // ✅ إذا كان هناك خياران أو أكثر، نسمح بالتوليد
     if (activeOptionsCount >= 2) {
       console.log('🔄 [Auto-Generate] 2+ options active, allowing regeneration...');
     } else {
@@ -216,10 +204,6 @@ export function ProductOptionsManager({
       return;
     }
 
-    // ============================================================
-    // 🎨 3. التحقق من صور الألوان
-    // ============================================================
-    
     if (value.colors && value.colors.length > 0) {
       const colorsWithoutImage = value.colors.filter(c => !colorImages[c]);
       if (colorsWithoutImage.length > 0) {
@@ -234,10 +218,6 @@ export function ProductOptionsManager({
       }
     }
 
-    // ============================================================
-    // ⚙️ 4. توليد التركيبات الجديدة مع الحفاظ على الأسعار للتركيبات الموجودة
-    // ============================================================
-    
     const generatedVariations = generateVariationsAuto(value, colorImages);
     
     if (generatedVariations.length === 0) {
@@ -251,10 +231,7 @@ export function ProductOptionsManager({
       return;
     }
 
-    // ✅✅✅ 🔥🔥🔥 التغيير المهم: الحفاظ على الأسعار القديمة للتركيبات المطابقة
-    // وتعيين is_new = true للتركيبات الجديدة
     const variationsWithDefaults = generatedVariations.map(v => {
-      // 🔍 البحث عن تركيبة مطابقة في التركيبات الحالية
       const existingVariation = localVariations.find(existing => {
         const existingKeys = Object.keys(existing.combination);
         const newKeys = Object.keys(v.combination);
@@ -266,8 +243,6 @@ export function ProductOptionsManager({
         );
       });
       
-      // ✅ إذا وجدت تركيبة مطابقة → استخدم سعرها القديم
-      // ✅ إذا لم توجد (تركيبة جديدة) → السعر = 0 (يطلب من المستخدم إدخاله)
       const isNew = !existingVariation;
       
       return {
@@ -280,10 +255,6 @@ export function ProductOptionsManager({
       };
     });
 
-    // ============================================================
-    // 🔍 5. مقارنة التركيبات الحالية مع الجديدة
-    // ============================================================
-    
     const currentKeys = new Set(
       localVariations.map(v => JSON.stringify(v.combination))
     );
@@ -300,10 +271,6 @@ export function ProductOptionsManager({
       return;
     }
 
-    // ============================================================
-    // 📝 6. عرض رسالة للتركيبات الجديدة
-    // ============================================================
-    
     const hasNewVariations = variationsWithDefaults.some(v => v.is_new);
     if (hasNewVariations) {
       const newVariationsCount = variationsWithDefaults.filter(v => v.is_new).length;
@@ -315,10 +282,6 @@ export function ProductOptionsManager({
       );
     }
 
-    // ============================================================
-    // 🔥 7. إعادة التوليد مع الأسعار المحفوظة
-    // ============================================================
-    
     console.log(`🔄 [Auto-Generate] Regenerating ${variationsWithDefaults.length} variations (was ${localVariations.length})`);
     console.log('📊 [Auto-Generate] Active options:', activeTypes);
     console.log('📊 [Auto-Generate] New variations:', variationsWithDefaults.filter(v => v.is_new).length);
@@ -336,7 +299,6 @@ export function ProductOptionsManager({
     
   }, [value, colorImages, localVariations, onVariationsChange]);
 
-  // ✅ ✅ ✅ دالة توليد التركيبات التلقائية
   const generateVariationsAuto = (
     currentValue: Record<string, string[]>, 
     currentColorImages: Record<string, string>
@@ -392,7 +354,6 @@ export function ProductOptionsManager({
     return allVariations;
   };
 
-  // ✅ ✅ ✅ توليد التركيبات يدوياً (يستخدم للزر)
   const generateVariations = useCallback(() => {
     const activeTypes: Record<string, string[]> = {};
     Object.keys(value).forEach(key => {
@@ -480,7 +441,6 @@ export function ProductOptionsManager({
     }
   }, [value, colorImages, lang, onVariationsChange, recordManualAction]);
 
-  // ✅ ✅ ✅ حذف جميع التركيبات - مع نسخ احتياطي
   const removeAllVariations = useCallback(() => {
     if (localVariations.length > 0) {
       setDeletedVariationsBackup(localVariations);
@@ -513,7 +473,6 @@ export function ProductOptionsManager({
     }, 600);
   }, [localVariations, lang, onVariationsChange, recordManualAction]);
 
-  // ✅ ✅ ✅ استعادة التركيبات المحذوفة
   const restoreVariations = useCallback(() => {
     if (deletedVariationsBackup.length === 0) {
       toast.info(lang === "ar" ? "💡 لا توجد تركيبات لاستعادتها" : "💡 No variations to restore");
@@ -535,7 +494,6 @@ export function ProductOptionsManager({
     );
   }, [deletedVariationsBackup, lang, onVariationsChange]);
 
-  // ✅ إضافة خيار
   const addOption = (type: string, imageUrl?: string) => {
     const val = newValue.trim();
     if (!val) {
@@ -578,7 +536,6 @@ export function ProductOptionsManager({
     return true;
   };
 
-  // ✅ حذف خيار
   const removeOption = (type: string, option: string) => {
     console.log(`🗑️ [removeOption] Removing "${option}" from "${type}"`);
     
@@ -600,7 +557,6 @@ export function ProductOptionsManager({
     toast.info(lang === "ar" ? `🗑️ تم حذف "${option}"` : `🗑️ Deleted "${option}"`);
   };
 
-  // ✅ حذف جميع الخيارات من نوع معين
   const removeAll = (type: string) => {
     console.log(`🗑️ [removeAll] Removing all from "${type}"`);
     
@@ -619,7 +575,6 @@ export function ProductOptionsManager({
     toast.info(lang === "ar" ? "🗑️ تم حذف الكل" : "🗑️ Deleted all");
   };
 
-  // ✅ تبديل حالة التركيبة
   const toggleVariationAvailability = (variationId: string) => {
     const updated = localVariations.map(v => 
       v.id === variationId ? { ...v, is_available: !v.is_available } : v
@@ -630,7 +585,6 @@ export function ProductOptionsManager({
     }
   };
 
-  // ✅ حذف تركيبة
   const removeVariation = (variationId: string) => {
     const updated = localVariations.filter(v => v.id !== variationId);
     setLocalVariations(updated);
@@ -640,7 +594,6 @@ export function ProductOptionsManager({
     toast.success(lang === "ar" ? "✅ تم حذف التركيبة" : "✅ Variation deleted");
   };
 
-  // ✅ حساب الإحصائيات
   const totalOptions = Object.values(value).reduce((acc, arr) => acc + arr.length, 0);
   const availableVariations = localVariations.filter(v => v.is_available).length;
   const unavailableVariations = localVariations.filter(v => !v.is_available).length;
@@ -659,7 +612,6 @@ export function ProductOptionsManager({
 
   return (
     <div className="space-y-6">
-      {/* ===== كارد المساعدة ===== */}
       {showHelp && (
         <div className="relative overflow-hidden rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 p-5 animate-in fade-in slide-in-from-top-5 duration-300">
           <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#2a655f]/5 blur-3xl" />
@@ -718,7 +670,6 @@ export function ProductOptionsManager({
         </div>
       )}
 
-      {/* ===== Header ===== */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white shadow-lg shadow-[#2a655f]/20 animate-pulse">
@@ -728,28 +679,25 @@ export function ProductOptionsManager({
             <h4 className="text-lg font-semibold text-slate-900 dark:text-white">
               {lang === "ar" ? "خيارات المنتج" : "Product Options"}
             </h4>
-           <div
-  className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap"
-  data-tsd-source="/src/components/dashboard/ProductOptionsManager.tsx:724:13"
->
-  <span>{lang === "ar" ? `${totalOptions} خيار` : `${totalOptions} options`}</span>
-  {localVariations.length > 0 && (
-    <>
-      <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-      <span className="text-emerald-600 dark:text-emerald-400">
-        ✅ {availableVariations} / {localVariations.length} {lang === "ar" ? "تركيبة" : "variations"}
-      </span>
-    </>
-  )}
-  {newVariationsCount > 0 && (
-    <>
-      <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-      <Badge className="bg-yellow-500 text-white border-0 text-[10px] animate-pulse">
-        🆕 {newVariationsCount} {lang === "ar" ? "جديد" : "new"}
-      </Badge>
-    </>
-  )}
-</div>
+            <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+              <span>{lang === "ar" ? `${totalOptions} خيار` : `${totalOptions} options`}</span>
+              {localVariations.length > 0 && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                  <span className="text-emerald-600 dark:text-emerald-400">
+                    ✅ {availableVariations} / {localVariations.length} {lang === "ar" ? "تركيبة" : "variations"}
+                  </span>
+                </>
+              )}
+              {newVariationsCount > 0 && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                  <Badge className="bg-yellow-500 text-white border-0 text-[10px] animate-pulse">
+                    🆕 {newVariationsCount} {lang === "ar" ? "جديد" : "new"}
+                  </Badge>
+                </>
+              )}
+            </div>
           </div>
         </div>
         {!readOnly && localVariations.length > 0 && (
@@ -778,7 +726,6 @@ export function ProductOptionsManager({
         )}
       </div>
 
-      {/* ===== Search ===== */}
       <div className="relative group">
         <input
           type="text"
@@ -797,7 +744,6 @@ export function ProductOptionsManager({
         )}
       </div>
 
-      {/* ===== Types Grid ===== */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 max-h-[300px] overflow-y-auto p-1">
         {filteredTypes.map((type) => {
           const count = value[type.id]?.length || 0;
@@ -831,7 +777,6 @@ export function ProductOptionsManager({
         })}
       </div>
 
-      {/* ===== Active Option Type ===== */}
       {activeType && !readOnly && (
         <div className="rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4 bg-gradient-to-r from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10">
           <div className="flex items-center justify-between mb-3">
@@ -864,7 +809,6 @@ export function ProductOptionsManager({
             )}
           </div>
 
-          {/* ===== Existing Options Display ===== */}
           {activeType === 'colors' && colorList.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {colorList.map(({ name, image }) => (
@@ -902,7 +846,6 @@ export function ProductOptionsManager({
             </div>
           )}
 
-          {/* ===== Add New Option ===== */}
           <div className="flex flex-wrap gap-2">
             <div className="flex-1 min-w-[150px]">
               <Input
@@ -977,7 +920,6 @@ export function ProductOptionsManager({
             </Button>
           </div>
 
-          {/* ===== رسالة توجيهية ===== */}
           {value[activeType]?.length === 0 && (
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1 animate-pulse">
               <Info className="h-3 w-3 text-[#2a655f]" />
@@ -989,10 +931,8 @@ export function ProductOptionsManager({
         </div>
       )}
 
-      {/* ===== Variations Section ===== */}
       {!readOnly && (
         <div className="space-y-4">
-          {/* ✅ مؤشر التوليد التلقائي */}
           {Object.keys(value).filter(key => value[key] && value[key].length > 0).length >= 2 && (
             <div className="rounded-xl border-2 border-emerald-200/50 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-3">
               <p className="text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
@@ -1004,7 +944,6 @@ export function ProductOptionsManager({
             </div>
           )}
 
-          {/* ✅ زر توليد يدوي (اختياري) */}
           {Object.keys(value).filter(key => value[key] && value[key].length > 0).length >= 2 && (
             <div className="flex items-center gap-2">
               <Button
@@ -1018,7 +957,6 @@ export function ProductOptionsManager({
             </div>
           )}
 
-          {/* ===== رسالة توجيهية للتوليد ===== */}
           {Object.keys(value).filter(key => value[key] && value[key].length > 0).length < 2 && (
             <div className="rounded-xl border-2 border-yellow-200/50 dark:border-yellow-800/30 bg-yellow-50/50 dark:bg-yellow-950/20 p-3 animate-pulse">
               <p className="text-xs text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
@@ -1075,7 +1013,6 @@ export function ProductOptionsManager({
                 </div>
               </div>
 
-              {/* ===== ✅ عرض التركيبات مع تمييز الجديدة ===== */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
                 {localVariations.map((variation) => {
                   const isAvailable = variation.is_available;
@@ -1131,10 +1068,8 @@ export function ProductOptionsManager({
                         </div>
                       </div>
                       
-                      {/* ✅ حقول الأسعار لكل تركيبة */}
                       <div className="flex flex-col gap-1.5 mt-1.5 pt-1.5 border-t border-slate-200/50 dark:border-slate-700/50">
                         
-                        {/* ✅ السعر (للمنتج العادي) أو السعر الجديد (للعرض) */}
                         <div className="flex items-center gap-2">
                           <div className="flex-1 flex items-center gap-1">
                             <span className="text-[10px] text-muted-foreground whitespace-nowrap">
@@ -1145,37 +1080,36 @@ export function ProductOptionsManager({
                               <span className="text-red-500">*</span>
                             </span>
                             <Input
-  type="number"
-  min="1"
-  step="1"
-  value={variation.price !== undefined && variation.price !== null && variation.price > 0 ? variation.price : ''}
-  onChange={(e) => {
-    const val = e.target.value;
-    const newPrice = val === '' ? 0 : Number(val);
-    const updated = localVariations.map(v => 
-      v.id === variation.id ? { ...v, price: newPrice, is_new: false } : v
-    );
-    setLocalVariations(updated);
-    if (onVariationsChange) {
-      onVariationsChange(updated);
-    }
-  }}
-  onMouseDown={(e) => e.stopPropagation()}  // ✅ أضف هذا
-  onKeyDown={(e) => e.stopPropagation()}    // ✅ أضف هذا
-  onClick={(e) => e.stopPropagation()}
-  className={cn(
-    "h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300",
-    (!variation.price || variation.price <= 0) && isNew
-      ? "border-red-500 dark:border-red-500 bg-red-50/50 dark:bg-red-950/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
-      : (!variation.price || variation.price <= 0)
-      ? "border-red-300 dark:border-red-800 focus:border-red-500"
-      : "border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
-  )}
-  placeholder={lang === "ar" ? "مطلوب" : "Required"}
-/>
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={variation.price !== undefined && variation.price !== null && variation.price > 0 ? variation.price : ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const newPrice = val === '' ? 0 : Number(val);
+                                const updated = localVariations.map(v => 
+                                  v.id === variation.id ? { ...v, price: newPrice, is_new: false } : v
+                                );
+                                setLocalVariations(updated);
+                                if (onVariationsChange) {
+                                  onVariationsChange(updated);
+                                }
+                              }}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => e.stopPropagation()}
+                              onClick={(e) => e.stopPropagation()}
+                              className={cn(
+                                "h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300",
+                                (!variation.price || variation.price <= 0) && isNew
+                                  ? "border-red-500 dark:border-red-500 bg-red-50/50 dark:bg-red-950/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                  : (!variation.price || variation.price <= 0)
+                                  ? "border-red-300 dark:border-red-800 focus:border-red-500"
+                                  : "border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
+                              )}
+                              placeholder={lang === "ar" ? "مطلوب" : "Required"}
+                            />
                           </div>
                           
-                          {/* ✅ عرض السعر */}
                           {variation.price && variation.price > 0 ? (
                             <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                               {variation.price} ل.س
@@ -1187,38 +1121,36 @@ export function ProductOptionsManager({
                           )}
                         </div>
 
-                        {/* ✅ السعر القديم (يظهر فقط للعروض) */}
                         {isOffer && (
                           <div className="flex items-center gap-2">
                             <div className="flex-1 flex items-center gap-1">
                               <span className="text-[10px] text-muted-foreground whitespace-nowrap line-through">
                                 {lang === "ar" ? "📌 السعر القديم:" : "📌 Old Price:"}
                               </span>
-                         <Input
-  type="number"
-  min="0"
-  step="1"
-  value={variation.old_price !== undefined && variation.old_price !== null && variation.old_price > 0 ? variation.old_price : ''}
-  onChange={(e) => {
-    const val = e.target.value;
-    const oldPrice = val === '' ? 0 : Number(val);
-    const updated = localVariations.map(v => 
-      v.id === variation.id ? { ...v, old_price: oldPrice } : v
-    );
-    setLocalVariations(updated);
-    if (onVariationsChange) {
-      onVariationsChange(updated);
-    }
-  }}
-  onMouseDown={(e) => e.stopPropagation()}  // ✅ أضف هذا
-  onKeyDown={(e) => e.stopPropagation()}    // ✅ أضف هذا
-  onClick={(e) => e.stopPropagation()}
-  className="h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
-  placeholder={lang === "ar" ? "اختياري" : "Optional"}
-/>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={variation.old_price !== undefined && variation.old_price !== null && variation.old_price > 0 ? variation.old_price : ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const oldPrice = val === '' ? 0 : Number(val);
+                                  const updated = localVariations.map(v => 
+                                    v.id === variation.id ? { ...v, old_price: oldPrice } : v
+                                  );
+                                  setLocalVariations(updated);
+                                  if (onVariationsChange) {
+                                    onVariationsChange(updated);
+                                  }
+                                }}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
+                                placeholder={lang === "ar" ? "اختياري" : "Optional"}
+                              />
                             </div>
                             
-                            {/* ✅ عرض السعر القديم */}
                             {variation.old_price && variation.old_price > 0 ? (
                               <span className="text-[10px] font-medium text-red-400 line-through whitespace-nowrap">
                                 {variation.old_price} ل.س

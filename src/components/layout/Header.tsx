@@ -178,10 +178,10 @@ function MegaMenu({ categories }: { categories: any[] }) {
         }
       `}</style>
 
-      <button
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-[#2a655f]/15 transition-all duration-300 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 border border-[#2a655f]/30 dark:border-[#2a655f]/40 group shadow-sm hover:shadow-md hover:shadow-[#2a655f]/20 cursor-pointer"
-        onClick={() => setIsOpen(!isOpen)}
-      >
+    <button
+  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-pink-500/10 transition-all duration-300 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 group shadow-sm hover:shadow-md hover:shadow-pink-500/20 cursor-pointer"
+  onClick={() => setIsOpen(!isOpen)}
+>
         <LayoutGrid className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
         <span className="hidden md:inline font-semibold text-[#2a655f] dark:text-[#3a8a82]">{t("categories")}</span>
         <ChevronDown className={`h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
@@ -649,9 +649,9 @@ export const Header = memo(function Header() {
             <SheetTrigger asChild>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="md:hidden h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition shrink-0">
-                    <Menu className="h-4.5 w-4.5" />
-                  </Button>
+<Button variant="ghost" size="icon" className="md:hidden h-9 w-9 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 hover:bg-pink-500/10 transition shrink-0">
+  <Menu className="h-4.5 w-4.5" />
+</Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
                   <p>{app.lang === "ar" ? "القائمة" : "Menu"}</p>
@@ -782,7 +782,7 @@ export const Header = memo(function Header() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="h-10 gap-1 shrink-0 min-w-[100px] rounded-xl border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 hover:border-pink-400/50 transition group text-sm px-3">
+                    <Button variant="outline" className="h-10 gap-1 shrink-0 min-w-[100px] rounded-xl border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 hover:bg-pink-500/10 transition group text-sm px-3">
                       <MapPin className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
                       <span className="text-xs max-w-[70px] truncate">
                         {gov === "all"
@@ -851,7 +851,7 @@ export const Header = memo(function Header() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-pink-400/50 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 flex items-center justify-center group relative">
+                <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 hover:bg-pink-500/10 transition-all duration-300 flex items-center justify-center group relative">
                   <MapPin className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
                   {gov !== "all" && (
                     <span className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full bg-pink-500 ring-2 ring-background animate-pulse" />
@@ -1663,193 +1663,7 @@ export const Header = memo(function Header() {
           </DropdownMenu>
         </div>
 
-     {/* ✅ Category Strip - بوردر وردي */}
-<div className="relative border-t-2 border-pink-400/50 bg-gradient-to-r from-[#173d38] via-[#2a655f] to-[#173d38] backdrop-blur-md overflow-hidden py-3 shadow-2xl">
-  
-  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-200/20 via-transparent to-transparent animate-pulse pointer-events-none" />
-  
-  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-pink-200 to-transparent shadow-[0_0_12px_rgba(244,114,182,0.6)]" />
 
-  <style>{`
-    @keyframes marquee-scroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    .marquee-track {
-      display: flex;
-      width: max-content;
-      animation: marquee-scroll 180s linear infinite;
-      will-change: transform;
-    }
-    .marquee-track.paused {
-      animation-play-state: paused !important;
-    }
-    
-    @keyframes shimmerAnimation {
-      100% { transform: translateX(200%); }
-    }
-    .animate-shimmer {
-      animation: shimmerAnimation 2s infinite;
-    }
-
-    @keyframes offer-icon-dance {
-      0%, 100% { transform: scale(1) rotate(0deg); }
-      25% { transform: scale(1.25) rotate(-10deg); }
-      50% { transform: scale(1.1) rotate(10deg); }
-      75% { transform: scale(1.25) rotate(-5deg); }
-    }
-    .offer-icon-special {
-      animation: offer-icon-dance 1.2s ease-in-out infinite;
-    }
-
-    @keyframes float-icon {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-4px) rotate(2deg); }
-    }
-    .float-icon {
-      animation: float-icon 3s ease-in-out infinite;
-    }
-
-    .category-scrollbar::-webkit-scrollbar {
-      height: 4px;
-    }
-    .category-scrollbar::-webkit-scrollbar-track {
-      background: rgba(42, 101, 95, 0.2);
-      border-radius: 10px;
-      margin: 0 16px;
-    }
-    .category-scrollbar::-webkit-scrollbar-thumb {
-      background: #f9a8d4;
-      border-radius: 10px;
-    }
-    .category-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #fbcfe8;
-    }
-    @keyframes pulse-slow {
-      0%, 100% { 
-        transform: scale(1);
-        box-shadow: 0 0 10px rgba(236,72,153,0.2);
-      }
-      50% { 
-        transform: scale(1.02);
-        box-shadow: 0 0 25px rgba(236,72,153,0.4);
-      }
-    }
-    .animate-pulse-slow {
-      animation: pulse-slow 2s ease-in-out infinite;
-    }
-    
-    @keyframes float-bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-3px); }
-    }
-    .animate-float-bounce {
-      animation: float-bounce 1.5s ease-in-out infinite;
-    }
-  `}</style>
-
-  <div 
-    className="mx-auto max-w-7xl px-4 overflow-x-auto category-scrollbar select-none pb-2" 
-    dir="ltr"
-    onMouseEnter={(e) => {
-      const trackElem = e.currentTarget.querySelector(".marquee-track");
-      if (trackElem) trackElem.classList.add("paused");
-    }}
-    onMouseLeave={(e) => {
-      const trackElem = e.currentTarget.querySelector(".marquee-track");
-      if (trackElem) trackElem.classList.remove("paused");
-    }}
-  >
-    
-    <div className="marquee-track gap-3 py-1.5">
-      
-      {[...categories, ...categories].map((c: any, index: number) => {
-        const Icon = getCategoryIcon(c.icon);
-        const totalCategories = categories.length;
-        const originalIndex = index % totalCategories;
-        const isRtl = app.lang === "ar";
-        
-        const isOffer = c.slug === "offers" || c.slug === "deals" || c.name_ar?.includes("عروض") || c.name_en?.toLowerCase().includes("offers") || c.name_en?.toLowerCase().includes("deals");
-        
-        if (isOffer) {
-          return (
-            <Link
-              key={`${c.id}-${index}`}
-              to="/category/$slug"
-              params={{ slug: c.slug }}
-              className="group relative shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl font-bold text-xs transition-all duration-300 bg-gradient-to-r from-pink-100 via-pink-200 to-pink-300 text-pink-800 shadow-[0_0_35px_rgba(216,27,96,0.2)] hover:shadow-[0_0_55px_rgba(194,24,91,0.35)] hover:scale-105 hover:-translate-y-1 cursor-pointer overflow-hidden border-3 border-[#d81b60]/60 hover:border-[#c2185b] animate-pulse"
-            >
-              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/70 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
-              
-              <div className="relative flex items-center justify-center h-8 w-8 rounded-full bg-pink-300/30 border-2 border-pink-300 shadow-lg overflow-hidden offer-icon-special">
-                {c.image_url ? (
-                  <OptimizedImage
-                    src={c.image_url}
-                    alt={isRtl ? c.name_ar : (c.name_en || c.name_ar)}
-                    width={32}
-                    height={32}
-                    quality={80}
-                    objectFit="cover"
-                    className="h-full w-full object-cover rounded-full"
-                  />
-                ) : (
-                  <Icon className="h-4 w-4 text-pink-600" />
-                )}
-              </div>
-
-              <div className="flex flex-col relative z-10">
-                <span className="whitespace-nowrap font-black text-sm tracking-wide text-pink-800 drop-shadow-md" dir={isRtl ? "rtl" : "ltr"}>
-                  {isRtl ? c.name_ar : (c.name_en || c.name_ar)}
-                </span>
-                <span className="text-[9px] text-pink-500 font-extrabold uppercase tracking-widest animate-bounce">
-                  {isRtl ? "🌸 عروض رائعة" : "🌸 SPECIAL OFFERS"}
-                </span>
-              </div>
-
-              <span className="relative z-10 ml-2 text-[9px] uppercase bg-white text-pink-500 px-2.5 py-1 rounded-full font-black tracking-wider shadow-lg border border-pink-200 animate-bounce">
-                {isRtl ? "💕 تخفيضات" : "💕 SALE"}
-              </span>
-            </Link>
-          );
-        }
-        
-        return (
-          <Link
-            key={`${c.id}-${index}`}
-            to="/category/$slug"
-            params={{ slug: c.slug }}
-            className="group relative shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl font-medium text-xs transition-all duration-300 bg-white/10 hover:bg-pink-500/20 text-white shadow-lg border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 hover:scale-105 hover:-translate-y-0.5 cursor-pointer backdrop-blur-sm"
-          >
-            <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
-            
-            <div className="relative flex items-center justify-center h-7 w-7 rounded-full bg-black/30 border border-white/25 shadow-inner overflow-hidden group-hover:scale-110 transition-transform float-icon">
-              {c.image_url ? (
-                <OptimizedImage
-                  src={c.image_url}
-                  alt={isRtl ? c.name_ar : (c.name_en || c.name_ar)}
-                  width={28}
-                  height={28}
-                  quality={80}
-                  objectFit="cover"
-                  className="h-full w-full object-cover rounded-full"
-                />
-              ) : (
-                <Icon className="h-3.5 w-3.5 text-emerald-300 group-hover:text-white transition-colors" />
-              )}
-            </div>
-            
-            <span className="whitespace-nowrap font-semibold tracking-wide text-white/95 group-hover:text-white" dir={isRtl ? "rtl" : "ltr"}>
-              {isRtl ? c.name_ar : (c.name_en || c.name_ar)}
-            </span>
-            
-            <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-pink-400 shadow-[0_0_6px_rgba(244,114,182,1)]" />
-          </Link>
-        );
-      })}
-      
-    </div>
-  </div>
-</div>
       </header>
     </TooltipProvider>
   );

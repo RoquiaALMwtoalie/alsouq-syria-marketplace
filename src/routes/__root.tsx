@@ -944,38 +944,63 @@ const checkAuthorization = useCallback(async () => {
     // ============================================================
     // ✅ المسارات العامة
     // ============================================================
-    const publicPaths = [
-      "/",
-      "/auth",
-      "/auth/login",
-      "/auth/register",
-      "/reset-password",
-      "/products",
-      "/categories",
-      "/search",
-      "/voice-search",
-      "/listing",
-      "/offer",
-      "/cart",
-      "/orders",
-      "/tracking",
-      "/contact",
-      "/about",
-      "/terms",
-      "/privacy",
-    ];
+  // ============================================================
+// ✅ صفحات المصادقة (مسموحة للجميع - مشتري، بائع، موزع، شركة توصيل، أدمن)
+// ============================================================
+const isAuthPath = 
+  pathname.startsWith("/auth") || 
+  pathname.startsWith("/reset-password");
 
-    const isPublicPath = publicPaths.some(path => 
-      pathname === path || pathname.startsWith(path + '/')
-    );
+if (isAuthPath) {
+  console.log('✅ [RouteGuard] Auth path, access granted for all:', pathname);
+  setLoading(false);
+  setIsAuthorized(true);
+  return;
+}
 
-    if (isPublicPath) {
-      console.log('✅ [RouteGuard] Public path, access granted:', pathname);
-      setLoading(false);
-      setIsAuthorized(true);
-      return;
-    }
+// ============================================================
+// ✅ المسارات العامة (مسموحة للمشتري والبائع والأدمن، ممنوعة للموزع وشركة التوصيل)
+// ============================================================
+const publicPaths = [
+  "/",
+  "/products",
+  "/categories",
+  "/search",
+  "/voice-search",
+  "/listing",
+  "/offer",
+  "/cart",
+  "/orders",
+  "/tracking",
+  "/contact",
+  "/about",
+  "/terms",
+  "/privacy",
+  "/checkout",
+  "/payment",
+  "/wishlist",
+  "/profile",
+  "/settings",
+];
 
+const isPublicPath = publicPaths.some(path => 
+  pathname === path || pathname.startsWith(path + '/')
+);
+
+if (isPublicPath) {
+  // ❌ منع الموزع وشركة التوصيل
+  if (isDistributor || isDeliveryCompany) {
+    console.log('🚫 [RouteGuard] Blocked: public path for distributor/delivery:', pathname);
+    redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
+    return;
+  }
+  
+  // ✅ السماح للمشتري والبائع والأدمن
+  console.log('✅ [RouteGuard] Public path, access granted:', pathname);
+  setLoading(false);
+  setIsAuthorized(true);
+  return;
+}
     // ============================================================
     // ✅ المسارات الخاصة بالمسؤول (Admin)
     // ============================================================
@@ -1628,7 +1653,7 @@ useEffect(() => {
       
       <ClientOnly>
         <div className="min-h-screen flex flex-col">
-          {!hideChrome && <AnnouncementBar />}
+       
           {!hideChrome && <Header />}
           <main className="flex-1"><Outlet /></main>
           {!hideChrome && <Footer />}

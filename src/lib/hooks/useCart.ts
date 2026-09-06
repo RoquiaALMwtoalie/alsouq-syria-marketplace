@@ -911,7 +911,7 @@ export function useAddToCart() {
       const insertData: any = {
         cart_id: cartId,
         listing_id: listingId,
-        quantity: 1,
+       quantity: quantity,
         price: finalPrice,
         price_usd: listing.price_usd,
         currency: listing.currency || 'SYP',
