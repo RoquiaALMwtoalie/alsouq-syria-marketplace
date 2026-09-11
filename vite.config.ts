@@ -1,54 +1,66 @@
-// vite.config.ts - إعداد مباشر بدون Lovable wrapper
-import { defineConfig } from "vite";
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import tsconfigPaths from "vite-tsconfig-paths";
-import tailwindcss from "@tailwindcss/vite";
-import viteReact from "@vitejs/plugin-react";
+// vite.config.ts - مع تحسينات إضافية
+import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
-  plugins: [
-    tsconfigPaths(),
-    tailwindcss(),
-    tanstackStart({
-      // ✅ الهدف الصحيح لـ Cloudflare Pages
-      target: "cloudflare-pages",
-      server: { entry: "server" },
-    }),
-    viteReact(),
-  ],
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id: string) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) return 'vendor';
-            if (id.includes('lucide-react')) return 'lucide';
-            if (id.includes('@radix-ui')) return 'ui';
-            if (id.includes('@supabase/supabase-js')) return 'supabase';
-            return 'vendor';
-          }
-          return null;
+  tanstackStart: {
+    server: { entry: "server" },
+  },
+  // ✅ إضافة تحسينات الأداء
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          // ✅ ✅ ✅ تحويل manualChunks من Object إلى Function
+          manualChunks(id: string) {
+            // ✅ فصل المكتبات الكبيرة
+            if (id.includes('node_modules')) {
+              // ✅ React + React DOM
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'vendor';
+              }
+              // ✅ Lucide React
+              if (id.includes('lucide-react')) {
+                return 'lucide';
+              }
+              // ✅ Radix UI
+              if (id.includes('@radix-ui')) {
+                return 'ui';
+              }
+              // ✅ Supabase
+              if (id.includes('@supabase/supabase-js')) {
+                return 'supabase';
+              }
+              // ✅ باقي الـ node_modules
+              return 'vendor';
+            }
+            // ✅ إذا كان الملف مش من node_modules
+            return null;
+          },
         },
       },
+      // ✅ تصغير الحجم
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+        },
+      },
+      // ✅ تحسين الـ Chunks
+      chunkSizeWarningLimit: 500,
     },
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
+    // ✅ تحسين الـ Server
+    server: {
+      warmup: {
+        clientFiles: [
+          './src/router.tsx',
+          './src/routeTree.gen.ts',
+        ],
       },
     },
-    chunkSizeWarningLimit: 500,
-  },
-  server: {
-    warmup: {
-      clientFiles: [
-        './src/router.tsx',
-        './src/routeTree.gen.ts',
-      ],
+    // ✅ تحسين الـ CSS
+    css: {
+      devSourcemap: true,
     },
-  },
-  css: {
-    devSourcemap: true,
   },
 });
