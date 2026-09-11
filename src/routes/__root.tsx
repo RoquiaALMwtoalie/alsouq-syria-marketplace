@@ -382,7 +382,7 @@ function NotificationsProvider() {
           .from('notifications')
           .update({ is_read: true })
           .eq('id', notification.id)
-         .eq('user_id', app.user!.id)
+          .eq('user_id', app.user!.id);
         
         if (error) throw error;
         await refetchNotifications();
@@ -404,7 +404,7 @@ function NotificationsProvider() {
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId)
-      .eq('user_id', app.user!.id)
+        .eq('user_id', app.user!.id);
       
       if (error) throw error;
       await refetchNotifications();
@@ -420,7 +420,7 @@ function NotificationsProvider() {
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
-       .eq('user_id', app.user!.id)
+        .eq('user_id', app.user!.id)
         .eq('is_read', false);
       
       if (error) throw error;
@@ -1322,6 +1322,12 @@ function RootContent({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const router = useRouter(); // ✅ أضف هذا
+  
+  // ============================================================
+  // ✅ ✅ ✅ Flag للتحكم في LoginSplash (معطّل حالياً)
+  // ============================================================
+  const ENABLE_LOGIN_SPLASH = false; // ← غيّرها لـ true لتفعيل السبلاش
+  
   const [showSplash, setShowSplash] = useState(false);
   const notificationChannelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
@@ -1616,11 +1622,20 @@ function RootContent({
     };
   }, [app.user, queryClient]);
   
-  // ✅ إظهار السبلاش
-// ✅ ⚠️ السبلاش معطّل مؤقتاً
-useEffect(() => {
-  setShowSplash(false); // ✅ دائماً false
-}, []);[app?.user?.id]);
+  // ✅ إظهار السبلاش - معطّل حالياً عبر Flag
+  useEffect(() => {
+    // ⚠️ السبلاش معطّل حالياً - لن يظهر
+    if (!ENABLE_LOGIN_SPLASH) {
+      setShowSplash(false);
+      return;
+    }
+    
+    if (!app?.user) {
+      setShowSplash(false);
+      return;
+    }
+    setShowSplash(true);
+  }, [app?.user?.id]);
 
   const handleSplashComplete = () => {
     setShowSplash(false);
