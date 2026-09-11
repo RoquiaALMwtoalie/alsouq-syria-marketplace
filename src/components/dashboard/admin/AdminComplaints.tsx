@@ -1,3 +1,5 @@
+// src/components/dashboard/admin/AdminComplaints.tsx
+
 import React, { useState, useMemo, useCallback } from "react";
 import { useApp } from "@/lib/i18n";
 import { useAllComplaints, useUpdateComplaint } from "@/lib/queries";
@@ -25,6 +27,7 @@ import {
   FileSpreadsheet,
   FileText,
   X,
+  Activity,  // ✅ ✅ ✅ أضف هذا السطر
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -52,7 +55,7 @@ const COLORS = {
 };
 
 // ============================================================
-// ✅ مكون إحصائيات سريعة - خلفية وردية وبوردر وردي
+// ✅ مكون إحصائيات سريعة - خلفية بيضاء وبوردر زهري
 // ============================================================
 const StatsCards = React.memo(({ stats, isArabic }: { stats: any; isArabic: boolean }) => {
   const items = useMemo(() => [
@@ -62,6 +65,7 @@ const StatsCards = React.memo(({ stats, isArabic }: { stats: any; isArabic: bool
       value: stats.total, 
       icon: AlertTriangle,
       color: 'text-[#2a655f]',
+      gradient: 'from-[#2a655f] to-[#f9a8d4]',
     },
     { 
       key: 'pending', 
@@ -69,6 +73,7 @@ const StatsCards = React.memo(({ stats, isArabic }: { stats: any; isArabic: bool
       value: stats.pending, 
       icon: Clock,
       color: 'text-amber-500',
+      gradient: 'from-amber-500 to-amber-600',
     },
     { 
       key: 'inProgress', 
@@ -76,6 +81,7 @@ const StatsCards = React.memo(({ stats, isArabic }: { stats: any; isArabic: bool
       value: stats.inProgress, 
       icon: Loader2,
       color: 'text-[#3a8a82]',
+      gradient: 'from-[#3a8a82] to-[#4a9f95]',
     },
     { 
       key: 'resolved', 
@@ -83,6 +89,7 @@ const StatsCards = React.memo(({ stats, isArabic }: { stats: any; isArabic: bool
       value: stats.resolved, 
       icon: CheckCircle2,
       color: 'text-emerald-500',
+      gradient: 'from-emerald-500 to-teal-500',
     },
     { 
       key: 'closed', 
@@ -90,6 +97,7 @@ const StatsCards = React.memo(({ stats, isArabic }: { stats: any; isArabic: bool
       value: stats.closed, 
       icon: XCircle,
       color: 'text-[#f9a8d4]',
+      gradient: 'from-[#f9a8d4] to-[#fbcfe8]',
     },
   ], [stats, isArabic]);
 
@@ -98,27 +106,31 @@ const StatsCards = React.memo(({ stats, isArabic }: { stats: any; isArabic: bool
       {items.map((item) => (
         <div 
           key={item.key} 
-          className="group relative bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
+          className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 shadow-sm hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative p-4"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="absolute -top-8 -right-8 h-16 w-16 rounded-full bg-[#fbcfe8]/60 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="relative flex items-center justify-between p-3">
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+            <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" />
+          </div>
+          <div className="flex items-center justify-between relative">
             <div>
-              <p className="text-[10px] font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">
-                {item.label}
-              </p>
-              <p className={`text-xl font-bold mt-0.5 ${item.color} group-hover:scale-110 transition-transform duration-300`}>
-                {item.value}
-              </p>
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{item.label}</p>
+              <p className={`text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors ${item.color}`}>{item.value}</p>
               <p className="text-[9px] text-slate-500 dark:text-slate-400">
                 {stats.total > 0 ? `${Math.round((item.value / stats.total) * 100)}%` : '0%'}
               </p>
             </div>
-            <div className={`h-9 w-9 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
-              <item.icon className={`h-4 w-4 ${item.color}`} />
+            <div className="h-10 w-10 rounded-xl bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+              <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center`}>
+                <item.icon className="h-3.5 w-3.5 text-white" />
+              </div>
             </div>
           </div>
-          <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
+          <div className="mt-2 h-0.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+            <div 
+              className={`h-full rounded-full bg-gradient-to-r ${item.gradient} transition-all duration-1000 animate-shimmer`} 
+              style={{ width: `${Math.min(100, (item.value / (stats.total || 1)) * 100)}%` }}
+            />
+          </div>
         </div>
       ))}
     </div>
@@ -127,7 +139,7 @@ const StatsCards = React.memo(({ stats, isArabic }: { stats: any; isArabic: bool
 StatsCards.displayName = 'StatsCards';
 
 // ============================================================
-// ✅ مكون صف الشكوى - مثل CustomersPage
+// ✅ مكون صف الشكوى
 // ============================================================
 const ComplaintRow = React.memo(({ 
   complaint, 
@@ -149,18 +161,18 @@ const ComplaintRow = React.memo(({
   
   return (
     <TableRow 
-      className="border-slate-100 dark:border-slate-800 hover:bg-[#f9a8d4]/15 dark:hover:bg-[#f9a8d4]/10 transition-colors duration-300 group border-b-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10 cursor-pointer"
+      className="border-slate-200 dark:border-slate-700 hover:bg-[#f9a8d4]/15 dark:hover:bg-[#f9a8d4]/10 transition-colors duration-300 group border-b-2 border-pink-400/30 dark:border-pink-400/20 cursor-pointer"
       onClick={() => onToggle(complaint.id)}
     >
       {/* ✅ الترتيب */}
-      <TableCell className="text-center">
+      <TableCell className="text-center border-r-2 border-pink-400/30 dark:border-pink-400/20">
         <span className={`inline-flex items-center justify-center h-8 w-8 rounded-full ${rankBg} ${rankColor} font-bold text-sm transition-all duration-300 group-hover:scale-110`}>
           {rankEmoji}
         </span>
       </TableCell>
       
       {/* ✅ الموضوع */}
-      <TableCell className="font-semibold text-slate-900 dark:text-white text-right border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+      <TableCell className="font-semibold text-slate-900 dark:text-white text-right border-r-2 border-pink-400/30 dark:border-pink-400/20">
         <div className="flex items-center gap-2 justify-end">
           <span className="group-hover:text-[#2a655f] transition-colors">
             {complaint.subject || (isArabic ? "شكوى" : "Complaint")}
@@ -186,14 +198,14 @@ const ComplaintRow = React.memo(({
       </TableCell>
       
       {/* ✅ رقم الطلب */}
-      <TableCell className="text-slate-600 dark:text-slate-300 text-center font-mono border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+      <TableCell className="text-slate-600 dark:text-slate-300 text-center font-mono border-r-2 border-pink-400/30 dark:border-pink-400/20">
         <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20">
           #{complaint.order_id?.slice(0, 12) || '—'}
         </Badge>
       </TableCell>
       
       {/* ✅ الحالة */}
-      <TableCell className="text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+      <TableCell className="text-center border-r-2 border-pink-400/30 dark:border-pink-400/20">
         <Badge className={cn("border-2 flex items-center gap-1.5 px-3 py-1 text-xs", status.bg, status.color)}>
           <StatusIcon className="h-3 w-3" />
           {status.label}
@@ -207,7 +219,7 @@ const ComplaintRow = React.memo(({
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 w-8 rounded-lg hover:bg-[#2a655f]/10 hover:text-[#2a655f] transition-all duration-200 hover:scale-105 border-2 border-[#f9a8d4]/30"
+              className="h-8 w-8 rounded-lg border-2 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800 transition-all duration-200 hover:scale-105"
               onClick={(e) => {
                 e.stopPropagation();
                 onReply(complaint);
@@ -220,19 +232,19 @@ const ComplaintRow = React.memo(({
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 w-8 rounded-lg hover:bg-[#f9a8d4]/30 transition-all duration-200 hover:scale-105 border-2 border-[#f9a8d4]/30"
+            className="h-8 w-8 rounded-lg border-2 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800 transition-all duration-200 hover:scale-105"
             onClick={(e) => {
               e.stopPropagation();
               window.open(`/admin/complaints/${complaint.id}`, '_blank');
             }}
             title={isArabic ? "عرض التفاصيل" : "View Details"}
           >
-            <Eye className="h-4 w-4 text-[#2a655f]" />
+            <Eye className="h-4 w-4" />
           </Button>
           {isExpanded ? (
-            <ChevronUp className="h-5 w-5 text-[#2a655f] group-hover:scale-110 transition-transform" />
+            <ChevronUp className="h-5 w-5 text-slate-400 group-hover:text-[#2a655f] group-hover:scale-110 transition-transform" />
           ) : (
-            <ChevronDown className="h-5 w-5 text-[#2a655f] group-hover:scale-110 transition-transform" />
+            <ChevronDown className="h-5 w-5 text-slate-400 group-hover:text-[#2a655f] group-hover:scale-110 transition-transform" />
           )}
         </div>
       </TableCell>
@@ -252,11 +264,11 @@ const ComplaintDetails = React.memo(({
   const user = complaint.profiles;
   
   return (
-    <div className="px-4 pb-4 pt-3 border-t-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 animate-in slide-in-from-top-2 duration-300 bg-gradient-to-r from-[#f9a8d4]/5 to-[#fbcfe8]/5 dark:from-[#f9a8d4]/5 dark:to-[#fbcfe8]/5 rounded-b-2xl">
+    <div className="px-4 pb-4 pt-3 border-t-3 border-pink-400/30 dark:border-pink-400/20 animate-in slide-in-from-top-2 duration-300 bg-gradient-to-r from-[#f9a8d4]/5 to-[#fbcfe8]/5 dark:from-[#f9a8d4]/5 dark:to-[#fbcfe8]/5 rounded-b-2xl">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         {/* ✅ معلومات العميل */}
-        <div className="p-4 bg-white/70 dark:bg-slate-900/70 rounded-xl border-2 border-[#f9a8d4]/40">
+        <div className="p-4 bg-white/70 dark:bg-slate-900/70 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Users className="h-3 w-3 text-[#2a655f]" />
             {isArabic ? "معلومات العميل" : "Customer Information"}
@@ -319,7 +331,7 @@ const ComplaintDetails = React.memo(({
           {complaint.status !== 'resolved' && complaint.status !== 'closed' && (
             <Button
               size="sm"
-              className="w-full bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] hover:from-[#3a8a82] hover:to-[#f48fb1] text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#f9a8d4]/30 rounded-xl border-2 border-[#f9a8d4]/50"
+              className="w-full border-2 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800 transition-all duration-300 hover:scale-105 rounded-xl"
               onClick={() => onReply(complaint)}
             >
               <Reply className="h-4 w-4 mr-2" />
@@ -612,85 +624,86 @@ export function AdminComplaints() {
   return (
     <div className="space-y-6">
       
-      {/* ===== HEADER ===== */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="relative">
-          <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
-          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#f9a8d4]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
-          
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
-            <div className="relative group">
-              <div className="absolute inset-0 rounded-2xl bg-amber-500/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
-              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/25 group-hover:shadow-amber-500/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                <AlertTriangle className="h-5 w-5 group-hover:animate-bounce" />
-              </div>
-            </div>
-            {isArabic ? "الشكاوى" : "Complaints"}
-            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
-              {stats.total}
+      {/* ===== HEADER - نفس تصميم Overview ===== */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <span className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] bg-clip-text text-transparent">
+              {isArabic ? "الشكاوى" : "Complaints"}
+            </span>
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20 text-[10px]">
+              <Activity className="h-2.5 w-2.5 mr-1 text-emerald-500 animate-pulse" />
+              {isArabic ? 'مباشر' : 'Live'}
             </Badge>
           </h1>
-          
-          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
+              <AlertTriangle className="h-3.5 w-3.5 text-[#2a655f]" />
+              <span className="text-[#2a655f] font-medium">{stats.total}</span>
+              <span className="text-xs text-muted-foreground">{isArabic ? 'إجمالي' : 'total'}</span>
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 hover:bg-amber-100/50 transition-colors">
               <Clock className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
               <span className="text-amber-600 dark:text-amber-400 font-medium">{stats.pending}</span>
-              <span className="text-xs text-muted-foreground">{isArabic ? "قيد المراجعة" : "pending"}</span>
+              <span className="text-xs text-muted-foreground">{isArabic ? 'قيد المراجعة' : 'pending'}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 transition-colors">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
               <span className="text-emerald-600 dark:text-emerald-400 font-medium">{stats.resolved}</span>
-              <span className="text-xs text-muted-foreground">{isArabic ? "تم الحل" : "resolved"}</span>
-            </span>
-            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-            <span className="text-xs text-[#2a655f] flex items-center gap-1">
-              <Zap className="h-3 w-3 animate-pulse" />
-              {isArabic ? 'تحديث لحظي' : 'Real-time'}
+              <span className="text-xs text-muted-foreground">{isArabic ? 'تم الحل' : 'resolved'}</span>
             </span>
           </p>
         </div>
 
+        {/* ✅ أزرار التصدير - رمادية */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportToExcel}
-            disabled={filteredComplaints.length === 0}
-            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
-          >
-            <FileSpreadsheet className="h-4 w-4 mr-1.5" />
-            Excel
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportToWord}
-            disabled={filteredComplaints.length === 0}
-            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
-          >
-            <FileText className="h-4 w-4 mr-1.5" />
-            Word
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="rounded-xl border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 group"
-          >
-            <RefreshCw className="h-4 w-4 mr-1.5 group-hover:rotate-180 transition-transform duration-700" />
-            {isArabic ? "تحديث" : "Refresh"}
-          </Button>
+          <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border-2 border-pink-400/60 dark:border-pink-400/40 shadow-sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={exportToExcel}
+              disabled={filteredComplaints.length === 0}
+              className="rounded-lg h-9 px-4 text-slate-600 hover:bg-slate-100 hover:text-slate-800 gap-2 transition-all duration-300"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs font-medium">Excel</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={exportToWord}
+              disabled={filteredComplaints.length === 0}
+              className="rounded-lg h-9 px-4 text-slate-600 hover:bg-slate-100 hover:text-slate-800 gap-2 transition-all duration-300"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs font-medium">Word</span>
+            </Button>
+            <div className="w-px h-6 bg-slate-300/50" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => refetch()}
+              className="rounded-lg h-9 px-3 text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-all duration-300"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+          <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#2a655f]/30 animate-pulse">
+            <Sparkles className="h-3 w-3 mr-1" />
+            {isArabic ? 'تقرير لحظي' : 'Live Report'}
+          </Badge>
         </div>
       </div>
 
-      {/* ===== STATS CARDS ===== */}
+      {/* ===== STATS CARDS - خلفية بيضاء وبوردر زهري ===== */}
       <StatsCards stats={stats} isArabic={isArabic} />
 
-      {/* ===== SEARCH & FILTERS - مثل CustomersPage ===== */}
+      {/* ===== SEARCH & FILTERS - مثل Overview ===== */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 group">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#f9a8d4] transition-colors duration-300" />
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-focus-within:text-[#d81b60] transition-colors duration-300" />
           <Input
             value={searchQuery}
             onChange={(e) => {
@@ -698,7 +711,7 @@ export function AdminComplaints() {
               setPage(1);
             }}
             placeholder={isArabic ? "🔍 بحث عن شكوى..." : "🔍 Search complaints..."}
-            className="ps-9 h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+            className="ps-9 h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 transition-all duration-300 hover:border-pink-500"
           />
         </div>
 
@@ -709,18 +722,18 @@ export function AdminComplaints() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[140px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
+              <Filter className="h-4 w-4 text-[#d81b60]" />
               <SelectValue placeholder={isArabic ? "الحالة" : "Status"} />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">{isArabic ? "📋 الكل" : "📋 All"}</SelectItem>
-            <SelectItem value="pending" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">⏳ {isArabic ? "قيد المراجعة" : "Pending"}</SelectItem>
-            <SelectItem value="in_progress" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">🔄 {isArabic ? "قيد المعالجة" : "In Progress"}</SelectItem>
-            <SelectItem value="resolved" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">✅ {isArabic ? "تم الحل" : "Resolved"}</SelectItem>
-            <SelectItem value="closed" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📌 {isArabic ? "مغلقة" : "Closed"}</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+            <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">{isArabic ? "📋 الكل" : "📋 All"}</SelectItem>
+            <SelectItem value="pending" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">⏳ {isArabic ? "قيد المراجعة" : "Pending"}</SelectItem>
+            <SelectItem value="in_progress" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">🔄 {isArabic ? "قيد المعالجة" : "In Progress"}</SelectItem>
+            <SelectItem value="resolved" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">✅ {isArabic ? "تم الحل" : "Resolved"}</SelectItem>
+            <SelectItem value="closed" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📌 {isArabic ? "مغلقة" : "Closed"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -731,15 +744,15 @@ export function AdminComplaints() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[140px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
+              <Filter className="h-4 w-4 text-[#d81b60]" />
               <SelectValue placeholder={isArabic ? "ترتيب حسب" : "Sort by"} />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <SelectItem value="created_at" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📅 {isArabic ? "التاريخ" : "Date"}</SelectItem>
-            <SelectItem value="status" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📊 {isArabic ? "الحالة" : "Status"}</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+            <SelectItem value="created_at" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📅 {isArabic ? "التاريخ" : "Date"}</SelectItem>
+            <SelectItem value="status" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📊 {isArabic ? "الحالة" : "Status"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -750,12 +763,12 @@ export function AdminComplaints() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[100px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
             <SelectValue placeholder={isArabic ? "ترتيب" : "Order"} />
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <SelectItem value="desc" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">⬇️ {isArabic ? "تنازلي" : "Descending"}</SelectItem>
-            <SelectItem value="asc" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">⬆️ {isArabic ? "تصاعدي" : "Ascending"}</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+            <SelectItem value="desc" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">⬇️ {isArabic ? "تنازلي" : "Descending"}</SelectItem>
+            <SelectItem value="asc" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">⬆️ {isArabic ? "تصاعدي" : "Ascending"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -766,18 +779,18 @@ export function AdminComplaints() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[100px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400">{isArabic ? "عدد" : "Show"}</span>
               <SelectValue placeholder="10" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <SelectItem value="6" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">6</SelectItem>
-            <SelectItem value="10" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">10</SelectItem>
-            <SelectItem value="20" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">20</SelectItem>
-            <SelectItem value="50" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">50</SelectItem>
-            <SelectItem value="100" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">100</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+            <SelectItem value="6" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">6</SelectItem>
+            <SelectItem value="10" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">10</SelectItem>
+            <SelectItem value="20" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">20</SelectItem>
+            <SelectItem value="50" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">50</SelectItem>
+            <SelectItem value="100" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">100</SelectItem>
           </SelectContent>
         </Select>
 
@@ -791,17 +804,17 @@ export function AdminComplaints() {
             setSortOrder("desc");
             setPage(1);
           }}
-          className="h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 group"
+          className="h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-slate-100 hover:border-pink-500 hover:text-slate-800 transition-all duration-300"
         >
-          <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
+          <X className="h-4 w-4 mr-1.5" />
           {isArabic ? "مسح الكل" : "Clear all"}
         </Button>
       </div>
 
-      {/* ===== TABLE - مثل CustomersPage ===== */}
+      {/* ===== TABLE - مثل Overview ===== */}
       {filteredComplaints.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-dashed border-[#f9a8d4]/40 shadow-lg hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-300">
-          <div className="h-20 w-20 rounded-full bg-[#fbcfe8]/60 dark:bg-[#fbcfe8]/20 flex items-center justify-center mx-auto mb-4 animate-bounce-slow border-3 border-[#f9a8d4]/70">
+        <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-dashed border-pink-400/60 dark:border-pink-400/40 shadow-lg hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300">
+          <div className="h-20 w-20 rounded-full bg-[#fbcfe8]/60 dark:bg-[#fbcfe8]/20 flex items-center justify-center mx-auto mb-4 animate-bounce-slow border-2 border-pink-400/60 dark:border-pink-400/40">
             <AlertTriangle className="h-10 w-10 text-[#2a655f]/40" />
           </div>
           <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
@@ -819,7 +832,7 @@ export function AdminComplaints() {
               variant="outline"
               size="sm"
               onClick={() => setSearchQuery("")}
-              className="mt-4 rounded-xl border-3 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300"
+              className="mt-4 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-slate-100 hover:border-pink-500 hover:text-slate-800 transition-all duration-300"
             >
               {isArabic ? "مسح البحث" : "Clear search"}
             </Button>
@@ -827,21 +840,21 @@ export function AdminComplaints() {
         </div>
       ) : (
         <>
-          <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
+          <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 overflow-hidden shadow-lg hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-gradient-to-r from-[#f9a8d4]/30 via-[#fbcfe8]/20 to-[#f9a8d4]/30 dark:from-[#f9a8d4]/20 dark:via-[#fbcfe8]/10 dark:to-[#f9a8d4]/20 border-b-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30">
-                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[60px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                  <TableRow className="border-slate-200 dark:border-slate-700 hover:bg-transparent bg-gradient-to-r from-[#f9a8d4]/30 via-[#fbcfe8]/20 to-[#f9a8d4]/30 dark:from-[#f9a8d4]/20 dark:via-[#fbcfe8]/10 dark:to-[#f9a8d4]/20 border-b-2 border-pink-400/60 dark:border-pink-400/40">
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[60px] border-r-2 border-pink-400/30 dark:border-pink-400/20">
                       {isArabic ? "الترتيب" : "Rank"}
                     </TableHead>
-                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-right min-w-[200px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-right min-w-[200px] border-r-2 border-pink-400/30 dark:border-pink-400/20">
                       {isArabic ? "الموضوع" : "Subject"}
                     </TableHead>
-                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-pink-400/30 dark:border-pink-400/20">
                       {isArabic ? "رقم الطلب" : "Order ID"}
                     </TableHead>
-                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-pink-400/30 dark:border-pink-400/20">
                       {isArabic ? "الحالة" : "Status"}
                     </TableHead>
                     <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px]">
@@ -884,14 +897,15 @@ export function AdminComplaints() {
               </Table>
             </div>
 
-            {/* ===== Pagination - مثل CustomersPage ===== */}
+            {/* ===== Pagination - مثل Overview ===== */}
             {totalPages > 1 && (
-              <div className="px-4 py-3 border-t-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="px-4 py-3 border-t-2 border-pink-400/30 dark:border-pink-400/20 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="text-xs text-slate-500 dark:text-slate-400">
                   {filteredComplaints.length === 0 ? (
                     <span>{isArabic ? "لا توجد شكاوى" : "No complaints"}</span>
                   ) : (
-                    <span>
+                    <span className="flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60] animate-pulse" />
                       {isArabic
                         ? `عرض ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredComplaints.length)} من ${filteredComplaints.length} شكوى`
                         : `Showing ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredComplaints.length)} of ${filteredComplaints.length} complaints`}
@@ -905,7 +919,7 @@ export function AdminComplaints() {
                     size="sm"
                     onClick={() => goToPage(1)}
                     disabled={page === 1}
-                    className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
+                    className="h-8 w-8 p-0 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-slate-100 hover:border-pink-500 hover:text-slate-800 transition-all duration-300 disabled:opacity-50"
                   >
                     <span className="text-xs font-bold">«</span>
                   </Button>
@@ -914,7 +928,7 @@ export function AdminComplaints() {
                     size="sm"
                     onClick={() => goToPage(page - 1)}
                     disabled={page === 1}
-                    className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
+                    className="h-8 w-8 p-0 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-slate-100 hover:border-pink-500 hover:text-slate-800 transition-all duration-300 disabled:opacity-50"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -936,11 +950,12 @@ export function AdminComplaints() {
                           variant={page === pageNum ? "default" : "outline"}
                           size="sm"
                           onClick={() => goToPage(pageNum)}
-                          className={`h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300 ${
+                          className={cn(
+                            "h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300",
                             page === pageNum
-                              ? "bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white shadow-md shadow-[#2a655f]/25 border-2 border-white/30"
-                              : "border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 hover:text-[#2a655f]"
-                          }`}
+                              ? "bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#f9a8d4]/30 border-2 border-white/30 scale-105"
+                              : "border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-slate-100 hover:border-pink-500 hover:text-slate-800"
+                          )}
                         >
                           {pageNum}
                         </Button>
@@ -953,7 +968,7 @@ export function AdminComplaints() {
                           variant="outline"
                           size="sm"
                           onClick={() => goToPage(totalPages)}
-                          className="h-8 min-w-[32px] p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 text-xs"
+                          className="h-8 min-w-[32px] p-0 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-slate-100 hover:border-pink-500 hover:text-slate-800 text-xs transition-all duration-300"
                         >
                           {totalPages}
                         </Button>
@@ -965,7 +980,7 @@ export function AdminComplaints() {
                     size="sm"
                     onClick={() => goToPage(page + 1)}
                     disabled={page === totalPages}
-                    className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
+                    className="h-8 w-8 p-0 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-slate-100 hover:border-pink-500 hover:text-slate-800 transition-all duration-300 disabled:opacity-50"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -974,7 +989,7 @@ export function AdminComplaints() {
                     size="sm"
                     onClick={() => goToPage(totalPages)}
                     disabled={page === totalPages}
-                    className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
+                    className="h-8 w-8 p-0 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-slate-100 hover:border-pink-500 hover:text-slate-800 transition-all duration-300 disabled:opacity-50"
                   >
                     <span className="text-xs font-bold">»</span>
                   </Button>
@@ -983,25 +998,30 @@ export function AdminComplaints() {
             )}
 
             {/* ===== Footer ===== */}
-            <div className="px-4 py-2 border-t-3 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#f9a8d4]/15 via-[#fbcfe8]/10 to-[#f9a8d4]/15 dark:from-[#f9a8d4]/10 dark:via-[#fbcfe8]/5 dark:to-[#f9a8d4]/10">
-              <span>
-                {isArabic
-                  ? `عرض ${paginatedComplaints.length} من ${filteredComplaints.length} شكوى (إجمالي ${complaints.length})`
-                  : `Showing ${paginatedComplaints.length} of ${filteredComplaints.length} complaints (total ${complaints.length})`}
+            <div className="px-4 py-2 border-t-2 border-pink-400/30 dark:border-pink-400/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#f9a8d4]/10 to-[#fbcfe8]/10">
+              <span className="flex items-center gap-2">
+                <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
+                  {isArabic
+                    ? `عرض ${paginatedComplaints.length} من ${filteredComplaints.length}`
+                    : `Showing ${paginatedComplaints.length} of ${filteredComplaints.length}`}
+                </Badge>
+                <span className="text-[10px] text-[#d81b60]">
+                  {isArabic ? `إجمالي ${complaints.length}` : `Total ${complaints.length}`}
+                </span>
               </span>
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20">
+                <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
                   {sortBy === "created_at" ? (isArabic ? "📅 التاريخ" : "📅 Date") :
                    (isArabic ? "📊 الحالة" : "📊 Status")}
                   {sortOrder === "desc" ? " ↓" : " ↑"}
                 </Badge>
                 {searchQuery && (
-                  <Badge variant="secondary" className="bg-[#f9a8d4]/10 text-[#2a655f] border-2 border-[#f9a8d4]/20">
+                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
                     🔍 {searchQuery}
                   </Badge>
                 )}
                 {filterStatus !== "all" && (
-                  <Badge variant="secondary" className="bg-[#f9a8d4]/10 text-[#2a655f] border-2 border-[#f9a8d4]/20">
+                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
                     {getStatusBadge(filterStatus).label}
                   </Badge>
                 )}
@@ -1013,14 +1033,14 @@ export function AdminComplaints() {
 
       {/* ===== REPLY DIALOG ===== */}
       <Dialog open={replyDialogOpen} onOpenChange={setReplyDialogOpen}>
-        <DialogContent className="max-w-lg rounded-2xl border-3 border-[#f9a8d4]/60 shadow-2xl shadow-[#f9a8d4]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0 overflow-hidden">
+        <DialogContent className="max-w-lg rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 shadow-2xl shadow-pink-500/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0 overflow-hidden">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-slate-100 z-20 transition-all duration-300 border-2 border-slate-300"
             onClick={() => setReplyDialogOpen(false)}
           >
-            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+            <X className="h-4 w-4 text-slate-400 hover:text-slate-600" />
           </Button>
           <div className="p-6">
             <DialogHeader>
@@ -1043,10 +1063,10 @@ export function AdminComplaints() {
                   {isArabic ? "الحالة الجديدة" : "New Status"}
                 </Label>
                 <Select value={newStatus} onValueChange={setNewStatus}>
-                  <SelectTrigger className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300">
+                  <SelectTrigger className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 transition-all duration-300">
                     <SelectValue placeholder={isArabic ? "اختر حالة" : "Select status"} />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/40">
+                  <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
                     <SelectItem value="pending" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">⏳ {isArabic ? "قيد المراجعة" : "Pending"}</SelectItem>
                     <SelectItem value="in_progress" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">🔄 {isArabic ? "قيد المعالجة" : "In Progress"}</SelectItem>
                     <SelectItem value="resolved" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">✅ {isArabic ? "تم الحل" : "Resolved"}</SelectItem>
@@ -1065,23 +1085,23 @@ export function AdminComplaints() {
                   placeholder={isArabic 
                     ? "اكتب ردك على الشكوى..." 
                     : "Write your response to the complaint..."}
-                  className="min-h-[100px] rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+                  className="min-h-[100px] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 transition-all duration-300"
                 />
               </div>
             </div>
 
-            <DialogFooter className="gap-2 pt-4 border-t-3 border-[#f9a8d4]/30">
+            <DialogFooter className="gap-2 pt-4 border-t-2 border-pink-400/30">
               <Button
                 variant="outline"
                 onClick={() => setReplyDialogOpen(false)}
-                className="rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
+                className="rounded-xl border-2 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800 transition-all duration-300"
               >
                 {isArabic ? "إلغاء" : "Cancel"}
               </Button>
               <Button
                 onClick={handleUpdateComplaint}
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] hover:from-[#3a8a82] hover:to-[#f48fb1] text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#f9a8d4]/30 rounded-xl px-6 border-2 border-[#f9a8d4]/50"
+                className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-lg shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 border-2 border-[#2a655f]/40 px-6"
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -1123,6 +1143,14 @@ export function AdminComplaints() {
         }
         .animate-float {
           animation: float 3s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .animate-shimmer {
+          background-size: 200% auto;
+          animation: shimmer 3s linear infinite;
         }
       `}</style>
     </div>

@@ -136,8 +136,9 @@ function MegaMenu({ categories }: { categories: any[] }) {
     );
   };
 
-  const mainCategories = categories.filter(c => !isPromoCategory(c));
-  const promoCategories = categories.filter(c => isPromoCategory(c));
+  // ✅ ✅ ✅ التصنيفات الرئيسية فقط (بدون parent_id)
+  const mainCategories = categories.filter(c => !isPromoCategory(c) && !c.parent_id);
+  const promoCategories = categories.filter(c => isPromoCategory(c) && !c.parent_id);
 
   const iconColors = [
     "text-[#2a655f]", "text-[#3a8a82]", "text-[#1a4f4a]", "text-emerald-600",
@@ -161,13 +162,6 @@ function MegaMenu({ categories }: { categories: any[] }) {
         .animate-special-dance {
           animation: special-dance 1.5s ease-in-out infinite;
         }
-        @keyframes glow-pulse {
-          0%, 100% { box-shadow: 0 0 20px rgba(244,114,182,0.2); }
-          50% { box-shadow: 0 0 40px rgba(244,114,182,0.5); }
-        }
-        .animate-glow-pulse {
-          animation: glow-pulse 2s ease-in-out infinite;
-        }
         @keyframes shimmer-slow {
           0% { background-position: -200% 0; }
           100% { background-position: 200% 0; }
@@ -178,17 +172,16 @@ function MegaMenu({ categories }: { categories: any[] }) {
         }
       `}</style>
 
-    <button
-  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-pink-500/10 transition-all duration-300 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 group shadow-sm hover:shadow-md hover:shadow-pink-500/20 cursor-pointer"
-  onClick={() => setIsOpen(!isOpen)}
->
+      <button
+        className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-pink-500/10 transition-all duration-300 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 group shadow-sm hover:shadow-md hover:shadow-pink-500/20 cursor-pointer"
+        onClick={() => setIsOpen(!isOpen)}
+      >
         <LayoutGrid className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
         <span className="hidden md:inline font-semibold text-[#2a655f] dark:text-[#3a8a82]">{t("categories")}</span>
         <ChevronDown className={`h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        // ✅ ✅ ✅ بوردر فوشي غامق مطابق لـ StoreCard
         <div className="absolute top-full start-0 mt-2 w-[900px] max-w-[95vw] bg-card rounded-2xl shadow-2xl border-3 border-[#d81b60]/60 hover:border-[#c2185b] shadow-[0_0_35px_rgba(216,27,96,0.2)] hover:shadow-[0_0_55px_rgba(194,24,91,0.35)] transition-all duration-400 p-6 grid grid-cols-4 gap-6 animate-in slide-in-from-top-5 duration-200 z-50 bg-gradient-to-br from-white via-emerald-50/20 to-[#2a655f]/10 dark:from-gray-950 dark:via-[#173d38]/20 dark:to-[#2a655f]/20 max-h-[80vh] overflow-y-auto">
           
           <div className="col-span-3 grid grid-cols-3 gap-x-4 gap-y-1.5">
@@ -242,7 +235,7 @@ function MegaMenu({ categories }: { categories: any[] }) {
             })}
           </div>
 
-          {/* ✅ قسم العروض - تحسين الديزاين مع تأثير توهج نابض */}
+          {/* قسم العروض */}
           <div className="col-span-1 space-y-3 border-s border-[#2a655f]/15 dark:border-[#2a655f]/30 ps-4">
             <div className="text-[10px] uppercase tracking-wider text-[#2a655f] dark:text-[#3a8a82] font-extrabold flex items-center gap-2">
               <span className="h-1.5 w-5 rounded-full bg-gradient-to-r from-pink-400 to-pink-600 animate-pulse" />
@@ -285,12 +278,13 @@ function MegaMenu({ categories }: { categories: any[] }) {
               );
             })}
             
+            {/* ✅ زر عرض الكل - رمادي مع بوردر وردي */}
             <Link
               to="/categories"
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500/20 to-pink-600/20 hover:from-pink-500/40 hover:to-pink-600/40 transition-all duration-300 font-medium text-sm text-pink-700 dark:text-pink-300 mt-2 border border-pink-300/40 dark:border-pink-500/40 group cursor-pointer"
+              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all duration-300 font-bold text-sm text-slate-700 dark:text-slate-200 mt-2 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 group cursor-pointer shadow-sm hover:shadow-md"
             >
               {t("view_all")}
-              <ChevronDown className="h-3.5 w-3.5 -rotate-90 group-hover:translate-x-1 transition-transform text-pink-600" />
+              <ChevronDown className="h-3.5 w-3.5 -rotate-90 group-hover:translate-x-1 transition-transform text-slate-500" />
             </Link>
           </div>
 
@@ -1307,12 +1301,12 @@ export const Header = memo(function Header() {
               </TooltipContent>
             </Tooltip>
 
-        {/* User Menu */}
+{/* User Menu */}
 <Tooltip>
   <TooltipTrigger asChild>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-[#d81b60]/20 dark:hover:bg-[#d81b60]/30 transition-all duration-300 group relative shrink-0 border-2 border-[#d81b60]/60 dark:border-[#d81b60]/50 hover:border-[#d81b60] shadow-[0_0_15px_rgba(216,27,96,0.2)] hover:shadow-[0_0_30px_rgba(216,27,96,0.4)] cursor-pointer overflow-hidden p-0">
+        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-slate-100 dark:hover:bg-gray-700/30 transition-all duration-300 group relative shrink-0 border-2 border-slate-200 dark:border-slate-700 hover:border-[#2a655f] shadow-sm hover:shadow-md cursor-pointer overflow-hidden p-0">
           <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none z-10" />
           
           {app.user && profile?.avatar_url ? (
@@ -1328,7 +1322,7 @@ export const Header = memo(function Header() {
               />
             </div>
           ) : (
-            <User className="h-4 w-4 text-[#d81b60] dark:text-[#f48fb1] group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300 relative z-10 animate-icon-dance" />
+            <User className="h-4 w-4 text-[#2a655f] dark:text-slate-300 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300 relative z-10 animate-icon-dance" />
           )}
           
           {app.user && (
@@ -1340,12 +1334,12 @@ export const Header = memo(function Header() {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-80 rounded-[28px] p-0 border-2 border-[#d81b60]/60 dark:border-[#d81b60]/50 shadow-[0_20px_50px_rgba(216,27,96,0.25)] overflow-hidden bg-gradient-to-b from-white via-pink-50/30 to-white dark:from-slate-950 dark:via-[#d81b60]/10 dark:to-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300">
+      <DropdownMenuContent align="end" className="w-80 rounded-[28px] p-0 border-2 border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden bg-white dark:bg-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300">
         
         <style>{`
           @keyframes icon-dance-glow {
-            0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(216,27,96,0.5)); }
-            50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(216,27,96,0.9)); }
+            0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(42,101,95,0.5)); }
+            50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(42,101,95,0.9)); }
           }
           .animate-icon-dance {
             animation: icon-dance-glow 2s ease-in-out infinite;
@@ -1357,25 +1351,25 @@ export const Header = memo(function Header() {
           .animate-pulse-slow {
             animation: pulse-slow 4s ease-in-out infinite;
           }
-          @keyframes shimmer-pink {
+          @keyframes shimmer-olive {
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
           }
-          .animate-shimmer-pink {
-            background: linear-gradient(90deg, transparent, rgba(216,27,96,0.1), transparent);
+          .animate-shimmer-olive {
+            background: linear-gradient(90deg, transparent, rgba(42,101,95,0.1), transparent);
             background-size: 200% 100%;
-            animation: shimmer-pink 3s ease-in-out infinite;
+            animation: shimmer-olive 3s ease-in-out infinite;
           }
         `}</style>
 
         {app.user ? (
           <>
-            <div className="bg-gradient-to-br from-[#d81b60]/20 via-[#f48fb1]/15 to-[#d81b60]/10 dark:from-[#d81b60]/30 dark:via-[#f48fb1]/10 dark:to-[#d81b60]/20 p-5 border-b-2 border-[#d81b60]/30 relative overflow-hidden">
-              <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#d81b60]/30 blur-2xl animate-pulse-slow pointer-events-none" />
-              <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-[#f48fb1]/20 blur-2xl animate-pulse-slow pointer-events-none" style={{ animationDelay: '2s' }} />
+            <div className="bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-800/50 dark:via-slate-800/30 dark:to-slate-800/50 p-5 border-b-2 border-slate-200 dark:border-slate-700 relative overflow-hidden">
+              <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-slate-200/50 dark:bg-slate-700/30 blur-2xl animate-pulse-slow pointer-events-none" />
+              <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-slate-100/50 dark:bg-slate-700/20 blur-2xl animate-pulse-slow pointer-events-none" style={{ animationDelay: '2s' }} />
 
               <div className="flex items-center gap-4 relative z-10">
-                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-[#d81b60]/40 overflow-hidden flex-shrink-0 ring-4 ring-white/60 dark:ring-slate-800/80 transform hover:scale-105 transition-transform duration-300">
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-[#2a655f]/30 overflow-hidden flex-shrink-0 ring-4 ring-white/60 dark:ring-slate-800/80 transform hover:scale-105 transition-transform duration-300">
                   {profile?.avatar_url ? (
                     <OptimizedImage 
                       src={profile.avatar_url} 
@@ -1404,20 +1398,20 @@ export const Header = memo(function Header() {
                   </p>
                 </div>
                 
-                <Badge variant="outline" className="text-[10px] border-[#d81b60]/60 text-[#d81b60] dark:text-[#f48fb1] bg-[#d81b60]/15 flex-shrink-0 font-black px-2.5 py-1 rounded-full shadow-sm animate-pulse">
+                <Badge variant="outline" className="text-[10px] border-[#2a655f]/60 text-[#2a655f] dark:text-slate-300 bg-[#2a655f]/10 flex-shrink-0 font-black px-2.5 py-1 rounded-full shadow-sm animate-pulse">
                   {isAdmin ? (app.lang === 'ar' ? '⭐ أدمن' : '⭐ Admin') : 
                    isSeller ? (app.lang === 'ar' ? '🛍️ بائع' : '🛍️ Seller') : 
                    (app.lang === 'ar' ? '👤 عميل' : '👤 Customer')}
                 </Badge>
               </div>
               
-              <div className="mt-4 pt-3 border-t-2 border-[#d81b60]/25 flex items-center justify-between relative z-10">
+              <div className="mt-4 pt-3 border-t-2 border-slate-200 dark:border-slate-700 flex items-center justify-between relative z-10">
                 <Link 
                   to="/settings" 
-                  className="text-xs text-[#d81b60] dark:text-[#f48fb1] hover:text-[#c2185b] flex items-center gap-1.5 font-bold transition-colors group/link"
+                  className="text-xs text-[#2a655f] dark:text-slate-300 hover:text-[#3a8a82] flex items-center gap-1.5 font-bold transition-colors group/link"
                 >
-                  <div className="h-6 w-6 rounded-xl bg-[#d81b60]/15 flex items-center justify-center group-hover/link:bg-[#d81b60]/20 group-hover/link:scale-110 transition-all shadow-inner">
-                    <Camera className="h-3.5 w-3.5 text-[#d81b60] dark:text-[#f48fb1] group-hover/link:text-[#c2185b]" />
+                  <div className="h-6 w-6 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center group-hover/link:bg-slate-200 dark:group-hover/link:bg-slate-600 group-hover/link:scale-110 transition-all shadow-inner">
+                    <Camera className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300 group-hover/link:text-[#3a8a82]" />
                   </div>
                   {profile?.avatar_url 
                     ? (app.lang === "ar" ? "تغيير الصورة الشخصية" : "Change photo")
@@ -1431,20 +1425,20 @@ export const Header = memo(function Header() {
               
               {app.user.address && (
                 <div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground font-medium relative z-10">
-                  <MapPin className="h-3.5 w-3.5 text-[#d81b60] flex-shrink-0 animate-bounce" />
+                  <MapPin className="h-3.5 w-3.5 text-[#2a655f] flex-shrink-0 animate-bounce" />
                   <span className="truncate">{app.user.address}</span>
                 </div>
               )}
             </div>
 
             <div className="p-2.5 space-y-1.5">
-              <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#d81b60]/20 hover:bg-[#d81b60]/15 dark:focus:bg-[#d81b60]/30 dark:hover:bg-[#d81b60]/20 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+              <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
                 <Link to="/orders" className="flex items-center gap-3.5 w-full">
-                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#d81b60]/20 to-[#f48fb1]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm border-2 border-[#d81b60]/30">
-                    <Package className="h-5 w-5 text-[#d81b60] dark:text-[#f48fb1]" />
+                  <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm border-2 border-slate-200 dark:border-slate-700">
+                    <Package className="h-5 w-5 text-[#2a655f] dark:text-slate-300" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#d81b60] dark:group-hover:text-[#f48fb1] transition-colors">
+                    <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-slate-300 transition-colors">
                       {app.lang === "ar" ? "📦 طلباتي" : "📦 My Orders"}
                     </p>
                     <p className="text-[10px] text-muted-foreground font-medium">
@@ -1455,13 +1449,13 @@ export const Header = memo(function Header() {
                 </Link>
               </DropdownMenuItem>
 
-              <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#d81b60]/20 hover:bg-[#d81b60]/15 dark:focus:bg-[#d81b60]/30 dark:hover:bg-[#d81b60]/20 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+              <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
                 <Link to="/settings" className="flex items-center gap-3.5 w-full">
-                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#d81b60]/20 to-[#f48fb1]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 shadow-sm border-2 border-[#d81b60]/30">
-                    <Settings className="h-5 w-5 text-[#d81b60] dark:text-[#f48fb1]" />
+                  <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 shadow-sm border-2 border-slate-200 dark:border-slate-700">
+                    <Settings className="h-5 w-5 text-[#2a655f] dark:text-slate-300" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#d81b60] dark:group-hover:text-[#f48fb1] transition-colors">
+                    <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-slate-300 transition-colors">
                       {app.lang === "ar" ? "⚙️ الإعدادات" : "⚙️ Settings"}
                     </p>
                     <p className="text-[10px] text-muted-foreground font-medium">
@@ -1472,15 +1466,15 @@ export const Header = memo(function Header() {
                 </Link>
               </DropdownMenuItem>
 
-              <DropdownMenuSeparator className="my-2 bg-[#d81b60]/30" />
+              <DropdownMenuSeparator className="my-2 bg-slate-200 dark:bg-slate-700" />
 
-              <DropdownMenuItem onClick={app.logout} className="rounded-2xl focus:bg-[#d81b60]/20 hover:bg-[#d81b60]/20 dark:focus:bg-[#d81b60]/30 dark:hover:bg-[#d81b60]/20 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+              <DropdownMenuItem onClick={app.logout} className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
                 <div className="flex items-center gap-3.5 w-full">
-                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#d81b60]/30 to-[#f48fb1]/30 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300 shadow-sm border-2 border-[#d81b60]/40">
-                    <LogOut className="h-5 w-5 text-[#d81b60] dark:text-[#f48fb1]" />
+                  <div className="h-10 w-10 rounded-2xl bg-rose-500/10 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300 shadow-sm border-2 border-slate-200 dark:border-slate-700">
+                    <LogOut className="h-5 w-5 text-rose-500" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-black text-[#d81b60] dark:text-[#f48fb1] group-hover:text-[#c2185b] transition-colors">
+                    <p className="text-sm font-black text-rose-500 group-hover:text-rose-600 transition-colors">
                       {t("logout")}
                     </p>
                     <p className="text-[10px] text-muted-foreground font-medium">
@@ -1491,23 +1485,23 @@ export const Header = memo(function Header() {
               </DropdownMenuItem>
             </div>
 
-            <div className="px-5 py-3 bg-pink-50/90 dark:bg-slate-900/60 border-t-2 border-[#d81b60]/30">
+            <div className="px-5 py-3 bg-slate-50 dark:bg-slate-900/60 border-t-2 border-slate-200 dark:border-slate-700">
               <div className="flex items-center justify-between text-xs font-bold text-muted-foreground">
                 <span>
-                  {app.lang === "ar" ? "الحالة" : "Status"}: <strong className="text-[#d81b60] dark:text-[#f48fb1]">آمن ومحمي</strong>
+                  {app.lang === "ar" ? "الحالة" : "Status"}: <strong className="text-[#2a655f] dark:text-slate-300">آمن ومحمي</strong>
                 </span>
-                <span className="flex items-center gap-1.5 bg-[#d81b60]/10 px-2.5 py-1 rounded-full border-2 border-[#d81b60]/40">
-                  <span className="h-2 w-2 rounded-full bg-[#d81b60] animate-ping" />
-                  <span className="text-[#d81b60] dark:text-[#f48fb1] font-black">{app.lang === "ar" ? "متصل الآن" : "Online"}</span>
+                <span className="flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-full border-2 border-emerald-500/30">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black">{app.lang === "ar" ? "متصل الآن" : "Online"}</span>
                 </span>
               </div>
             </div>
           </>
         ) : (
           <>
-            <div className="p-7 text-center border-b-2 border-[#d81b60]/30 bg-gradient-to-b from-[#d81b60]/10 via-pink-50/10 to-transparent">
-              <div className="h-18 w-18 rounded-3xl bg-[#d81b60]/15 border-2 border-[#d81b60]/30 flex items-center justify-center mx-auto mb-3.5 shadow-xl animate-icon-dance">
-                <User className="h-9 w-9 text-[#d81b60]" />
+            <div className="p-7 text-center border-b-2 border-slate-200 dark:border-slate-700 bg-gradient-to-b from-slate-50 to-transparent dark:from-slate-800/50">
+              <div className="h-18 w-18 rounded-3xl bg-[#2a655f]/10 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center mx-auto mb-3.5 shadow-xl animate-icon-dance">
+                <User className="h-9 w-9 text-[#2a655f]" />
               </div>
               <p className="font-black text-lg text-slate-900 dark:text-white">
                 {app.lang === "ar" ? "أهلاً بك" : "Welcome"}
@@ -1518,19 +1512,19 @@ export const Header = memo(function Header() {
             </div>
             
             <div className="p-3 space-y-2">
-              <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#d81b60]/20 hover:bg-[#d81b60]/15 dark:focus:bg-[#d81b60]/30 dark:hover:bg-[#d81b60]/20 cursor-pointer py-3.5 px-4 transition-all group">
+              <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3.5 px-4 transition-all group">
                 <Link to="/auth/$mode" params={{ mode: "login" }} className="flex items-center gap-3.5 w-full">
-                  <div className="h-10 w-10 rounded-2xl bg-[#d81b60]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <LogIn className="h-5 w-5 text-[#d81b60]" />
+                  <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <LogIn className="h-5 w-5 text-[#2a655f]" />
                   </div>
                   <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("login")}</span>
                 </Link>
               </DropdownMenuItem>
               
-              <DropdownMenuItem asChild className="rounded-2xl focus:bg-[#d81b60]/20 hover:bg-[#d81b60]/15 dark:focus:bg-[#d81b60]/30 dark:hover:bg-[#d81b60]/20 cursor-pointer py-3.5 px-4 transition-all group">
+              <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3.5 px-4 transition-all group">
                 <Link to="/auth/$mode" params={{ mode: "register" }} className="flex items-center gap-3.5 w-full">
-                  <div className="h-10 w-10 rounded-2xl bg-[#d81b60]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <UserPlus className="h-5 w-5 text-[#d81b60]" />
+                  <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <UserPlus className="h-5 w-5 text-[#2a655f]" />
                   </div>
                   <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("register")}</span>
                 </Link>
@@ -1541,59 +1535,49 @@ export const Header = memo(function Header() {
       </DropdownMenuContent>
     </DropdownMenu>
   </TooltipTrigger>
-  <TooltipContent side="bottom" className="rounded-2xl bg-[#d81b60] text-white border-2 border-[#f48fb1]/50 px-4 py-2 shadow-xl font-bold">
+  <TooltipContent side="bottom" className="rounded-2xl bg-[#2a655f] text-white border-2 border-[#3a8a82]/50 px-4 py-2 shadow-xl font-bold">
     <p>{app.user ? (app.lang === "ar" ? "حسابي" : "My Account") : (app.lang === "ar" ? "تسجيل الدخول" : "Login")}</p>
   </TooltipContent>
 </Tooltip>
 
-{/* Role Button */}
+{/* Role Button - رمادي مع بوردر وردي فاتح */}
 {(() => {
   if (isAuthLoading) {
-    return <div className="ms-1 px-2 py-0.5 rounded-lg bg-[#2a655f]/20 animate-pulse h-5 w-16" />;
+    return <div className="ms-1 px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse h-6 w-16" />;
   }
+
+  const baseBtn = "ms-1 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1.5 shadow-sm hover:shadow-md cursor-pointer shrink-0 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500";
+
+  const grayStyle = "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200";
 
   if (app.user) {
     if (isAdmin) {
       return (
-        <Link 
-          to="/admin" 
-          className="ms-1 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-pink-500/10 to-pink-600/10 hover:from-pink-500/20 hover:to-pink-600/20 text-pink-600 dark:text-pink-300 shadow-sm shadow-pink-500/20 hover:shadow-md hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1.5 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 animate-pulse-slow cursor-pointer shrink-0"
-        >
-          <LayoutDashboard className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-pink-500 group-hover:rotate-12 transition-transform" />
-          {app.lang === "ar" ? "👑 لوحة الأدمن" : "👑 Admin"}
+        <Link to="/admin" className={cn(baseBtn, grayStyle)}>
+          <LayoutDashboard className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform" />
+          {app.lang === "ar" ? "لوحة الأدمن" : "Admin"}
         </Link>
       );
     }
     if (isSeller) {
       return (
-        <Link 
-          to="/dashboard" 
-          className="ms-1 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-pink-500/10 to-pink-600/10 hover:from-pink-500/20 hover:to-pink-600/20 text-pink-600 dark:text-pink-300 shadow-sm shadow-pink-500/20 hover:shadow-md hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1.5 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 animate-pulse-slow cursor-pointer shrink-0"
-        >
-          <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-pink-500 group-hover:rotate-12 transition-transform" />
-          {app.lang === "ar" ? "🛍️ لوحة البائع" : "🛍️ Seller"}
+        <Link to="/dashboard" className={cn(baseBtn, grayStyle)}>
+          <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform" />
+          {app.lang === "ar" ? "لوحة البائع" : "Seller"}
         </Link>
       );
     }
-    // ✅ ✅ ✅ إذا كان مستخدم عادي (ليس بائع) → يوجه إلى /become-seller
     return (
-      <Link 
-        to="/become-seller"
-        className="ms-1 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-pink-500/10 to-pink-600/10 hover:from-pink-500/20 hover:to-pink-600/20 text-pink-600 dark:text-pink-300 shadow-sm shadow-pink-500/20 hover:shadow-md hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1.5 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 animate-pulse-slow cursor-pointer shrink-0"
-      >
-        <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-pink-500 group-hover:rotate-12 transition-transform" />
+      <Link to="/become-seller" className={cn(baseBtn, grayStyle)}>
+        <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform" />
         {app.lang === "ar" ? "🚀 طلب فتح متجر" : "🚀 Open Store"}
       </Link>
     );
   }
-  
-  // ✅ ✅ ✅ إذا كان المستخدم غير مسجل → يوجه إلى /become-seller
+
   return (
-    <Link 
-      to="/become-seller"
-      className="ms-1 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-pink-500/10 to-pink-600/10 hover:from-pink-500/20 hover:to-pink-600/20 text-pink-600 dark:text-pink-300 shadow-sm shadow-pink-500/20 hover:shadow-md hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1.5 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 animate-pulse-slow cursor-pointer shrink-0"
-    >
-      <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-pink-500 group-hover:rotate-12 transition-transform" />
+    <Link to="/become-seller" className={cn(baseBtn, grayStyle)}>
+      <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform" />
       {app.lang === "ar" ? "🚀 طلب فتح متجر" : "🚀 Open Store"}
     </Link>
   );

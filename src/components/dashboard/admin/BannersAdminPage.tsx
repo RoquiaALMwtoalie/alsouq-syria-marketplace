@@ -10,9 +10,9 @@ import { ImageInput } from "@/components/ImageInput";
 import { useApp, useT } from "@/lib/i18n";
 import { useAllBanners, useSaveBanner, useDeleteBanner, type BannerRow } from "@/lib/queries";
 import { toast } from "sonner";
-import { 
-  Plus, Pencil, Trash2, AlertTriangle, X, 
-  Sparkles, Zap, Shield, Image, Link2, 
+import {
+  Plus, Pencil, Trash2, AlertTriangle, X,
+  Sparkles, Zap, Shield, Image, Link2,
   CheckCircle2, Clock, Eye, EyeOff, LayoutDashboard,
   TrendingUp, Award, Star, Gem, Rocket, Crown
 } from "lucide-react";
@@ -20,36 +20,19 @@ import { cn } from "@/lib/utils";
 import { OptimizedImage } from "@/components/OptimizedImage";
 
 // ============================================================
-// 🎨 ZOOQ BRAND COLORS
+// ✅ مكون بطاقة البنر - بتصميم بسيط
 // ============================================================
-const COLORS = {
-  olive: '#2a655f',
-  oliveLight: '#3a8a82',
-  oliveDark: '#1a4f4a',
-  oliveVeryLight: '#e8f0ee',
-  pink: '#f9a8d4',
-  pinkLight: '#fbcfe8',
-  pinkDark: '#f48fb1',
-  pinkVeryLight: '#fdf2f8',
-  fuchsia: '#d81b60',
-  fuchsiaDark: '#c2185b',
-  fuchsiaGlow: 'rgba(216,27,96,0.2)',
-};
-
-// ============================================================
-// ✅ مكون بطاقة البنر - بتصميم وردي احترافي
-// ============================================================
-const BannerCard = React.memo(({ 
-  banner, 
-  onEdit, 
+const BannerCard = React.memo(({
+  banner,
+  onEdit,
   onDelete,
   isArabic,
 }: any) => {
   return (
-    <div className="group bg-gradient-to-br from-white to-[#fbcfe8]/40 dark:from-[#1e293b] dark:to-[#fbcfe8]/10 rounded-2xl border-3 border-[#f9a8d4]/60 dark:border-[#f9a8d4]/30 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#f9a8d4]/25 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02]">
+    <div className="group bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]">
       
       {/* ===== الصورة ===== */}
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-44 overflow-hidden">
         <OptimizedImage
           src={banner.image_url}
           alt={banner.title_ar}
@@ -57,16 +40,16 @@ const BannerCard = React.memo(({
           height={300}
           quality={85}
           objectFit="cover"
-          className="w-full h-full group-hover:scale-105 transition-transform duration-700"
+          className="w-full h-full group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#2a655f]/60 via-[#2a655f]/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
         
-        {/* ✅ Badge الحالة - بتصميم وردي */}
+        {/* ✅ Badge الحالة */}
         <Badge
           className={cn(
             "absolute top-3 right-3 border-2 px-3 py-1 text-xs font-medium backdrop-blur-sm",
-            banner.active 
-              ? "bg-[#f9a8d4]/30 text-[#d81b60] border-[#f9a8d4]/50 shadow-lg shadow-[#f9a8d4]/20" 
+            banner.active
+              ? "bg-emerald-500/20 text-emerald-600 border-emerald-500/30"
               : "bg-slate-500/20 text-slate-400 border-slate-500/30"
           )}
         >
@@ -83,14 +66,14 @@ const BannerCard = React.memo(({
           )}
         </Badge>
 
-        {/* ✅ أيقونة نوع البنر - بتصميم وردي */}
+        {/* ✅ أيقونة نوع البنر */}
         <div className="absolute bottom-3 left-3 flex items-center gap-2">
-          <Badge className="bg-[#2a655f]/40 backdrop-blur-sm border-2 border-[#f9a8d4]/30 text-white text-[10px]">
+          <Badge className="bg-black/40 backdrop-blur-sm border border-white/20 text-white text-[10px]">
             <Image className="h-3 w-3 mr-1" />
             Banner
           </Badge>
           {banner.link_url && (
-            <Badge className="bg-[#d81b60]/40 backdrop-blur-sm border-2 border-[#f9a8d4]/30 text-white text-[10px]">
+            <Badge className="bg-black/40 backdrop-blur-sm border border-white/20 text-white text-[10px]">
               <Link2 className="h-3 w-3 mr-1" />
               {isArabic ? "رابط" : "Link"}
             </Badge>
@@ -98,15 +81,15 @@ const BannerCard = React.memo(({
         </div>
       </div>
 
-      {/* ===== المحتوى - مع ألوان وردية ===== */}
-      <div className="p-5">
+      {/* ===== المحتوى ===== */}
+      <div className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors truncate">
+            <h3 className="font-bold text-base text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors truncate">
               {banner.title_ar}
             </h3>
             {banner.subtitle_ar && (
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1 group-hover:text-[#2a655f] transition-colors">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
                 {banner.subtitle_ar}
               </p>
             )}
@@ -116,92 +99,95 @@ const BannerCard = React.memo(({
               </p>
             )}
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40 text-[10px]">
-              #{banner.sort_order + 1}
-            </Badge>
-          </div>
+          <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40 text-[10px] flex-shrink-0">
+            #{banner.sort_order + 1}
+          </Badge>
         </div>
 
-        {/* ✅ أزرار الإجراءات - بتصميم وردي */}
-        <div className="mt-4 flex items-center gap-2">
+        {/* ✅ أزرار الإجراءات - رمادية بالكامل */}
+        <div className="mt-3 flex items-center gap-2">
           <Button
             size="sm"
-            className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105 flex-1 border-2 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
+            variant="outline"
+            className="rounded-xl h-8 px-4 flex-1 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-300"
             onClick={() => onEdit(banner)}
           >
-            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+            <Pencil className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
             {isArabic ? "تعديل" : "Edit"}
           </Button>
           <Button
             size="sm"
-            variant="ghost"
-            className="rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 transition-all duration-300 hover:scale-105 border-2 border-transparent hover:border-rose-500/30"
+            variant="outline"
+            className="rounded-xl h-8 px-3 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-300"
             onClick={() => onDelete(banner)}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-3.5 w-3.5 text-gray-500" />
           </Button>
         </div>
       </div>
       
-      {/* ✅ خط زخرفي سفلي وردي */}
-      <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
+      {/* ✅ خط زخرفي سفلي */}
+      <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#f9a8d4] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
     </div>
   );
 });
 BannerCard.displayName = 'BannerCard';
 
 // ============================================================
-// ✅ مكون إحصائيات سريعة - بتصميم وردي
+// ✅ مكون إحصائيات سريعة - بنفس تصميم الصفحات الأخرى
 // ============================================================
 const StatsCards = React.memo(({ total, active, inactive, isArabic }: any) => {
   const items = [
-    { 
-      key: 'total', 
-      label: isArabic ? '📊 الإجمالي' : '📊 Total', 
-      value: total, 
+    {
+      key: 'total',
+      label: isArabic ? 'إجمالي البنرات' : 'Total Banners',
+      value: total,
       icon: LayoutDashboard,
-      color: 'text-[#2a655f]',
+      gradient: 'from-[#2a655f] to-[#1a4f4a]',
     },
-    { 
-      key: 'active', 
-      label: isArabic ? '✅ نشط' : '✅ Active', 
-      value: active, 
+    {
+      key: 'active',
+      label: isArabic ? 'نشط' : 'Active',
+      value: active,
       icon: CheckCircle2,
-      color: 'text-emerald-500',
+      gradient: 'from-emerald-500 to-teal-500',
     },
-    { 
-      key: 'inactive', 
-      label: isArabic ? '⏸️ غير نشط' : '⏸️ Inactive', 
-      value: inactive, 
+    {
+      key: 'inactive',
+      label: isArabic ? 'غير نشط' : 'Inactive',
+      value: inactive,
       icon: Clock,
-      color: 'text-[#d81b60]',
+      gradient: 'from-[#d81b60] to-[#f9a8d4]',
     },
   ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       {items.map((item) => (
-        <div 
-          key={item.key} 
-          className="group relative bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
+        <div
+          key={item.key}
+          className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 shadow-sm hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative p-4"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="absolute -top-8 -right-8 h-16 w-16 rounded-full bg-[#fbcfe8]/60 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="relative flex items-center justify-between p-3">
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+            <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" />
+          </div>
+          <div className="flex items-center justify-between relative">
             <div>
-              <p className="text-[10px] font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">
-                {item.label}
-              </p>
-              <p className={`text-xl font-bold mt-0.5 ${item.color} group-hover:scale-110 transition-transform duration-300`}>
-                {item.value}
-              </p>
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{item.label}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{item.value}</p>
             </div>
-            <div className={`h-9 w-9 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
-              <item.icon className={`h-4 w-4 ${item.color}`} />
+            <div className="h-10 w-10 rounded-xl bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+              <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center`}>
+                <item.icon className="h-3.5 w-3.5 text-white" />
+              </div>
             </div>
           </div>
-          <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
+          <div className="mt-2 h-0.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+            <div
+              className={`h-full rounded-full bg-gradient-to-r ${item.gradient} transition-all duration-1000 animate-shimmer`}
+              style={{ width: `${Math.min(100, (item.value / (total || 1)) * 100)}%` }}
+            />
+          </div>
         </div>
       ))}
     </div>
@@ -265,41 +251,34 @@ export function BannersAdminPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       
       {/* ===== HEADER - نفس تصميم باقي الصفحات ===== */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="relative">
-          <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
-          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#f9a8d4]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
-          
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
-            <div className="relative group">
-              <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
-              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#f9a8d4]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                <Image className="h-5 w-5 group-hover:animate-bounce" />
-              </div>
-            </div>
-            {isArabic ? "البنرات" : "Banners"}
-            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
-              {stats.total}
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <span className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] bg-clip-text text-transparent">
+              {isArabic ? "البنرات" : "Banners"}
+            </span>
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20 text-[10px]">
+              <Sparkles className="h-2.5 w-2.5 mr-1 text-emerald-500 animate-pulse" />
+              {isArabic ? 'مباشر' : 'Live'}
             </Badge>
           </h1>
-          
-          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
+          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10">
               <LayoutDashboard className="h-3.5 w-3.5 text-[#2a655f]" />
               <span className="text-[#2a655f] font-medium">{stats.total}</span>
               <span className="text-xs text-muted-foreground">{isArabic ? "إجمالي" : "total"}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30 transition-colors">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
               <span className="text-emerald-600 dark:text-emerald-400 font-medium">{stats.active}</span>
               <span className="text-xs text-muted-foreground">{isArabic ? "نشط" : "active"}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f9a8d4]/10 border border-[#f9a8d4]/20 hover:bg-[#f9a8d4]/20 transition-colors">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f9a8d4]/10 border border-[#f9a8d4]/20">
               <Clock className="h-3.5 w-3.5 text-[#d81b60]" />
               <span className="text-[#d81b60] font-medium">{stats.inactive}</span>
               <span className="text-xs text-muted-foreground">{isArabic ? "غير نشط" : "inactive"}</span>
@@ -307,66 +286,57 @@ export function BannersAdminPage() {
           </p>
         </div>
 
-        <Button
-          onClick={openNew}
-          className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-105 group border-2 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
-        >
-          <Plus className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
-          {isArabic ? "إضافة بنر جديد" : "Add New Banner"}
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            onClick={openNew}
+            className="rounded-xl h-10 px-4 bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] hover:from-[#3a8a82] hover:to-[#2a655f] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-105 group border-0"
+          >
+            <Plus className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
+            {isArabic ? "إضافة بنر جديد" : "Add New Banner"}
+          </Button>
+          <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#2a655f]/30">
+            <Sparkles className="h-3 w-3 mr-1" />
+            {isArabic ? 'لوحة تحكم' : 'Dashboard'}
+          </Badge>
+        </div>
       </div>
 
-      {/* ===== STATS CARDS - بتصميم وردي ===== */}
+      {/* ===== STATS CARDS ===== */}
       <StatsCards {...stats} isArabic={isArabic} />
 
-      {/* ===== BANNERS GRID - مع كروت وردية ===== */}
+      {/* ===== BANNERS GRID ===== */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-32 space-y-6">
-          <div className="relative">
-            <div className="h-20 w-20 rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f] animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Image className="h-8 w-8 text-[#2a655f] animate-pulse" />
-            </div>
-          </div>
-          <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 animate-pulse">
+        <div className="flex flex-col items-center justify-center py-32 space-y-4">
+          <div className="h-12 w-12 rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f] animate-spin" />
+          <p className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">
             {isArabic ? "⏳ جاري تحميل البنرات..." : "⏳ Loading banners..."}
           </p>
         </div>
       ) : banners.length === 0 ? (
-        <div className="relative rounded-3xl border-3 border-[#2a655f]/40 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-[#f9a8d4]/5 group hover:border-[#d81b60]/60 hover:shadow-[0_0_35px_rgba(216,27,96,0.2)] transition-all duration-500">
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-[#f9a8d4] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="relative">
-            <div className="absolute -top-12 -left-12 h-32 w-32 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
-            <div className="absolute -bottom-12 -right-12 h-32 w-32 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-            <div className="relative inline-block">
-              <div className="h-24 w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto animate-bounce">
-                <Image className="h-12 w-12 text-[#2a655f]/60" />
-              </div>
-              <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#2a655f]/30">
-                <Plus className="h-4 w-4 text-white" />
-              </div>
-            </div>
-            <h3 className="text-2xl font-bold mt-6 bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] bg-clip-text text-transparent">
-              {isArabic ? "🚀 لا توجد بنرات" : "🚀 No banners"}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-              {isArabic 
-                ? "قم بإضافة أول بنر لجعل الصفحة الرئيسية أكثر جاذبية" 
-                : "Add your first banner to make the homepage more attractive"}
-            </p>
-            <Button
-              onClick={openNew}
-              className="mt-6 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-105 group border-3 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
-            >
-              <Plus className="h-4 w-4 me-2 group-hover:rotate-90 transition-transform duration-300" />
-              {isArabic ? "إضافة بنر جديد" : "Add New Banner"}
-            </Button>
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 p-16 text-center shadow-sm hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300">
+          <div className="h-16 w-16 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
+            <Image className="h-8 w-8 text-[#2a655f]/40" />
           </div>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+            {isArabic ? "🚀 لا توجد بنرات" : "🚀 No banners"}
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+            {isArabic
+              ? "قم بإضافة أول بنر لجعل الصفحة الرئيسية أكثر جاذبية"
+              : "Add your first banner to make the homepage more attractive"}
+          </p>
+          <Button
+            onClick={openNew}
+            className="mt-4 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] hover:from-[#3a8a82] hover:to-[#2a655f] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-105 group border-0"
+          >
+            <Plus className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
+            {isArabic ? "إضافة بنر جديد" : "Add New Banner"}
+          </Button>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {banners.map((banner, index) => (
-            <div key={banner.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
+            <div key={banner.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.05}s` }}>
               <BannerCard
                 banner={banner}
                 onEdit={(b: BannerRow) => setEditing(b)}
@@ -382,23 +352,23 @@ export function BannersAdminPage() {
       )}
 
       {/* ============================================================
-      // ✅ DIALOG: إضافة/تعديل البنر - مع بوردرات وردية
+      // ✅ DIALOG: إضافة/تعديل البنر - بتصميم بسيط
       // ============================================================ */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-3 border-[#f9a8d4]/40 shadow-2xl shadow-[#f9a8d4]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 shadow-2xl shadow-pink-500/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 z-20 transition-all duration-300 border border-gray-300 dark:border-gray-600"
             onClick={() => setEditing(null)}
           >
-            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+            <X className="h-4 w-4 text-slate-400 hover:text-slate-600" />
           </Button>
 
           <div className="p-6">
             <DialogHeader>
               <div className="flex items-start gap-4 mb-2">
-                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#f9a8d4]/30 border-2 border-[#f9a8d4]/40">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] flex items-center justify-center shadow-lg shadow-[#2a655f]/20 border-2 border-pink-400/40">
                   {editing?.id ? (
                     <Pencil className="h-6 w-6 text-white" />
                   ) : (
@@ -414,7 +384,7 @@ export function BannersAdminPage() {
                     )}
                   </DialogTitle>
                   <DialogDescription className="text-sm text-slate-500 dark:text-slate-400">
-                    {editing?.id 
+                    {editing?.id
                       ? isArabic ? "تعديل بيانات البنر" : "Edit banner details"
                       : isArabic ? "أدخل معلومات البنر الجديد" : "Enter new banner details"}
                   </DialogDescription>
@@ -433,7 +403,7 @@ export function BannersAdminPage() {
                     <Input
                       value={editing.title_ar || ""}
                       onChange={(e) => setEditing({ ...editing, title_ar: e.target.value })}
-                      className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+                      className="rounded-xl border border-gray-300 dark:border-gray-600 focus:border-gray-400 focus:ring-2 focus:ring-gray-300/30 transition-all duration-300"
                       placeholder={isArabic ? "مثال: عرض الصيف" : "Example: Summer Sale"}
                     />
                   </div>
@@ -445,7 +415,7 @@ export function BannersAdminPage() {
                     <Input
                       value={editing.title_en || ""}
                       onChange={(e) => setEditing({ ...editing, title_en: e.target.value })}
-                      className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+                      className="rounded-xl border border-gray-300 dark:border-gray-600 focus:border-gray-400 focus:ring-2 focus:ring-gray-300/30 transition-all duration-300"
                       placeholder="Example: Summer Sale"
                     />
                   </div>
@@ -460,7 +430,7 @@ export function BannersAdminPage() {
                     <Input
                       value={editing.subtitle_ar || ""}
                       onChange={(e) => setEditing({ ...editing, subtitle_ar: e.target.value })}
-                      className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+                      className="rounded-xl border border-gray-300 dark:border-gray-600 focus:border-gray-400 focus:ring-2 focus:ring-gray-300/30 transition-all duration-300"
                       placeholder={isArabic ? "مثال: خصم يصل إلى 50%" : "Example: Up to 50% off"}
                     />
                   </div>
@@ -472,7 +442,7 @@ export function BannersAdminPage() {
                     <Input
                       value={editing.subtitle_en || ""}
                       onChange={(e) => setEditing({ ...editing, subtitle_en: e.target.value })}
-                      className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+                      className="rounded-xl border border-gray-300 dark:border-gray-600 focus:border-gray-400 focus:ring-2 focus:ring-gray-300/30 transition-all duration-300"
                       placeholder="Example: Up to 50% off"
                     />
                   </div>
@@ -487,7 +457,7 @@ export function BannersAdminPage() {
                     value={editing.link_url || ""}
                     onChange={(e) => setEditing({ ...editing, link_url: e.target.value })}
                     placeholder={isArabic ? "/category/fashion" : "/category/fashion"}
-                    className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+                    className="rounded-xl border border-gray-300 dark:border-gray-600 focus:border-gray-400 focus:ring-2 focus:ring-gray-300/30 transition-all duration-300"
                   />
                 </div>
 
@@ -509,34 +479,34 @@ export function BannersAdminPage() {
                         ? "ارفع صورة البنر من جهازك أو ضع رابط URL"
                         : "Upload a banner image or paste a URL"
                     }
-                    previewClassName="aspect-[16/6] h-auto rounded-xl border-3 border-[#f9a8d4]/40"
+                    previewClassName="aspect-[16/6] h-auto rounded-xl border border-gray-300 dark:border-gray-600"
                   />
                 </div>
 
-                <div className="flex items-center gap-4 p-4 bg-[#f9a8d4]/10 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 transition-colors">
+                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-300 dark:border-gray-600">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={editing.active ?? true}
                       onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
-                      className="h-4 w-4 rounded border-[#f9a8d4]/40 text-[#2a655f] focus:ring-[#f9a8d4]/30 accent-[#2a655f]"
+                      className="h-4 w-4 rounded border-gray-300 text-[#2a655f] focus:ring-[#2a655f]/30 accent-[#2a655f]"
                     />
                     <span className="text-sm font-medium text-[#2a655f] dark:text-white">
                       {isArabic ? "🟢 البنر نشط" : "🟢 Banner is active"}
                     </span>
                   </label>
-                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40 text-[10px]">
+                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40 text-[10px]">
                     {isArabic ? `ترتيب: ${editing.sort_order + 1}` : `Order: ${editing.sort_order + 1}`}
                   </Badge>
                 </div>
               </div>
             )}
 
-            <DialogFooter className="gap-3 pt-4 border-t-3 border-[#f9a8d4]/30">
-              <Button 
-                variant="outline" 
+            <DialogFooter className="gap-3 pt-4 border-t border-gray-300 dark:border-gray-600">
+              <Button
+                variant="outline"
                 onClick={() => setEditing(null)}
-                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
+                className="flex-1 rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-slate-600 hover:text-slate-800 transition-all duration-300"
               >
                 <X className="h-4 w-4 mr-1" />
                 {isArabic ? "إلغاء" : "Cancel"}
@@ -544,7 +514,7 @@ export function BannersAdminPage() {
               <Button
                 onClick={handleSave}
                 disabled={save.isPending}
-                className="flex-1 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-[1.02] border-2 border-[#2a655f]/30"
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] hover:from-[#3a8a82] hover:to-[#2a655f] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-[1.02] border-0"
               >
                 {save.isPending ? (
                   <span className="flex items-center gap-2">
@@ -564,17 +534,17 @@ export function BannersAdminPage() {
       </Dialog>
 
       {/* ============================================================
-      // ✅ DIALOG: تأكيد الحذف - مع بوردرات وردية
+      // ✅ DIALOG: تأكيد الحذف - بتصميم بسيط
       // ============================================================ */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden border-3 border-[#d81b60]/40 shadow-2xl shadow-[#d81b60]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
+        <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden border-2 border-[#d81b60]/40 shadow-2xl shadow-[#d81b60]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 z-20 transition-all duration-300 border border-gray-300 dark:border-gray-600"
             onClick={() => setDeleteDialogOpen(false)}
           >
-            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+            <X className="h-4 w-4 text-slate-400 hover:text-slate-600" />
           </Button>
 
           <div className="p-6">
@@ -632,7 +602,7 @@ export function BannersAdminPage() {
               <Button
                 variant="outline"
                 onClick={() => setDeleteDialogOpen(false)}
-                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
+                className="flex-1 rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-slate-600 hover:text-slate-800 transition-all duration-300"
               >
                 {isArabic ? "إلغاء" : "Cancel"}
               </Button>
@@ -699,7 +669,7 @@ export function BannersAdminPage() {
           }
         }
         .animate-fade-in-up {
-          animation: fadeInUp 0.5s ease-out forwards;
+          animation: fadeInUp 0.3s ease-out forwards;
           opacity: 0;
         }
       `}</style>

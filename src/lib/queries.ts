@@ -285,33 +285,60 @@ export function useGovernorates() { return useQuery(governoratesQuery); }
 export function useSimilarListings(categoryId: string | undefined, currentId: string | undefined, limit = 4) {
   return useQuery({
     queryKey: ["listings", "similar", categoryId, currentId, limit],
-    enabled: !!categoryId && !!currentId,
+    enabled: !!currentId,  // ✅ فقط بـ currentId (لا يحتاج categoryId)
     queryFn: async () => {
       console.log("📡 [useSimilarListings] Fetching similar listings...");
       
-      const { data, error } = await supabase
-        .rpc('get_public_products_with_variations', {
-          p_limit: limit + 1, 
-          p_offset: 0,
-          p_sort: 'rating',
-          p_is_offer: null,
-          p_category_id: categoryId,
-          p_is_featured: null
-        });
-      
-      if (error) {
-        console.error("❌ [useSimilarListings] RPC Error:", error);
-        throw error;
+      // ✅ 1. جرب RPC أولاً
+      if (categoryId) {
+        const { data, error } = await supabase
+          .rpc('get_similar_listings', {
+            p_category_id: categoryId,
+            p_exclude_id: currentId || "",
+            p_limit: limit
+          });
+        
+        if (!error && Array.isArray(data) && data.length > 0) {
+          console.log(`✅ [useSimilarListings] Found ${data.length} similar listings from RPC`);
+          return data;
+        }
+        
+        if (error) {
+          console.warn("⚠️ [useSimilarListings] RPC failed, using fallback:", error);
+        } else {
+          console.log("⚠️ [useSimilarListings] RPC returned 0, using fallback...");
+        }
       }
       
-      const listings = Array.isArray(data) ? data : [];
-      const filtered = listings
-        .filter((item: any) => item.id !== currentId)
-        .slice(0, limit);
+      // ✅ 2. Fallback: الأكثر شعبية من كل الأقسام
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .rpc('get_public_products_with_variations', {
+          p_limit: limit + 2,  // ✅ +2 لضمان وجود بدائل بعد استبعاد المنتج الحالي
+          p_offset: 0,
+          p_sort: 'popular',
+          p_is_offer: null,
+          p_category_id: null,
+          p_is_featured: null,
+          p_governorate_id: null,
+        });
       
-      console.log(`✅ [useSimilarListings] Found ${filtered.length} similar listings`);
-      return filtered;
+      if (fallbackError) {
+        console.error("❌ [useSimilarListings] Fallback Error:", fallbackError);
+        return [];
+      }
+      
+      const fallbackListings = Array.isArray(fallbackData)
+        ? fallbackData
+            .filter((l: any) => l.id !== currentId)
+            .slice(0, limit)
+        : [];
+      
+      console.log(`✅ [useSimilarListings] Fallback: ${fallbackListings.length} listings`);
+      return fallbackListings;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -2203,10 +2230,11 @@ export function useTrendingListings(limit = 12) {
         .rpc('get_public_products_with_variations', {
           p_limit: limit,
           p_offset: 0,
-          p_sort: 'featured',
+          p_sort: 'popular',        // ✅ الأكثر شعبية
           p_is_offer: null,
           p_category_id: null,
-          p_is_featured: true
+          p_is_featured: null,      // ✅ بدون فلتر (كل المنتجات)
+          p_governorate_id: null,
         });
       
       if (error) throw error;
@@ -2223,7 +2251,6 @@ export function useTrendingListings(limit = 12) {
     refetchOnMount: false,
   });
 }
-
 export function useTrendingStores(limit = 12) {
   return useQuery({
     queryKey: ["stores", "trending", limit],
@@ -5285,9 +5312,8 @@ export function useProductOffers(options?: {
   offerType?: 'bogo' | 'cross_sell' | 'bundle';
   featured?: boolean;
   categoryId?: string;
-  governorateId?: string;  // ✅ أضف هذا
+  governorateId?: string;
 }) {
-  // ✅ تثبيت الـ options باستخدام useMemo
   const stableOptions = useMemo(() => ({
     storeId: options?.storeId || null,
     listingId: options?.listingId || null,
@@ -5297,7 +5323,7 @@ export function useProductOffers(options?: {
     offerType: options?.offerType || null,
     featured: options?.featured !== undefined ? options.featured : null,
     categoryId: options?.categoryId || null,
-    governorateId: options?.governorateId || null,  // ✅ أضف هذا
+    governorateId: options?.governorateId || null,
   }), [
     options?.storeId,
     options?.listingId,
@@ -5307,23 +5333,19 @@ export function useProductOffers(options?: {
     options?.offerType,
     options?.featured,
     options?.categoryId,
-    options?.governorateId,  // ✅ أضف هذا
+    options?.governorateId,
   ]);
 
-  console.log("🎯 [useProductOffers] Hook called with stable options:", stableOptions);
-  
   return useQuery({
     queryKey: ["product-offers", stableOptions],
     queryFn: async () => {
-      console.log("🔄 [useProductOffers] queryFn executing...");
-      
       const cacheKey = `product_offers_${JSON.stringify(stableOptions)}`;
       const cached = cacheManager.get<any[]>(cacheKey);
       if (cached) {
         console.log('✅ [useProductOffers] Using cached data');
         return cached;
       }
-      
+
       const { data, error } = await supabase
         .rpc('get_product_offers_with_details', {
           p_limit: stableOptions.limit,
@@ -5331,7 +5353,7 @@ export function useProductOffers(options?: {
           p_store_id: stableOptions.storeId,
           p_category_id: stableOptions.categoryId,
           p_is_active: stableOptions.isActive,
-          p_governorate_id: stableOptions.governorateId  // ✅ أضف هذا
+          p_governorate_id: stableOptions.governorateId,
         });
 
       if (error) {
@@ -5339,9 +5361,17 @@ export function useProductOffers(options?: {
         return [];
       }
 
-      const result = data || [];
+      let result = data || [];
+
+      // ✅ فلترة حسب listingId إذا مُرّر
+      if (stableOptions.listingId) {
+        result = result.filter((offer: any) => 
+          offer.listing_id === stableOptions.listingId ||
+          (offer.required_product_ids && offer.required_product_ids.includes(stableOptions.listingId))
+        );
+      }
+
       cacheManager.set(cacheKey, result, PRODUCT_OFFERS_CACHE_TTL);
-      
       console.log(`📊 [useProductOffers] Found ${result.length} offers (cached)`);
       return result;
     },
@@ -5353,7 +5383,14 @@ export function useProductOffers(options?: {
     retry: 1,
   });
 }
-
+// ✅ Hook لجلب عروض منتج معين (للبطاقات في أي مكان)
+export function useProductOffersForListing(listingId: string | undefined) {
+  return useProductOffers({
+    listingId,
+    isActive: true,
+    limit: 10,
+  });
+}
 // ============================================================
 // ✅ GET OR CREATE CONVERSATION
 // ============================================================

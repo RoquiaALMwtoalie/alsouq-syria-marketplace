@@ -18,8 +18,8 @@ import {
   useSendNotificationV2,
 } from "@/lib/queries";
 import { toast } from "sonner";
-import { 
-  CheckCircle2, XCircle, Clock, Trash2, Flame, 
+import {
+  CheckCircle2, XCircle, Clock, Trash2, Flame,
   Search, Filter, RefreshCw, FileSpreadsheet, FileText,
   ChevronLeft, ChevronRight, Package, Store, DollarSign,
   Eye, Sparkles, Layers, Zap, Crown, Star, Gem,
@@ -51,11 +51,11 @@ export function AdminListings() {
   const isRTL = app.lang === 'ar';
 
   // ✅ ===== استخدام React Query مع تحسينات =====
-  const { 
-    data: rows = [], 
-    isLoading, 
+  const {
+    data: rows = [],
+    isLoading,
     refetch,
-    isRefetching 
+    isRefetching
   } = useAllListingsAdmin(statusFilter === "all" ? undefined : statusFilter);
 
   const setStatusMut = useSetListingStatus();
@@ -126,7 +126,7 @@ export function AdminListings() {
           type: "product_approved",
           titleAr: "✅ تمت الموافقة على منتجك",
           bodyAr: `تمت الموافقة على منتج "${product.title_ar}" وهو الآن متاح للبيع 🎉`,
-          linkUrl: `/dashboard?tab=products`, 
+          linkUrl: `/dashboard?tab=products`,
           imageUrl: product.cover_url || undefined,
           actions: [
             { label_ar: "عرض المنتج", url: `/listing/${product.id}` },
@@ -172,10 +172,10 @@ export function AdminListings() {
     const toastId = toast.loading(isRTL ? "⏳ جاري الرفض..." : "⏳ Rejecting...");
     
     try {
-      await setStatusMut.mutateAsync({ 
-        id: productToReject.id, 
+      await setStatusMut.mutateAsync({
+        id: productToReject.id,
         status: "draft",
-        rejection_reason: rejectReason 
+        rejection_reason: rejectReason
       });
       await refetch();
       
@@ -185,7 +185,7 @@ export function AdminListings() {
           type: "product_rejected",
           titleAr: "❌ تم رفض منتجك",
           bodyAr: `تم رفض منتج "${productToReject.title_ar}"\nالسبب: ${rejectReason}`,
-          linkUrl: `/dashboard?tab=products`, 
+          linkUrl: `/dashboard?tab=products`,
           imageUrl: productToReject.cover_url,
           actions: [
             { label_ar: "مراجعة المنتج", url: "/dashboard/products" },
@@ -367,25 +367,21 @@ export function AdminListings() {
   }, []);
 
   // ============================================================
-  // ✅ التصميم
+  // ✅ التصميم - كروت الإحصائيات بنفس تصميم AdminOverview
   // ============================================================
 
   return (
     <div className="space-y-5">
       
-      {/* ✅ Header */}
-
+      {/* ✅ Header - نفس تصميم AdminProducts */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#f9a8d4]/30">
-              <Package className="h-5 w-5 text-white animate-float" />
-            </div>
-            <span className="bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] bg-clip-text text-transparent">
               {isRTL ? "إدارة المنتجات" : "Products"}
             </span>
-            <Badge className="bg-[#f9a8d4]/20 text-[#d81b60] border-2 border-[#f9a8d4]/40 text-[10px] animate-pulse">
-              <Sparkles className="h-2.5 w-2.5 mr-1" />
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20 text-[10px]">
+              <Sparkles className="h-2.5 w-2.5 mr-1 text-emerald-500 animate-pulse" />
               {isRTL ? 'مباشر' : 'Live'}
             </Badge>
           </h1>
@@ -402,13 +398,13 @@ export function AdminListings() {
         </div>
         
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border-2 border-[#f9a8d4]/40 shadow-sm">
+          <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-slate-200 dark:border-slate-700 shadow-sm">
             <Button
               variant="ghost"
               size="sm"
               onClick={exportToExcel}
               disabled={filteredRows.length === 0}
-              className="rounded-lg h-9 px-4 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] gap-2 transition-all duration-300 hover:scale-105"
+              className="rounded-lg h-9 px-4 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:text-slate-800 dark:hover:text-slate-200 gap-2 transition-all duration-300"
             >
               <FileSpreadsheet className="h-4 w-4" />
               <span className="hidden sm:inline text-xs font-medium">Excel</span>
@@ -418,90 +414,94 @@ export function AdminListings() {
               size="sm"
               onClick={exportToWord}
               disabled={filteredRows.length === 0}
-              className="rounded-lg h-9 px-4 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] gap-2 transition-all duration-300 hover:scale-105"
+              className="rounded-lg h-9 px-4 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:text-slate-800 dark:hover:text-slate-200 gap-2 transition-all duration-300"
             >
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline text-xs font-medium">Word</span>
             </Button>
-            <div className="w-px h-6 bg-[#f9a8d4]/30" />
+            <div className="w-px h-6 bg-slate-300/50 dark:bg-slate-600/50" />
             <Button
               variant="ghost"
               size="sm"
               onClick={() => refetch()}
               disabled={isRefetching}
-              className="rounded-lg h-9 px-3 text-[#2a655f] hover:bg-[#f9a8d4]/20 transition-all duration-300 hover:scale-105"
+              className="rounded-lg h-9 px-3 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-all duration-300"
             >
               <RefreshCw className={cn("h-4 w-4", isRefetching && "animate-spin")} />
             </Button>
           </div>
-          <Badge className="bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white border-2 border-white/30 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#f9a8d4]/30 animate-pulse">
-            <Sparkles className="h-3 w-3 mr-1" />
-            {isRTL ? 'لوحة تحكم' : 'Dashboard'}
-          </Badge>
+         
         </div>
       </div>
 
-      {/* ✅ Stats Cards - بتصميم وردي */}
-
-<div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      {/* ✅ Stats Cards - نفس تصميم AdminOverview (خلفية بيضاء وبوردر زهري) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { 
-            key: "total", 
-            label: isRTL ? "إجمالي المنتجات" : "Total Products", 
+          {
+            key: "total",
+            label: isRTL ? "إجمالي المنتجات" : "Total Products",
             value: stats.total,
             icon: Package,
+            color: "text-[#2a655f]",
+            border: "border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500",
             gradient: "from-[#2a655f] to-[#f9a8d4]",
           },
-          { 
-            key: "pending", 
-            label: isRTL ? "قيد المراجعة" : "Pending", 
+          {
+            key: "pending",
+            label: isRTL ? "قيد المراجعة" : "Pending",
             value: stats.pending,
             icon: Clock,
-            gradient: "from-[#f9a8d4] to-[#fbcfe8]",
+            color: "text-[#3a8a82]",
+            border: "border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500",
+            gradient: "from-[#3a8a82] to-[#f9a8d4]",
           },
-          { 
-            key: "published", 
-            label: isRTL ? "منشورة" : "Published", 
+          {
+            key: "published",
+            label: isRTL ? "منشورة" : "Published",
             value: stats.published,
             icon: CheckCircle2,
-            gradient: "from-[#2a655f] to-[#3a8a82]",
+            color: "text-[#1a4f4a]",
+            border: "border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500",
+            gradient: "from-[#1a4f4a] to-[#f9a8d4]",
           },
-          { 
-            key: "archived", 
-            label: isRTL ? "مؤرشفة" : "Archived", 
-            value: stats.archived,
-            icon: XCircle,
-            gradient: "from-[#3a8a82] to-[#4a9f95]",
-          },
-          { 
-            key: "featured", 
-            label: isRTL ? "رائجة" : "Featured", 
+          {
+            key: "featured",
+            label: isRTL ? "رائجة" : "Featured",
             value: stats.featured,
             icon: Flame,
-            gradient: "from-[#d81b60] to-[#f9a8d4]",
+            color: "text-[#4a9f95]",
+            border: "border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500",
+            gradient: "from-[#4a9f95] to-[#f9a8d4]",
           },
-        ].map((stat) => (
-          <div
-            key={stat.key}
-            className="group bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden relative p-4"
+        ].map((stat, i) => (
+          <div 
+            key={i} 
+            className={cn(
+              "group bg-white dark:bg-[#1e293b] rounded-xl border-2 transition-all duration-300 hover:shadow-xl",
+              stat.border,
+              "hover:shadow-pink-500/20 hover:-translate-y-1 hover:scale-[1.02]"
+            )}
           >
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-              <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#f9a8d4]/10 blur-3xl animate-pulse" />
-            </div>
-            <div className="flex items-center justify-between relative">
+            <div className="flex items-start justify-between p-4">
               <div>
-                <p className="text-xs font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">{stat.label}</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stat.value}</p>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
-                  <stat.icon className="h-3.5 w-3.5 text-white" />
-                </div>
+              <div className={cn(
+                "h-12 w-12 rounded-xl flex items-center justify-center",
+                "bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40",
+                "group-hover:scale-110 group-hover:rotate-6 transition-all duration-300"
+              )}>
+                <stat.icon className={cn("h-5 w-5", stat.color)} />
               </div>
             </div>
-            <div className="mt-2 h-0.5 w-full rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+            <div className="mt-0 h-1 w-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
               <div 
-                className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000 animate-shimmer`} 
+                className={cn(
+                  "h-full rounded-full bg-gradient-to-r",
+                  stat.gradient,
+                  "transition-all duration-1000 animate-shimmer"
+                )} 
                 style={{ width: `${Math.min(100, (stat.value / (stats.total || 1)) * 100)}%` }}
               />
             </div>
@@ -509,53 +509,52 @@ export function AdminListings() {
         ))}
       </div>
 
-      {/* ✅ Search & Filters - مع بوردرات وردية */}
-
+      {/* ✅ Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 group">
-          <Search className={`absolute inset-y-0 my-auto ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-focus-within:text-[#d81b60] transition-colors duration-300`} />
+          <Search className={`absolute inset-y-0 my-auto ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-focus-within:text-slate-600 transition-colors duration-300`} />
           <Input
             value={searchQuery}
             onChange={handleSearchChange}
             placeholder={isRTL ? "🔍 بحث عن منتج..." : "🔍 Search products..."}
-            className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border-3 border-[#f9a8d4]/40 dark:border-[#f9a8d4]/30 bg-white dark:bg-[#1e293b] focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#d81b60]/50`}
+            className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:border-slate-300 focus:ring-2 focus:ring-slate-300/30 transition-all duration-300 hover:border-slate-300 dark:hover:border-slate-600`}
           />
         </div>
 
         <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
-          <SelectTrigger className="w-[160px] h-10 rounded-xl border-3 border-[#f9a8d4]/40 dark:border-[#f9a8d4]/30 bg-white dark:bg-[#1e293b] hover:border-[#d81b60]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[160px] h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-slate-300/30">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-[#d81b60]" />
+              <Filter className="h-4 w-4 text-slate-500" />
               <SelectValue placeholder={isRTL ? "الحالة" : "Status"} />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/40">
-            <SelectItem value="pending" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">⏳ {isRTL ? "قيد المراجعة" : "Pending"}</SelectItem>
-            <SelectItem value="published" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">✅ {isRTL ? "منشور" : "Published"}</SelectItem>
-            <SelectItem value="archived" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📦 {isRTL ? "مؤرشف" : "Archived"}</SelectItem>
-            <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📋 {isRTL ? "الكل" : "All"}</SelectItem>
+          <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-700">
+            <SelectItem value="pending" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⏳ {isRTL ? "قيد المراجعة" : "Pending"}</SelectItem>
+            <SelectItem value="published" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {isRTL ? "منشور" : "Published"}</SelectItem>
+            <SelectItem value="archived" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📦 {isRTL ? "مؤرشف" : "Archived"}</SelectItem>
+            <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📋 {isRTL ? "الكل" : "All"}</SelectItem>
           </SelectContent>
         </Select>
 
-        <Select 
-          value={String(limit)} 
+        <Select
+          value={String(limit)}
           onValueChange={(value) => {
             setLimit(Number(value));
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-3 border-[#f9a8d4]/40 dark:border-[#f9a8d4]/30 bg-white dark:bg-[#1e293b] hover:border-[#d81b60]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[100px] h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-slate-300/30">
             <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-[#d81b60]" />
+              <Layers className="h-4 w-4 text-slate-500" />
               <SelectValue placeholder="10" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/40">
-            <SelectItem value="6" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">6</SelectItem>
-            <SelectItem value="10" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">10</SelectItem>
-            <SelectItem value="20" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">20</SelectItem>
-            <SelectItem value="50" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">50</SelectItem>
-            <SelectItem value="100" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">100</SelectItem>
+          <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-700">
+            <SelectItem value="6" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">6</SelectItem>
+            <SelectItem value="10" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">10</SelectItem>
+            <SelectItem value="20" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">20</SelectItem>
+            <SelectItem value="50" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">50</SelectItem>
+            <SelectItem value="100" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">100</SelectItem>
           </SelectContent>
         </Select>
 
@@ -567,415 +566,412 @@ export function AdminListings() {
             setStatusFilter("pending");
             setPage(1);
           }}
-          className="h-10 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] transition-all duration-300 hover:scale-105"
+          className="h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
         >
           <XCircle className="h-4 w-4 mr-1.5" />
           {isRTL ? "مسح الكل" : "Clear all"}
         </Button>
       </div>
 
-      {/* ✅ Table - مع hover وردي */}
-
-   {/* ✅ Table - نفس تصميم جدول CustomersPage */}
-
-<div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
-  <div className="overflow-x-auto">
-    <Table>
-      <TableHeader>
-        <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-gradient-to-r from-[#f9a8d4]/30 via-[#fbcfe8]/20 to-[#f9a8d4]/30 dark:from-[#f9a8d4]/20 dark:via-[#fbcfe8]/10 dark:to-[#f9a8d4]/20 border-b-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30">
-          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-right min-w-[200px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <div className="flex items-center gap-2">
-              <Package className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
-              {isRTL ? "المنتج" : "Product"}
-            </div>
-          </TableHead>
-          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <div className="flex items-center justify-center gap-2">
-              <Store className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
-              {isRTL ? "المتجر" : "Store"}
-            </div>
-          </TableHead>
-          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[100px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <div className="flex items-center justify-center gap-2">
-              <DollarSign className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
-              {isRTL ? "السعر" : "Price"}
-            </div>
-          </TableHead>
-          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[100px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <div className="flex items-center justify-center gap-2">
-              <Shield className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
-              {isRTL ? "الحالة" : "Status"}
-            </div>
-          </TableHead>
-          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[340px]">
-            <div className="flex items-center justify-center gap-2">
-              <Zap className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4] animate-pulse" />
-              {isRTL ? "إجراءات" : "Actions"}
-            </div>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {isLoading && (
-          <TableRow>
-            <TableCell colSpan={5} className="text-center py-12">
-              <div className="flex items-center justify-center gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-[#2a655f]" />
-                <span className="text-slate-500">{isRTL ? "جار التحميل..." : "Loading..."}</span>
-              </div>
-            </TableCell>
-          </TableRow>
-        )}
-        {!isLoading && paginatedRows.length === 0 && (
-          <TableRow>
-            <TableCell colSpan={5} className="text-center py-12">
-              <div className="flex flex-col items-center gap-3">
-                <div className="h-16 w-16 rounded-full bg-[#2a655f]/10 flex items-center justify-center animate-bounce-slow">
-                  <Package className="h-8 w-8 text-[#2a655f]/40" />
-                </div>
-                <p className="font-medium text-slate-900 dark:text-white">
-                  {isRTL ? "لا توجد منتجات" : "No products"}
-                </p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {isRTL ? "جميع المنتجات تمت مراجعتها" : "All products have been reviewed"}
-                </p>
-              </div>
-            </TableCell>
-          </TableRow>
-        )}
-        {paginatedRows.map((r: any) => {
-          const isPending = r.status === "pending";
-          const isPublished = r.status === "published";
-          const isArchived = r.status === "archived";
-          const isFeatured = r.is_featured === true;
-          const isProcessing = setStatusMut.isPending;
-          const hasRejectionReason = r.rejection_reason && r.rejection_reason.trim() !== "";
-          
-          return (
-            <TableRow 
-              key={r.id} 
-              className={cn(
-                "border-slate-100 dark:border-slate-800 hover:bg-[#f9a8d4]/15 dark:hover:bg-[#f9a8d4]/10 transition-colors duration-300 group border-b-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10",
-                isPending && "bg-amber-50/30 dark:bg-amber-950/10",
-                isArchived && hasRejectionReason && "bg-rose-50/10 dark:bg-rose-950/5"
-              )}
-            >
-              {/* ✅ عمود المنتج */}
-              <TableCell className="border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
-                <div className="flex items-center gap-3">
-                  {r.cover_url ? (
-                    <div className="relative h-12 w-12 rounded-xl overflow-hidden border-2 border-[#f9a8d4]/30 flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
-                      <img
-                        src={r.cover_url}
-                        className="h-full w-full object-cover"
-                        alt=""
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#f9a8d4]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    </div>
-                  ) : (
-                    <div className="h-12 w-12 rounded-xl bg-[#f9a8d4]/20 border-2 border-[#f9a8d4]/30 flex items-center justify-center flex-shrink-0">
-                      <Package className="h-5 w-5 text-[#d81b60]/40" />
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 group-hover:text-[#d81b60] transition-colors">
-                      {isRTL ? r.title_ar : (r.title_en || r.title_ar)}
-                      {isFeatured && (
-                        <Flame className="h-3.5 w-3.5 text-[#d81b60] fill-[#d81b60] animate-pulse shrink-0" />
-                      )}
-                      {isPending && (
-                        <Badge className="bg-[#f9a8d4]/20 text-[#d81b60] border-2 border-[#f9a8d4]/40 text-[8px] animate-pulse">
-                          {isRTL ? "جديد" : "New"}
-                        </Badge>
-                      )}
-                      {isArchived && hasRejectionReason && (
-                        <Badge className="bg-rose-500/20 text-rose-600 border-2 border-rose-500/30 text-[8px]">
-                          {isRTL ? "مرفوض" : "Rejected"}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px] flex items-center gap-1">
-                      <Tags className="h-3 w-3 text-[#d81b60]" />
-                      {r.categories?.[isRTL ? "name_ar" : "name_en"] ?? "—"}
-                    </div>
+      {/* ✅ Table */}
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-slate-200 dark:border-slate-700 hover:bg-transparent bg-gradient-to-r from-slate-100/50 via-slate-50/30 to-slate-100/50 dark:from-slate-800/30 dark:via-slate-700/20 dark:to-slate-800/30 border-b-2 border-slate-200 dark:border-slate-700">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-right min-w-[200px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                    {isRTL ? "المنتج" : "Product"}
                   </div>
-                </div>
-              </TableCell>
-              
-              {/* ✅ عمود المتجر */}
-              <TableCell className="text-sm text-slate-600 dark:text-slate-300 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
-                <div className="flex items-center justify-center gap-1">
-                  <Store className="h-3 w-3 text-[#d81b60]" />
-                  {getStoreName(r)}
-                </div>
-              </TableCell>
-              
-              {/* ✅ عمود السعر */}
-              <TableCell className="font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
-                {Number(r.price).toLocaleString(app.lang === "ar" ? "ar-SY" : "en-US")}
-              </TableCell>
-              
-              {/* ✅ عمود الحالة */}
-              <TableCell className="text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
-                <Badge
-                  className={cn(
-                    "border-2 font-medium px-3 py-1 transition-all duration-300",
-                    isPending 
-                      ? "bg-[#f9a8d4]/20 text-[#d81b60] border-[#f9a8d4]/40" 
-                      : isPublished
-                      ? "bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/30" 
-                      : "bg-[#3a8a82]/10 text-[#3a8a82] border-[#3a8a82]/30"
-                  )}
-                >
-                  <span className="flex items-center gap-1.5">
-                    {isPending && <Clock className="h-3 w-3 animate-spin-slow" />}
-                    {isPublished && <CheckCircle2 className="h-3 w-3" />}
-                    {isArchived && <XCircle className="h-3 w-3" />}
-                    {isPending ? (isRTL ? "قيد المراجعة" : "Pending") :
-                     isPublished ? (isRTL ? "منشور" : "Published") :
-                     (isRTL ? "مؤرشف" : "Archived")}
-                  </span>
-                </Badge>
-              </TableCell>
-              
-              {/* ✅ عمود الإجراءات */}
-              <TableCell className="text-center">
-                <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                  {/* ✅ زر Trending - مع ألوان وردية */}
-                  <Button
-                    size="sm"
+                </TableHead>
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[120px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center justify-center gap-2">
+                    <Store className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                    {isRTL ? "المتجر" : "Store"}
+                  </div>
+                </TableHead>
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[100px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center justify-center gap-2">
+                    <DollarSign className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                    {isRTL ? "السعر" : "Price"}
+                  </div>
+                </TableHead>
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[100px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center justify-center gap-2">
+                    <Shield className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                    {isRTL ? "الحالة" : "Status"}
+                  </div>
+                </TableHead>
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[340px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300 animate-pulse" />
+                    {isRTL ? "إجراءات" : "Actions"}
+                  </div>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12">
+                    <div className="flex items-center justify-center gap-3">
+                      <Loader2 className="h-6 w-6 animate-spin text-[#2a655f]" />
+                      <span className="text-slate-500">{isRTL ? "جار التحميل..." : "Loading..."}</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isLoading && paginatedRows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-16 w-16 rounded-full bg-[#2a655f]/10 flex items-center justify-center animate-bounce-slow">
+                        <Package className="h-8 w-8 text-[#2a655f]/40" />
+                      </div>
+                      <p className="font-medium text-slate-900 dark:text-white">
+                        {isRTL ? "لا توجد منتجات" : "No products"}
+                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {isRTL ? "جميع المنتجات تمت مراجعتها" : "All products have been reviewed"}
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+              {paginatedRows.map((r: any) => {
+                const isPending = r.status === "pending";
+                const isPublished = r.status === "published";
+                const isArchived = r.status === "archived";
+                const isFeatured = r.is_featured === true;
+                const isProcessing = setStatusMut.isPending;
+                const hasRejectionReason = r.rejection_reason && r.rejection_reason.trim() !== "";
+                
+                return (
+                  <TableRow
+                    key={r.id}
                     className={cn(
-                      "rounded-xl h-8 px-3 transition-all duration-300 hover:scale-105 border-2",
-                      isFeatured
-                        ? "bg-gradient-to-r from-[#d81b60] to-[#f9a8d4] hover:from-[#c2185b] hover:to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/30 border-[#f9a8d4]/50"
-                        : "border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60]"
+                      "border-slate-200 dark:border-slate-700 hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition-colors duration-300 group border-b-2 border-slate-200/60 dark:border-slate-700/60",
+                      isPending && "bg-amber-50/30 dark:bg-amber-950/10",
+                      isArchived && hasRejectionReason && "bg-rose-50/10 dark:bg-rose-950/5"
                     )}
-                    onClick={() => handleToggleFeatured(r.id, isFeatured)}
-                    disabled={setFeatured.isPending}
-                    title={isRTL ? "الأكثر رواجاً" : "Trending"}
                   >
-                    {setFeatured.isPending ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                    ) : (
-                      <Flame className={cn("h-3.5 w-3.5 mr-1", isFeatured ? "animate-pulse" : "")} />
-                    )}
-                    {isRTL ? "رائج" : "Trend"}
-                  </Button>
+                    {/* ✅ عمود المنتج */}
+                    <TableCell className="border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                      <div className="flex items-center gap-3">
+                        {r.cover_url ? (
+                          <div className="relative h-12 w-12 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                            <img
+                              src={r.cover_url}
+                              className="h-full w-full object-cover"
+                              alt=""
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-200/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          </div>
+                        ) : (
+                          <div className="h-12 w-12 rounded-xl bg-slate-100 dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0">
+                            <Package className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 group-hover:text-[#2a655f] transition-colors">
+                            {isRTL ? r.title_ar : (r.title_en || r.title_ar)}
+                            {isFeatured && (
+                              <Flame className="h-3.5 w-3.5 text-[#d81b60] fill-[#d81b60] animate-pulse shrink-0" />
+                            )}
+                            {isPending && (
+                              <Badge className="bg-[#f9a8d4]/20 text-[#d81b60] border-2 border-pink-400/40 text-[8px] animate-pulse hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
+                                {isRTL ? "جديد" : "New"}
+                              </Badge>
+                            )}
+                            {isArchived && hasRejectionReason && (
+                              <Badge className="bg-rose-500/20 text-rose-600 border-2 border-rose-500/30 text-[8px] hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
+                                {isRTL ? "مرفوض" : "Rejected"}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px] flex items-center gap-1">
+                            <Tags className="h-3 w-3 text-[#d81b60]" />
+                            {r.categories?.[isRTL ? "name_ar" : "name_en"] ?? "—"}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    
+                    {/* ✅ عمود المتجر */}
+                    <TableCell className="text-sm text-slate-600 dark:text-slate-300 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                      <div className="flex items-center justify-center gap-1">
+                        <Store className="h-3 w-3 text-[#2a655f] dark:text-slate-400" />
+                        {getStoreName(r)}
+                      </div>
+                    </TableCell>
+                    
+                    {/* ✅ عمود السعر */}
+                    <TableCell className="font-bold text-[#2a655f] dark:text-slate-300 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                      {Number(r.price).toLocaleString(app.lang === "ar" ? "ar-SY" : "en-US")}
+                    </TableCell>
+                    
+                    {/* ✅ عمود الحالة - مع هوفر رمادي فاتح */}
+                    <TableCell className="text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                      <Badge
+                        className={cn(
+                          "border-2 font-medium px-3 py-1 transition-all duration-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30",
+                          isPending
+                            ? "bg-[#f9a8d4]/20 text-[#d81b60] border-pink-400/40"
+                            : isPublished
+                            ? "bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/30"
+                            : "bg-[#3a8a82]/10 text-[#3a8a82] border-[#3a8a82]/30"
+                        )}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          {isPending && <Clock className="h-3 w-3 animate-spin-slow" />}
+                          {isPublished && <CheckCircle2 className="h-3 w-3" />}
+                          {isArchived && <XCircle className="h-3 w-3" />}
+                          {isPending ? (isRTL ? "قيد المراجعة" : "Pending") :
+                           isPublished ? (isRTL ? "منشور" : "Published") :
+                           (isRTL ? "مؤرشف" : "Archived")}
+                        </span>
+                      </Badge>
+                    </TableCell>
+                    
+                    {/* ✅ عمود الإجراءات - كل الأزرار رمادية مع هوفر رمادي فاتح */}
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                        {/* ✅ زر Trending */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={cn(
+                            "rounded-xl h-8 px-3 transition-all duration-300 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200",
+                            isFeatured && "border-amber-400/60 dark:border-amber-400/40 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300"
+                          )}
+                          onClick={() => handleToggleFeatured(r.id, isFeatured)}
+                          disabled={setFeatured.isPending}
+                          title={isRTL ? "الأكثر رواجاً" : "Trending"}
+                        >
+                          {setFeatured.isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                          ) : (
+                            <Flame className={cn("h-3.5 w-3.5 mr-1", isFeatured ? "animate-pulse" : "")} />
+                          )}
+                          {isRTL ? "رائج" : "Trend"}
+                        </Button>
 
-                  {/* ✅ زر Approve - مع ألوان وردية */}
-                  {isPending && (
-                    <Button
-                      size="sm"
-                      className="rounded-xl h-8 px-3 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 border-2 border-[#2a655f]/40"
-                      onClick={() => handleApprove(r.id)}
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                      ) : (
-                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                      )}
-                      {isRTL ? "موافقة" : "Approve"}
-                    </Button>
-                  )}
+                        {/* ✅ زر Approve */}
+                        {isPending && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-xl h-8 px-3 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
+                            onClick={() => handleApprove(r.id)}
+                            disabled={isProcessing}
+                          >
+                            {isProcessing ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                            ) : (
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                            )}
+                            {isRTL ? "موافقة" : "Approve"}
+                          </Button>
+                        )}
 
-                  {/* ✅ زر Reject - مع ألوان وردية */}
-                  {isPending && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-xl h-8 px-3 border-2 border-rose-500/30 text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/50 transition-all duration-300 hover:scale-105"
-                      onClick={() => openRejectDialog(r)}
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                      ) : (
-                        <XCircle className="h-3.5 w-3.5 mr-1" />
-                      )}
-                      {isRTL ? "رفض" : "Reject"}
-                    </Button>
-                  )}
+                        {/* ✅ زر Reject */}
+                        {isPending && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-xl h-8 px-3 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
+                            onClick={() => openRejectDialog(r)}
+                            disabled={isProcessing}
+                          >
+                            {isProcessing ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                            ) : (
+                              <XCircle className="h-3.5 w-3.5 mr-1" />
+                            )}
+                            {isRTL ? "رفض" : "Reject"}
+                          </Button>
+                        )}
 
-                  {/* ✅ زر Delete */}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="rounded-xl h-8 px-2 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all duration-300 hover:scale-105"
-                    onClick={() => openDeleteDialog(r)}
-                    disabled={del.isPending}
-                  >
-                    {del.isPending ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
-  </div>
+                        {/* ✅ زر Delete */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="rounded-xl h-8 px-3 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-red-500 transition-all duration-300"
+                          onClick={() => openDeleteDialog(r)}
+                          disabled={del.isPending}
+                        >
+                          {del.isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
 
-  {/* ✅ Pagination - نفس تصميم CustomersPage */}
-  {totalPages > 1 && (
-    <div className="px-4 py-3 border-t-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 flex flex-col sm:flex-row items-center justify-between gap-3">
-      <div className="text-xs text-slate-500 dark:text-slate-400">
-        {filteredRows.length === 0 ? (
-          <span>{isRTL ? "لا توجد منتجات" : "No products"}</span>
-        ) : (
-          <span className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60] animate-pulse" />
-            {isRTL
-              ? `عرض ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredRows.length)} من ${filteredRows.length} منتج`
-              : `Showing ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredRows.length)} of ${filteredRows.length} products`}
-          </span>
-        )}
-      </div>
+        {/* ✅ Pagination */}
+        {totalPages > 1 && (
+          <div className="px-4 py-3 border-t-2 border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              {filteredRows.length === 0 ? (
+                <span>{isRTL ? "لا توجد منتجات" : "No products"}</span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60] animate-pulse" />
+                  {isRTL
+                    ? `عرض ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredRows.length)} من ${filteredRows.length} منتج`
+                    : `Showing ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredRows.length)} of ${filteredRows.length} products`}
+                </span>
+              )}
+            </div>
 
-      <div className="flex items-center gap-1">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => goToPage(1)}
-          disabled={page === 1}
-          className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] transition-all duration-300 disabled:opacity-50"
-          title={isRTL ? "الصفحة الأولى" : "First page"}
-        >
-          <span className="text-xs font-bold">«</span>
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => goToPage(page - 1)}
-          disabled={page === 1}
-          className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] transition-all duration-300 disabled:opacity-50"
-          title={isRTL ? "السابق" : "Previous"}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-
-        <div className="flex items-center gap-1">
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            let pageNum: number;
-            if (totalPages <= 5) {
-              pageNum = i + 1;
-            } else if (page <= 3) {
-              pageNum = i + 1;
-            } else if (page >= totalPages - 2) {
-              pageNum = totalPages - 4 + i;
-            } else {
-              pageNum = page - 2 + i;
-            }
-
-            return (
+            <div className="flex items-center gap-1">
               <Button
-                key={pageNum}
-                variant={page === pageNum ? "default" : "outline"}
+                variant="outline"
                 size="sm"
-                onClick={() => goToPage(pageNum)}
-                className={cn(
-                  "h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300",
-                  page === pageNum
-                    ? "bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#f9a8d4]/30 border-2 border-white/30 scale-105"
-                    : "border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60]"
-                )}
+                onClick={() => goToPage(1)}
+                disabled={page === 1}
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
+                title={isRTL ? "الصفحة الأولى" : "First page"}
               >
-                {pageNum}
+                <span className="text-xs font-bold">«</span>
               </Button>
-            );
-          })}
 
-          {totalPages > 5 && page < totalPages - 2 && (
-            <>
-              <span className="text-slate-400 text-sm px-1">...</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(page - 1)}
+                disabled={page === 1}
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
+                title={isRTL ? "السابق" : "Previous"}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (page <= 3) {
+                    pageNum = i + 1;
+                  } else if (page >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={page === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => goToPage(pageNum)}
+                      className={cn(
+                        "h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300",
+                        page === pageNum
+                          ? "bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30 border-0 scale-105"
+                          : "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200"
+                      )}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+
+                {totalPages > 5 && page < totalPages - 2 && (
+                  <>
+                    <span className="text-slate-400 text-sm px-1">...</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(totalPages)}
+                      className="h-8 min-w-[32px] p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 text-xs transition-all duration-300"
+                    >
+                      {totalPages}
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(page + 1)}
+                disabled={page === totalPages}
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
+                title={isRTL ? "التالي" : "Next"}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => goToPage(totalPages)}
-                className="h-8 min-w-[32px] p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] text-xs transition-all duration-300 hover:scale-105"
+                disabled={page === totalPages}
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
+                title={isRTL ? "الصفحة الأخيرة" : "Last page"}
               >
-                {totalPages}
+                <span className="text-xs font-bold">»</span>
               </Button>
-            </>
-          )}
+            </div>
+          </div>
+        )}
+
+        {/* ✅ Footer */}
+        <div className="px-4 py-2 border-t-2 border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-slate-50/50 to-slate-100/30 dark:from-slate-800/20 dark:to-slate-700/10">
+          <span className="flex items-center gap-2">
+            <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
+              {isRTL
+                ? `عرض ${paginatedRows.length} من ${filteredRows.length}`
+                : `Showing ${paginatedRows.length} of ${filteredRows.length}`}
+            </Badge>
+            <span className="text-[10px] text-[#d81b60]">
+              {isRTL ? `إجمالي ${rows.length}` : `Total ${rows.length}`}
+            </span>
+          </span>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
+              <Shield className="h-3 w-3 mr-1 text-[#d81b60]" />
+              {statusFilter === "pending" && (isRTL ? "قيد المراجعة" : "Pending")}
+              {statusFilter === "published" && (isRTL ? "منشور" : "Published")}
+              {statusFilter === "archived" && (isRTL ? "مؤرشف" : "Archived")}
+              {statusFilter === "all" && (isRTL ? "الكل" : "All")}
+            </Badge>
+            {searchQuery && (
+              <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
+                <Search className="h-3 w-3 mr-1 text-[#d81b60]" />
+                {searchQuery}
+              </Badge>
+            )}
+          </div>
         </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => goToPage(page + 1)}
-          disabled={page === totalPages}
-          className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] transition-all duration-300 disabled:opacity-50"
-          title={isRTL ? "التالي" : "Next"}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => goToPage(totalPages)}
-          disabled={page === totalPages}
-          className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] transition-all duration-300 disabled:opacity-50"
-          title={isRTL ? "الصفحة الأخيرة" : "Last page"}
-        >
-          <span className="text-xs font-bold">»</span>
-        </Button>
       </div>
-    </div>
-  )}
-
-  {/* ✅ Footer - مع ألوان وردية */}
-  <div className="px-4 py-2 border-t-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#f9a8d4]/10 to-[#fbcfe8]/10">
-    <span className="flex items-center gap-2">
-      <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
-        {isRTL
-          ? `عرض ${paginatedRows.length} من ${filteredRows.length}`
-          : `Showing ${paginatedRows.length} of ${filteredRows.length}`}
-      </Badge>
-      <span className="text-[10px] text-[#d81b60]">
-        {isRTL ? `إجمالي ${rows.length}` : `Total ${rows.length}`}
-      </span>
-    </span>
-    <div className="flex items-center gap-2">
-      <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
-        <Shield className="h-3 w-3 mr-1 text-[#d81b60]" />
-        {statusFilter === "pending" && (isRTL ? "قيد المراجعة" : "Pending")}
-        {statusFilter === "published" && (isRTL ? "منشور" : "Published")}
-        {statusFilter === "archived" && (isRTL ? "مؤرشف" : "Archived")}
-        {statusFilter === "all" && (isRTL ? "الكل" : "All")}
-      </Badge>
-      {searchQuery && (
-        <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
-          <Search className="h-3 w-3 mr-1 text-[#d81b60]" />
-          {searchQuery}
-        </Badge>
-      )}
-    </div>
-  </div>
-</div>
 
       {/* ============================================================
-      // ✅ DIALOG: سبب الرفض (Reject Reason) - مع ألوان وردية
+      // ✅ DIALOG: سبب الرفض (Reject Reason)
       // ============================================================ */}
 
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl border-3 border-[#d81b60]/40 shadow-2xl shadow-[#d81b60]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0 overflow-hidden">
+        <DialogContent className="max-w-md rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-2xl shadow-slate-200/50 dark:shadow-slate-800/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0 overflow-hidden">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-gray-50/80 dark:hover:bg-gray-700/30 z-20 transition-all duration-300 border border-slate-200 dark:border-slate-700"
             onClick={() => setRejectDialogOpen(false)}
           >
-            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+            <X className="h-4 w-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" />
           </Button>
 
           <div className="p-6">
@@ -999,27 +995,27 @@ export function AdminListings() {
 
             <div className="py-4">
               {productToReject && (
-                <div className="flex items-center gap-3 p-3 bg-[#f9a8d4]/10 rounded-xl border-2 border-[#f9a8d4]/30 mb-4">
+                <div className="flex items-center gap-3 p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border-2 border-slate-200/50 dark:border-slate-700/50 mb-4">
                   {productToReject.cover_url ? (
                     <img
                       src={productToReject.cover_url}
                       alt={productToReject.title_ar}
-                      className="h-12 w-12 rounded-lg object-cover border-2 border-[#f9a8d4]/30"
+                      className="h-12 w-12 rounded-lg object-cover border-2 border-slate-200 dark:border-slate-700"
                     />
                   ) : (
-                    <div className="h-12 w-12 rounded-lg bg-[#f9a8d4]/20 flex items-center justify-center">
-                      <Package className="h-6 w-6 text-[#d81b60]/40" />
+                    <div className="h-12 w-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                      <Package className="h-6 w-6 text-slate-400 dark:text-slate-500" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
                       {productToReject.title_ar}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {getStoreName(productToReject)}
                     </p>
                   </div>
-                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
+                  <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
                     {Number(productToReject.price).toLocaleString(app.lang === "ar" ? "ar-SY" : "en-US")}
                   </Badge>
                 </div>
@@ -1033,25 +1029,25 @@ export function AdminListings() {
                 <Textarea
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder={isRTL 
-                    ? "✍️ اكتب سبب الرفض هنا (سيظهر للمستخدم)" 
+                  placeholder={isRTL
+                    ? "✍️ اكتب سبب الرفض هنا (سيظهر للمستخدم)"
                     : "✍️ Write the rejection reason here (will be shown to the user)"}
                   rows={4}
                   className={cn(
-                    "rounded-xl resize-none border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300",
+                    "rounded-xl resize-none border border-slate-200 dark:border-slate-700 focus:border-slate-300 focus:ring-2 focus:ring-slate-300/30 transition-all duration-300",
                     !rejectReason.trim() && rejectDialogOpen ? "border-rose-500/50 focus-visible:ring-rose-500/20" : ""
                   )}
                 />
                 {!rejectReason.trim() && rejectDialogOpen && (
-                  <p className="text-xs text-rose-500 flex items-center gap-1 animate-pulse">
+                  <p className="text-xs text-rose-500 mt-1 flex items-center gap-1 animate-pulse">
                     <AlertTriangle className="h-3 w-3" />
                     {isRTL ? "⚠️ يرجى كتابة سبب الرفض" : "⚠️ Please provide a rejection reason"}
                   </p>
                 )}
                 <p className="text-xs text-slate-400 flex items-center gap-1">
                   <MessageCircle className="h-3 w-3 text-[#d81b60]" />
-                  {isRTL 
-                    ? "💡 هذا السبب سيظهر للمستخدم في الإشعار" 
+                  {isRTL
+                    ? "💡 هذا السبب سيظهر للمستخدم في الإشعار"
                     : "💡 This reason will be shown to the user in the notification"}
                 </p>
               </div>
@@ -1061,7 +1057,7 @@ export function AdminListings() {
               <Button
                 variant="outline"
                 onClick={() => setRejectDialogOpen(false)}
-                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
               >
                 {isRTL ? "إلغاء" : "Cancel"}
               </Button>
@@ -1088,18 +1084,18 @@ export function AdminListings() {
       </Dialog>
 
       {/* ============================================================
-      // ✅ DELETE CONFIRMATION DIALOG - مع ألوان وردية
+      // ✅ DELETE CONFIRMATION DIALOG
       // ============================================================ */}
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden border-3 border-[#d81b60]/40 shadow-2xl shadow-[#d81b60]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
+        <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden border-2 border-slate-200 dark:border-slate-700 shadow-2xl shadow-slate-200/50 dark:shadow-slate-800/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-gray-50/80 dark:hover:bg-gray-700/30 z-20 transition-all duration-300 border border-slate-200 dark:border-slate-700"
             onClick={() => setDeleteDialogOpen(false)}
           >
-            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+            <X className="h-4 w-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" />
           </Button>
 
           <div className="p-6">
@@ -1164,7 +1160,7 @@ export function AdminListings() {
               <Button
                 variant="outline"
                 onClick={() => setDeleteDialogOpen(false)}
-                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
               >
                 {isRTL ? "إلغاء" : "Cancel"}
               </Button>

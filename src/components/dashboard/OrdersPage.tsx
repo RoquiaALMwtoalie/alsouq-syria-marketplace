@@ -9,7 +9,9 @@ import {
   Calendar, User, Phone, MessageCircle,
   TrendingUp, Star, Users, Clock as ClockIcon,
   MapPin, Store,
-  Wallet, Trash2, Info, ChevronDown, ChevronUp, Zap, Gift
+  Wallet, Trash2, Info, ChevronDown, ChevronUp, Zap, Gift,
+  Hash,    // ✅ من الخطأ السابق
+  Shield,  // ✅ أضف هذا الآن
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -970,116 +972,96 @@ export const OrdersPage = React.memo(function OrdersPage() {
           >
             <FileText className="h-4 w-4 mr-1.5" /> Word
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => refetchOrders()} 
-            className="rounded-xl border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300"
-          >
-            <RefreshCw className="h-4 w-4 mr-1.5" /> 
-            {app.lang === "ar" ? "تحديث" : "Refresh"}
-          </Button>
+     
         </div>
       </div>
 
-      {/* ===== STATS CARDS - خلفية وردية وبوردر وردي ===== */}
+      {/* ===== STATS CARDS - بتصميم كروت AdminStores (بوردر رمادي، هوفر رمادي فاتح) ===== */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {[
-          { key: 'total', label: app.lang === 'ar' ? 'الإجمالي' : 'Total', value: stats.total, icon: ShoppingBag },
-          { key: 'pending', label: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: stats.pending, icon: Clock },
-          { key: 'accepted', label: app.lang === 'ar' ? 'مقبول' : 'Accepted', value: stats.accepted, icon: CheckCircle2 },
-          { key: 'rejected', label: app.lang === 'ar' ? 'مرفوض' : 'Rejected', value: stats.rejected, icon: XCircle },
-          { key: 'processing', label: app.lang === 'ar' ? 'قيد المعالجة' : 'Processing', value: stats.processing, icon: RefreshCw },
-          { key: 'shipped', label: app.lang === 'ar' ? 'تم الشحن' : 'Shipped', value: stats.shipped, icon: Truck },
-          { key: 'delivered', label: app.lang === 'ar' ? 'تم التوصيل' : 'Delivered', value: stats.delivered, icon: CheckCircle2 },
-          { key: 'cancelled', label: app.lang === 'ar' ? 'ملغي' : 'Cancelled', value: stats.cancelled, icon: XCircle },
-        ].map((stat) => {
-          let colorClass = 'text-[#2a655f]';
-          
-          if (stat.key === 'pending') {
-            colorClass = 'text-yellow-600 dark:text-yellow-400';
-          } else if (stat.key === 'accepted' || stat.key === 'delivered') {
-            colorClass = 'text-emerald-600 dark:text-emerald-400';
-          } else if (stat.key === 'rejected' || stat.key === 'cancelled') {
-            colorClass = 'text-red-600 dark:text-red-400';
-          } else if (stat.key === 'processing') {
-            colorClass = 'text-blue-600 dark:text-blue-400';
-          } else if (stat.key === 'shipped') {
-            colorClass = 'text-purple-600 dark:text-purple-400';
-          }
-          
-          return (
-            <div 
-              key={stat.key} 
-              className="group relative bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="absolute -top-8 -right-8 h-16 w-16 rounded-full bg-[#fbcfe8]/60 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative flex items-center justify-between p-3">
-                <div>
-                  <p className="text-[10px] font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">
-                    {stat.label}
-                  </p>
-                  <p className={`text-xl font-bold mt-0.5 ${colorClass} group-hover:scale-110 transition-transform duration-300`}>
-                    {stat.value}
-                  </p>
-                </div>
-                <div className={`h-8 w-8 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
-                  <stat.icon className={`h-4 w-4 ${colorClass}`} />
+          { key: 'total', label: app.lang === 'ar' ? 'الإجمالي' : 'Total', value: stats.total, icon: ShoppingBag, gradient: 'from-[#2a655f] to-[#1a4f4a]' },
+          { key: 'pending', label: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: stats.pending, icon: Clock, gradient: 'from-amber-500 to-orange-500' },
+          { key: 'accepted', label: app.lang === 'ar' ? 'مقبول' : 'Accepted', value: stats.accepted, icon: CheckCircle2, gradient: 'from-emerald-500 to-teal-500' },
+          { key: 'rejected', label: app.lang === 'ar' ? 'مرفوض' : 'Rejected', value: stats.rejected, icon: XCircle, gradient: 'from-red-500 to-rose-500' },
+          { key: 'processing', label: app.lang === 'ar' ? 'قيد المعالجة' : 'Processing', value: stats.processing, icon: RefreshCw, gradient: 'from-blue-500 to-indigo-500' },
+          { key: 'shipped', label: app.lang === 'ar' ? 'تم الشحن' : 'Shipped', value: stats.shipped, icon: Truck, gradient: 'from-indigo-500 to-purple-500' },
+          { key: 'delivered', label: app.lang === 'ar' ? 'تم التوصيل' : 'Delivered', value: stats.delivered, icon: CheckCircle2, gradient: 'from-teal-500 to-emerald-500' },
+          { key: 'cancelled', label: app.lang === 'ar' ? 'ملغي' : 'Cancelled', value: stats.cancelled, icon: XCircle, gradient: 'from-rose-500 to-pink-500' },
+        ].map((stat) => (
+          <div 
+            key={stat.key} 
+            className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative p-4"
+          >
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+              <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-slate-100/50 dark:bg-slate-700/20 blur-3xl animate-pulse" />
+            </div>
+            <div className="flex items-center justify-between relative">
+              <div>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-white dark:bg-[#1e293b] border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
+                  <stat.icon className="h-3.5 w-3.5 text-white" />
                 </div>
               </div>
-              <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
             </div>
-          );
-        })}
+            <div className="mt-2 h-0.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+              <div 
+                className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000 animate-shimmer`} 
+                style={{ width: `${Math.min(100, (stat.value / (stats.total || 1)) * 100)}%` }}
+              />
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ============================================================ */}
       {/* ✅✅✅ SEARCH & FILTERS (مع فلتر الوقت والتقويم المنبثق) ✅✅✅ */}
       {/* ============================================================ */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* 🔍 حقل البحث - بوردر وردي */}
+        {/* 🔍 حقل البحث - بوردر رمادي */}
         <div className="relative flex-1 min-w-[200px] group">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#f9a8d4] transition-colors" />
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors" />
           <Input 
             value={searchQuery} 
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
             placeholder={app.lang === "ar" ? "🔍 ابحث برقم الطلب #، اسم العميل، التاريخ..." : "🔍 Search by Order #, Customer, Date..."} 
-            className="ps-9 h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300" 
+            className="ps-9 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300" 
           />
           {searchQuery && (
             <button
               onClick={() => { setSearchQuery(""); setCurrentPage(1); }}
-              className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#f9a8d4] transition-colors"
+              className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
         
-        {/* ✅ فلتر الحالة - بوردر وردي */}
+        {/* ✅ فلتر الحالة - بوردر رمادي */}
         <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[150px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[150px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400 group-hover:text-[#f9a8d4]" />
+              <Filter className="h-4 w-4 text-slate-500" />
               <SelectValue placeholder={app.lang === "ar" ? "الحالة" : "Status"} />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
-            <SelectItem value="pending" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
-            <SelectItem value="accepted" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">✅ {app.lang === "ar" ? "مقبول" : "Accepted"}</SelectItem>
-            <SelectItem value="rejected" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">❌ {app.lang === "ar" ? "مرفوض" : "Rejected"}</SelectItem>
-            <SelectItem value="processing" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">🔄 {app.lang === "ar" ? "قيد المعالجة" : "Processing"}</SelectItem>
-            <SelectItem value="shipped" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">🚚 {app.lang === "ar" ? "تم الشحن" : "Shipped"}</SelectItem>
-            <SelectItem value="delivered" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">✅ {app.lang === "ar" ? "تم التوصيل" : "Delivered"}</SelectItem>
-            <SelectItem value="cancelled" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">❌ {app.lang === "ar" ? "ملغي" : "Cancelled"}</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+            <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
+            <SelectItem value="pending" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
+            <SelectItem value="accepted" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {app.lang === "ar" ? "مقبول" : "Accepted"}</SelectItem>
+            <SelectItem value="rejected" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">❌ {app.lang === "ar" ? "مرفوض" : "Rejected"}</SelectItem>
+            <SelectItem value="processing" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🔄 {app.lang === "ar" ? "قيد المعالجة" : "Processing"}</SelectItem>
+            <SelectItem value="shipped" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🚚 {app.lang === "ar" ? "تم الشحن" : "Shipped"}</SelectItem>
+            <SelectItem value="delivered" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {app.lang === "ar" ? "تم التوصيل" : "Delivered"}</SelectItem>
+            <SelectItem value="cancelled" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">❌ {app.lang === "ar" ? "ملغي" : "Cancelled"}</SelectItem>
           </SelectContent>
         </Select>
 
-        {/* ✅ ✅ ✅ فلتر النطاق الزمني - بوردر وردي */}
+        {/* ✅ ✅ ✅ فلتر النطاق الزمني - بوردر رمادي */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 rounded-full border border-[#2a655f]/20 dark:border-[#2a655f]/30">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-700 rounded-full border border-slate-200 dark:border-slate-600">
             <Calendar className="h-3.5 w-3.5 text-[#2a655f]" />
             <span className="text-[10px] font-medium text-[#2a655f] dark:text-[#3a8a82] whitespace-nowrap">
               {app.lang === "ar" ? "📅 فلتر التاريخ" : "📅 Date Filter"}
@@ -1096,18 +1078,18 @@ export const OrdersPage = React.memo(function OrdersPage() {
               setTempDateTo("");
             }
           }}>
-            <SelectTrigger className="w-[140px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+            <SelectTrigger className="w-[140px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-slate-400 group-hover:text-[#f9a8d4]" />
+                <Calendar className="h-4 w-4 text-slate-500" />
                 <SelectValue placeholder={app.lang === "ar" ? "الفترة" : "Period"} />
               </div>
             </SelectTrigger>
-            <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-              <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📅 {app.lang === "ar" ? "الكل" : "All"}</SelectItem>
-              <SelectItem value="today" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📅 {app.lang === "ar" ? "اليوم" : "Today"}</SelectItem>
-              <SelectItem value="week" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📅 {app.lang === "ar" ? "آخر 7 أيام" : "Last 7 days"}</SelectItem>
-              <SelectItem value="month" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📅 {app.lang === "ar" ? "آخر شهر" : "Last month"}</SelectItem>
-              <SelectItem value="custom" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📅 {app.lang === "ar" ? "مخصص" : "Custom"}</SelectItem>
+            <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+              <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "الكل" : "All"}</SelectItem>
+              <SelectItem value="today" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "اليوم" : "Today"}</SelectItem>
+              <SelectItem value="week" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "آخر 7 أيام" : "Last 7 days"}</SelectItem>
+              <SelectItem value="month" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "آخر شهر" : "Last month"}</SelectItem>
+              <SelectItem value="custom" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "مخصص" : "Custom"}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1119,7 +1101,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
               variant="outline"
               size="sm"
               onClick={() => setShowDatePicker(!showDatePicker)}
-              className="h-10 px-4 rounded-xl border-3 border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 flex items-center gap-2"
+              className="h-10 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-all duration-300 flex items-center gap-2"
             >
               <Calendar className="h-4 w-4 text-[#2a655f]" />
               <span className="text-sm font-medium">
@@ -1141,7 +1123,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
             </Button>
 
             {showDatePicker && (
-              <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[999999] bg-white dark:bg-slate-900 rounded-2xl border-3 border-[#f9a8d4]/30 shadow-2xl p-5 min-w-[420px] max-w-[95vw] max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+              <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[999999] bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-2xl p-5 min-w-[420px] max-w-[95vw] max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-[#2a655f] dark:text-white flex items-center gap-2">
@@ -1164,7 +1146,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         type="datetime-local"
                         value={tempDateFrom}
                         onChange={(e) => setTempDateFrom(e.target.value)}
-                        className="h-10 w-full rounded-xl border-3 border-[#2a655f]/20 focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 bg-white/50 dark:bg-slate-800/50 text-sm transition-all duration-300 cursor-pointer"
+                        className="h-10 w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 bg-white dark:bg-slate-800 text-sm transition-all duration-300 cursor-pointer"
                       />
                     </div>
                   </div>
@@ -1180,12 +1162,12 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         type="datetime-local"
                         value={tempDateTo}
                         onChange={(e) => setTempDateTo(e.target.value)}
-                        className="h-10 w-full rounded-xl border-3 border-[#2a655f]/20 focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 bg-white/50 dark:bg-slate-800/50 text-sm transition-all duration-300 cursor-pointer"
+                        className="h-10 w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 bg-white dark:bg-slate-800 text-sm transition-all duration-300 cursor-pointer"
                       />
                     </div>
                   </div>
                   
-                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-700">
                     <span className="text-[10px] text-muted-foreground flex items-center gap-1 w-full">
                       <Zap className="h-3 w-3 text-[#2a655f]" />
                       {app.lang === "ar" ? "اختيارات سريعة:" : "Quick picks:"}
@@ -1233,7 +1215,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                           setTempDateFrom(fromStr);
                           setTempDateTo(toStr);
                         }}
-                        className="h-7 px-3 rounded-lg text-[10px] border-3 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-200"
+                        className="h-7 px-3 rounded-lg text-[10px] border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-all duration-200"
                       >
                         {item.label}
                       </Button>
@@ -1241,7 +1223,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                   
                   {(tempDateFrom || tempDateTo) && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 animate-in fade-in duration-300">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border-2 border-slate-200 dark:border-slate-700 animate-in fade-in duration-300">
                       <ClockIcon className="h-3.5 w-3.5 text-[#2a655f]" />
                       <span className="text-xs text-[#2a655f] dark:text-[#3a8a82] truncate">
                         {tempDateFrom && tempDateTo 
@@ -1254,7 +1236,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     </div>
                   )}
                   
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1281,7 +1263,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                           setShowDatePicker(false);
                           setCurrentPage(1);
                         }}
-                        className="h-8 px-3 rounded-xl text-xs border-3 border-red-200/50 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-300"
+                        className="h-8 px-3 rounded-xl text-xs border-2 border-red-200/50 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-300"
                       >
                         <Trash2 className="h-3.5 w-3.5 mr-1" />
                         {app.lang === "ar" ? "مسح" : "Clear"}
@@ -1295,7 +1277,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                           setShowDatePicker(false);
                           setCurrentPage(1);
                         }}
-                        className="h-8 px-4 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105 border-2 border-white/30"
+                        className="h-8 px-4 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105 border-2 border-[#2a655f]/30"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                         {app.lang === "ar" ? "تطبيق" : "Apply"}
@@ -1307,7 +1289,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
             )}
 
             {(dateFrom || dateTo) && (
-              <div className="absolute top-full left-0 mt-14 flex items-center gap-2 px-3 py-1.5 bg-[#2a655f]/10 dark:bg-[#2a655f]/20 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 animate-in fade-in duration-300 whitespace-nowrap z-50">
+              <div className="absolute top-full left-0 mt-14 flex items-center gap-2 px-3 py-1.5 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border-2 border-slate-200 dark:border-slate-700 animate-in fade-in duration-300 whitespace-nowrap z-50">
                 <ClockIcon className="h-3.5 w-3.5 text-[#2a655f]" />
                 <span className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82]">
                   {dateFrom && dateTo 
@@ -1336,18 +1318,18 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
         {/* ✅ عدد العناصر لكل صفحة */}
         <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[90px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[90px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
             <SelectValue placeholder="10" />
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <SelectItem value="5" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">5</SelectItem>
-            <SelectItem value="10" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">10</SelectItem>
-            <SelectItem value="20" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">20</SelectItem>
-            <SelectItem value="50" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">50</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+            <SelectItem value="5" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">5</SelectItem>
+            <SelectItem value="10" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">10</SelectItem>
+            <SelectItem value="20" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">20</SelectItem>
+            <SelectItem value="50" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">50</SelectItem>
           </SelectContent>
         </Select>
 
-        {/* ✅ زر مسح الكل - بوردر وردي */}
+        {/* ✅ زر مسح الكل - بوردر رمادي */}
         <Button 
           variant="outline" 
           size="sm" 
@@ -1362,7 +1344,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
             setItemsPerPage(10); 
             setCurrentPage(1); 
           }} 
-          className="h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 group"
+          className="h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 group"
         >
           <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
           {app.lang === "ar" ? "مسح الكل" : "Clear All"}
@@ -1370,10 +1352,10 @@ export const OrdersPage = React.memo(function OrdersPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* ✅ ORDERS TABLE - أعمدة فاصلة وردية وهوفرو وردي */}
+      {/* ✅ ORDERS TABLE - نفس تصميم AdminStores (خلفية بيضاء، بوردر رمادي، هوفر رمادي فاتح) */}
       {/* ============================================================ */}
       {storeOrders.length === 0 ? (
-        <div className="rounded-3xl border-3 border-dashed border-[#2a655f]/30 dark:border-[#2a655f]/40 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-transparent">
+        <div className="rounded-3xl border-3 border-dashed border-slate-200 dark:border-slate-700 p-20 text-center bg-gradient-to-b from-slate-50/50 to-transparent dark:from-slate-800/20">
           <div className="h-24 w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto">
             <ShoppingBag className="h-12 w-12 text-[#2a655f]/60" />
           </div>
@@ -1387,14 +1369,14 @@ export const OrdersPage = React.memo(function OrdersPage() {
           </p>
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="rounded-3xl border-3 border-dashed border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 p-20 text-center">
+        <div className="rounded-3xl border-3 border-dashed border-slate-200 dark:border-slate-700 p-20 text-center">
           <Search className="h-20 w-20 text-muted-foreground/40 mx-auto" />
           <h3 className="text-xl font-semibold text-muted-foreground mt-4">
             {app.lang === "ar" ? "🔍 لا توجد نتائج مطابقة" : "🔍 No matching results"}
           </h3>
           <Button 
             variant="outline" 
-            className="mt-4 rounded-xl border-3 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300"
+            className="mt-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
             onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterDateRange("all"); setDateFrom(""); setDateTo(""); setCurrentPage(1); }}
           >
             <X className="h-4 w-4 mr-2" />
@@ -1403,32 +1385,50 @@ export const OrdersPage = React.memo(function OrdersPage() {
         </div>
       ) : (
         <>
-          <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
+          <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gradient-to-r from-[#f9a8d4]/30 via-[#fbcfe8]/20 to-[#f9a8d4]/30 dark:from-[#f9a8d4]/20 dark:via-[#fbcfe8]/10 dark:to-[#f9a8d4]/20 border-b-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30">
-                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-                      {app.lang === "ar" ? "رقم الطلب" : "Order #"}
+                  <tr className="border-slate-200 dark:border-slate-700 hover:bg-transparent bg-gradient-to-r from-slate-100/50 via-slate-50/30 to-slate-100/50 dark:from-slate-800/30 dark:via-slate-700/20 dark:to-slate-800/30 border-b-2 border-slate-200 dark:border-slate-700">
+                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-slate-300 text-xs uppercase tracking-wider border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                      <div className="flex items-center justify-center gap-2">
+                        <Hash className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                        {app.lang === "ar" ? "رقم الطلب" : "Order #"}
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-right font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-                      {app.lang === "ar" ? "العميل" : "Customer"}
+                    <th className="px-4 py-3 text-right font-bold text-[#2a655f] dark:text-slate-300 text-xs uppercase tracking-wider border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                      <div className="flex items-center justify-end gap-2">
+                        <User className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                        {app.lang === "ar" ? "العميل" : "Customer"}
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-                      {app.lang === "ar" ? "رقم العميل" : "Phone"}
+                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-slate-300 text-xs uppercase tracking-wider border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                      <div className="flex items-center justify-center gap-2">
+                        <Phone className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                        {app.lang === "ar" ? "رقم العميل" : "Phone"}
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-                      {app.lang === "ar" ? "الوقت" : "Time"}
+                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-slate-300 text-xs uppercase tracking-wider border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                      <div className="flex items-center justify-center gap-2">
+                        <ClockIcon className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                        {app.lang === "ar" ? "الوقت" : "Time"}
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-                      {app.lang === "ar" ? "الحالة" : "Status"}
+                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-slate-300 text-xs uppercase tracking-wider border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                      <div className="flex items-center justify-center gap-2">
+                        <Shield className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                        {app.lang === "ar" ? "الحالة" : "Status"}
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-[#f9a8d4] text-xs uppercase tracking-wider">
-                      {app.lang === "ar" ? "الإجراءات" : "Actions"}
+                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-slate-300 text-xs uppercase tracking-wider">
+                      <div className="flex items-center justify-center gap-2">
+                        <Zap className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300 animate-pulse" />
+                        {app.lang === "ar" ? "الإجراءات" : "Actions"}
+                      </div>
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y-2 divide-[#f9a8d4]/20 dark:divide-[#f9a8d4]/10">
+                <tbody className="divide-y-2 divide-slate-200/60 dark:divide-slate-700/60">
                   {paginatedOrders.map((order: any) => {
                     const StatusIcon = getStatusIcon(order.status);
                     const statusColor = getStatusColor(order.status);
@@ -1437,28 +1437,28 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     return (
                       <tr 
                         key={order.id} 
-                        className="group hover:bg-[#f9a8d4]/15 dark:hover:bg-[#f9a8d4]/10 transition-colors duration-300 cursor-pointer"
+                        className="group hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition-colors duration-300 cursor-pointer border-b-2 border-slate-200/60 dark:border-slate-700/60"
                         onClick={() => { setSelectedOrder(order); setDetailDialogOpen(true); }}
                       >
-                        <td className="px-4 py-3 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
-                          <span className="font-mono font-bold text-sm text-[#2a655f] dark:text-[#f9a8d4] group-hover:text-[#d81b60] transition-colors">
+                        <td className="px-4 py-3 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                          <span className="font-mono font-bold text-sm text-[#2a655f] dark:text-slate-300 group-hover:text-[#2a655f] transition-colors">
                             #{String(order.id).slice(0, 8)}
                           </span>
                         </td>
                         
-                        <td className="px-4 py-3 text-right border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                        <td className="px-4 py-3 text-right border-r-2 border-slate-200/60 dark:border-slate-700/60">
                           <div className="flex items-center justify-end gap-2">
-                            <User className="h-3.5 w-3.5 text-[#2a655f] group-hover:text-[#d81b60] transition-colors" />
+                            <User className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-400 transition-colors" />
                             <span className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-[#2a655f] transition-colors">
                               {order.buyer_name || (app.lang === "ar" ? "عميل" : "Customer")}
                             </span>
                           </div>
                         </td>
                         
-                        <td className="px-4 py-3 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                        <td className="px-4 py-3 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
                           {order.buyer_phone ? (
                             <div className="flex items-center justify-center gap-1.5">
-                              <Phone className="h-3.5 w-3.5 text-[#2a655f] group-hover:text-[#d81b60] transition-colors" />
+                              <Phone className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-400 transition-colors" />
                               <span className="font-mono text-sm text-slate-600 dark:text-slate-300 group-hover:text-[#2a655f] transition-colors">
                                 {order.buyer_phone}
                               </span>
@@ -1468,7 +1468,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                           )}
                         </td>
                         
-                        <td className="px-4 py-3 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                        <td className="px-4 py-3 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
                           <div className="flex flex-col items-center">
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-[#2a655f] transition-colors">
                               {new Date(order.created_at).toLocaleDateString(
@@ -1486,8 +1486,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
                           </div>
                         </td>
                         
-                        <td className="px-4 py-3 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
-                          <Badge className={`${statusColor} border-2 border-[#f9a8d4]/30 text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1.5 w-fit mx-auto`}>
+                        <td className="px-4 py-3 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                          <Badge className={`${statusColor} border-2 border-slate-200 dark:border-slate-700 text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1.5 w-fit mx-auto hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors`}>
                             <StatusIcon className="h-3 w-3" />
                             {getStatusLabel(order.status)}
                           </Badge>
@@ -1498,14 +1498,14 @@ export const OrdersPage = React.memo(function OrdersPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 rounded-lg border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300"
+                              className="h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedOrder(order);
                                 setDetailDialogOpen(true);
                               }}
                             >
-                              <Eye className="h-4 w-4 text-[#2a655f] group-hover:text-[#d81b60] transition-colors" />
+                              <Eye className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                             </Button>
                             
                             {isPending && (
@@ -1538,7 +1538,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                             )}
                             
                             {!isPending && (
-                              <Badge className={`${statusColor} border-2 border-[#f9a8d4]/30 text-[9px] px-2 py-0.5`}>
+                              <Badge className={`${statusColor} border-2 border-slate-200 dark:border-slate-700 text-[9px] px-2 py-0.5 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors`}>
                                 {order.status === "accepted" && "✅ " + (app.lang === "ar" ? "مقبول" : "Accepted")}
                                 {order.status === "rejected" && "❌ " + (app.lang === "ar" ? "مرفوض" : "Rejected")}
                                 {order.status === "processing" && "🔄 " + (app.lang === "ar" ? "قيد المعالجة" : "Processing")}
@@ -1559,7 +1559,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
           {/* ===== PAGINATION ===== */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t-3 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10 flex-wrap gap-3">
+            <div className="flex items-center justify-between pt-4 border-t-2 border-slate-200 dark:border-slate-700 flex-wrap gap-3">
               <span className="text-xs text-slate-500 flex items-center gap-2">
                 <TrendingUp className="h-3.5 w-3.5 text-[#2a655f]" />
                 {app.lang === "ar" ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
@@ -1575,7 +1575,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   size="sm" 
                   onClick={() => setCurrentPage(1)} 
                   disabled={currentPage === 1} 
-                  className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 disabled:opacity-40 transition-all duration-300"
+                  className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
                 >
                   <span className="text-xs font-bold">«</span>
                 </Button>
@@ -1585,7 +1585,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   size="sm" 
                   onClick={() => setCurrentPage(currentPage - 1)} 
                   disabled={currentPage === 1} 
-                  className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 disabled:opacity-40 transition-all duration-300"
+                  className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -1612,8 +1612,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         className={cn(
                           "h-8 w-8 p-0 rounded-xl text-xs font-medium transition-all duration-300",
                           pageNum === currentPage 
-                            ? "bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white shadow-md shadow-[#2a655f]/25 border-2 border-white/30" 
-                            : "border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 hover:text-[#2a655f]"
+                            ? "bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30 border-0 scale-105" 
+                            : "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200"
                         )}
                       >
                         {pageNum}
@@ -1627,7 +1627,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   size="sm" 
                   onClick={() => setCurrentPage(currentPage + 1)} 
                   disabled={currentPage === totalPages} 
-                  className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 disabled:opacity-40 transition-all duration-300"
+                  className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -1637,7 +1637,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   size="sm" 
                   onClick={() => setCurrentPage(totalPages)} 
                   disabled={currentPage === totalPages} 
-                  className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 disabled:opacity-40 transition-all duration-300"
+                  className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
                 >
                   <span className="text-xs font-bold">»</span>
                 </Button>
@@ -1649,7 +1649,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
       {/* ===== ORDER DETAIL DIALOG مع دعم العروض الترويجية ===== */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 bg-white dark:bg-slate-900 p-6 shadow-2xl shadow-[#f9a8d4]/10">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-2xl">
           <Button
             variant="ghost"
             size="icon"
@@ -1714,7 +1714,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     </p>
                   </div>
                   <Badge className={cn(
-                    "border-2 border-[#f9a8d4]/30 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold shadow-sm",
+                    "border-2 border-slate-200 dark:border-slate-700 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold shadow-sm hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors",
                     status.bg,
                     status.border,
                     status.color,
@@ -1726,7 +1726,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                 </div>
 
                 <div className={cn(
-                  "p-4 rounded-xl border-2 border-[#f9a8d4]/30 mb-4",
+                  "p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 mb-4",
                   status.bg,
                   status.border
                 )}>
@@ -1739,13 +1739,13 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border-2 border-slate-200/50 dark:border-slate-700/50 mb-4">
                   <div className="flex items-center gap-3">
                     {storeLogo ? (
                       <img 
                         src={storeLogo} 
                         alt={storeName}
-                        className="h-12 w-12 rounded-xl object-cover border-2 border-[#2a655f]/20"
+                        className="h-12 w-12 rounded-xl object-cover border-2 border-slate-200 dark:border-slate-700"
                       />
                     ) : (
                       <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#0d2e2a] to-[#1a4f4a] text-white font-bold text-lg">
@@ -1891,7 +1891,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                               "p-3 rounded-xl border-2 transition-all duration-300",
                               isPromo 
                                 ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50 hover:border-purple-400/70" 
-                                : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50 hover:border-[#f9a8d4]/50"
+                                : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600"
                             )}
                           >
                             {isPromo ? (
@@ -2075,8 +2075,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
                                 </div>
                                 
                                 <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 hover:scale-110">
-                                    <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300">
+                                    <Eye className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                                   </Button>
                                 </Link>
                               </div>
@@ -2121,8 +2121,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
                             </div>
                           </div>
                           <Link to="/listing/$id" params={{ id: selectedOrder.listing_id }}>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 hover:scale-110">
-                              <Eye className="h-3.5 w-3.5 text-[#2a655f]" />
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300">
+                              <Eye className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                             </Button>
                           </Link>
                         </div>
@@ -2151,7 +2151,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                 )}
 
-                <div className="p-4 bg-[#2a655f]/5 dark:bg-[#2a655f]/10 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                <div className="p-4 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border-2 border-slate-200/50 dark:border-slate-700/50">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">
                       {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
@@ -2161,7 +2161,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     </span>
                   </div>
                   
-                  <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10">
+                  <div className="flex items-center justify-between mt-1 pt-1 border-t border-slate-200/50 dark:border-slate-700/50">
                     <span className="text-sm text-muted-foreground">
                       {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
                     </span>
@@ -2179,7 +2179,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                   
                   {promoDiscount > 0 && (
-                    <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/10 text-emerald-500">
+                    <div className="flex items-center justify-between mt-1 pt-1 border-t border-slate-200/50 dark:border-slate-700/50 text-emerald-500">
                       <span className="text-sm">
                         {app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}
                       </span>
@@ -2189,7 +2189,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     </div>
                   )}
                   
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/20">
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-slate-200/50 dark:border-slate-700/50">
                     <span className="text-sm font-semibold text-[#0d2e2a] dark:text-white">
                       {app.lang === "ar" ? "الإجمالي الكامل" : "Total"}
                     </span>
@@ -2211,11 +2211,11 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10 flex flex-wrap items-center justify-between gap-3">
+                <div className="mt-6 pt-4 border-t-2 border-slate-200/50 dark:border-slate-700/50 flex flex-wrap items-center justify-between gap-3">
                   <Button
                     variant="outline"
                     onClick={() => setDetailDialogOpen(false)}
-                    className="rounded-xl border-2 border-[#2a655f]/20 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300"
+                    className="rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
                   >
                     {app.lang === "ar" ? "إغلاق" : "Close"}
                   </Button>
@@ -2257,7 +2257,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
       {/* ===== REJECT ORDER DIALOG ===== */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl border-3 border-red-200/50 dark:border-red-800/30 bg-white dark:bg-slate-900 p-6 shadow-2xl shadow-red-500/10">
+        <DialogContent className="max-w-md rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-xl font-bold text-red-600 dark:text-red-400">
               <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">

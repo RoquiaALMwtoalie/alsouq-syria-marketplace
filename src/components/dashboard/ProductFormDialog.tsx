@@ -8,7 +8,7 @@ import {
   Save, AlertCircle, Info, Star, Shield, Clock, User,
   Camera, Trash2, Edit2, Heart, BookOpen, Cake,
   ChevronRight, ChevronLeft, Zap, Award, TrendingUp, ShieldCheck,
-  ArrowRight, ArrowLeft, Coins
+  ArrowRight, ArrowLeft, Coins, Folder, FolderTree, CornerDownRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,31 +34,23 @@ interface ProductFormDialogProps {
   isSaving: boolean;
   lang: string;
 }
-// ✅ ✅ ✅ قاموس الألوان الشامل (200+ لون)
+
+// ✅ قاموس الألوان الشامل
 const DEFAULT_COLORS: Record<string, string> = {
-  // أحمر
   'أحمر': '#FF0000', 'احمر': '#FF0000',
   'قرمزي': '#DC143C', 'كرزي': '#DE3163',
   'مرجاني': '#FF7F50',
-  
-  // أزرق
   'أزرق': '#0000FF', 'ازرق': '#0000FF',
   'كحلي': '#000080',
   'فيروزي': '#40E0D0', 'تركواز': '#40E0D0',
   'سماوي': '#00BFFF',
-  
-  // أخضر
   'أخضر': '#00FF00', 'اخضر': '#00FF00',
   'زمردي': '#50C878',
   'نعناعي': '#98FF98',
   'زيتوني': '#808000',
-  
-  // أسود وأبيض
   'أسود': '#000000', 'اسود': '#000000',
   'أبيض': '#FFFFFF', 'ابيض': '#FFFFFF',
   'عاجي': '#FFFFF0', 'لؤلؤي': '#F5F5F5',
-  
-  // بني وبيج
   'بني': '#8B4513',
   'قهوي': '#6F4E37',
   'شوكولاتة': '#7B3F00',
@@ -68,15 +60,11 @@ const DEFAULT_COLORS: Record<string, string> = {
   'ذهبي': '#FFD700',
   'فضي': '#C0C0C0',
   'برونزي': '#CD7F32',
-  
-  // أصفر وبرتقالي
   'أصفر': '#FFFF00', 'اصفر': '#FFFF00',
   'ليموني': '#FFF44F',
   'برتقالي': '#FF8C00',
   'خوخي': '#FFDAB9',
   'عنبري': '#FFBF00',
-  
-  // وردي وبنفسجي
   'وردي': '#FF69B4',
   'زهر': '#FF69B4',
   'زهري': '#FFB6C1',
@@ -85,13 +73,9 @@ const DEFAULT_COLORS: Record<string, string> = {
   'أرجواني': '#800080',
   'موف': '#C8A2C8',
   'لافندر': '#E6E6FA',
-  
-  // رمادي
   'رمادي': '#808080',
   'رمادي غامق': '#404040',
   'رمادي فاتح': '#D3D3D3',
-  
-  // ألوان أخرى
   'بشري': '#F5D0B8',
   'خردلي': '#DAA520',
   'خمري': '#722F37',
@@ -110,6 +94,7 @@ const DEFAULT_COLORS: Record<string, string> = {
   'حنطي': '#D4A574',
   'سكري': '#FDF5E6',
 };
+
 const emptyForm = {
   title_ar: "",
   description_ar: "",
@@ -120,6 +105,7 @@ const emptyForm = {
   payment_method: "cash" as const,
   kind: "product" as ListingKind,
   category_id: "",
+  parent_category_id: "",
   governorate_id: "",
   cover_url: "",
   image_urls: [""],
@@ -138,10 +124,11 @@ export function ProductFormDialog({
 }: ProductFormDialogProps) {
   const app = useApp();
   const t = useT();
-   const isRTL = app.lang === 'ar';
+  const isRTL = app.lang === 'ar';
   const { data: cats = [] } = useCategories();
   const { data: govs = [] } = useGovernorates();
-    const isLoadingRef = useRef(false);
+  
+  const isLoadingRef = useRef(false);
   const [form, setForm] = useState(emptyForm);
   const [options, setOptions] = useState<Record<string, string[]>>({
     colors: [],
@@ -158,22 +145,71 @@ export function ProductFormDialog({
   const [sizes, setSizes] = useState<string[]>([]);
   const [colorWithImages, setColorWithImages] = useState<ColorWithImage[]>([]);
 
-  const [categorySearch, setCategorySearch] = useState("");
+  // ✅ ✅ ✅ State للتصنيف الرئيسي والفرعي
+  const [parentCategoryId, setParentCategoryId] = useState<string>("");
+  const [subCategoryId, setSubCategoryId] = useState<string>("");
+  const [parentCategorySearch, setParentCategorySearch] = useState("");
+  const [subCategorySearch, setSubCategorySearch] = useState("");
+  const [isParentCategoryOpen, setIsParentCategoryOpen] = useState(false);
+  const [isSubCategoryOpen, setIsSubCategoryOpen] = useState(false);
+  
   const [governorateSearch, setGovernorateSearch] = useState("");
-  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isGovernorateOpen, setIsGovernorateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
 
-  // ✅ ✅ ✅ إضافة useRef لمنع إعادة التحميل المتكررة
   const isFirstLoadRef = useRef(true);
-  // ✅ ✅ ✅ إضافة useRef لمنع إعادة التوجيه أثناء كتابة السعر
   const isPriceEditingRef = useRef(false);
 
-  const getCategoryName = (categoryId: string) => {
+  // ============================================================
+  // ✅ ✅ ✅ التصنيفات - Hooks جديدة
+  // ============================================================
+  
+  // ✅ التصنيفات الرئيسية فقط
+  const mainCategories = useMemo(() => {
+    return cats.filter((c: any) => 
+      !c.parent_id && c.active !== false
+    );
+  }, [cats]);
+
+  // ✅ التصنيفات الفرعية للرئيسي المختار
+  const subCategories = useMemo(() => {
+    if (!parentCategoryId) return [];
+    return cats.filter((c: any) => 
+      c.parent_id === parentCategoryId && c.active !== false
+    );
+  }, [cats, parentCategoryId]);
+
+  // ✅ هل الرئيسي له فروع؟
+  const hasSubCategories = subCategories.length > 0;
+
+  // ✅ فلترة بحث الرئيسية
+  const filteredMainCategories = useMemo(() => {
+    if (!parentCategorySearch.trim()) return mainCategories;
+    const search = parentCategorySearch.toLowerCase().trim();
+    return mainCategories.filter((c: any) => {
+      const nameAr = (c.name_ar || "").toLowerCase();
+      const nameEn = (c.name_en || "").toLowerCase();
+      return nameAr.includes(search) || nameEn.includes(search);
+    });
+  }, [mainCategories, parentCategorySearch]);
+
+  // ✅ فلترة بحث الفرعية
+  const filteredSubCategories = useMemo(() => {
+    if (!subCategorySearch.trim()) return subCategories;
+    const search = subCategorySearch.toLowerCase().trim();
+    return subCategories.filter((c: any) => {
+      const nameAr = (c.name_ar || "").toLowerCase();
+      const nameEn = (c.name_en || "").toLowerCase();
+      return nameAr.includes(search) || nameEn.includes(search);
+    });
+  }, [subCategories, subCategorySearch]);
+
+  // ✅ دوال مساعدة
+  const getCategoryName = useCallback((categoryId: string) => {
     if (!categoryId) return "";
     const cat = cats.find((c: any) => c.id === categoryId);
     return cat ? (app.lang === "ar" ? cat.name_ar : cat.name_en) : "";
-  };
+  }, [cats, app.lang]);
 
   const getGovernorateName = (governorateId: string) => {
     if (!governorateId) return "";
@@ -181,23 +217,13 @@ export function ProductFormDialog({
     return gov ? (app.lang === "ar" ? gov.name_ar : gov.name_en) : "";
   };
 
-  const filteredCategories = useMemo(() => {
-    if (!categorySearch.trim()) return cats;
-    const search = categorySearch.toLowerCase().trim();
-    return cats.filter((c: any) => {
-      const nameAr = (c.name_ar || "").toLowerCase();
-      const nameEn = (c.name_en || "").toLowerCase();
-      return nameAr.includes(search) || nameEn.includes(search) || nameAr.startsWith(search) || nameEn.startsWith(search);
-    });
-  }, [cats, categorySearch]);
-
   const filteredGovernorates = useMemo(() => {
     if (!governorateSearch.trim()) return govs;
     const search = governorateSearch.toLowerCase().trim();
     return govs.filter((g: any) => {
       const nameAr = (g.name_ar || "").toLowerCase();
       const nameEn = (g.name_en || "").toLowerCase();
-      return nameAr.includes(search) || nameEn.includes(search) || nameAr.startsWith(search) || nameEn.startsWith(search);
+      return nameAr.includes(search) || nameEn.includes(search);
     });
   }, [govs, governorateSearch]);
 
@@ -228,9 +254,11 @@ export function ProductFormDialog({
 
   const labels = getProductLabels();
 
+  // ✅ التحقق من صحة التبويب
   const isTabValid = (tab: string) => {
     if (tab === 'basic') {
-      return !!form.title_ar.trim() && !!form.category_id && !!form.governorate_id;
+      // ✅ التصنيف الرئيسي إلزامي، والفرعي اختياري
+      return !!form.title_ar.trim() && !!parentCategoryId && !!form.governorate_id;
     }
     if (tab === 'pricing') {
       if (!form.price || form.price <= 0) return false;
@@ -293,13 +321,10 @@ export function ProductFormDialog({
     }
   };
 
-  // ✅ ✅ ✅ استخدم useMemo لحساب variationsWithPrices مرة واحدة فقط
   const variationsWithPrices = useMemo(() => {
     if (!product || !product.variations || product.variations.length === 0) {
       return [];
     }
-    
-    console.log("🔍🔍🔍 [ProductFormDialog] Computing variationsWithPrices from:", product.variations.length);
     
     return product.variations.map((v: any) => {
       const price = v.price !== undefined && v.price !== null && v.price > 0 
@@ -314,216 +339,199 @@ export function ProductFormDialog({
     });
   }, [product?.variations, form.price]);
 
-// src/components/dashboard/ProductFormDialog.tsx
-
-useEffect(() => {
-  // ✅ ✅ ✅ منع إعادة التحميل المتكررة
-  if (isLoadingRef.current) {
-    console.log("ℹ️ [ProductFormDialog] Already loading, skipping...");
-    return;
-  }
-  
-  // ✅ ✅ ✅ منع إعادة التوجيه أثناء كتابة السعر
-  if (isPriceEditingRef.current) {
-    console.log("ℹ️ [ProductFormDialog] Skipping - price editing in progress");
-    return;
-  }
-  
-  if (!open) {
-    isLoadingRef.current = false;
-    return;
-  }
-  
-  // ✅ تعيين العلم لمنع التحميل المتكرر
-  isLoadingRef.current = true;
-  
-  if (product) {
-    const availableValue = product.is_available !== undefined ? product.is_available : true;
-    
-    // ✅ تحميل البيانات الأساسية
-    setForm({
-      title_ar: product.title_ar || "",
-      description_ar: product.description_ar || "",
-      price: product.price || 0,
-      old_price: product.old_price || 0,
-      is_offer: product.is_offer || false,
-      is_available: availableValue,
-      payment_method: product.payment_method || "cash",
-      kind: product.kind || "product",
-      category_id: product.category_id || "",
-      governorate_id: product.governorate_id || "",
-      cover_url: product.cover_url || "",
-      image_urls: product.image_urls || [""],
-    });
-    
-    if (product.category_id && cats.length > 0) {
-      setCategorySearch(getCategoryName(product.category_id));
+  // ============================================================
+  // ✅ useEffect لتحميل البيانات
+  // ============================================================
+  useEffect(() => {
+    if (isLoadingRef.current) {
+      return;
     }
     
-    if (product.governorate_id && govs.length > 0) {
-      setGovernorateSearch(getGovernorateName(product.governorate_id));
+    if (isPriceEditingRef.current) {
+      return;
     }
     
-    // ✅ ✅ ✅ تحميل الخيارات
-    const productOptions = product.options || [];
-    const productColors = product.colors || [];
+    if (!open) {
+      isLoadingRef.current = false;
+      return;
+    }
     
-    console.log("🔍 [ProductFormDialog] Loading product data:", {
-      optionsCount: productOptions.length,
-      colorsCount: productColors.length,
-      variationsCount: product.variations?.length || 0,
-    });
+    isLoadingRef.current = true;
     
-    // ✅ ✅ ✅ خريطة تحويل الأنواع
-    const typeMap: Record<string, string> = {
-      'color': 'colors',
-      'size': 'sizes',
-      'model': 'models',
-      'material': 'materials',
-      'style': 'style',
-      'brand': 'brand',
-    };
-    
-    // ✅ تحويل المصفوفة إلى كائن Grouped
-    const optionsGrouped: Record<string, string[]> = {
-      colors: [],
-      sizes: [],
-      models: [],
-      materials: [],
-      weight: [],
-      style: [],
-      brand: [],
-      fabric: [],
-      season: [],
-      gender: [],
-      storage: [],
-      ram: [],
-      processor: [],
-      battery: [],
-      screen_size: [],
-      camera: [],
-      connectivity: [],
-    };
-    
-    productOptions.forEach((opt: any) => {
-      const originalType = opt.option_type;
-      const mappedType = typeMap[originalType] || originalType;
+    if (product) {
+      const availableValue = product.is_available !== undefined ? product.is_available : true;
       
-      console.log(`🔍 [ProductFormDialog] Option: ${originalType} → ${mappedType}, value: ${opt.option_value}`);
+      // ✅ تحميل البيانات الأساسية
+      setForm({
+        title_ar: product.title_ar || "",
+        description_ar: product.description_ar || "",
+        price: product.price || 0,
+        old_price: product.old_price || 0,
+        is_offer: product.is_offer || false,
+        is_available: availableValue,
+        payment_method: product.payment_method || "cash",
+        kind: product.kind || "product",
+        category_id: product.category_id || "",
+        parent_category_id: product.parent_category_id || "",
+        governorate_id: product.governorate_id || "",
+        cover_url: product.cover_url || "",
+        image_urls: product.image_urls || [""],
+      });
       
-      if (optionsGrouped[mappedType]) {
-        optionsGrouped[mappedType].push(opt.option_value);
-      } else {
-        console.warn(`⚠️ Unknown option type: ${originalType}`);
+      // ✅ ✅ ✅ تحميل التصنيف الرئيسي والفرعي
+      if (cats.length > 0) {
+        // حالة 1: parent_category_id موجود
+        if (product.parent_category_id) {
+          setParentCategoryId(product.parent_category_id);
+          setParentCategorySearch(getCategoryName(product.parent_category_id));
+          
+          if (product.category_id && product.category_id !== product.parent_category_id) {
+            setSubCategoryId(product.category_id);
+            setSubCategorySearch(getCategoryName(product.category_id));
+          } else {
+            setSubCategoryId("");
+            setSubCategorySearch("");
+          }
+        }
+        // حالة 2: فقط category_id (منتج قديم)
+        else if (product.category_id) {
+          const cat = cats.find((c: any) => c.id === product.category_id);
+          
+          if (cat) {
+            // إذا كان التصنيف فرعي
+            if (cat.parent_id) {
+              setParentCategoryId(cat.parent_id);
+              setParentCategorySearch(getCategoryName(cat.parent_id));
+              setSubCategoryId(product.category_id);
+              setSubCategorySearch(getCategoryName(product.category_id));
+            }
+            // إذا كان التصنيف رئيسي
+            else {
+              setParentCategoryId(product.category_id);
+              setParentCategorySearch(getCategoryName(product.category_id));
+              setSubCategoryId("");
+              setSubCategorySearch("");
+            }
+          }
+        }
       }
-    });
-    
-    console.log("🔍 [ProductFormDialog] Grouped options:", optionsGrouped);
-    setOptions(optionsGrouped);
-    
-    // ✅ تعيين الألوان
-    if (productColors.length > 0) {
-      const mappedColors = productColors.map((c: any) => ({
-        id: c.id,
-        color_name_ar: c.color_name_ar || c.color_name_en || 'لون',
-        color_name_en: c.color_name_en || c.color_name_ar || 'Color',
-        color_hex: c.color_hex || null,
-        image_url: c.image_url || '',
-        sort_order: c.sort_order || 0,
-      }));
       
-      console.log("🔍 [ProductFormDialog] Setting colors with images:", mappedColors);
+      if (product.governorate_id && govs.length > 0) {
+        setGovernorateSearch(getGovernorateName(product.governorate_id));
+      }
       
-      setTempColors(mappedColors);
-      setColorWithImages(mappedColors.map((c: any) => ({
-        name: c.color_name_ar,
-        image: c.image_url,
-        hex: c.color_hex,
-      })));
-    } else {
-      setTempColors([]);
-      setColorWithImages([]);
-    }
-    
-    // ✅ تعيين المقاسات من الخيارات المجمعة
-    if (optionsGrouped.sizes && optionsGrouped.sizes.length > 0) {
-      setSizes(optionsGrouped.sizes);
-    } else {
-      setSizes([]);
-    }
-    
-    // ✅ ✅ ✅ 🔥🔥🔥 التعديل هنا 🔥🔥🔥
-    // ✅ تعيين التركيبات مباشرة من product.variations مع الأسعار
-    if (product.variations && product.variations.length > 0) {
-      console.log("🔍 [ProductFormDialog] Raw variations from product:", 
-        product.variations.map((v: any) => ({
+      // ✅ تحميل الخيارات
+      const productOptions = product.options || [];
+      const productColors = product.colors || [];
+      
+      const typeMap: Record<string, string> = {
+        'color': 'colors',
+        'size': 'sizes',
+        'model': 'models',
+        'material': 'materials',
+        'style': 'style',
+        'brand': 'brand',
+      };
+      
+      const optionsGrouped: Record<string, string[]> = {
+        colors: [], sizes: [], models: [], materials: [],
+        weight: [], style: [], brand: [], fabric: [],
+        season: [], gender: [], storage: [], ram: [],
+        processor: [], battery: [], screen_size: [],
+        camera: [], connectivity: [],
+      };
+      
+      productOptions.forEach((opt: any) => {
+        const originalType = opt.option_type;
+        const mappedType = typeMap[originalType] || originalType;
+        
+        if (optionsGrouped[mappedType]) {
+          optionsGrouped[mappedType].push(opt.option_value);
+        }
+      });
+      
+      setOptions(optionsGrouped);
+      
+      // ✅ تعيين الألوان
+      if (productColors.length > 0) {
+        const mappedColors = productColors.map((c: any) => ({
+          id: c.id,
+          color_name_ar: c.color_name_ar || c.color_name_en || 'لون',
+          color_name_en: c.color_name_en || c.color_name_ar || 'Color',
+          color_hex: c.color_hex || null,
+          image_url: c.image_url || '',
+          sort_order: c.sort_order || 0,
+        }));
+        
+        setTempColors(mappedColors);
+        setColorWithImages(mappedColors.map((c: any) => ({
+          name: c.color_name_ar,
+          image: c.image_url,
+          hex: c.color_hex,
+        })));
+      } else {
+        setTempColors([]);
+        setColorWithImages([]);
+      }
+      
+      // ✅ تعيين المقاسات
+      if (optionsGrouped.sizes && optionsGrouped.sizes.length > 0) {
+        setSizes(optionsGrouped.sizes);
+      } else {
+        setSizes([]);
+      }
+      
+      // ✅ تعيين التركيبات
+      if (product.variations && product.variations.length > 0) {
+        const mappedVariations = product.variations.map((v: any) => ({
           id: v.id,
-          price: v.price,
-          old_price: v.old_price,
-          combination: v.combination
-        }))
-      );
+          combination: v.combination || {},
+          is_available: v.is_available !== undefined ? v.is_available : v.is_active !== false,
+          price: v.price || 0,
+          old_price: v.old_price || null,
+          sku: v.sku || '',
+          stock_quantity: v.stock_quantity || 0,
+          color_id: v.color_id || null,
+          image_url: v.image_url || null,
+        }));
+        
+        setVariations(mappedVariations);
+      } else {
+        setVariations([]);
+      }
       
-      // ✅ تحويل البيانات مع الحفاظ على السعر
-      const mappedVariations = product.variations.map((v: any) => ({
-        id: v.id,
-        combination: v.combination || {},
-        is_available: v.is_available !== undefined ? v.is_available : v.is_active !== false,
-        price: v.price || 0,
-        old_price: v.old_price || null, // ✅ ✅ ✅ الحفاظ على old_price
-        sku: v.sku || '',
-        stock_quantity: v.stock_quantity || 0,
-        color_id: v.color_id || null,
-        image_url: v.image_url || null,
-      }));
-      
-      console.log("🔍 [ProductFormDialog] Mapped variations with prices:", 
-        mappedVariations.map((v: any) => ({
-          id: v.id,
-          price: v.price,
-          old_price: v.old_price,
-          combination: v.combination
-        }))
-      );
-      
-      setVariations(mappedVariations);
     } else {
-      console.log("ℹ️ [ProductFormDialog] No variations found");
+      // ✅ حالة الإضافة الجديدة
+      setForm({
+        ...emptyForm,
+        is_offer: productType === "offer",
+      });
+      setOptions({ colors: [], sizes: [], models: [], materials: [], weight: [], style: [], brand: [] });
       setVariations([]);
+      setTempColors([]);
+      setSizes([]);
+      setColorWithImages([]);
+      setParentCategoryId("");
+      setSubCategoryId("");
+      setParentCategorySearch("");
+      setSubCategorySearch("");
+      setGovernorateSearch("");
     }
+    setActiveTab("basic");
     
-  } else {
-    // ✅ حالة الإضافة الجديدة
-    setForm({
-      ...emptyForm,
-      is_offer: productType === "offer",
-    });
-    setOptions({ colors: [], sizes: [], models: [], materials: [], weight: [], style: [], brand: [] });
-    setVariations([]);
-    setTempColors([]);
-    setSizes([]);
-    setColorWithImages([]);
-    setCategorySearch("");
-    setGovernorateSearch("");
-  }
-  setActiveTab("basic");
-  
-  // ✅ ✅ ✅ إعادة تعيين isFirstLoadRef عند فتح النافذة
-  isFirstLoadRef.current = true;
-  
-  // ✅ ✅ ✅ إعادة تعيين العلم بعد الانتهاء
-  setTimeout(() => {
-    isLoadingRef.current = false;
-  }, 500);
-  
-}, [product, productType, open, cats, govs]);
-  // ✅ ✅ ✅ إضافة useMemo لحل مشكلة الصور
+    isFirstLoadRef.current = true;
+    
+    setTimeout(() => {
+      isLoadingRef.current = false;
+    }, 500);
+    
+  }, [product, productType, open, cats, govs, getCategoryName]);
+
+  // ✅ externalColorImages
   const externalColorImages = useMemo(() => {
-    const result = Object.fromEntries(
+    return Object.fromEntries(
       tempColors.map((c: any) => [c.color_name_ar, c.image_url])
     );
-    console.log("🔍 [ProductFormDialog] externalColorImages memoized:", result);
-    return result;
   }, [tempColors]);
 
   const handlePriceChange = (value: string, field: string) => {
@@ -538,11 +546,9 @@ useEffect(() => {
       return;
     }
     
-    // ✅ ✅ ✅ منع إعادة التوجيه أثناء كتابة السعر
     isPriceEditingRef.current = true;
     setForm({ ...form, [field]: num });
     
-    // ✅ إعادة تعيين بعد 500ms
     setTimeout(() => {
       isPriceEditingRef.current = false;
     }, 500);
@@ -558,7 +564,8 @@ useEffect(() => {
       if (form.old_price < 0) return false;
     }
     
-    if (!form.category_id) return false;
+    // ✅ التصنيف الرئيسي إلزامي
+    if (!parentCategoryId) return false;
     if (!form.governorate_id) return false;
     if (!form.cover_url?.trim()) return false;
     
@@ -576,12 +583,7 @@ useEffect(() => {
   };
 
   const validateAndSubmit = async () => {
-    console.log("🔍 [validateAndSubmit] ===== STARTING VALIDATION =====");
-    console.log("🔍 [validateAndSubmit] Product type:", productType);
-    console.log("🔍 [validateAndSubmit] Form data:", { ...form, image_urls: `${form.image_urls?.length || 0} images` });
-
     if (!form.title_ar.trim()) {
-      console.log("❌ [validateAndSubmit] Missing title");
       toast.error(
         app.lang === "ar" 
           ? `الرجاء إدخال ${productType === "offer" ? "اسم العرض" : "اسم المنتج"}` 
@@ -590,81 +592,64 @@ useEffect(() => {
       setActiveTab("basic");
       return;
     }
-    console.log("✅ [validateAndSubmit] Title OK:", form.title_ar);
     
     if (!form.price || form.price <= 0) {
-      console.log("❌ [validateAndSubmit] Missing price");
       toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال السعر" : "⚠️ Please enter price");
       setActiveTab("pricing");
       return;
     }
     if (form.price < 0) {
-      console.log("❌ [validateAndSubmit] Negative price");
       toast.error(app.lang === "ar" ? "⚠️ السعر لا يمكن أن يكون سالباً" : "⚠️ Price cannot be negative");
       setActiveTab("pricing");
       return;
     }
-    console.log("✅ [validateAndSubmit] Price OK:", form.price);
     
     if (productType === "offer") {
       if (!form.old_price || form.old_price <= form.price) {
-        console.log("❌ [validateAndSubmit] Old price invalid");
         toast.error(app.lang === "ar" ? "⚠️ السعر القديم يجب أن يكون أكبر من السعر الحالي" : "⚠️ Old price must be greater than current price");
         setActiveTab("pricing");
         return;
       }
       if (form.old_price < 0) {
-        console.log("❌ [validateAndSubmit] Negative old price");
         toast.error(app.lang === "ar" ? "⚠️ السعر القديم لا يمكن أن يكون سالباً" : "⚠️ Old price cannot be negative");
         setActiveTab("pricing");
         return;
       }
-      console.log("✅ [validateAndSubmit] Old price OK:", form.old_price);
     }
     
-    if (!form.category_id) {
-      console.log("❌ [validateAndSubmit] Missing category");
-      toast.error(app.lang === "ar" ? "⚠️ الرجاء اختيار التصنيف" : "⚠️ Please select category");
+    // ✅ التحقق من التصنيف الرئيسي
+    if (!parentCategoryId) {
+      toast.error(app.lang === "ar" ? "⚠️ الرجاء اختيار التصنيف الرئيسي" : "⚠️ Please select main category");
       setActiveTab("basic");
       return;
     }
-    console.log("✅ [validateAndSubmit] Category OK:", form.category_id);
     
     if (!form.governorate_id) {
-      console.log("❌ [validateAndSubmit] Missing governorate");
       toast.error(app.lang === "ar" ? "⚠️ الرجاء اختيار المحافظة" : "⚠️ Please select governorate");
       setActiveTab("basic");
       return;
     }
-    console.log("✅ [validateAndSubmit] Governorate OK:", form.governorate_id);
     
     if (!form.cover_url?.trim()) {
-      console.log("❌ [validateAndSubmit] Missing cover image");
       toast.error(app.lang === "ar" ? "⚠️ الرجاء رفع الصورة الرئيسية" : "⚠️ Please upload main image");
       setActiveTab("images");
       return;
     }
-    console.log("✅ [validateAndSubmit] Cover image OK");
     
-    // ✅ ✅ ✅ التحقق من صور الألوان - محسن احترافي
+    // ✅ التحقق من صور الألوان
     if (tempColors.length > 0) {
-      // ✅ التحقق الذكي: الألوان الموجودة في قاعدة البيانات لا تحتاج صورة جديدة
       const colorsWithoutImage = tempColors.filter((c: any) => {
-        // ❌ حالة 1: لون جديد (id يبدأ بـ temp-) وليس له صورة → مطلوب
         if (c.id?.startsWith('temp-') && !c.image_url?.trim()) {
           return true;
         }
-        // ✅ حالة 2: لون من قاعدة البيانات (id لا يبدأ بـ temp-) → لا نطلب صورة
         if (c.id && !c.id.startsWith('temp-')) {
           return false;
         }
-        // ✅ حالة 3: أي حالة أخرى، تحقق من وجود الصورة
         return !c.image_url?.trim();
       });
       
       if (colorsWithoutImage.length > 0) {
         const colorNames = colorsWithoutImage.map((c: any) => c.color_name_ar).join(', ');
-        console.log("❌ [validateAndSubmit] Colors without image:", colorNames);
         toast.error(
           app.lang === "ar" 
             ? `⚠️ الألوان التالية بدون صورة: ${colorNames}` 
@@ -673,155 +658,162 @@ useEffect(() => {
         setActiveTab("options");
         return;
       }
-      console.log("✅ [validateAndSubmit] Colors OK:", tempColors.length, "colors with images");
     }
     
-    console.log("🔍 [validateAndSubmit] ===== CHECKING OPTIONS =====");
-    console.log("🔍 [validateAndSubmit] Options object:", options);
-    console.log("🔍 [validateAndSubmit] Options keys:", Object.keys(options));
-    
+    // ✅ التحقق من التركيبات
     const activeOptionsCount = Object.values(options).filter(arr => arr.length > 0).length;
-    console.log("🔍 [validateAndSubmit] Active options count:", activeOptionsCount);
-    
-    Object.entries(options).forEach(([key, values]) => {
-      if (values.length > 0) {
-        console.log(`🔍 [validateAndSubmit]   - ${key}: ${values.length} values (${values.join(', ')})`);
-      }
-    });
-    
-    console.log("🔍 [validateAndSubmit] Variations count:", variations.length);
-    if (variations.length > 0) {
-      console.log("🔍 [validateAndSubmit] Variations:", variations.map(v => 
-        `${Object.values(v.combination).join(' • ')} (${v.is_available ? '✅' : '❌'})`
-      ));
-    }
     
     if (activeOptionsCount >= 2) {
-      console.log("🔍 [validateAndSubmit] ⚠️ Active options >= 2, checking variations...");
-      const hasVariations = variations.length > 0;
-      console.log("🔍 [validateAndSubmit] Has variations?", hasVariations);
-      
-      if (!hasVariations) {
-        console.log("❌ [validateAndSubmit] ERROR: Options found but NO variations!");
-        console.log("❌ [validateAndSubmit] User must generate variations first!");
-        
+      if (variations.length === 0) {
         setActiveTab("options");
         
         toast.error(
           app.lang === "ar" 
-            ? "⚠️ لديك خيارين أو أكثر (ألوان، مقاسات، إلخ) ولكن لم تقم بتوليد التركيبات!\n\n📌 الرجاء التوجه إلى تبويب 'خيارات' والضغط على زر 'توليد التركيبات' في الأسفل" 
-            : "⚠️ You have 2 or more options (colors, sizes, etc.) but haven't generated variations!\n\n📌 Please go to the 'Options' tab and click the 'Generate Variations' button below"
+            ? "⚠️ لديك خيارين أو أكثر ولكن لم تقم بتوليد التركيبات!" 
+            : "⚠️ You have 2 or more options but haven't generated variations!"
         );
         return;
       }
-      
-      console.log("✅ [validateAndSubmit] Variations exist, proceeding...");
-    } else {
-      console.log("ℹ️ [validateAndSubmit] Active options < 2, skipping variations check");
     }
     
-    // ✅ ✅ ✅ التحقق من أسعار الفيرنتس - محسن احترافي
     if (variations.length > 0) {
-      // ✅ التحقق من أن كل تركيبة لها سعر
       const variationsWithoutPrice = variations.filter(v => {
-        // ❌ السعر غير موجود أو null أو undefined أو <= 0
         return v.price === undefined || v.price === null || v.price <= 0;
       });
       
       if (variationsWithoutPrice.length > 0) {
-        console.log("❌ [validateAndSubmit] Variations without price:", variationsWithoutPrice.length);
-        // ✅ عرض أسماء التركيبات بدون سعر للمساعدة
         const variationNames = variationsWithoutPrice.map(v => {
           return Object.values(v.combination || {}).join(' • ');
         }).join(', ');
         
         toast.error(
           app.lang === "ar" 
-            ? `⚠️ هناك ${variationsWithoutPrice.length} تركيبة بدون سعر:\n${variationNames}\n\n📌 الرجاء تحديد السعر لكل تركيبة` 
-            : `⚠️ ${variationsWithoutPrice.length} variations have no price:\n${variationNames}\n\n📌 Please set price for each variation`
+            ? `⚠️ هناك ${variationsWithoutPrice.length} تركيبة بدون سعر:\n${variationNames}` 
+            : `⚠️ ${variationsWithoutPrice.length} variations have no price:\n${variationNames}`
         );
         setActiveTab("options");
         return;
       }
     }
     
-    console.log("✅ [validateAndSubmit] ===== ALL VALIDATIONS PASSED =====");
-    console.log("✅ [validateAndSubmit] Submitting product...");
-    
-   setIsSubmitting(true);
-  try {
-    // ✅ ✅ ✅ استخدم options.sizes بدلاً من sizes
-    const finalSizes = options.sizes || [];
-    
-    console.log("🔍🔍🔍 [ProductFormDialog] finalSizes:", finalSizes);
-    console.log("🔍🔍🔍 [ProductFormDialog] options.sizes:", options.sizes);
-    
-    const allData = { 
-      ...form, 
-      options: {
-        ...options,
-        colors: tempColors.map((c: any) => c.color_name_ar),
-        sizes: finalSizes,  // ✅ استخدم finalSizes
-      },
-      variations: variations.map(v => ({
-        ...v,
-        price: v.price || form.price,
-        old_price: v.old_price || form.old_price || null,
-      })),
-      colors: tempColors,
-      image_urls: form.image_urls,
-    };
-    
-    console.log("✅ [validateAndSubmit] Data to save:", {
-      title: allData.title_ar,
-      price: allData.price,
-      is_offer: allData.is_offer,
-      options_count: Object.values(allData.options).filter(arr => arr.length > 0).length,
-      variations_count: allData.variations.length,
-      colors_count: allData.colors.length,
-      sizes_count: allData.options.sizes?.length || 0,  // ✅ أضف هذا
-    });
-    console.log("🔍🔍🔍 [ProductFormDialog] allData.options.sizes:", allData.options.sizes);
-console.log("🔍🔍🔍 [ProductFormDialog] allData.options:", allData.options);
-    await onSave(allData);
-    console.log("✅ [validateAndSubmit] Product saved successfully!");
-  } catch (error) {
-    console.error("❌ [validateAndSubmit] Error saving:", error);
-  } finally {
-    setIsSubmitting(false);
-    console.log("🔍 [validateAndSubmit] ===== VALIDATION END =====");
-  }
-};
+    setIsSubmitting(true);
+    try {
+      const finalSizes = options.sizes || [];
+      
+      // ✅ ✅ ✅ تحديد category_id النهائي
+      // إذا اختار فرعي → استخدم الفرعي
+      // إذا لم يختار فرعي → استخدم الرئيسي
+      const finalCategoryId = subCategoryId || parentCategoryId;
+      
+      const allData = { 
+        ...form, 
+        // ✅ التصنيفات
+        parent_category_id: parentCategoryId,
+        category_id: finalCategoryId,
+        // ✅ الخيارات
+        options: {
+          ...options,
+          colors: tempColors.map((c: any) => c.color_name_ar),
+          sizes: finalSizes,
+        },
+        variations: variations.map(v => ({
+          ...v,
+          price: v.price || form.price,
+          old_price: v.old_price || form.old_price || null,
+        })),
+        colors: tempColors,
+        image_urls: form.image_urls,
+      };
+      
+      await onSave(allData);
+    } catch (error) {
+      console.error("❌ Error saving:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
- // ✅ ✅ ✅ دالة معالجة الألوان مع الصور (معدلة)
-const handleColorsWithImagesChange = (colors: ColorWithImage[]) => {
-  setColorWithImages(colors);
-  
-  const newTempColors = colors.map((c, index) => ({
-    id: `temp-${Date.now()}-${index}`,
-    color_name_ar: c.name,
-    color_name_en: c.name,
-    // ✅ ✅ ✅ تعبئة color_hex تلقائياً من القاموس
-    color_hex: c.hex || DEFAULT_COLORS[c.name] || '#CCCCCC',
-    image_url: c.image,
-    sort_order: index,
-  }));
-  setTempColors(newTempColors);
-  
-  setOptions(prev => ({
-    ...prev,
-    colors: colors.map(c => c.name),
-  }));
-};
+  // ✅ دالة معالجة الألوان مع الصور
+  const handleColorsWithImagesChange = (colors: ColorWithImage[]) => {
+    setColorWithImages(colors);
+    
+    const newTempColors = colors.map((c, index) => ({
+      id: `temp-${Date.now()}-${index}`,
+      color_name_ar: c.name,
+      color_name_en: c.name,
+      color_hex: c.hex || DEFAULT_COLORS[c.name] || '#CCCCCC',
+      image_url: c.image,
+      sort_order: index,
+    }));
+    setTempColors(newTempColors);
+    
+    setOptions(prev => ({
+      ...prev,
+      colors: colors.map(c => c.name),
+    }));
+  };
 
-const handleSizesUpdate = (newSizes: string[]) => {
-  console.log("🔍🔍🔍 [ProductFormDialog] handleSizesUpdate called with:", newSizes);
-  setSizes(newSizes);
-  setOptions(prev => ({
-    ...prev,
-    sizes: newSizes,
-  }));
-};
+  const handleSizesUpdate = (newSizes: string[]) => {
+    setSizes(newSizes);
+    setOptions(prev => ({
+      ...prev,
+      sizes: newSizes,
+    }));
+  };
+
+  // ✅ اختيار التصنيف الرئيسي
+  const handleParentCategorySelect = (cat: any) => {
+    setParentCategoryId(cat.id);
+    setParentCategorySearch(lang === "ar" ? cat.name_ar : cat.name_en);
+    setIsParentCategoryOpen(false);
+    
+    // ✅ إعادة تصفير الفرعي
+    setSubCategoryId("");
+    setSubCategorySearch("");
+    
+    // ✅ تحديث form
+    setForm(prev => ({ 
+      ...prev, 
+      parent_category_id: cat.id,
+      category_id: cat.id, // مؤقتاً الرئيسي
+    }));
+  };
+
+  // ✅ اختيار التصنيف الفرعي
+  const handleSubCategorySelect = (cat: any) => {
+    setSubCategoryId(cat.id);
+    setSubCategorySearch(lang === "ar" ? cat.name_ar : cat.name_en);
+    setIsSubCategoryOpen(false);
+    
+    setForm(prev => ({ 
+      ...prev, 
+      category_id: cat.id,
+    }));
+  };
+
+  // ✅ مسح التصنيف الرئيسي
+  const clearParentCategory = () => {
+    setParentCategoryId("");
+    setParentCategorySearch("");
+    setSubCategoryId("");
+    setSubCategorySearch("");
+    setForm(prev => ({ 
+      ...prev, 
+      parent_category_id: "",
+      category_id: "",
+    }));
+  };
+
+  // ✅ مسح التصنيف الفرعي
+  const clearSubCategory = () => {
+    setSubCategoryId("");
+    setSubCategorySearch("");
+    // ✅ رجع للرئيسي
+    setForm(prev => ({ 
+      ...prev, 
+      category_id: parentCategoryId,
+    }));
+  };
 
   const getProductIcon = () => {
     if (productType === "offer") return <Gift className="h-6 w-6 text-[#d81b60]" />;
@@ -936,7 +928,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
             </Button>
           </div>
           
-          {/* ===== شريط التقدم ===== */}
+          {/* شريط التقدم */}
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -967,7 +959,7 @@ const handleSizesUpdate = (newSizes: string[]) => {
             </div>
           </div>
           
-          {/* ===== Tabs ===== */}
+          {/* Tabs */}
           <div className="mt-3">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList 
@@ -1074,118 +1066,216 @@ const handleSizesUpdate = (newSizes: string[]) => {
                   </div>
                 </div>
 
-                {/* ===== Category & Location ===== */}
+                {/* ============================================================ */}
+                {/* ✅ ✅ ✅ التصنيف الرئيسي + الفرعي */}
+                {/* ============================================================ */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  
+                  {/* ✅ التصنيف الرئيسي (إلزامي) */}
                   <div>
                     <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                      {lang === "ar" ? "التصنيف" : "Category"}
+                      <span>📁</span>
+                      {lang === "ar" ? "التصنيف الرئيسي" : "Main Category"}
                       <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative mt-1.5">
                       <div className="relative">
                         <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#d81b60]/60" />
                         <Input
-                          value={categorySearch}
-                          onChange={(e) => setCategorySearch(e.target.value)}
-                          onFocus={() => setIsCategoryOpen(true)}
-                          placeholder={lang === "ar" ? "🔍 ابحث عن تصنيف..." : "🔍 Search category..."}
+                          value={parentCategorySearch}
+                          onChange={(e) => setParentCategorySearch(e.target.value)}
+                          onFocus={() => setIsParentCategoryOpen(true)}
+                          placeholder={lang === "ar" ? "🔍 ابحث عن التصنيف الرئيسي..." : "🔍 Search main category..."}
                           className="ps-9 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
                         />
-                        {categorySearch && (
+                        {parentCategorySearch && (
                           <button
-                            onClick={() => setCategorySearch("")}
+                            onClick={clearParentCategory}
                             className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#d81b60] transition-colors"
                           >
                             <X className="h-4 w-4" />
                           </button>
                         )}
                       </div>
-                      {isCategoryOpen && (
+                      {isParentCategoryOpen && (
                         <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#d81b60]/20">
-                          {filteredCategories.length === 0 ? (
+                          {filteredMainCategories.length === 0 ? (
                             <div className="p-4 text-sm text-muted-foreground text-center">
                               {lang === "ar" ? "لا توجد نتائج" : "No results found"}
                             </div>
                           ) : (
-                            filteredCategories.map((c: any) => (
-                              <button
-                                key={c.id}
-                                className={cn(
-                                  "w-full text-start px-4 py-3 text-sm hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
-                                  form.category_id === c.id && "bg-[#d81b60]/10 dark:bg-[#d81b60]/30 text-[#d81b60]"
-                                )}
-                                onClick={() => {
-                                  setForm({ ...form, category_id: c.id });
-                                  setCategorySearch(lang === "ar" ? c.name_ar : c.name_en);
-                                  setIsCategoryOpen(false);
-                                }}
-                              >
-                                {form.category_id === c.id && (
-                                  <CheckCircle2 className="h-4 w-4 text-[#d81b60] flex-shrink-0" />
-                                )}
-                                <span>{lang === "ar" ? c.name_ar : c.name_en}</span>
-                              </button>
-                            ))
+                            filteredMainCategories.map((c: any) => {
+                              const childCount = cats.filter((cat: any) => cat.parent_id === c.id && cat.active !== false).length;
+                              return (
+                                <button
+                                  key={c.id}
+                                  className={cn(
+                                    "w-full text-start px-4 py-3 text-sm hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
+                                    parentCategoryId === c.id && "bg-[#d81b60]/10 dark:bg-[#d81b60]/30 text-[#d81b60]"
+                                  )}
+                                  onClick={() => handleParentCategorySelect(c)}
+                                >
+                                  {parentCategoryId === c.id && (
+                                    <CheckCircle2 className="h-4 w-4 text-[#d81b60] flex-shrink-0" />
+                                  )}
+                                  <span className="flex-1">{lang === "ar" ? c.name_ar : c.name_en}</span>
+                                  {childCount > 0 && (
+                                    <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[9px]">
+                                      {childCount} {lang === "ar" ? "فرعي" : "sub"}
+                                    </Badge>
+                                  )}
+                                </button>
+                              );
+                            })
                           )}
                         </div>
                       )}
                     </div>
                   </div>
 
+                  {/* ✅ التصنيف الفرعي (اختياري - يظهر فقط إذا للرئيسي فروع) */}
                   <div>
                     <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                      {lang === "ar" ? "المحافظة" : "Governorate"}
-                      <span className="text-red-500">*</span>
+                      <span>📂</span>
+                      {lang === "ar" ? "التصنيف الفرعي" : "Subcategory"}
+                      <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400">
+                        {lang === "ar" ? "اختياري" : "Optional"}
+                      </Badge>
                     </Label>
-                    <div className="relative mt-1.5">
-                      <div className="relative">
-                        <MapPin className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#d81b60]/60" />
-                        <Input
-                          value={governorateSearch}
-                          onChange={(e) => setGovernorateSearch(e.target.value)}
-                          onFocus={() => setIsGovernorateOpen(true)}
-                          placeholder={lang === "ar" ? "🔍 ابحث عن محافظة..." : "🔍 Search governorate..."}
-                          className="ps-9 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
-                        />
-                        {governorateSearch && (
-                          <button
-                            onClick={() => setGovernorateSearch("")}
-                            className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#d81b60] transition-colors"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        )}
+                    
+                    {!parentCategoryId ? (
+                      // لم يُختَر الرئيسي بعد
+                      <div className="mt-1.5 flex items-center gap-2 h-12 px-4 rounded-xl border-3 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
+                        <Info className="h-4 w-4 text-slate-400" />
+                        <span className="text-sm text-slate-500">
+                          {lang === "ar" ? "اختر التصنيف الرئيسي أولاً" : "Select main category first"}
+                        </span>
                       </div>
-                      {isGovernorateOpen && (
-                        <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#d81b60]/20">
-                          {filteredGovernorates.length === 0 ? (
-                            <div className="p-4 text-sm text-muted-foreground text-center">
-                              {lang === "ar" ? "لا توجد نتائج" : "No results found"}
-                            </div>
-                          ) : (
-                            filteredGovernorates.map((g: any) => (
-                              <button
-                                key={g.id}
-                                className={cn(
-                                  "w-full text-start px-4 py-3 text-sm hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
-                                  form.governorate_id === g.id && "bg-[#d81b60]/10 dark:bg-[#d81b60]/30 text-[#d81b60]"
-                                )}
-                                onClick={() => {
-                                  setForm({ ...form, governorate_id: g.id });
-                                  setGovernorateSearch(lang === "ar" ? g.name_ar : g.name_en);
-                                  setIsGovernorateOpen(false);
-                                }}
-                              >
-                                {form.governorate_id === g.id && (
-                                  <CheckCircle2 className="h-4 w-4 text-[#d81b60] flex-shrink-0" />
-                                )}
-                                <span>{lang === "ar" ? g.name_ar : g.name_en}</span>
-                              </button>
-                            ))
+                    ) : !hasSubCategories ? (
+                      // الرئيسي ليس له فروع
+                      <div className="mt-1.5 flex items-center gap-2 h-12 px-4 rounded-xl border-3 border-emerald-200/50 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                          {lang === "ar" 
+                            ? "✅ سيتم استخدام التصنيف الرئيسي" 
+                            : "✅ Main category will be used"}
+                        </span>
+                      </div>
+                    ) : (
+                      // الرئيسي له فروع → فعّل البحث
+                      <div className="relative mt-1.5">
+                        <div className="relative">
+                          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#2a655f]/60" />
+                          <Input
+                            value={subCategorySearch}
+                            onChange={(e) => setSubCategorySearch(e.target.value)}
+                            onFocus={() => setIsSubCategoryOpen(true)}
+                            placeholder={lang === "ar" ? "🔍 ابحث عن التصنيف الفرعي..." : "🔍 Search subcategory..."}
+                            className="ps-9 h-12 rounded-xl border-3 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/50"
+                          />
+                          {subCategorySearch && (
+                            <button
+                              onClick={clearSubCategory}
+                              className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
                           )}
                         </div>
+                        {isSubCategoryOpen && (
+                          <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#2a655f]/20">
+                            {filteredSubCategories.length === 0 ? (
+                              <div className="p-4 text-sm text-muted-foreground text-center">
+                                {lang === "ar" ? "لا توجد نتائج" : "No results found"}
+                              </div>
+                            ) : (
+                              filteredSubCategories.map((c: any) => (
+                                <button
+                                  key={c.id}
+                                  className={cn(
+                                    "w-full text-start px-4 py-3 text-sm hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
+                                    subCategoryId === c.id && "bg-[#2a655f]/10 dark:bg-[#2a655f]/30 text-[#2a655f]"
+                                  )}
+                                  onClick={() => handleSubCategorySelect(c)}
+                                >
+                                  {subCategoryId === c.id && (
+                                    <CheckCircle2 className="h-4 w-4 text-[#2a655f] flex-shrink-0" />
+                                  )}
+                                  <span>{lang === "ar" ? c.name_ar : c.name_en}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Info */}
+                    {parentCategoryId && hasSubCategories && (
+                      <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                        <Info className="h-3 w-3 text-[#2a655f]" />
+                        {lang === "ar" 
+                          ? "💡 إذا لم تختر فرعياً، سيتم استخدام الرئيسي" 
+                          : "💡 If not selected, main category will be used"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* ✅ المحافظة */}
+                <div>
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    {lang === "ar" ? "المحافظة" : "Governorate"}
+                    <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative mt-1.5">
+                    <div className="relative">
+                      <MapPin className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#d81b60]/60" />
+                      <Input
+                        value={governorateSearch}
+                        onChange={(e) => setGovernorateSearch(e.target.value)}
+                        onFocus={() => setIsGovernorateOpen(true)}
+                        placeholder={lang === "ar" ? "🔍 ابحث عن محافظة..." : "🔍 Search governorate..."}
+                        className="ps-9 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
+                      />
+                      {governorateSearch && (
+                        <button
+                          onClick={() => setGovernorateSearch("")}
+                          className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#d81b60] transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
                       )}
                     </div>
+                    {isGovernorateOpen && (
+                      <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#d81b60]/20">
+                        {filteredGovernorates.length === 0 ? (
+                          <div className="p-4 text-sm text-muted-foreground text-center">
+                            {lang === "ar" ? "لا توجد نتائج" : "No results found"}
+                          </div>
+                        ) : (
+                          filteredGovernorates.map((g: any) => (
+                            <button
+                              key={g.id}
+                              className={cn(
+                                "w-full text-start px-4 py-3 text-sm hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
+                                form.governorate_id === g.id && "bg-[#d81b60]/10 dark:bg-[#d81b60]/30 text-[#d81b60]"
+                              )}
+                              onClick={() => {
+                                setForm({ ...form, governorate_id: g.id });
+                                setGovernorateSearch(lang === "ar" ? g.name_ar : g.name_en);
+                                setIsGovernorateOpen(false);
+                              }}
+                            >
+                              {form.governorate_id === g.id && (
+                                <CheckCircle2 className="h-4 w-4 text-[#d81b60] flex-shrink-0" />
+                              )}
+                              <span>{lang === "ar" ? g.name_ar : g.name_en}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1260,7 +1350,6 @@ const handleSizesUpdate = (newSizes: string[]) => {
                 </div>
               </div>
 
-              {/* ✅ فقط حقل السعر بالليرة السورية */}
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
@@ -1284,7 +1373,6 @@ const handleSizesUpdate = (newSizes: string[]) => {
                 </div>
               </div>
 
-              {/* ✅ للعروض فقط: حقل السعر القديم */}
               {productType === "offer" && (
                 <>
                   <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#d81b60]/10 to-[#f48fb1]/10 dark:from-[#d81b60]/30 dark:to-[#f48fb1]/10 rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
@@ -1461,90 +1549,90 @@ const handleSizesUpdate = (newSizes: string[]) => {
                 </div>
               </div>
 
-          <ProductOptionsManager
-  value={options}
-  onChange={setOptions}
-  lang={app.lang}
-  variations={variations}
-  onVariationsChange={setVariations}
-  userId={app.user?.id || ''}
-  onColorsWithImagesChange={handleColorsWithImagesChange}
-  externalColorImages={externalColorImages}
-  sizes={sizes}
-  onSizesChange={handleSizesUpdate}
-  isOffer={productType === "offer"}  // ✅ هذا السطر الجديد
-/>
+              <ProductOptionsManager
+                value={options}
+                onChange={setOptions}
+                lang={app.lang}
+                variations={variations}
+                onVariationsChange={setVariations}
+                userId={app.user?.id || ''}
+                onColorsWithImagesChange={handleColorsWithImagesChange}
+                externalColorImages={externalColorImages}
+                sizes={sizes}
+                onSizesChange={handleSizesUpdate}
+                isOffer={productType === "offer"}
+              />
             </div>
           )}
         </div>
 
-       {/* ===== Footer ===== */}
-<div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 p-4 md:p-6 rounded-b-2xl">
-  <div className="flex items-center justify-between gap-3">
-    <Button
-      variant="outline"
-      onClick={goToPrevTab}
-      disabled={isFirstTab}
-      className="rounded-xl border-3 border-[#d81b60]/30 text-[#d81b60] hover:bg-[#d81b60]/10 hover:border-[#d81b60]/50 transition-all duration-300 h-12 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      {isRTL ? (
-        <ArrowRight className="h-4 w-4 ml-2" />
-      ) : (
-        <ArrowLeft className="h-4 w-4 mr-2" />
-      )}
-      {lang === "ar" ? "السابق" : "Previous"}
-    </Button>
+        {/* ===== Footer ===== */}
+        <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 p-4 md:p-6 rounded-b-2xl">
+          <div className="flex items-center justify-between gap-3">
+            <Button
+              variant="outline"
+              onClick={goToPrevTab}
+              disabled={isFirstTab}
+              className="rounded-xl border-3 border-[#d81b60]/30 text-[#d81b60] hover:bg-[#d81b60]/10 hover:border-[#d81b60]/50 transition-all duration-300 h-12 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRTL ? (
+                <ArrowRight className="h-4 w-4 ml-2" />
+              ) : (
+                <ArrowLeft className="h-4 w-4 mr-2" />
+              )}
+              {lang === "ar" ? "السابق" : "Previous"}
+            </Button>
 
-    <div className="flex items-center gap-3">
-      <Button
-        variant="ghost"
-        onClick={() => onOpenChange(false)}
-        className="rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300 h-12 px-6"
-      >
-        {lang === "ar" ? "إلغاء" : "Cancel"}
-      </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+                className="rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300 h-12 px-6"
+              >
+                {lang === "ar" ? "إلغاء" : "Cancel"}
+              </Button>
 
-      {isLastTab ? (
-        <Button
-          onClick={validateAndSubmit}
-          disabled={!isFormValid() || isSaving || isSubmitting}
-          className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#d81b60]/40 hover:scale-[1.02] hover:from-[#c2185b] hover:to-[#f9a8d4] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSaving || isSubmitting ? (
-            <span className="flex items-center gap-2">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-              {lang === "ar" ? "جاري النشر..." : "Publishing..."}
-            </span>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              {product 
-                ? (lang === "ar" ? "حفظ التغييرات" : "Save Changes")
-                : (productType === "offer"
-                  ? (lang === "ar" ? "نشر العرض" : "Publish Offer")
-                  : (lang === "ar" ? "نشر المنتج" : "Publish Product")
-                )
-              }
-            </>
-          )}
-        </Button>
-      ) : (
-        <Button
-          onClick={goToNextTab}
-          disabled={!isTabValid(activeTab)}
-          className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#d81b60]/40 hover:scale-[1.02] hover:from-[#c2185b] hover:to-[#f9a8d4] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {lang === "ar" ? "التالي" : "Next"}
-          {isRTL ? (
-            <ArrowLeft className="h-4 w-4 mr-2" />
-          ) : (
-            <ArrowRight className="h-4 w-4 ml-2" />
-          )}
-        </Button>
-      )}
-    </div>
-  </div>
-</div>
+              {isLastTab ? (
+                <Button
+                  onClick={validateAndSubmit}
+                  disabled={!isFormValid() || isSaving || isSubmitting}
+                  className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#d81b60]/40 hover:scale-[1.02] hover:from-[#c2185b] hover:to-[#f9a8d4] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving || isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                      {lang === "ar" ? "جاري النشر..." : "Publishing..."}
+                    </span>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      {product 
+                        ? (lang === "ar" ? "حفظ التغييرات" : "Save Changes")
+                        : (productType === "offer"
+                          ? (lang === "ar" ? "نشر العرض" : "Publish Offer")
+                          : (lang === "ar" ? "نشر المنتج" : "Publish Product")
+                        )
+                      }
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={goToNextTab}
+                  disabled={!isTabValid(activeTab)}
+                  className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#d81b60]/40 hover:scale-[1.02] hover:from-[#c2185b] hover:to-[#f9a8d4] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {lang === "ar" ? "التالي" : "Next"}
+                  {isRTL ? (
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                  ) : (
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

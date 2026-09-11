@@ -46,7 +46,7 @@ import { StatsPage } from "./StatsPage";
 import { SettingsPage } from "./SettingsPage";
 
 // ============================================================
-// 🎨 ZOOQ BRAND COLORS - ألوان محسّنة واحترافية
+// 🎨 ZOOQ BRAND COLORS - ألوان الداشبورد الإداري (زيتي)
 // ============================================================
 const COLORS = {
   olive: '#2a655f',
@@ -100,6 +100,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
   const [tab, setTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResultsPage, setShowSearchResultsPage] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   
   // ===== جلب بيانات المتجر من الـ Database =====
   const { data: profile } = useProfile(app.user?.id) as { data: any };
@@ -113,11 +114,18 @@ export function SellerDashboard({}: SellerDashboardProps) {
   // ✅ منع التمرير غير المرغوب عند تغيير التاب
   // ============================================================
   useEffect(() => {
-    // منع أي عنصر من أخذ الفوكس تلقائياً
     if (document.activeElement) {
       (document.activeElement as HTMLElement).blur();
     }
   }, [tab]);
+
+  // ============================================================
+  // ✅ تحديث الوقت الحقيقي
+  // ============================================================
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // ============================================================
   // ✅ دالة تغيير التاب مع تحديث الـ URL
@@ -145,18 +153,10 @@ export function SellerDashboard({}: SellerDashboardProps) {
     settings: 0,
   });
 
-  // ============================================================
-  // ✅ دالة تغيير التاب مع الحفاظ على موضع التمرير
-  // ============================================================
   const handleTabChangeWithScroll = useCallback((newTab: string) => {
-    // حفظ موضع التمرير الحالي للتاب الحالي
     const currentScroll = window.scrollY;
     scrollPositionRef.current[tab] = currentScroll;
-    
-    // تغيير التاب
     handleTabChange(newTab);
-    
-    // ✅ استعادة موضع التمرير بعد تغيير التاب (بتأخير بسيط)
     requestAnimationFrame(() => {
       const savedPosition = scrollPositionRef.current[newTab] || 0;
       window.scrollTo({ top: savedPosition, behavior: 'instant' });
@@ -169,30 +169,20 @@ export function SellerDashboard({}: SellerDashboardProps) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tabFromUrl = params.get('tab');
-    
     if (tabFromUrl) {
-      const validTabs = [
-        "overview", "products", "orders", "customers", "stats", "settings"
-      ];
-      
+      const validTabs = ["overview", "products", "orders", "customers", "stats", "settings"];
       if (validTabs.includes(tabFromUrl)) {
-        console.log(`📌 [SellerDashboard] Setting tab from URL: ${tabFromUrl}`);
         setTab(tabFromUrl);
       }
     }
   }, []);
 
-  // ============================================================
-  // ✅ الاستماع لتغيرات الـ URL
-  // ============================================================
   useEffect(() => {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const tabFromUrl = params.get('tab');
       if (tabFromUrl) {
-        const validTabs = [
-          "overview", "products", "orders", "customers", "stats", "settings"
-        ];
+        const validTabs = ["overview", "products", "orders", "customers", "stats", "settings"];
         if (validTabs.includes(tabFromUrl)) {
           setTab(tabFromUrl);
         }
@@ -200,7 +190,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
         setTab('overview');
       }
     };
-    
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -245,24 +234,17 @@ export function SellerDashboard({}: SellerDashboardProps) {
   const isStoreOpen = (store: any): boolean => {
     if (!store || store.store_online === false) return false;
     if (!store.store_opens_at || !store.store_closes_at) return true;
-    
     try {
       const opens = store.store_opens_at.slice(0, 5);
       const closes = store.store_closes_at.slice(0, 5);
-      
       if (!opens || !closes || opens.length < 5 || closes.length < 5) return true;
-      
       const now = new Date();
       const cur = now.getHours() * 60 + now.getMinutes();
-      
       const [oh, om] = opens.split(":").map(Number);
       const [ch, cm] = closes.split(":").map(Number);
-      
       if (isNaN(oh) || isNaN(om) || isNaN(ch) || isNaN(cm)) return true;
-      
       const o = oh * 60 + om;
       const c = ch * 60 + cm;
-      
       if (o <= c) {
         return cur >= o && cur <= c;
       } else {
@@ -295,12 +277,10 @@ export function SellerDashboard({}: SellerDashboardProps) {
     return counts;
   }, [sellerOrders]);
 
-  // ✅ دمج بيانات العملاء مع عدد الطلبات
   const customersWithOrders = useMemo(() => {
     return sellerCustomers.map((customer: any) => {
       const customerId = customer.id || customer.user_id;
       const orderCount = customerOrderCounts[customerId] || 0;
-      
       const displayName = 
         customer.full_name || 
         customer.name || 
@@ -308,19 +288,16 @@ export function SellerDashboard({}: SellerDashboardProps) {
         customer.user?.name ||
         customer.email?.split('@')[0] ||
         (app.lang === "ar" ? "عميل" : "Customer");
-      
       const phone = 
         customer.phone || 
         customer.user?.phone || 
         customer.user?.phone_number ||
         '';
-      
       const avatar = 
         customer.avatar_url || 
         customer.user?.avatar_url || 
         customer.user?.avatar ||
         '';
-      
       return {
         ...customer,
         display_name: displayName,
@@ -344,28 +321,23 @@ export function SellerDashboard({}: SellerDashboardProps) {
     });
   };
 
-  // ===== فلترة المنتجات =====
   const filteredListings = useMemo(() => {
     return getFilteredData(sellerListings, ['title_ar', 'title_en', 'description_ar', 'description_en'], searchQuery);
   }, [sellerListings, searchQuery]);
 
-  // ===== فلترة الطلبات =====
   const filteredOrders = useMemo(() => {
     return getFilteredData(sellerOrders, ['id', 'product_name', 'customer_name', 'status', 'total'], searchQuery);
   }, [sellerOrders, searchQuery]);
 
-  // ===== فلترة العملاء =====
   const filteredCustomers = useMemo(() => {
     return getFilteredData(customersWithOrders, ['display_name', 'email', 'phone_number', 'city', 'address'], searchQuery);
   }, [customersWithOrders, searchQuery]);
 
-  // ===== فلترة التقييمات =====
   const filteredReviews = useMemo(() => {
     const reviews = sellerOrders.filter((o: any) => o.rating && o.rating > 0);
     return getFilteredData(reviews, ['id', 'product_name', 'customer_name', 'rating', 'comment'], searchQuery);
   }, [sellerOrders, searchQuery]);
 
-  // ===== حساب عدد النتائج في كل قسم =====
   const searchResults = useMemo(() => {
     return {
       products: filteredListings.length,
@@ -376,7 +348,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
     };
   }, [filteredListings, filteredOrders, filteredCustomers, filteredReviews]);
 
-  // ===== دالة البحث =====
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       setShowSearchResultsPage(true);
@@ -387,7 +358,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
     }
   };
 
-  // ===== تحديد التبويب الأنسب للبحث =====
   const getBestTab = () => {
     const results = [
       { tab: 'products', count: filteredListings.length, label: app.lang === 'ar' ? 'المنتجات' : 'Products' },
@@ -399,13 +369,11 @@ export function SellerDashboard({}: SellerDashboardProps) {
     return results[0];
   };
 
-  // ===== مسح البحث =====
   const clearSearch = () => {
     setSearchQuery('');
     setShowSearchResultsPage(false);
   };
 
-  // ===== عرض نتائج البحث =====
   const showSearchResults = searchQuery.trim().length > 0 && showSearchResultsPage;
 
   // ===== البيانات المحسوبة =====
@@ -424,7 +392,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
   const completionRate = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  // ===== أحدث 5 طلبات =====
   const recentOrders = useMemo(() => 
     sellerOrders
       .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -432,7 +399,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
     [sellerOrders]
   );
 
-  // ===== أفضل 5 منتجات =====
   const topProducts = useMemo(() => {
     const productMap: { [key: string]: any } = {};
     sellerListings.forEach((listing: any) => {
@@ -444,12 +410,9 @@ export function SellerDashboard({}: SellerDashboardProps) {
     sellerOrders.forEach((order: any) => {
       const productId = order.product_id || order.listing_id;
       if (!productId) return;
-      
       const product = productMap[productId];
       if (!product) return;
-      
       const productName = product.title_ar || `منتج ${String(productId).slice(-6)}`;
-      
       if (!revenueMap[productId]) {
         revenueMap[productId] = {
           id: productId,
@@ -458,7 +421,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
           revenue: 0,
         };
       }
-      
       revenueMap[productId].quantity += Number(order.quantity) || 1;
       revenueMap[productId].revenue += Number(order.total) || 0;
     });
@@ -468,7 +430,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
       .slice(0, 5);
   }, [sellerOrders, sellerListings]);
 
-  // ===== بيانات المبيعات الشهرية =====
   const monthlyData = useMemo(() => {
     const months: { [key: string]: any } = {};
     const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
@@ -490,7 +451,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
       .map(([k, v]) => ({ ...v, revenue: Math.round(v.revenue) }));
   }, [sellerOrders, app.lang]);
 
-  // ===== توزيع الفئات =====
   const categoryData = useMemo(() => {
     const map: { [key: string]: number } = {};
     sellerOrders.forEach((o: any) => {
@@ -501,7 +461,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
       .sort((a, b) => b.value - a.value).slice(0, 5);
   }, [sellerOrders, app.lang]);
 
-  // ===== بيانات العملاء للتوزيع =====
   const customerData = useMemo(() => {
     const map: { [key: string]: number } = {};
     customersWithOrders.forEach((c: any) => {
@@ -512,7 +471,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
       .sort((a, b) => b.value - a.value).slice(0, 5);
   }, [customersWithOrders, app.lang]);
 
-  // ===== بيانات التقييمات =====
   const reviewData = useMemo(() => {
     const ratings = [5, 4, 3, 2, 1];
     return ratings.map(r => {
@@ -521,7 +479,6 @@ export function SellerDashboard({}: SellerDashboardProps) {
     });
   }, [sellerOrders]);
 
-  // ===== بيانات الأداء =====
   const performanceData = useMemo(() => [
     { subject: app.lang === 'ar' ? 'المبيعات' : 'Sales', value: totalOrders > 0 ? Math.min(Math.round((totalRevenue / 1000) * 10), 100) : 0 },
     { subject: app.lang === 'ar' ? 'العملاء' : 'Customers', value: totalCustomers > 0 ? Math.min(Math.round(totalCustomers * 2), 100) : 0 },
@@ -530,73 +487,163 @@ export function SellerDashboard({}: SellerDashboardProps) {
     { subject: app.lang === 'ar' ? 'التقييم' : 'Rating', value: sellerOrders.filter((o: any) => o.rating > 0).length > 0 ? Math.min(Math.round((sellerOrders.reduce((sum: number, o: any) => sum + Number(o.rating || 0), 0) / sellerOrders.filter((o: any) => o.rating > 0).length) * 20), 100) : 0 },
   ], [totalRevenue, totalOrders, totalCustomers, completionRate, pendingOrders, completedOrders, sellerOrders]);
 
-  // ===== بيانات السلايدر =====
-  const sliderData = useMemo(() => [
-    {
-      id: 1,
-      icon: "🏛️",
-      title: app.lang === "ar" ? "ذوق | Zooq" : "Zooq",
-      subtitle: app.lang === "ar" ? "نظام إدارة السوق الذكي" : "Smart Marketplace Management System",
-      description: app.lang === "ar" 
-        ? "منصة سوق متكاملة تربط البائعين والمشترين في بيئة آمنة وسهلة الاستخدام" 
-        : "An integrated marketplace platform connecting buyers and sellers in a secure, user-friendly environment",
-      color: `from-[${COLORS.pink}] to-[${COLORS.pinkLight}]`,
-      badge: app.lang === "ar" ? "🏛️ منصة متكاملة" : "🏛️ Integrated Platform",
-      stat: `${totalOrders} ${app.lang === "ar" ? 'طلب' : 'orders'}`,
-      gradient: `from-[${COLORS.pink}]/40 to-[${COLORS.pinkLight}]/40`,
-      emoji: "🏛️",
-      image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/istockphoto-2105032127-612x612.jpg",
-    },
-    {
-      id: 2,
-      icon: "🛡️",
-      title: app.lang === "ar" ? "ذوق | Zooq" : "Zooq",
-      subtitle: app.lang === "ar" ? "أمان وحماية متكاملة" : "Complete Security & Protection",
-      description: app.lang === "ar" 
-        ? "نظام حماية المشتري والبائع مع توثيق الهوية ومراقبة الطلبات لحماية جميع الأطراف" 
-        : "Buyer and seller protection system with identity verification and order monitoring",
-      color: `from-[${COLORS.pinkLight}] to-[${COLORS.pink}]`,
-      badge: app.lang === "ar" ? "🛡️ حماية متقدمة" : "🛡️ Advanced Security",
-      stat: `100% ${app.lang === "ar" ? 'آمن' : 'Secure'}`,
-      gradient: `from-[${COLORS.pinkLight}]/40 to-[${COLORS.pink}]/40`,
-      emoji: "🛡️",
-      isPositive: true,
-      image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/42430876-ai-generated-8793863_1920.jpg",
-    },
-    {
-      id: 3,
-      icon: "📊",
-      title: app.lang === "ar" ? "ذوق | Zooq" : "Zooq",
-      subtitle: app.lang === "ar" ? "تحليلات وتقارير فورية" : "Real-time Analytics & Reports",
-      description: app.lang === "ar" 
-        ? "لوحة تحكم متقدمة تعرض مؤشرات الأداء والإحصائيات لحظياً لاتخاذ قرارات ذكية" 
-        : "Advanced dashboard displaying real-time KPIs and statistics for smart decision making",
-      color: `from-[${COLORS.pink}] to-[${COLORS.pinkDark}]`,
-      badge: `📊 ${app.lang === "ar" ? 'تحليلات لحظية' : 'Real-time Analytics'}`,
-      stat: `${totalOrders > 0 ? Math.round(totalOrders * 1.2) : 0} ${app.lang === "ar" ? 'زيارة' : 'visits'}`,
-      gradient: `from-[${COLORS.pink}]/40 to-[${COLORS.pinkDark}]/40`,
-      emoji: "📊",
-      isPositive: true,
-      image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/mohamed_hassan-systems-icons-3334262_1920.jpg",
-    },
-    {
-      id: 4,
-      icon: "🚀",
-      title: app.lang === "ar" ? "ذوق | Zooq" : "Zooq",
-      subtitle: app.lang === "ar" ? "توصيل ذكي ومتكامل" : "Smart Integrated Delivery",
-      description: app.lang === "ar" 
-        ? "نظام توصيل متطور يدعم شركات متعددة وتتبع الطلبات في الوقت الفعلي" 
-        : "Advanced delivery system supporting multiple companies and real-time order tracking",
-      color: `from-[${COLORS.pinkDark}] to-[${COLORS.pink}]`,
-      badge: app.lang === "ar" ? "🚚 توصيل سريع" : "🚚 Fast Delivery",
-      stat: `${totalOrders} ${app.lang === "ar" ? 'تم التوصيل' : 'delivered'}`,
-      gradient: `from-[${COLORS.pinkDark}]/40 to-[${COLORS.pink}]/40`,
-      emoji: "🚀",
-      isPositive: true,
-      image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/regencygirl123-present-8440034_1920.jpg",
-    },
-   
-  ], [app.lang, totalOrders, totalProducts]);
+  // ============================================================
+  // 🎯 SYSTEM SLIDER - نفس تصميم AdminDashboard
+  // ============================================================
+  const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
+    const slides = [
+      {
+        id: 1,
+        icon: "🏛️",
+        title_ar: "ذوق | Zooq",
+        title_en: "Zooq",
+        subtitle_ar: "نظام إدارة السوق الذكي",
+        subtitle_en: "Smart Marketplace Management System",
+        desc_ar: "منصة سوق متكاملة تربط البائعين والمشترين في بيئة آمنة وسهلة الاستخدام",
+        desc_en: "An integrated marketplace platform connecting buyers and sellers in a secure, user-friendly environment",
+        badge_ar: "🏛️ منصة متكاملة",
+        badge_en: "🏛️ Integrated Platform",
+        stat_ar: `📦 ${totalOrders} طلب`,
+        stat_en: `📦 ${totalOrders} orders`,
+      },
+      {
+        id: 2,
+        icon: "🛡️",
+        title_ar: "ذوق | Zooq",
+        title_en: "Zooq",
+        subtitle_ar: "أمان وحماية متكاملة",
+        subtitle_en: "Complete Security & Protection",
+        desc_ar: "نظام حماية المشتري والبائع مع توثيق الهوية ومراقبة الطلبات لحماية جميع الأطراف",
+        desc_en: "Buyer and seller protection system with identity verification and order monitoring",
+        badge_ar: "🛡️ حماية متقدمة",
+        badge_en: "🛡️ Advanced Security",
+        stat_ar: "🔒 آمن ومحمي",
+        stat_en: "🔒 Secure & Protected",
+      },
+      {
+        id: 3,
+        icon: "📊",
+        title_ar: "ذوق | Zooq",
+        title_en: "Zooq",
+        subtitle_ar: "تحليلات وتقارير فورية",
+        subtitle_en: "Real-time Analytics & Reports",
+        desc_ar: "لوحة تحكم متقدمة تعرض مؤشرات الأداء والإحصائيات لحظياً لاتخاذ قرارات ذكية",
+        desc_en: "Advanced dashboard displaying real-time KPIs and statistics for smart decision making",
+        badge_ar: "📊 تحليلات لحظية",
+        badge_en: "📊 Real-time Analytics",
+        stat_ar: "📈 نمو متزايد",
+        stat_en: "📈 Growing",
+      },
+      {
+        id: 4,
+        icon: "🚀",
+        title_ar: "ذوق | Zooq",
+        title_en: "Zooq",
+        subtitle_ar: "توصيل ذكي ومتكامل",
+        subtitle_en: "Smart Integrated Delivery",
+        desc_ar: "نظام توصيل متطور يدعم شركات متعددة وتتبع الطلبات في الوقت الفعلي",
+        desc_en: "Advanced delivery system supporting multiple companies and real-time order tracking",
+        badge_ar: "🚚 توصيل سريع",
+        badge_en: "🚚 Fast Delivery",
+        stat_ar: "📦 توصيل فوري",
+        stat_en: "📦 Instant Delivery",
+      },
+      {
+        id: 5,
+        icon: "💎",
+        title_ar: "ذوق | Zooq",
+        title_en: "Zooq",
+        subtitle_ar: "تجربة مستخدم فريدة",
+        subtitle_en: "Unique User Experience",
+        desc_ar: "واجهات مستخدم حديثة ومتجاوبة مع دعم كامل للغتين العربية والإنجليزية",
+        desc_en: "Modern, responsive user interfaces with full Arabic and English language support",
+        badge_ar: "✨ تجربة متميزة",
+        badge_en: "✨ Premium Experience",
+        stat_ar: "⭐ تقييم عالي",
+        stat_en: "⭐ High Rating",
+      },
+    ];
+
+    const current = slides[currentSlide];
+
+    return (
+      <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] shadow-xl shadow-[#2a655f]/20 border-2 border-[#2a655f]/30 group min-h-[90px] md:min-h-[105px]">
+        
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] bg-repeat" />
+        </div>
+        
+        <div className="absolute -top-20 -right-20 h-32 w-32 rounded-full bg-[#2a655f]/20 blur-2xl animate-pulse" />
+        <div className="absolute -bottom-20 -left-20 h-32 w-32 rounded-full bg-[#2a655f]/20 blur-2xl animate-pulse delay-1000" />
+        
+        <div className="relative px-3 py-2.5 md:px-5 md:py-3.5 flex flex-col md:flex-row items-center gap-2 md:gap-3.5 z-10">
+          <div className="flex-shrink-0">
+            <div className="relative">
+              <div className="h-9 w-9 md:h-12 md:w-12 rounded-xl bg-white/30 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center text-xl md:text-3xl shadow-lg shadow-[#2a655f]/20 animate-float group-hover:scale-110 transition-transform duration-500">
+                {current.icon}
+              </div>
+              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#2a655f]/30 to-[#3a8a82]/30 blur-lg animate-pulse" />
+            </div>
+          </div>
+          
+          <div className="flex-1 text-center md:text-right">
+            <h1 className={`text-sm md:text-lg font-bold text-white mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
+              {isRTL ? current.title_ar : current.title_en}
+            </h1>
+            <h2 className={`text-xs md:text-base font-bold text-[#e8f0ee] mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
+              {isRTL ? current.subtitle_ar : current.subtitle_en}
+            </h2>
+            <p className={`text-[10px] md:text-xs text-[#e8f0ee]/80 max-w-2xl leading-relaxed hidden sm:block ${isRTL ? 'font-arabic' : ''}`}>
+              {isRTL ? current.desc_ar : current.desc_en}
+            </p>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1 justify-center md:justify-start">
+              <span className="px-2 py-0.5 rounded-full bg-white/40 backdrop-blur-sm border border-white/30 text-[#2a655f] text-[9px] font-bold">
+                {isRTL ? current.badge_ar : current.badge_en}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-[#2a655f]/20 backdrop-blur-sm border border-[#2a655f]/30 text-white text-[9px] font-bold">
+                {isRTL ? current.stat_ar : current.stat_en}
+              </span>
+            </div>
+          </div>
+          
+          <div className="flex-shrink-0 flex flex-row md:flex-col gap-1.5">
+            <button
+              onClick={prevSlide}
+              className="h-6 w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-white/30 hover:border-white/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={nextSlide}
+              className="h-6 w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-white/30 hover:border-white/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+        
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-1">
+          {Array.from({ length: totalSlides }).map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={cn(
+                "h-1 rounded-full transition-all duration-500",
+                currentSlide === index
+                  ? "w-4 bg-white shadow-lg shadow-white/30"
+                  : "w-1.5 bg-white/30 hover:bg-white/50"
+              )}
+            />
+          ))}
+          <span className="text-[7px] text-white/50 ml-1 font-mono">
+            {currentSlide + 1}/{totalSlides}
+          </span>
+        </div>
+        
+        <div className="relative h-0.5 w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      </div>
+    );
+  };
 
   // ===== قائمة التبويب =====
   const nav = [
@@ -626,6 +673,21 @@ export function SellerDashboard({}: SellerDashboardProps) {
   };
 
   const isRTL = app.lang === 'ar';
+
+  // ✅ الوقت المنسق
+  const formattedTime = currentTime.toLocaleTimeString(app.lang === 'ar' ? 'ar-SA' : 'en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+
+  // ✅ مؤشر حيوي
+  const LiveIndicator = () => (
+    <span className="relative flex h-2.5 w-2.5">
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2a655f] opacity-75" />
+      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#2a655f] shadow-[0_0_12px_rgba(42,101,95,0.8)]" />
+    </span>
+  );
 
   // ===== دوال التصدير =====
   const exportToExcel = () => {
@@ -701,7 +763,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
   };
 
   // ============================================================
-  // 🚀 CHARTS SECTION - مع ألوان محسّنة
+  // 🚀 CHARTS SECTION
   // ============================================================
   const ChartsSection = ({ 
     showSales = true, 
@@ -717,16 +779,15 @@ export function SellerDashboard({}: SellerDashboardProps) {
     showReviews?: boolean;
   }) => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-      {/* 1. مخطط المبيعات */}
       {showSales && (
-        <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#f9a8d4]/40 dark:border-[#2a655f]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-[#f9a8d4]/15 to-[#fbcfe8]/15 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-[#2a655f]/15 to-[#f9a8d4]/15 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-[#2a655f]/15 to-[#3a8a82]/15 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-[#3a8a82]/15 to-[#2a655f]/15 rounded-full blur-3xl animate-pulse delay-1000" />
           
           <div className="flex items-center justify-between mb-4 relative">
             <div>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#f9a8d4]/30 border-2 border-[#f9a8d4]/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 border-2 border-[#2a655f]/30">
                   <TrendingUp className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -740,10 +801,10 @@ export function SellerDashboard({}: SellerDashboardProps) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 text-xs font-bold text-white bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] rounded-full shadow-lg animate-pulse border-2 border-white/30">
+              <span className="px-3 py-1 text-xs font-bold text-white bg-gradient-to-r from-[#2a655f] to-[#3a8a82] rounded-full shadow-lg animate-pulse border-2 border-white/30">
                 ↑ +12.5%
               </span>
-              <span className="px-3 py-1 text-xs font-bold text-[#f9a8d4] bg-[#f9a8d4]/10 rounded-full border-2 border-[#f9a8d4]/20">
+              <span className="px-3 py-1 text-xs font-bold text-[#2a655f] bg-[#2a655f]/10 rounded-full border-2 border-[#2a655f]/20">
                 <Zap className="w-3 h-3 inline mr-1" />
                 {app.lang === 'ar' ? 'نشط' : 'Active'}
               </span>
@@ -757,8 +818,8 @@ export function SellerDashboard({}: SellerDashboardProps) {
                   <defs>
                     <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#2a655f" stopOpacity={0.3}/>
-                      <stop offset="50%" stopColor="#f9a8d4" stopOpacity={0.15}/>
-                      <stop offset="100%" stopColor="#fbcfe8" stopOpacity={0}/>
+                      <stop offset="50%" stopColor="#3a8a82" stopOpacity={0.15}/>
+                      <stop offset="100%" stopColor="#f9a8d4" stopOpacity={0}/>
                     </linearGradient>
                     <filter id="glow">
                       <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
@@ -775,7 +836,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                   <Tooltip 
                     contentStyle={{ 
                       borderRadius: '16px', 
-                      border: '2px solid #f9a8d4', 
+                      border: '2px solid #2a655f', 
                       boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
                       background: 'rgba(255,255,255,0.98)',
                       backdropFilter: 'blur(12px)',
@@ -795,8 +856,8 @@ export function SellerDashboard({}: SellerDashboardProps) {
                     stroke="#2a655f" 
                     strokeWidth={3} 
                     fill="url(#revenueGrad)"
-                    dot={{ fill: '#f9a8d4', r: 5, stroke: '#fff', strokeWidth: 2 }}
-                    activeDot={{ r: 8, fill: '#f9a8d4', stroke: '#fff', strokeWidth: 2 }}
+                    dot={{ fill: '#3a8a82', r: 5, stroke: '#fff', strokeWidth: 2 }}
+                    activeDot={{ r: 8, fill: '#3a8a82', stroke: '#fff', strokeWidth: 2 }}
                     animationDuration={2000}
                     animationEasing="ease-in-out"
                     filter="url(#glow)"
@@ -815,7 +876,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
             ) : (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-[#f9a8d4]/10 flex items-center justify-center mx-auto mb-3 animate-bounce">
+                  <div className="w-16 h-16 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-3 animate-bounce">
                     <Package className="w-8 h-8 text-gray-400" />
                   </div>
                   <p className="text-sm text-gray-500">{app.lang === 'ar' ? '📭 لا توجد بيانات مبيعات' : '📭 No sales data'}</p>
@@ -824,13 +885,13 @@ export function SellerDashboard({}: SellerDashboardProps) {
             )}
           </div>
           
-          <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t-2 border-[#f9a8d4]/20">
+          <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t-2 border-[#2a655f]/20">
             {[
               { label: app.lang === 'ar' ? '🏆 أعلى إيراد' : '🏆 Peak Revenue', value: monthlyData.length > 0 ? formatPrice(Math.max(...monthlyData.map(d => d.revenue)), app.currency, app.lang) : formatPrice(0, app.currency, app.lang), color: 'text-[#2a655f]' },
               { label: app.lang === 'ar' ? '📊 متوسط الطلبات' : '📊 Avg Orders', value: monthlyData.length > 0 ? Math.round(monthlyData.reduce((sum, d) => sum + d.orders, 0) / monthlyData.length) : 0, color: 'text-[#3a8a82]' },
-              { label: app.lang === 'ar' ? '📈 معدل النمو' : '📈 Growth Rate', value: `+${monthlyData.length > 1 ? Math.round(((monthlyData[monthlyData.length-1].revenue - monthlyData[0].revenue) / (monthlyData[0].revenue || 1)) * 100) : 0}%`, color: 'text-[#f9a8d4]' },
+              { label: app.lang === 'ar' ? '📈 معدل النمو' : '📈 Growth Rate', value: `+${monthlyData.length > 1 ? Math.round(((monthlyData[monthlyData.length-1].revenue - monthlyData[0].revenue) / (monthlyData[0].revenue || 1)) * 100) : 0}%`, color: 'text-[#1a4f4a]' },
             ].map((item, i) => (
-              <div key={i} className="text-center p-2 rounded-xl bg-gradient-to-r from-[#2a655f]/5 to-[#f9a8d4]/5 border border-[#f9a8d4]/20 hover:scale-105 transition-transform duration-300">
+              <div key={i} className="text-center p-2 rounded-xl bg-gradient-to-r from-[#2a655f]/5 to-[#3a8a82]/5 border border-[#2a655f]/20 hover:scale-105 transition-transform duration-300">
                 <p className="text-[10px] text-gray-400 uppercase tracking-wider">{item.label}</p>
                 <p className={`text-sm font-bold ${item.color}`}>{item.value}</p>
               </div>
@@ -839,15 +900,14 @@ export function SellerDashboard({}: SellerDashboardProps) {
         </div>
       )}
 
-      {/* 2. Radar Chart */}
       {showSales && (
-        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#f9a8d4]/40 dark:border-[#2a655f]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-[#f9a8d4]/20 to-[#fbcfe8]/20 rounded-full blur-3xl animate-pulse delay-700" />
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 rounded-full blur-3xl animate-pulse delay-700" />
           
           <div className="flex items-center justify-between mb-4 relative">
             <div>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#f9a8d4]/30 border-2 border-[#f9a8d4]/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 border-2 border-[#2a655f]/30">
                   <Award className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -878,8 +938,8 @@ export function SellerDashboard({}: SellerDashboardProps) {
                   <defs>
                     <linearGradient id="performanceGrad" x1="0" y1="0" x2="1" y2="1">
                       <stop offset="0%" stopColor="#2a655f" />
-                      <stop offset="50%" stopColor="#f9a8d4" />
-                      <stop offset="100%" stopColor="#fbcfe8" />
+                      <stop offset="50%" stopColor="#3a8a82" />
+                      <stop offset="100%" stopColor="#f9a8d4" />
                     </linearGradient>
                   </defs>
                 </svg>
@@ -908,8 +968,8 @@ export function SellerDashboard({}: SellerDashboardProps) {
                   <Radar 
                     name={app.lang === 'ar' ? 'الأداء' : 'Performance'} 
                     dataKey="value" 
-                    stroke="#f9a8d4" 
-                    fill="rgba(249,168,212,0.2)" 
+                    stroke="#2a655f" 
+                    fill="rgba(42,101,95,0.2)" 
                     fillOpacity={0.6}
                     strokeWidth={2}
                     animationDuration={2000}
@@ -918,7 +978,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                   <Tooltip 
                     contentStyle={{ 
                       borderRadius: '12px', 
-                      border: '2px solid #f9a8d4', 
+                      border: '2px solid #2a655f', 
                       boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
                       background: 'rgba(255,255,255,0.98)',
                       padding: '8px 12px'
@@ -937,11 +997,11 @@ export function SellerDashboard({}: SellerDashboardProps) {
           <div className="grid grid-cols-2 gap-2 mt-2 relative">
             {[
               { label: app.lang === 'ar' ? '💰 المبيعات' : '💰 Sales', value: `${performanceData[0]?.value || 0}%`, color: '#2a655f' },
-              { label: app.lang === 'ar' ? '🏅 الجودة' : '🏅 Quality', value: `${performanceData[2]?.value || 0}%`, color: '#f9a8d4' },
-              { label: app.lang === 'ar' ? '⭐ التقييم' : '⭐ Rating', value: `${performanceData[4]?.value || 0}%`, color: '#fbcfe8' },
-              { label: app.lang === 'ar' ? '⚡ السرعة' : '⚡ Speed', value: `${performanceData[3]?.value || 0}%`, color: '#2a655f' },
+              { label: app.lang === 'ar' ? '🏅 الجودة' : '🏅 Quality', value: `${performanceData[2]?.value || 0}%`, color: '#3a8a82' },
+              { label: app.lang === 'ar' ? '⭐ التقييم' : '⭐ Rating', value: `${performanceData[4]?.value || 0}%`, color: '#f9a8d4' },
+              { label: app.lang === 'ar' ? '⚡ السرعة' : '⚡ Speed', value: `${performanceData[3]?.value || 0}%`, color: '#1a4f4a' },
             ].map((item, i) => (
-              <div key={i} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 text-center hover:scale-105 transition-transform duration-300 border-2 border-[#f9a8d4]/20">
+              <div key={i} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 text-center hover:scale-105 transition-transform duration-300 border-2 border-[#2a655f]/20">
                 <div className="flex items-center justify-center gap-1">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
                   <span className="text-[10px] text-gray-500 dark:text-gray-400">{item.label}</span>
@@ -953,15 +1013,14 @@ export function SellerDashboard({}: SellerDashboardProps) {
         </div>
       )}
 
-      {/* 3. توزيع الفئات - Pie Chart */}
       {showCategory && (
-        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#f9a8d4]/40 dark:border-[#2a655f]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-[#f9a8d4]/20 to-[#fbcfe8]/20 rounded-full blur-3xl animate-pulse delay-500" />
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 rounded-full blur-3xl animate-pulse delay-500" />
           
           <div className="flex items-center justify-between mb-4 relative">
             <div>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#f9a8d4]/30 border-2 border-[#f9a8d4]/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 border-2 border-[#2a655f]/30">
                   <PieChart className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -1013,7 +1072,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                     formatter={(v: any) => formatPrice(v, app.currency, app.lang)}
                     contentStyle={{ 
                       borderRadius: '12px', 
-                      border: '2px solid #f9a8d4', 
+                      border: '2px solid #2a655f', 
                       boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
                       background: 'rgba(255,255,255,0.98)'
                     }}
@@ -1028,7 +1087,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
             ) : (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-[#f9a8d4]/10 flex items-center justify-center mx-auto mb-3 animate-spin-slow">
+                  <div className="w-16 h-16 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-3 animate-spin-slow">
                     <PieChart className="w-8 h-8 text-gray-400" />
                   </div>
                   <p className="text-sm text-gray-500">{app.lang === 'ar' ? '📭 لا توجد بيانات' : '📭 No data'}</p>
@@ -1037,9 +1096,9 @@ export function SellerDashboard({}: SellerDashboardProps) {
             )}
           </div>
           
-          <div className="flex flex-wrap justify-center gap-2 mt-3 pt-3 border-t-2 border-[#f9a8d4]/20">
+          <div className="flex flex-wrap justify-center gap-2 mt-3 pt-3 border-t-2 border-[#2a655f]/20">
             {categoryData.slice(0, 5).map((item, i) => (
-              <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-gray-50 dark:bg-gray-800/50 border-2 border-[#f9a8d4]/20 hover:scale-105 transition-transform duration-300">
+              <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-gray-50 dark:bg-gray-800/50 border-2 border-[#2a655f]/20 hover:scale-105 transition-transform duration-300">
                 <span
                   className="w-3 h-3 rounded-full shadow-md"
                   style={{ backgroundColor: PREMIUM_COLORS[i % PREMIUM_COLORS.length] }}
@@ -1056,15 +1115,14 @@ export function SellerDashboard({}: SellerDashboardProps) {
         </div>
       )}
 
-      {/* 4. اتجاه الطلبات - Bar Chart */}
       {showOrders && (
-        <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#f9a8d4]/40 dark:border-[#2a655f]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
-          <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-gradient-to-br from-[#f9a8d4]/20 to-[#fbcfe8]/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
+          <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 rounded-full blur-3xl animate-pulse delay-1000" />
           
           <div className="flex items-center justify-between mb-4 relative">
             <div>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#f9a8d4]/30 border-2 border-[#f9a8d4]/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 border-2 border-[#2a655f]/30">
                   <BarChart3 className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -1078,11 +1136,11 @@ export function SellerDashboard({}: SellerDashboardProps) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 text-xs font-bold text-[#2a655f] bg-[#f9a8d4]/10 rounded-full border-2 border-[#f9a8d4]/20">
+              <span className="px-3 py-1 text-xs font-bold text-[#2a655f] bg-[#2a655f]/10 rounded-full border-2 border-[#2a655f]/20">
                 <TrendingUp className="w-3 h-3 inline mr-1" />
                 +{monthlyData.length > 1 ? Math.round(((monthlyData[monthlyData.length-1]?.orders || 0) - (monthlyData[0]?.orders || 0)) / ((monthlyData[0]?.orders || 1)) * 100) : 0}%
               </span>
-              <span className="px-3 py-1 text-xs font-bold text-white bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] rounded-full shadow-lg border-2 border-white/30">
+              <span className="px-3 py-1 text-xs font-bold text-white bg-gradient-to-r from-[#2a655f] to-[#3a8a82] rounded-full shadow-lg border-2 border-white/30">
                 {totalOrders} {app.lang === 'ar' ? 'طلب' : 'orders'}
               </span>
             </div>
@@ -1095,8 +1153,8 @@ export function SellerDashboard({}: SellerDashboardProps) {
                   <defs>
                     <linearGradient id="ordersBarGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#2a655f" stopOpacity={0.9}/>
-                      <stop offset="50%" stopColor="#f9a8d4" stopOpacity={0.7}/>
-                      <stop offset="100%" stopColor="#fbcfe8" stopOpacity={0.4}/>
+                      <stop offset="50%" stopColor="#3a8a82" stopOpacity={0.7}/>
+                      <stop offset="100%" stopColor="#f9a8d4" stopOpacity={0.4}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="5 5" stroke="#e2e8f0" opacity={0.2} vertical={false} />
@@ -1105,7 +1163,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                   <Tooltip 
                     contentStyle={{ 
                       borderRadius: '12px', 
-                      border: '2px solid #f9a8d4', 
+                      border: '2px solid #2a655f', 
                       boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
                       background: 'rgba(255,255,255,0.98)'
                     }}
@@ -1124,7 +1182,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
             ) : (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-[#f9a8d4]/10 flex items-center justify-center mx-auto mb-3 animate-spin-slow">
+                  <div className="w-16 h-16 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-3 animate-spin-slow">
                     <BarChart3 className="w-8 h-8 text-gray-400" />
                   </div>
                   <p className="text-sm text-gray-500">{app.lang === 'ar' ? '📭 لا توجد بيانات' : '📭 No data'}</p>
@@ -1135,15 +1193,14 @@ export function SellerDashboard({}: SellerDashboardProps) {
         </div>
       )}
 
-      {/* 5. توزيع العملاء */}
       {showCustomers && (
-        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#f9a8d4]/40 dark:border-[#2a655f]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
-          <div className="absolute -top-40 -left-40 w-80 h-80 bg-gradient-to-br from-[#f9a8d4]/20 to-[#fbcfe8]/20 rounded-full blur-3xl animate-pulse delay-500" />
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
+          <div className="absolute -top-40 -left-40 w-80 h-80 bg-gradient-to-br from-[#2a655f]/20 to-[#3a8a82]/20 rounded-full blur-3xl animate-pulse delay-500" />
           
           <div className="flex items-center justify-between mb-4 relative">
             <div>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#f9a8d4]/30 border-2 border-[#f9a8d4]/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 border-2 border-[#2a655f]/30">
                   <Users className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -1156,7 +1213,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                 </div>
               </div>
             </div>
-            <span className="px-3 py-1 text-xs font-bold text-[#2a655f] bg-[#f9a8d4]/10 rounded-full border-2 border-[#f9a8d4]/20">
+            <span className="px-3 py-1 text-xs font-bold text-[#2a655f] bg-[#2a655f]/10 rounded-full border-2 border-[#2a655f]/20">
               {totalCustomers} {app.lang === 'ar' ? 'عميل' : 'customers'}
             </span>
           </div>
@@ -1168,8 +1225,8 @@ export function SellerDashboard({}: SellerDashboardProps) {
                   <defs>
                     <linearGradient id="customerBarGrad" x1="0" y1="0" x2="1" y2="0">
                       <stop offset="0%" stopColor="#2a655f" stopOpacity={0.9}/>
-                      <stop offset="50%" stopColor="#f9a8d4" stopOpacity={0.7}/>
-                      <stop offset="100%" stopColor="#fbcfe8" stopOpacity={0.5}/>
+                      <stop offset="50%" stopColor="#3a8a82" stopOpacity={0.7}/>
+                      <stop offset="100%" stopColor="#f9a8d4" stopOpacity={0.5}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="5 5" stroke="#e2e8f0" opacity={0.2} horizontal={false} />
@@ -1185,7 +1242,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                   <Tooltip 
                     contentStyle={{ 
                       borderRadius: '12px', 
-                      border: '2px solid #f9a8d4', 
+                      border: '2px solid #2a655f', 
                       boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
                       background: 'rgba(255,255,255,0.98)'
                     }}
@@ -1204,7 +1261,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
             ) : (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-[#f9a8d4]/10 flex items-center justify-center mx-auto mb-3 animate-bounce">
+                  <div className="w-16 h-16 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-3 animate-bounce">
                     <Users className="w-8 h-8 text-gray-400" />
                   </div>
                   <p className="text-sm text-gray-500">{app.lang === 'ar' ? '📭 لا توجد بيانات' : '📭 No data'}</p>
@@ -1221,252 +1278,198 @@ export function SellerDashboard({}: SellerDashboardProps) {
   // ✅ RENDER
   // ============================================================
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-white via-[#f9a8d4]/5 to-[#2a655f]/5 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#f9a8d4]/5 ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen bg-gradient-to-br from-white via-[#2a655f]/5 to-[#3a8a82]/5 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#2a655f]/5 ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
       
-      {/* ===== TOP HEADER ===== */}
-      <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-b-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 shadow-lg shadow-[#f9a8d4]/10">
-        <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#f9a8d4] to-[#2a655f] animate-pulse" />
+      {/* ===== TOP HEADER - نفس تصميم AdminDashboard ===== */}
+      <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-b-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 shadow-lg shadow-[#2a655f]/10">
+        <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#2a655f] to-[#3a8a82] animate-pulse" />
+        
         <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <div className="flex items-center gap-3 group">
               <div className="relative">
-                <Avatar className="h-12 w-12 rounded-2xl ring-2 ring-[#f9a8d4]/50 dark:ring-[#2a655f]/40 shadow-lg shadow-[#f9a8d4]/20 group-hover:shadow-xl group-hover:scale-105 transition-all duration-500">
+                <Avatar className="h-12 w-12 rounded-2xl ring-2 ring-[#2a655f]/40 shadow-lg shadow-[#2a655f]/20 group-hover:shadow-xl group-hover:scale-105 transition-all duration-500">
                   {storeLogo ? (
                     <AvatarImage src={storeLogo} alt={storeName} className="object-cover" />
                   ) : (
-                    <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white text-lg font-bold">
+                    <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-lg font-bold">
                       {storeName.charAt(0).toUpperCase() || 'S'}
                     </AvatarFallback>
                   )}
                 </Avatar>
                 <div className={cn(
                   "absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-slate-900 animate-pulse",
-                  storeStatus && currentlyOpen ? "bg-[#f9a8d4] shadow-[0_0_12px_rgba(249,168,212,0.8)]" : storeStatus ? "bg-[#2a655f]" : "bg-[#d81b60]"
+                  storeStatus && currentlyOpen ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]" : storeStatus ? "bg-amber-500" : "bg-red-500"
                 )} />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-[#2a655f] dark:text-[#f9a8d4] text-lg group-hover:text-[#f9a8d4] transition-colors">
+                  <span className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-lg group-hover:text-[#3a8a82] transition-colors">
                     {app.lang === 'ar' ? `لوحة متجر ${storeName}` : `${storeName} Dashboard`}
                   </span>
                   {storeStatus ? (
                     <Badge className={cn(
                       "text-[8px] px-1.5 py-0.5 border-0 animate-pulse",
-                      currentlyOpen ? "bg-[#f9a8d4]/20 text-[#f9a8d4] dark:text-[#f9a8d4]" : "bg-[#2a655f]/20 text-[#2a655f] dark:text-[#2a655f]"
+                      currentlyOpen ? "bg-[#2a655f]/20 text-[#2a655f] dark:text-[#2a655f]" : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
                     )}>
                       {currentlyOpen ? (app.lang === "ar" ? "🟢 مفتوح" : "🟢 Open") : (app.lang === "ar" ? "🟡 مغلق" : "🟡 Closed")}
                     </Badge>
                   ) : (
-                    <Badge className="text-[8px] px-1.5 py-0.5 bg-[#d81b60]/20 text-[#d81b60] dark:text-[#d81b60] border-0">
+                    <Badge className="text-[8px] px-1.5 py-0.5 bg-red-500/20 text-red-600 dark:text-red-400 border-0">
                       🔴 {app.lang === "ar" ? "غير نشط" : "Inactive"}
                     </Badge>
                   )}
                 </div>
-                {opensAt && closesAt && (
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                    <Clock className="h-3 w-3 text-[#f9a8d4]" />
-                    <span dir="ltr">{opensAt} - {closesAt}</span>
-                    <span className="w-0.5 h-3 bg-slate-300 dark:bg-slate-600" />
-                    <MapPin className="h-3 w-3 text-[#f9a8d4]" />
-                    <span className="truncate max-w-[120px]">{governorate || storeAddress || (app.lang === "ar" ? "جميع المحافظات" : "All governorates")}</span>
-                  </div>
-                )}
+                <p className="text-[10px] text-[#2a655f] dark:text-[#3a8a82] -mt-0.5 font-semibold">
+                  {app.lang === 'ar' ? 'إدارة كاملة لمتجرك' : 'Full Store Management'}
+                </p>
               </div>
             </div>
           </div>
 
           <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="relative hidden md:block">
-              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 h-4 w-4 text-[#f9a8d4]`} />
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 border-2 border-[#2a655f]/20">
+              <Clock className="h-3.5 w-3.5 text-[#2a655f]" />
+              <span className="text-xs font-mono text-slate-600 dark:text-slate-300">{formattedTime}</span>
+              <LiveIndicator />
+            </div>
+
+            <div className="relative hidden md:block group">
+              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 h-4 w-4 text-[#2a655f] transition-colors duration-300 group-focus-within:text-[#2a655f]`} />
               <Input 
                 placeholder={app.lang === 'ar' ? "بحث في لوحة التحكم..." : "Search dashboard..."} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearch}
-                className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} w-64 h-9 rounded-lg border-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 bg-slate-50 dark:bg-slate-800/50 text-sm focus:border-[#2a655f] focus:ring-2 focus:ring-[#f9a8d4]/20 transition-all`}
+                className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} w-64 h-9 rounded-xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 bg-slate-50 dark:bg-slate-800/50 text-sm focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 focus:bg-white dark:focus:bg-slate-800/50 transition-all duration-300 group-focus-within:shadow-lg group-focus-within:shadow-[#2a655f]/20`}
               />
               {searchQuery && (
                 <button
                   onClick={clearSearch}
-                  className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-[#f9a8d4] hover:text-[#2a655f] transition-colors`}
+                  className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-[#2a655f] hover:text-[#3a8a82] transition-colors duration-200`}
                 >
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
-            <Avatar className="h-8 w-8 ring-2 ring-[#f9a8d4]/40 dark:ring-[#2a655f]/30">
-              <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white text-xs">
-                {app.user?.name?.charAt(0) || 'S'}
-              </AvatarFallback>
-            </Avatar>
+            
+            {/* ✅ صورة البائع مع الاسم */}
+            <div className="relative group flex items-center gap-3">
+              <div className="flex flex-col items-end text-right">
+                <span className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">
+                  {app.user?.name || (app.lang === 'ar' ? 'بائع' : 'Seller')}
+                </span>
+                <span className="text-[9px] text-[#2a655f] dark:text-[#3a8a82] font-semibold">
+                  {app.lang === 'ar' ? 'صاحب المتجر' : 'Store Owner'}
+                </span>
+              </div>
+              <Avatar className="h-10 w-10 ring-2 ring-[#2a655f]/40 group-hover:ring-[#2a655f]/60 transition-all duration-300 group-hover:scale-105 cursor-pointer">
+                {app.user?.avatar_url ? (
+                  <AvatarImage src={app.user.avatar_url} alt={app.user.name || 'Seller'} className="object-cover" />
+                ) : (
+                  <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-sm font-bold">
+                    {app.user?.name?.charAt(0)?.toUpperCase() || 'S'}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#2a655f] border-2 border-white dark:border-slate-900 animate-pulse shadow-[0_0_12px_rgba(42,101,95,0.8)]" />
+            </div>
           </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-7xl px-4 py-6 relative z-0">
         
-      {/* ===== SLIDER - بدون صور ===== */}
-{!showSearchResults && (
-  <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#f9a8d4] to-[#fbcfe8] shadow-xl shadow-[#f9a8d4]/20 border-2 border-[#f9a8d4]/40 group min-h-[90px] md:min-h-[105px] mb-6">
-    
-    <div className="absolute inset-0 opacity-5">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] bg-repeat" />
-    </div>
-    
-    <div className="absolute -top-20 -right-20 h-32 w-32 rounded-full bg-[#f9a8d4]/20 blur-2xl animate-pulse" />
-    <div className="absolute -bottom-20 -left-20 h-32 w-32 rounded-full bg-[#f9a8d4]/20 blur-2xl animate-pulse delay-1000" />
-    
-    <div className="relative px-3 py-2.5 md:px-5 md:py-3.5 flex flex-col md:flex-row items-center gap-2 md:gap-3.5 z-10">
-      <div className="flex-shrink-0">
-        <div className="relative">
-          <div className="h-9 w-9 md:h-12 md:w-12 rounded-xl bg-white/30 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center text-xl md:text-3xl shadow-lg shadow-[#f9a8d4]/20 animate-float group-hover:scale-110 transition-transform duration-500">
-            {sliderData[currentSlide]?.icon || "🏛️"}
+        {/* ✅ ===== سلايدر النظام - زيتي فقط ===== */}
+        {!showSearchResults && (
+          <div className="mb-6">
+            <SystemSlider isRTL={isRTL} />
           </div>
-          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#f9a8d4]/30 to-[#fbcfe8]/30 blur-lg animate-pulse" />
+        )}
+
+        {/* ===== PAGE HEADER ===== */}
+        <div className={`flex items-center justify-between mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className={isRTL ? 'text-right' : ''}>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {showSearchResults ? (
+                <span className="flex items-center gap-3">
+                  <span>{app.lang === 'ar' ? 'نتائج البحث' : 'Search Results'}</span>
+                  <Badge className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white text-sm px-3 py-1 shadow-lg shadow-[#2a655f]/30 border-2 border-white/30">
+                    {searchResults.total} {app.lang === 'ar' ? 'نتيجة' : 'results'}
+                  </Badge>
+                </span>
+              ) : (
+                nav.find(n => n.id === tab)?.label || (app.lang === 'ar' ? "نظرة عامة" : "Overview")
+              )}
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
+              {showSearchResults ? (
+                <span>
+                  {app.lang === 'ar' ? `نتائج البحث عن "${searchQuery}"` : `Results for "${searchQuery}"`}
+                </span>
+              ) : (
+                <span className="flex items-center gap-3">
+                  <span className="text-base md:text-lg font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                    {app.lang === 'ar' ? `مرحبا بك في ذوق يا ${app.user?.name || 'بائع'}` : `Welcome to Zooq, ${app.user?.name || 'Seller'}`}
+                  </span>
+                </span>
+              )}
+            </p>
+          </div>
+          
+          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToExcel}
+              disabled={sellerOrders.length === 0}
+              className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 transition-all duration-300 hover:scale-105"
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-1.5" />
+              {app.lang === 'ar' ? "Excel" : "Excel"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToWord}
+              disabled={sellerOrders.length === 0}
+              className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 transition-all duration-300 hover:scale-105"
+            >
+              <FileText className="h-4 w-4 mr-1.5" />
+              {app.lang === 'ar' ? "Word" : "Word"}
+            </Button>
+          </div>
         </div>
-      </div>
-      
-      <div className="flex-1 text-center md:text-right">
-        <h1 className={`text-sm md:text-lg font-bold text-[#2a655f] mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
-          {sliderData[currentSlide]?.title || "ذوق | Zooq"}
-        </h1>
-        <h2 className={`text-xs md:text-base font-bold text-[#1a4f4a] mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
-          {sliderData[currentSlide]?.subtitle || "نظام إدارة السوق الذكي"}
-        </h2>
-        <p className={`text-[10px] md:text-xs text-[#1a4f4a]/80 max-w-2xl leading-relaxed hidden sm:block ${isRTL ? 'font-arabic' : ''}`}>
-          {sliderData[currentSlide]?.description || ""}
-        </p>
-        <div className="flex flex-wrap items-center gap-1.5 mt-1 justify-center md:justify-start">
-          <span className="px-2 py-0.5 rounded-full bg-white/40 backdrop-blur-sm border border-white/30 text-[#2a655f] text-[9px] font-bold">
-            {sliderData[currentSlide]?.badge || "✨ منصة متكاملة"}
-          </span>
-          <span className="px-2 py-0.5 rounded-full bg-[#2a655f]/20 backdrop-blur-sm border border-[#2a655f]/30 text-[#2a655f] text-[9px] font-bold">
-            {sliderData[currentSlide]?.stat || "🚀 تحديثات لحظية"}
-          </span>
-        </div>
-      </div>
-      
-      <div className="flex-shrink-0 flex flex-row md:flex-col gap-1.5">
-        <button
-          onClick={prevSlide}
-          className="h-6 w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-[#2a655f]/30 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" />
-        </button>
-        <button
-          onClick={nextSlide}
-          className="h-6 w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-[#2a655f]/30 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
-        >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
-    
-    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-1">
-      {Array.from({ length: totalSlides }).map((_, index) => (
-        <button
-          key={index}
-          onClick={() => goToSlide(index)}
-          className={cn(
-            "h-1 rounded-full transition-all duration-500",
-            currentSlide === index
-              ? "w-4 bg-[#2a655f] shadow-lg shadow-[#2a655f]/30"
-              : "w-1.5 bg-[#2a655f]/30 hover:bg-[#2a655f]/50"
-          )}
-        />
-      ))}
-      <span className="text-[7px] text-[#2a655f]/50 ml-1 font-mono">
-        {currentSlide + 1}/{totalSlides}
-      </span>
-    </div>
-    
-    <div className="relative h-0.5 w-full bg-gradient-to-r from-transparent via-[#2a655f]/20 to-transparent" />
-  </div>
-)}
-        
-     {/* ===== PAGE HEADER ===== */}
-<div className={`flex items-center justify-between mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-  <div className={isRTL ? 'text-right' : ''}>
-    <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-      {showSearchResults ? (
-        <span className="flex items-center gap-3">
-          <span>{app.lang === 'ar' ? 'نتائج البحث' : 'Search Results'}</span>
-          <Badge className="bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white text-sm px-3 py-1 shadow-lg shadow-[#f9a8d4]/30 border-2 border-white/30">
-            {searchResults.total} {app.lang === 'ar' ? 'نتيجة' : 'results'}
-          </Badge>
-        </span>
-      ) : (
-        nav.find(n => n.id === tab)?.label || (app.lang === 'ar' ? "نظرة عامة" : "Overview")
-      )}
-    </h1>
-    <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
-      {showSearchResults ? (
-        <span>
-          {app.lang === 'ar' ? `نتائج البحث عن "${searchQuery}"` : `Results for "${searchQuery}"`}
-        </span>
-      ) : (
-        <span className="flex items-center gap-3">
-          <span className="text-base md:text-lg font-bold bg-gradient-to-r from-[#2a655f] to-[#d81b60] bg-clip-text text-transparent">
-            {app.lang === 'ar' ? `مرحبا بك في ذوق يا ${app.user?.name || 'بائع'}` : `Welcome to Zooq, ${app.user?.name || 'Seller'}`}
-          </span>
-          <span className="text-xl md:text-2xl animate-bounce text-[#d81b60]">❤️</span>
-        </span>
-      )}
-    </p>
-  </div>
-  
-  <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={exportToExcel}
-      disabled={sellerOrders.length === 0}
-      className="rounded-xl border-2 border-[#f9a8d4]/30 text-[#2a655f] hover:bg-[#f9a8d4]/10 dark:hover:bg-[#f9a8d4]/20 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
-    >
-      <FileSpreadsheet className="h-4 w-4 mr-1.5" />
-      {app.lang === 'ar' ? "Excel" : "Excel"}
-    </Button>
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={exportToWord}
-      disabled={sellerOrders.length === 0}
-      className="rounded-xl border-2 border-[#f9a8d4]/30 text-[#2a655f] hover:bg-[#f9a8d4]/10 dark:hover:bg-[#f9a8d4]/20 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
-    >
-      <FileText className="h-4 w-4 mr-1.5" />
-      {app.lang === 'ar' ? "Word" : "Word"}
-    </Button>
-  </div>
-</div>
 
         {/* ===== SEARCH RESULTS ===== */}
         {showSearchResults && (
-          <div className="space-y-4 mb-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="space-y-4 mb-6 animate-in slide-in-from-top-5 duration-300">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {[
-                { key: 'products', label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package, color: 'text-[#2a655f]', bg: 'bg-[#f9a8d4]/10' },
-                { key: 'orders', label: app.lang === 'ar' ? 'الطلبات' : 'Orders', count: searchResults.orders, icon: ShoppingCart, color: 'text-[#3a8a82]', bg: 'bg-[#f9a8d4]/10' },
-                { key: 'customers', label: app.lang === 'ar' ? 'العملاء' : 'Customers', count: searchResults.customers, icon: Users, color: 'text-[#1a4f4a]', bg: 'bg-[#f9a8d4]/10' },
+                { key: 'products', label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package },
+                { key: 'orders', label: app.lang === 'ar' ? 'الطلبات' : 'Orders', count: searchResults.orders, icon: ShoppingCart },
+                { key: 'customers', label: app.lang === 'ar' ? 'العملاء' : 'Customers', count: searchResults.customers, icon: Users },
               ].map((item) => {
                 const isActive = tab === item.key;
                 return (
                   <button
                     key={item.key}
                     type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
+                    tabIndex={-1}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
                       handleTabChangeWithScroll(item.key);
                       setShowSearchResultsPage(false);
                     }}
-                    className={`bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 p-3 text-center hover:shadow-xl transition-all duration-300 hover:scale-[1.03] group ${isActive ? 'ring-2 ring-[#f9a8d4] border-[#f9a8d4] shadow-lg shadow-[#f9a8d4]/20' : ''} cursor-pointer`}
+                    className={`bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-3 text-center hover:shadow-xl transition-all duration-300 hover:scale-[1.03] group ${isActive ? 'ring-2 ring-[#2a655f] border-[#2a655f] shadow-lg shadow-[#2a655f]/20' : ''}`}
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <div className={`h-8 w-8 rounded-lg ${item.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border-2 border-[#f9a8d4]/20`}>
-                        <item.icon className={`h-4 w-4 ${item.color}`} />
+                      <div className={`h-8 w-8 rounded-lg bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border-2 border-[#2a655f]/20`}>
+                        <item.icon className={`h-4 w-4 text-[#2a655f]`} />
                       </div>
                       <div className="text-left">
                         <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{item.label}</p>
-                        <p className="text-lg font-bold text-[#2a655f] dark:text-[#f9a8d4]">{item.count}</p>
+                        <p className="text-lg font-bold text-[#2a655f] dark:text-[#3a8a82]">{item.count}</p>
                       </div>
                     </div>
                     {item.count > 0 && (
@@ -1480,9 +1483,9 @@ export function SellerDashboard({}: SellerDashboardProps) {
             </div>
 
             {searchResults.total === 0 && (
-              <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 p-12 text-center shadow-lg">
-                <div className="h-20 w-20 rounded-full bg-[#f9a8d4]/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
-                  <Search className="h-10 w-10 text-[#f9a8d4]" />
+              <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-12 text-center shadow-lg">
+                <div className="h-20 w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                  <Search className="h-10 w-10 text-[#2a655f]" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
                   {app.lang === 'ar' ? 'لا توجد نتائج' : 'No results found'}
@@ -1490,7 +1493,11 @@ export function SellerDashboard({}: SellerDashboardProps) {
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                   {app.lang === 'ar' ? `لم نعثر على أي نتائج تطابق "${searchQuery}"` : `No results match "${searchQuery}"`}
                 </p>
-                <Button variant="outline" className="mt-4 rounded-xl border-2 border-[#f9a8d4]/30 text-[#2a655f] hover:bg-[#f9a8d4]/10" onClick={clearSearch}>
+                <Button 
+                  variant="outline" 
+                  className="mt-4 rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
+                  onClick={clearSearch}
+                >
                   {app.lang === 'ar' ? 'مسح البحث' : 'Clear search'}
                 </Button>
               </div>
@@ -1498,89 +1505,96 @@ export function SellerDashboard({}: SellerDashboardProps) {
           </div>
         )}
 
-{/* ===== TABS NAVIGATION - مُصحح بالكامل ===== */}
-{!showSearchResults && (
-  <div className="mb-6 relative z-40">
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#d81b60]/40 dark:border-[#d81b60]/30 shadow-xl shadow-[#d81b60]/10 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#d81b60] to-[#2a655f] animate-pulse" />
-      
-      {/* ✅ Desktop Tabs */}
-      <div className="hidden md:flex items-center p-1.5 gap-1.5 overflow-x-auto relative z-50">
-        {nav.map((n) => {
-          const isActive = tab === n.id;
-          return (
-            <button
-              key={n.id}
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleTabChangeWithScroll(n.id);
-              }}
-              className={`
-                relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-500 whitespace-nowrap flex-1 text-center justify-center group cursor-pointer z-50
-                ${isActive 
-                  ? 'bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#fbcfe8] text-white shadow-xl shadow-[#2a655f]/40 scale-[1.03] border-2 border-[#2a655f]/50' 
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-[#f9a8d4]/10 dark:hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] dark:hover:text-[#f9a8d4]'
-                }
-              `}
-            >
-              <div className={`relative transition-all duration-500 ${isActive ? 'scale-110 animate-pulse' : 'group-hover:scale-110 group-hover:rotate-6'}`}>
-                <n.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#d81b60] dark:text-[#d81b60] group-hover:text-[#d81b60]'}`} />
-                {isActive && (
-                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-white/60 animate-ping" />
-                )}
+        {/* ===== TABS NAVIGATION - زيتي فقط ===== */}
+        {!showSearchResults && (
+          <div className="mb-6">
+            <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 shadow-xl shadow-[#2a655f]/10 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-[#3a8a82] animate-pulse" />
+              
+              {/* ✅ Desktop Tabs - زيتي فقط */}
+              <div className="hidden md:flex items-center p-1.5 gap-1.5 overflow-x-auto">
+                {nav.map((n) => {
+                  const isActive = tab === n.id;
+                  return (
+                    <button
+                      key={n.id}
+                      type="button"
+                      tabIndex={-1}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleTabChangeWithScroll(n.id);
+                      }}
+                      className={`
+                        relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-500 whitespace-nowrap flex-1 text-center justify-center group
+                        ${isActive 
+                          ? 'bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-xl shadow-[#2a655f]/40 scale-[1.03] border-2 border-[#2a655f]/50' 
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 hover:text-[#2a655f] dark:hover:text-[#2a655f]'
+                        }
+                      `}
+                    >
+                      <div className={`relative transition-all duration-500 ${isActive ? 'scale-110 animate-pulse' : 'group-hover:scale-110 group-hover:rotate-6'}`}>
+                        <n.icon 
+                          className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#2a655f] group-hover:text-[#2a655f]'}`}
+                        />
+                        {isActive && (
+                          <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-white/60 animate-ping" />
+                        )}
+                      </div>
+                      <span className={`font-bold ${isActive ? 'text-white' : 'group-hover:text-[#2a655f]'}`}>
+                        {n.label}
+                      </span>
+                      {isActive && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-white/60 animate-pulse ml-1" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-              <span className={`font-bold ${isActive ? 'text-white' : 'group-hover:text-[#2a655f]'}`}>
-                {n.label}
-              </span>
-              {isActive && (
-                <span className="h-1.5 w-1.5 rounded-full bg-white/60 animate-pulse ml-1" />
-              )}
-            </button>
-          );
-        })}
-      </div>
 
-      {/* ✅ Mobile Tabs */}
-      <div className="md:hidden p-3 relative z-50">
-        <div className="grid grid-cols-4 gap-1.5">
-          {nav.map((n) => {
-            const isActive = tab === n.id;
-            return (
-              <button
-                key={n.id}
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleTabChangeWithScroll(n.id);
-                }}
-                className={`
-                  relative flex flex-col items-center gap-1 p-2.5 rounded-xl text-xs font-medium transition-all duration-500 cursor-pointer z-50
-                  ${isActive 
-                    ? 'bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#fbcfe8] text-white shadow-xl shadow-[#2a655f]/40 scale-[1.03] border-2 border-[#2a655f]/50' 
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-[#f9a8d4]/10 dark:hover:bg-[#f9a8d4]/20'
-                  }
-                `}
-              >
-                <div className={`transition-all duration-500 ${isActive ? 'scale-110 animate-pulse' : ''}`}>
-                  <n.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#d81b60] dark:text-[#d81b60]'}`} />
+              {/* ✅ Mobile Tabs - زيتي فقط */}
+              <div className="md:hidden p-3">
+                <div className="grid grid-cols-4 gap-1.5">
+                  {nav.map((n) => {
+                    const isActive = tab === n.id;
+                    return (
+                      <button
+                        key={n.id}
+                        type="button"
+                        tabIndex={-1}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleTabChangeWithScroll(n.id);
+                        }}
+                        className={`
+                          relative flex flex-col items-center gap-1 p-2.5 rounded-xl text-xs font-medium transition-all duration-500
+                          ${isActive 
+                            ? 'bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-xl shadow-[#2a655f]/40 scale-[1.03] border-2 border-[#2a655f]/50' 
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20'
+                          }
+                        `}
+                      >
+                        <div className={`transition-all duration-500 ${isActive ? 'scale-110 animate-pulse' : ''}`}>
+                          <n.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#2a655f]'}`} />
+                        </div>
+                        <span className="text-[8px] leading-tight text-center max-w-full break-words font-bold">
+                          {n.label}
+                        </span>
+                        {isActive && (
+                          <span className="h-0.5 w-6 rounded-full bg-white/60 animate-pulse" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-                <span className="text-[8px] leading-tight text-center max-w-full break-words font-bold">
-                  {n.label}
-                </span>
-                {isActive && (
-                  <span className="h-0.5 w-6 rounded-full bg-white/60 animate-pulse" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ===== CONTENT ===== */}
         {!showSearchResults && (
           <div className="space-y-6">
@@ -1588,76 +1602,85 @@ export function SellerDashboard({}: SellerDashboardProps) {
             {/* ===== OVERVIEW ===== */}
             {tab === 'overview' && (
               <div>
-          {/* بطاقات الإحصائيات */}
-<div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-  {[
-    { 
-      label: app.lang === 'ar' ? "📦 إجمالي الطلبات" : "📦 Total Orders", 
-      value: totalOrders, 
-      icon: ShoppingCart, 
-      change: '+8.2%', 
-      color: 'text-[#2a655f]', 
-      bg: 'bg-[#fbcfe8]/60',
-      border: 'border-[#f9a8d4]/70',
-      gradient: 'from-[#2a655f] to-[#f9a8d4]',
-    },
-    { 
-      label: app.lang === 'ar' ? "👥 العملاء" : "👥 Customers", 
-      value: totalCustomers, 
-      icon: Users, 
-      change: '+5.3%', 
-      color: 'text-[#3a8a82]', 
-      bg: 'bg-[#fbcfe8]/60',
-      border: 'border-[#f9a8d4]/70',
-      gradient: 'from-[#3a8a82] to-[#f9a8d4]',
-    },
-    { 
-      label: app.lang === 'ar' ? "📦 المنتجات" : "📦 Products", 
-      value: totalProducts, 
-      icon: Package, 
-      change: '+2.1%', 
-      color: 'text-[#1a4f4a]', 
-      bg: 'bg-[#fbcfe8]/60',
-      border: 'border-[#f9a8d4]/70',
-      gradient: 'from-[#1a4f4a] to-[#f9a8d4]',
-    },
-  ].map((stat, i) => (
-    <div key={i} className="group bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-1 overflow-hidden">
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" />
-      </div>
-      <div className={`flex items-start justify-between ${isRTL ? 'flex-row-reverse' : ''} relative p-5`}>
-        <div className={isRTL ? 'text-right' : ''}>
-          <p className="text-xs font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">{stat.label}</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1 group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
-          <div className={`flex items-center gap-1 mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <ArrowUpRight className="h-3 w-3 text-[#2a655f] animate-bounce-slow" />
-            <span className="text-xs font-medium text-[#2a655f]">{stat.change}</span>
-          </div>
-        </div>
-        <div className={`h-10 w-10 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
-          <stat.icon className={`h-5 w-5 ${stat.color}`} />
-        </div>
-      </div>
-      <div className="mt-0 h-1 w-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-        <div 
-          className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000 animate-shimmer`} 
-          style={{ width: `${Math.min(Math.abs(parseFloat(stat.change) || 0) * 4, 100)}%` }}
-        />
-      </div>
-    </div>
-  ))}
-</div>
+                {/* بطاقات الإحصائيات - نفس تصميم AdminOverview (بوردر زهري) */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  {[
+                    { 
+                      label: app.lang === 'ar' ? "📦 إجمالي الطلبات" : "📦 Total Orders", 
+                      value: totalOrders, 
+                      icon: ShoppingCart, 
+                      change: '+8.2%', 
+                      color: 'text-[#2a655f]', 
+                      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+                      gradient: 'from-[#2a655f] to-[#f9a8d4]',
+                    },
+                    { 
+                      label: app.lang === 'ar' ? "👥 العملاء" : "👥 Customers", 
+                      value: totalCustomers, 
+                      icon: Users, 
+                      change: '+5.3%', 
+                      color: 'text-[#3a8a82]', 
+                      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+                      gradient: 'from-[#3a8a82] to-[#f9a8d4]',
+                    },
+                    { 
+                      label: app.lang === 'ar' ? "📦 المنتجات" : "📦 Products", 
+                      value: totalProducts, 
+                      icon: Package, 
+                      change: '+2.1%', 
+                      color: 'text-[#1a4f4a]', 
+                      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+                      gradient: 'from-[#1a4f4a] to-[#f9a8d4]',
+                    },
+                    { 
+                      label: app.lang === 'ar' ? "💰 الإيرادات" : "💰 Revenue", 
+                      value: formatPrice(totalRevenue, app.currency, app.lang), 
+                      icon: DollarSign, 
+                      change: '+12.4%', 
+                      color: 'text-[#f9a8d4]', 
+                      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+                      gradient: 'from-[#2a655f] to-[#f9a8d4]',
+                    },
+                  ].map((stat, i) => (
+                    <div 
+                      key={i} 
+                      className={`group bg-white dark:bg-[#1e293b] rounded-xl border-2 ${stat.border} shadow-sm hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-500 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative`}
+                    >
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                        <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" />
+                      </div>
+                      <div className={`flex items-start justify-between p-4 ${isRTL ? 'flex-row-reverse' : ''} relative`}>
+                        <div className={isRTL ? 'text-right' : ''}>
+                          <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
+                          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1 group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
+                          <div className={`flex items-center gap-1 mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                            <ArrowUpRight className="h-3 w-3 text-[#2a655f] animate-bounce-slow" />
+                            <span className="text-xs font-medium text-[#2a655f]">{stat.change}</span>
+                          </div>
+                        </div>
+                        <div className={`h-12 w-12 rounded-xl bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                          <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                        </div>
+                      </div>
+                      <div className="mt-0 h-1 w-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000 animate-shimmer`} 
+                          style={{ width: `${Math.min(Math.abs(parseFloat(stat.change) || 0) * 4, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
                 {/* المنتجات والطلبات والعملاء */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   
                   {/* أفضل المنتجات */}
-                  <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#f9a8d4]/10 transition-all duration-500 hover:-translate-y-1">
-                    <div className={`px-5 py-4 border-b-2 border-[#f9a8d4]/20 dark:border-[#2a655f]/20 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-500 hover:-translate-y-1">
+                    <div className={`px-5 py-4 border-b-2 border-pink-400/20 dark:border-pink-400/20 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <div className={isRTL ? 'text-right' : ''}>
                         <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                          <Package className="h-4 w-4 text-[#f9a8d4] animate-pulse" />
+                          <Package className="h-4 w-4 text-[#2a655f] animate-pulse" />
                           {app.lang === 'ar' ? "📦 أفضل المنتجات" : "📦 Top Products"}
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -1667,19 +1690,19 @@ export function SellerDashboard({}: SellerDashboardProps) {
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="text-xs text-[#2a655f] hover:text-[#f9a8d4] hover:bg-[#f9a8d4]/10 transition-all"
+                        className="text-xs text-[#2a655f] hover:text-[#3a8a82] hover:bg-[#2a655f]/10 transition-all"
                         onClick={() => handleTabChangeWithScroll('products')}
                       >
                         {app.lang === 'ar' ? "عرض الكل" : "View all"} 
                         <ChevronRight className={`h-3 w-3 ${isRTL ? 'rotate-180' : ''}`} />
                       </Button>
                     </div>
-                    <div className="divide-y divide-[#f9a8d4]/10 dark:divide-[#f9a8d4]/10 max-h-[300px] overflow-y-auto">
+                    <div className="divide-y divide-pink-400/10 dark:divide-pink-400/10 max-h-[300px] overflow-y-auto">
                       {topProducts.map((product: any, idx: number) => (
-                        <div key={idx} className={`px-5 py-3 hover:bg-[#f9a8d4]/5 dark:hover:bg-[#f9a8d4]/10 transition-colors ${isRTL ? 'text-right' : ''}`}>
+                        <div key={idx} className={`px-5 py-3 hover:bg-pink-500/5 dark:hover:bg-pink-500/10 transition-colors ${isRTL ? 'text-right' : ''}`}>
                           <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                              <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${['from-[#2a655f] to-[#f9a8d4]', 'from-[#3a8a82] to-[#f9a8d4]', 'from-[#1a4f4a] to-[#f9a8d4]', 'from-[#f9a8d4] to-[#fbcfe8]', 'from-[#2a655f] to-[#f9a8d4]'][idx]} flex items-center justify-center text-white font-bold text-xs group-hover:scale-110 transition-transform duration-300 border-2 border-[#f9a8d4]/30`}>
+                              <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${['from-[#2a655f] to-[#3a8a82]', 'from-[#3a8a82] to-[#1a4f4a]', 'from-[#1a4f4a] to-[#3a8a82]', 'from-[#3a8a82] to-[#f9a8d4]', 'from-[#2a655f] to-[#f9a8d4]'][idx]} flex items-center justify-center text-white font-bold text-xs group-hover:scale-110 transition-transform duration-300 border-2 border-pink-400/30`}>
                                 #{idx + 1}
                               </div>
                               <div>
@@ -1691,7 +1714,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                                 </p>
                               </div>
                             </div>
-                            <p className="text-sm font-bold text-[#f9a8d4]">
+                            <p className="text-sm font-bold text-[#2a655f]">
                               {formatPrice(product.revenue || 0, app.currency, app.lang)}
                             </p>
                           </div>
@@ -1701,11 +1724,11 @@ export function SellerDashboard({}: SellerDashboardProps) {
                   </div>
 
                   {/* آخر الطلبات */}
-                  <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#f9a8d4]/10 transition-all duration-500 hover:-translate-y-1">
-                    <div className={`px-5 py-4 border-b-2 border-[#f9a8d4]/20 dark:border-[#2a655f]/20 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-500 hover:-translate-y-1">
+                    <div className={`px-5 py-4 border-b-2 border-pink-400/20 dark:border-pink-400/20 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <div className={isRTL ? 'text-right' : ''}>
                         <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                          <ShoppingCart className="h-4 w-4 text-[#f9a8d4] animate-bounce-slow" />
+                          <ShoppingCart className="h-4 w-4 text-[#2a655f] animate-bounce-slow" />
                           {app.lang === 'ar' ? "📋 آخر الطلبات" : "📋 Recent Orders"}
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -1715,20 +1738,20 @@ export function SellerDashboard({}: SellerDashboardProps) {
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="text-xs text-[#2a655f] hover:text-[#f9a8d4] hover:bg-[#f9a8d4]/10 transition-all"
+                        className="text-xs text-[#2a655f] hover:text-[#3a8a82] hover:bg-[#2a655f]/10 transition-all"
                         onClick={() => handleTabChangeWithScroll('orders')}
                       >
                         {app.lang === 'ar' ? "عرض الكل" : "View all"} 
                         <ChevronRight className={`h-3 w-3 ${isRTL ? 'rotate-180' : ''}`} />
                       </Button>
                     </div>
-                    <div className="divide-y divide-[#f9a8d4]/10 dark:divide-[#f9a8d4]/10 max-h-[300px] overflow-y-auto">
+                    <div className="divide-y divide-pink-400/10 dark:divide-pink-400/10 max-h-[300px] overflow-y-auto">
                       {recentOrders.map((order: any, idx: number) => (
-                        <div key={idx} className={`px-5 py-3 hover:bg-[#f9a8d4]/5 dark:hover:bg-[#f9a8d4]/10 transition-colors ${isRTL ? 'text-right' : ''}`}>
+                        <div key={idx} className={`px-5 py-3 hover:bg-pink-500/5 dark:hover:bg-pink-500/10 transition-colors ${isRTL ? 'text-right' : ''}`}>
                           <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                               <div className="flex items-center gap-2 group">
-                                <span className="text-xs font-mono text-[#2a655f] dark:text-white bg-[#f9a8d4]/10 dark:bg-[#f9a8d4]/20 px-2 py-1 rounded-lg border border-[#f9a8d4]/20 dark:border-[#2a655f]/20">
+                                <span className="text-xs font-mono text-[#2a655f] dark:text-white bg-[#2a655f]/10 dark:bg-[#2a655f]/20 px-2 py-1 rounded-lg border border-pink-400/20 dark:border-pink-400/20">
                                   #{String(order.id).slice(0, 8)}
                                 </span>
                                 <button
@@ -1736,7 +1759,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                                     navigator.clipboard.writeText(order.id);
                                     toast.success(app.lang === 'ar' ? '✅ تم نسخ رقم الطلب' : '✅ Order ID copied');
                                   }}
-                                  className="text-[10px] text-muted-foreground hover:text-[#f9a8d4] transition-colors opacity-0 group-hover:opacity-100"
+                                  className="text-[10px] text-muted-foreground hover:text-[#2a655f] transition-colors opacity-0 group-hover:opacity-100"
                                 >
                                   📋 نسخ
                                 </button>
@@ -1754,7 +1777,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                               </div>
                             </div>
                             <div className={isRTL ? 'text-left' : 'text-right'}>
-                              <p className="text-sm font-bold text-[#f9a8d4]">
+                              <p className="text-sm font-bold text-[#2a655f]">
                                 {formatPrice(order.total, app.currency, app.lang)}
                               </p>
                               <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''} justify-end`}>
@@ -1772,51 +1795,51 @@ export function SellerDashboard({}: SellerDashboardProps) {
 
                   {/* العملاء */}
                   <div className="space-y-4">
-                    <div className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 p-5 shadow-lg hover:shadow-2xl hover:shadow-[#f9a8d4]/10 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden">
+                    <div className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 p-5 shadow-lg hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden">
                       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" />
+                        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-pink-500/5 blur-3xl animate-pulse" />
                       </div>
                       <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''} relative`}>
                         <div className={isRTL ? 'text-right' : ''}>
                           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                            <Users className="h-3 w-3 text-[#f9a8d4]" />
+                            <Users className="h-3 w-3 text-[#2a655f]" />
                             {app.lang === 'ar' ? "👥 العملاء" : "👥 Customers"}
                           </p>
-                          <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#f9a8d4] transition-colors">{totalCustomers}</p>
+                          <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{totalCustomers}</p>
                         </div>
-                        <div className="h-12 w-12 rounded-lg bg-[#f9a8d4]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 border-2 border-[#f9a8d4]/20">
-                          <Users className="h-6 w-6 text-[#f9a8d4]" />
+                        <div className="h-12 w-12 rounded-lg bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 border-2 border-pink-400/20">
+                          <Users className="h-6 w-6 text-[#2a655f]" />
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#f9a8d4]/10 transition-all duration-500 hover:-translate-y-1">
-                      <div className={`px-4 py-3 border-b-2 border-[#f9a8d4]/20 dark:border-[#2a655f]/20 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-500 hover:-translate-y-1">
+                      <div className={`px-4 py-3 border-b-2 border-pink-400/20 dark:border-pink-400/20 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                         <div className={isRTL ? 'text-right' : ''}>
                           <h3 className="text-xs font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                            <UserPlus className="h-3 w-3 text-[#f9a8d4]" />
+                            <UserPlus className="h-3 w-3 text-[#2a655f]" />
                             {app.lang === 'ar' ? "👤 أحدث العملاء" : "👤 Recent Customers"}
                           </h3>
                         </div>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="text-[10px] text-[#f9a8d4] hover:text-[#f9a8d4] hover:bg-[#f9a8d4]/10 transition-all"
+                          className="text-[10px] text-[#2a655f] hover:text-[#3a8a82] hover:bg-[#2a655f]/10 transition-all"
                           onClick={() => handleTabChangeWithScroll('customers')}
                         >
                           {app.lang === 'ar' ? "عرض الكل" : "View all"} 
                           <ChevronRight className={`h-3 w-3 ${isRTL ? 'rotate-180' : ''}`} />
                         </Button>
                       </div>
-                      <div className="divide-y divide-[#f9a8d4]/10 dark:divide-[#f9a8d4]/10 max-h-[260px] overflow-y-auto">
+                      <div className="divide-y divide-pink-400/10 dark:divide-pink-400/10 max-h-[260px] overflow-y-auto">
                         {customersWithOrders.slice(0, 5).map((customer: any, idx: number) => (
-                          <div key={idx} className={`px-4 py-3 hover:bg-[#f9a8d4]/5 dark:hover:bg-[#f9a8d4]/10 transition-colors ${isRTL ? 'text-right' : ''}`}>
+                          <div key={idx} className={`px-4 py-3 hover:bg-pink-500/5 dark:hover:bg-pink-500/10 transition-colors ${isRTL ? 'text-right' : ''}`}>
                             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                              <Avatar className="h-10 w-10 rounded-xl ring-2 ring-[#f9a8d4]/20 group-hover:ring-[#f9a8d4]/50 transition-all duration-300">
+                              <Avatar className="h-10 w-10 rounded-xl ring-2 ring-pink-400/20 group-hover:ring-pink-400/50 transition-all duration-300">
                                 {customer.avatar_url ? (
                                   <AvatarImage src={customer.avatar_url} alt={customer.display_name} className="object-cover" />
                                 ) : (
-                                  <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white text-sm font-bold">
+                                  <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-sm font-bold">
                                     {customer.display_name?.charAt(0).toUpperCase() || 'ع'}
                                   </AvatarFallback>
                                 )}
@@ -1828,25 +1851,25 @@ export function SellerDashboard({}: SellerDashboardProps) {
                                     {customer.display_name}
                                   </p>
                                   {customer.is_online && (
-                                    <span className="h-2 w-2 rounded-full bg-[#f9a8d4] animate-pulse shadow-[0_0_8px_rgba(249,168,212,0.8)]" />
+                                    <span className="h-2 w-2 rounded-full bg-[#2a655f] animate-pulse shadow-[0_0_8px_rgba(42,101,95,0.8)]" />
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 flex-wrap">
                                   {customer.phone_number && (
                                     <span className="flex items-center gap-1">
-                                      <Phone className="h-3 w-3 text-[#f9a8d4]" />
+                                      <Phone className="h-3 w-3 text-[#2a655f]" />
                                       {customer.phone_number}
                                     </span>
                                   )}
                                   {customer.email && (
                                     <span className="flex items-center gap-1">
-                                      <Mail className="h-3 w-3 text-[#f9a8d4]" />
+                                      <Mail className="h-3 w-3 text-[#2a655f]" />
                                       <span className="truncate max-w-[80px]">{customer.email}</span>
                                     </span>
                                   )}
                                   {customer.city && (
                                     <span className="flex items-center gap-1">
-                                      <MapPin className="h-3 w-3 text-[#f9a8d4]" />
+                                      <MapPin className="h-3 w-3 text-[#2a655f]" />
                                       {customer.city}
                                     </span>
                                   )}
@@ -1854,7 +1877,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
                               </div>
                               
                               <div className="text-right">
-                                <p className="text-sm font-bold text-[#f9a8d4]">
+                                <p className="text-sm font-bold text-[#2a655f]">
                                   {customer.total_orders || 0}
                                 </p>
                                 <p className="text-[8px] text-slate-400 uppercase tracking-wider">
@@ -1867,8 +1890,8 @@ export function SellerDashboard({}: SellerDashboardProps) {
                         
                         {customersWithOrders.length === 0 && (
                           <div className="px-4 py-6 text-center">
-                            <div className="h-12 w-12 rounded-full bg-[#f9a8d4]/10 flex items-center justify-center mx-auto mb-2">
-                              <Users className="h-6 w-6 text-[#f9a8d4]" />
+                            <div className="h-12 w-12 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-2">
+                              <Users className="h-6 w-6 text-[#2a655f]" />
                             </div>
                             <p className="text-sm text-slate-500 dark:text-slate-400">
                               {app.lang === 'ar' ? 'لا يوجد عملاء حتى الآن' : 'No customers yet'}
@@ -1955,13 +1978,12 @@ export function SellerDashboard({}: SellerDashboardProps) {
         .animate-ping {
           animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
-        @keyframes shimmer-gold {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
+        @keyframes pulse-slow {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.1); opacity: 0.8; }
         }
-        .animate-shimmer-gold {
-          background-size: 200% auto;
-          animation: shimmer-gold 3s linear infinite;
+        .animate-pulse-slow {
+          animation: pulse-slow 2s ease-in-out infinite;
         }
       `}</style>
     </div>

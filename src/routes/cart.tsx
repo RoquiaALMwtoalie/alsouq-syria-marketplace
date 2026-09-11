@@ -1,11 +1,11 @@
-// src/routes/cart.tsx - الكود المُصحّح بالكامل مع تصميم أنيق
+// src/routes/cart.tsx - الكود المُصحّح بالكامل مع تصميم بسيط بألوان أبيض، رمادي، أسود، وزيتي فقط (بدون خطوات)
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { 
   ShoppingBag, Trash2, Plus, Minus, ArrowRight, Store, Shield, 
   Truck, Clock, Award, Sparkles, Tag, X, Loader2, Gift, CheckCircle2,
   MapPin, Edit2, PlusCircle, Navigation, Home, Building2, AlertCircle,
-  Percent, Package, Layers
+  Percent, Package, Layers, Check, ChevronRight, Info
 } from "lucide-react";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useApp, formatPrice } from "@/lib/i18n";
@@ -37,13 +37,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCartTotal } from "@/lib/hooks/useCartTotal";
@@ -57,12 +50,10 @@ function CartPage() {
   const app = useApp();
   const navigate = useNavigate();
   
-  // ✅ Hooks
   const createOrder = useCreateOrder();
   const updateCartItem = useUpdateCartItem();
   const clearCart = useClearCart();
   
-  // ✅ جلب السلة
   const { 
     data: cart, 
     isLoading, 
@@ -70,7 +61,6 @@ function CartPage() {
     refetch: refetchCart 
   } = useCart(app.user?.id);
   
-  // ✅ State
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoDiscount, setPromoDiscount] = useState(0);
@@ -79,7 +69,6 @@ function CartPage() {
   const [promoData, setPromoData] = useState<any>(null);
   const [freeItems, setFreeItems] = useState<any[]>([]);
   
-  // ✅ State للعناوين
   const [userAddresses, setUserAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
@@ -88,172 +77,173 @@ function CartPage() {
   const [newLocation, setNewLocation] = useState<PickedLocation | null>(null);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   
-  // ✅ State لإضافة عنوان جديد
   const [newAddressLabel, setNewAddressLabel] = useState("");
   const [newAddressDetails, setNewAddressDetails] = useState("");
   
-  // ✅ State للتوصيل
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryCompany, setDeliveryCompany] = useState<any>(null);
   const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(false);
 
-  // ✅ State لديالوغ تفريغ السلة
   const [showClearCartDialog, setShowClearCartDialog] = useState(false);
 
-  // ✅ useRef
+  // ✅ State جديدة لميزة المسافة
+  const [userCurrentLocation, setUserCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [distanceFromSelectedAddress, setDistanceFromSelectedAddress] = useState<number | null>(null);
+  const [showDistanceWarningDialog, setShowDistanceWarningDialog] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt' | null>(null);
+
   const isFirstRender = useRef(true);
   const deliveryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previousCartState = useRef<string>("");
   
-  // ✅ تعريف items مع دعم الفيرنتات بشكل كامل
-const items = useMemo(() => {
-  if (!cart?.items) return [];
-  
-  return cart.items.map((item: any) => {
-    const price = Number(item.price);
-    const quantity = Number(item.quantity);
-    const subtotal = price * quantity;
-    const subtotal_usd = item.price_usd ? Number(item.price_usd) * quantity : null;
+  const items = useMemo(() => {
+    if (!cart?.items) return [];
     
-    const listing = item.listings || item.listing || null;
-    
-    // ✅ التحقق مما إذا كان هذا العنصر هدية
-    const isGift = item.is_free === true || item.variation_snapshot?.is_gift === true;
-    
-    // ============================================================
-    // ✅✅✅ حساب displayImage مع دعم العروض التخفيضية والفيرنتات ✅✅✅
-    // ============================================================
-    let displayImage = listing?.cover_url || '/placeholder.png';
-    
-    // ✅ 1. جلب صورة الفيرنت من variation_snapshot
-    if (item.variation_snapshot) {
-      if (item.variation_snapshot.variation_image) {
-        displayImage = item.variation_snapshot.variation_image;
-      } else if (item.variation_snapshot.cover_url) {
-        displayImage = item.variation_snapshot.cover_url;
-      } else if (item.variation_snapshot.image_url) {
-        displayImage = item.variation_snapshot.image_url;
-      }
-    }
-    
-    // ✅ 2. التحقق من selected_variation_id (العروض التخفيضية والمنتجات العادية)
-    if (!displayImage || displayImage === '/placeholder.png') {
-      const variationId = item.selected_variation_id || 
-                          item.selected_options?.selected_variation_id;
+    return cart.items.map((item: any) => {
+      const price = Number(item.price);
+      const quantity = Number(item.quantity);
+      const subtotal = price * quantity;
+      const subtotal_usd = item.price_usd ? Number(item.price_usd) * quantity : null;
       
-      if (variationId && listing?.variations) {
-        const selectedVariation = listing.variations.find(
-          (v: any) => v.id === variationId
-        );
-        if (selectedVariation) {
-          if (selectedVariation.image_url) {
-            displayImage = selectedVariation.image_url;
-          }
-          if (selectedVariation.color_id && listing.colors) {
-            const color = listing.colors.find((c: any) => c.id === selectedVariation.color_id);
-            if (color?.image_url) {
-              displayImage = color.image_url;
+      const listing = item.listings || item.listing || null;
+      
+      const isGift = item.is_free === true || item.variation_snapshot?.is_gift === true;
+      
+      let displayImage = listing?.cover_url || '/placeholder.png';
+      
+      if (item.variation_snapshot) {
+        if (item.variation_snapshot.variation_image) {
+          displayImage = item.variation_snapshot.variation_image;
+        } else if (item.variation_snapshot.cover_url) {
+          displayImage = item.variation_snapshot.cover_url;
+        } else if (item.variation_snapshot.image_url) {
+          displayImage = item.variation_snapshot.image_url;
+        }
+      }
+      
+      if (!displayImage || displayImage === '/placeholder.png') {
+        const variationId = item.selected_variation_id || 
+                            item.selected_options?.selected_variation_id;
+        
+        if (variationId && listing?.variations) {
+          const selectedVariation = listing.variations.find(
+            (v: any) => v.id === variationId
+          );
+          if (selectedVariation) {
+            if (selectedVariation.image_url) {
+              displayImage = selectedVariation.image_url;
+            }
+            if (selectedVariation.color_id && listing.colors) {
+              const color = listing.colors.find((c: any) => c.id === selectedVariation.color_id);
+              if (color?.image_url) {
+                displayImage = color.image_url;
+              }
             }
           }
         }
       }
-    }
-    
-    // ✅ 3. التحقق من variation_combination (استخراج اللون)
-    if (!displayImage || displayImage === '/placeholder.png') {
-      const combination = item.variation_combination || 
-                          item.selected_options?.combination || 
-                          {};
       
-      const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
-      let colorValue = null;
-      for (const key of colorKeys) {
-        if (combination[key]) {
-          colorValue = combination[key];
-          break;
+      if (!displayImage || displayImage === '/placeholder.png') {
+        const combination = item.variation_combination || 
+                            item.selected_options?.combination || 
+                            {};
+        
+        const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+        let colorValue = null;
+        for (const key of colorKeys) {
+          if (combination[key]) {
+            colorValue = combination[key];
+            break;
+          }
+        }
+        
+        if (colorValue && listing?.colors) {
+          const color = listing.colors.find((c: any) => 
+            String(c.color_name_ar || "").trim().toLowerCase() === String(colorValue).trim().toLowerCase() ||
+            String(c.color_name_en || "").trim().toLowerCase() === String(colorValue).trim().toLowerCase()
+          );
+          if (color?.image_url) {
+            displayImage = color.image_url;
+          }
         }
       }
       
-      if (colorValue && listing?.colors) {
-        const color = listing.colors.find((c: any) => 
-          String(c.color_name_ar || "").trim().toLowerCase() === String(colorValue).trim().toLowerCase() ||
-          String(c.color_name_en || "").trim().toLowerCase() === String(colorValue).trim().toLowerCase()
-        );
-        if (color?.image_url) {
-          displayImage = color.image_url;
+      if (!displayImage || displayImage === '/placeholder.png') {
+        const colorName = item.selected_color || 
+                          item.selected_options?.selected_color;
+        
+        if (colorName && listing?.colors) {
+          const color = listing.colors.find((c: any) => 
+            String(c.color_name_ar || "").trim().toLowerCase() === String(colorName).trim().toLowerCase() ||
+            String(c.color_name_en || "").trim().toLowerCase() === String(colorName).trim().toLowerCase()
+          );
+          if (color?.image_url) {
+            displayImage = color.image_url;
+          }
         }
       }
-    }
-    
-    // ✅ 4. التحقق من selected_color (fallback)
-    if (!displayImage || displayImage === '/placeholder.png') {
-      const colorName = item.selected_color || 
-                        item.selected_options?.selected_color;
       
-      if (colorName && listing?.colors) {
-        const color = listing.colors.find((c: any) => 
-          String(c.color_name_ar || "").trim().toLowerCase() === String(colorName).trim().toLowerCase() ||
-          String(c.color_name_en || "").trim().toLowerCase() === String(colorName).trim().toLowerCase()
-        );
-        if (color?.image_url) {
-          displayImage = color.image_url;
+      if (!displayImage || displayImage === '/placeholder.png') {
+        if (listing?.cover_url) {
+          displayImage = listing.cover_url;
         }
       }
-    }
-    
-    // ✅ 5. fallback أخير: استخدم cover_url
-    if (!displayImage || displayImage === '/placeholder.png') {
-      if (listing?.cover_url) {
-        displayImage = listing.cover_url;
+      
+      const getVariationName = () => {
+        if (item.variation_snapshot?.variation_data?.combination) {
+          return Object.values(item.variation_snapshot.variation_data.combination).join(' • ');
+        }
+        if (item.variation_snapshot?.combination) {
+          return Object.values(item.variation_snapshot.combination).join(' • ');
+        }
+        if (item.selected_options?.combination) {
+          return Object.values(item.selected_options.combination).join(' • ');
+        }
+        if (item.variation_combination && Object.keys(item.variation_combination).length > 0) {
+          return Object.values(item.variation_combination).join(' • ');
+        }
+        if (item.selected_color || item.selected_size) {
+          const parts = [];
+          if (item.selected_color) parts.push(item.selected_color);
+          if (item.selected_size) parts.push(item.selected_size);
+          return parts.join(' • ');
+        }
+        return '';
+      };
+      
+      const variationName = getVariationName();
+      
+      let displayTitle = app.lang === "ar" ? listing?.title_ar : (listing?.title_en || listing?.title_ar);
+      if (isGift && item.variation_snapshot?.title_ar) {
+        displayTitle = item.variation_snapshot.title_ar;
       }
-    }
-    
-    // ✅ استخراج اسم الفيرنت
-    const getVariationName = () => {
-      if (item.variation_snapshot?.variation_data?.combination) {
-        return Object.values(item.variation_snapshot.variation_data.combination).join(' • ');
-      }
-      if (item.variation_snapshot?.combination) {
-        return Object.values(item.variation_snapshot.combination).join(' • ');
-      }
-      if (item.selected_options?.combination) {
-        return Object.values(item.selected_options.combination).join(' • ');
-      }
-      if (item.variation_combination && Object.keys(item.variation_combination).length > 0) {
-        return Object.values(item.variation_combination).join(' • ');
-      }
-      if (item.selected_color || item.selected_size) {
-        const parts = [];
-        if (item.selected_color) parts.push(item.selected_color);
-        if (item.selected_size) parts.push(item.selected_size);
-        return parts.join(' • ');
-      }
-      return '';
-    };
-    
-    const variationName = getVariationName();
-    
-    let displayTitle = app.lang === "ar" ? listing?.title_ar : (listing?.title_en || listing?.title_ar);
-    if (isGift && item.variation_snapshot?.title_ar) {
-      displayTitle = item.variation_snapshot.title_ar;
-    }
-    
-    return {
-      ...item,
-      subtotal,
-      subtotal_usd,
-      listing: listing,
-      displayImage: displayImage,
-      variationName: variationName,
-      displayTitle: displayTitle,
-      isGift: isGift,
-      isPromoOffer: item.is_promo_offer === true || item.offer_id !== null,
-      isDiscountOffer: listing?.is_offer === true && item.is_promo_offer !== true,
-    };
-  });
-}, [cart?.items, app.lang]);
 
-  // ✅ جب storeId من أول منتج في السلة
+      const sellerName = 
+        (listing as any)?.profile?.store_name ||    
+        (listing as any)?.profiles?.store_name ||   
+        (listing as any)?.owner?.store_name || 
+        (listing as any)?.profile?.full_name || 
+        (listing as any)?.profiles?.full_name || 
+        (listing as any)?.owner?.full_name || 
+        (app.lang === "ar" ? "متجر" : "Store");
+      
+      return {
+        ...item,
+        subtotal,
+        subtotal_usd,
+        listing: listing,
+        displayImage: displayImage,
+        variationName: variationName,
+        displayTitle: displayTitle,
+        isGift: isGift,
+        isPromoOffer: item.is_promo_offer === true || item.offer_id !== null,
+        isDiscountOffer: listing?.is_offer === true && item.is_promo_offer !== true,
+        sellerName,
+      };
+    });
+  }, [cart?.items, app.lang]);
+
   const storeIdFromCart = useMemo(() => {
     if (!items || items.length === 0) return undefined;
     const firstItem = items[0];
@@ -261,10 +251,55 @@ const items = useMemo(() => {
     return listing.owner_id || firstItem.listing_id;
   }, [items]);
 
-  // ✅ حساب قيمة السلة
   const cartTotal = useCartTotal(app.user?.id, storeIdFromCart);
-  
-  // ✅ جلب عناوين المستخدم
+
+  // ✅ دالة حساب المسافة (Haversine)
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+    if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) return 0;
+    
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }, []);
+
+  // ✅ دالة جلب موقع المستخدم الحالي
+  const getUserCurrentLocation = useCallback((): Promise<{ lat: number; lng: number } | null> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        console.warn("Geolocation not supported");
+        resolve(null);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocationPermission('granted');
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.warn("Location permission denied or error:", error);
+          setLocationPermission('denied');
+          resolve(null);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000,
+        }
+      );
+    });
+  }, []);
+
   useEffect(() => {
     const fetchUserAddresses = async () => {
       if (!app.user) return;
@@ -296,7 +331,6 @@ const items = useMemo(() => {
     fetchUserAddresses();
   }, [app.user]);
 
-  // ✅ استخراج اسم المتجر وصورته
   const storeInfo = useMemo(() => {
     if (items.length === 0) {
       return { 
@@ -305,82 +339,32 @@ const items = useMemo(() => {
         cover: null
       };
     }
-    
     const firstItem = items[0];
     const listing = firstItem.listing || firstItem;
+    const name = firstItem.sellerName;
+    const logo = (listing as any)?.profile?.store_logo_url || (listing as any)?.profiles?.store_logo_url || null;
+    const cover = (listing as any)?.profile?.store_cover_url || null;
     
-    const name = 
-      (listing as any)?.profile?.store_name ||    
-      (listing as any)?.profiles?.store_name ||   
-      (listing as any)?.owner?.store_name || 
-      (listing as any)?.profile?.full_name || 
-      (listing as any)?.profiles?.full_name || 
-      (listing as any)?.owner?.full_name || 
-      "متجر";
-    
-    const logo = 
-      (listing as any)?.profile?.store_logo_url || 
-      (listing as any)?.profiles?.store_logo_url || 
-      (listing as any)?.owner?.store_logo_url || 
-      (listing as any)?.profile?.avatar_url || 
-      (listing as any)?.profiles?.avatar_url || 
-      (listing as any)?.owner?.avatar_url || 
-      null;
-    
-    const cover = 
-      (listing as any)?.profile?.store_cover_url || 
-      (listing as any)?.profiles?.store_cover_url || 
-      (listing as any)?.owner?.store_cover_url || 
-      null;
-    
-    return {
-      name: name || (app.lang === "ar" ? "متجر" : "Store"),
-      logo: logo,
-      cover: cover
-    };
+    return { name, logo, cover };
   }, [items, app.lang]);
 
-  // ✅ دالة حساب المسافة
-  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
-    if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) return 0;
-    
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }, []);
-
-  // ✅ دالة حساب سعر التوصيل
   const calculateDeliveryPrice = useCallback((company: any, distanceInKm: number, orderTotal: number): number => {
     const freeThreshold = company.free_delivery_threshold || 0;
-    if (freeThreshold > 0 && orderTotal >= freeThreshold) {
-      return 0;
-    }
+    if (freeThreshold > 0 && orderTotal >= freeThreshold) return 0;
 
     const basePrice = company.base_price || 0;
     const pricePerKm = company.price_per_km || 0;
     let price = basePrice + (distanceInKm * pricePerKm);
 
     const minFee = company.min_delivery_fee || 0;
-    if (price < minFee) {
-      price = minFee;
-    }
+    if (price < minFee) price = minFee;
 
     const maxFee = company.max_delivery_fee || 999999;
-    if (price > maxFee) {
-      price = maxFee;
-    }
+    if (price > maxFee) price = maxFee;
 
     return Math.round(price);
   }, []);
 
-  // ✅ حساب التوصيل
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -408,66 +392,30 @@ const items = useMemo(() => {
             .maybeSingle();
 
           if (storeError || !store) {
-            console.error("❌ [Cart] Store not found:", storeError);
             setDeliveryFee(0);
             setDeliveryCompany(null);
             return;
           }
 
           let selectedCompany = null;
-
           if (store.delivery_company_id) {
-            const { data: company, error: companyError } = await supabase
+            const { data: company } = await supabase
               .from("delivery_companies")
               .select("*")
               .eq("id", store.delivery_company_id)
               .eq("is_active", true)
               .maybeSingle();
-
-            if (!companyError && company) {
-              selectedCompany = company;
-              console.log("✅ [Cart] Using store's delivery company:", company.name_ar);
-            }
+            if (company) selectedCompany = company;
           }
 
           if (!selectedCompany) {
-            const { data: companies, error: companiesError } = await supabase
+            const { data: companies } = await supabase
               .from("delivery_companies")
               .select("*")
               .eq("is_active", true);
 
-            if (!companiesError && companies) {
-              const matchingCompanies = companies.filter((c: any) => {
-                const coverage = c.coverage_areas || [];
-                if (coverage.includes("all") || coverage.includes(store.governorate_id)) {
-                  return true;
-                }
-                if (c.governorate_id === store.governorate_id) {
-                  return true;
-                }
-                return false;
-              });
-
-              if (matchingCompanies.length > 0) {
-                selectedCompany = matchingCompanies.sort((a: any, b: any) => 
-                  (a.base_price || 0) - (b.base_price || 0)
-                )[0];
-                console.log("✅ [Cart] Using best matching company:", selectedCompany.name_ar);
-              }
-            }
-          }
-
-          if (!selectedCompany) {
-            const { data: fallbackCompany, error: fallbackError } = await supabase
-              .from("delivery_companies")
-              .select("*")
-              .eq("is_active", true)
-              .limit(1)
-              .maybeSingle();
-
-            if (!fallbackError && fallbackCompany) {
-              selectedCompany = fallbackCompany;
-              console.log("✅ [Cart] Using fallback company:", selectedCompany.name_ar);
+            if (companies) {
+              selectedCompany = companies[0];
             }
           }
 
@@ -477,59 +425,30 @@ const items = useMemo(() => {
             return;
           }
 
-          let distance = 0;
-          const hasValidCoordinates = store.lat && store.lng && selectedAddress.lat && selectedAddress.lng;
-
-          if (hasValidCoordinates) {
-            distance = calculateDistance(
-              store.lat,
-              store.lng,
-              selectedAddress.lat,
-              selectedAddress.lng
-            );
-            console.log(`📍 [Cart] Real distance: ${distance.toFixed(2)} km`);
-          } else {
-            const storeGovId = store.governorate_id;
-            const userGovId = selectedAddress.governorate_id;
-            
-            if (storeGovId === userGovId) {
-              distance = 5;
-            } else {
-              distance = 25;
-            }
-            console.log(`📍 [Cart] Estimated distance: ${distance} km`);
-          }
+          let distance = store.lat && store.lng && selectedAddress.lat && selectedAddress.lng
+            ? calculateDistance(store.lat, store.lng, selectedAddress.lat, selectedAddress.lng)
+            : 5;
 
           const fee = calculateDeliveryPrice(selectedCompany, distance, cartTotal);
-          console.log(`💰 [Cart] Delivery fee: ${fee} SYP (cartTotal: ${cartTotal})`);
-          
           setDeliveryFee(Number(fee) || 0);
           setDeliveryCompany(selectedCompany);
-
         } catch (error) {
-          console.error("❌ [Cart] Error calculating delivery:", error);
-          setDeliveryFee(0);
-          setDeliveryCompany(null);
+          console.error("Delivery error:", error);
         } finally {
           setIsCalculatingDelivery(false);
         }
       };
-      
       calculateDelivery();
     }, 300);
 
     return () => {
-      if (deliveryTimeoutRef.current) {
-        clearTimeout(deliveryTimeoutRef.current);
-      }
+      if (deliveryTimeoutRef.current) clearTimeout(deliveryTimeoutRef.current);
     };
   }, [selectedAddress, storeIdFromCart, cartTotal, calculateDistance, calculateDeliveryPrice]);
 
-  // ✅ حساب الإجماليات
   const totals = useMemo(() => {
     const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
     const total = subtotal + deliveryFee - promoDiscount;
-    
     return {
       subtotal,
       deliveryFee,
@@ -538,21 +457,49 @@ const items = useMemo(() => {
       totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
     };
   }, [items, deliveryFee, promoDiscount]);
-  
-  // ✅ تغيير العنوان
-  const handleAddressChange = useCallback((addressId: string) => {
-    const address = userAddresses.find((a: any) => a.id === addressId);
-    if (address) {
-      setSelectedAddressId(addressId);
-      setSelectedAddress(address);
-      
-      if (promoApplied) {
-        removePromoCode();
-      }
-    }
-  }, [userAddresses, promoApplied]);
 
-  // ✅ إزالة كود الخصم
+  // ✅ دالة التحقق من المسافة قبل تغيير العنوان
+  const handleAddressChange = useCallback(async (addressId: string) => {
+    const address = userAddresses.find((a: any) => a.id === addressId);
+    if (!address) return;
+
+    // إذا كان العنوان يحتوي على إحداثيات، نتحقق من المسافة
+    if (address.lat && address.lng) {
+      setIsGettingLocation(true);
+      const currentLocation = await getUserCurrentLocation();
+      setIsGettingLocation(false);
+
+      if (currentLocation) {
+        const distance = calculateDistance(
+          currentLocation.lat,
+          currentLocation.lng,
+          address.lat,
+          address.lng
+        );
+
+        // إذا كانت المسافة أكبر من 10 كم، نعرض تحذيراً
+        if (distance > 10) {
+          setSelectedAddressId(addressId);
+          setSelectedAddress(address);
+          setDistanceFromSelectedAddress(distance);
+          setShowDistanceWarningDialog(true);
+          return;
+        }
+
+        // المسافة قريبة، نحدث المسافة ونكمل
+        setDistanceFromSelectedAddress(distance);
+      } else {
+        setDistanceFromSelectedAddress(null);
+      }
+    } else {
+      setDistanceFromSelectedAddress(null);
+    }
+
+    setSelectedAddressId(addressId);
+    setSelectedAddress(address);
+    if (promoApplied) removePromoCode();
+  }, [userAddresses, promoApplied, getUserCurrentLocation, calculateDistance]);
+
   const removePromoCode = useCallback(() => {
     setPromoCode("");
     setPromoApplied(false);
@@ -563,20 +510,9 @@ const items = useMemo(() => {
     toast.info(app.lang === "ar" ? "🗑️ تم إزالة كود الخصم" : "🗑️ Promo code removed");
   }, [app.lang]);
 
-  // ✅ إضافة عنوان جديد
   const handleAddAddress = useCallback(async () => {
-    if (!app.user || !newLocation) {
-      toast.error(app.lang === "ar" ? "⚠️ الرجاء اختيار الموقع على الخريطة" : "⚠️ Please select a location on the map");
-      return;
-    }
-    
-    if (!newAddressLabel.trim()) {
-      toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال اسم للعنوان" : "⚠️ Please enter a label for the address");
-      return;
-    }
-    
-    if (!newAddressDetails.trim()) {
-      toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال تفاصيل إضافية" : "⚠️ Please enter additional details");
+    if (!app.user || !newLocation || !newAddressLabel.trim() || !newAddressDetails.trim()) {
+      toast.error(app.lang === "ar" ? "⚠️ الرجاء تعبئة الحقول المطلوبة واختيار الموقع" : "⚠️ Please fill required fields and location");
       return;
     }
     
@@ -594,7 +530,6 @@ const items = useMemo(() => {
         });
       
       if (error) throw error;
-      
       toast.success(app.lang === "ar" ? "✅ تم إضافة العنوان بنجاح" : "✅ Address added successfully");
       
       const { data } = await supabase
@@ -613,36 +548,23 @@ const items = useMemo(() => {
         setSelectedAddressId(data[0].id);
         setSelectedAddress(data[0]);
       }
-      
     } catch (error) {
-      console.error("❌ Error adding address:", error);
       toast.error(app.lang === "ar" ? "❌ فشل إضافة العنوان" : "❌ Failed to add address");
     }
   }, [app.user, newLocation, newAddressLabel, newAddressDetails, userAddresses.length, app.lang]);
 
-  // ✅ تطبيق كود الخصم
   const applyPromoCode = useCallback(async () => {
-    console.log("🔍 [PROMO] ===== START APPLYING PROMO CODE =====");
-    console.log("🔍 [PROMO] Code entered:", promoCode.trim().toUpperCase());
-    
     if (!promoCode.trim()) {
       toast.error(app.lang === "ar" ? "⚠️ الرجاء إدخال كود الخصم" : "⚠️ Please enter a promo code");
       return;
     }
 
     if (promoApplied) {
-      console.log("❌ [PROMO] A promo code is already applied");
       toast.error(
         app.lang === "ar" 
-          ? "⚠️ لا يمكن تطبيق أكثر من كود خصم واحد. قم بإزالة الكود الحالي أولاً" 
-          : "⚠️ Cannot apply more than one promo code. Please remove the current code first"
+          ? "⚠️ لا يمكن تطبيق أكثر من كود خصم واحد" 
+          : "⚠️ Cannot apply more than one promo code"
       );
-      setPromoMessage(
-        app.lang === "ar" 
-          ? "⚠️ يوجد كود خصم مطبق بالفعل، قم بإزالته أولاً" 
-          : "⚠️ A promo code is already applied, please remove it first"
-      );
-      setIsApplyingPromo(false);
       return;
     }
 
@@ -657,37 +579,18 @@ const items = useMemo(() => {
         .eq("is_active", true)
         .maybeSingle();
 
-      if (error) {
-        console.error("❌ [PROMO] Database error:", error);
-        throw error;
-      }
-
-      if (!data) {
-        console.log("❌ [PROMO] Code not found or inactive");
+      if (error || !data) {
         setPromoMessage(app.lang === "ar" ? "❌ كود غير صالح" : "❌ Invalid code");
         toast.error(app.lang === "ar" ? "❌ كود الخصم غير صالح" : "❌ Invalid promo code");
         setIsApplyingPromo(false);
         return;
       }
 
-      console.log("✅ [PROMO] Code found:", {
-        code: data.code,
-        type: data.type,
-        value: data.value,
-        is_active: data.is_active,
-        used_count: data.used_count,
-        usage_limit: data.usage_limit,
-        expires_at: data.expires_at,
-        store_id: data.store_id,
-        store_name: data.store_name,
-      });
-
       const now = new Date();
       const expiresAt = data.expires_at ? new Date(data.expires_at) : null;
       const startsAt = data.starts_at ? new Date(data.starts_at) : null;
 
       if (startsAt && now < startsAt) {
-        console.log("❌ [PROMO] Code not active yet");
         setPromoMessage(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
         toast.error(app.lang === "ar" ? "⏳ الكود غير مفعل بعد" : "⏳ Code not active yet");
         setIsApplyingPromo(false);
@@ -695,31 +598,19 @@ const items = useMemo(() => {
       }
 
       if (expiresAt && now > expiresAt) {
-        console.log("❌ [PROMO] Code expired");
         setPromoMessage(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
         toast.error(app.lang === "ar" ? "❌ انتهت صلاحية الكود" : "❌ Code expired");
         setIsApplyingPromo(false);
         return;
       }
 
-      console.log("✅ [PROMO] Code is valid (active and within date range)");
-
-      // ✅ التحقق من المتجر
       if (data.store_id) {
-        console.log("🔍 [PROMO] Checking store specificity...");
-        console.log("📌 [PROMO] Code is for store:", data.store_id, data.store_name);
-        
         const hasDifferentStore = items.some((item: any) => {
           const listing = item.listing || item;
-          const isDifferent = listing.owner_id !== data.store_id;
-          if (isDifferent) {
-            console.log("⚠️ [PROMO] Product", listing.title_ar, "belongs to different store:", listing.owner_id);
-          }
-          return isDifferent;
+          return listing.owner_id !== data.store_id;
         });
 
         if (hasDifferentStore) {
-          console.log("❌ [PROMO] Cart contains products from different stores");
           setPromoMessage(
             app.lang === "ar" 
               ? `❌ هذا الكود مخصص لمتجر "${data.store_name}" فقط` 
@@ -733,179 +624,27 @@ const items = useMemo(() => {
           setIsApplyingPromo(false);
           return;
         }
-        console.log("✅ [PROMO] All products belong to the correct store");
-      } else {
-        console.log("✅ [PROMO] Code is public (no store restriction)");
       }
 
-      // ✅ التحقق من عدد الاستخدامات
       if (data.usage_limit && data.used_count >= data.usage_limit) {
-        console.log("❌ [PROMO] Code usage limit reached");
         setPromoMessage(
           app.lang === "ar" 
-            ? `❌ تم استخدام هذا الكود بالكامل (${data.used_count}/${data.usage_limit})` 
-            : `❌ This code has been fully used (${data.used_count}/${data.usage_limit})`
+            ? `❌ تم استخدام هذا الكود بالكامل` 
+            : `❌ This code has been fully used`
         );
         toast.error(
           app.lang === "ar" 
-            ? `❌ تم استخدام هذا الكود بالكامل (${data.used_count}/${data.usage_limit})` 
-            : `❌ This code has been fully used (${data.used_count}/${data.usage_limit})`
+            ? `❌ تم استخدام هذا الكود بالكامل` 
+            : `❌ This code has been fully used`
         );
         setIsApplyingPromo(false);
         return;
       }
 
-      // ✅ تحذير عدد الاستخدامات المتبقية
-      if (data.usage_limit) {
-        const remaining = data.usage_limit - data.used_count;
-        console.log(`📌 [PROMO] Remaining uses: ${remaining}`);
-        
-        if (remaining <= 2 && data.used_count === 0) {
-          toast.warning(
-            app.lang === "ar" 
-              ? `⚠️ تبقى ${remaining} استخدام${remaining > 1 ? 'ات' : ''} فقط لهذا الكود` 
-              : `⚠️ Only ${remaining} use${remaining > 1 ? 's' : ''} remaining for this code`
-          );
-        }
-      }
-      console.log("✅ [PROMO] Usage limit check passed");
-
-      // ✅ التحقق من استخدام الكود من قبل هذا المستخدم
-      const { data: existingUsage, error: usageCheckError } = await supabase
-        .from("promo_code_usage")
-        .select(`
-          id,
-          order_id,
-          used_at,
-          discount_amount,
-          orders:order_id (
-            id,
-            status,
-            delivery_status,
-            created_at
-          )
-        `)
-        .eq("promo_code_id", data.id)
-        .eq("user_id", app.user.id)
-        .order("used_at", { ascending: false });
-
-      if (!usageCheckError && existingUsage && existingUsage.length > 0) {
-        console.log(`📌 [PROMO] Total usage records: ${existingUsage.length}`);
-        
-        // ✅ 1. تصنيف الاستخدامات
-        const completedUses = existingUsage.filter((usage: any) => {
-          const order = usage.orders;
-          if (!order) return false;
-          const isCompleted = order.status === 'completed' || 
-                              order.status === 'delivered' ||
-                              order.status === 'done' ||
-                              order.delivery_status === 'delivered' ||
-                              order.delivery_status === 'completed';
-          return isCompleted;
-        });
-        
-        const pendingUses = existingUsage.filter((usage: any) => {
-          const order = usage.orders;
-          if (!order) return false;
-          const isPending = order.status === 'pending' || 
-                            order.status === 'processing' || 
-                            order.status === 'accepted' ||
-                            order.delivery_status === 'pending' ||
-                            order.delivery_status === 'assigned' ||
-                            order.delivery_status === 'picked_up' ||
-                            order.delivery_status === 'in_transit';
-          return isPending;
-        });
-        
-        const cancelledUses = existingUsage.filter((usage: any) => {
-          const order = usage.orders;
-          if (!order) return false;
-          const isCancelled = order.status === 'cancelled' || 
-                              order.status === 'canceled' ||
-                              order.status === 'rejected' ||
-                              order.delivery_status === 'cancelled';
-          return isCancelled;
-        });
-        
-        const userUsageLimit = data.metadata?.user_usage_limit || 1;
-        const completedCount = completedUses.length;
-        const pendingCount = pendingUses.length;
-        
-        console.log(`📌 [PROMO] Completed: ${completedCount}, Pending: ${pendingCount}, Limit: ${userUsageLimit}`);
-        
-        // ✅ 2. الأولوية القصوى: التحقق من الوصول للحد المسموح
-        if (completedCount >= userUsageLimit) {
-          // ❌ منع الاستخدام - وصل للحد المسموح
-          let message = "";
-          if (userUsageLimit === 1) {
-            message = app.lang === "ar" 
-              ? `✅ لقد استفدت من هذا الكود مسبقاً (${completedCount} مرة)، لا يمكن استخدامه مجدداً` 
-              : `✅ You have already used this code (${completedCount} time), cannot use it again`;
-          } else {
-            message = app.lang === "ar" 
-              ? `✅ لقد استفدت من هذا الكود مسبقاً (${completedCount}/${userUsageLimit} مرة)، لا يمكن استخدامه مجدداً` 
-              : `✅ You have already used this code (${completedCount}/${userUsageLimit} times), cannot use it again`;
-          }
-          
-          setPromoMessage(message);
-          toast.info(
-            app.lang === "ar" 
-              ? `✅ لقد استفدت من هذا الكود مسبقاً (${completedCount} مرة)` 
-              : `✅ You have already used this code (${completedCount} times)`
-          );
-          setIsApplyingPromo(false);
-          return;
-        }
-        
-        // ✅ 3. التحقق من وجود طلب جاري (بعد التأكد من عدم الوصول للحد)
-        if (pendingCount > 0) {
-          // ⚠️ تحذير: يوجد طلب جاري، ولكن ما زال مسموح بالاستخدام (لأنه لم يصل للحد)
-          const remainingUses = userUsageLimit - completedCount;
-          const pendingOrder = pendingUses[0];
-          const orderId = pendingOrder.order_id?.slice(0, 8) || '';
-          
-          console.log(`⚠️ [PROMO] User has pending order but hasn't reached limit (${completedCount}/${userUsageLimit})`);
-          
-          // عرض تحذير مع السماح بالاستخدام
-          setPromoMessage(
-            app.lang === "ar" 
-              ? `⚠️ لديك طلب جاري بهذا الكود (رقم: #${orderId})، ولكن يمكنك استخدامه ${remainingUses} مرة${remainingUses > 1 ? 'ات' : ''} متبقية` 
-              : `⚠️ You have a pending order with this code (ID: #${orderId}), but you have ${remainingUses} more use${remainingUses > 1 ? 's' : ''} remaining`
-          );
-          
-          toast.warning(
-            app.lang === "ar" 
-              ? `⚠️ لديك طلب جاري بهذا الكود، ولكن يمكنك استخدامه مرة أخرى (${remainingUses} متبقية)` 
-              : `⚠️ You have a pending order with this code, but you can use it again (${remainingUses} remaining)`
-          );
-          
-          // ✅ السماح بالاستخدام (طالما لم يصل للحد)
-          // نكمل تطبيق الكود...
-        }
-        
-        // ✅ 4. تنبيه بعدد الاستخدامات المتبقية (فقط إذا لم يصل للحد)
-        const remainingUses = userUsageLimit - completedCount;
-        if (remainingUses > 0 && remainingUses <= 2 && pendingCount === 0) {
-          // ✅ فقط إذا لم يكن هناك طلب جاري (لتجنب تكرار الرسائل)
-          setTimeout(() => {
-            toast.info(
-              app.lang === "ar" 
-                ? `ℹ️ يمكنك استخدام هذا الكود ${remainingUses} مرة${remainingUses > 1 ? 'ات' : ''} متبقية` 
-                : `ℹ️ You have ${remainingUses} more use${remainingUses > 1 ? 's' : ''} remaining`
-            );
-          }, 500);
-        }
-      }
-
-      console.log("🔍 [PROMO] Step 7: Calculating subtotal and checking min order...");
       const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
       const minOrder = data.min_order || 0;
 
-      console.log("📌 [PROMO] Subtotal:", subtotal);
-      console.log("📌 [PROMO] Minimum order:", minOrder);
-
       if (subtotal < minOrder) {
-        console.log("❌ [PROMO] Subtotal below minimum order");
         setPromoMessage(
           app.lang === "ar" 
             ? `❌ الحد الأدنى للطلب هو ${formatPrice(minOrder, app.currency, app.lang)}` 
@@ -919,116 +658,53 @@ const items = useMemo(() => {
         setIsApplyingPromo(false);
         return;
       }
-      console.log("✅ [PROMO] Subtotal meets minimum order requirement");
 
-      console.log("🔍 [PROMO] Step 8: Calculating discount...");
       let discount = 0;
       let discountMessage = "";
-      let freeItemsList: any[] = [];
 
       if (data.type === "percentage") {
         discount = (subtotal * (data.value / 100));
         discountMessage = `${data.value}%`;
-        console.log("📌 [PROMO] Percentage discount:", data.value, "% →", discount);
       } 
       else if (data.type === "fixed") {
         discount = data.value;
         discountMessage = `${formatPrice(data.value, app.currency, app.lang)}`;
-        console.log("📌 [PROMO] Fixed discount:", data.value);
       }
       else if (data.type === "free_shipping") {
         discount = deliveryFee;
         discountMessage = app.lang === "ar" ? "توصيل مجاني" : "Free Shipping";
-        console.log("📌 [PROMO] Free shipping discount:", deliveryFee);
         
         if (deliveryFee === 0) {
-          console.log("✅ [PROMO] Delivery is already free");
           setPromoMessage(app.lang === "ar" ? "✅ التوصيل مجاني بالفعل" : "✅ Shipping is already free");
           toast.info(app.lang === "ar" ? "✅ التوصيل مجاني بالفعل" : "✅ Shipping is already free");
           setIsApplyingPromo(false);
           return;
         }
       }
-      else if (data.type === "buy_x_get_y") {
-        const buyQty = data.metadata?.buy_quantity || 2;
-        const getQty = data.metadata?.get_quantity || 1;
-        console.log("📌 [PROMO] Buy X Get Y:", buyQty, "→ get", getQty, "free");
-        
-        const sortedItems = [...items].sort((a, b) => a.price - b.price);
-        let freeItemsCount = 0;
-        let freeDiscount = 0;
-        freeItemsList = [];
-        
-        for (const item of sortedItems) {
-          const batches = Math.floor(item.quantity / buyQty);
-          const freePerBatch = Math.min(getQty, batches);
-          if (freePerBatch > 0) {
-            const freeItem = {
-              ...item,
-              free_quantity: freePerBatch,
-              free_amount: freePerBatch * item.price
-            };
-            freeItemsList.push(freeItem);
-            freeItemsCount += freePerBatch;
-            freeDiscount += freePerBatch * item.price;
-          }
-        }
-        
-        discount = freeDiscount;
-        discountMessage = `${app.lang === "ar" ? `اشترِ ${buyQty} واحصل على ${getQty} مجاناً` : `Buy ${buyQty} Get ${getQty} Free`}`;
-        console.log("📌 [PROMO] Buy X Get Y discount:", freeDiscount);
-        
-        if (discount === 0) {
-          console.log("❌ [PROMO] No free items qualify");
-          setPromoMessage(
-            app.lang === "ar" 
-              ? `❌ اشترِ ${buyQty} منتج للحصول على ${getQty} مجاناً` 
-              : `❌ Buy ${buyQty} items to get ${getQty} free`
-          );
-          toast.error(
-            app.lang === "ar" 
-              ? `❌ اشترِ ${buyQty} منتج للحصول على ${getQty} مجاناً` 
-              : `❌ Buy ${buyQty} items to get ${getQty} free`
-          );
-          setIsApplyingPromo(false);
-          return;
-        }
-      }
 
       if (data.max_discount && discount > data.max_discount) {
-        console.log("📌 [PROMO] Applying max discount limit:", data.max_discount);
         discount = data.max_discount;
       }
 
       if (discount > subtotal) {
-        console.log("📌 [PROMO] Discount exceeds subtotal, adjusting...");
         discount = subtotal;
       }
 
-      console.log("💰 [PROMO] Final discount:", discount);
-      console.log("💰 [PROMO] Final discount message:", discountMessage);
-
       if (discount <= 0) {
-        console.log("❌ [PROMO] Discount is 0, cannot apply");
         setPromoMessage(app.lang === "ar" ? "❌ لا يمكن تطبيق الخصم" : "❌ Cannot apply discount");
         toast.error(app.lang === "ar" ? "❌ لا يمكن تطبيق الخصم" : "❌ Cannot apply discount");
         setIsApplyingPromo(false);
         return;
       }
 
-      console.log("✅ [PROMO] Step 9: Applying discount...");
       setPromoApplied(true);
       setPromoDiscount(discount);
       setPromoData(data);
-      setFreeItems(freeItemsList);
       setPromoMessage(
         app.lang === "ar" 
           ? `✅ خصم ${discountMessage} (${formatPrice(discount, app.currency, app.lang)})` 
           : `✅ ${discountMessage} discount (${formatPrice(discount, app.currency, app.lang)})`
       );
-      
-      console.log("✅ [PROMO] ===== PROMO CODE APPLIED SUCCESSFULLY =====");
-      console.log("📌 [PROMO] New total:", subtotal - discount + deliveryFee);
       
       toast.success(
         app.lang === "ar" 
@@ -1042,101 +718,49 @@ const items = useMemo(() => {
       toast.error(app.lang === "ar" ? "❌ حدث خطأ أثناء تطبيق الكود" : "❌ Error applying code");
     } finally {
       setIsApplyingPromo(false);
-      console.log("🔍 [PROMO] ===== END APPLYING PROMO CODE =====");
     }
-  }, [promoCode, promoApplied, items, deliveryFee, app.lang, app.currency, app.user?.id]);
-  
-  // ✅ تحديث الكمية
-  const handleUpdateQuantity = useCallback(async (itemId: string, newQuantity: number) => {
-    if (!app.user) {
-      toast.warning(app.lang === "ar" ? "⚠️ يرجى تسجيل الدخول" : "⚠️ Please login");
-      return;
-    }
-    
-    const item = items.find(i => i.id === itemId);
-    if (item && item.quantity === newQuantity) return;
-    
-    try {
-      await updateCartItem.mutateAsync({
-        itemId,
-        quantity: newQuantity,
-        userId: app.user.id,
-      });
-      
-      if (promoApplied) {
-        removePromoCode();
-      }
-      
-    } catch (error) {
-      console.error("❌ Error updating quantity:", error);
-      toast.error(app.lang === "ar" ? "❌ حدث خطأ" : "❌ An error occurred");
-    }
-  }, [app.user, updateCartItem, items, promoApplied, removePromoCode, app.lang]);
+  }, [promoCode, promoApplied, items, deliveryFee, app.lang, app.currency]);
 
-  // ✅ تفريغ السلة
+  const handleUpdateQuantity = useCallback(async (itemId: string, newQuantity: number) => {
+    if (!app.user) return;
+    try {
+      await updateCartItem.mutateAsync({ itemId, quantity: newQuantity, userId: app.user.id });
+      if (promoApplied) removePromoCode();
+    } catch (error) {
+      toast.error(app.lang === "ar" ? "❌ حدث خطأ" : "❌ Error updating quantity");
+    }
+  }, [app.user, updateCartItem, promoApplied, removePromoCode, app.lang]);
+
   const handleClearCart = useCallback(() => {
     if (!app.user) return;
     setShowClearCartDialog(true);
   }, [app.user]);
 
-  // ✅ تأكيد تفريغ السلة
   const confirmClearCart = useCallback(async () => {
     if (!app.user) return;
-    
     try {
       await clearCart.mutateAsync({ userId: app.user.id });
       if (promoApplied) removePromoCode();
-      toast.success(app.lang === "ar" ? "🧹 تم تفريغ السلة" : "🧹 Cart cleared");
       setShowClearCartDialog(false);
+      toast.success(app.lang === "ar" ? "🧹 تم تفريغ السلة" : "🧹 Cart cleared");
     } catch (error) {
-      console.error("❌ Error clearing cart:", error);
-      toast.error(app.lang === "ar" ? "❌ حدث خطأ" : "❌ An error occurred");
+      toast.error(app.lang === "ar" ? "❌ حدث خطأ" : "❌ Error");
     }
   }, [app.user, clearCart, promoApplied, removePromoCode, app.lang]);
 
-  // ✅ إتمام الشراء
   const checkout = useCallback(async () => {
     if (!app.user) {
-      toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
       navigate({ to: "/auth/$mode", params: { mode: "login" } });
       return;
     }
-
-    if (items.length === 0) {
-      toast.error(app.lang === "ar" ? "السلة فارغة" : "Cart is empty");
-      return;
-    }
-
-    if (!selectedAddress) {
-      toast.error(app.lang === "ar" ? "يرجى اختيار عنوان التوصيل" : "Please select a delivery address");
+    if (items.length === 0 || !selectedAddress) {
+      toast.error(app.lang === "ar" ? "البيانات غير مكتملة" : "Incomplete data");
       return;
     }
 
     try {
-      console.log("📊 [Checkout] ===== ORDER SUMMARY =====");
-      console.log("💰 deliveryFee:", deliveryFee);
-      console.log("💰 promoDiscount:", promoDiscount);
-      console.log("💰 totals.total:", totals.total);
-      console.log("💰 totals.subtotal:", totals.subtotal);
-      console.log("💰 promoApplied:", promoApplied);
-      console.log("💰 promoData:", promoData);
-
-      const { data: userProfile, error: profileError } = await supabase
-        .from("profiles")
-        .select("full_name, phone")
-        .eq("id", app.user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("❌ Error fetching user profile:", profileError);
-      }
-
-      const buyerName = userProfile?.full_name || app.user.full_name || app.user.email || 'عميل';
-      const buyerPhone = userProfile?.phone || app.user.phone || '';
-
       const groupedBySeller = items.reduce((acc: any, item: any) => {
-        const listing = item.listing || item;
-        const sellerId = listing.owner_id || item.listing_id;
+        const sellerId = item.listing?.owner_id || item.listing_id;
         if (!acc[sellerId]) acc[sellerId] = [];
         acc[sellerId].push(item);
         return acc;
@@ -1144,50 +768,23 @@ const items = useMemo(() => {
 
       for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
         const itemsList = sellerItems as any[];
-        
-        const total = itemsList.reduce((sum, item) => {
-          const price = Number(item.price);
-          const quantity = Number(item.quantity);
-          return sum + (price * quantity);
-        }, 0);
+        const total = itemsList.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
 
-        const firstItem = itemsList[0];
-        const firstListing = firstItem.listing || firstItem;
-        const governorateId = firstListing.governorate_id || null;
-
-        const finalDeliveryFee = deliveryFee || 0;
-        const finalPromoDiscount = promoApplied ? promoDiscount : 0;
-        const finalTotalWithDelivery = totals.total || (total + finalDeliveryFee - finalPromoDiscount);
-
-        console.log(`📊 [Checkout] Order for seller ${sellerId}:`);
-        console.log(`   total: ${total}`);
-        console.log(`   deliveryFee: ${finalDeliveryFee}`);
-        console.log(`   promoDiscount: ${finalPromoDiscount}`);
-        console.log(`   total_with_delivery: ${finalTotalWithDelivery}`);
-
-        const orderData: any = {
+        const orderData = {
           buyer_id: app.user.id,
           seller_id: sellerId,
-          listing_id: firstItem.listing_id,
+          listing_id: itemsList[0].listing_id,
           total: total,
-          quantity: itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0),
-          notes: `طلب من ${storeInfo.name} (${itemsList.length} منتجات)`,
-          governorate_id: governorateId,
+          quantity: itemsList.reduce((sum, item) => sum + item.quantity, 0),
           delivery_address: selectedAddress.address_text,
           delivery_lat: selectedAddress.lat || 0,
           delivery_lng: selectedAddress.lng || 0,
-          buyer_name: buyerName,
-          buyer_phone: buyerPhone,
           status: 'pending',
           currency: itemsList[0]?.currency || 'SYP',
-          created_at: new Date().toISOString(),
-          delivery_fee: finalDeliveryFee,
-          promo_discount: finalPromoDiscount,
-          promo_code_id: promoApplied && promoData ? promoData.id : null,
-          total_with_delivery: finalTotalWithDelivery,
+          delivery_fee: deliveryFee,
+          promo_discount: promoApplied ? promoDiscount : 0,
+          total_with_delivery: totals.total,
         };
-
-        console.log("📊 [Checkout] Final orderData:", orderData);
 
         const { data: order, error: orderError } = await supabase
           .from("orders")
@@ -1197,947 +794,405 @@ const items = useMemo(() => {
 
         if (orderError) throw orderError;
 
-        console.log(`✅ [Checkout] Order created with ID: ${order.id}`);
+        const orderItems = itemsList.map((item: any) => ({
+          order_id: order.id,
+          listing_id: item.listing_id,
+          quantity: item.quantity,
+          price: Number(item.price),
+          currency: item.currency || 'SYP',
+          variation_combination: item.variation_combination || null,
+        }));
 
-        // ✅ حفظ بيانات الفيرنتات في order_items
-      // ✅ ✅ ✅ حفظ بيانات الفيرنتات والعروض الترويجية في order_items
-const orderItems = itemsList.map((item: any) => {
-  // ✅ ✅ ✅ استخراج بيانات العرض الترويجي
-  let offerData = null;
-  let isPromoOffer = false;
-  
-  // ✅ من variation_snapshot
-  if (item.variation_snapshot?.offer_data) {
-    offerData = item.variation_snapshot.offer_data;
-    isPromoOffer = true;
-  }
-  
-  // ✅ من item مباشرة
-  if (item.offer_id && item.variation_snapshot?.offer_data) {
-    isPromoOffer = true;
-  }
-  
-  // ✅ من metadata (إذا كانت موجودة)
-  if (item.metadata?.promo_offer_data) {
-    offerData = item.metadata.promo_offer_data;
-    isPromoOffer = true;
-  }
-  
-  return {
-    order_id: order.id,
-    listing_id: item.listing_id,
-    quantity: item.quantity,
-    price: Number(item.price),
-    currency: item.currency || 'SYP',
-    variation_combination: item.variation_combination || null,
-    selected_options: {
-      selected_variation_id: item.selected_variation_id || null,
-      selected_color: item.selected_color || null,
-      selected_size: item.selected_size || null,
-    },
-    metadata: {
-      variation_image: item.displayImage || null,
-      variation_price: Number(item.price),
-      variation_combination: item.variation_combination || {},
-      product_title: item.listing?.title_ar || null,
-      product_cover: item.listing?.cover_url || null,
-      is_promo_offer: isPromoOffer,
-      is_discount_offer: item.isDiscountOffer || false,
-      // ✅ ✅ ✅ حفظ بيانات العرض الترويجي الكاملة
-      promo_offer_data: offerData,
-    },
-  };
-});
-        const { error: itemsError } = await supabase
-          .from("order_items")
-          .insert(orderItems);
-
-        if (itemsError) throw itemsError;
-
-       if (promoApplied && promoData && order) {
-  try {
-    // ✅ 1. تسجيل استخدام الكود
-    const { error: usageError } = await supabase
-      .from("promo_code_usage")
-      .insert({
-        promo_code_id: promoData.id,
-        user_id: app.user.id,
-        order_id: order.id,
-        discount_amount: promoDiscount,
-        used_at: new Date().toISOString(),
-        store_id: promoData.store_id || null,
-        metadata: {
-          subtotal: totals.subtotal,
-          delivery_fee: deliveryFee,
-          total: totals.total,
-          free_items: freeItems,
-          order_status: 'pending',
-        }
-      });
-    
-    if (usageError) {
-      console.error("❌ Error recording promo usage:", usageError);
-    } else {
-      console.log(`✅ Promo code ${promoData.code} usage recorded`);
-      
-      // ✅ ✅ ✅ 2. زيادة used_count
-      const { data: currentCode, error: fetchError } = await supabase
-        .from("promo_codes")
-        .select("used_count")
-        .eq("id", promoData.id)
-        .single();
-      
-      if (!fetchError && currentCode) {
-        const newCount = (currentCode.used_count || 0) + 1;
-        const { error: updateError } = await supabase
-          .from("promo_codes")
-          .update({ used_count: newCount })
-          .eq("id", promoData.id);
-        
-        if (updateError) {
-          console.error("❌ Error updating used_count:", updateError);
-        } else {
-          console.log(`✅ Promo code ${promoData.code} used_count: ${newCount}`);
-        }
-      }
-    }
-    
-  } catch (error) {
-    console.error("❌ Error in promo code recording:", error);
-  }
-}
-        // ✅ إشعار للبائع
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: sellerId,
-            type: "new_order",
-            title_ar: "📦 طلب جديد",
-            body_ar: `لديك طلب جديد من ${buyerName} (${itemsList.length} منتجات)${promoApplied ? ` 🔥 تم استخدام كود خصم` : ''}`,
-            title_en: "📦 New Order",
-            body_en: `You have a new order from ${buyerName} (${itemsList.length} products)${promoApplied ? ` 🔥 Promo code used` : ''}`,
-           link_url: `/dashboard?tab=orders`,
-            metadata: {
-              order_id: order.id,
-              buyer_id: app.user.id,
-              total: total,
-              items_count: itemsList.length,
-              buyer_name: buyerName,
-              buyer_phone: buyerPhone,
-              promo_code_used: promoApplied ? promoData.code : null,
-              promo_discount: promoApplied ? promoDiscount : 0,
-            }
-          });
+        await supabase.from("order_items").insert(orderItems);
       }
 
-      // ✅ تفريغ السلة
       await clearCart.mutateAsync({ userId: app.user.id });
-      if (promoApplied) removePromoCode();
-
-      toast.success(
-        app.lang === "ar" 
-          ? `✅ تم إرسال طلبك بنجاح! (${Object.keys(groupedBySeller).length} طلب)${promoApplied ? ` 🎉 خصم ${formatPrice(promoDiscount, app.currency, app.lang)}` : ''}`
-          : `✅ Orders placed successfully! (${Object.keys(groupedBySeller).length} orders)${promoApplied ? ` 🎉 ${formatPrice(promoDiscount, app.currency, app.lang)} discount` : ''}`,
-        { duration: 5000 }
-      );
-
+      toast.success(app.lang === "ar" ? "✅ تم إرسال طلبك بنجاح!" : "✅ Order placed successfully!");
       navigate({ to: "/orders" });
-
     } catch (error: any) {
-      console.error("❌ Checkout error:", error);
-      toast.error(
-        app.lang === "ar" 
-          ? `❌ حدث خطأ أثناء إتمام الطلب: ${error.message || 'يرجى المحاولة مرة أخرى'}`
-          : `❌ An error occurred during checkout: ${error.message || 'Please try again'}`
-      );
+      toast.error(error.message || "Checkout error");
     }
-  }, [app.user, items, clearCart, promoApplied, removePromoCode, navigate, app.lang, selectedAddress, storeInfo.name, promoData, promoDiscount, totals, deliveryFee, freeItems]);
-  
+  }, [app.user, items, selectedAddress, deliveryFee, promoApplied, promoDiscount, totals.total, clearCart, navigate, app.lang]);
+
   if (isLoading || isLoadingAddresses) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-[#d81b60] border-t-transparent rounded-full mx-auto" />
-          <p className="mt-4 text-muted-foreground">
-            {app.lang === "ar" ? "جاري تحميل السلة..." : "Loading cart..."}
-          </p>
-        </div>
+      <div className="min-h-[70vh] flex items-center justify-center bg-[#f8f9fc]">
+        <div className="animate-spin h-10 w-10 border-4 border-[#2a655f] border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!cart || items.length === 0) {
     return (
-      <div className="min-h-[70vh] bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
-        <div className="mx-auto max-w-lg px-4 text-center">
-          <div className="relative inline-block">
-            <div className="h-32 w-32 rounded-full bg-gradient-to-r from-[#d81b60]/10 to-[#1b433e]/10 flex items-center justify-center mx-auto animate-bounce-slow">
-              <ShoppingBag className="h-16 w-16 text-[#d81b60]/40" />
-            </div>
-            <div className="absolute -top-2 -right-2 h-10 w-10 rounded-full bg-gradient-to-r from-[#d81b60] to-[#1b433e] flex items-center justify-center text-white text-sm font-bold animate-pulse">
-              0
-            </div>
-          </div>
-          <h2 className="mt-6 text-3xl font-bold text-slate-900 dark:text-white">
-            {app.lang === "ar" ? "🛒 سلة التسوق فارغة" : "🛒 Your cart is empty"}
-          </h2>
-          <p className="mt-2 text-muted-foreground">
-            {app.lang === "ar" 
-              ? "ابدأ بالتسوق وأضف المنتجات التي تريدها إلى سلة التسوق" 
-              : "Start shopping and add the products you want to your cart"}
-          </p>
-          <Link to="/">
-            <Button className="mt-6 h-12 px-8 rounded-2xl bg-gradient-to-r from-[#d81b60] to-[#1b433e] hover:from-[#c2185b] hover:to-[#2a655f] text-white shadow-lg shadow-[#d81b60]/30 transition-all duration-300 hover:scale-105">
-              <ShoppingBag className="h-4 w-4 mr-2" />
-              {app.lang === "ar" ? "ابدأ التسوق" : "Start Shopping"}
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          </Link>
-        </div>
+      <div className="min-h-[70vh] bg-[#f8f9fc] flex flex-col items-center justify-center p-4">
+        <ShoppingBag className="h-16 w-16 text-gray-300 mb-4" />
+        <h2 className="text-xl font-bold text-gray-800 mb-2">
+          {app.lang === "ar" ? "سلة التسوق فارغة" : "Your cart is empty"}
+        </h2>
+        <p className="text-sm text-gray-500 mb-4">
+          {app.lang === "ar" ? "أضف منتجاتك المفضلة وابدأ التسوق" : "Add your favorite products and start shopping"}
+        </p>
+        <Link to="/">
+          <Button className="mt-2 rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white px-8 shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-[1.02]">
+            {app.lang === "ar" ? "ابدأ التسوق" : "Start Shopping"}
+          </Button>
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-[#fdf2f8] to-[#f0faf8] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 py-8">
-      <div className="mx-auto max-w-7xl px-4">
+    <div className="min-h-screen bg-[#f8f9fc] text-gray-900 pb-32">
+      <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
         
-        {/* HEADER - PINK & GREEN مع بوردرات أنيقة */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-gradient-to-br from-[#d81b60] via-[#f48fb1] to-[#1b433e] text-white shadow-lg shadow-[#d81b60]/30">
-                <ShoppingBag className="h-6 w-6" />
-              </div>
-              <span className="bg-gradient-to-r from-[#d81b60] to-[#1b433e] bg-clip-text text-transparent">
-                {app.lang === "ar" ? "سلة التسوق" : "Shopping Cart"}
-              </span>
-              <Badge className="bg-gradient-to-r from-[#d81b60] to-[#1b433e] text-white text-sm px-4 py-1.5 rounded-full shadow-md shadow-[#d81b60]/20 border-0">
-                {totals.itemCount} {app.lang === "ar" ? "منتجات" : "items"}
-              </Badge>
-            </h1>
-            
-          <div className="mt-3 flex items-center gap-3 p-3 bg-gradient-to-r from-[#d81b60]/10 via-[#f48fb1]/20 to-[#1b433e]/10 dark:from-[#d81b60]/20 dark:via-[#f48fb1]/10 dark:to-[#1b433e]/20 backdrop-blur-sm rounded-2xl border-2 border-[#d81b60]/30 hover:border-[#d81b60]/60 shadow-lg shadow-[#d81b60]/10 transition-all duration-300 max-w-md">
-  <div className="h-10 w-10 rounded-xl overflow-hidden border-2 border-[#d81b60]/30 flex-shrink-0 bg-gradient-to-br from-[#d81b60]/20 to-[#1b433e]/20">
-    {storeInfo.logo ? (
-      <OptimizedImage
-        src={storeInfo.logo}
-        alt={storeInfo.name}
-        width={40}
-        height={40}
-        quality={80}
-        objectFit="cover"
-        className="h-full w-full"
-      />
-    ) : (
-      <div className="h-full w-full flex items-center justify-center text-[#d81b60] font-bold text-sm">
-        {storeInfo.name.charAt(0).toUpperCase()}
-      </div>
-    )}
-  </div>
-  <div className="flex-1 min-w-0">
-    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">
-      {storeInfo.name}
-    </p>
-    <div className="flex items-center gap-2">
-      <Shield className="h-3 w-3 text-emerald-500" />
-      <span className="text-[10px] text-muted-foreground font-medium">
-        {app.lang === "ar" ? "متجر موثوق" : "Trusted Store"}
-      </span>
-      <span className="w-1 h-1 rounded-full bg-[#d81b60]/30" />
-      <span className="text-[10px] text-muted-foreground font-medium">
-        {items.length} {app.lang === "ar" ? "منتج" : "products"}
-      </span>
-    </div>
-  </div>
-  <Link to={`/store/${items[0]?.listing?.owner_id || items[0]?.listing_id}`}>
-    <Button 
-      variant="ghost" 
-      size="sm" 
-      className="h-8 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] shadow-md shadow-[#d81b60]/30 hover:shadow-lg hover:shadow-[#d81b60]/40 hover:scale-105 transition-all duration-300 border-0"
-    >
-      {app.lang === "ar" ? "زيارة المتجر" : "Visit Store"}
-      <ArrowRight className="h-3 w-3 ml-1.5" />
-    </Button>
-  </Link>
-</div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              className="border-2 border-[#d81b60]/30 hover:border-[#d81b60]/60 hover:bg-[#d81b60]/10 text-[#d81b60] rounded-xl font-bold transition-all duration-300"
-              onClick={handleClearCart}
-              disabled={clearCart.isPending}
-            >
-              {clearCart.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4 mr-2" />
-              )}
-              {app.lang === "ar" ? "تفريغ السلة" : "Clear Cart"}
-            </Button>
-            <Link to="/">
-              <Button variant="ghost" className="text-[#d81b60] hover:bg-[#d81b60]/10 rounded-xl font-bold">
-                {app.lang === "ar" ? "متابعة التسوق" : "Continue Shopping"}
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
-          </div>
+        {/* ===== رأس الصفحة: السلة وزر الرجوع ===== */}
+        <div className="flex items-center justify-between mb-2">
+          <Link to="/">
+            <button className="h-10 w-10 flex items-center justify-center rounded-full bg-white shadow-sm text-gray-700 border border-gray-200 hover:border-[#2a655f]/30 hover:text-[#2a655f] transition-all duration-200">
+              <ArrowRight className="h-5 w-5" />
+            </button>
+          </Link>
+          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <ShoppingBag className="h-5 w-5 text-[#2a655f]" />
+            {app.lang === "ar" ? "السلة" : "Cart"}
+            <Badge className="bg-[#2a655f] text-white border-0 text-xs px-2 py-0.5 rounded-full">
+              {items.length}
+            </Badge>
+          </h1>
+          <button
+            onClick={handleClearCart}
+            className="h-10 w-10 flex items-center justify-center rounded-full bg-white shadow-sm text-gray-700 border border-gray-200 hover:border-red-300 hover:text-red-500 hover:bg-red-50 transition-all duration-200"
+            disabled={clearCart.isPending}
+          >
+            {clearCart.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </button>
         </div>
 
-        {/* MAIN CONTENT */}
-        <div className="grid lg:grid-cols-[1fr_400px] gap-8">
-          
-          {/* CART ITEMS */}
-          <div className="space-y-4">
-            {/* عنوان التوصيل - بوردر أنيق */}
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-2xl border-2 border-[#d81b60]/20 hover:border-[#d81b60]/40 shadow-lg shadow-[#d81b60]/5 p-5 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#d81b60]/10 to-[#1b433e]/10 border border-[#d81b60]/20">
-                    <MapPin className="h-5 w-5 text-[#d81b60]" />
-                  </div>
+        {/* ===== تنبيه التوصيل المجاني ===== */}
+        <div 
+          onClick={() => setShowAddressDialog(true)}
+          className="flex items-center gap-2 bg-[#e8f0ee] text-[#2a655f] px-4 py-3 rounded-2xl text-xs font-semibold cursor-pointer shadow-sm border border-[#2a655f]/20 hover:border-[#2a655f]/50 transition-all duration-200"
+        >
+          <MapPin className="h-4 w-4 text-[#2a655f] shrink-0" />
+          <span className="truncate flex-1">
+            {selectedAddress 
+              ? selectedAddress.address_text 
+              : (app.lang === "ar" ? "أضف عنوان الشحن لمعرفة الحد المطلوب للتوصيل المجاني" : "Add shipping address for free delivery info")}
+          </span>
+          {distanceFromSelectedAddress !== null && (
+            <Badge className={cn(
+              "text-[9px] px-2 py-0.5 shrink-0",
+              distanceFromSelectedAddress > 10
+                ? "bg-amber-500/20 text-amber-700 border border-amber-400/40"
+                : "bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20"
+            )}>
+              {distanceFromSelectedAddress.toFixed(1)} {app.lang === "ar" ? "كم" : "km"}
+            </Badge>
+          )}
+          <ChevronRight className="h-4 w-4 text-[#2a655f]/50 shrink-0" />
+        </div>
+
+        {/* ===== عرض المنتجات ===== */}
+        {items.map((item: any) => {
+          const isDiscount = item.isDiscountOffer === true;
+          const isPromo = item.isPromoOffer === true;
+          const discountPercent = item.listing?.discount_percent || 0;
+          const oldPrice = item.listing?.old_price ? Number(item.listing.old_price) : null;
+          const price = Number(item.price);
+
+          return (
+            <div key={item.id} className="space-y-2">
+              
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                  <Store className="h-3.5 w-3.5 text-[#2a655f]" />
+                  {item.sellerName}
+                </span>
+                <span className="text-xs font-bold text-[#0a0a0a]">
+                  {formatPrice(item.subtotal, app.currency, app.lang)}
+                </span>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex gap-3 relative hover:border-[#2a655f]/30 transition-all duration-200">
+                
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground">
-                      {app.lang === "ar" ? "📍 عنوان التوصيل" : "📍 Delivery Address"}
-                    </p>
-                    {selectedAddress ? (
-                      <div className="font-bold text-sm text-slate-800 dark:text-white line-clamp-1">
-                        {selectedAddress.address_text}
-                        {selectedAddress.label && (
-                          <Badge className="bg-gradient-to-r from-[#d81b60]/20 to-[#1b433e]/20 text-[#d81b60] border-0 text-[10px] ml-2 px-2 py-0.5">
-                            {selectedAddress.label}
-                          </Badge>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-amber-500 font-bold">
-                        {app.lang === "ar" ? "⚠️ لم يتم اختيار عنوان" : "⚠️ No address selected"}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAddressDialog(true)}
-                  className="text-[#d81b60] hover:bg-[#d81b60]/10 rounded-xl font-bold border border-[#d81b60]/20"
-                >
-                  <Edit2 className="h-4 w-4 mr-1.5" />
-                  {app.lang === "ar" ? "تغيير" : "Change"}
-                </Button>
-              </div>
-              
-              {selectedAddress && (
-                <div className="mt-4 pt-4 border-t-2 border-[#d81b60]/10 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Truck className="h-4 w-4 text-[#d81b60]" />
-                    {isCalculatingDelivery ? (
-                      <span className="flex items-center gap-1 font-medium">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        {app.lang === "ar" ? "جاري الحساب..." : "Calculating..."}
-                      </span>
-                    ) : (
-                      <span className="font-medium">
-                        {deliveryFee === 0 
-                          ? (app.lang === "ar" ? "🆓 توصيل مجاني" : "🆓 Free Delivery")
-                          : `${app.lang === "ar" ? "توصيل" : "Delivery"}: ${formatPrice(deliveryFee, app.currency, app.lang)}`
-                        }
-                      </span>
-                    )}
-                  </div>
-                  {deliveryCompany && (
-                    <Badge className="bg-gradient-to-r from-[#d81b60]/10 to-[#1b433e]/10 text-[#d81b60] border-2 border-[#d81b60]/20 text-[10px] px-3 py-1 rounded-full">
-                      {deliveryCompany.name_ar || "شركة توصيل"}
-                    </Badge>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* ✅ قائمة المنتجات مع بوردرات أنيقة وخطوط منظمة */}
-            {items.map((item: any) => {
-              const listing = item.listing || item;
-              
-              // ✅ التحقق من وجود عرض ترويجي
-              const isPromoOffer = item.variation_snapshot?.is_promo_offer === true || 
-                                   item.offer_id !== null ||
-                                   item.variation_snapshot?.offer_id !== undefined;
-              
-              // ✅ استخراج بيانات العرض من variation_snapshot
-              const offerData = item.variation_snapshot?.offer_data || {};
-              const requiredVariations = offerData?.required_products?.variations || {};
-              const giftVariations = offerData?.free_product?.variations || {};
-              const hasRequired = Object.keys(requiredVariations).length > 0;
-              const hasGift = Object.keys(giftVariations).length > 0;
-
-              return (
-                <div 
-                  key={item.id} 
-                  className={cn(
-                    "group bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-2xl border-2 p-5 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]",
-                    isPromoOffer 
-                      ? "border-[#d81b60]/40 hover:border-[#d81b60]/70 shadow-[#d81b60]/10" 
-                      : "border-[#d81b60]/20 hover:border-[#d81b60]/50 shadow-[#d81b60]/5"
-                  )}
-                >
-                  {/* ===== عرض العرض الترويجي ===== */}
-                  {isPromoOffer && (
-                    <>
-                      {/* شارة العرض الترويجي */}
-                      <div className="flex items-center gap-2 mb-4">
-                        <Badge className="bg-gradient-to-r from-[#d81b60] via-[#f48fb1] to-[#1b433e] text-white border-0 px-4 py-1.5 rounded-full text-xs font-bold shadow-md shadow-[#d81b60]/20">
-                          <Gift className="h-3.5 w-3.5 inline mr-1.5" />
-                          {app.lang === "ar" ? "عرض ترويجي مميز" : "Special Promo Offer"}
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      {isDiscount && discountPercent > 0 && (
+                        <Badge className="bg-[#2a655f] text-white border-0 text-[9px] px-2 py-0.5 rounded-full">
+                          🔥 -{discountPercent}%
                         </Badge>
-                        
-                        <Badge variant="outline" className="border-2 border-[#d81b60]/30 text-[#d81b60] text-[10px] font-bold px-3 py-1 rounded-full">
-                          {offerData?.offer_type === 'bogo' ? '🎁 نفس المنتج' : 
-                           offerData?.offer_type === 'cross_sell' ? '🔄 منتج مختلف' : '📦 باقة'}
+                      )}
+                      {isPromo && (
+                        <Badge className="bg-[#2a655f] text-white border-0 text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Gift className="h-2.5 w-2.5" />
+                          {app.lang === "ar" ? "عرض ترويجي" : "Promo"}
                         </Badge>
+                      )}
+                    </div>
+
+                    <h3 className="font-bold text-sm text-gray-800 line-clamp-2">
+                      {item.displayTitle}
+                    </h3>
+                    
+                    {item.variationName && (
+                      <div className="mt-1.5 inline-flex items-center bg-gray-100 text-gray-600 text-[11px] font-semibold px-2.5 py-0.5 rounded-lg">
+                        {item.variationName}
                       </div>
+                    )}
 
-                      {/* نص العرض */}
-                      {offerData?.display_text_ar && (
-                        <div className="p-3 bg-gradient-to-r from-[#d81b60]/5 to-[#1b433e]/5 rounded-xl border border-[#d81b60]/20 mb-4">
-                          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 text-center">
-                            {app.lang === "ar" ? offerData.display_text_ar : offerData.display_text_en}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* المنتجات المطلوبة */}
-                      {hasRequired && (
-                        <div className="space-y-2 mb-4">
-                          <p className="text-xs font-bold text-slate-500 flex items-center gap-2">
-                            <span className="w-1.5 h-6 bg-[#d81b60] rounded-full"></span>
-                            🛒 المنتجات المطلوبة ({Object.keys(requiredVariations).length})
-                          </p>
-                          {Object.entries(requiredVariations).map(([id, data]: any) => {
-                            const comboText = Object.values(data.combination || {}).join(' • ');
-                            const mainProduct = offerData?.required_products?.main_product || {};
-                            const variationImage = data.image_url || 
-                                                  mainProduct?.cover_url || 
-                                                  item.variation_snapshot?.cover_url || 
-                                                  null;
-                            
-                            return (
-                              <div key={id} className="flex items-center gap-3 p-3 bg-white/80 dark:bg-slate-800/50 rounded-xl border-2 border-[#d81b60]/20 hover:border-[#d81b60]/40 transition-all duration-300">
-                                {variationImage ? (
-                                  <img 
-                                    src={variationImage} 
-                                    alt={comboText} 
-                                    className="w-12 h-12 rounded-lg object-cover border-2 border-[#d81b60]/20"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src = '/placeholder.png';
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="w-12 h-12 rounded-lg bg-[#d81b60]/10 flex items-center justify-center text-[#d81b60]/40 border-2 border-[#d81b60]/20">
-                                    <Package className="h-6 w-6" />
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-bold text-slate-700 truncate">{comboText || 'فيرنت'}</p>
-                                  <p className="text-xs text-muted-foreground">الكمية: {data.quantity}</p>
-                                </div>
-                                <p className="text-sm font-bold text-[#d81b60] whitespace-nowrap">
-                                  {formatPrice(data.price * data.quantity, app.currency, app.lang)}
-                                </p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* الهدية */}
-                      {hasGift && (
-                        <div className="space-y-2 mb-4">
-                          <p className="text-xs font-bold text-emerald-500 flex items-center gap-2">
-                            <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
-                            🎁 الهدية ({Object.keys(giftVariations).length})
-                          </p>
-                          {Object.entries(giftVariations).map(([id, data]: any) => {
-                            const comboText = Object.values(data.combination || {}).join(' • ');
-                            const freeProduct = offerData?.free_product || {};
-                            const giftImage = data.image_url || 
-                                             freeProduct?.cover_url || 
-                                             item.variation_snapshot?.cover_url || 
-                                             null;
-                            
-                            return (
-                              <div key={id} className="flex items-center gap-3 p-3 bg-emerald-50/80 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-200/50 hover:border-emerald-400/50 transition-all duration-300">
-                                {giftImage ? (
-                                  <img 
-                                    src={giftImage} 
-                                    alt={comboText} 
-                                    className="w-12 h-12 rounded-lg object-cover border-2 border-emerald-200/50"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src = '/placeholder.png';
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="w-12 h-12 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400 border-2 border-emerald-200/50">
-                                    <Gift className="h-6 w-6" />
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-bold text-slate-700 truncate">{comboText || 'فيرنت'}</p>
-                                  <p className="text-xs text-muted-foreground">الكمية: {data.quantity}</p>
-                                </div>
-                                <Badge className="bg-emerald-500/20 text-emerald-600 border-2 border-emerald-300/50 text-xs font-bold px-4 py-1.5 rounded-full">
-                                  🎁 مجاناً
-                                </Badge>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* ✅ إجمالي السعر مع أزرار التحكم بالكمية */}
-                      <div className="mt-4 pt-4 border-t-2 border-[#d81b60]/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-semibold text-muted-foreground">إجمالي المنتجات</span>
-                          <span className="text-xl font-bold text-[#d81b60]">
-                            {formatPrice(Number(item.price), app.currency, app.lang)}
+                    <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                      {isDiscount && oldPrice && oldPrice > price ? (
+                        <>
+                          <span className="text-xs text-gray-400 line-through font-medium">
+                            {formatPrice(oldPrice, app.currency, app.lang)}
                           </span>
-                        </div>
-                        
-                        {/* ✅ أزرار التحكم بالكمية */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center border-2 rounded-xl overflow-hidden shadow-sm border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50">
-                            <button
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                              className="h-10 w-10 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-[#d81b60] font-bold"
-                              disabled={updateCartItem.isPending || item.quantity <= 1}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </button>
-                            <span className="w-14 text-center font-bold text-lg text-[#d81b60]">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                              className="h-10 w-10 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-[#d81b60] font-bold"
-                              disabled={updateCartItem.isPending}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition border border-red-200/30 hover:border-red-400/50"
-                            onClick={() => handleUpdateQuantity(item.id, 0)}
-                            disabled={updateCartItem.isPending}
-                          >
-                            {updateCartItem.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* ===== عرض المنتج العادي ===== */}
-                  {!isPromoOffer && (
-                    <div className="flex flex-col sm:flex-row gap-5">
-                      {/* صورة المنتج */}
-                      <div className="relative h-32 w-32 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 mx-auto sm:mx-0 border-2 border-[#d81b60]/20 group-hover:border-[#d81b60]/50 transition-all duration-300">
-                        <OptimizedImage
-                          src={item.displayImage || listing?.cover_url || '/placeholder.png'}
-                          alt={app.lang === "ar" ? listing.title_ar : listing.title_en || listing.title_ar}
-                          width={128}
-                          height={128}
-                          quality={80}
-                          objectFit="cover"
-                          className="h-full w-full group-hover:scale-105 transition-transform duration-500"
-                        />
-                        {/* شارة العرض التخفيضي */}
-                        {item.isDiscountOffer && listing.discount_percent && (
-                          <Badge className="absolute top-2 start-2 bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[10px] px-2 py-0.5 rounded-full shadow-md">
-                            -{listing.discount_percent}%
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      {/* معلومات المنتج */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors line-clamp-1">
-                          {app.lang === "ar" ? listing.title_ar : (listing.title_en || listing.title_ar)}
-                        </h3>
-                        
-                        {/* ✅ الفيرنت المختار مع صورة وسعر وكمية */}
-                        {item.variationName && (
-                          <div className="mt-3 p-3 bg-gradient-to-r from-[#d81b60]/5 to-[#1b433e]/5 rounded-xl border-2 border-[#d81b60]/20 hover:border-[#d81b60]/40 transition-all duration-300">
-                            <div className="flex items-center gap-3">
-                              {/* صورة الفيرنت */}
-                              {item.displayImage && item.displayImage !== '/placeholder.png' ? (
-                                <img 
-                                  src={item.displayImage} 
-                                  alt={item.variationName} 
-                                  className="w-14 h-14 rounded-lg object-cover border-2 border-[#d81b60]/30"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = '/placeholder.png';
-                                  }}
-                                />
-                              ) : (
-                                <div className="w-14 h-14 rounded-lg bg-[#d81b60]/10 flex items-center justify-center text-[#d81b60]/40 border-2 border-[#d81b60]/20">
-                                  <Layers className="h-7 w-7" />
-                                </div>
-                              )}
-                              
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                  <Layers className="h-4 w-4 text-[#d81b60]" />
-                                  {app.lang === "ar" ? "الفيرنت المختار:" : "Selected variation:"}
-                                  <span className="text-[#d81b60]">{item.variationName}</span>
-                                </p>
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                                  <span className="flex items-center gap-1 font-semibold">
-                                    <span className="text-[#d81b60]">×</span>
-                                    <span>{item.quantity}</span>
-                                  </span>
-                                  <span className="text-muted-foreground/30">|</span>
-                                  <span className="font-bold text-[#d81b60]">
-                                    {formatPrice(Number(item.price), app.currency, app.lang)}
-                                  </span>
-                                  {item.isDiscountOffer && listing.old_price && (
-                                    <span className="line-through text-red-400 text-[10px]">
-                                      {formatPrice(Number(listing.old_price), app.currency, app.lang)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {item.isDiscountOffer && (
-                                <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[10px] px-3 py-1 rounded-full shadow-md">
-                                  🔥 {app.lang === "ar" ? "تخفيض" : "Sale"}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* ✅ إذا كان المنتج ليس لديه فيرنتات */}
-                        {!item.variationName && (
-                          <div className="mt-3 flex items-center gap-3 flex-wrap">
-                            <span className="text-2xl font-bold text-[#d81b60] dark:text-[#f48fb1]">
-                              {formatPrice(Number(item.price), app.currency, app.lang)}
-                            </span>
-                            {item.isDiscountOffer && listing.old_price && (
-                              <span className="text-sm line-through text-red-400">
-                                {formatPrice(Number(listing.old_price), app.currency, app.lang)}
-                              </span>
-                            )}
-                            {item.isDiscountOffer && listing.discount_percent && (
-                              <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 text-[10px] px-3 py-1 rounded-full shadow-md">
-                                -{listing.discount_percent}%
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* ✅ أزرار التحكم بالكمية */}
-                        <div className="mt-4 flex items-center gap-2">
-                          <div className="flex items-center border-2 rounded-xl overflow-hidden shadow-sm border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50">
-                            <button
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                              className="h-10 w-10 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-[#d81b60] font-bold"
-                              disabled={updateCartItem.isPending || item.quantity <= 1}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </button>
-                            <span className="w-14 text-center font-bold text-lg text-[#d81b60]">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                              className="h-10 w-10 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-[#d81b60] font-bold"
-                              disabled={updateCartItem.isPending}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition border border-red-200/30 hover:border-red-400/50"
-                            onClick={() => handleUpdateQuantity(item.id, 0)}
-                            disabled={updateCartItem.isPending}
-                          >
-                            {updateCartItem.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* ===== SUMMARY - PINK & GREEN مع بوردر أنيق ===== */}
-          <div className="lg:sticky lg:top-32 h-fit">
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-2xl border-2 border-[#d81b60]/30 shadow-xl shadow-[#d81b60]/10 p-6 transition-all duration-300 hover:border-[#d81b60]/50">
-              <h2 className="text-lg font-bold text-[#d81b60] dark:text-white flex items-center gap-2 mb-5">
-                <Sparkles className="h-5 w-5 text-[#d81b60]" />
-                {app.lang === "ar" ? "📋 ملخص الطلب" : "📋 Order Summary"}
-              </h2>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm py-1">
-                  <span className="text-muted-foreground font-medium">
-                    {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
-                  </span>
-                  <span className="font-bold text-[#d81b60]">{formatPrice(totals.subtotal, app.currency, app.lang)}</span>
-                </div>
-                
-                <div className="flex justify-between text-sm py-1 border-b border-[#d81b60]/10">
-                  <span className="text-muted-foreground font-medium">
-                    {app.lang === "ar" ? "التوصيل" : "Delivery"}
-                  </span>
-                  {deliveryFee === 0 ? (
-                    <span className="font-bold text-emerald-500">
-                      {app.lang === "ar" ? "🆓 مجاني" : "🆓 Free"}
-                    </span>
-                  ) : (
-                    <span className="font-bold text-[#d81b60]">{formatPrice(deliveryFee, app.currency, app.lang)}</span>
-                  )}
-                </div>
-
-                {/* كود الخصم */}
-                <div className="pt-3">
-                  {promoApplied ? (
-                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[#d81b60]/10 to-emerald-50/50 rounded-xl border-2 border-[#d81b60]/30">
-                      <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-[#d81b60]" />
-                        <span className="text-sm font-bold text-[#d81b60]">
-                          {promoMessage}
+                          <span className="text-sm font-bold text-[#0a0a0a]">
+                            {formatPrice(price, app.currency, app.lang)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-sm font-bold text-[#0a0a0a]">
+                          {formatPrice(price, app.currency, app.lang)}
                         </span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 rounded-full hover:bg-[#d81b60]/20 border border-[#d81b60]/20"
-                        onClick={removePromoCode}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
+                      )}
                     </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d81b60]/50" />
-                        <Input
-                          placeholder={app.lang === "ar" ? "🎫 كود الخصم" : "🎫 Promo code"}
-                          value={promoCode}
-                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                          className="pl-9 h-11 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 text-sm font-medium bg-white/50 dark:bg-slate-800/50"
-                          onKeyDown={(e) => e.key === "Enter" && applyPromoCode()}
-                          disabled={isApplyingPromo}
-                        />
-                      </div>
-                      <Button
-                        onClick={applyPromoCode}
-                        disabled={isApplyingPromo}
-                        className="h-11 px-5 rounded-xl bg-gradient-to-r from-[#d81b60] to-[#1b433e] hover:from-[#c2185b] hover:to-[#2a655f] text-white font-bold shadow-lg shadow-[#d81b60]/30 transition-all duration-300"
-                      >
-                        {isApplyingPromo ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          app.lang === "ar" ? "تطبيق" : "Apply"
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                  {promoMessage && !promoApplied && (
-                    <p className="text-xs text-red-500 mt-1 font-medium">{promoMessage}</p>
-                  )}
-                </div>
-                
-                {promoDiscount > 0 && (
-                  <div className="flex justify-between text-sm text-emerald-500 py-1 border-b border-emerald-200/30">
-                    <span className="font-bold">{app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}</span>
-                    <span className="font-bold">-{formatPrice(promoDiscount, app.currency, app.lang)}</span>
                   </div>
-                )}
-                
-                <div className="pt-3 border-t-2 border-[#d81b60]/20">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span className="text-[#d81b60] dark:text-white">
-                      {app.lang === "ar" ? "الإجمالي" : "Total"}
-                    </span>
-                    <span className="text-[#d81b60]">
-                      {formatPrice(totals.total, app.currency, app.lang)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 text-right font-medium">
-                    {app.lang === "ar" ? "شامل جميع الرسوم" : "All fees included"}
-                  </p>
-                </div>
-                
-                <Button 
-                  size="lg" 
-                  className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#d81b60] via-[#f48fb1] to-[#1b433e] hover:from-[#c2185b] hover:via-[#f9a8d4] hover:to-[#2a655f] text-white shadow-lg shadow-[#d81b60]/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-base font-bold border-0"
-                  onClick={checkout}
-                  disabled={createOrder.isPending || !selectedAddress}
-                >
-                  {createOrder.isPending ? (
-                    <div className="flex items-center gap-3">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      {app.lang === "ar" ? "جاري الإتمام..." : "Processing..."}
+
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+                      <button
+                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                        className="h-8 w-8 flex items-center justify-center text-gray-700 hover:bg-gray-200 font-bold transition"
+                        disabled={updateCartItem.isPending}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="w-8 text-center font-bold text-xs text-[#0a0a0a]">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                        className="h-8 w-8 flex items-center justify-center text-gray-700 hover:bg-gray-200 font-bold transition"
+                        disabled={updateCartItem.isPending || item.quantity <= 1}
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                  ) : (
-                    <>
-                      <ShoppingBag className="h-5 w-5 mr-2" />
-                      {app.lang === "ar" ? "إتمام الطلب" : "Place Order"}
-                      <Badge className="bg-white/20 text-white border-0 ml-2 px-3 py-1 rounded-full">
-                        {formatPrice(totals.total, app.currency, app.lang)}
-                      </Badge>
-                    </>
-                  )}
-                </Button>
-                
-                {!selectedAddress && (
-                  <p className="text-xs text-amber-500 text-center font-bold">
-                    {app.lang === "ar" ? "⚠️ يرجى اختيار عنوان التوصيل" : "⚠️ Please select a delivery address"}
-                  </p>
-                )}
-                
-                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground mt-4 pt-3 border-t border-[#d81b60]/10">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Shield className="h-3.5 w-3.5 text-emerald-500" />
-                    {app.lang === "ar" ? "دفع آمن" : "Secure"}
-                  </span>
-                  <span className="w-px h-4 bg-[#d81b60]/20" />
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Truck className="h-3.5 w-3.5 text-[#d81b60]" />
-                    {app.lang === "ar" ? "توصيل سريع" : "Fast"}
-                  </span>
-                  <span className="w-px h-4 bg-[#d81b60]/20" />
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Award className="h-3.5 w-3.5 text-amber-500" />
-                    {app.lang === "ar" ? "ضمان الجودة" : "Quality"}
-                  </span>
+
+                    <button
+                      onClick={() => handleUpdateQuantity(item.id, 0)}
+                      className="h-8 w-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-xl transition ml-auto"
+                      disabled={updateCartItem.isPending}
+                      title="حذف"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="h-20 w-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+                  <OptimizedImage
+                    src={item.displayImage}
+                    alt={item.displayTitle}
+                    width={80}
+                    height={80}
+                    quality={80}
+                    objectFit="cover"
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               </div>
             </div>
+          );
+        })}
+
+        {/* ===== كود الخصم ===== */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+          {promoApplied ? (
+            <div className="flex items-center justify-between p-3 bg-[#e8f0ee] rounded-xl border border-[#2a655f]/30">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-[#2a655f]" />
+                <span className="text-sm font-bold text-[#2a655f]">
+                  {promoMessage}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full hover:bg-[#2a655f]/10 border border-[#2a655f]/20"
+                onClick={removePromoCode}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#2a655f]/50" />
+                <Input
+                  placeholder={app.lang === "ar" ? "🎫 كود الخصم" : "🎫 Promo code"}
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  className="pl-9 h-11 rounded-xl border-2 border-gray-200 focus:border-[#2a655f] focus:ring-[#2a655f]/20 text-sm font-medium bg-white"
+                  onKeyDown={(e) => e.key === "Enter" && applyPromoCode()}
+                  disabled={isApplyingPromo}
+                />
+              </div>
+              <Button
+                onClick={applyPromoCode}
+                disabled={isApplyingPromo}
+                className="h-11 px-5 rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white font-bold shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-[1.02]"
+              >
+                {isApplyingPromo ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  app.lang === "ar" ? "تطبيق" : "Apply"
+                )}
+              </Button>
+            </div>
+          )}
+          {promoMessage && !promoApplied && (
+            <p className="text-xs text-red-500 mt-1 font-medium">{promoMessage}</p>
+          )}
+        </div>
+
+        {/* ===== عرض الخصم المطبق ===== */}
+        {promoDiscount > 0 && (
+          <div className="flex justify-between text-sm text-[#2a655f] py-2 px-4 bg-[#e8f0ee] rounded-xl border border-[#2a655f]/20">
+            <span className="font-bold">{app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}</span>
+            <span className="font-bold text-[#0a0a0a]">-{formatPrice(promoDiscount, app.currency, app.lang)}</span>
+          </div>
+        )}
+
+        {/* ===== المجموع الفرعي والتوصيل - الأرقام باللون الأسود الغامق ===== */}
+      <div className="flex justify-between text-sm py-1">
+  <span className="font-bold text-[#0a0a0a]">
+    {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
+  </span>
+  <span className="font-bold text-[#0a0a0a] text-base">
+    {formatPrice(totals.subtotal, app.currency, app.lang)}
+  </span>
+</div>
+<div className="flex justify-between text-sm py-1 border-b border-gray-100">
+  <span className="font-bold text-[#0a0a0a]">
+    {app.lang === "ar" ? "التوصيل" : "Delivery"}
+  </span>
+  {deliveryFee === 0 ? (
+    <span className="font-bold text-[#2a655f]">
+      {app.lang === "ar" ? "🆓 مجاني" : "🆓 Free"}
+    </span>
+  ) : (
+    <span className="font-bold text-[#0a0a0a] text-base">
+      {formatPrice(deliveryFee, app.currency, app.lang)}
+    </span>
+  )}
+</div>
+
+        {/* ===== زر ومجموع الفاتورة الثابت بالأسفل - المبلغ الإجمالي بالأسود الغامق ===== */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-30">
+          <div className="max-w-lg mx-auto flex items-center justify-between mb-3 px-1">
+           <span className="text-xs font-bold text-[#0a0a0a]">
+  {app.lang === "ar" ? "المبلغ الإجمالي" : "Total Amount"}
+</span>
+            <span className="text-xl font-extrabold text-[#0a0a0a]">
+              {formatPrice(totals.total, app.currency, app.lang)}
+            </span>
+          </div>
+          
+          <div className="max-w-lg mx-auto flex gap-2">
+            <Button 
+              className="w-full h-12 rounded-2xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white font-bold shadow-lg shadow-[#2a655f]/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-sm flex items-center justify-center gap-2"
+              onClick={checkout}
+              disabled={createOrder.isPending || !selectedAddress}
+            >
+              {createOrder.isPending ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  {app.lang === "ar" ? "جاري الإتمام..." : "Processing..."}
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="h-5 w-5" />
+                  <span>{app.lang === "ar" ? "إتمام الطلب" : "Place Order"}</span>
+                  <ChevronRight className="h-4 w-4" />
+                </>
+              )}
+            </Button>
           </div>
         </div>
+
       </div>
 
-      {/* ===== DIALOG: تغيير العنوان - PINK & GREEN ===== */}
+      {/* ===== نافذة اختيار العنوان ===== */}
       <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
-        <DialogContent className="rounded-2xl max-w-md border-2 border-[#d81b60]/30 shadow-2xl shadow-[#d81b60]/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
+        <DialogContent className="rounded-2xl max-w-md bg-white border-2 border-[#2a655f]/20 shadow-xl">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-[#d81b60]/10 to-[#1b433e]/10 border-2 border-[#d81b60]/20 flex items-center justify-center">
-                <MapPin className="h-5 w-5 text-[#d81b60]" />
+              <div className="h-10 w-10 rounded-xl bg-[#e8f0ee] flex items-center justify-center">
+                <MapPin className="h-5 w-5 text-[#2a655f]" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold text-[#d81b60]">
+                <DialogTitle className="text-lg font-bold text-[#2a655f]">
                   {app.lang === "ar" ? "📍 اختيار عنوان التوصيل" : "📍 Select Delivery Address"}
                 </DialogTitle>
-                <DialogDescription className="font-medium">
-                  {app.lang === "ar" 
-                    ? "اختر عنواناً من قائمتك أو أضف عنواناً جديداً" 
-                    : "Choose an address from your list or add a new one"}
+                <DialogDescription className="text-xs text-gray-500">
+                  {app.lang === "ar" ? "اختر عنواناً من قائمتك" : "Choose an address from your list"}
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            {userAddresses.length > 0 ? (
-              <div className="space-y-2">
-                {userAddresses.map((addr: any) => (
-                  <button
-                    key={addr.id}
-                    onClick={() => {
-                      handleAddressChange(addr.id);
-                      setShowAddressDialog(false);
-                    }}
-                    className={cn(
-                      "w-full text-start p-3.5 rounded-xl border-2 transition-all duration-300",
-                      selectedAddressId === addr.id
-                        ? "border-[#d81b60] bg-[#d81b60]/5 shadow-md shadow-[#d81b60]/10"
-                        : "border-slate-200/50 dark:border-slate-700/50 hover:border-[#d81b60]/40 hover:bg-[#d81b60]/5"
+          <div className="space-y-3 py-2">
+            {userAddresses.map((addr: any) => (
+              <div
+                key={addr.id}
+                onClick={() => {
+                  handleAddressChange(addr.id);
+                  setShowAddressDialog(false);
+                }}
+                className={cn(
+                  "p-3 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all duration-200",
+                  selectedAddressId === addr.id
+                    ? "border-[#2a655f] bg-[#e8f0ee]"
+                    : "border-gray-200 hover:border-[#2a655f]/30 hover:bg-gray-50"
+                )}
+              >
+                <div>
+                  <p className="font-bold text-xs text-gray-900 flex items-center gap-2">
+                    {addr.label}
+                    {addr.is_default && (
+                      <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-[9px] px-2 py-0.5">
+                        {app.lang === "ar" ? "افتراضي" : "Default"}
+                      </Badge>
                     )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        "p-1.5 rounded-lg",
-                        selectedAddressId === addr.id ? "bg-[#d81b60] text-white" : "bg-slate-100 dark:bg-slate-800"
-                      )}>
-                        {addr.is_default ? (
-                          <Home className="h-4 w-4" />
-                        ) : (
-                          <MapPin className="h-4 w-4" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm flex items-center gap-2">
-                          {addr.label || (app.lang === "ar" ? "عنوان" : "Address")}
-                          {addr.is_default && (
-                            <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-2 border-[#d81b60]/20 text-[9px] px-2 py-0.5">
-                              {app.lang === "ar" ? "افتراضي" : "Default"}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground line-clamp-1 font-medium">{addr.address_text}</p>
-                        {addr.details && (
-                          <p className="text-xs text-muted-foreground/70 line-clamp-1">{addr.details}</p>
-                        )}
-                      </div>
-                      {selectedAddressId === addr.id && (
-                        <CheckCircle2 className="h-5 w-5 text-[#d81b60] flex-shrink-0" />
-                      )}
-                    </div>
-                  </button>
-                ))}
+                  </p>
+                  <p className="text-[11px] text-gray-500 line-clamp-1">{addr.address_text}</p>
+                </div>
+                {selectedAddressId === addr.id && (
+                  <Check className="h-5 w-5 text-[#2a655f]" />
+                )}
               </div>
-            ) : (
-              <div className="text-center py-6 text-muted-foreground">
-                <MapPin className="h-12 w-12 mx-auto mb-2 text-[#d81b60]/30" />
-                <p className="font-medium">{app.lang === "ar" ? "لا توجد عناوين محفوظة" : "No saved addresses"}</p>
-              </div>
-            )}
-            
+            ))}
             <Button
               variant="outline"
               onClick={() => {
                 setShowAddressDialog(false);
                 setShowAddAddressDialog(true);
               }}
-              className="w-full rounded-xl border-2 border-[#d81b60]/30 text-[#d81b60] font-bold hover:bg-[#d81b60]/10 hover:border-[#d81b60]/50 transition-all duration-300"
+              className="w-full rounded-xl border-dashed border-2 border-[#2a655f]/30 text-[#2a655f] font-bold hover:bg-[#e8f0ee] hover:border-[#2a655f]/50"
             >
               <PlusCircle className="h-4 w-4 mr-2" />
               {app.lang === "ar" ? "إضافة عنوان جديد" : "Add New Address"}
             </Button>
           </div>
-          
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setShowAddressDialog(false)}
-              className="rounded-xl font-bold hover:bg-[#d81b60]/10"
-            >
-              {app.lang === "ar" ? "إغلاق" : "Close"}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: إضافة عنوان جديد - PINK & GREEN ===== */}
+      {/* ===== نافذة إضافة عنوان جديد ===== */}
       <Dialog open={showAddAddressDialog} onOpenChange={(open) => {
         setShowAddAddressDialog(open);
         if (!open) {
@@ -2146,31 +1201,27 @@ const orderItems = itemsList.map((item: any) => {
           setNewAddressDetails("");
         }
       }}>
-        <DialogContent className="rounded-2xl max-w-md max-h-[90vh] border-2 border-[#d81b60]/30 shadow-2xl shadow-[#d81b60]/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm flex flex-col">
+        <DialogContent className="rounded-2xl max-w-md max-h-[90vh] bg-white border-2 border-[#2a655f]/20 shadow-xl flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-[#d81b60]/10 to-[#1b433e]/10 border-2 border-[#d81b60]/20 flex items-center justify-center">
-                <PlusCircle className="h-5 w-5 text-[#d81b60]" />
+              <div className="h-10 w-10 rounded-xl bg-[#e8f0ee] flex items-center justify-center">
+                <PlusCircle className="h-5 w-5 text-[#2a655f]" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold text-[#d81b60]">
+                <DialogTitle className="text-lg font-bold text-[#2a655f]">
                   {app.lang === "ar" ? "📍 إضافة عنوان جديد" : "📍 Add New Address"}
                 </DialogTitle>
-                <DialogDescription className="font-medium">
-                  {app.lang === "ar" 
-                    ? "اختر موقعك على الخريطة وأدخل تفاصيل العنوان" 
-                    : "Choose your location on the map and enter address details"}
+                <DialogDescription className="text-xs text-gray-500">
+                  {app.lang === "ar" ? "أدخل تفاصيل العنوان الجديد" : "Enter new address details"}
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1">
-            
-            {/* حقل اسم العنوان */}
             <div>
-              <Label className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                <Home className="h-4 w-4 text-[#d81b60]" />
+              <Label className="text-sm font-bold text-gray-700 flex items-center gap-1">
+                <Home className="h-4 w-4 text-[#2a655f]" />
                 {app.lang === "ar" ? "اسم العنوان" : "Address Label"}
                 <span className="text-red-500">*</span>
               </Label>
@@ -2178,30 +1229,21 @@ const orderItems = itemsList.map((item: any) => {
                 value={newAddressLabel}
                 onChange={(e) => setNewAddressLabel(e.target.value)}
                 placeholder={app.lang === "ar" ? "مثال: المنزل، العمل، المكتب" : "e.g. Home, Work, Office"}
-                className="mt-1.5 h-12 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 font-medium"
+                className="mt-1.5 h-11 rounded-xl border-2 border-gray-200 focus:border-[#2a655f] focus:ring-[#2a655f]/20 font-medium bg-white"
               />
-              {!newAddressLabel.trim() && (
-                <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium">
-                  <AlertCircle className="h-3 w-3" />
-                  {app.lang === "ar" ? "⚠️ هذا الحقل مطلوب" : "⚠️ This field is required"}
-                </p>
-              )}
             </div>
             
-            {/* الخريطة */}
             <AddressPicker 
               value={newLocation ?? undefined} 
               onChange={setNewLocation} 
               lang={app.lang} 
             />
             
-            {/* حقل التفاصيل الإضافية */}
             <div>
-              <Label className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                <MapPin className="h-4 w-4 text-[#d81b60]" />
+              <Label className="text-sm font-bold text-gray-700 flex items-center gap-1">
+                <MapPin className="h-4 w-4 text-[#2a655f]" />
                 {app.lang === "ar" ? "تفاصيل إضافية" : "Additional Details"}
                 <span className="text-red-500">*</span>
-                <span className="text-xs text-muted-foreground">({app.lang === "ar" ? "مطلوب" : "Required"})</span>
               </Label>
               <Textarea
                 value={newAddressDetails}
@@ -2210,29 +1252,22 @@ const orderItems = itemsList.map((item: any) => {
                   ? "رقم الطابق، رقم الشقة، معلم قريب..." 
                   : "Floor number, apartment number, nearby landmark..."}
                 rows={2}
-                className="mt-1.5 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 resize-none font-medium"
+                className="mt-1.5 rounded-xl border-2 border-gray-200 focus:border-[#2a655f] focus:ring-[#2a655f]/20 resize-none font-medium bg-white"
               />
-              {!newAddressDetails.trim() && (
-                <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium">
-                  <AlertCircle className="h-3 w-3" />
-                  {app.lang === "ar" ? "⚠️ هذا الحقل مطلوب" : "⚠️ This field is required"}
-                </p>
-              )}
             </div>
             
-            {/* عرض الموقع المختار */}
             {newLocation && (
-              <div className="p-3 bg-gradient-to-r from-[#d81b60]/10 to-emerald-50/50 rounded-xl border-2 border-[#d81b60]/30">
-                <p className="text-sm font-bold text-[#d81b60] flex items-center gap-2">
+              <div className="p-3 bg-[#e8f0ee] rounded-xl border border-[#2a655f]/20">
+                <p className="text-sm font-bold text-[#2a655f] flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4" />
                   {app.lang === "ar" ? "✅ تم اختيار الموقع" : "✅ Location selected"}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-1 font-medium">{newLocation.address}</p>
+                <p className="text-xs text-gray-500 mt-1 line-clamp-1">{newLocation.address}</p>
               </div>
             )}
           </div>
           
-          <DialogFooter className="flex-shrink-0 gap-3 pt-4 border-t-2 border-[#d81b60]/20">
+          <DialogFooter className="flex-shrink-0 gap-3 pt-4 border-t border-gray-200">
             <Button
               variant="outline"
               onClick={() => {
@@ -2241,14 +1276,14 @@ const orderItems = itemsList.map((item: any) => {
                 setNewAddressLabel("");
                 setNewAddressDetails("");
               }}
-              className="rounded-xl border-2 border-slate-200/50 dark:border-slate-700/50 font-bold hover:bg-[#d81b60]/10"
+              className="rounded-xl border-2 border-gray-200 font-bold hover:bg-gray-50"
             >
               {app.lang === "ar" ? "إلغاء" : "Cancel"}
             </Button>
             <Button
               onClick={handleAddAddress}
               disabled={!newLocation || !newAddressLabel.trim() || !newAddressDetails.trim()}
-              className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#1b433e] hover:from-[#c2185b] hover:to-[#2a655f] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 hover:scale-[1.02] font-bold"
+              className="rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-[1.02] font-bold"
             >
               <PlusCircle className="h-4 w-4 mr-2" />
               {app.lang === "ar" ? "إضافة العنوان" : "Add Address"}
@@ -2257,99 +1292,224 @@ const orderItems = itemsList.map((item: any) => {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: تأكيد تفريغ السلة - PINK & GREEN ===== */}
+      {/* ===== نافذة تفريغ السلة الاحترافية والناعمة ===== */}
       <AlertDialog open={showClearCartDialog} onOpenChange={setShowClearCartDialog}>
-        <AlertDialogContent className="rounded-2xl border-2 border-[#d81b60]/30 shadow-2xl shadow-[#d81b60]/10 max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
-          <AlertDialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center animate-pulse border-2 border-red-200/50">
-                <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+        <AlertDialogContent className="rounded-3xl max-w-md bg-white border-0 shadow-2xl shadow-red-500/10 overflow-hidden p-0">
+          {/* Header gradient */}
+          <div className="bg-gradient-to-r from-red-500/10 to-rose-500/10 px-6 pt-6 pb-4 border-b border-red-100/50">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center shadow-lg shadow-red-500/25">
+                <Trash2 className="h-7 w-7 text-white" />
               </div>
               <div>
-                <AlertDialogTitle className="text-xl font-bold text-[#d81b60] dark:text-white">
+                <AlertDialogTitle className="text-xl font-bold text-gray-900">
                   {app.lang === "ar" ? "🗑️ تفريغ السلة" : "🗑️ Clear Cart"}
                 </AlertDialogTitle>
-                <AlertDialogDescription className="text-sm text-muted-foreground font-medium">
+                <AlertDialogDescription className="text-sm text-gray-500 mt-0.5">
                   {app.lang === "ar" 
-                    ? "هل أنت متأكد من رغبتك في تفريغ سلة التسوق؟ هذا الإجراء لا يمكن التراجع عنه."
-                    : "Are you sure you want to clear your shopping cart? This action cannot be undone."}
+                    ? "سيتم إزالة جميع المنتجات من سلة التسوق" 
+                    : "All items will be removed from your cart"}
                 </AlertDialogDescription>
               </div>
             </div>
-          </AlertDialogHeader>
-
-          <div className="my-4 max-h-48 overflow-y-auto space-y-2">
-            <p className="text-xs font-bold text-muted-foreground">
-              {app.lang === "ar" ? `📦 سيتم حذف ${items.length} منتج` : `📦 ${items.length} items will be removed`}
-            </p>
-            {items.slice(0, 5).map((item: any) => {
-              const listing = item.listing || item;
-              return (
-                <div key={item.id} className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-                  <OptimizedImage
-                    src={item.displayImage || '/placeholder.png'}
-                    alt={listing.title_ar}
-                    width={44}
-                    height={44}
-                    quality={80}
-                    objectFit="cover"
-                    className="h-11 w-11 rounded-lg object-cover border border-slate-200/50 dark:border-slate-700/50"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold line-clamp-1">
-                      {app.lang === "ar" ? listing.title_ar : (listing.title_en || listing.title_ar)}
-                    </p>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      {app.lang === "ar" ? "الكمية" : "Qty"}: {item.quantity} × {formatPrice(Number(item.price), app.currency, app.lang)}
-                    </p>
-                  </div>
-                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-0 font-bold px-3 py-1">
-                    {formatPrice(item.subtotal, app.currency, app.lang)}
-                  </Badge>
-                </div>
-              );
-            })}
-            {items.length > 5 && (
-              <p className="text-xs text-muted-foreground text-center font-medium">
-                {app.lang === "ar" ? `و ${items.length - 5} منتجات أخرى` : `and ${items.length - 5} more items`}
-              </p>
-            )}
           </div>
 
-          <AlertDialogFooter className="gap-3">
-            <AlertDialogCancel className="rounded-xl border-2 border-slate-200/50 dark:border-slate-700/50 font-bold hover:bg-[#d81b60]/10 transition-all duration-300">
+          {/* محتوى المنتجات */}
+          <div className="px-6 py-4 max-h-48 overflow-y-auto">
+            <div className="space-y-2">
+              {items.slice(0, 4).map((item: any) => {
+                const listing = item.listing || item;
+                return (
+                  <div key={item.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className="h-10 w-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                      <OptimizedImage
+                        src={item.displayImage || '/placeholder.png'}
+                        alt={item.displayTitle}
+                        width={40}
+                        height={40}
+                        quality={80}
+                        objectFit="cover"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-gray-700 line-clamp-1">{item.displayTitle}</p>
+                      <p className="text-[10px] text-gray-400">
+                        {app.lang === "ar" ? "الكمية" : "Qty"}: {item.quantity}
+                      </p>
+                    </div>
+                    <span className="text-xs font-bold text-[#0a0a0a]">
+                      {formatPrice(item.subtotal, app.currency, app.lang)}
+                    </span>
+                  </div>
+                );
+              })}
+              {items.length > 4 && (
+                <p className="text-[10px] text-gray-400 text-center font-medium">
+                  {app.lang === "ar" ? `و ${items.length - 4} منتجات أخرى` : `and ${items.length - 4} more items`}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-gray-500 font-medium">
+                {app.lang === "ar" ? "عدد المنتجات" : "Items"}
+              </span>
+              <span className="text-sm font-bold text-[#0a0a0a]">
+                {items.length}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500 font-medium">
+                {app.lang === "ar" ? "المجموع" : "Total"}
+              </span>
+              <span className="text-base font-extrabold text-[#0a0a0a]">
+                {formatPrice(totals.total, app.currency, app.lang)}
+              </span>
+            </div>
+          </div>
+
+          <AlertDialogFooter className="px-6 pb-6 pt-2 gap-3">
+            <AlertDialogCancel className="rounded-2xl border-2 border-gray-200 font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 h-11 px-6 flex-1">
               {app.lang === "ar" ? "إلغاء" : "Cancel"}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmClearCart}
               disabled={clearCart.isPending}
-              className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/25 hover:shadow-red-600/40 transition-all duration-300 hover:scale-[1.02] font-bold"
+              className="rounded-2xl bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] font-bold h-11 px-6 flex-1"
             >
               {clearCart.isPending ? (
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   {app.lang === "ar" ? "جاري التفريغ..." : "Clearing..."}
                 </div>
               ) : (
-                <>
-                  <Trash2 className="h-4 w-4 mr-2" />
+                <div className="flex items-center justify-center gap-2">
+                  <Trash2 className="h-4 w-4" />
                   {app.lang === "ar" ? "تأكيد التفريغ" : "Confirm Clear"}
-                </>
+                </div>
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <style>{`
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-bounce-slow {
-          animation: bounce-slow 2s ease-in-out infinite;
-        }
-      `}</style>
+      {/* ===== نافذة تحذير المسافة (جديدة) ===== */}
+      <Dialog open={showDistanceWarningDialog} onOpenChange={setShowDistanceWarningDialog}>
+        <DialogContent className="rounded-3xl max-w-md bg-white border-2 border-amber-400/40 shadow-2xl shadow-amber-500/20 p-0 overflow-hidden">
+          
+          {/* Header */}
+          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-6 pt-6 pb-4 border-b border-amber-200/50">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25 animate-pulse">
+                <AlertCircle className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-gray-900">
+                  {app.lang === "ar" ? "⚠️ تنبيه الموقع" : "⚠️ Location Warning"}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-gray-500 mt-0.5">
+                  {app.lang === "ar" 
+                    ? "أنت بعيد عن العنوان المختار" 
+                    : "You are far from the selected address"}
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
+
+          {/* المحتوى */}
+          <div className="p-6 space-y-4">
+            
+            {/* بطاقة المسافة */}
+            <div className="bg-amber-50 dark:bg-amber-950/20 rounded-2xl p-4 border-2 border-amber-200/50 dark:border-amber-800/30">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-amber-700 dark:text-amber-300 font-medium flex items-center gap-2">
+                  <Navigation className="h-4 w-4" />
+                  {app.lang === "ar" ? "المسافة بينك وبين العنوان" : "Distance from your location"}
+                </span>
+                <Badge className="bg-amber-500 text-white border-0 text-xs px-3 py-1 font-bold">
+                  {distanceFromSelectedAddress?.toFixed(1)} {app.lang === "ar" ? "كم" : "km"}
+                </Badge>
+              </div>
+              
+              <div className="mt-3 pt-3 border-t border-amber-200/50 dark:border-amber-800/30">
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  {app.lang === "ar" 
+                    ? "📍 الموقع الحالي: تم اكتشافه بنجاح"
+                    : "📍 Current location: detected successfully"}
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  {app.lang === "ar" 
+                    ? `🏠 العنوان المختار: ${selectedAddress?.label || selectedAddress?.address_text}`
+                    : `🏠 Selected address: ${selectedAddress?.label || selectedAddress?.address_text}`}
+                </p>
+              </div>
+            </div>
+
+            {/* التحذير */}
+            <div className="bg-red-50 dark:bg-red-950/20 rounded-xl p-4 border-2 border-red-200/50 dark:border-red-800/30">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0 animate-pulse" />
+                <div>
+                  <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                    {app.lang === "ar"
+                      ? "⚠️ هل أنت متأكد من اختيار هذا العنوان؟"
+                      : "⚠️ Are you sure about this address?"}
+                  </p>
+                  <p className="text-xs text-red-600/70 dark:text-red-400/70 mt-1">
+                    {app.lang === "ar"
+                      ? "أنت حالياً بعيد عن هذا العنوان. قد يؤثر ذلك على وقت التوصيل."
+                      : "You are currently far from this address. This may affect delivery time."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* نصائح */}
+            <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl p-3 border border-blue-200/50 dark:border-blue-800/30">
+              <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                {app.lang === "ar"
+                  ? "💡 إذا كنت تطلب لمنزل آخر أو لشخص آخر، يمكنك المتابعة بأمان."
+                  : "💡 If you're ordering for another home or person, you can safely continue."}
+              </p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <DialogFooter className="p-6 pt-0 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDistanceWarningDialog(false);
+                // إعادة تعيين العنوان السابق
+                const previousAddress = userAddresses.find((a: any) => a.id !== selectedAddressId);
+                if (previousAddress) {
+                  setSelectedAddressId(previousAddress.id);
+                  setSelectedAddress(previousAddress);
+                  setDistanceFromSelectedAddress(null);
+                }
+              }}
+              className="flex-1 rounded-xl border-2 border-gray-300 font-bold hover:bg-gray-50 h-11"
+            >
+              {app.lang === "ar" ? "تغيير العنوان" : "Change Address"}
+            </Button>
+            <Button
+              onClick={() => {
+                setShowDistanceWarningDialog(false);
+                if (promoApplied) removePromoCode();
+              }}
+              className="flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/30 font-bold h-11"
+            >
+              {app.lang === "ar" ? "متابعة على أي حال" : "Continue Anyway"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

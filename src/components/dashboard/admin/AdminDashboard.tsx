@@ -1,4 +1,4 @@
-// src/components/dashboard/admin/AdminDashboard.tsx - الكود الكامل المُصحح (بدون تمرير نهائياً)
+// src/components/dashboard/admin/AdminDashboard.tsx - الأزرار زيتي فقط
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -39,7 +39,7 @@ interface AdminDashboardProps {
 }
 
 // ============================================================
-// 🎨 ZOOQ BRAND COLORS - نفس ألوان SellerDashboard
+// 🎨 ZOOQ BRAND COLORS - زيتي فقط
 // ============================================================
 const COLORS = {
   olive: '#2a655f',
@@ -48,25 +48,9 @@ const COLORS = {
   oliveVeryLight: '#e8f0ee',
   oliveGlow: 'rgba(42,101,95,0.2)',
   oliveGlowStrong: 'rgba(42,101,95,0.35)',
-  
-  pink: '#f9a8d4',
-  pinkLight: '#fbcfe8',
-  pinkDark: '#f48fb1',
-  pinkVeryLight: '#fdf2f8',
-  pinkGlow: 'rgba(249,168,212,0.25)',
-  pinkGlowStrong: 'rgba(249,168,212,0.4)',
-  
-  fuchsia: '#d81b60',
-  fuchsiaDark: '#c2185b',
-  fuchsiaGlow: 'rgba(216,27,96,0.2)',
-  fuchsiaGlowStrong: 'rgba(194,24,91,0.35)',
-  
-  glowOlive: 'rgba(42,101,95,0.15)',
-  glowPink: 'rgba(249,168,212,0.2)',
-  glowPinkStrong: 'rgba(249,168,212,0.35)',
 };
 
-// ✅ تعريف الأيقونات مع ألوان زهرية وزيتية
+// ✅ تعريف الأيقونات - زيتي فقط
 const NAV_ICONS: Record<string, { 
   icon: any; 
   animation: string;
@@ -80,7 +64,7 @@ const NAV_ICONS: Record<string, {
   listings: {
     icon: Package,
     animation: "animate-pulse-slow",
-    color: "text-[#f9a8d4]"
+    color: "text-[#2a655f]"
   },
   stores: {
     icon: Store,
@@ -90,7 +74,7 @@ const NAV_ICONS: Record<string, {
   delivery: {
     icon: Truck,
     animation: "animate-bounce-slow",
-    color: "text-[#f9a8d4]"
+    color: "text-[#2a655f]"
   },
   promo: {
     icon: Tag,
@@ -100,7 +84,7 @@ const NAV_ICONS: Record<string, {
   complaints: {
     icon: AlertTriangle,
     animation: "animate-pulse-slow",
-    color: "text-[#f9a8d4]"
+    color: "text-[#2a655f]"
   },
   applications: {
     icon: ShieldCheck,
@@ -110,7 +94,7 @@ const NAV_ICONS: Record<string, {
   banners: {
     icon: ImageIcon,
     animation: "animate-pulse-slow",
-    color: "text-[#f9a8d4]"
+    color: "text-[#2a655f]"
   },
   announcements: {
     icon: Megaphone,
@@ -120,7 +104,7 @@ const NAV_ICONS: Record<string, {
   categories: {
     icon: Tags,
     animation: "animate-spin-slow",
-    color: "text-[#f9a8d4]"
+    color: "text-[#2a655f]"
   },
   notifications: {
     icon: Bell,
@@ -129,15 +113,15 @@ const NAV_ICONS: Record<string, {
   },
 };
 
-// ✅ مؤشرات حيوية متحركة - وردية
+// ✅ مؤشرات حيوية متحركة - زيتية
 const LiveIndicator = () => (
   <span className="relative flex h-2.5 w-2.5">
-    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9a8d4] opacity-75" />
-    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#f9a8d4] shadow-[0_0_12px_rgba(249,168,212,0.8)]" />
+    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2a655f] opacity-75" />
+    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#2a655f] shadow-[0_0_12px_rgba(42,101,95,0.8)]" />
   </span>
 );
 
-// ✅ ===== سلايدر النظام - نفس تصميم SellerDashboard بدون صور =====
+// ✅ ===== سلايدر النظام - زيتي فقط =====
 const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
@@ -242,40 +226,40 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
   const current = slides[currentSlide];
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#f9a8d4] to-[#fbcfe8] shadow-xl shadow-[#f9a8d4]/20 border-2 border-[#f9a8d4]/40 group min-h-[90px] md:min-h-[105px]">
+    <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] shadow-xl shadow-[#2a655f]/20 border-2 border-[#2a655f]/30 group min-h-[90px] md:min-h-[105px]">
       
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] bg-repeat" />
       </div>
       
-      <div className="absolute -top-20 -right-20 h-32 w-32 rounded-full bg-[#f9a8d4]/20 blur-2xl animate-pulse" />
-      <div className="absolute -bottom-20 -left-20 h-32 w-32 rounded-full bg-[#f9a8d4]/20 blur-2xl animate-pulse delay-1000" />
+      <div className="absolute -top-20 -right-20 h-32 w-32 rounded-full bg-[#2a655f]/20 blur-2xl animate-pulse" />
+      <div className="absolute -bottom-20 -left-20 h-32 w-32 rounded-full bg-[#2a655f]/20 blur-2xl animate-pulse delay-1000" />
       
       <div className="relative px-3 py-2.5 md:px-5 md:py-3.5 flex flex-col md:flex-row items-center gap-2 md:gap-3.5 z-10">
         <div className="flex-shrink-0">
           <div className="relative">
-            <div className="h-9 w-9 md:h-12 md:w-12 rounded-xl bg-white/30 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center text-xl md:text-3xl shadow-lg shadow-[#f9a8d4]/20 animate-float group-hover:scale-110 transition-transform duration-500">
+            <div className="h-9 w-9 md:h-12 md:w-12 rounded-xl bg-white/30 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center text-xl md:text-3xl shadow-lg shadow-[#2a655f]/20 animate-float group-hover:scale-110 transition-transform duration-500">
               {current.icon}
             </div>
-            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#f9a8d4]/30 to-[#fbcfe8]/30 blur-lg animate-pulse" />
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#2a655f]/30 to-[#3a8a82]/30 blur-lg animate-pulse" />
           </div>
         </div>
         
         <div className="flex-1 text-center md:text-right">
-          <h1 className={`text-sm md:text-lg font-bold text-[#2a655f] mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
+          <h1 className={`text-sm md:text-lg font-bold text-white mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
             {isRTL ? current.title_ar : current.title_en}
           </h1>
-          <h2 className={`text-xs md:text-base font-bold text-[#1a4f4a] mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
+          <h2 className={`text-xs md:text-base font-bold text-[#e8f0ee] mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
             {isRTL ? current.subtitle_ar : current.subtitle_en}
           </h2>
-          <p className={`text-[10px] md:text-xs text-[#1a4f4a]/80 max-w-2xl leading-relaxed hidden sm:block ${isRTL ? 'font-arabic' : ''}`}>
+          <p className={`text-[10px] md:text-xs text-[#e8f0ee]/80 max-w-2xl leading-relaxed hidden sm:block ${isRTL ? 'font-arabic' : ''}`}>
             {isRTL ? current.desc_ar : current.desc_en}
           </p>
           <div className="flex flex-wrap items-center gap-1.5 mt-1 justify-center md:justify-start">
             <span className="px-2 py-0.5 rounded-full bg-white/40 backdrop-blur-sm border border-white/30 text-[#2a655f] text-[9px] font-bold">
               {isRTL ? current.badge_ar : current.badge_en}
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-[#2a655f]/20 backdrop-blur-sm border border-[#2a655f]/30 text-[#2a655f] text-[9px] font-bold">
+            <span className="px-2 py-0.5 rounded-full bg-[#2a655f]/20 backdrop-blur-sm border border-[#2a655f]/30 text-white text-[9px] font-bold">
               {isRTL ? current.stat_ar : current.stat_en}
             </span>
           </div>
@@ -284,13 +268,13 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
         <div className="flex-shrink-0 flex flex-row md:flex-col gap-1.5">
           <button
             onClick={prevSlide}
-            className="h-6 w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-[#2a655f]/30 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
+            className="h-6 w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-white/30 hover:border-white/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={nextSlide}
-            className="h-6 w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-[#2a655f]/30 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
+            className="h-6 w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-white/30 hover:border-white/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -305,17 +289,17 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
             className={cn(
               "h-1 rounded-full transition-all duration-500",
               currentSlide === index
-                ? "w-4 bg-[#2a655f] shadow-lg shadow-[#2a655f]/30"
-                : "w-1.5 bg-[#2a655f]/30 hover:bg-[#2a655f]/50"
+                ? "w-4 bg-white shadow-lg shadow-white/30"
+                : "w-1.5 bg-white/30 hover:bg-white/50"
             )}
           />
         ))}
-        <span className="text-[7px] text-[#2a655f]/50 ml-1 font-mono">
+        <span className="text-[7px] text-white/50 ml-1 font-mono">
           {currentSlide + 1}/{totalSlides}
         </span>
       </div>
       
-      <div className="relative h-0.5 w-full bg-gradient-to-r from-transparent via-[#2a655f]/20 to-transparent" />
+      <div className="relative h-0.5 w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
     </div>
   );
 };
@@ -338,9 +322,8 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
     }
   }, []);
 
-  // ✅ ✅ ✅ منع التمرير غير المرغوب عند تغيير التاب ✅ ✅ ✅
+  // ✅ منع التمرير غير المرغوب عند تغيير التاب
   useEffect(() => {
-    // منع أي عنصر من أخذ الفوكس تلقائياً (مثل Dialog, Input, ImageInput)
     if (document.activeElement) {
       (document.activeElement as HTMLElement).blur();
     }
@@ -371,7 +354,6 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
       ];
       
       if (validTabs.includes(tabFromUrl)) {
-        console.log(`📌 [AdminDashboard] Setting tab from URL: ${tabFromUrl}`);
         setTab(tabFromUrl as any);
       }
     }
@@ -510,29 +492,29 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
   });
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-white via-[#f9a8d4]/5 to-[#2a655f]/5 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#f9a8d4]/5 ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen bg-gradient-to-br from-white via-[#2a655f]/5 to-[#3a8a82]/5 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#2a655f]/5 ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
       
       {/* ===== TOP HEADER ===== */}
-      <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-b-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 shadow-lg shadow-[#f9a8d4]/10">
-        <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#f9a8d4] to-[#2a655f] animate-pulse" />
+      <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-b-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 shadow-lg shadow-[#2a655f]/10">
+        <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#2a655f] to-[#3a8a82] animate-pulse" />
         
         <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <div className="flex items-center gap-3 group">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#f9a8d4]/30 group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 relative">
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 relative">
                 <ShieldCheck className="h-4.5 w-4.5 text-white" />
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#f9a8d4]/20 to-transparent animate-pulse" />
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#2a655f]/20 to-transparent animate-pulse" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-[#2a655f] dark:text-[#f9a8d4] text-lg group-hover:text-[#f9a8d4] transition-colors">
+                  <span className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-lg group-hover:text-[#3a8a82] transition-colors">
                     {app.lang === 'ar' ? "لوحة الأدمن" : "Admin Panel"}
                   </span>
-                  <Badge className="text-[8px] px-1.5 py-0.5 bg-[#f9a8d4]/20 text-[#f9a8d4] dark:text-[#f9a8d4] border-0 animate-pulse">
+                  <Badge className="text-[8px] px-1.5 py-0.5 bg-[#2a655f]/20 text-[#2a655f] dark:text-[#2a655f] border-0 animate-pulse">
                     🟢 {app.lang === "ar" ? "نشط" : "Active"}
                   </Badge>
                 </div>
-                <p className="text-[10px] text-[#2a655f] dark:text-[#f9a8d4] -mt-0.5 font-semibold">
+                <p className="text-[10px] text-[#2a655f] dark:text-[#3a8a82] -mt-0.5 font-semibold">
                   {app.lang === 'ar' ? 'تحكم كامل في المنصة' : 'Full Platform Control'}
                 </p>
               </div>
@@ -540,25 +522,25 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
           </div>
 
           <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#2a655f]/10 to-[#f9a8d4]/10 border-2 border-[#f9a8d4]/20">
-              <Clock className="h-3.5 w-3.5 text-[#f9a8d4]" />
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 border-2 border-[#2a655f]/20">
+              <Clock className="h-3.5 w-3.5 text-[#2a655f]" />
               <span className="text-xs font-mono text-slate-600 dark:text-slate-300">{formattedTime}</span>
               <LiveIndicator />
             </div>
 
             <div className="relative hidden md:block group">
-              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 h-4 w-4 text-[#f9a8d4] transition-colors duration-300 group-focus-within:text-[#2a655f]`} />
+              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 h-4 w-4 text-[#2a655f] transition-colors duration-300 group-focus-within:text-[#2a655f]`} />
               <Input 
                 placeholder={app.lang === 'ar' ? "بحث في لوحة التحكم..." : "Search dashboard..."} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearch}
-                className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} w-64 h-9 rounded-xl border-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 bg-slate-50 dark:bg-slate-800/50 text-sm focus:border-[#2a655f] focus:ring-2 focus:ring-[#f9a8d4]/20 focus:bg-white dark:focus:bg-slate-800/50 transition-all duration-300 group-focus-within:shadow-lg group-focus-within:shadow-[#f9a8d4]/20`}
+                className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} w-64 h-9 rounded-xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 bg-slate-50 dark:bg-slate-800/50 text-sm focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 focus:bg-white dark:focus:bg-slate-800/50 transition-all duration-300 group-focus-within:shadow-lg group-focus-within:shadow-[#2a655f]/20`}
               />
               {searchQuery && (
                 <button
                   onClick={clearSearch}
-                  className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-[#f9a8d4] hover:text-[#2a655f] transition-colors duration-200`}
+                  className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-[#2a655f] hover:text-[#3a8a82] transition-colors duration-200`}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -572,20 +554,20 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                 <span className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">
                   {app.user?.name || 'Admin'}
                 </span>
-                <span className="text-[9px] text-[#f9a8d4] dark:text-[#fbcfe8] font-semibold">
+                <span className="text-[9px] text-[#2a655f] dark:text-[#3a8a82] font-semibold">
                   {app.lang === 'ar' ? 'مدير النظام' : 'System Administrator'}
                 </span>
               </div>
-              <Avatar className="h-10 w-10 ring-2 ring-[#f9a8d4]/40 group-hover:ring-[#2a655f]/60 transition-all duration-300 group-hover:scale-105 cursor-pointer">
+              <Avatar className="h-10 w-10 ring-2 ring-[#2a655f]/40 group-hover:ring-[#2a655f]/60 transition-all duration-300 group-hover:scale-105 cursor-pointer">
                 {app.user?.avatar_url ? (
                   <AvatarImage src={app.user.avatar_url} alt={app.user.name || 'Admin'} className="object-cover" />
                 ) : (
-                  <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white text-sm font-bold">
+                  <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-sm font-bold">
                     {app.user?.name?.charAt(0)?.toUpperCase() || 'A'}
                   </AvatarFallback>
                 )}
               </Avatar>
-              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#f9a8d4] border-2 border-white dark:border-slate-900 animate-pulse shadow-[0_0_12px_rgba(249,168,212,0.8)]" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#2a655f] border-2 border-white dark:border-slate-900 animate-pulse shadow-[0_0_12px_rgba(42,101,95,0.8)]" />
             </div>
           </div>
         </div>
@@ -594,7 +576,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
       {/* ===== المحتوى ===== */}
       <div className="mx-auto max-w-7xl px-4 py-6 relative z-0">
         
-        {/* ✅ ===== سلايدر النظام - نفس تصميم SellerDashboard ===== */}
+        {/* ✅ ===== سلايدر النظام - زيتي فقط ===== */}
         {!showSearchResults && (
           <div className="mb-6">
             <SystemSlider isRTL={isRTL} />
@@ -608,7 +590,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
               {showSearchResults ? (
                 <span className="flex items-center gap-3">
                   <span>{app.lang === 'ar' ? 'نتائج البحث' : 'Search Results'}</span>
-                  <Badge className="bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white text-sm px-3 py-1 shadow-lg shadow-[#f9a8d4]/30 border-2 border-white/30">
+                  <Badge className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white text-sm px-3 py-1 shadow-lg shadow-[#2a655f]/30 border-2 border-white/30">
                     {searchResults.total} {app.lang === 'ar' ? 'نتيجة' : 'results'}
                   </Badge>
                 </span>
@@ -623,10 +605,9 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                 </span>
               ) : (
                 <span className="flex items-center gap-3">
-                  <span className="text-base md:text-lg font-bold bg-gradient-to-r from-[#2a655f] to-[#d81b60] bg-clip-text text-transparent">
+                  <span className="text-base md:text-lg font-bold text-[#2a655f] dark:text-[#3a8a82]">
                     {app.lang === 'ar' ? `مرحبا بك في ذوق يا ${app.user?.name || 'مدير'}` : `Welcome to Zooq, ${app.user?.name || 'Admin'}`}
                   </span>
-                  <span className="text-xl md:text-2xl animate-bounce text-[#d81b60]">❤️</span>
                 </span>
               )}
             </p>
@@ -653,15 +634,15 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                       handleTabChange(item.key as any);
                       setShowSearchResultsPage(false);
                     }}
-                    className={`bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 p-3 text-center hover:shadow-xl transition-all duration-300 hover:scale-[1.03] group ${isActive ? 'ring-2 ring-[#f9a8d4] border-[#f9a8d4] shadow-lg shadow-[#f9a8d4]/20' : ''}`}
+                    className={`bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-3 text-center hover:shadow-xl transition-all duration-300 hover:scale-[1.03] group ${isActive ? 'ring-2 ring-[#2a655f] border-[#2a655f] shadow-lg shadow-[#2a655f]/20' : ''}`}
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <div className={`h-8 w-8 rounded-lg bg-[#f9a8d4]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border-2 border-[#f9a8d4]/20`}>
-                        <item.icon className={`h-4 w-4 ${isActive ? 'text-[#2a655f]' : 'text-[#f9a8d4]'}`} />
+                      <div className={`h-8 w-8 rounded-lg bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border-2 border-[#2a655f]/20`}>
+                        <item.icon className={`h-4 w-4 ${isActive ? 'text-[#2a655f]' : 'text-[#2a655f]'}`} />
                       </div>
                       <div className="text-left">
                         <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{item.label}</p>
-                        <p className="text-lg font-bold text-[#2a655f] dark:text-[#f9a8d4]">{item.count}</p>
+                        <p className="text-lg font-bold text-[#2a655f] dark:text-[#3a8a82]">{item.count}</p>
                       </div>
                     </div>
                     {item.count > 0 && (
@@ -675,9 +656,9 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
             </div>
 
             {searchResults.total === 0 && (
-              <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#f9a8d4]/30 dark:border-[#2a655f]/30 p-12 text-center shadow-lg">
-                <div className="h-20 w-20 rounded-full bg-[#f9a8d4]/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
-                  <Search className="h-10 w-10 text-[#f9a8d4]" />
+              <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-12 text-center shadow-lg">
+                <div className="h-20 w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                  <Search className="h-10 w-10 text-[#2a655f]" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
                   {app.lang === 'ar' ? 'لا توجد نتائج' : 'No results found'}
@@ -687,7 +668,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                 </p>
                 <Button 
                   variant="outline" 
-                  className="mt-4 rounded-xl border-2 border-[#f9a8d4]/30 text-[#2a655f] hover:bg-[#f9a8d4]/10"
+                  className="mt-4 rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10"
                   onClick={clearSearch}
                 >
                   {app.lang === 'ar' ? 'مسح البحث' : 'Clear search'}
@@ -697,13 +678,13 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
           </div>
         )}
 
-        {/* ===== TABS NAVIGATION - مُصحح بالكامل (بدون تمرير) ===== */}
+        {/* ===== TABS NAVIGATION - زيتي فقط ===== */}
         {!showSearchResults && (
           <div className="mb-6">
-            <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#d81b60]/40 dark:border-[#d81b60]/30 shadow-xl shadow-[#d81b60]/10 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#d81b60] to-[#2a655f] animate-pulse" />
+            <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 shadow-xl shadow-[#2a655f]/10 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-[#3a8a82] animate-pulse" />
               
-              {/* ✅ Desktop Tabs */}
+              {/* ✅ Desktop Tabs - زيتي فقط */}
               <div className="hidden md:flex items-center p-1.5 gap-1.5 overflow-x-auto">
                 {nav.map((n) => {
                   const iconConfig = getIconConfig(n.iconKey);
@@ -724,14 +705,14 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                       className={`
                         relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-500 whitespace-nowrap flex-1 text-center justify-center group
                         ${isActive 
-                          ? 'bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#fbcfe8] text-white shadow-xl shadow-[#2a655f]/40 scale-[1.03] border-2 border-[#2a655f]/50' 
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-[#f9a8d4]/10 dark:hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] dark:hover:text-[#f9a8d4]'
+                          ? 'bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-xl shadow-[#2a655f]/40 scale-[1.03] border-2 border-[#2a655f]/50' 
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 hover:text-[#2a655f] dark:hover:text-[#2a655f]'
                         }
                       `}
                     >
                       <div className={`relative transition-all duration-500 ${isActive ? 'scale-110 animate-pulse' : 'group-hover:scale-110 group-hover:rotate-6'}`}>
                         <Icon 
-                          className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#d81b60] dark:text-[#d81b60] group-hover:text-[#d81b60]'}`}
+                          className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#2a655f] group-hover:text-[#2a655f]'}`}
                         />
                         {isActive && (
                           <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-white/60 animate-ping" />
@@ -748,7 +729,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                 })}
               </div>
 
-              {/* ✅ Mobile Tabs */}
+              {/* ✅ Mobile Tabs - زيتي فقط */}
               <div className="md:hidden p-3">
                 <div className="grid grid-cols-4 gap-1.5">
                   {nav.map((n) => {
@@ -770,13 +751,13 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                         className={`
                           relative flex flex-col items-center gap-1 p-2.5 rounded-xl text-xs font-medium transition-all duration-500
                           ${isActive 
-                            ? 'bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#fbcfe8] text-white shadow-xl shadow-[#2a655f]/40 scale-[1.03] border-2 border-[#2a655f]/50' 
-                            : 'text-slate-600 dark:text-slate-300 hover:bg-[#f9a8d4]/10 dark:hover:bg-[#f9a8d4]/20'
+                            ? 'bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-xl shadow-[#2a655f]/40 scale-[1.03] border-2 border-[#2a655f]/50' 
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20'
                           }
                         `}
                       >
                         <div className={`transition-all duration-500 ${isActive ? 'scale-110 animate-pulse' : ''}`}>
-                          <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#d81b60] dark:text-[#d81b60]'}`} />
+                          <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#2a655f]'}`} />
                         </div>
                         <span className="text-[8px] leading-tight text-center max-w-full break-words font-bold">
                           {n.label}
@@ -809,20 +790,20 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
         </div>
 
         {/* ===== Footer ===== */}
-        <div className="mt-12 pt-6 border-t-2 border-[#f9a8d4]/20 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
+        <div className="mt-12 pt-6 border-t-2 border-[#2a655f]/20 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
           <div className="flex items-center gap-4">
-            <span className="text-[#2a655f] dark:text-[#f9a8d4] font-medium">{app.lang === 'ar' ? '© 2024 جميع الحقوق محفوظة' : '© 2024 All rights reserved'}</span>
-            <span className="h-1 w-1 rounded-full bg-[#f9a8d4]/50" />
-            <span className="flex items-center gap-1 text-[#2a655f] dark:text-[#f9a8d4]">
+            <span className="text-[#2a655f] dark:text-[#3a8a82] font-medium">{app.lang === 'ar' ? '© 2024 جميع الحقوق محفوظة' : '© 2024 All rights reserved'}</span>
+            <span className="h-1 w-1 rounded-full bg-[#2a655f]/50" />
+            <span className="flex items-center gap-1 text-[#2a655f] dark:text-[#3a8a82]">
               <LiveIndicator />
               {app.lang === 'ar' ? 'النظام يعمل بشكل طبيعي' : 'System operational'}
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-[#f9a8d4]">v2.0.0</span>
-            <span className="h-1 w-1 rounded-full bg-[#f9a8d4]/50" />
-            <span>{app.lang === 'ar' ? 'مدعوم من' : 'Powered by'} <span className="text-[#2a655f] dark:text-[#f9a8d4] font-bold hover:text-[#f9a8d4] transition-colors duration-300">Zooq</span></span>
-            <Zap className="h-3 w-3 text-[#f9a8d4] animate-pulse" />
+            <span className="text-[#2a655f]">v2.0.0</span>
+            <span className="h-1 w-1 rounded-full bg-[#2a655f]/50" />
+            <span>{app.lang === 'ar' ? 'مدعوم من' : 'Powered by'} <span className="text-[#2a655f] dark:text-[#3a8a82] font-bold hover:text-[#3a8a82] transition-colors duration-300">Zooq</span></span>
+            <Zap className="h-3 w-3 text-[#2a655f] animate-pulse" />
           </div>
         </div>
 

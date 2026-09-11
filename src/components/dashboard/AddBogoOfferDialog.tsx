@@ -1,4 +1,4 @@
-// src/components/dashboard/AddBogoOfferDialog.tsx - الكود المُصحح بالكامل مع الألوان الوردية والزيتية
+// src/components/dashboard/AddBogoOfferDialog.tsx
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useApp, formatPrice } from "@/lib/i18n";
 import { useCreateProductOffer, useUpdateProductOffer, type OfferType } from "@/lib/hooks/useProductOffers";
 import { useListings, useCategories } from "@/lib/queries";
-import { Gift, Loader2, X, Store, Package, Calendar, Clock, AlertCircle, Plus, Minus, Trash2, Layers, Search, CheckCircle2, Zap } from "lucide-react";
+import { Gift, Loader2, X, Store, Package, Calendar, Clock, AlertCircle, Plus, Minus, Trash2, Layers, Search, CheckCircle2, Zap, Folder, FolderTree, Info, CornerDownRight } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -61,34 +61,39 @@ function AddBogoOfferDialogComponent({
     // ✅ جلب التصنيفات
     const { data: categories = [] } = useCategories();
     
-    // ✅ جلب منتجات المتجر - فقط المنتجات العادية (ليست عروض تخفيضية)
+    // ✅ جلب منتجات المتجر
     const ownerId = app.user?.id;
     const { data: listingsData, isLoading: listingsLoading } = useListings({ 
         limit: 1000,
         ...(ownerId && { ownerId })
     });
     
-    // ✅ تصفية المنتجات: فقط المنتجات العادية (is_offer !== true)
     const listings = (listingsData?.data || []).filter((l: any) => !l.is_offer);
 
     // ============================================================
-    // ✅ STATE
+    // ✅ ✅ ✅ STATE (يجب أن يكون أولاً - قبل أي useMemo يستخدمه)
     // ============================================================
     const [offerType, setOfferType] = useState<OfferType>('bogo');
-    const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
     
-    // ✅ State للبحث في التصنيفات
-    const [categorySearch, setCategorySearch] = useState("");
-    const [isCategoryOpen, setIsCategoryOpen] = useState(false);
-    const categoryInputRef = useRef<HTMLInputElement>(null);
-    const categoryDropdownRef = useRef<HTMLDivElement>(null);
+    // ✅ ✅ ✅ التصنيف الرئيسي والفرعي
+    const [selectedParentCategoryId, setSelectedParentCategoryId] = useState<string>("");
+    const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string>("");
+    const [parentCategorySearch, setParentCategorySearch] = useState("");
+    const [subCategorySearch, setSubCategorySearch] = useState("");
+    const [isParentCategoryOpen, setIsParentCategoryOpen] = useState(false);
+    const [isSubCategoryOpen, setIsSubCategoryOpen] = useState(false);
+    
+    const parentCategoryInputRef = useRef<HTMLInputElement>(null);
+    const parentCategoryDropdownRef = useRef<HTMLDivElement>(null);
+    const subCategoryInputRef = useRef<HTMLInputElement>(null);
+    const subCategoryDropdownRef = useRef<HTMLDivElement>(null);
     
     // ✅ الشروط (المنتجات المطلوبة)
     const [requirements, setRequirements] = useState<ProductRequirement[]>([
         { listing_id: '', variations: { mode: 'all', ids: [] }, quantity: 1, variationQuantities: {} }
     ]);
     
-    // ✅ النتيجة (الهدية) مع دعم الكميات لكل تشكيل
+    // ✅ النتيجة (الهدية)
     const [result, setResult] = useState<OfferResult>({
         listing_id: '',
         variations: { mode: 'all', ids: [] },
@@ -101,38 +106,75 @@ function AddBogoOfferDialogComponent({
     const [isPermanent, setIsPermanent] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    // ✅ السعر الفعلي للتشكيل المحدد
     const [selectedVariationPrice, setSelectedVariationPrice] = useState<number | null>(null);
 
-    // ✅ ✅ ✅ استخدام useRef لمنع التحديثات المتكررة
     const isUpdatingFromExisting = useRef(false);
 
     // ============================================================
-    // ✅ فلتر التصنيفات حسب البحث
+    // ✅ ✅ ✅ useMemo (بعد useState - آمن الآن)
     // ============================================================
-    const filteredCategories = useMemo(() => {
-        if (!categorySearch.trim()) return categories;
-        const search = categorySearch.toLowerCase().trim();
-        return categories.filter((cat: any) => {
+    
+    // ✅ التصنيفات الرئيسية
+    const mainCategories = useMemo(() => {
+        return categories.filter((c: any) => 
+            !c.parent_id && c.active !== false
+        );
+    }, [categories]);
+
+    // ✅ التصنيفات الفرعية للرئيسي المختار
+    const subCategories = useMemo(() => {
+        if (!selectedParentCategoryId) return [];
+        return categories.filter((c: any) => 
+            c.parent_id === selectedParentCategoryId && c.active !== false
+        );
+    }, [categories, selectedParentCategoryId]);
+
+    // ✅ هل الرئيسي له فروع؟
+    const hasSubCategories = subCategories.length > 0;
+
+    // ✅ فلترة الرئيسية حسب البحث
+    const filteredMainCategories = useMemo(() => {
+        if (!parentCategorySearch.trim()) return mainCategories;
+        const search = parentCategorySearch.toLowerCase().trim();
+        return mainCategories.filter((cat: any) => {
             const nameAr = (cat.name_ar || "").toLowerCase();
             const nameEn = (cat.name_en || "").toLowerCase();
             return nameAr.includes(search) || nameEn.includes(search);
         });
-    }, [categories, categorySearch]);
+    }, [mainCategories, parentCategorySearch]);
+
+    // ✅ فلترة الفرعية حسب البحث
+    const filteredSubCategories = useMemo(() => {
+        if (!subCategorySearch.trim()) return subCategories;
+        const search = subCategorySearch.toLowerCase().trim();
+        return subCategories.filter((cat: any) => {
+            const nameAr = (cat.name_ar || "").toLowerCase();
+            const nameEn = (cat.name_en || "").toLowerCase();
+            return nameAr.includes(search) || nameEn.includes(search);
+        });
+    }, [subCategories, subCategorySearch]);
 
     // ============================================================
-    // ✅ إغلاق القائمة عند الضغط خارجها
+    // ✅ إغلاق القوائم عند الضغط خارجها
     // ============================================================
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (
-                categoryDropdownRef.current && 
-                !categoryDropdownRef.current.contains(event.target as Node) &&
-                categoryInputRef.current &&
-                !categoryInputRef.current.contains(event.target as Node)
+                parentCategoryDropdownRef.current && 
+                !parentCategoryDropdownRef.current.contains(event.target as Node) &&
+                parentCategoryInputRef.current &&
+                !parentCategoryInputRef.current.contains(event.target as Node)
             ) {
-                setIsCategoryOpen(false);
+                setIsParentCategoryOpen(false);
+            }
+            
+            if (
+                subCategoryDropdownRef.current && 
+                !subCategoryDropdownRef.current.contains(event.target as Node) &&
+                subCategoryInputRef.current &&
+                !subCategoryInputRef.current.contains(event.target as Node)
+            ) {
+                setIsSubCategoryOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -140,21 +182,15 @@ function AddBogoOfferDialogComponent({
     }, []);
 
     // ============================================================
-    // ✅ ✅ ✅ دوال مساعدة معدلة لدعم الألوان
+    // ✅ دوال مساعدة
     // ============================================================
-
-    // ✅ دالة جلب التشكيلات والألوان معاً
     const getProductVariationsOrColors = (listingId: string) => {
         const product = listings.find((l: any) => l.id === listingId);
         if (!product) return [];
         
-        // ✅ جلب التشكيلات (product_variations)
         const variations = product.variations || [];
-        
-        // ✅ جلب الألوان (product_colors)
         const colors = product.colors || product.product_colors || [];
         
-        // ✅ تحويل الألوان إلى تنسيق مشابه للتشكيلات
         const colorVariations = colors.map((color: any) => ({
             id: color.id,
             combination: {
@@ -169,11 +205,9 @@ function AddBogoOfferDialogComponent({
             _type: 'color'
         }));
         
-        // ✅ دمج التشكيلات والألوان
         return [...variations, ...colorVariations];
     };
 
-    // ✅ دالة التحقق من وجود تشكيلات أو ألوان
     const hasVariationsOrColors = (listingId: string) => {
         const product = listings.find((l: any) => l.id === listingId);
         if (!product) return false;
@@ -185,19 +219,16 @@ function AddBogoOfferDialogComponent({
         return hasVariations || hasColors || hasProductColors;
     };
 
-    // ✅ دالة جلب اسم المنتج
     const getProductTitle = (listingId: string) => {
         const product = listings.find((l: any) => l.id === listingId);
         return product?.title_ar || '';
     };
 
-    // ✅ دالة جلب سعر المنتج
     const getProductPrice = (listingId: string) => {
         const product = listings.find((l: any) => l.id === listingId);
         return product?.price || 0;
     };
 
-    // ✅ جلب سعر التشكيل المحدد
     const getVariationPrice = (listingId: string, variationId: string) => {
         const product = listings.find((l: any) => l.id === listingId);
         if (!product) return null;
@@ -205,7 +236,6 @@ function AddBogoOfferDialogComponent({
         if (variation) {
             return variation?.price || variation?.old_price || product.price || 0;
         }
-        // ✅ البحث في الألوان إذا لم يتم العثور عليه في التشكيلات
         const colors = product.colors || product.product_colors || [];
         const color = colors.find((c: any) => c.id === variationId);
         if (color) {
@@ -214,91 +244,107 @@ function AddBogoOfferDialogComponent({
         return product.price || 0;
     };
 
-    // ✅ ✅ ✅ دالة توليد اسم العرض بشكل احترافي
- const generateProfessionalDisplayText = () => {
-    const isArabic = app.lang === "ar";
-    const mainProduct = listings.find((l: any) => l.id === requirements[0]?.listing_id);
-    
-    // ✅ اسم المنتج الرئيسي حسب اللغة
-    const productName = isArabic 
-        ? mainProduct?.title_ar || "المنتج"
-        : mainProduct?.title_en || mainProduct?.title_ar || "Product";
-    
-    const buyQty = requirements.reduce((sum, r) => sum + r.quantity, 0);
-    const getQty = result.quantity;
-    const giftProduct = listings.find((l: any) => l.id === result.listing_id);
-    
-    // ✅ اسم الهدية حسب اللغة
-    const giftName = isArabic 
-        ? giftProduct?.title_ar || "منتج آخر"
-        : giftProduct?.title_en || giftProduct?.title_ar || "another product";
+    // ✅ دوال التصنيفات
+    const getCategoryName = useCallback((categoryId: string) => {
+        if (!categoryId) return "";
+        const cat = categories.find((c: any) => c.id === categoryId);
+        return cat ? (isArabic ? cat.name_ar : cat.name_en) : "";
+    }, [categories, isArabic]);
 
-    // ============================================================
-    // 🎯 BOGO (نفس المنتج) - Buy One Get One
-    // ============================================================
-    if (offerType === 'bogo') {
-        if (mainProduct && productName !== (isArabic ? "المنتج" : "Product")) {
-            return isArabic 
-                ? `🛒 عرض مزدوج: اشتري ${buyQty} من "${productName}" واحصل على ${getQty} مجاناً ✨`
-                : `🛒 Double Deal: Buy ${buyQty} "${productName}" & Get ${getQty} Free ✨`;
-        }
-        return isArabic 
-            ? `🎁 عرض مميز: اشتري ${buyQty} واحصل على ${getQty} مجاناً`
-            : `🎁 Special Offer: Buy ${buyQty} Get ${getQty} Free`;
-    }
+    const handleParentCategorySelect = (cat: any) => {
+        setSelectedParentCategoryId(cat.id);
+        setParentCategorySearch(isArabic ? cat.name_ar : cat.name_en);
+        setIsParentCategoryOpen(false);
+        
+        setSelectedSubCategoryId("");
+        setSubCategorySearch("");
+    };
 
-    // ============================================================
-    // 🎯 Cross-sell (منتج مختلف) - Buy Product Get Another
-    // ============================================================
-    if (offerType === 'cross_sell') {
-        if (mainProduct && giftProduct) {
-            return isArabic 
-                ? `🛍️ صفقة رائعة: ${productName} + ${giftName} مجاناً 🎉`
-                : `🛍️ Great Deal: ${productName} + ${giftName} Free 🎉`;
-        }
-        return isArabic 
-            ? `💎 عرض حصري: منتج + آخر مجاناً`
-            : `💎 Exclusive: Buy One Get One Free`;
-    }
+    const handleSubCategorySelect = (cat: any) => {
+        setSelectedSubCategoryId(cat.id);
+        setSubCategorySearch(isArabic ? cat.name_ar : cat.name_en);
+        setIsSubCategoryOpen(false);
+    };
 
-    // ============================================================
-    // 🎯 Bundle (باقة منتجات) - Products Bundle
-    // ============================================================
-    if (offerType === 'bundle') {
-        const productNames = requirements
-            .map((r) => {
-                const p = listings.find((l: any) => l.id === r.listing_id);
+    const clearParentCategory = () => {
+        setSelectedParentCategoryId("");
+        setParentCategorySearch("");
+        setSelectedSubCategoryId("");
+        setSubCategorySearch("");
+    };
+
+    const clearSubCategory = () => {
+        setSelectedSubCategoryId("");
+        setSubCategorySearch("");
+    };
+
+    // ✅ دالة توليد اسم العرض
+    const generateProfessionalDisplayText = () => {
+        const mainProduct = listings.find((l: any) => l.id === requirements[0]?.listing_id);
+        
+        const productName = isArabic 
+            ? mainProduct?.title_ar || "المنتج"
+            : mainProduct?.title_en || mainProduct?.title_ar || "Product";
+        
+        const buyQty = requirements.reduce((sum, r) => sum + r.quantity, 0);
+        const getQty = result.quantity;
+        const giftProduct = listings.find((l: any) => l.id === result.listing_id);
+        
+        const giftName = isArabic 
+            ? giftProduct?.title_ar || "منتج آخر"
+            : giftProduct?.title_en || giftProduct?.title_ar || "another product";
+
+        if (offerType === 'bogo') {
+            if (mainProduct && productName !== (isArabic ? "المنتج" : "Product")) {
                 return isArabic 
-                    ? p?.title_ar || "منتج"
-                    : p?.title_en || p?.title_ar || "Product";
-            })
-            .slice(0, 2)
-            .join(isArabic ? " + " : " + ");
-        
-        const extraCount = requirements.length - 2;
-        let bundleText = productNames;
-        if (extraCount > 0) {
-            bundleText += isArabic 
-                ? ` + ${extraCount} منتجات` 
-                : ` + ${extraCount} products`;
+                    ? `🛒 عرض مزدوج: اشتري ${buyQty} من "${productName}" واحصل على ${getQty} مجاناً ✨`
+                    : `🛒 Double Deal: Buy ${buyQty} "${productName}" & Get ${getQty} Free ✨`;
+            }
+            return isArabic 
+                ? `🎁 عرض مميز: اشتري ${buyQty} واحصل على ${getQty} مجاناً`
+                : `🎁 Special Offer: Buy ${buyQty} Get ${getQty} Free`;
         }
-        
+
+        if (offerType === 'cross_sell') {
+            if (mainProduct && giftProduct) {
+                return isArabic 
+                    ? `🛍️ صفقة رائعة: ${productName} + ${giftName} مجاناً 🎉`
+                    : `🛍️ Great Deal: ${productName} + ${giftName} Free 🎉`;
+            }
+            return isArabic 
+                ? `💎 عرض حصري: منتج + آخر مجاناً`
+                : `💎 Exclusive: Buy One Get One Free`;
+        }
+
+        if (offerType === 'bundle') {
+            const productNames = requirements
+                .map((r) => {
+                    const p = listings.find((l: any) => l.id === r.listing_id);
+                    return isArabic 
+                        ? p?.title_ar || "منتج"
+                        : p?.title_en || p?.title_ar || "Product";
+                })
+                .slice(0, 2)
+                .join(isArabic ? " + " : " + ");
+            
+            const extraCount = requirements.length - 2;
+            let bundleText = productNames;
+            if (extraCount > 0) {
+                bundleText += isArabic 
+                    ? ` + ${extraCount} منتجات` 
+                    : ` + ${extraCount} products`;
+            }
+            
+            return isArabic 
+                ? `📦 باقة ${bundleText} + ${getQty} مجاناً 🎁`
+                : `📦 Bundle ${bundleText} + ${getQty} Free 🎁`;
+        }
+
         return isArabic 
-            ? `📦 باقة ${bundleText} + ${getQty} مجاناً 🎁`
-            : `📦 Bundle ${bundleText} + ${getQty} Free 🎁`;
-    }
+            ? `🏷️ عرض خاص: ${buyQty} + ${getQty} مجاناً`
+            : `🏷️ Special Offer: ${buyQty} + ${getQty} Free`;
+    };
 
-    // ============================================================
-    // 🎯 الوضع الافتراضي
-    // ============================================================
-    return isArabic 
-        ? `🏷️ عرض خاص: ${buyQty} + ${getQty} مجاناً`
-        : `🏷️ Special Offer: ${buyQty} + ${getQty} Free`;
-};
-
-    // ============================================================
-    // ✅ معاينة العرض
-    // ============================================================
     const getPreviewText = () => {
         return generateProfessionalDisplayText();
     };
@@ -325,6 +371,17 @@ function AddBogoOfferDialogComponent({
         }
         setRequirements(newReqs);
     };
+
+    const autoDistributeQuantities = useCallback((variationIds: string[], totalQty: number): Record<string, number> => {
+        if (!variationIds || variationIds.length === 0) return {};
+        const perVariation = Math.floor(totalQty / variationIds.length);
+        const remainder = totalQty % variationIds.length;
+        const quantities: Record<string, number> = {};
+        variationIds.forEach((id: string, index: number) => {
+            quantities[id] = perVariation + (index < remainder ? 1 : 0);
+        });
+        return quantities;
+    }, []);
 
     const toggleVariation = (target: 'requirements' | 'result', reqIndex: number | null, variationId: string) => {
         if (target === 'requirements' && reqIndex !== null) {
@@ -379,7 +436,6 @@ function AddBogoOfferDialogComponent({
         }
     };
 
-    // ✅ دالة تغيير كمية تشكيل الشرط
     const handleRequirementVariationQuantityChange = useCallback((reqIndex: number, variationId: string, delta: number) => {
         setRequirements(prev => {
             const newReqs = [...prev];
@@ -407,7 +463,6 @@ function AddBogoOfferDialogComponent({
         });
     }, [isArabic]);
 
-    // ✅ دالة تغيير كمية تشكيل الهدية
     const handleGiftVariationQuantityChange = useCallback((variationId: string, delta: number) => {
         setResult(prev => {
             const currentQuantities = prev.variationQuantities || {};
@@ -432,7 +487,6 @@ function AddBogoOfferDialogComponent({
         });
     }, [isArabic]);
 
-    // ✅ دالة توزيع الكمية المتبقية على تشكيلات الشرط
     const distributeRemainingRequirementQuantity = useCallback((reqIndex: number, variations: any[]) => {
         setRequirements(prev => {
             const newReqs = [...prev];
@@ -472,7 +526,6 @@ function AddBogoOfferDialogComponent({
         });
     }, [isArabic]);
 
-    // ✅ دالة توزيع الكمية المتبقية بالتساوي على الهدية
     const distributeRemainingGiftQuantity = useCallback((variations: any[]) => {
         setResult(prev => {
             const totalQty = prev.quantity || 1;
@@ -510,24 +563,9 @@ function AddBogoOfferDialogComponent({
     }, [isArabic]);
 
     // ============================================================
-    // ✅ دالة مساعدة لتوزيع الكميات تلقائيًا
-    // ============================================================
-    const autoDistributeQuantities = useCallback((variationIds: string[], totalQty: number): Record<string, number> => {
-        if (!variationIds || variationIds.length === 0) return {};
-        const perVariation = Math.floor(totalQty / variationIds.length);
-        const remainder = totalQty % variationIds.length;
-        const quantities: Record<string, number> = {};
-        variationIds.forEach((id: string, index: number) => {
-            quantities[id] = perVariation + (index < remainder ? 1 : 0);
-        });
-        return quantities;
-    }, []);
-
-    // ============================================================
-    // ✅ ✅ ✅ حفظ العرض - المُصحح بالكامل
+    // ✅ ✅ ✅ حفظ العرض
     // ============================================================
     const handleSubmit = async () => {
-        // ✅ التحقق
         if (requirements.some(r => !r.listing_id)) {
             setError(isArabic ? "❌ الرجاء اختيار جميع المنتجات المطلوبة" : "❌ Please select all required products");
             return;
@@ -538,12 +576,11 @@ function AddBogoOfferDialogComponent({
             return;
         }
 
-        if (!selectedCategoryId) {
-            setError(isArabic ? "❌ الرجاء اختيار التصنيف" : "❌ Please select a category");
+        if (!selectedParentCategoryId) {
+            setError(isArabic ? "❌ الرجاء اختيار التصنيف الرئيسي" : "❌ Please select a main category");
             return;
         }
 
-        // ✅ استخدام الدالة الجديدة للتحقق من وجود تشكيلات أو ألوان
         const giftHasVariationsOrColors = hasVariationsOrColors(result.listing_id);
         if (giftHasVariationsOrColors && result.variations.mode === 'all') {
             setError(isArabic 
@@ -561,7 +598,6 @@ function AddBogoOfferDialogComponent({
             return;
         }
 
-        // ✅ التحقق من توزيع الكميات للشروط
         for (let i = 0; i < requirements.length; i++) {
             const req = requirements[i];
             const hasVariationsOrColors = getProductVariationsOrColors(req.listing_id).length > 0;
@@ -607,7 +643,6 @@ function AddBogoOfferDialogComponent({
             }
         }
 
-        // ✅ التحقق من توزيع الكميات للهدية
         let variationQuantities = { ...(result.variationQuantities || {}) };
         
         if (giftHasVariationsOrColors && result.variations.mode === 'selected' && result.variations.ids.length > 0) {
@@ -616,7 +651,6 @@ function AddBogoOfferDialogComponent({
             
             if (distributedTotal !== totalQty) {
                 variationQuantities = autoDistributeQuantities(result.variations.ids, totalQty);
-                console.log("🔄 [handleSubmit] Auto-distributed quantities:", variationQuantities);
             }
             
             const finalDistributedTotal = Object.values(variationQuantities).reduce((sum, qty) => sum + qty, 0);
@@ -647,6 +681,8 @@ function AddBogoOfferDialogComponent({
         setError(null);
 
         try {
+            const finalCategoryId = selectedSubCategoryId || selectedParentCategoryId;
+            
             const data = {
                 listing_id: requirements[0].listing_id,
                 store_id: app.user?.id,
@@ -668,7 +704,8 @@ function AddBogoOfferDialogComponent({
                 is_active: true,
                 display_text_ar: getPreviewText(),
                 display_text_en: getPreviewText(),
-                category_id: selectedCategoryId || null,
+                category_id: finalCategoryId,
+                parent_category_id: selectedParentCategoryId,
                 metadata: {
                     variation_quantities: variationQuantities,
                     requirement_variation_quantities: requirements.map(r => ({
@@ -677,9 +714,6 @@ function AddBogoOfferDialogComponent({
                     }))
                 }
             };
-
-            console.log("📤 [handleSubmit] Final metadata:", data.metadata);
-            console.log("📤 [handleSubmit] variationQuantities:", variationQuantities);
 
             if (existingOffer) {
                 await updateOffer.mutateAsync({ id: existingOffer.id, ...data });
@@ -700,19 +734,15 @@ function AddBogoOfferDialogComponent({
     };
 
     // ============================================================
-    // ✅ ✅ ✅ التحميل المسبق للبيانات (للتعديل والإضافة) - المُصحح بالكامل
+    // ✅ تحميل البيانات
     // ============================================================
     useEffect(() => {
         if (!open) {
-            console.log("🔍 [AddBogoOfferDialog] Dialog is closed, skipping");
             return;
         }
 
         if (existingOffer) {
-            console.log("🔍 [AddBogoOfferDialog] Editing existing offer, type:", existingOffer.offer_type);
-            
             if (isUpdatingFromExisting.current) {
-                console.log("⏳ [AddBogoOfferDialog] Already updating from existing, skipping...");
                 return;
             }
             
@@ -720,11 +750,39 @@ function AddBogoOfferDialogComponent({
             
             setOfferType(existingOffer.offer_type || 'bogo');
             
-            setSelectedCategoryId(existingOffer.category_id || '');
-            setCategorySearch(
-                categories.find((c: any) => c.id === existingOffer.category_id)?.[isArabic ? 'name_ar' : 'name_en'] || ''
-            );
+            // ✅ تحميل التصنيف الرئيسي والفرعي
+            if (categories.length > 0) {
+                if (existingOffer.parent_category_id) {
+                    setSelectedParentCategoryId(existingOffer.parent_category_id);
+                    setParentCategorySearch(getCategoryName(existingOffer.parent_category_id));
+                    
+                    if (existingOffer.category_id && existingOffer.category_id !== existingOffer.parent_category_id) {
+                        setSelectedSubCategoryId(existingOffer.category_id);
+                        setSubCategorySearch(getCategoryName(existingOffer.category_id));
+                    } else {
+                        setSelectedSubCategoryId("");
+                        setSubCategorySearch("");
+                    }
+                } else if (existingOffer.category_id) {
+                    const cat = categories.find((c: any) => c.id === existingOffer.category_id);
+                    
+                    if (cat) {
+                        if (cat.parent_id) {
+                            setSelectedParentCategoryId(cat.parent_id);
+                            setParentCategorySearch(getCategoryName(cat.parent_id));
+                            setSelectedSubCategoryId(existingOffer.category_id);
+                            setSubCategorySearch(getCategoryName(existingOffer.category_id));
+                        } else {
+                            setSelectedParentCategoryId(existingOffer.category_id);
+                            setParentCategorySearch(getCategoryName(existingOffer.category_id));
+                            setSelectedSubCategoryId("");
+                            setSubCategorySearch("");
+                        }
+                    }
+                }
+            }
             
+            // ✅ تحميل الشروط
             if (existingOffer.required_product_ids && existingOffer.required_product_ids.length > 0) {
                 const requirementsData = existingOffer.required_product_ids.map((productId: string, index: number) => {
                     let variations = { mode: 'all' as const, ids: [] as string[] };
@@ -740,10 +798,8 @@ function AddBogoOfferDialogComponent({
                         
                         if (reqVar.variation_quantities) {
                             variationQuantities = reqVar.variation_quantities;
-                            console.log(`🟢 [Edit] Restored variation quantities for requirement ${index}:`, variationQuantities);
                         } else if (reqVar.variation_ids && reqVar.variation_ids.length > 0) {
                             variationQuantities = autoDistributeQuantities(reqVar.variation_ids, quantity);
-                            console.log(`🟡 [Edit] Auto-distributed quantities for requirement ${index}:`, variationQuantities);
                         }
                     }
                     
@@ -757,13 +813,11 @@ function AddBogoOfferDialogComponent({
                 setRequirements(requirementsData);
             }
             
+            // ✅ تحميل الهدية
             const isBogo = existingOffer.offer_type === 'bogo';
             const giftListingId = isBogo 
                 ? existingOffer.listing_id
                 : existingOffer.free_listing_id;
-            
-            console.log("🟢 [Edit] isBogo:", isBogo);
-            console.log("🟢 [Edit] giftListingId:", giftListingId);
             
             if (giftListingId) {
                 let variations = { mode: 'all' as const, ids: [] as string[] };
@@ -774,15 +828,12 @@ function AddBogoOfferDialogComponent({
                     
                     if (existingOffer.metadata?.variation_quantities) {
                         variationQuantities = existingOffer.metadata.variation_quantities;
-                        console.log("🟢 [Edit] Restored variation quantities from metadata:", variationQuantities);
                     } else {
                         const totalQty = existingOffer.get_quantity || 1;
                         const ids = existingOffer.result_variation_ids;
                         variationQuantities = autoDistributeQuantities(ids, totalQty);
-                        console.log("🟡 [Edit] Auto-distributed quantities:", variationQuantities);
                     }
                 } else {
-                    // ✅ استخدام الدالة الجديدة للتحقق من وجود تشكيلات أو ألوان
                     const giftHasVarsOrColors = hasVariationsOrColors(giftListingId);
                     if (giftHasVarsOrColors) {
                         variations = { mode: 'selected', ids: [] };
@@ -795,15 +846,7 @@ function AddBogoOfferDialogComponent({
                     quantity: existingOffer.get_quantity || 1,
                     variationQuantities: variationQuantities
                 });
-                
-                console.log("✅ [Edit] Result set to:", {
-                    listing_id: giftListingId,
-                    variations: variations,
-                    quantity: existingOffer.get_quantity || 1,
-                    variationQuantities: variationQuantities
-                });
             } else {
-                console.warn("⚠️ [Edit] No giftListingId found, using listing_id as fallback");
                 const fallbackListingId = existingOffer.listing_id;
                 if (fallbackListingId) {
                     setResult({
@@ -815,12 +858,12 @@ function AddBogoOfferDialogComponent({
                 }
             }
             
+            // ✅ التاريخ
             if (existingOffer.expires_at) {
                 setIsPermanent(false);
                 const date = new Date(existingOffer.expires_at);
                 const formattedDate = date.toISOString().slice(0, 16);
                 setExpiresAt(formattedDate);
-                console.log("🟢 [Edit] Restored expires_at:", formattedDate);
             } else {
                 setIsPermanent(true);
                 setExpiresAt("");
@@ -830,11 +873,12 @@ function AddBogoOfferDialogComponent({
             return;
         }
 
-        console.log("🔍 [AddBogoOfferDialog] Creating new offer");
-        
+        // ✅ حالة الإضافة الجديدة
         setOfferType('bogo');
-        setSelectedCategoryId('');
-        setCategorySearch('');
+        setSelectedParentCategoryId('');
+        setSelectedSubCategoryId('');
+        setParentCategorySearch('');
+        setSubCategorySearch('');
         setRequirements([{ 
             listing_id: initialProduct?.id || '', 
             variations: { mode: 'all', ids: [] }, 
@@ -852,7 +896,7 @@ function AddBogoOfferDialogComponent({
         setError(null);
         setSelectedVariationPrice(null);
 
-    }, [open, existingOffer, initialProduct, categories, isArabic, autoDistributeQuantities]);
+    }, [open, existingOffer, initialProduct, categories, isArabic, autoDistributeQuantities, getCategoryName]);
 
     // ============================================================
     // ✅ RENDER
@@ -873,104 +917,188 @@ function AddBogoOfferDialogComponent({
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
-                    {/* ===== التصنيف مع بحث ذكي - وردي/زيتي ===== */}
-                    <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                            <Layers className="h-4 w-4 text-[#d81b60]" />
-                            {isArabic ? "التصنيف" : "Category"}
-                            <span className="text-red-500">*</span>
-                        </Label>
+                    
+                    {/* ✅ التصنيف الرئيسي + الفرعي */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         
-                        <div className="relative" ref={categoryDropdownRef}>
-                            <div className="relative">
-                                <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    ref={categoryInputRef}
-                                    value={categorySearch}
-                                    onChange={(e) => {
-                                        setCategorySearch(e.target.value);
-                                        setIsCategoryOpen(true);
-                                    }}
-                                    onFocus={() => setIsCategoryOpen(true)}
-                                    placeholder={isArabic ? "🔍 ابحث عن تصنيف..." : "🔍 Search category..."}
-                                    className="ps-9 h-11 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 bg-white dark:bg-slate-900"
-                                />
-                                {categorySearch && (
-                                    <button
-                                        onClick={() => {
-                                            setCategorySearch("");
-                                            setSelectedCategoryId("");
-                                        }}
-                                        className="absolute inset-y-0 end-3 flex items-center text-muted-foreground hover:text-[#d81b60] transition-colors"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
+                        {/* ✅ التصنيف الرئيسي (إلزامي) */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                <span>📁</span>
+                                {isArabic ? "التصنيف الرئيسي" : "Main Category"}
+                                <span className="text-red-500">*</span>
+                            </Label>
                             
-                            {isCategoryOpen && (
-                                <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#d81b60]/20">
-                                    {filteredCategories.length === 0 ? (
-                                        <div className="p-4 text-sm text-muted-foreground text-center">
-                                            {isArabic ? "❌ لا توجد تصنيفات تطابق البحث" : "❌ No categories match search"}
-                                        </div>
-                                    ) : (
-                                        filteredCategories.map((cat: any) => {
-                                            const isSelected = selectedCategoryId === cat.id;
-                                            return (
-                                                <button
-                                                    key={cat.id}
-                                                    className={cn(
-                                                        "w-full text-start px-4 py-3 text-sm hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
-                                                        isSelected && "bg-[#d81b60]/10 dark:bg-[#d81b60]/30"
-                                                    )}
-                                                    onClick={() => {
-                                                        setSelectedCategoryId(cat.id);
-                                                        setCategorySearch(isArabic ? cat.name_ar : cat.name_en);
-                                                        setIsCategoryOpen(false);
-                                                    }}
-                                                >
-                                                    {isSelected && (
-                                                        <CheckCircle2 className="h-4 w-4 text-[#d81b60] flex-shrink-0" />
-                                                    )}
-                                                    <div className="flex-1 flex items-center gap-2">
-                                                        <span>{isArabic ? cat.name_ar : cat.name_en}</span>
-                                                        {cat.is_featured && (
-                                                            <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[8px]">
-                                                                ⭐ {isArabic ? "مميز" : "Featured"}
+                            <div className="relative" ref={parentCategoryDropdownRef}>
+                                <div className="relative">
+                                    <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#d81b60]/60" />
+                                    <Input
+                                        ref={parentCategoryInputRef}
+                                        value={parentCategorySearch}
+                                        onChange={(e) => {
+                                            setParentCategorySearch(e.target.value);
+                                            setIsParentCategoryOpen(true);
+                                        }}
+                                        onFocus={() => setIsParentCategoryOpen(true)}
+                                        placeholder={isArabic ? "🔍 ابحث عن التصنيف الرئيسي..." : "🔍 Search main category..."}
+                                        className="ps-9 h-11 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 bg-white dark:bg-slate-900"
+                                    />
+                                    {parentCategorySearch && (
+                                        <button
+                                            type="button"
+                                            onClick={clearParentCategory}
+                                            className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#d81b60] transition-colors"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                                
+                                {isParentCategoryOpen && (
+                                    <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#d81b60]/20">
+                                        {filteredMainCategories.length === 0 ? (
+                                            <div className="p-4 text-sm text-muted-foreground text-center">
+                                                {isArabic ? "❌ لا توجد تصنيفات" : "❌ No categories"}
+                                            </div>
+                                        ) : (
+                                            filteredMainCategories.map((cat: any) => {
+                                                const childCount = categories.filter((c: any) => c.parent_id === cat.id && c.active !== false).length;
+                                                const isSelected = selectedParentCategoryId === cat.id;
+                                                
+                                                return (
+                                                    <button
+                                                        key={cat.id}
+                                                        type="button"
+                                                        className={cn(
+                                                            "w-full text-start px-4 py-3 text-sm hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
+                                                            isSelected && "bg-[#d81b60]/10 dark:bg-[#d81b60]/30"
+                                                        )}
+                                                        onClick={() => handleParentCategorySelect(cat)}
+                                                    >
+                                                        {isSelected && (
+                                                            <CheckCircle2 className="h-4 w-4 text-[#d81b60] flex-shrink-0" />
+                                                        )}
+                                                        <span className="flex-1">{isArabic ? cat.name_ar : cat.name_en}</span>
+                                                        {childCount > 0 && (
+                                                            <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[9px]">
+                                                                {childCount} {isArabic ? "فرعي" : "sub"}
                                                             </Badge>
                                                         )}
-                                                    </div>
-                                                    <span className="text-[10px] text-muted-foreground">
-                                                        {cat.slug}
-                                                    </span>
-                                                </button>
-                                            );
-                                        })
+                                                    </button>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ✅ التصنيف الفرعي (اختياري) */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                <span>📂</span>
+                                {isArabic ? "التصنيف الفرعي" : "Subcategory"}
+                                <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400">
+                                    {isArabic ? "اختياري" : "Optional"}
+                                </Badge>
+                            </Label>
+                            
+                            {!selectedParentCategoryId ? (
+                                <div className="flex items-center gap-2 h-11 px-4 rounded-xl border-3 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
+                                    <Info className="h-4 w-4 text-slate-400" />
+                                    <span className="text-sm text-slate-500">
+                                        {isArabic ? "اختر الرئيسي أولاً" : "Select main first"}
+                                    </span>
+                                </div>
+                            ) : !hasSubCategories ? (
+                                <div className="flex items-center gap-2 h-11 px-4 rounded-xl border-3 border-emerald-200/50 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20">
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                    <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                                        {isArabic ? "✅ سيُستخدم الرئيسي" : "✅ Main will be used"}
+                                    </span>
+                                </div>
+                            ) : (
+                                <div className="relative" ref={subCategoryDropdownRef}>
+                                    <div className="relative">
+                                        <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#2a655f]/60" />
+                                        <Input
+                                            ref={subCategoryInputRef}
+                                            value={subCategorySearch}
+                                            onChange={(e) => {
+                                                setSubCategorySearch(e.target.value);
+                                                setIsSubCategoryOpen(true);
+                                            }}
+                                            onFocus={() => setIsSubCategoryOpen(true)}
+                                            placeholder={isArabic ? "🔍 ابحث عن التصنيف الفرعي..." : "🔍 Search subcategory..."}
+                                            className="ps-9 h-11 rounded-xl border-3 border-[#2a655f]/30 dark:border-[#2a655f]/40 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 bg-white dark:bg-slate-900"
+                                        />
+                                        {subCategorySearch && (
+                                            <button
+                                                type="button"
+                                                onClick={clearSubCategory}
+                                                className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    {isSubCategoryOpen && (
+                                        <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#2a655f]/20">
+                                            {filteredSubCategories.length === 0 ? (
+                                                <div className="p-4 text-sm text-muted-foreground text-center">
+                                                    {isArabic ? "❌ لا توجد نتائج" : "❌ No results"}
+                                                </div>
+                                            ) : (
+                                                filteredSubCategories.map((cat: any) => {
+                                                    const isSelected = selectedSubCategoryId === cat.id;
+                                                    return (
+                                                        <button
+                                                            key={cat.id}
+                                                            type="button"
+                                                            className={cn(
+                                                                "w-full text-start px-4 py-3 text-sm hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
+                                                                isSelected && "bg-[#2a655f]/10 dark:bg-[#2a655f]/30"
+                                                            )}
+                                                            onClick={() => handleSubCategorySelect(cat)}
+                                                        >
+                                                            {isSelected && (
+                                                                <CheckCircle2 className="h-4 w-4 text-[#2a655f] flex-shrink-0" />
+                                                            )}
+                                                            <span>{isArabic ? cat.name_ar : cat.name_en}</span>
+                                                        </button>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             )}
                         </div>
-                        
-                        {selectedCategoryId && (
-                            <div className="flex items-center gap-2 p-2 bg-[#d81b60]/5 rounded-lg border border-[#d81b60]/20">
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                <span className="text-sm text-muted-foreground">
-                                    {isArabic ? "التصنيف المختار:" : "Selected category:"}
-                                </span>
-                                <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0">
-                                    {categories.find((c: any) => c.id === selectedCategoryId)?.[isArabic ? 'name_ar' : 'name_en'] || ""}
-                                </Badge>
-                            </div>
-                        )}
-                        
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <Search className="h-3 w-3" />
-                            {isArabic ? "💡 اكتب للبحث عن تصنيف معين" : "💡 Type to search for a specific category"}
-                        </p>
                     </div>
 
-                    {/* ===== نوع العرض - وردي/زيتي ===== */}
+                    {/* ✅ مؤشر التصنيف المختار */}
+                    {selectedParentCategoryId && (
+                        <div className="flex items-center gap-2 p-2.5 bg-gradient-to-r from-[#d81b60]/5 to-[#2a655f]/5 rounded-xl border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30">
+                            <Layers className="h-4 w-4 text-[#d81b60]" />
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                                {isArabic ? "التصنيف:" : "Category:"}
+                            </span>
+                            <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[10px]">
+                                📁 {getCategoryName(selectedParentCategoryId)}
+                            </Badge>
+                            {selectedSubCategoryId && (
+                                <>
+                                    <CornerDownRight className="h-3 w-3 text-[#2a655f]" />
+                                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px]">
+                                        📂 {getCategoryName(selectedSubCategoryId)}
+                                    </Badge>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ===== نوع العرض ===== */}
                     <div className="space-y-2">
                         <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                             {isArabic ? "📌 نوع العرض" : "📌 Offer Type"}
@@ -990,10 +1118,7 @@ function AddBogoOfferDialogComponent({
                             </button>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    console.log("🔄 [AddBogoOfferDialog] Clicked cross_sell");
-                                    setOfferType('cross_sell');
-                                }}
+                                onClick={() => setOfferType('cross_sell')}
                                 className={cn(
                                     "p-3 rounded-xl border-3 text-sm font-medium transition-all duration-300 text-center cursor-pointer",
                                     offerType === 'cross_sell'
@@ -1005,10 +1130,7 @@ function AddBogoOfferDialogComponent({
                             </button>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    console.log("📦 [AddBogoOfferDialog] Clicked bundle");
-                                    setOfferType('bundle');
-                                }}
+                                onClick={() => setOfferType('bundle')}
                                 className={cn(
                                     "p-3 rounded-xl border-3 text-sm font-medium transition-all duration-300 text-center cursor-pointer",
                                     offerType === 'bundle'
@@ -1021,7 +1143,7 @@ function AddBogoOfferDialogComponent({
                         </div>
                     </div>
 
-                    {/* ===== الشروط (المنتجات المطلوبة) - وردي/زيتي ===== */}
+                    {/* ===== الشروط ===== */}
                     <div className="space-y-3 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
                         <div className="flex items-center justify-between">
                             <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
@@ -1047,9 +1169,7 @@ function AddBogoOfferDialogComponent({
                         </div>
 
                         {requirements.map((req, index) => {
-                            // ✅ استخدام الدالة الجديدة
                             const variations = getProductVariationsOrColors(req.listing_id);
-                            const isBogoAndSingle = offerType === 'bogo' && requirements.length === 1;
                             const totalQty = req.quantity || 1;
                             const variationQuantities = req.variationQuantities || {};
                             const distributedTotal = Object.values(variationQuantities).reduce((sum, qty) => sum + qty, 0);
@@ -1086,9 +1206,6 @@ function AddBogoOfferDialogComponent({
                                                 <div>
                                                     <Label className="text-xs text-muted-foreground">
                                                         🎨 {isArabic ? "التشكيلات والألوان" : "Variations & Colors"}
-                                                        <span className="text-[10px] text-muted-foreground/60 ml-1">
-                                                            ({isArabic ? "اختر ما يناسب" : "Select what applies"})
-                                                        </span>
                                                     </Label>
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <button
@@ -1163,18 +1280,6 @@ function AddBogoOfferDialogComponent({
                                                             })}
                                                         </div>
                                                     )}
-                                                    {req.variations.mode === 'all' && (
-                                                        <p className="text-[10px] text-emerald-500/60 mt-0.5">
-                                                            ✅ {isArabic ? "جميع الخيارات مشمولة" : "All options included"}
-                                                            {(() => {
-                                                                const product = listings.find((l: any) => l.id === req.listing_id);
-                                                                if (product) {
-                                                                    return ` (${formatPrice(Number(product.price), app.currency, app.lang)})`;
-                                                                }
-                                                                return '';
-                                                            })()}
-                                                        </p>
-                                                    )}
                                                 </div>
                                             )}
 
@@ -1223,12 +1328,11 @@ function AddBogoOfferDialogComponent({
                                                 </div>
                                             </div>
 
-                                            {/* ✅ توزيع الكميات على التشكيلات - وردي/زيتي */}
                                             {hasSelectedVariations && (
                                                 <div className="mt-3 p-3 bg-white/50 dark:bg-slate-800/30 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <Label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                                            📊 {isArabic ? "توزيع الكميات على الخيارات" : "Variation Quantity Distribution"}
+                                                            📊 {isArabic ? "توزيع الكميات" : "Distribution"}
                                                             <Badge className={cn(
                                                                 "border-0 text-[9px]",
                                                                 distributedTotal === totalQty 
@@ -1237,11 +1341,6 @@ function AddBogoOfferDialogComponent({
                                                             )}>
                                                                 {distributedTotal}/{totalQty}
                                                             </Badge>
-                                                            {remaining > 0 && (
-                                                                <Badge className="bg-amber-500/20 text-amber-600 border-0 text-[9px]">
-                                                                    {isArabic ? `متبقي ${remaining}` : `${remaining} remaining`}
-                                                                </Badge>
-                                                            )}
                                                         </Label>
                                                         {remaining > 0 && (
                                                             <button
@@ -1267,22 +1366,11 @@ function AddBogoOfferDialogComponent({
                                                                 .map(([key, value]) => `${key}: ${value}`)
                                                                 .join(' • ');
                                                             const currentQty = variationQuantities[id] || 0;
-                                                            const price = variation.price || getProductPrice(req.listing_id);
-                                                            const isColor = variation._type === 'color';
                                                             
                                                             return (
                                                                 <div key={id} className="flex items-center gap-2 p-2 border-3 rounded-xl border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50">
-                                                                    {isColor && combo?.hex && (
-                                                                        <span 
-                                                                            className="w-3 h-3 rounded-full border border-slate-200 flex-shrink-0"
-                                                                            style={{ backgroundColor: combo.hex }}
-                                                                        />
-                                                                    )}
                                                                     <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
                                                                         {comboText}
-                                                                    </span>
-                                                                    <span className="text-[10px] text-muted-foreground">
-                                                                        ({formatPrice(Number(price), app.currency, app.lang)})
                                                                     </span>
                                                                     <div className="flex items-center gap-1">
                                                                         <button
@@ -1291,8 +1379,8 @@ function AddBogoOfferDialogComponent({
                                                                             className={cn(
                                                                                 "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-3",
                                                                                 currentQty > 0 
-                                                                                    ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 border-slate-300"
-                                                                                    : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800 border-slate-200"
+                                                                                    ? "bg-slate-200 hover:bg-slate-300 border-slate-300"
+                                                                                    : "bg-slate-100 text-slate-300 cursor-not-allowed border-slate-200"
                                                                             )}
                                                                             disabled={currentQty === 0}
                                                                         >
@@ -1307,8 +1395,8 @@ function AddBogoOfferDialogComponent({
                                                                             className={cn(
                                                                                 "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-3",
                                                                                 distributedTotal < totalQty
-                                                                                    ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white border-[#d81b60] shadow-sm shadow-[#d81b60]/30"
-                                                                                    : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 border-slate-300"
+                                                                                    ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-[#d81b60]"
+                                                                                    : "bg-slate-200 text-slate-400 cursor-not-allowed border-slate-300"
                                                                             )}
                                                                             disabled={distributedTotal >= totalQty}
                                                                         >
@@ -1327,7 +1415,7 @@ function AddBogoOfferDialogComponent({
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-8 w-8 p-0 rounded-xl text-red-500 hover:bg-red-50/50 hover:text-red-600 flex-shrink-0"
+                                                className="h-8 w-8 p-0 rounded-xl text-red-500 hover:bg-red-50/50"
                                                 onClick={() => removeRequirement(index)}
                                                 type="button"
                                             >
@@ -1340,16 +1428,11 @@ function AddBogoOfferDialogComponent({
                         })}
                     </div>
 
-                    {/* ===== النتيجة (الهدية) - وردي/زيتي ===== */}
+                    {/* ===== الهدية ===== */}
                     <div className="space-y-3 p-4 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl border-3 border-emerald-200/50 dark:border-emerald-800/30">
                         <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                             🎁 {isArabic ? "النتيجة (الهدية)" : "Result (Gift)"}
                             <span className="text-red-500">*</span>
-                            {offerType === 'bogo' && (
-                                <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px]">
-                                    {isArabic ? "نفس المنتج" : "Same product"}
-                                </Badge>
-                            )}
                         </Label>
 
                         <div>
@@ -1379,29 +1462,13 @@ function AddBogoOfferDialogComponent({
                                             disabled={offerType === 'bogo' && l.id !== requirements[0]?.listing_id}
                                         >
                                             {l.title_ar} - {formatPrice(Number(l.price), app.currency, app.lang)}
-                                            {offerType === 'bogo' && l.id === requirements[0]?.listing_id && (
-                                                <span className="text-[10px] text-emerald-500 ml-1">
-                                                    ✅ {isArabic ? "نفس المنتج" : "Same product"}
-                                                </span>
-                                            )}
-                                            {hasVariationsOrColors(l.id) && (
-                                                <span className="text-[10px] text-amber-500 ml-1">
-                                                    🎨 {isArabic ? "يحتوي خيارات" : "Has options"}
-                                                </span>
-                                            )}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {offerType === 'bogo' && (
-                                <p className="text-[10px] text-muted-foreground mt-1">
-                                    ℹ️ {isArabic ? "في عرض BOGO، الهدية هي نفس المنتج" : "In BOGO, the gift is the same product"}
-                                </p>
-                            )}
                         </div>
 
                         {result.listing_id && (() => {
-                            // ✅ استخدام الدالة الجديدة
                             const resultVariations = getProductVariationsOrColors(result.listing_id);
                             const giftHasVarsOrColors = resultVariations.length > 0;
                             const totalQty = result.quantity || 1;
@@ -1417,9 +1484,6 @@ function AddBogoOfferDialogComponent({
                                                 <Label className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                                                     🎨 {isArabic ? "خيارات الهدية (إجباري)" : "Gift Options (Required)"}
                                                     <span className="text-red-500">*</span>
-                                                    <span className="text-[10px] text-muted-foreground/60 ml-1">
-                                                        ({isArabic ? "اختر خيار محدد" : "Select a specific option"})
-                                                    </span>
                                                 </Label>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <button
@@ -1443,7 +1507,6 @@ function AddBogoOfferDialogComponent({
                                                             .map(([key, value]) => `${key}: ${value}`)
                                                             .join(' ');
                                                         const isSelected = result.variations.ids.includes(v.id);
-                                                        const price = v.price || v.old_price || getProductPrice(result.listing_id);
                                                         const currentQty = variationQuantities[v.id] || 0;
                                                         const isColor = v._type === 'color';
 
@@ -1456,7 +1519,7 @@ function AddBogoOfferDialogComponent({
                                                                     "px-2 py-0.5 rounded-lg border-3 text-[10px] transition-all duration-300 flex items-center gap-1",
                                                                     isSelected
                                                                         ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60]"
-                                                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600 hover:bg-slate-100/50"
+                                                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600"
                                                                 )}
                                                             >
                                                                 {isColor && v.combination?.hex && (
@@ -1466,11 +1529,6 @@ function AddBogoOfferDialogComponent({
                                                                     />
                                                                 )}
                                                                 {comboText || v.id.slice(0, 6)}
-                                                                {price && (
-                                                                    <span className="text-[8px] text-emerald-500 ml-1">
-                                                                        {formatPrice(Number(price), app.currency, app.lang)}
-                                                                    </span>
-                                                                )}
                                                                 {isSelected && (
                                                                     <span className="text-[8px] text-emerald-600 ml-1">
                                                                         (×{currentQty})
@@ -1480,31 +1538,20 @@ function AddBogoOfferDialogComponent({
                                                         );
                                                     })}
                                                 </div>
-                                                {result.variations.mode === 'selected' && result.variations.ids.length === 0 && (
-                                                    <p className="text-[10px] text-red-500/70 mt-0.5">
-                                                        ⚠️ {isArabic ? "الرجاء اختيار خيار للهدية" : "Please select an option for the gift"}
-                                                    </p>
-                                                )}
-                                                {result.variations.mode === 'selected' && result.variations.ids.length > 0 && (
-                                                    <p className="text-[10px] text-emerald-500/60 mt-0.5">
-                                                        ✅ {isArabic ? "تم اختيار" : "Selected"} {result.variations.ids.length} {isArabic ? "خيار" : "option(s)"}
-                                                    </p>
-                                                )}
                                             </div>
                                         </>
                                     )}
                                     {!giftHasVarsOrColors && (
                                         <p className="text-[10px] text-muted-foreground mt-1">
-                                            ✅ {isArabic ? "هذا المنتج لا يحتوي على خيارات" : "This product has no options"}
+                                            ✅ {isArabic ? "هذا المنتج لا يحتوي على خيارات" : "No options"}
                                         </p>
                                     )}
 
-                                    {/* ===== توزيع الكميات على التشكيلات - وردي/زيتي ===== */}
                                     {giftHasVarsOrColors && result.variations.mode === 'selected' && result.variations.ids.length > 0 && (
-                                        <div className="mt-3 p-3 bg-white/50 dark:bg-slate-800/30 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
+                                        <div className="mt-3 p-3 bg-white/50 dark:bg-slate-800/30 rounded-xl border-3 border-[#d81b60]/30">
                                             <div className="flex items-center justify-between mb-2">
-                                                <Label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                                    📊 {isArabic ? "توزيع الكميات" : "Quantity Distribution"}
+                                                <Label className="text-xs font-medium flex items-center gap-2">
+                                                    📊 {isArabic ? "توزيع الكميات" : "Distribution"}
                                                     <Badge className={cn(
                                                         "border-0 text-[9px]",
                                                         distributedTotal === totalQty 
@@ -1513,11 +1560,6 @@ function AddBogoOfferDialogComponent({
                                                     )}>
                                                         {distributedTotal}/{totalQty}
                                                     </Badge>
-                                                    {remaining > 0 && (
-                                                        <Badge className="bg-amber-500/20 text-amber-600 border-0 text-[9px]">
-                                                            {isArabic ? `متبقي ${remaining}` : `${remaining} remaining`}
-                                                        </Badge>
-                                                    )}
                                                 </Label>
                                                 {remaining > 0 && (
                                                     <button
@@ -1525,7 +1567,7 @@ function AddBogoOfferDialogComponent({
                                                         onClick={() => distributeRemainingGiftQuantity(
                                                             resultVariations.filter((v: any) => result.variations.ids.includes(v.id))
                                                         )}
-                                                        className="text-[10px] text-[#d81b60] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border-3 border-[#d81b60]/30 rounded-lg hover:bg-[#d81b60]/5"
+                                                        className="text-[10px] text-[#d81b60] hover:underline flex items-center gap-1 px-2 py-1 border-3 border-[#d81b60]/30 rounded-lg hover:bg-[#d81b60]/5"
                                                     >
                                                         <Zap className="h-3 w-3" />
                                                         {isArabic ? `وزع ${remaining}` : `Distribute ${remaining}`}
@@ -1542,33 +1584,17 @@ function AddBogoOfferDialogComponent({
                                                         .map(([key, value]) => `${key}: ${value}`)
                                                         .join(' • ');
                                                     const currentQty = variationQuantities[id] || 0;
-                                                    const price = variation.price || getProductPrice(result.listing_id);
-                                                    const isColor = variation._type === 'color';
                                                     
                                                     return (
-                                                        <div key={id} className="flex items-center gap-2 p-2 border-3 rounded-xl border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50">
-                                                            {isColor && combo?.hex && (
-                                                                <span 
-                                                                    className="w-3 h-3 rounded-full border border-slate-200 flex-shrink-0"
-                                                                    style={{ backgroundColor: combo.hex }}
-                                                                />
-                                                            )}
-                                                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                                        <div key={id} className="flex items-center gap-2 p-2 border-3 rounded-xl border-[#d81b60]/30 bg-white/50">
+                                                            <span className="text-xs font-medium">
                                                                 {comboText}
-                                                            </span>
-                                                            <span className="text-[10px] text-muted-foreground">
-                                                                ({formatPrice(Number(price), app.currency, app.lang)})
                                                             </span>
                                                             <div className="flex items-center gap-1">
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleGiftVariationQuantityChange(id, -1)}
-                                                                    className={cn(
-                                                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-3",
-                                                                        currentQty > 0 
-                                                                            ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 border-slate-300"
-                                                                            : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800 border-slate-200"
-                                                                    )}
+                                                                    className="h-6 w-6 rounded-full bg-slate-200 hover:bg-slate-300 text-xs font-bold border-3 border-slate-300"
                                                                     disabled={currentQty === 0}
                                                                 >
                                                                     -
@@ -1580,10 +1606,10 @@ function AddBogoOfferDialogComponent({
                                                                     type="button"
                                                                     onClick={() => handleGiftVariationQuantityChange(id, 1)}
                                                                     className={cn(
-                                                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-3",
+                                                                        "h-6 w-6 rounded-full text-xs font-bold border-3",
                                                                         distributedTotal < totalQty
-                                                                            ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white border-[#d81b60] shadow-sm shadow-[#d81b60]/30"
-                                                                            : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 border-slate-300"
+                                                                            ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-[#d81b60]"
+                                                                            : "bg-slate-200 text-slate-400 border-slate-300"
                                                                     )}
                                                                     disabled={distributedTotal >= totalQty}
                                                                 >
@@ -1644,8 +1670,8 @@ function AddBogoOfferDialogComponent({
                         </div>
                     </div>
 
-                    {/* ===== المدة - وردي/زيتي ===== */}
-                    <div className="space-y-3 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
+                    {/* ===== المدة ===== */}
+                    <div className="space-y-3 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border-3 border-[#d81b60]/30">
                         <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                             ⏰ {isArabic ? "المدة" : "Duration"}
                         </Label>
@@ -1654,10 +1680,10 @@ function AddBogoOfferDialogComponent({
                                 type="button"
                                 onClick={() => { setIsPermanent(true); setError(null); setExpiresAt(""); }}
                                 className={cn(
-                                    "px-4 py-2 rounded-xl border-3 text-sm font-medium transition-all duration-300 flex-1 cursor-pointer",
+                                    "px-4 py-2 rounded-xl border-3 text-sm font-medium transition-all duration-300 flex-1",
                                     isPermanent
-                                        ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60] shadow-sm shadow-[#d81b60]/10"
-                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600 hover:bg-[#d81b60]/5"
+                                        ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60]"
+                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600"
                                 )}
                                 disabled={isSubmitting}
                             >
@@ -1668,10 +1694,10 @@ function AddBogoOfferDialogComponent({
                                 type="button"
                                 onClick={() => { setIsPermanent(false); setError(null); }}
                                 className={cn(
-                                    "px-4 py-2 rounded-xl border-3 text-sm font-medium transition-all duration-300 flex-1 cursor-pointer",
+                                    "px-4 py-2 rounded-xl border-3 text-sm font-medium transition-all duration-300 flex-1",
                                     !isPermanent
-                                        ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60] shadow-sm shadow-[#d81b60]/10"
-                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600 hover:bg-[#d81b60]/5"
+                                        ? "border-[#d81b60] bg-[#d81b60]/10 text-[#d81b60]"
+                                        : "border-slate-200/50 hover:border-[#d81b60]/30 text-slate-600"
                                 )}
                                 disabled={isSubmitting}
                             >
@@ -1684,7 +1710,7 @@ function AddBogoOfferDialogComponent({
                                 type="datetime-local"
                                 value={expiresAt}
                                 onChange={(e) => { setExpiresAt(e.target.value); setError(null); }}
-                                className="mt-1 rounded-xl border-3 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                                className="mt-1 rounded-xl border-3 border-[#d81b60]/30 focus:border-[#d81b60]"
                                 disabled={isSubmitting}
                                 min={new Date().toISOString().slice(0, 16)}
                             />
@@ -1692,78 +1718,46 @@ function AddBogoOfferDialogComponent({
                     </div>
 
                     {error && (
-                        <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-xl border-3 border-red-200 dark:border-red-800/30 flex items-start gap-2">
+                        <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-xl border-3 border-red-200 flex items-start gap-2">
                             <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
                             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                         </div>
                     )}
 
-                    {/* ===== معاينة العرض - وردي/زيتي ===== */}
-                    <div className="p-4 bg-gradient-to-r from-[#d81b60]/10 to-[#f48fb1]/10 dark:from-[#d81b60]/20 dark:to-[#f48fb1]/10 rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
+                    {/* ===== معاينة العرض ===== */}
+                    <div className="p-4 bg-gradient-to-r from-[#d81b60]/10 to-[#f48fb1]/10 dark:from-[#d81b60]/20 dark:to-[#f48fb1]/10 rounded-xl border-3 border-[#d81b60]/30">
                         <p className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1] text-center">
                             🎯 {getPreviewText()}
                         </p>
-                        <div className="text-xs text-[#d81b60]/70 dark:text-[#f48fb1]/70 text-center mt-1 space-y-0.5">
+                        <div className="text-xs text-[#d81b60]/70 text-center mt-1 space-y-0.5">
                             <p>
                                 {isArabic 
                                     ? `💰 عند شراء ${requirements.reduce((sum, r) => sum + r.quantity, 0)}، تحصل على ${result.quantity} مجاناً`
                                     : `💰 Buy ${requirements.reduce((sum, r) => sum + r.quantity, 0)}, get ${result.quantity} free`
                                 }
                             </p>
-                            {!isPermanent && expiresAt && (
-                                <p className="text-[10px] text-emerald-500/60">
-                                    📅 {isArabic ? 'ينتهي في' : 'Expires'} {new Date(expiresAt).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US')} 
-                                    {(() => {
-                                        const date = new Date(expiresAt);
-                                        if (!isNaN(date.getTime())) {
-                                            return ` ${date.toLocaleTimeString(isArabic ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`;
-                                        }
-                                        return '';
-                                    })()}
-                                </p>
-                            )}
-                            {selectedCategoryId && (
+                            {selectedParentCategoryId && (
                                 <p className="text-[10px] text-muted-foreground">
-                                    📂 {isArabic ? 'التصنيف' : 'Category'}: {
-                                        categories.find((c: any) => c.id === selectedCategoryId)?.[isArabic ? 'name_ar' : 'name_en'] || ''
-                                    }
-                                </p>
-                            )}
-                            {result.variationQuantities && Object.keys(result.variationQuantities).length > 0 && (
-                                <p className="text-[10px] text-emerald-500/60">
-                                    🎨 {isArabic ? 'توزيع كميات الهدية' : 'Gift quantity distribution'}: {
-                                        Object.entries(result.variationQuantities)
-                                            .map(([id, qty]) => `${qty}`)
-                                            .join(' + ')
-                                    }
-                                </p>
-                            )}
-                            {requirements.some(r => r.variationQuantities && Object.keys(r.variationQuantities).length > 0) && (
-                                <p className="text-[10px] text-emerald-500/60">
-                                    🎨 {isArabic ? 'توزيع كميات الشروط' : 'Requirements quantity distribution'}: {
-                                        requirements.map((r, i) => {
-                                            const qtyStr = Object.values(r.variationQuantities || {}).join('+');
-                                            return qtyStr ? `شرط ${i+1}: ${qtyStr}` : null;
-                                        }).filter(Boolean).join(' | ')
-                                    }
+                                    📁 {isArabic ? 'الرئيسي' : 'Main'}: {getCategoryName(selectedParentCategoryId)}
+                                    {selectedSubCategoryId && ` → 📂 ${getCategoryName(selectedSubCategoryId)}`}
                                 </p>
                             )}
                         </div>
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2 pt-2 border-t-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
+                <DialogFooter className="gap-2 pt-2 border-t-3 border-[#d81b60]/30">
                     <Button 
                         variant="outline" 
                         onClick={() => onOpenChange(false)}
-                        className="rounded-xl border-3 border-[#d81b60]/30 text-[#d81b60] hover:bg-[#d81b60]/10 dark:hover:bg-[#d81b60]/20"
+                        className="rounded-xl border-3 border-[#d81b60]/30 text-[#d81b60] hover:bg-[#d81b60]/10"
                         disabled={isSubmitting}
                     >
                         <X className="h-4 w-4 mr-1.5" />
                         {isArabic ? "إلغاء" : "Cancel"}
                     </Button>
                     <Button
-                        className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/30 hover:shadow-[#d81b60]/50 transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 border-3 border-[#d81b60]/30"
+                        className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/30 transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 border-3 border-[#d81b60]/30"
                         onClick={handleSubmit}
                         disabled={isSubmitting}
                     >
@@ -1788,5 +1782,4 @@ function AddBogoOfferDialogComponent({
     );
 }
 
-// ✅ ✅ ✅ استخدام React.memo لمنع التحميل المتكرر
 export const AddBogoOfferDialog = React.memo(AddBogoOfferDialogComponent);

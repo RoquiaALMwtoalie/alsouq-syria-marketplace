@@ -98,41 +98,47 @@ const STATUS_CONFIG: Record<string, {
 };
 
 // ============================================================
-// ✅ Stat Card - بتصميم وردي
+// ✅ Stat Card - خلفية بيضاء وبوردر زهري (مثل Overview)
 // ============================================================
 const StatCard = ({ 
   label, 
   value, 
   icon: Icon, 
   color,
+  gradient,
 }: { 
   label: string; 
   value: number; 
   icon: any; 
   color: string;
+  gradient: string;
 }) => (
-  <div className="group relative bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden">
-    <div className="absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-    <div className="absolute -top-8 -right-8 h-16 w-16 rounded-full bg-[#fbcfe8]/60 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-    <div className="relative flex items-center justify-between p-3">
+  <div className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 shadow-sm hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative p-4">
+    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+      <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" />
+    </div>
+    <div className="flex items-center justify-between relative">
       <div>
-        <p className="text-[10px] font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">
-          {label}
-        </p>
-        <p className={`text-xl font-bold mt-0.5 ${color} group-hover:scale-110 transition-transform duration-300`}>
-          {value}
-        </p>
+        <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{label}</p>
+        <p className={`text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors ${color}`}>{value}</p>
       </div>
-      <div className={`h-9 w-9 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
-        <Icon className={`h-4 w-4 ${color}`} />
+      <div className="h-10 w-10 rounded-xl bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+        <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+          <Icon className="h-3.5 w-3.5 text-white" />
+        </div>
       </div>
     </div>
-    <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
+    <div className="mt-2 h-0.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+      <div 
+        className={`h-full rounded-full bg-gradient-to-r ${gradient} transition-all duration-1000 animate-shimmer`} 
+        style={{ width: `${Math.min(100, (value / (1)) * 100)}%` }}
+      />
+    </div>
   </div>
 );
 
 // ============================================================
-// ✅ Badge الحالة
+// ✅ Badge الحالة - هوفر رمادي فاتح جداً
 // ============================================================
 const StatusBadge = ({ status }: { status: string }) => {
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
@@ -141,7 +147,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   
   return (
     <Badge className={cn(
-      "border-2 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 hover:scale-105",
+      "border-2 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 cursor-default",
       config.bg,
       config.color,
       config.border
@@ -153,7 +159,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 // ============================================================
-// ✅ Badge النوع
+// ✅ Badge النوع - هوفر رمادي فاتح جداً
 // ============================================================
 const TypeBadge = ({ type }: { type: string }) => {
   const isRTL = useApp().lang === 'ar';
@@ -179,7 +185,7 @@ const TypeBadge = ({ type }: { type: string }) => {
   
   return (
     <Badge className={cn(
-      "border-2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 hover:scale-105",
+      "border-2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 cursor-default",
       config.bg,
       config.color
     )}>
@@ -776,53 +782,47 @@ export function SellerApplicationsAdmin() {
   return (
     <div className="space-y-6">
       
-      {/* ===== HEADER ===== */}
+      {/* ===== HEADER - نفس تصميم Overview ===== */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="relative">
-          <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
-          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#f9a8d4]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
-          
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
-            <div className="relative group">
-              <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
-              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#f9a8d4]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                <Layers className="h-5 w-5 group-hover:animate-bounce" />
-              </div>
-            </div>
-            {isRTL ? "طلبات البائعين" : "Seller Applications"}
-            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
-              {totalCount}
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <span className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] bg-clip-text text-transparent">
+              {isRTL ? "طلبات البائعين" : "Seller Applications"}
+            </span>
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20 text-[10px]">
+              <Activity className="h-2.5 w-2.5 mr-1 text-emerald-500 animate-pulse" />
+              {isRTL ? 'مباشر' : 'Live'}
             </Badge>
           </h1>
-          
-          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
+              <Layers className="h-3.5 w-3.5 text-[#2a655f]" />
+              <span className="text-[#2a655f] font-medium">{totalCount}</span>
+              <span className="text-xs text-muted-foreground">{isRTL ? 'إجمالي' : 'total'}</span>
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 hover:bg-amber-100/50 transition-colors">
               <Clock className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
               <span className="text-amber-600 dark:text-amber-400 font-medium">{stats.pending}</span>
-              <span className="text-xs text-muted-foreground">{isRTL ? "قيد المراجعة" : "pending"}</span>
+              <span className="text-xs text-muted-foreground">{isRTL ? 'قيد المراجعة' : 'pending'}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 transition-colors">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
               <span className="text-emerald-600 dark:text-emerald-400 font-medium">{stats.approved}</span>
-              <span className="text-xs text-muted-foreground">{isRTL ? "موافق" : "approved"}</span>
-            </span>
-            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-            <span className="text-xs text-[#2a655f] flex items-center gap-1">
-              <Zap className="h-3 w-3 animate-pulse" />
-              {isRTL ? 'تحديث لحظي' : 'Real-time'}
+              <span className="text-xs text-muted-foreground">{isRTL ? 'موافق' : 'approved'}</span>
             </span>
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border-2 border-[#f9a8d4]/40 shadow-sm">
+          <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border-2 border-pink-400/60 dark:border-pink-400/40 shadow-sm">
             <Button
               variant="ghost"
               size="sm"
               onClick={exportToExcel}
               disabled={apps.length === 0}
-              className="rounded-lg h-9 px-4 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] gap-2 transition-all duration-300 hover:scale-105"
+              className="rounded-lg h-9 px-4 text-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:text-slate-800 gap-2 transition-all duration-300"
             >
               <FileSpreadsheet className="h-4 w-4" />
               <span className="hidden sm:inline text-xs font-medium">Excel</span>
@@ -832,57 +832,61 @@ export function SellerApplicationsAdmin() {
               size="sm"
               onClick={exportToWord}
               disabled={apps.length === 0}
-              className="rounded-lg h-9 px-4 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] gap-2 transition-all duration-300 hover:scale-105"
+              className="rounded-lg h-9 px-4 text-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:text-slate-800 gap-2 transition-all duration-300"
             >
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline text-xs font-medium">Word</span>
             </Button>
-            <div className="w-px h-6 bg-[#f9a8d4]/30" />
+            <div className="w-px h-6 bg-slate-300/50" />
             <Button
               variant="ghost"
               size="sm"
               onClick={() => refetch()}
-              className="rounded-lg h-9 px-3 text-[#2a655f] hover:bg-[#f9a8d4]/20 transition-all duration-300 hover:scale-105"
+              className="rounded-lg h-9 px-3 text-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:text-slate-800 transition-all duration-300"
             >
-              <RefreshCw className="h-4 w-4 animate-spin-slow" />
+              <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
-          <Badge className="bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white border-2 border-white/30 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#f9a8d4]/30 animate-pulse">
+          <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#2a655f]/30 animate-pulse">
             <Sparkles className="h-3 w-3 mr-1" />
             {isRTL ? 'لوحة تحكم' : 'Dashboard'}
           </Badge>
         </div>
       </div>
 
-      {/* ===== STATS CARDS - بتصميم وردي ===== */}
+      {/* ===== STATS CARDS - خلفية بيضاء وبوردر زهري (مثل Overview) ===== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard 
           label={isRTL ? '📊 الإجمالي' : '📊 Total'} 
           value={stats.total} 
           icon={Layers}
           color="text-[#2a655f]"
+          gradient="from-[#2a655f] to-[#f9a8d4]"
         />
         <StatCard 
           label={isRTL ? '⏳ قيد المراجعة' : '⏳ Pending'} 
           value={stats.pending} 
           icon={Clock}
           color="text-amber-500"
+          gradient="from-amber-500 to-amber-600"
         />
         <StatCard 
           label={isRTL ? '✅ موافق عليه' : '✅ Approved'} 
           value={stats.approved} 
           icon={CheckCircle2}
           color="text-emerald-500"
+          gradient="from-emerald-500 to-teal-500"
         />
         <StatCard 
           label={isRTL ? '❌ مرفوض' : '❌ Rejected'} 
           value={stats.rejected} 
           icon={XCircle}
           color="text-rose-500"
+          gradient="from-rose-500 to-red-600"
         />
       </div>
 
-      {/* ===== SEARCH & FILTERS - بوردرات وردية ===== */}
+      {/* ===== SEARCH & FILTERS - مثل Overview ===== */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 group">
           <Search className={`absolute inset-y-0 my-auto ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-focus-within:text-[#d81b60] transition-colors duration-300`} />
@@ -893,7 +897,7 @@ export function SellerApplicationsAdmin() {
               setPage(1);
             }}
             placeholder={isRTL ? "🔍 بحث عن طلب..." : "🔍 Search applications..."}
-            className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border-3 border-[#f9a8d4]/40 dark:border-[#f9a8d4]/30 bg-white dark:bg-[#1e293b] focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#d81b60]/50`}
+            className={`${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 transition-all duration-300 hover:border-pink-500`}
           />
         </div>
 
@@ -904,17 +908,17 @@ export function SellerApplicationsAdmin() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[160px] h-10 rounded-xl border-3 border-[#f9a8d4]/40 dark:border-[#f9a8d4]/30 hover:border-[#d81b60]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[160px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-[#d81b60]" />
               <SelectValue placeholder={isRTL ? "جميع الحالات" : "All status"} />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/40">
-            <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📋 {isRTL ? "جميع الحالات" : "All"}</SelectItem>
-            <SelectItem value="pending" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">⏳ {isRTL ? "قيد المراجعة" : "Pending"}</SelectItem>
-            <SelectItem value="approved" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">✅ {isRTL ? "موافق" : "Approved"}</SelectItem>
-            <SelectItem value="rejected" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">❌ {isRTL ? "مرفوض" : "Rejected"}</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+            <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📋 {isRTL ? "جميع الحالات" : "All"}</SelectItem>
+            <SelectItem value="pending" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⏳ {isRTL ? "قيد المراجعة" : "Pending"}</SelectItem>
+            <SelectItem value="approved" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {isRTL ? "موافق" : "Approved"}</SelectItem>
+            <SelectItem value="rejected" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">❌ {isRTL ? "مرفوض" : "Rejected"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -925,16 +929,16 @@ export function SellerApplicationsAdmin() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[160px] h-10 rounded-xl border-3 border-[#f9a8d4]/40 dark:border-[#f9a8d4]/30 hover:border-[#d81b60]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[160px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
             <div className="flex items-center gap-2">
               <Layers className="h-4 w-4 text-[#d81b60]" />
               <SelectValue placeholder={isRTL ? "النوع" : "Type"} />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/40">
-            <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📦 {isRTL ? "جميع الأنواع" : "All"}</SelectItem>
-            <SelectItem value="store" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">🏪 {isRTL ? "فتح متجر" : "Open Store"}</SelectItem>
-            <SelectItem value="product" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">🛍️ {isRTL ? "إضافة منتج" : "Add Product"}</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+            <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📦 {isRTL ? "جميع الأنواع" : "All"}</SelectItem>
+            <SelectItem value="store" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🏪 {isRTL ? "فتح متجر" : "Open Store"}</SelectItem>
+            <SelectItem value="product" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🛍️ {isRTL ? "إضافة منتج" : "Add Product"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -945,18 +949,18 @@ export function SellerApplicationsAdmin() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-3 border-[#f9a8d4]/40 dark:border-[#f9a8d4]/30 hover:border-[#d81b60]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[100px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
             <div className="flex items-center gap-2">
               <Layers className="h-4 w-4 text-[#d81b60]" />
               <SelectValue placeholder="10" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/40">
-            <SelectItem value="6" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">6</SelectItem>
-            <SelectItem value="10" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">10</SelectItem>
-            <SelectItem value="20" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">20</SelectItem>
-            <SelectItem value="50" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">50</SelectItem>
-            <SelectItem value="100" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">100</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+            <SelectItem value="6" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">6</SelectItem>
+            <SelectItem value="10" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">10</SelectItem>
+            <SelectItem value="20" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">20</SelectItem>
+            <SelectItem value="50" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">50</SelectItem>
+            <SelectItem value="100" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">100</SelectItem>
           </SelectContent>
         </Select>
 
@@ -969,52 +973,52 @@ export function SellerApplicationsAdmin() {
             setFilterType("all");
             setPage(1);
           }}
-          className="h-10 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60] transition-all duration-300 hover:scale-105"
+          className="h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-pink-500 hover:text-slate-800 transition-all duration-300"
         >
-          <XCircle className="h-4 w-4 mr-1.5" />
+          <X className="h-4 w-4 mr-1.5" />
           {isRTL ? "مسح الكل" : "Clear all"}
         </Button>
       </div>
 
-      {/* ===== TABLE - مع هوفر وردي ===== */}
-      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#f9a8d4]/40 dark:border-[#f9a8d4]/30 overflow-hidden shadow-lg shadow-[#f9a8d4]/10 hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-300">
+      {/* ===== TABLE - نفس تصميم جدول المتاجر ===== */}
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
         <div className="overflow-x-auto" ref={tableRef}>
           <Table>
             <TableHeader>
-              <TableRow className="border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 hover:bg-transparent bg-gradient-to-r from-[#f9a8d4]/20 to-[#fbcfe8]/20">
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-right min-w-[200px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+              <TableRow className="border-slate-200 dark:border-slate-700 hover:bg-transparent bg-gradient-to-r from-slate-100/50 via-slate-50/30 to-slate-100/50 dark:from-slate-800/30 dark:via-slate-700/20 dark:to-slate-800/30 border-b-2 border-slate-200 dark:border-slate-700">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-right min-w-[200px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
                   <div className="flex items-center gap-2">
-                    <Store className="h-3.5 w-3.5 text-[#d81b60]" />
+                    <Store className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
                     {isRTL ? "المتقدم / المتجر" : "Applicant / Store"}
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[100px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[100px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
                   <div className="flex items-center justify-center gap-2">
-                    <Layers className="h-3.5 w-3.5 text-[#d81b60]" />
+                    <Layers className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
                     {isRTL ? "النوع" : "Type"}
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[100px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[100px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
                   <div className="flex items-center justify-center gap-2">
-                    <Phone className="h-3.5 w-3.5 text-[#d81b60]" />
+                    <Phone className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
                     {isRTL ? "الهاتف" : "Phone"}
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[120px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
                   <div className="flex items-center justify-center gap-2">
-                    <Shield className="h-3.5 w-3.5 text-[#d81b60]" />
+                    <Shield className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
                     {isRTL ? "الحالة" : "Status"}
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[100px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[100px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
                   <div className="flex items-center justify-center gap-2">
-                    <Calendar className="h-3.5 w-3.5 text-[#d81b60]" />
+                    <Calendar className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
                     {isRTL ? "تاريخ الطلب" : "Date"}
                   </div>
                 </TableHead>
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[280px]">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[280px]">
                   <div className="flex items-center justify-center gap-2">
-                    <Zap className="h-3.5 w-3.5 text-[#d81b60] animate-pulse" />
+                    <Zap className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300 animate-pulse" />
                     {isRTL ? "إجراءات" : "Actions"}
                   </div>
                 </TableHead>
@@ -1025,7 +1029,7 @@ export function SellerApplicationsAdmin() {
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-12">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="h-16 w-16 rounded-full bg-[#fbcfe8]/60 dark:bg-[#fbcfe8]/20 flex items-center justify-center animate-bounce-slow border-3 border-[#f9a8d4]/70">
+                      <div className="h-16 w-16 rounded-full bg-[#2a655f]/10 flex items-center justify-center animate-bounce-slow">
                         <Layers className="h-8 w-8 text-[#2a655f]/40" />
                       </div>
                       <p className="font-medium text-slate-900 dark:text-white">
@@ -1045,19 +1049,19 @@ export function SellerApplicationsAdmin() {
                     <TableRow 
                       key={a.id} 
                       className={cn(
-                        "border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 transition-all duration-300 group",
-                        a.status === "pending" ? "bg-[#f9a8d4]/10 dark:bg-[#f9a8d4]/5" : "",
-                        "hover:bg-[#f9a8d4]/20 dark:hover:bg-[#f9a8d4]/15"
+                        "border-slate-200 dark:border-slate-700 transition-colors duration-300 group border-b-2 border-slate-200/60 dark:border-slate-700/60",
+                        a.status === "pending" ? "bg-amber-50/30 dark:bg-amber-950/10" : "",
+                        "hover:bg-gray-50/60 dark:hover:bg-gray-700/20"
                       )}
                       onMouseEnter={() => setHoveredRow(a.id)}
                       onMouseLeave={() => setHoveredRow(null)}
                     >
-                      <TableCell className="border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                      <TableCell className="border-r-2 border-slate-200/60 dark:border-slate-700/60">
                         <div className="flex items-center gap-3">
                           <div className={cn(
-                            "h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 border-2 border-[#f9a8d4]/30",
+                            "h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 border-2 border-slate-200 dark:border-slate-700",
                             isHovered ? "scale-105 rotate-6" : "",
-                            a.store_logo_url ? "" : "bg-gradient-to-br from-[#2a655f] to-[#f9a8d4]"
+                            a.store_logo_url ? "" : "bg-gradient-to-br from-[#2a655f] to-[#1a4f4a]"
                           )}>
                             {a.store_logo_url ? (
                               <img src={a.store_logo_url} alt="" className="h-11 w-11 rounded-xl object-cover" />
@@ -1066,16 +1070,16 @@ export function SellerApplicationsAdmin() {
                             )}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 group-hover:text-[#d81b60] transition-colors">
+                            <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 group-hover:text-[#2a655f] transition-colors">
                               <span className="truncate">{a.store_name}</span>
                               {a.store_type && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-2 border-[#f9a8d4]/30">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-2 border-slate-200 dark:border-slate-700 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
                                   {a.store_type === "physical" ? "🏪" : "🌐"}
                                 </Badge>
                               )}
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                              <User className="h-3 w-3 text-[#d81b60]" />
+                              <User className="h-3 w-3 text-[#2a655f] dark:text-slate-400" />
                               {a.profiles?.full_name || "—"}
                             </div>
                             {a.store_description && (
@@ -1087,18 +1091,18 @@ export function SellerApplicationsAdmin() {
                         </div>
                       </TableCell>
                       
-                      <TableCell className="text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                      <TableCell className="text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
                         <TypeBadge type={a.application_type || "store"} />
                       </TableCell>
                       
-                      <TableCell dir="ltr" className="text-sm text-slate-600 dark:text-slate-300 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                      <TableCell dir="ltr" className="text-sm text-slate-600 dark:text-slate-300 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
                         <div className="flex items-center justify-center gap-1">
-                          <Phone className="h-3 w-3 text-[#d81b60]" />
+                          <Phone className="h-3 w-3 text-[#2a655f] dark:text-slate-400" />
                           {a.store_phone || a.profiles?.phone || "—"}
                         </div>
                       </TableCell>
                       
-                      <TableCell className="text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                      <TableCell className="text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
                         <StatusBadge status={a.status} />
                         {a.reviewed_at && a.status !== "pending" && (
                           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -1109,9 +1113,9 @@ export function SellerApplicationsAdmin() {
                         )}
                       </TableCell>
                       
-                      <TableCell className="text-sm text-slate-600 dark:text-slate-300 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                      <TableCell className="text-sm text-slate-600 dark:text-slate-300 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
                         <div className="flex items-center justify-center gap-1">
-                          <Calendar className="h-3.5 w-3.5 text-[#d81b60]" />
+                          <Calendar className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-400" />
                           {new Date(a.created_at).toLocaleDateString(
                             isRTL ? "ar-SA" : "en-US",
                             { year: "numeric", month: "short", day: "numeric" }
@@ -1122,11 +1126,11 @@ export function SellerApplicationsAdmin() {
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1.5 flex-wrap">
                           
-                          {/* زر التفاصيل */}
+                          {/* ✅ زر التفاصيل - رمادي مع هوفر رمادي فاتح */}
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="rounded-xl h-8 px-3 text-[#2a655f] hover:text-[#d81b60] hover:bg-[#f9a8d4]/20 transition-all duration-300 hover:scale-105 border-2 border-[#f9a8d4]/30"
+                            variant="outline"
+                            className="rounded-xl h-8 px-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 hover:scale-105"
                             onClick={() => {
                               setSelectedApp(a);
                               setShowDetailsDialog(true);
@@ -1138,11 +1142,12 @@ export function SellerApplicationsAdmin() {
 
                           {a.status === "pending" && (
                             <>
-                              {/* زر الموافقة - يختلف حسب نوع الطلب */}
+                              {/* ✅ زر الموافقة لمتجر - رمادي مع هوفر رمادي فاتح */}
                               {a.application_type === "store" ? (
                                 <Button
                                   size="sm"
-                                  className="rounded-xl h-8 px-3 transition-all duration-300 hover:scale-105 bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] hover:from-[#3a8a82] hover:to-[#f48fb1] text-white shadow-lg shadow-[#f9a8d4]/30 border-2 border-[#f9a8d4]/50"
+                                  variant="outline"
+                                  className="rounded-xl h-8 px-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 hover:scale-105"
                                   onClick={() => {
                                     setPendingAppId(a.id);
                                     setShowDeliveryCompanyDialog(true);
@@ -1160,12 +1165,13 @@ export function SellerApplicationsAdmin() {
                               ) : (
                                 <Button
                                   size="sm"
-                                  className="rounded-xl h-8 px-3 transition-all duration-300 hover:scale-105 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 text-white shadow-lg shadow-emerald-500/30 border-2 border-emerald-500/50"
+                                  variant="outline"
+                                  className="rounded-xl h-8 px-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 hover:scale-105"
                                   onClick={() => {
                                     decide(a.id, "approved");
                                   }}
                                   disabled={isProcessing}
-                                  title={isRTL ? "موافقة على الطلب (بدون شركة توصيل)" : "Approve application (No delivery company)"}
+                                  title={isRTL ? "موافقة على الطلب" : "Approve application"}
                                 >
                                   {isProcessing && pendingAppId === a.id ? (
                                     <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
@@ -1176,11 +1182,11 @@ export function SellerApplicationsAdmin() {
                                 </Button>
                               )}
 
-                              {/* زر الرفض */}
+                              {/* ✅ زر الرفض - رمادي مع هوفر رمادي فاتح */}
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="rounded-xl h-8 px-3 transition-all duration-300 border-2 border-rose-500/30 text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/50 hover:scale-105"
+                                className="rounded-xl h-8 px-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 hover:scale-105"
                                 onClick={() => {
                                   if (isProcessing) {
                                     toast.warning(isRTL ? "⏳ جاري المعالجة..." : "⏳ Processing...");
@@ -1204,19 +1210,19 @@ export function SellerApplicationsAdmin() {
                           
                           {a.status !== "pending" && (
                             <div className={cn(
-                              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border-2",
+                              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border-2 transition-all duration-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 cursor-default",
                               a.status === "approved" 
                                 ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" 
                                 : "bg-rose-500/10 text-rose-600 border-rose-500/30"
                             )}>
                               {a.status === "approved" ? (
                                 <>
-                                  <CheckCircle2 className="h-3.5 w-3.5 animate-bounce-slow" />
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
                                   <span>{isRTL ? "تمت الموافقة" : "Approved"}</span>
                                 </>
                               ) : (
                                 <>
-                                  <XCircle className="h-3.5 w-3.5 animate-float" />
+                                  <XCircle className="h-3.5 w-3.5" />
                                   <span>{isRTL ? "مرفوض" : "Rejected"}</span>
                                 </>
                               )}
@@ -1232,9 +1238,9 @@ export function SellerApplicationsAdmin() {
           </Table>
         </div>
 
-        {/* ===== PAGINATION ===== */}
+        {/* ===== PAGINATION - مثل المتاجر ===== */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="px-4 py-3 border-t-2 border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-xs text-slate-500 dark:text-slate-400">
               {apps.length === 0 ? (
                 <span>{isRTL ? "لا توجد طلبات" : "No applications"}</span>
@@ -1254,7 +1260,7 @@ export function SellerApplicationsAdmin() {
                 size="sm"
                 onClick={() => goToPage(1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <span className="text-xs font-bold">«</span>
               </Button>
@@ -1264,7 +1270,7 @@ export function SellerApplicationsAdmin() {
                 size="sm"
                 onClick={() => goToPage(page - 1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -1291,8 +1297,8 @@ export function SellerApplicationsAdmin() {
                       className={cn(
                         "h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300",
                         page === pageNum
-                          ? "bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] hover:from-[#3a8a82] hover:to-[#f48fb1] text-white shadow-lg shadow-[#f9a8d4]/30 border-2 border-white/30 scale-105"
-                          : "border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 hover:text-[#d81b60]"
+                          ? "bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30 border-0 scale-105"
+                          : "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200"
                       )}
                     >
                       {pageNum}
@@ -1307,7 +1313,7 @@ export function SellerApplicationsAdmin() {
                       variant="outline"
                       size="sm"
                       onClick={() => goToPage(totalPages)}
-                      className="h-8 min-w-[32px] p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-xs transition-all duration-300 hover:scale-105"
+                      className="h-8 min-w-[32px] p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 text-xs transition-all duration-300"
                     >
                       {totalPages}
                     </Button>
@@ -1320,7 +1326,7 @@ export function SellerApplicationsAdmin() {
                 size="sm"
                 onClick={() => goToPage(page + 1)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -1330,7 +1336,7 @@ export function SellerApplicationsAdmin() {
                 size="sm"
                 onClick={() => goToPage(totalPages)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-3 border-[#f9a8d4]/40 text-[#2a655f] hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <span className="text-xs font-bold">»</span>
               </Button>
@@ -1338,10 +1344,10 @@ export function SellerApplicationsAdmin() {
           </div>
         )}
 
-        {/* ✅ Footer */}
-        <div className="px-4 py-2 border-t-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#f9a8d4]/10 to-[#fbcfe8]/10">
+        {/* ✅ Footer - مثل المتاجر */}
+        <div className="px-4 py-2 border-t-2 border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-slate-50/50 to-slate-100/30 dark:from-slate-800/20 dark:to-slate-700/10">
           <span className="flex items-center gap-2">
-            <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
+            <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
               {isRTL
                 ? `عرض ${apps.length} من ${totalCount}`
                 : `Showing ${apps.length} of ${totalCount}`}
@@ -1351,7 +1357,7 @@ export function SellerApplicationsAdmin() {
             </span>
           </span>
           <div className="flex items-center gap-2">
-            <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
+            <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
               <Shield className="h-3 w-3 mr-1 text-[#d81b60]" />
               {filterStatus === "all" && (isRTL ? "جميع" : "All")}
               {filterStatus === "pending" && (isRTL ? "قيد المراجعة" : "Pending")}
@@ -1359,7 +1365,7 @@ export function SellerApplicationsAdmin() {
               {filterStatus === "rejected" && (isRTL ? "مرفوض" : "Rejected")}
             </Badge>
             {searchQuery && (
-              <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
+              <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
                 <Search className="h-3 w-3 mr-1 text-[#d81b60]" />
                 {searchQuery}
               </Badge>
@@ -1369,17 +1375,17 @@ export function SellerApplicationsAdmin() {
       </div>
 
       {/* ============================================================
-      // ✅ REJECT DIALOG
+      // ✅ REJECT DIALOG - مثل Overview
       // ============================================================ */}
       <Dialog open={!!noteFor} onOpenChange={(o) => !o && setNoteFor(null)}>
-        <DialogContent className="rounded-2xl max-w-md border-3 border-[#f9a8d4]/60 shadow-2xl shadow-[#f9a8d4]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0 overflow-hidden">
+        <DialogContent className="rounded-2xl max-w-md border-2 border-pink-400/60 dark:border-pink-400/40 shadow-2xl shadow-pink-500/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0 overflow-hidden">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-gray-50/80 dark:hover:bg-gray-700/30 z-20 transition-all duration-300 border border-slate-200 dark:border-slate-700"
             onClick={() => setNoteFor(null)}
           >
-            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+            <X className="h-4 w-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" />
           </Button>
           <div className="p-6">
             <DialogHeader>
@@ -1413,7 +1419,7 @@ export function SellerApplicationsAdmin() {
                     ? "✍️ اذكر سبب الرفض هنا (مطلوب)" 
                     : "✍️ Mention the reason for rejection here (required)"}
                   className={cn(
-                    "mt-1.5 rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300",
+                    "mt-1.5 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 transition-all duration-300",
                     !note && noteFor && "border-rose-500/50 focus-visible:ring-rose-500/20"
                   )}
                 />
@@ -1431,11 +1437,11 @@ export function SellerApplicationsAdmin() {
                 </p>
               </div>
             </div>
-            <DialogFooter className="gap-3 pt-4 border-t-3 border-[#f9a8d4]/30">
+            <DialogFooter className="gap-3 pt-4 border-t-2 border-pink-400/30">
               <Button 
                 variant="outline" 
                 onClick={() => setNoteFor(null)}
-                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
               >
                 {isRTL ? "إلغاء" : "Cancel"}
               </Button>
@@ -1448,7 +1454,7 @@ export function SellerApplicationsAdmin() {
                   noteFor && decide(noteFor, "rejected", note.trim());
                 }}
                 disabled={isProcessing}
-                className="flex-1 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-lg shadow-rose-500/30 transition-all duration-300 hover:scale-105 border-2 border-rose-400/50"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 hover:scale-105"
               >
                 {isProcessing ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
@@ -1463,22 +1469,22 @@ export function SellerApplicationsAdmin() {
       </Dialog>
 
       {/* ============================================================
-      // ✅ DETAILS DIALOG
+      // ✅ DETAILS DIALOG - مثل Overview
       // ============================================================ */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="rounded-2xl max-w-lg border-3 border-[#f9a8d4]/60 shadow-2xl shadow-[#f9a8d4]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0 overflow-hidden">
+        <DialogContent className="rounded-2xl max-w-lg border-2 border-pink-400/60 dark:border-pink-400/40 shadow-2xl shadow-pink-500/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0 overflow-hidden">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-gray-50/80 dark:hover:bg-gray-700/30 z-20 transition-all duration-300 border border-slate-200 dark:border-slate-700"
             onClick={() => setShowDetailsDialog(false)}
           >
-            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+            <X className="h-4 w-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" />
           </Button>
           <div className="p-6">
             <DialogHeader>
               <div className="flex items-start gap-4 mb-4">
-                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#f9a8d4]/30 border-2 border-[#f9a8d4]/40">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] flex items-center justify-center shadow-lg shadow-[#2a655f]/20 border-2 border-slate-200 dark:border-slate-700">
                   <Store className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -1525,7 +1531,7 @@ export function SellerApplicationsAdmin() {
                   
                   <div className="col-span-2">
                     <p className="text-xs text-slate-500">{isRTL ? "الوصف" : "Description"}</p>
-                    <p className="text-slate-700 dark:text-slate-300 bg-[#f9a8d4]/10 p-3 rounded-xl border-2 border-[#f9a8d4]/30">
+                    <p className="text-slate-700 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl border-2 border-slate-200/50 dark:border-slate-700/50">
                       {selectedApp.store_description || (isRTL ? "لا يوجد وصف" : "No description")}
                     </p>
                   </div>
@@ -1534,15 +1540,15 @@ export function SellerApplicationsAdmin() {
                     <div className="col-span-2">
                       <p className="text-xs text-slate-500">{isRTL ? "العنوان" : "Address"}</p>
                       <p className="text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                        <MapPin className="h-4 w-4 text-[#d81b60]" />
+                        <MapPin className="h-4 w-4 text-[#2a655f]" />
                         {selectedApp.address}
                       </p>
                     </div>
                   )}
                   
                   {selectedApp.admin_note && (
-                    <div className="col-span-2 p-4 rounded-xl bg-[#f9a8d4]/20 border-2 border-[#f9a8d4]/50">
-                      <p className="text-xs text-[#d81b60] flex items-center gap-1">
+                    <div className="col-span-2 p-4 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 border-2 border-slate-200/50 dark:border-slate-700/50">
+                      <p className="text-xs text-[#2a655f] flex items-center gap-1">
                         <MessageSquare className="h-3.5 w-3.5" />
                         {isRTL ? "ملاحظة الأدمن" : "Admin Note"}
                       </p>
@@ -1580,9 +1586,9 @@ export function SellerApplicationsAdmin() {
                   )}
                 </div>
                 
-                <div className="flex items-center justify-between pt-3 border-t-3 border-[#f9a8d4]/30">
+                <div className="flex items-center justify-between pt-3 border-t-2 border-slate-200 dark:border-slate-700">
                   <p className="text-xs text-slate-500 flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5 text-[#d81b60]" />
+                    <Calendar className="h-3.5 w-3.5 text-[#2a655f]" />
                     {isRTL ? "تاريخ الطلب" : "Request Date"}:{" "}
                     {new Date(selectedApp.created_at).toLocaleDateString(
                       isRTL ? "ar-SA" : "en-US",
@@ -1592,7 +1598,7 @@ export function SellerApplicationsAdmin() {
                   <Button 
                     variant="outline" 
                     onClick={() => setShowDetailsDialog(false)}
-                    className="rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
+                    className="rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
                   >
                     {isRTL ? "إغلاق" : "Close"}
                   </Button>
@@ -1604,21 +1610,21 @@ export function SellerApplicationsAdmin() {
       </Dialog>
 
       {/* ============================================================
-      // ✅ DIALOG: اختيار شركة التوصيل عند الموافقة
+      // ✅ DIALOG: اختيار شركة التوصيل عند الموافقة - مثل Overview
       // ============================================================ */}
       <Dialog open={showDeliveryCompanyDialog} onOpenChange={setShowDeliveryCompanyDialog}>
-        <DialogContent className="rounded-2xl max-w-md border-3 border-[#f9a8d4]/60 shadow-2xl shadow-[#f9a8d4]/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0 overflow-hidden">
+        <DialogContent className="rounded-2xl max-w-md border-2 border-pink-400/60 dark:border-pink-400/40 shadow-2xl shadow-pink-500/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-0 overflow-hidden">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-[#f9a8d4]/20 z-20 transition-all duration-300 hover:scale-110 border-2 border-[#f9a8d4]/30"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-gray-50/80 dark:hover:bg-gray-700/30 z-20 transition-all duration-300 border border-slate-200 dark:border-slate-700"
             onClick={() => {
               setShowDeliveryCompanyDialog(false);
               setSelectedDeliveryCompanyId("");
               setPendingAppId("");
             }}
           >
-            <X className="h-4 w-4 text-slate-400 hover:text-[#d81b60]" />
+            <X className="h-4 w-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" />
           </Button>
           <div className="p-6">
             <DialogHeader>
@@ -1648,24 +1654,24 @@ export function SellerApplicationsAdmin() {
                   value={selectedDeliveryCompanyId} 
                   onValueChange={setSelectedDeliveryCompanyId}
                 >
-                  <SelectTrigger className="rounded-xl border-3 border-[#f9a8d4]/40 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300">
+                  <SelectTrigger className="rounded-xl border border-slate-200 dark:border-slate-700 focus:border-slate-300 focus:ring-2 focus:ring-slate-300/30 transition-all duration-300">
                     <SelectValue placeholder={isRTL ? "🔍 اختر شركة التوصيل..." : "🔍 Select delivery company..."} />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/40">
+                  <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-700">
                     {deliveryCompanies.length === 0 ? (
                       <SelectItem value="no-company" disabled>
                         {isRTL ? "⚠️ لا توجد شركات توصيل موثقة" : "⚠️ No verified delivery companies"}
                       </SelectItem>
                     ) : (
                       deliveryCompanies.map((company) => (
-                        <SelectItem key={company.id} value={company.id}>
+                        <SelectItem key={company.id} value={company.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
                           <span className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-[#2a655f]" />
                             <span>{company.name_ar || company.name_en}</span>
-                            <Badge className="text-[9px] bg-emerald-500/10 text-emerald-600 border-2 border-emerald-400/40">
+                            <Badge className="text-[9px] bg-emerald-500/10 text-emerald-600 border-2 border-emerald-400/40 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
                               ✅ {isRTL ? "موثقة" : "Verified"}
                             </Badge>
-                            <Badge className="text-[9px] bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-[#f9a8d4]/40">
+                            <Badge className="text-[9px] bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
                               {company.base_price || 0} SYP
                             </Badge>
                           </span>
@@ -1675,7 +1681,7 @@ export function SellerApplicationsAdmin() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Info className="h-3 w-3 text-[#d81b60]" />
+                  <Info className="h-3 w-3 text-[#2a655f]" />
                   {isRTL 
                     ? "💡 هذه الشركة ستكون المسؤولة عن توصيل طلبات هذا المتجر"
                     : "💡 This company will handle delivery for this store"}
@@ -1692,7 +1698,7 @@ export function SellerApplicationsAdmin() {
               )}
             </div>
             
-            <DialogFooter className="gap-3 pt-4 border-t-3 border-[#f9a8d4]/30">
+            <DialogFooter className="gap-3 pt-4 border-t-2 border-slate-200 dark:border-slate-700">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1700,14 +1706,14 @@ export function SellerApplicationsAdmin() {
                   setSelectedDeliveryCompanyId("");
                   setPendingAppId("");
                 }}
-                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/40 hover:bg-[#f9a8d4]/20 hover:border-[#d81b60]/60 text-[#2a655f] hover:text-[#d81b60] transition-all duration-300"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
               >
                 {isRTL ? "إلغاء" : "Cancel"}
               </Button>
               <Button
                 onClick={handleApproveWithDelivery}
                 disabled={!selectedDeliveryCompanyId || isProcessing}
-                className="flex-1 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] hover:from-[#3a8a82] hover:to-[#f48fb1] text-white shadow-lg shadow-[#f9a8d4]/30 transition-all duration-300 hover:scale-[1.02] border-2 border-[#f9a8d4]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1756,6 +1762,14 @@ export function SellerApplicationsAdmin() {
         }
         .animate-pulse-slow {
           animation: pulse-slow 2s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .animate-shimmer {
+          background-size: 200% auto;
+          animation: shimmer 3s linear infinite;
         }
       `}</style>
     </div>

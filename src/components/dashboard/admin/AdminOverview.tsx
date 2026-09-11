@@ -35,7 +35,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // ============================================================
-// 🎨 ZOOQ BRAND COLORS - نفس ألوان ProductsPage
+// 🎨 ZOOQ BRAND COLORS
 // ============================================================
 const COLORS = {
   olive: '#2a655f',
@@ -63,7 +63,7 @@ const COLORS = {
 };
 
 // ============================================================
-// 🟢 CHART COLORS - تدرجات الزيتي والوردي
+// 🟢 CHART COLORS
 // ============================================================
 const CHART_COLORS = {
   green: ['#2a655f', '#3a8a82', '#1a4f4a', '#4a9f95', '#6bb5aa', '#8dcfc6'],
@@ -245,7 +245,7 @@ const stores = storesData?.data || [];
     total: filteredAll.length + filteredStores.length + filteredApps.length
   };
 
-  // ===== إحصائيات سريعة - نفس تصميم ProductsPage مع خلفية وردية =====
+  // ===== إحصائيات سريعة =====
   const quickStats = [
     { 
       label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', 
@@ -254,8 +254,7 @@ const stores = storesData?.data || [];
       change: `${totalOrders > 0 ? '+' : ''}${totalOrders > 0 ? Math.round((totalOrders / (sellerOrdersRaw.length || 1)) * 100) : 0}%`,
       changeType: totalOrders > 0 ? 'up' : 'down',
       color: 'text-[#2a655f]',
-      bg: 'bg-[#fbcfe8]/60',
-      border: 'border-[#f9a8d4]/70',
+      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
       gradient: 'from-[#2a655f] to-[#f9a8d4]',
     },
     { 
@@ -265,8 +264,7 @@ const stores = storesData?.data || [];
       change: `${stores.length > 0 ? '+' : ''}${stores.length > 0 ? Math.round((stores.length / (all.length || 1)) * 100) : 0}%`,
       changeType: stores.length > 0 ? 'up' : 'down',
       color: 'text-[#3a8a82]',
-      bg: 'bg-[#fbcfe8]/60',
-      border: 'border-[#f9a8d4]/70',
+      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
       gradient: 'from-[#3a8a82] to-[#f9a8d4]',
     },
     { 
@@ -276,52 +274,51 @@ const stores = storesData?.data || [];
       change: `${totalOrders > 0 ? '+' : ''}${totalOrders > 0 ? Math.round(((totalRevenue / totalOrders) / (totalRevenue / (totalOrders || 1))) * 100) : 0}%`,
       changeType: totalOrders > 0 ? 'up' : 'down',
       color: 'text-[#1a4f4a]',
-      bg: 'bg-[#fbcfe8]/60',
-      border: 'border-[#f9a8d4]/70',
+      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
       gradient: 'from-[#1a4f4a] to-[#f9a8d4]',
     },
   ];
 
-  // ===== إحصائيات إضافية - نفس تصميم ProductsPage =====
+  // ===== إحصائيات إضافية =====
   const additionalStats = [
     {
       label: app.lang === 'ar' ? 'البنرات النشطة' : 'Active Banners',
       value: activeBanners.length,
       icon: LayoutDashboard,
       gradient: 'from-[#2a655f] to-[#1a4f4a]',
-      bg: 'bg-[#2a655f]/10',
+      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
     },
     {
       label: app.lang === 'ar' ? 'الإعلانات النشطة' : 'Active Announcements',
       value: activeAnnouncements.length,
       icon: Megaphone,
       gradient: 'from-[#1a4f4a] to-[#3a8a82]',
-      bg: 'bg-[#1a4f4a]/10',
+      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
     },
     {
       label: app.lang === 'ar' ? 'التصنيفات' : 'Categories',
       value: categories.length,
       icon: Tags,
       gradient: 'from-[#3a8a82] to-[#4a9f95]',
-      bg: 'bg-[#3a8a82]/10',
+      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
     },
     {
       label: app.lang === 'ar' ? 'الإشعارات غير المقروءة' : 'Unread Notifications',
       value: unreadNotifications.length,
       icon: Bell,
       gradient: 'from-[#4a9f95] to-[#6bb5aa]',
-      bg: 'bg-[#4a9f95]/10',
+      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
     },
   ];
 
-  // ===== حالة المنصة - نفس تصميم ProductsPage =====
+  // ===== حالة المنصة =====
   const platformStats = [
     { 
       label: app.lang === 'ar' ? 'منتجات بانتظار الموافقة' : 'Products Pending', 
       value: pending.length, 
       icon: Package,
       gradient: 'from-[#2a655f] to-[#1a4f4a]',
-      bg: 'bg-[#2a655f]/10',
+      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
       to: 'listings',
       glow: 'shadow-[#2a655f]/20',
     },
@@ -330,7 +327,7 @@ const stores = storesData?.data || [];
       value: pendingApps.length, 
       icon: ShieldCheck,
       gradient: 'from-[#1a4f4a] to-[#3a8a82]',
-      bg: 'bg-[#1a4f4a]/10',
+      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
       to: 'applications',
       glow: 'shadow-[#1a4f4a]/20',
     },
@@ -339,7 +336,7 @@ const stores = storesData?.data || [];
       value: stores.length, 
       icon: Store,
       gradient: 'from-[#3a8a82] to-[#4a9f95]',
-      bg: 'bg-[#3a8a82]/10',
+      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
       to: 'stores',
       glow: 'shadow-[#3a8a82]/20',
     },
@@ -348,7 +345,7 @@ const stores = storesData?.data || [];
       value: all.length, 
       icon: LayoutDashboard,
       gradient: 'from-[#4a9f95] to-[#6bb5aa]',
-      bg: 'bg-[#4a9f95]/10',
+      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
       to: 'listings',
       glow: 'shadow-[#4a9f95]/20',
     },
@@ -492,7 +489,7 @@ const stores = storesData?.data || [];
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-700">
       
-      {/* ===== العنوان مع أزرار التصدير - نفس تصميم ProductsPage ===== */}
+      {/* ===== العنوان مع أزرار التصدير ===== */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
@@ -542,10 +539,10 @@ const stores = storesData?.data || [];
           </p>
         </div>
 
-        {/* ✅ أزرار التصدير - نفس تصميم ProductsPage */}
+        {/* ✅ أزرار التصدير */}
         {!searchQuery.trim() && (
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-[#2a655f]/20 shadow-sm">
+            <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-pink-400/60 dark:border-pink-400/40 shadow-sm">
               <Button
                 variant="ghost"
                 size="sm"
@@ -564,7 +561,7 @@ const stores = storesData?.data || [];
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline text-xs font-medium">Word</span>
               </Button>
-              <div className="w-px h-6 bg-[#2a655f]/20" />
+              <div className="w-px h-6 bg-pink-400/40" />
               <Button
                 variant="ghost"
                 size="sm"
@@ -582,7 +579,7 @@ const stores = storesData?.data || [];
         )}
       </div>
 
-      {/* ===== عرض نتائج البحث - نفس تصميم ProductsPage ===== */}
+      {/* ===== عرض نتائج البحث ===== */}
       {searchQuery.trim() && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-in slide-in-from-top-5 duration-300">
           {[
@@ -597,7 +594,7 @@ const stores = storesData?.data || [];
                 else if (item.key === 'stores') onGoto('stores');
                 else if (item.key === 'applications') onGoto('applications');
               }}
-              className="group bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-4 text-center hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all hover:scale-[1.02]"
+              className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 p-4 text-center hover:shadow-xl hover:shadow-pink-500/20 transition-all hover:scale-[1.02]"
             >
               <div className="flex items-center justify-center gap-3">
                 <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg shadow-[#2a655f]/20 group-hover:scale-110 transition-all duration-300`}>
@@ -620,7 +617,7 @@ const stores = storesData?.data || [];
 
       {/* ===== إذا لم يتم العثور على نتائج ===== */}
       {searchQuery.trim() && searchResults.total === 0 && (
-        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-[#2a655f]/20 p-12 text-center">
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 p-12 text-center">
           <div className="h-20 w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
             <Search className="h-10 w-10 text-[#2a655f]/40" />
           </div>
@@ -635,23 +632,24 @@ const stores = storesData?.data || [];
         </div>
       )}
 
-      {/* ===== بطاقات الإحصائيات السريعة - نفس تصميم ProductsPage مع خلفية وردية ===== */}
+      {/* ===== بطاقات الإحصائيات السريعة - خلفية بيضاء وبوردر زهري ===== */}
       {!searchQuery.trim() && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {quickStats.map((stat, i) => (
               <div 
                 key={i} 
-                className="group bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
+                className={cn(
+                  "group bg-white dark:bg-[#1e293b] rounded-xl border-2 transition-all duration-300 hover:shadow-xl",
+                  stat.border,
+                  "hover:shadow-pink-500/20 hover:-translate-y-1 hover:scale-[1.02]"
+                )}
               >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" />
-                </div>
-                <div className={`flex items-start justify-between ${isRTL ? 'flex-row-reverse' : ''} relative p-5`}>
-                  <div className={isRTL ? 'text-right' : ''}>
-                    <p className="text-xs font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">{stat.label}</p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1 group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
-                    <div className={`flex items-center gap-1 mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="flex items-start justify-between p-4">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stat.value}</p>
+                    <div className="flex items-center gap-1 mt-1">
                       {stat.changeType === 'up' ? (
                         <ArrowUpRight className="h-3 w-3 text-[#2a655f] animate-bounce-slow" />
                       ) : (
@@ -662,13 +660,21 @@ const stores = storesData?.data || [];
                       </span>
                     </div>
                   </div>
-                  <div className={`h-12 w-12 rounded-xl bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
-                    <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                  <div className={cn(
+                    "h-12 w-12 rounded-xl flex items-center justify-center",
+                    "bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40",
+                    "group-hover:scale-110 group-hover:rotate-6 transition-all duration-300"
+                  )}>
+                    <stat.icon className={cn("h-5 w-5", stat.color)} />
                   </div>
                 </div>
-                <div className="mt-0 h-1 w-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                <div className="mt-0 h-1 w-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                   <div 
-                    className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000 animate-shimmer`} 
+                    className={cn(
+                      "h-full rounded-full bg-gradient-to-r",
+                      stat.gradient,
+                      "transition-all duration-1000 animate-shimmer"
+                    )} 
                     style={{ width: `${Math.min(Math.abs(parseFloat(stat.change) || 0) * 4, 100)}%` }}
                   />
                 </div>
@@ -676,31 +682,43 @@ const stores = storesData?.data || [];
             ))}
           </div>
 
-          {/* ===== بطاقات حالة المنصة - نفس تصميم ProductsPage ===== */}
+          {/* ===== بطاقات حالة المنصة - خلفية بيضاء وبوردر زهري ===== */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {platformStats.map((item) => (
               <button
                 key={item.label}
                 onClick={() => onGoto(item.to as any)}
-                className="group bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-[#2a655f]/20 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all hover:scale-[1.02] text-start relative overflow-hidden"
+                className={cn(
+                  "group bg-white dark:bg-[#1e293b] rounded-xl p-4 border-2 transition-all hover:shadow-xl hover:shadow-pink-500/20 hover:scale-[1.02] text-start relative overflow-hidden",
+                  item.border
+                )}
               >
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className={`absolute -right-20 -bottom-20 h-48 w-48 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse`} />
+                  <div className="absolute -right-20 -bottom-20 h-48 w-48 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
                 </div>
                 <div className="flex items-center justify-between relative">
                   <div>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{item.label}</p>
+                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{item.label}</p>
                     <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{item.value}</p>
                   </div>
-                  <div className={`h-12 w-12 rounded-xl ${item.bg} flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg ${item.glow}`}>
-                    <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center`}>
+                  <div className={cn(
+                    "h-12 w-12 rounded-xl flex items-center justify-center",
+                    "bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40",
+                    "group-hover:scale-110 transition-all duration-300",
+                    "shadow-lg shadow-pink-500/10"
+                  )}>
+                    <div className={cn("h-6 w-6 rounded-lg bg-gradient-to-br", item.gradient, "flex items-center justify-center")}>
                       <item.icon className="h-3.5 w-3.5 text-white" />
                     </div>
                   </div>
                 </div>
-                <div className="mt-2 h-1 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden relative">
+                <div className="mt-2 h-1 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden relative">
                   <div 
-                    className={`h-full rounded-full bg-gradient-to-r ${item.gradient} transition-all duration-1000 animate-shimmer`} 
+                    className={cn(
+                      "h-full rounded-full bg-gradient-to-r",
+                      item.gradient,
+                      "transition-all duration-1000 animate-shimmer"
+                    )} 
                     style={{ width: `${Math.min(100, (item.value / (all.length || 1)) * 100)}%` }}
                   />
                 </div>
@@ -711,11 +729,11 @@ const stores = storesData?.data || [];
             ))}
           </div>
 
-          {/* ===== الرسوم البيانية - نفس تصميم ProductsPage مع ألوان وردية وزيتية ===== */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* ===== الرسوم البيانية ===== */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* ✅ مخطط المبيعات الشهرية - مع ألوان وردية وزيتية */}
-            <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-5 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all duration-300 relative overflow-hidden">
+            {/* ✅ مخطط المبيعات الشهرية */}
+            <div className="lg:col-span-1 bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 p-5 hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 relative overflow-hidden">
               <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
               <div className={`flex items-center justify-between mb-4 ${isRTL ? 'flex-row-reverse' : ''} relative`}>
                 <div className={isRTL ? 'text-right' : ''}>
@@ -754,7 +772,7 @@ const stores = storesData?.data || [];
                       <Tooltip 
                         contentStyle={{ 
                           borderRadius: '12px', 
-                          border: '1px solid #2a655f/20', 
+                          border: '2px solid #f9a8d4/50', 
                           boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
                           background: 'rgba(255,255,255,0.95)'
                         }}
@@ -794,24 +812,24 @@ const stores = storesData?.data || [];
               </div>
             </div>
 
-            {/* ✅ مخطط توزيع المنتجات - مع ألوان وردية وزيتية */}
-            <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-5 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse delay-700" />
+            {/* ✅ حالة المتاجر - تم نقلها إلى هنا بدلاً من توزيع المنتجات */}
+            <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 p-5 hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 relative overflow-hidden">
+              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#1a4f4a]/5 blur-3xl animate-pulse delay-500" />
               <div className={isRTL ? 'text-right' : ''}>
                 <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                  <PieChartIcon className="h-4 w-4 text-[#f9a8d4] animate-spin-slow" />
-                  {app.lang === 'ar' ? "توزيع المنتجات" : "Product Distribution"}
+                  <Store className="h-4 w-4 text-[#1a4f4a] animate-float" />
+                  {app.lang === 'ar' ? "حالة المتاجر" : "Store Status"}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {app.lang === 'ar' ? "حسب الحالة" : "By status"}
+                  {app.lang === 'ar' ? "نشط مقابل محظور" : "Active vs Banned"}
                 </p>
               </div>
               <div className="h-[260px] mt-2">
-                {productStatusData.some(d => d.value > 0) ? (
+                {storeStatusData.some(d => d.value > 0) ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie 
-                        data={productStatusData} 
+                        data={storeStatusData} 
                         cx="50%" 
                         cy="45%" 
                         innerRadius={45} 
@@ -823,61 +841,6 @@ const stores = storesData?.data || [];
                         animationDuration={2000}
                         animationEasing="ease-in-out"
                       >
-                        {productStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} className="hover:opacity-80 transition-opacity duration-300 cursor-pointer" />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(v: any) => v}
-                        contentStyle={{ 
-                          borderRadius: '12px', 
-                          border: '1px solid #2a655f/20', 
-                          boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
-                          background: 'rgba(255,255,255,0.95)'
-                        }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '4px' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-sm text-slate-500">
-                    {app.lang === 'ar' ? "لا توجد منتجات" : "No products"}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* ===== صف ثاني من الرسوم ===== */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* ✅ حالة المتاجر */}
-            <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-5 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#1a4f4a]/5 blur-3xl animate-pulse delay-500" />
-              <div className={isRTL ? 'text-right' : ''}>
-                <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                  <Store className="h-4 w-4 text-[#1a4f4a] animate-float" />
-                  {app.lang === 'ar' ? "حالة المتاجر" : "Store Status"}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {app.lang === 'ar' ? "نشط مقابل محظور" : "Active vs Banned"}
-                </p>
-              </div>
-              <div className="h-[200px] mt-2">
-                {storeStatusData.some(d => d.value > 0) ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie 
-                        data={storeStatusData} 
-                        cx="50%" 
-                        cy="45%" 
-                        innerRadius={35} 
-                        outerRadius={65} 
-                        paddingAngle={3} 
-                        dataKey="value"
-                        animationDuration={2000}
-                        animationEasing="ease-in-out"
-                      >
                         {storeStatusData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} className="hover:opacity-80 transition-opacity duration-300 cursor-pointer" />
                         ))}
@@ -885,7 +848,7 @@ const stores = storesData?.data || [];
                       <Tooltip 
                         contentStyle={{ 
                           borderRadius: '12px', 
-                          border: '1px solid #2a655f/20', 
+                          border: '2px solid #f9a8d4/50', 
                           boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
                           background: 'rgba(255,255,255,0.95)'
                         }}
@@ -900,9 +863,11 @@ const stores = storesData?.data || [];
                 )}
               </div>
             </div>
+          </div>
 
-            {/* ✅ أفضل البائعين */}
-            <div className="lg:col-span-2 bg-white dark:bg-[#1e293b] rounded-xl border border-[#2a655f]/20 p-5 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all duration-300 relative overflow-hidden">
+          {/* ===== صف ثاني: أفضل البائعين ===== */}
+          <div className="grid grid-cols-1 gap-6">
+            <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 p-5 hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 relative overflow-hidden">
               <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse delay-1000" />
               <div className={isRTL ? 'text-right' : ''}>
                 <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
@@ -937,7 +902,7 @@ const stores = storesData?.data || [];
                       <Tooltip 
                         contentStyle={{ 
                           borderRadius: '12px', 
-                          border: '1px solid #2a655f/20', 
+                          border: '2px solid #f9a8d4/50', 
                           boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
                           background: 'rgba(255,255,255,0.95)'
                         }}
@@ -962,30 +927,42 @@ const stores = storesData?.data || [];
             </div>
           </div>
 
-          {/* ===== إحصائيات إضافية - نفس تصميم ProductsPage ===== */}
+          {/* ===== إحصائيات إضافية - خلفية بيضاء وبوردر زهري ===== */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {additionalStats.map((stat, i) => (
               <div 
                 key={i} 
-                className="group bg-white dark:bg-[#1e293b] rounded-xl p-4 border border-[#2a655f]/20 hover:shadow-xl hover:shadow-[#2a655f]/10 transition-all hover:scale-[1.02] relative overflow-hidden"
+                className={cn(
+                  "group bg-white dark:bg-[#1e293b] rounded-xl p-4 border-2 transition-all hover:shadow-xl hover:shadow-pink-500/20 hover:scale-[1.02] relative overflow-hidden",
+                  stat.border
+                )}
               >
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
                   <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
                 </div>
                 <div className="flex items-center gap-3 relative">
-                  <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg shadow-[#2a655f]/10`}>
-                    <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
+                  <div className={cn(
+                    "h-10 w-10 rounded-xl flex items-center justify-center",
+                    "bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40",
+                    "group-hover:scale-110 transition-all duration-300",
+                    "shadow-lg shadow-pink-500/10"
+                  )}>
+                    <div className={cn("h-6 w-6 rounded-lg bg-gradient-to-br", stat.gradient, "flex items-center justify-center")}>
                       <stat.icon className="h-3.5 w-3.5 text-white" />
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">{stat.label}</p>
                     <p className="text-lg font-bold text-slate-900 dark:text-white">{stat.value}</p>
                   </div>
                 </div>
-                <div className="mt-2 h-0.5 w-full rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                <div className="mt-2 h-0.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                   <div 
-                    className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000 animate-shimmer`} 
+                    className={cn(
+                      "h-full rounded-full bg-gradient-to-r",
+                      stat.gradient,
+                      "transition-all duration-1000 animate-shimmer"
+                    )} 
                     style={{ width: `${Math.min(100, (stat.value / (all.length || 1)) * 100)}%` }}
                   />
                 </div>
@@ -993,8 +970,8 @@ const stores = storesData?.data || [];
             ))}
           </div>
 
-          {/* ===== شريط سفلي متحرك - نفس تصميم ProductsPage ===== */}
-          <div className="relative w-full overflow-hidden rounded-xl border border-[#2a655f]/20 bg-gradient-to-r from-[#2a655f]/5 via-[#1a4f4a]/5 to-[#f9a8d4]/5 p-3">
+          {/* ===== شريط سفلي متحرك ===== */}
+          <div className="relative w-full overflow-hidden rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] p-3">
             <div className="flex items-center justify-center gap-6 animate-marquee-slow">
               <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
                 <Rocket className="h-4 w-4 text-[#2a655f] animate-float" />
@@ -1063,13 +1040,6 @@ const stores = storesData?.data || [];
         }
         .animate-marquee-slow:hover {
           animation-play-state: paused;
-        }
-        @keyframes slide {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(200%); }
-        }
-        .animate-slide {
-          animation: slide 1.5s ease-in-out infinite;
         }
       `}</style>
     </div>

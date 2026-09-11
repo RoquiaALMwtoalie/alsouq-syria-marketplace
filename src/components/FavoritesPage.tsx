@@ -7,10 +7,9 @@ import {
   Heart, ShoppingBag, Store, MapPin, Star, Trash2, 
   ShoppingCart, HeartOff, Package, X, ChevronLeft, ChevronRight,
   Share2, Eye, Clock, Truck, Shield, Award, Sparkles, Zap,
-  Gem, Crown, Flame, Gift, Compass, TrendingUp
+  Gem, Crown, Flame, Gift, Compass, TrendingUp, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -82,20 +81,7 @@ interface FavoriteItem {
   } | null;
 }
 
-// ✅ أيقونة متحركة
-const AnimatedIcon = ({ Icon, className = "", color = "text-[#2a655f]", delay = 0, size = "h-5 w-5" }: any) => {
-  return (
-    <div className="relative inline-flex items-center justify-center" style={{ animationDelay: `${delay}ms` }}>
-      <div className="animate-float-icon group-hover:animate-pulse-slow">
-        <Icon className={cn("transition-all duration-500 group-hover:scale-110 group-hover:rotate-12", color, size, className)} />
-      </div>
-      <span className="absolute -inset-2 rounded-full border-2 border-[#2a655f]/20 animate-ripple opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      <span className="absolute -inset-4 rounded-full border-2 border-[#3a8a82]/10 animate-ripple delay-700 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-    </div>
-  );
-};
-
-// ✅ مكون التقييم
+// ✅ مكون التقييم - بنفس ألوان الأدمن (بوردر زهري)
 const RatingStars = ({ rating }: { rating: number }) => {
   return (
     <div className="flex items-center gap-0.5">
@@ -105,7 +91,7 @@ const RatingStars = ({ rating }: { rating: number }) => {
           className={cn(
             "h-3.5 w-3.5 transition-all duration-300",
             star <= rating
-              ? "fill-[#fbbf24] text-[#fbbf24]"
+              ? "fill-[#f9a8d4] text-[#f9a8d4]"
               : "fill-slate-200 text-slate-200 dark:fill-slate-700 dark:text-slate-700"
           )}
         />
@@ -124,17 +110,18 @@ export function FavoritesPage() {
   const [selectedItem, setSelectedItem] = useState<FavoriteItem | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [showEmptyDialog, setShowEmptyDialog] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
+  // ============================================================
   // ✅ CSS Animations
+  // ============================================================
   const styles = `
-    @keyframes float-icon {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      25% { transform: translateY(-8px) rotate(3deg); }
-      75% { transform: translateY(6px) rotate(-2deg); }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
     }
-    .animate-float-icon {
-      animation: float-icon 3.5s ease-in-out infinite;
+    .animate-shimmer {
+      background-size: 200% auto;
+      animation: shimmer 3s linear infinite;
     }
     @keyframes pulse-slow {
       0%, 100% { opacity: 0.6; }
@@ -143,19 +130,28 @@ export function FavoritesPage() {
     .animate-pulse-slow {
       animation: pulse-slow 2.5s ease-in-out infinite;
     }
-    @keyframes ripple {
-      0% { transform: scale(0.8); opacity: 1; }
-      100% { transform: scale(2.5); opacity: 0; }
+    @keyframes heart-beat {
+      0%, 100% { transform: scale(1); }
+      25% { transform: scale(1.15); }
+      50% { transform: scale(0.95); }
+      75% { transform: scale(1.05); }
     }
-    .animate-ripple {
-      animation: ripple 2.5s ease-out infinite;
+    .animate-heart-beat {
+      animation: heart-beat 1.5s ease-in-out infinite;
     }
-    @keyframes shimmer {
-      0% { transform: translateX(-100%) skewX(-20deg); }
-      100% { transform: translateX(200%) skewX(-20deg); }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
     }
-    .animate-shimmer {
-      animation: shimmer 3s infinite;
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes bounce-slow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .animate-bounce-slow {
+      animation: bounce-slow 2s ease-in-out infinite;
     }
     @keyframes slide-up {
       0% { opacity: 0; transform: translateY(30px) scale(0.95); }
@@ -163,15 +159,6 @@ export function FavoritesPage() {
     }
     .animate-slide-up {
       animation: slide-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    }
-    @keyframes heart-beat {
-      0%, 100% { transform: scale(1); }
-      25% { transform: scale(1.1); }
-      50% { transform: scale(0.95); }
-      75% { transform: scale(1.05); }
-    }
-    .animate-heart-beat {
-      animation: heart-beat 2s ease-in-out infinite;
     }
   `;
 
@@ -370,7 +357,6 @@ export function FavoritesPage() {
   // ============================================================
   // 📊 دوال مساعدة
   // ============================================================
-
   const getProductTitle = (item: FavoriteItem | null): string => {
     if (!item?.listings) {
       return isRTL ? 'منتج غير متوفر' : 'Product unavailable';
@@ -433,19 +419,13 @@ export function FavoritesPage() {
     };
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString(
-      isRTL ? 'ar-SA' : 'en-US',
-      { year: 'numeric', month: 'short', day: 'numeric' }
-    );
-  };
-
   // ============================================================
   // 🌀 Skeleton Loader
   // ============================================================
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#2a655f]/5 via-transparent to-[#3a8a82]/5 dark:from-[#2a655f]/20 dark:to-[#3a8a82]/10">
+        <style>{styles}</style>
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -456,7 +436,7 @@ export function FavoritesPage() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
             {[...Array(10)].map((_, i) => (
-              <div key={i} className="bg-white/80 dark:bg-slate-800/80 rounded-2xl overflow-hidden shadow-sm border border-[#2a655f]/10">
+              <div key={i} className="bg-white dark:bg-[#1e293b] rounded-2xl overflow-hidden border-2 border-pink-400/60 dark:border-pink-400/40">
                 <Skeleton className="aspect-square w-full" />
                 <div className="p-4 space-y-3">
                   <Skeleton className="h-4 w-3/4" />
@@ -482,8 +462,8 @@ export function FavoritesPage() {
         <div className="max-w-md mx-auto text-center px-6">
           <div className="relative inline-block">
             <div className="absolute inset-0 bg-gradient-to-br from-[#2a655f] to-[#3a8a82] rounded-full blur-3xl opacity-20 animate-pulse-slow" />
-            <div className="relative h-32 w-32 rounded-full bg-gradient-to-br from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 flex items-center justify-center mx-auto border-4 border-[#2a655f]/20">
-              <AnimatedIcon Icon={Heart} className="h-14 w-14 text-[#2a655f]" color="text-[#2a655f]" delay={0} size="h-14 w-14" />
+            <div className="relative h-32 w-32 rounded-full bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40 flex items-center justify-center mx-auto">
+              <Heart className="h-14 w-14 text-pink-500 fill-pink-500 animate-heart-beat" />
             </div>
           </div>
           
@@ -509,24 +489,11 @@ export function FavoritesPage() {
             <Button
               variant="outline"
               onClick={() => navigate({ to: '/categories' })}
-              className="rounded-2xl px-8 py-6 text-base border-2 border-[#2a655f]/30 hover:border-[#3a8a82]/50 hover:bg-[#2a655f]/10"
+              className="rounded-2xl px-8 py-6 text-base border-2 border-pink-400/60 hover:border-pink-500 hover:bg-pink-500/10"
             >
-              <Sparkles className="h-5 w-5 mr-2" />
+              <Sparkles className="h-5 w-5 mr-2 text-pink-500" />
               {isRTL ? 'تصفح التصنيفات' : 'Browse Categories'}
             </Button>
-          </div>
-          
-          <div className="mt-8 grid grid-cols-3 gap-4">
-            {[
-              { icon: Truck, text: isRTL ? 'توصيل سريع' : 'Fast Delivery' },
-              { icon: Shield, text: isRTL ? 'دفع آمن' : 'Secure Payment' },
-              { icon: Award, text: isRTL ? 'جودة مضمونة' : 'Quality Guarantee' },
-            ].map((item, i) => (
-              <div key={i} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-[#2a655f]/10">
-                <AnimatedIcon Icon={item.icon} className="h-5 w-5 text-[#2a655f]" color="text-[#2a655f]" delay={i * 200} size="h-5 w-5" />
-                <span className="text-xs text-muted-foreground">{item.text}</span>
-              </div>
-            ))}
           </div>
         </div>
       </div>
@@ -546,31 +513,39 @@ export function FavoritesPage() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] shadow-lg shadow-[#2a655f]/30">
-                <AnimatedIcon Icon={Heart} className="h-6 w-6 text-white" color="text-white" delay={0} size="h-6 w-6" />
+              <div className="p-3 rounded-2xl bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40 shadow-sm">
+                <Heart className="h-6 w-6 text-pink-500 fill-pink-500 animate-heart-beat" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                  {isRTL ? '❤️ المفضلة' : '❤️ Favorites'}
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-3">
+                  {isRTL ? 'المفضلة' : 'Favorites'}
+                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20 text-[10px]">
+                    <Sparkles className="h-2.5 w-2.5 mr-1 text-emerald-500 animate-pulse" />
+                    {isRTL ? 'مباشر' : 'Live'}
+                  </Badge>
                 </h1>
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <span className="h-1 w-4 rounded-full bg-gradient-to-r from-[#2a655f] to-[#3a8a82]" />
+                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
                   {isRTL 
                     ? `${favorites.length} منتج في قائمتك` 
                     : `${favorites.length} products in your list`}
+                  <span className="h-1 w-1 rounded-full bg-[#f9a8d4]/50" />
+                  <span className="text-xs text-[#d81b60] flex items-center gap-1">
+                    <Zap className="h-3 w-3 animate-pulse" />
+                    {isRTL ? 'تحديث لحظي' : 'Real-time'}
+                  </span>
                 </p>
               </div>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate({ to: '/' })}
-              className="rounded-xl border-[#2a655f]/20 hover:border-[#3a8a82]/40 hover:bg-[#2a655f]/10 transition-all"
+              className="rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-[#2a655f]/5 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 h-10"
             >
-              <ShoppingBag className="h-4 w-4 mr-1.5" />
+              <ShoppingBag className="h-4 w-4 mr-1.5 text-[#2a655f]" />
               {isRTL ? 'مواصلة التسوق' : 'Continue Shopping'}
             </Button>
             
@@ -578,7 +553,7 @@ export function FavoritesPage() {
               variant="outline"
               size="sm"
               onClick={() => setShowEmptyDialog(true)}
-              className="rounded-xl border-red-200/50 text-red-500 hover:text-red-600 hover:bg-red-50/50 dark:hover:bg-red-950/30 transition-all"
+              className="rounded-xl border border-slate-200 dark:border-slate-700 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/30 hover:border-red-300 transition-all duration-300 h-10"
             >
               <Trash2 className="h-4 w-4 mr-1.5" />
               {isRTL ? 'تفريغ الكل' : 'Clear All'}
@@ -586,45 +561,63 @@ export function FavoritesPage() {
           </div>
         </div>
 
-        {/* ===== Stats Bar ===== */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* ===== Stats Bar - نفس تصميم AdminStores (بوردر زهري + خلفية بيضاء) ===== */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           {[
             { 
               icon: Heart, 
               label: isRTL ? 'إجمالي المفضلات' : 'Total Favorites',
               value: favorites.length,
+              gradient: 'from-[#d81b60] to-[#f9a8d4]',
             },
             { 
               icon: Store, 
               label: isRTL ? 'عدد المتاجر' : 'Stores',
               value: new Set(favorites.map(f => f.listings?.owner_id)).size,
+              gradient: 'from-[#2a655f] to-[#1a4f4a]',
             },
             { 
               icon: ShoppingBag, 
               label: isRTL ? 'متوفر للشراء' : 'Available',
               value: favorites.filter(f => f.listings?.is_available !== false).length,
+              gradient: 'from-emerald-500 to-teal-500',
             },
             { 
               icon: Star, 
               label: isRTL ? 'متوسط التقييم' : 'Avg Rating',
               value: (favorites.reduce((acc, f) => acc + (f.listings?.rating || 0), 0) / favorites.length || 0).toFixed(1),
+              gradient: 'from-amber-500 to-orange-500',
             },
           ].map((stat, i) => (
-            <div key={i} className="group bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-[#2a655f]/10 hover:border-[#3a8a82]/30 hover:shadow-md hover:shadow-[#2a655f]/10 transition-all hover:-translate-y-1">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-[#2a655f]/10 dark:bg-[#2a655f]/20 group-hover:bg-[#2a655f]/20 transition-all">
-                  <AnimatedIcon Icon={stat.icon} className="h-5 w-5 text-[#2a655f]" color="text-[#2a655f]" delay={i * 150} size="h-5 w-5" />
-                </div>
+            <div 
+              key={i} 
+              className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 shadow-sm hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative p-4"
+            >
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse" />
+              </div>
+              <div className="flex items-center justify-between relative">
                 <div>
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
                 </div>
+                <div className="h-10 w-10 rounded-xl bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                  <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
+                    <stat.icon className="h-3.5 w-3.5 text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 h-0.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000 animate-shimmer`} 
+                  style={{ width: `${Math.min(100, (Number(stat.value) / (favorites.length || 1)) * 100)}%` }}
+                />
               </div>
             </div>
           ))}
         </div>
 
-        {/* ===== Grid ===== */}
+        {/* ===== Grid - بطاقات بيضاء + بوردر زهري (نفس تصميم الأدمن) ===== */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
           {favorites.map((item, index) => {
             if (!item?.listings) return null;
@@ -635,7 +628,6 @@ export function FavoritesPage() {
             const image = getProductImage(item);
             const governorateName = getGovernorateName(item);
             const { isAvailable, text: availabilityText, color: availabilityColor } = getAvailability(item);
-            const isHovered = hoveredItem === item.id;
             
             const isOffer = listing.is_offer === true;
             const discount = listing.discount_percent || 0;
@@ -647,10 +639,8 @@ export function FavoritesPage() {
             return (
               <div
                 key={item.id}
-                className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-[#2a655f]/15 transition-all duration-500 hover:-translate-y-2 border border-[#2a655f]/10 hover:border-[#3a8a82]/30 animate-slide-up"
+                className="group relative bg-white dark:bg-[#1e293b] rounded-2xl overflow-hidden border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 shadow-sm hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] animate-slide-up"
                 style={{ animationDelay: `${index * 60}ms` }}
-                onMouseEnter={() => setHoveredItem(item.id)}
-                onMouseLeave={() => setHoveredItem(null)}
               >
                 {/* ===== صورة المنتج ===== */}
                 <Link to={`/listing/${listing.id}`} className="block relative aspect-square overflow-hidden bg-[#2a655f]/5">
@@ -664,142 +654,116 @@ export function FavoritesPage() {
                   />
                   
                   {/* ===== Badges ===== */}
-                  <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                  <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
                     {isOffer && discount > 0 && (
-                      <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 shadow-lg rounded-full px-3 py-1 text-[10px] font-bold animate-pulse">
-                        -{discount}%
+                      <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f9a8d4] text-white border-2 border-white/30 shadow-lg rounded-full px-2.5 py-0.5 text-[10px] font-bold animate-pulse">
+                        🔥 -{discount}%
                       </Badge>
                     )}
                     {!isAvailable && (
-                      <Badge className="bg-red-500/90 text-white border-0 shadow-lg rounded-full px-3 py-1 text-[10px]">
-                        {isRTL ? 'غير متوفر' : 'Out of stock'}
+                      <Badge className="bg-red-500/90 text-white border-2 border-white/30 shadow-lg rounded-full px-2.5 py-0.5 text-[10px]">
+                        ❌ {isRTL ? 'غير متوفر' : 'Out of stock'}
                       </Badge>
                     )}
                   </div>
 
-                  {/* ===== Quick Actions ===== */}
-                  <div className={cn(
-                    "absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center gap-3 transition-all duration-500",
-                    isHovered ? "opacity-100 scale-100" : "opacity-0 scale-95"
-                  )}>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            className="h-12 w-12 rounded-full bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-700 shadow-xl transition-all hover:scale-110"
-                            onClick={() => {
-                              setSelectedItem(item);
-                              setShowRemoveDialog(true);
-                            }}
-                          >
-                            <HeartOff className="h-5 w-5 text-pink-500" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-[#2a655f] text-white border-0">
-                          <p>{isRTL ? 'إزالة من المفضلة' : 'Remove from favorites'}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            className="h-12 w-12 rounded-full bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-700 shadow-xl transition-all hover:scale-110"
-                            onClick={() => addToCart(listing)}
-                            disabled={!isAvailable}
-                          >
-                            <ShoppingCart className="h-5 w-5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-[#2a655f] text-white border-0">
-                          <p>{isRTL ? 'إضافة إلى السلة' : 'Add to cart'}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            className="h-12 w-12 rounded-full bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-700 shadow-xl transition-all hover:scale-110"
-                            onClick={() => navigate({ to: `/listing/${listing.id}` })}
-                          >
-                            <Eye className="h-5 w-5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-[#2a655f] text-white border-0">
-                          <p>{isRTL ? 'عرض التفاصيل' : 'View details'}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-
-                  {/* ===== زر المفضلة ===== */}
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur hover:bg-white dark:hover:bg-slate-700 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-500 hover:scale-110"
-                    onClick={() => {
+                  {/* ===== زر المفضلة - قلب وردي (نفس لون الهيدر تماماً) ===== */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setSelectedItem(item);
                       setShowRemoveDialog(true);
                     }}
+                    className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 dark:bg-[#1e293b]/90 backdrop-blur-sm border-2 border-pink-400/60 dark:border-pink-400/40 flex items-center justify-center shadow-lg hover:border-pink-500 hover:bg-pink-500/10 transition-all duration-300 hover:scale-110 z-10"
                   >
-                    <Heart className="h-4 w-4 text-pink-500 fill-pink-500" />
-                  </Button>
+                    <Heart 
+                      className="h-5 w-5 fill-pink-500 text-pink-500 animate-heart-beat" 
+                    />
+                  </button>
                 </Link>
 
                 {/* ===== المحتوى ===== */}
                 <div className="p-4 space-y-2">
                   <Link 
                     to={`/store/${listing.owner_id}`} 
-                    className="text-xs text-[#2a655f] dark:text-[#3a8a82] hover:underline flex items-center gap-1 font-medium"
+                    className="text-xs text-[#2a655f] dark:text-[#3a8a82] hover:text-pink-500 hover:underline flex items-center gap-1 font-bold transition-colors"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Store className="h-3 w-3" />
+                    <Store className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
                     <span className="truncate">{storeName}</span>
                   </Link>
 
                   <Link to={`/listing/${listing.id}`}>
-                    <h3 className="font-semibold text-foreground text-sm line-clamp-2 hover:text-[#2a655f] dark:hover:text-[#3a8a82] transition-colors">
+                    <h3 className="font-bold text-sm line-clamp-2 text-slate-800 dark:text-slate-100 group-hover:text-[#2a655f] transition-colors leading-snug">
                       {productTitle}
                     </h3>
                   </Link>
 
                   <div className="flex items-center gap-1.5">
                     <RatingStars rating={rating} />
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground font-medium">
                       ({favoritesCount})
                     </span>
                   </div>
 
-                  <div className="flex items-end gap-2">
-                    <span className="text-lg font-bold text-foreground">
+                  <div className="flex items-end gap-2 pt-1">
+                    <span className="text-lg font-bold text-[#2a655f] dark:text-[#3a8a82]">
                       {formatPrice(price, listing.currency || 'SYP', app.lang)}
                     </span>
                     {isOffer && oldPrice > 0 && oldPrice > price && (
-                      <span className="text-sm text-red-500 line-through">
+                      <span className="text-sm text-[#d81b60] line-through font-medium">
                         {formatPrice(oldPrice, listing.currency || 'SYP', app.lang)}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-[#2a655f]/10">
-                    {governorateName && (
+                  {/* ===== Footer ===== */}
+                  <div className="flex items-center justify-between pt-2 border-t-2 border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                    {governorateName ? (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <MapPin className="h-3 w-3 text-[#2a655f]" />
-                        <span className="truncate max-w-[80px]">{governorateName}</span>
+                        <span className="truncate max-w-[70px] font-medium">{governorateName}</span>
                       </div>
-                    )}
+                    ) : <span />}
                     
                     <div className="flex items-center gap-1.5">
                       <div className={cn("h-1.5 w-1.5 rounded-full animate-pulse", isAvailable ? "bg-emerald-500" : "bg-red-500")} />
-                      <span className={cn("text-[10px] font-medium", availabilityColor)}>
+                      <span className={cn("text-[10px] font-bold", availabilityColor)}>
                         {availabilityText}
                       </span>
                     </div>
+                  </div>
+
+                  {/* ===== أزرار الإجراءات ===== */}
+                  <div className="flex items-center gap-1.5 pt-2 border-t-2 border-[#2a655f]/10 dark:border-[#2a655f]/20">
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addToCart(listing);
+                      }}
+                      disabled={!isAvailable}
+                      className="flex-1 rounded-xl text-[11px] font-bold h-8 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-md shadow-[#2a655f]/25 transition-all duration-300 hover:scale-[1.02] border-2 border-white/20"
+                    >
+                      <ShoppingCart className="h-3.5 w-3.5 mr-1" />
+                      {isRTL ? 'أضف للسلة' : 'Add to Cart'}
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedItem(item);
+                        setShowRemoveDialog(true);
+                      }}
+                      className="rounded-xl h-8 w-8 p-0 text-pink-500 hover:text-white hover:bg-pink-500 hover:scale-110 transition-all duration-300 border-2 border-pink-400/60 hover:border-pink-500"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -808,10 +772,10 @@ export function FavoritesPage() {
         </div>
 
         {/* ===== Footer ===== */}
-        <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-[#2a655f]/10">
+        <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 shadow-sm">
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <AnimatedIcon Icon={Heart} className="h-5 w-5 text-[#2a655f]" color="text-[#2a655f]" delay={0} size="h-5 w-5" />
-            <span>
+            <Heart className="h-5 w-5 text-pink-500 fill-pink-500 animate-heart-beat" />
+            <span className="font-bold">
               {isRTL 
                 ? `لديك ${favorites.length} منتج في قائمة المفضلة` 
                 : `You have ${favorites.length} products in your favorites list`}
@@ -823,16 +787,15 @@ export function FavoritesPage() {
               variant="outline"
               size="sm"
               onClick={() => navigate({ to: '/' })}
-              className="rounded-xl border-[#2a655f]/20 hover:border-[#3a8a82]/40 hover:bg-[#2a655f]/10"
+              className="rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-[#2a655f]/5 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
             >
               {isRTL ? 'مواصلة التسوق' : 'Continue Shopping'}
             </Button>
             
             <Button
-              variant="destructive"
               size="sm"
               onClick={() => setShowEmptyDialog(true)}
-              className="rounded-xl bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600"
+              className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 hover:scale-105 border-2 border-white/20"
             >
               <Trash2 className="h-4 w-4 mr-1.5" />
               {isRTL ? 'تفريغ الكل' : 'Clear All'}
@@ -843,29 +806,29 @@ export function FavoritesPage() {
 
       {/* ===== Dialog: إزالة من المفضلة ===== */}
       <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-        <DialogContent className="rounded-3xl max-w-md p-0 overflow-hidden border-[#2a655f]/20 bg-white/95 dark:bg-[#0d1f1d]/95 backdrop-blur-xl">
+        <DialogContent className="max-w-md rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-2xl p-0 overflow-hidden bg-white dark:bg-[#1e293b]">
           <div className="p-6">
             <DialogHeader className="space-y-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-full bg-[#2a655f]/10">
-                    <HeartOff className="h-6 w-6 text-[#2a655f]" />
+                  <div className="p-3 rounded-2xl bg-pink-500/10 border-2 border-pink-400/60 flex items-center justify-center">
+                    <HeartOff className="h-6 w-6 text-pink-500" />
                   </div>
-                  <DialogTitle className="text-xl font-bold text-foreground">
+                  <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
                     {isRTL ? 'إزالة من المفضلة' : 'Remove from favorites'}
                   </DialogTitle>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-full hover:bg-[#2a655f]/10"
+                  className="h-8 w-8 rounded-full hover:bg-[#2a655f]/10 border border-slate-200 dark:border-slate-700"
                   onClick={() => setShowRemoveDialog(false)}
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
               
-              <DialogDescription className="text-muted-foreground">
+              <DialogDescription className="text-slate-500 dark:text-slate-400">
                 {isRTL
                   ? `هل أنت متأكد من إزالة "${getProductTitle(selectedItem)}" من قائمتك؟`
                   : `Are you sure you want to remove "${getProductTitle(selectedItem)}" from your list?`}
@@ -876,14 +839,13 @@ export function FavoritesPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowRemoveDialog(false)}
-                className="flex-1 rounded-xl border-[#2a655f]/20 hover:border-[#3a8a82]/40"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-all duration-300 h-11"
               >
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </Button>
               <Button
-                variant="destructive"
                 onClick={() => selectedItem && removeFromFavorites(selectedItem.id)}
-                className="flex-1 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600"
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 hover:scale-105 border-2 border-white/20 h-11"
               >
                 <Trash2 className="h-4 w-4 mr-1.5" />
                 {isRTL ? 'إزالة' : 'Remove'}
@@ -895,29 +857,29 @@ export function FavoritesPage() {
 
       {/* ===== Dialog: تفريغ الكل ===== */}
       <Dialog open={showEmptyDialog} onOpenChange={setShowEmptyDialog}>
-        <DialogContent className="rounded-3xl max-w-md p-0 overflow-hidden border-[#2a655f]/20 bg-white/95 dark:bg-[#0d1f1d]/95 backdrop-blur-xl">
+        <DialogContent className="max-w-md rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-2xl p-0 overflow-hidden bg-white dark:bg-[#1e293b]">
           <div className="p-6">
             <DialogHeader className="space-y-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-full bg-red-100 dark:bg-red-950/30">
+                  <div className="p-3 rounded-2xl bg-red-500/10 border-2 border-red-400/60 flex items-center justify-center">
                     <Trash2 className="h-6 w-6 text-red-500" />
                   </div>
-                  <DialogTitle className="text-xl font-bold text-foreground">
+                  <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
                     {isRTL ? 'تفريغ المفضلة' : 'Clear favorites'}
                   </DialogTitle>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-full hover:bg-[#2a655f]/10"
+                  className="h-8 w-8 rounded-full hover:bg-[#2a655f]/10 border border-slate-200 dark:border-slate-700"
                   onClick={() => setShowEmptyDialog(false)}
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
               
-              <DialogDescription className="text-muted-foreground">
+              <DialogDescription className="text-slate-500 dark:text-slate-400">
                 {isRTL
                   ? `هل أنت متأكد من إزالة جميع المنتجات (${favorites.length}) من قائمتك؟ هذا الإجراء لا يمكن التراجع عنه.`
                   : `Are you sure you want to remove all (${favorites.length}) products from your list? This action cannot be undone.`}
@@ -928,14 +890,13 @@ export function FavoritesPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowEmptyDialog(false)}
-                className="flex-1 rounded-xl border-[#2a655f]/20 hover:border-[#3a8a82]/40"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-all duration-300 h-11"
               >
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </Button>
               <Button
-                variant="destructive"
                 onClick={clearAllFavorites}
-                className="flex-1 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600"
+                className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/25 transition-all duration-300 hover:scale-105 border-2 border-white/20 h-11"
               >
                 <Trash2 className="h-4 w-4 mr-1.5" />
                 {isRTL ? 'تأكيد التفريغ' : 'Confirm Clear'}

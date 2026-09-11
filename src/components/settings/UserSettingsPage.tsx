@@ -1343,12 +1343,12 @@ export function UserSettingsPage() {
               {app.lang === "ar" ? "محدث" : "Updated"}
             </Badge>
           </h1>
-          <p className="text-sm text-muted-foreground flex items-center gap-2">
-            <AnimatedIcon Icon={Sparkles} className="h-3.5 w-3.5" color="text-[#2a655f]" size="h-3.5 w-3.5" delay={100} />
-            {app.lang === "ar"
-              ? "إدارة ملفك الشخصي وعناوينك وإعدادات الحساب"
-              : "Manage your profile, addresses, and account settings"}
-          </p>
+      <div className="text-sm text-muted-foreground flex items-center gap-2">
+  <AnimatedIcon Icon={Sparkles} className="h-3.5 w-3.5" color="text-[#2a655f]" size="h-3.5 w-3.5" delay={100} />
+  {app.lang === "ar"
+    ? "إدارة ملفك الشخصي وعناوينك وإعدادات الحساب"
+    : "Manage your profile, addresses, and account settings"}
+</div>
         </div>
       </div>
 

@@ -832,397 +832,422 @@ function OrdersPage() {
                     </div>
                   </div>
 
-                  {/* ===== DETAILS (EXPANDED) ===== */}
-                  {isExpanded && (
-                    <div className="px-5 pb-5 pt-3 border-t-3 border-[#d81b60]/20 dark:border-[#d81b60]/30 animate-fade-up">
-                      <div className="space-y-4">
-                        <div className={cn(
-                          "p-4 rounded-xl border-2",
-                          status.bg,
-                          status.border
-                        )}>
-                          <div className="flex items-center gap-3">
-                            <StatusIcon className={cn("h-5 w-5", status.color)} />
-                            <div>
-                              <p className="font-bold text-sm">{status.label}</p>
-                              <p className="text-xs text-muted-foreground">{status.description}</p>
-                            </div>
-                          </div>
-                        </div>
+               {/* ===== DETAILS (EXPANDED) ===== */}
+{isExpanded && (
+  <div className="px-5 pb-5 pt-3 border-t-3 border-[#d81b60]/20 dark:border-[#d81b60]/30 animate-fade-up">
+    <div className="space-y-4">
+      <div className={cn(
+        "p-4 rounded-xl border-2",
+        status.bg,
+        status.border
+      )}>
+        <div className="flex items-center gap-3">
+          <StatusIcon className={cn("h-5 w-5", status.color)} />
+          <div>
+            <p className="font-bold text-sm">{status.label}</p>
+            <p className="text-xs text-muted-foreground">{status.description}</p>
+          </div>
+        </div>
+      </div>
 
-                        <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-r from-[#d81b60]/5 to-[#1b433e]/5 dark:from-[#d81b60]/10 dark:to-[#1b433e]/10 rounded-xl border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30">
-                          <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                              <User className="h-3 w-3 text-[#d81b60]" />
-                              {app.lang === "ar" ? "العميل" : "Customer"}
-                            </p>
-                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{group.buyerName}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-[#d81b60]" />
-                              {app.lang === "ar" ? "رقم الطلب" : "Order ID"}
-                            </p>
-                            <p className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">{group.orderId.slice(0, 12)}</p>
-                          </div>
-                          {group.buyerPhone && (
-                            <div className="col-span-2">
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                                <Phone className="h-3 w-3 text-[#d81b60]" />
-                                {app.lang === "ar" ? "رقم الهاتف" : "Phone"}
-                              </p>
-                              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{group.buyerPhone}</p>
-                            </div>
-                          )}
-                        </div>
+      <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-r from-[#d81b60]/5 to-[#1b433e]/5 dark:from-[#d81b60]/10 dark:to-[#1b433e]/10 rounded-xl border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30">
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+            <User className="h-3 w-3 text-[#d81b60]" />
+            {app.lang === "ar" ? "العميل" : "Customer"}
+          </p>
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{getLocalizedBuyerName(group.buyerName)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+            <Clock className="h-3 w-3 text-[#d81b60]" />
+            {app.lang === "ar" ? "رقم الطلب" : "Order ID"}
+          </p>
+          <p className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">{group.orderId.slice(0, 12)}</p>
+        </div>
+        {group.buyerPhone && (
+          <div className="col-span-2">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+              <Phone className="h-3 w-3 text-[#d81b60]" />
+              {app.lang === "ar" ? "رقم الهاتف" : "Phone"}
+            </p>
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{group.buyerPhone}</p>
+          </div>
+        )}
+      </div>
 
-                        <div className="space-y-3">
-                          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                            <Package className="h-3.5 w-3.5 text-[#d81b60]" />
-                            {app.lang === "ar" ? "المنتجات" : "Products"}
-                            <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[10px]">
-                              {group.items.length}
-                            </Badge>
-                          </div>
-                          
-                          {group.items.map((item: any) => {
-                            const listing = item.listings || item;
-                            const imageUrl = getProductImage(item);
-                            const isPromo = isPromoOffer(item);
-                            const offerData = getPromoOfferData(item);
-                            const requiredVariations = offerData?.required_products?.variations || {};
-                            const giftVariations = offerData?.free_product?.variations || {};
-                            const hasRequired = Object.keys(requiredVariations).length > 0;
-                            const hasGift = Object.keys(giftVariations).length > 0;
-                            
-                            return (
-                              <div 
-                                key={item.id || item.listing_id}
-                                className={cn(
-                                  "p-3 rounded-xl border-2 transition-all duration-300",
-                                  isPromo 
-                                    ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50 hover:border-purple-400/70" 
-                                    : "bg-slate-50/80 dark:bg-slate-800/40 border-[#d81b60]/20 dark:border-[#d81b60]/30 hover:border-[#d81b60]/50"
-                                )}
-                              >
-                                {isPromo ? (
-                                  <div className="space-y-3">
-                                    <div className="flex items-center gap-2">
-                                      <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 px-3 py-1 rounded-full text-xs font-bold">
-                                        <Gift className="h-3.5 w-3.5 inline mr-1.5" />
-                                        {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
-                                      </Badge>
-                                      <Badge variant="outline" className="border-purple-300 text-purple-600 text-[10px]">
-                                        {offerData?.offer_type === 'bogo' ? '🎁 نفس المنتج' : 
-                                         offerData?.offer_type === 'cross_sell' ? '🔄 منتج مختلف' : '📦 باقة'}
-                                      </Badge>
-                                    </div>
-                                    {offerData?.display_text_ar && (
-                                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                        {app.lang === "ar" ? offerData.display_text_ar : offerData.display_text_en}
-                                      </p>
-                                    )}
-                                    {hasRequired && (
-                                      <div className="space-y-2">
-                                        <p className="text-xs font-semibold text-slate-500 flex items-center gap-2">
-                                          <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
-                                          🛒 {app.lang === "ar" ? "المنتجات المطلوبة" : "Required Products"} ({Object.keys(requiredVariations).length})
-                                        </p>
-                                        {Object.entries(requiredVariations).map(([id, data]: any) => {
-                                          const comboText = Object.values(data.combination || {}).join(' • ');
-                                          const variationImage = data.image_url || 
-                                                                offerData?.required_products?.main_product?.cover_url || 
-                                                                null;
-                                          return (
-                                            <div key={id} className="flex items-center gap-3 p-2 bg-white/70 rounded-xl border border-purple-100/50">
-                                              {variationImage ? (
-                                                <img 
-                                                  src={variationImage} 
-                                                  alt={comboText} 
-                                                  className="w-10 h-10 rounded-lg object-cover border border-purple-100"
-                                                  onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = '/placeholder.png';
-                                                  }}
-                                                />
-                                              ) : (
-                                                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center text-purple-400">
-                                                  <Package className="h-5 w-5" />
-                                                </div>
-                                              )}
-                                              <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
-                                                <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
-                                              </div>
-                                              <p className="text-sm font-bold text-[#d81b60] whitespace-nowrap">
-                                                {(data.price * data.quantity).toLocaleString()} SYP
-                                              </p>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                    {hasGift && (
-                                      <div className="space-y-2">
-                                        <p className="text-xs font-semibold text-emerald-500 flex items-center gap-2">
-                                          <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
-                                          🎁 {app.lang === "ar" ? "الهدية" : "Gift"} ({Object.keys(giftVariations).length})
-                                        </p>
-                                        {Object.entries(giftVariations).map(([id, data]: any) => {
-                                          const comboText = Object.values(data.combination || {}).join(' • ');
-                                          const giftImage = data.image_url || 
-                                                           offerData?.free_product?.cover_url || 
-                                                           null;
-                                          return (
-                                            <div key={id} className="flex items-center gap-3 p-2 bg-emerald-50/70 rounded-xl border border-emerald-100/50">
-                                              {giftImage ? (
-                                                <img 
-                                                  src={giftImage} 
-                                                  alt={comboText} 
-                                                  className="w-10 h-10 rounded-lg object-cover border border-emerald-100"
-                                                  onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = '/placeholder.png';
-                                                  }}
-                                                />
-                                              ) : (
-                                                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400">
-                                                  <Gift className="h-5 w-5" />
-                                                </div>
-                                              )}
-                                              <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
-                                                <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
-                                              </div>
-                                              <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-xs font-bold px-3 py-1 rounded-full">
-                                                🎁 {app.lang === "ar" ? "مجاناً" : "Free"}
-                                              </Badge>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                    <div className="mt-3 pt-3 border-t border-purple-200/50">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-sm text-muted-foreground">
-                                          {app.lang === "ar" ? "إجمالي المنتجات المطلوبة" : "Total required products"}
-                                        </span>
-                                        <span className="text-lg font-bold text-[#d81b60]">
-                                          {(item.price * item.quantity).toLocaleString()} SYP
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-4">
-                                    <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30">
-                                      {imageUrl ? (
-                                        <OptimizedImage
-                                          src={imageUrl}
-                                          alt=""
-                                          width={48}
-                                          height={48}
-                                          quality={80}
-                                          objectFit="cover"
-                                          className="h-full w-full"
-                                        />
-                                      ) : (
-                                        <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                                          <Package className="h-5 w-5 text-slate-400" />
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="flex-1">
-                                      <p className="font-semibold text-sm text-slate-800 dark:text-white">
-                                        {app.lang === "ar" 
-                                          ? listing?.title_ar || 'منتج'
-                                          : listing?.title_en || listing?.title_ar || 'Product'}
-                                      </p>
-                                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                                        <span>{app.lang === "ar" ? "الكمية:" : "Qty:"} {item.quantity || 1}</span>
-                                        <span className="text-muted-foreground/30">•</span>
-                                        <span className="font-semibold text-[#d81b60] dark:text-[#f48fb1]">
-                                          {formatPrice(
-                                            item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
-                                            app.currency, 
-                                            app.lang
-                                          )}
-                                        </span>
-                                        <span className="text-muted-foreground/30">•</span>
-                                        <Badge className={cn(
-                                          "border-0 text-[9px] px-2 py-0.5",
-                                          getOrderStatus(item.status || group.status).bg,
-                                          getOrderStatus(item.status || group.status).color
-                                        )}>
-                                          {getOrderStatus(item.status || group.status).label}
-                                        </Badge>
-                                        {item.selected_variation_id && (
-                                          <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                                            <Layers className="h-2.5 w-2.5 text-[#d81b60]" />
-                                            {item.variation_snapshot?.combination 
-                                              ? Object.values(item.variation_snapshot.combination).join(' • ')
-                                              : (item.selected_variation_id.slice(0, 8))}
-                                          </span>
-                                        )}
-                                        {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && (
-                                          <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                                            <Layers className="h-2.5 w-2.5 text-[#d81b60]" />
-                                            {Object.values(item.metadata.variation_combination).join(' • ')}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
-                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#d81b60]/10 border border-[#d81b60]/20 hover:border-[#d81b60]/50">
-                                        <Eye className="h-3.5 w-3.5 text-[#d81b60]" />
-                                      </Button>
-                                    </Link>
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#d81b60]/20 dark:border-[#d81b60]/30">
-                                  {canRate(item.status || group.status) && (
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[10px] text-muted-foreground">
-                                        {app.lang === "ar" ? "قيم:" : "Rate:"}
-                                      </span>
-                                      <StarRating
-                                        rating={item.rating || 0}
-                                        onRatingChange={(value) => {
-                                          setRatingOrder(item.id || item.listing_id);
-                                          setRatingValue(value);
-                                          handleRateOrder(item.order_id || group.orderId, item.listing_id, value);
-                                        }}
-                                        readonly={isRating && ratingOrder === (item.id || item.listing_id)}
-                                        size="sm"
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+      <div className="space-y-3">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <Package className="h-3.5 w-3.5 text-[#d81b60]" />
+          {app.lang === "ar" ? "المنتجات" : "Products"}
+          <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[10px]">
+            {group.items.length}
+          </Badge>
+        </div>
+        
+        {group.items.map((item: any) => {
+          const listing = item.listings || item;
+          const imageUrl = getProductImage(item);
+          const isPromo = isPromoOffer(item);
+          const offerData = getPromoOfferData(item);
+          const requiredVariations = offerData?.required_products?.variations || {};
+          const giftVariations = offerData?.free_product?.variations || {};
+          const hasRequired = Object.keys(requiredVariations).length > 0;
+          const hasGift = Object.keys(giftVariations).length > 0;
+          
+          // ✅ دوال الترجمة داخل الخريطة
+          const getLocalizedTitle = (listing: any) => {
+            if (!listing) return app.lang === "ar" ? "منتج" : "Product";
+            if (app.lang === "ar") {
+              return listing.title_ar || listing.title_en || "منتج";
+            }
+            return listing.title_en || listing.title_ar || "Product";
+          };
 
-                        {/* ✅ زر إلغاء الطلب كامل - PINK & GREEN */}
-                        {canCancelOrder && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="w-full rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-[1.02] group font-bold border-0"
-                            onClick={() => openCancelDialog(group.orderId)}
-                            disabled={isCancelling === group.orderId}
-                          >
-                            {isCancelling === group.orderId ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                {app.lang === "ar" ? "جاري الإلغاء..." : "Cancelling..."}
-                              </>
+          const getLocalizedOfferText = (offerData: any) => {
+            if (!offerData) return "";
+            if (app.lang === "ar") {
+              return offerData.display_text_ar || offerData.display_text_en || "";
+            }
+            return offerData.display_text_en || offerData.display_text_ar || "";
+          };
+
+          const getLocalizedStoreName = (storeName: string) => {
+            if (!storeName) return app.lang === "ar" ? "متجر" : "Store";
+            return storeName;
+          };
+
+          const getLocalizedBuyerName = (buyerName: string) => {
+            if (!buyerName) return app.lang === "ar" ? "عميل" : "Customer";
+            return buyerName;
+          };
+          
+          return (
+            <div 
+              key={item.id || item.listing_id}
+              className={cn(
+                "p-3 rounded-xl border-2 transition-all duration-300",
+                isPromo 
+                  ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50 hover:border-purple-400/70" 
+                  : "bg-slate-50/80 dark:bg-slate-800/40 border-[#d81b60]/20 dark:border-[#d81b60]/30 hover:border-[#d81b60]/50"
+              )}
+            >
+              {isPromo ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 px-3 py-1 rounded-full text-xs font-bold">
+                      <Gift className="h-3.5 w-3.5 inline mr-1.5" />
+                      {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
+                    </Badge>
+                    <Badge variant="outline" className="border-purple-300 text-purple-600 text-[10px]">
+                      {offerData?.offer_type === 'bogo' ? '🎁 نفس المنتج' : 
+                       offerData?.offer_type === 'cross_sell' ? '🔄 منتج مختلف' : '📦 باقة'}
+                    </Badge>
+                  </div>
+                  {offerData?.display_text_ar && (
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {getLocalizedOfferText(offerData)}
+                    </p>
+                  )}
+                  {hasRequired && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
+                        🛒 {app.lang === "ar" ? "المنتجات المطلوبة" : "Required Products"} ({Object.keys(requiredVariations).length})
+                      </p>
+                      {Object.entries(requiredVariations).map(([id, data]: any) => {
+                        const comboText = Object.values(data.combination || {}).join(' • ');
+                        const variationImage = data.image_url || 
+                                              offerData?.required_products?.main_product?.cover_url || 
+                                              null;
+                        return (
+                          <div key={id} className="flex items-center gap-3 p-2 bg-white/70 rounded-xl border border-purple-100/50">
+                            {variationImage ? (
+                              <img 
+                                src={variationImage} 
+                                alt={comboText} 
+                                className="w-10 h-10 rounded-lg object-cover border border-purple-100"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = '/placeholder.png';
+                                }}
+                              />
                             ) : (
-                              <>
-                                <XCircle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                                {app.lang === "ar" ? "🚫 إلغاء الطلب بالكامل" : "🚫 Cancel Entire Order"}
-                              </>
+                              <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center text-purple-400">
+                                <Package className="h-5 w-5" />
+                              </div>
                             )}
-                          </Button>
-                        )}
-
-                        {group.notes && (
-                          <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border-2 border-yellow-200/50 dark:border-yellow-800/30">
-                            <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
-                              <MessageCircle className="h-3.5 w-3.5" />
-                              {app.lang === "ar" ? "ملاحظات" : "Notes"}
-                            </p>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{group.notes}</p>
-                          </div>
-                        )}
-
-                        {group.rejectionReason && (
-                          <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border-2 border-red-200/50 dark:border-red-800/30">
-                            <p className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
-                              <XCircle className="h-3.5 w-3.5" />
-                              {app.lang === "ar" ? "سبب الرفض" : "Rejection Reason"}
-                            </p>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{group.rejectionReason}</p>
-                          </div>
-                        )}
-
-                        <div className="p-4 bg-gradient-to-r from-[#d81b60]/5 to-[#1b433e]/5 dark:from-[#d81b60]/10 dark:to-[#1b433e]/10 rounded-xl border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-muted-foreground">
-                              {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
-                            </span>
-                            <span className="text-lg font-bold text-[#d81b60] dark:text-[#f48fb1]">
-                              {formatPrice(group.totalPrice, app.currency, app.lang)}
-                            </span>
-                          </div>
-                          
-                          {group.deliveryFee !== undefined && (
-                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#d81b60]/10">
-                              <span className="text-sm text-muted-foreground">
-                                {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
-                              </span>
-                              <span className={cn(
-                                "text-sm font-medium",
-                                group.deliveryFee === 0 
-                                  ? "text-emerald-500 font-bold" 
-                                  : "text-[#d81b60] dark:text-[#f48fb1]"
-                              )}>
-                                {group.deliveryFee === 0 
-                                  ? (app.lang === "ar" ? "🆓 مجاني" : "🆓 Free")
-                                  : formatPrice(group.deliveryFee, app.currency, app.lang)
-                                }
-                              </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-700 truncate">{comboText || (app.lang === "ar" ? 'فيرنت' : 'Variation')}</p>
+                              <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
                             </div>
-                          )}
-                          
-                          {group.promoDiscount > 0 && (
-                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#d81b60]/10 text-emerald-500">
-                              <span className="text-sm">
-                                {app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}
-                              </span>
-                              <span className="text-sm font-bold">
-                                -{formatPrice(group.promoDiscount, app.currency, app.lang)}
-                              </span>
-                            </div>
-                          )}
-                          
-                          <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#d81b60]/30">
-                            <span className="text-sm font-semibold text-[#d81b60] dark:text-white">
-                              {app.lang === "ar" ? "الإجمالي الكامل" : "Total"}
-                            </span>
-                            <span className="text-2xl font-bold text-[#d81b60] dark:text-[#f48fb1]">
-                              {formatPrice(group.totalWithDelivery, app.currency, app.lang)}
-                            </span>
+                            <p className="text-sm font-bold text-[#d81b60] whitespace-nowrap">
+                              {formatPrice(data.price * data.quantity, app.currency, app.lang)}
+                            </p>
                           </div>
-                          
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs text-muted-foreground">
-                              {group.totalItems} {app.lang === "ar" ? "منتج" : "items"}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(group.createdAt).toLocaleString(
-                                app.lang === "ar" ? "ar-SA" : "en-US",
-                                { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
-                              )}
-                            </span>
-                          </div>
-                        </div>
-
-                        {hasRateableItem && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full rounded-xl border-2 border-amber-500/30 text-amber-600 hover:bg-amber-50 hover:border-amber-500 transition-all duration-300 group font-bold"
-                            onClick={() => {
-                              setSelectedOrder(group);
-                              setComplaintDialogOpen(true);
-                            }}
-                          >
-                            <AlertTriangle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                            {app.lang === "ar" ? "📢 تقديم شكوى" : "📢 Submit Complaint"}
-                          </Button>
-                        )}
-                      </div>
+                        );
+                      })}
                     </div>
                   )}
+                  {hasGift && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-emerald-500 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
+                        🎁 {app.lang === "ar" ? "الهدية" : "Gift"} ({Object.keys(giftVariations).length})
+                      </p>
+                      {Object.entries(giftVariations).map(([id, data]: any) => {
+                        const comboText = Object.values(data.combination || {}).join(' • ');
+                        const giftImage = data.image_url || 
+                                         offerData?.free_product?.cover_url || 
+                                         null;
+                        return (
+                          <div key={id} className="flex items-center gap-3 p-2 bg-emerald-50/70 rounded-xl border border-emerald-100/50">
+                            {giftImage ? (
+                              <img 
+                                src={giftImage} 
+                                alt={comboText} 
+                                className="w-10 h-10 rounded-lg object-cover border border-emerald-100"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = '/placeholder.png';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400">
+                                <Gift className="h-5 w-5" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-700 truncate">{comboText || (app.lang === "ar" ? 'فيرنت' : 'Variation')}</p>
+                              <p className="text-xs text-muted-foreground">{app.lang === "ar" ? "الكمية" : "Qty"}: {data.quantity}</p>
+                            </div>
+                            <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-xs font-bold px-3 py-1 rounded-full">
+                              🎁 {app.lang === "ar" ? "مجاناً" : "Free"}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="mt-3 pt-3 border-t border-purple-200/50">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {app.lang === "ar" ? "إجمالي المنتجات المطلوبة" : "Total required products"}
+                      </span>
+                      <span className="text-lg font-bold text-[#d81b60]">
+                        {formatPrice(item.price * item.quantity, app.currency, app.lang)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30">
+                    {imageUrl ? (
+                      <OptimizedImage
+                        src={imageUrl}
+                        alt=""
+                        width={48}
+                        height={48}
+                        quality={80}
+                        objectFit="cover"
+                        className="h-full w-full"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                        <Package className="h-5 w-5 text-slate-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm text-slate-800 dark:text-white">
+                      {getLocalizedTitle(listing)}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                      <span>{app.lang === "ar" ? "الكمية:" : "Qty:"} {item.quantity || 1}</span>
+                      <span className="text-muted-foreground/30">•</span>
+                      <span className="font-semibold text-[#d81b60] dark:text-[#f48fb1]">
+                        {formatPrice(
+                          item.total || (Number(item.price) * (item.quantity || 1)) || 0, 
+                          app.currency, 
+                          app.lang
+                        )}
+                      </span>
+                      <span className="text-muted-foreground/30">•</span>
+                      <Badge className={cn(
+                        "border-0 text-[9px] px-2 py-0.5",
+                        getOrderStatus(item.status || group.status).bg,
+                        getOrderStatus(item.status || group.status).color
+                      )}>
+                        {getOrderStatus(item.status || group.status).label}
+                      </Badge>
+                      {item.selected_variation_id && (
+                        <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                          <Layers className="h-2.5 w-2.5 text-[#d81b60]" />
+                          {item.variation_snapshot?.combination 
+                            ? Object.values(item.variation_snapshot.combination).join(' • ')
+                            : (item.selected_variation_id.slice(0, 8))}
+                        </span>
+                      )}
+                      {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && (
+                        <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
+                          <Layers className="h-2.5 w-2.5 text-[#d81b60]" />
+                          {Object.values(item.metadata.variation_combination).join(' • ')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Link to="/listing/$id" params={{ id: item.listing_id || item.id }}>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-[#d81b60]/10 border border-[#d81b60]/20 hover:border-[#d81b60]/50">
+                      <Eye className="h-3.5 w-3.5 text-[#d81b60]" />
+                    </Button>
+                  </Link>
+                </div>
+              )}
+              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#d81b60]/20 dark:border-[#d81b60]/30">
+                {canRate(item.status || group.status) && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground">
+                      {app.lang === "ar" ? "قيم:" : "Rate:"}
+                    </span>
+                    <StarRating
+                      rating={item.rating || 0}
+                      onRatingChange={(value) => {
+                        setRatingOrder(item.id || item.listing_id);
+                        setRatingValue(value);
+                        handleRateOrder(item.order_id || group.orderId, item.listing_id, value);
+                      }}
+                      readonly={isRating && ratingOrder === (item.id || item.listing_id)}
+                      size="sm"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* زر إلغاء الطلب كامل - PINK & GREEN */}
+      {canCancelOrder && (
+        <Button
+          variant="destructive"
+          size="sm"
+          className="w-full rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-[1.02] group font-bold border-0"
+          onClick={() => openCancelDialog(group.orderId)}
+          disabled={isCancelling === group.orderId}
+        >
+          {isCancelling === group.orderId ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              {app.lang === "ar" ? "جاري الإلغاء..." : "Cancelling..."}
+            </>
+          ) : (
+            <>
+              <XCircle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+              {app.lang === "ar" ? "🚫 إلغاء الطلب بالكامل" : "🚫 Cancel Entire Order"}
+            </>
+          )}
+        </Button>
+      )}
+
+      {group.notes && (
+        <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-xl border-2 border-yellow-200/50 dark:border-yellow-800/30">
+          <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
+            <MessageCircle className="h-3.5 w-3.5" />
+            {app.lang === "ar" ? "ملاحظات" : "Notes"}
+          </p>
+          <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{group.notes}</p>
+        </div>
+      )}
+
+      {group.rejectionReason && (
+        <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border-2 border-red-200/50 dark:border-red-800/30">
+          <p className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
+            <XCircle className="h-3.5 w-3.5" />
+            {app.lang === "ar" ? "سبب الرفض" : "Rejection Reason"}
+          </p>
+          <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{group.rejectionReason}</p>
+        </div>
+      )}
+
+      <div className="p-4 bg-gradient-to-r from-[#d81b60]/5 to-[#1b433e]/5 dark:from-[#d81b60]/10 dark:to-[#1b433e]/10 rounded-xl border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-muted-foreground">
+            {app.lang === "ar" ? "المجموع الفرعي" : "Subtotal"}
+          </span>
+          <span className="text-lg font-bold text-[#d81b60] dark:text-[#f48fb1]">
+            {formatPrice(group.totalPrice, app.currency, app.lang)}
+          </span>
+        </div>
+        
+        {group.deliveryFee !== undefined && (
+          <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#d81b60]/10">
+            <span className="text-sm text-muted-foreground">
+              {app.lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}
+            </span>
+            <span className={cn(
+              "text-sm font-medium",
+              group.deliveryFee === 0 
+                ? "text-emerald-500 font-bold" 
+                : "text-[#d81b60] dark:text-[#f48fb1]"
+            )}>
+              {group.deliveryFee === 0 
+                ? (app.lang === "ar" ? "🆓 مجاني" : "🆓 Free")
+                : formatPrice(group.deliveryFee, app.currency, app.lang)
+              }
+            </span>
+          </div>
+        )}
+        
+        {group.promoDiscount > 0 && (
+          <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#d81b60]/10 text-emerald-500">
+            <span className="text-sm">
+              {app.lang === "ar" ? "💚 الخصم" : "💚 Discount"}
+            </span>
+            <span className="text-sm font-bold">
+              -{formatPrice(group.promoDiscount, app.currency, app.lang)}
+            </span>
+          </div>
+        )}
+        
+        <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#d81b60]/30">
+          <span className="text-sm font-semibold text-[#d81b60] dark:text-white">
+            {app.lang === "ar" ? "الإجمالي الكامل" : "Total"}
+          </span>
+          <span className="text-2xl font-bold text-[#d81b60] dark:text-[#f48fb1]">
+            {formatPrice(group.totalWithDelivery, app.currency, app.lang)}
+          </span>
+        </div>
+        
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-xs text-muted-foreground">
+            {group.totalItems} {app.lang === "ar" ? "منتج" : "items"}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {new Date(group.createdAt).toLocaleString(
+              app.lang === "ar" ? "ar-SA" : "en-US",
+              { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+            )}
+          </span>
+        </div>
+      </div>
+
+      {hasRateableItem && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full rounded-xl border-2 border-amber-500/30 text-amber-600 hover:bg-amber-50 hover:border-amber-500 transition-all duration-300 group font-bold"
+          onClick={() => {
+            setSelectedOrder(group);
+            setComplaintDialogOpen(true);
+          }}
+        >
+          <AlertTriangle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+          {app.lang === "ar" ? "📢 تقديم شكوى" : "📢 Submit Complaint"}
+        </Button>
+      )}
+    </div>
+  </div>
+)}
                 </div>
               );
             })}

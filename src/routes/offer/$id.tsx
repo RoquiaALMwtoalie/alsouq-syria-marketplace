@@ -1,4 +1,4 @@
-// src/routes/offer/$id.tsx - الكود المصحح بالكامل (نسخة احترافية مع ألوان وردية وزيتية)
+// src/routes/offer/$id.tsx - نفس تصميم listing/$id مع الحفاظ على كل اللوجيك
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
@@ -16,7 +16,7 @@ import {
   Truck, Shield, Clock, Award, Minus, Plus, AlertTriangle,
   Layers, Palette, Ruler, Trash2, Check, X,
   ShoppingBag, Percent, ChevronDown, ChevronUp,
-  Zap, Rocket, Gem, Crown, Flame
+  Zap, Rocket, Gem, Crown, Flame, Heart, Share2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -29,13 +29,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useListings } from "@/lib/queries";
+import { useListings, useSimilarListings, useTrendingListings } from "@/lib/queries";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { ClientOnly } from "@/components/ClientOnly";
 
 export const Route = createFileRoute("/offer/$id")({
+  beforeLoad: () => ({
+    hideFooter: true,
+  }),
   component: OfferDetailPage,
   head: () => ({ meta: [{ title: "تفاصيل العرض الترويجي — السوق لعندك" }] }),
 });
+
+const LoadingSkeleton = () => (
+  <div className="mx-auto max-w-4xl px-4 py-8">
+    <Skeleton className="aspect-square rounded-2xl w-full" />
+    <div className="space-y-4 mt-6">
+      <Skeleton className="h-8 w-3/4" />
+      <Skeleton className="h-6 w-1/3" />
+      <Skeleton className="h-24 w-full" />
+      <Skeleton className="h-12 w-1/4" />
+    </div>
+  </div>
+);
 
 function OfferDetailPage() {
   const { id } = Route.useParams();
@@ -58,6 +74,7 @@ function OfferDetailPage() {
   const [isVariationSelectedFlag, setIsVariationSelectedFlag] = useState<boolean>(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isZoomed, setIsZoomed] = useState(false);
   
   // ✅ مؤقت لمنع التحديثات المتكررة للصورة
   const imageUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -68,6 +85,31 @@ function OfferDetailPage() {
   
   const { data: listingsData } = useListings({ limit: 1000 });
   const listings = listingsData?.data || [];
+
+  // ✅ للاقتراحات (نستخدم المنتج الرئيسي للعرض كمرجع)
+  const mainProductId = useMemo(() => {
+    if (!rawOffer) return undefined;
+    const products = Array.isArray(rawOffer.products) 
+      ? rawOffer.products 
+      : rawOffer.products ? [rawOffer.products] : [];
+    return products[0]?.id || rawOffer.listing_id || undefined;
+  }, [rawOffer]);
+
+  const mainProductCategoryId = useMemo(() => {
+    if (!rawOffer) return undefined;
+    const products = Array.isArray(rawOffer.products) 
+      ? rawOffer.products 
+      : rawOffer.products ? [rawOffer.products] : [];
+    return products[0]?.category_id || rawOffer.category_id || undefined;
+  }, [rawOffer]);
+
+  const { data: similarListings = [] } = useSimilarListings(
+    mainProductCategoryId, 
+    mainProductId, 
+    4
+  );
+
+  const { data: trendingListings = [], isLoading: trendingLoading } = useTrendingListings(8);
 
   // ========== ✅ OFFER ==========
   const offer = useMemo(() => {
@@ -158,20 +200,20 @@ function OfferDetailPage() {
       bogo: { 
         label: app.lang === "ar" ? "🎁 نفس المنتج" : "🎁 Same Product", 
         icon: Gift,
-        color: "text-[#d81b60]",
-        bg: "bg-[#fbcfe8]/50 dark:bg-[#d81b60]/20"
+        color: "text-[#1a4f4a]",
+        bg: "bg-[#1a4f4a]/10 dark:bg-[#1a4f4a]/20"
       },
       cross_sell: { 
         label: app.lang === "ar" ? "🔄 منتج مختلف" : "🔄 Different Product", 
         icon: Tag,
-        color: "text-[#d81b60]",
-        bg: "bg-[#fbcfe8]/50 dark:bg-[#d81b60]/20"
+        color: "text-[#1a4f4a]",
+        bg: "bg-[#1a4f4a]/10 dark:bg-[#1a4f4a]/20"
       },
       bundle: { 
         label: app.lang === "ar" ? "📦 باقة منتجات" : "📦 Bundle", 
         icon: Package,
-        color: "text-[#d81b60]",
-        bg: "bg-[#fbcfe8]/50 dark:bg-[#d81b60]/20"
+        color: "text-[#1a4f4a]",
+        bg: "bg-[#1a4f4a]/10 dark:bg-[#1a4f4a]/20"
       },
     };
     return types[type] || types.bogo;
@@ -372,13 +414,11 @@ function OfferDetailPage() {
   const getVariationImage = useCallback((product: any, variationId: string): string | null => {
     if (!product) return null;
     
-    // ✅ 1. البحث في product_variations
     const variation = product.variations?.find((v: any) => v.id === variationId);
     if (variation?.image_url) {
       return variation.image_url;
     }
     
-    // ✅ 2. إذا كان للخيار color_id → البحث في product_colors
     if (variation?.color_id) {
       const color = product.colors?.find((c: any) => c.id === variation.color_id);
       if (color?.image_url) {
@@ -386,13 +426,11 @@ function OfferDetailPage() {
       }
     }
     
-    // ✅ 3. البحث في product_colors مباشرة (إذا كان الـ ID هو لون)
     const color = product.colors?.find((c: any) => c.id === variationId);
     if (color?.image_url) {
       return color.image_url;
     }
     
-    // ✅ 4. إذا كان الخيار يحتوي على combo مع لون
     if (variation?.combination) {
       const combo = variation.combination || {};
       const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
@@ -409,224 +447,54 @@ function OfferDetailPage() {
       }
     }
     
-    // ✅ 5. الصورة الافتراضية للمنتج
     return product.cover_url || null;
   }, []);
 
   // ============================================================
-  // ✅✅✅ مصفوفة صور العرض (تشمل جميع الصور - المنتجات + الخيارات + الألوان)
+  // ✅✅✅ مصفوفة صور العرض
   // ============================================================
- const offerImages = useMemo(() => {
-  const images: Array<{ 
-    url: string; 
-    title: string; 
-    type: 'main' | 'free' | 'required' | 'variation' | 'color' | 'gift_variation' | 'gift_color';
-    variationId?: string;
-    colorId?: string;
-    productId?: string;
-    isGift?: boolean;
-    isRequired?: boolean;
-    displayName?: string;
-  }> = [];
-  
-  const addImage = (url: string, title: string, type: any, extra?: any) => {
-    if (!url) return;
-    const exists = images.some(img => img.url === url);
-    if (!exists) {
-      images.push({ url, title, type, ...extra });
-    }
-  };
-  
-  // ✅ 1. المنتج الرئيسي + خياراته + ألوانه
-  if (mainProduct) {
-    addImage(
-      mainProduct.cover_url, 
-      mainProduct.title_ar || 'المنتج الرئيسي', 
-      'main',
-      { productId: mainProduct.id, displayName: mainProduct.title_ar || 'المنتج الرئيسي' }
-    );
+  const offerImages = useMemo(() => {
+    const images: Array<{ 
+      url: string; 
+      title: string; 
+      type: 'main' | 'free' | 'required' | 'variation' | 'color' | 'gift_variation' | 'gift_color';
+      variationId?: string;
+      colorId?: string;
+      productId?: string;
+      isGift?: boolean;
+      isRequired?: boolean;
+      displayName?: string;
+    }> = [];
     
-    // ✅✅✅ التصحيح: تصفية التشكيلات حسب variation_ids (بدون useMemo داخل useMemo)
-    const selectedIds = offer?.variation_ids || [];
-    const allVariations = mainProduct.variations || [];
-    const mainVariations = selectedIds.length > 0 
-      ? allVariations.filter((v: any) => selectedIds.includes(v.id))
-      : allVariations;
+    const addImage = (url: string, title: string, type: any, extra?: any) => {
+      if (!url) return;
+      const exists = images.some(img => img.url === url);
+      if (!exists) {
+        images.push({ url, title, type, ...extra });
+      }
+    };
     
-    mainVariations.forEach((v: any) => {
-      let imageUrl = v.image_url || null;
-      let displayName = '';
-      
-      // ✅ حاول الحصول على الصورة من color_id
-      if (!imageUrl && v.color_id) {
-        const color = mainProduct.colors?.find((c: any) => c.id === v.color_id);
-        if (color?.image_url) {
-          imageUrl = color.image_url;
-          displayName = color.color_name_ar || '';
-        }
-      }
-      
-      // ✅ حاول الحصول على الصورة من combo
-      if (!imageUrl) {
-        const combo = v.combination || {};
-        const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
-        for (const key of colorKeys) {
-          if (combo[key]) {
-            const colorValue = String(combo[key]).trim();
-            const color = mainProduct.colors?.find((c: any) => 
-              String(c.color_name_ar || "").trim().toLowerCase() === colorValue.toLowerCase()
-            );
-            if (color?.image_url) {
-              imageUrl = color.image_url;
-              displayName = color.color_name_ar || colorValue;
-              break;
-            }
-            displayName = colorValue;
-          }
-        }
-      }
-      
-      // ✅ إذا لم نجد صورة، استخدم الـ cover_url
-      if (!imageUrl) {
-        imageUrl = mainProduct.cover_url;
-      }
-      
-      const comboText = Object.entries(v.combination || {})
-        .map(([key, val]) => `${val}`)
-        .join(' • ');
-      
+    // ✅ 1. المنتج الرئيسي + خياراته + ألوانه
+    if (mainProduct) {
       addImage(
-        imageUrl,
-        `${mainProduct.title_ar || 'منتج'} - ${comboText || 'خيار'}`,
-        'variation',
-        { 
-          variationId: v.id, 
-          productId: mainProduct.id, 
-          displayName: comboText || displayName || 'خيار' 
-        }
-      );
-    });
-    
-    const colors = mainProduct.colors || mainProduct.product_colors || [];
-    colors.forEach((c: any) => {
-      if (c.image_url) {
-        addImage(
-          c.image_url,
-          `${mainProduct.title_ar || 'منتج'} - ${c.color_name_ar || 'لون'}`,
-          'color',
-          { colorId: c.id, productId: mainProduct.id, displayName: c.color_name_ar || 'لون' }
-        );
-      }
-    });
-  }
-  
-  // ✅ 2. الهدية + خياراتها + ألوانها
-  if (freeProduct) {
-    addImage(
-      freeProduct.cover_url,
-      freeProduct.title_ar || 'الهدية',
-      'free',
-      { productId: freeProduct.id, isGift: true, displayName: freeProduct.title_ar || 'الهدية' }
-    );
-    
-    // ✅✅✅ تصفية تشكيلات الهدية حسب result_variation_ids
-    const giftSelectedIds = offer?.result_variation_ids || [];
-    const allGiftVariations = freeProduct.variations || [];
-    const giftVariations = giftSelectedIds.length > 0 
-      ? allGiftVariations.filter((v: any) => giftSelectedIds.includes(v.id))
-      : allGiftVariations;
-    
-    giftVariations.forEach((v: any) => {
-      let imageUrl = v.image_url || null;
-      let displayName = '';
-      
-      if (!imageUrl && v.color_id) {
-        const color = freeProduct.colors?.find((c: any) => c.id === v.color_id);
-        if (color?.image_url) {
-          imageUrl = color.image_url;
-          displayName = color.color_name_ar || '';
-        }
-      }
-      
-      if (!imageUrl) {
-        const combo = v.combination || {};
-        const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
-        for (const key of colorKeys) {
-          if (combo[key]) {
-            const colorValue = String(combo[key]).trim();
-            const color = freeProduct.colors?.find((c: any) => 
-              String(c.color_name_ar || "").trim().toLowerCase() === colorValue.toLowerCase()
-            );
-            if (color?.image_url) {
-              imageUrl = color.image_url;
-              displayName = color.color_name_ar || colorValue;
-              break;
-            }
-            displayName = colorValue;
-          }
-        }
-      }
-      
-      if (!imageUrl) {
-        imageUrl = freeProduct.cover_url;
-      }
-      
-      const comboText = Object.entries(v.combination || {})
-        .map(([key, val]) => `${val}`)
-        .join(' • ');
-      
-      addImage(
-        imageUrl,
-        `${freeProduct.title_ar || 'هدية'} - ${comboText || 'خيار'}`,
-        'gift_variation',
-        { 
-          variationId: v.id, 
-          productId: freeProduct.id, 
-          isGift: true, 
-          displayName: comboText || displayName || 'خيار' 
-        }
-      );
-    });
-    
-    const giftColors = freeProduct.colors || freeProduct.product_colors || [];
-    giftColors.forEach((c: any) => {
-      if (c.image_url) {
-        addImage(
-          c.image_url,
-          `${freeProduct.title_ar || 'هدية'} - ${c.color_name_ar || 'لون'}`,
-          'gift_color',
-          { colorId: c.id, productId: freeProduct.id, isGift: true, displayName: c.color_name_ar || 'لون' }
-        );
-      }
-    });
-  }
-  
-  // ✅ 3. المنتجات المطلوبة (Bundle) + خياراتها + ألوانها
-  if (isBundle) {
-    requiredProducts.forEach((req: any) => {
-      const product = req.product;
-      if (!product) return;
-      
-      addImage(
-        product.cover_url,
-        product.title_ar || 'منتج مطلوب',
-        'required',
-        { productId: product.id, isRequired: true, displayName: product.title_ar || 'منتج مطلوب' }
+        mainProduct.cover_url, 
+        mainProduct.title_ar || 'المنتج الرئيسي', 
+        'main',
+        { productId: mainProduct.id, displayName: mainProduct.title_ar || 'المنتج الرئيسي' }
       );
       
-      // ✅✅✅ تصفية تشكيلات المنتج المطلوب حسب variation_ids من required_variations
-      const reqVariationIds = req.selectedVariationIds || [];
-      const allVariations = product.variations || [];
-      const variations = reqVariationIds.length > 0 
-        ? allVariations.filter((v: any) => reqVariationIds.includes(v.id))
+      const selectedIds = offer?.variation_ids || [];
+      const allVariations = mainProduct.variations || [];
+      const mainVariations = selectedIds.length > 0 
+        ? allVariations.filter((v: any) => selectedIds.includes(v.id))
         : allVariations;
       
-      variations.forEach((v: any) => {
+      mainVariations.forEach((v: any) => {
         let imageUrl = v.image_url || null;
         let displayName = '';
         
         if (!imageUrl && v.color_id) {
-          const color = product.colors?.find((c: any) => c.id === v.color_id);
+          const color = mainProduct.colors?.find((c: any) => c.id === v.color_id);
           if (color?.image_url) {
             imageUrl = color.image_url;
             displayName = color.color_name_ar || '';
@@ -639,7 +507,7 @@ function OfferDetailPage() {
           for (const key of colorKeys) {
             if (combo[key]) {
               const colorValue = String(combo[key]).trim();
-              const color = product.colors?.find((c: any) => 
+              const color = mainProduct.colors?.find((c: any) => 
                 String(c.color_name_ar || "").trim().toLowerCase() === colorValue.toLowerCase()
               );
               if (color?.image_url) {
@@ -653,7 +521,7 @@ function OfferDetailPage() {
         }
         
         if (!imageUrl) {
-          imageUrl = product.cover_url;
+          imageUrl = mainProduct.cover_url;
         }
         
         const comboText = Object.entries(v.combination || {})
@@ -662,61 +530,219 @@ function OfferDetailPage() {
         
         addImage(
           imageUrl,
-          `${product.title_ar || 'منتج'} - ${comboText || 'خيار'}`,
+          `${mainProduct.title_ar || 'منتج'} - ${comboText || 'خيار'}`,
           'variation',
           { 
             variationId: v.id, 
-            productId: product.id, 
-            isRequired: true, 
+            productId: mainProduct.id, 
             displayName: comboText || displayName || 'خيار' 
           }
         );
       });
       
-      const colors = product.colors || product.product_colors || [];
+      const colors = mainProduct.colors || mainProduct.product_colors || [];
       colors.forEach((c: any) => {
         if (c.image_url) {
           addImage(
             c.image_url,
-            `${product.title_ar || 'منتج'} - ${c.color_name_ar || 'لون'}`,
+            `${mainProduct.title_ar || 'منتج'} - ${c.color_name_ar || 'لون'}`,
             'color',
-            { colorId: c.id, productId: product.id, isRequired: true, displayName: c.color_name_ar || 'لون' }
+            { colorId: c.id, productId: mainProduct.id, displayName: c.color_name_ar || 'لون' }
           );
         }
       });
-    });
-  }
-  
-  return images;
-}, [mainProduct, freeProduct, requiredProducts, isBundle, offer?.variation_ids, offer?.result_variation_ids]);
-  
+    }
+    
+    // ✅ 2. الهدية + خياراتها + ألوانها
+    if (freeProduct) {
+      addImage(
+        freeProduct.cover_url,
+        freeProduct.title_ar || 'الهدية',
+        'free',
+        { productId: freeProduct.id, isGift: true, displayName: freeProduct.title_ar || 'الهدية' }
+      );
+      
+      const giftSelectedIds = offer?.result_variation_ids || [];
+      const allGiftVariations = freeProduct.variations || [];
+      const giftVariations = giftSelectedIds.length > 0 
+        ? allGiftVariations.filter((v: any) => giftSelectedIds.includes(v.id))
+        : allGiftVariations;
+      
+      giftVariations.forEach((v: any) => {
+        let imageUrl = v.image_url || null;
+        let displayName = '';
+        
+        if (!imageUrl && v.color_id) {
+          const color = freeProduct.colors?.find((c: any) => c.id === v.color_id);
+          if (color?.image_url) {
+            imageUrl = color.image_url;
+            displayName = color.color_name_ar || '';
+          }
+        }
+        
+        if (!imageUrl) {
+          const combo = v.combination || {};
+          const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+          for (const key of colorKeys) {
+            if (combo[key]) {
+              const colorValue = String(combo[key]).trim();
+              const color = freeProduct.colors?.find((c: any) => 
+                String(c.color_name_ar || "").trim().toLowerCase() === colorValue.toLowerCase()
+              );
+              if (color?.image_url) {
+                imageUrl = color.image_url;
+                displayName = color.color_name_ar || colorValue;
+                break;
+              }
+              displayName = colorValue;
+            }
+          }
+        }
+        
+        if (!imageUrl) {
+          imageUrl = freeProduct.cover_url;
+        }
+        
+        const comboText = Object.entries(v.combination || {})
+          .map(([key, val]) => `${val}`)
+          .join(' • ');
+        
+        addImage(
+          imageUrl,
+          `${freeProduct.title_ar || 'هدية'} - ${comboText || 'خيار'}`,
+          'gift_variation',
+          { 
+            variationId: v.id, 
+            productId: freeProduct.id, 
+            isGift: true, 
+            displayName: comboText || displayName || 'خيار' 
+          }
+        );
+      });
+      
+      const giftColors = freeProduct.colors || freeProduct.product_colors || [];
+      giftColors.forEach((c: any) => {
+        if (c.image_url) {
+          addImage(
+            c.image_url,
+            `${freeProduct.title_ar || 'هدية'} - ${c.color_name_ar || 'لون'}`,
+            'gift_color',
+            { colorId: c.id, productId: freeProduct.id, isGift: true, displayName: c.color_name_ar || 'لون' }
+          );
+        }
+      });
+    }
+    
+    // ✅ 3. المنتجات المطلوبة (Bundle) + خياراتها + ألوانها
+    if (isBundle) {
+      requiredProducts.forEach((req: any) => {
+        const product = req.product;
+        if (!product) return;
+        
+        addImage(
+          product.cover_url,
+          product.title_ar || 'منتج مطلوب',
+          'required',
+          { productId: product.id, isRequired: true, displayName: product.title_ar || 'منتج مطلوب' }
+        );
+        
+        const reqVariationIds = req.selectedVariationIds || [];
+        const allVariations = product.variations || [];
+        const variations = reqVariationIds.length > 0 
+          ? allVariations.filter((v: any) => reqVariationIds.includes(v.id))
+          : allVariations;
+        
+        variations.forEach((v: any) => {
+          let imageUrl = v.image_url || null;
+          let displayName = '';
+          
+          if (!imageUrl && v.color_id) {
+            const color = product.colors?.find((c: any) => c.id === v.color_id);
+            if (color?.image_url) {
+              imageUrl = color.image_url;
+              displayName = color.color_name_ar || '';
+            }
+          }
+          
+          if (!imageUrl) {
+            const combo = v.combination || {};
+            const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+            for (const key of colorKeys) {
+              if (combo[key]) {
+                const colorValue = String(combo[key]).trim();
+                const color = product.colors?.find((c: any) => 
+                  String(c.color_name_ar || "").trim().toLowerCase() === colorValue.toLowerCase()
+                );
+                if (color?.image_url) {
+                  imageUrl = color.image_url;
+                  displayName = color.color_name_ar || colorValue;
+                  break;
+                }
+                displayName = colorValue;
+              }
+            }
+          }
+          
+          if (!imageUrl) {
+            imageUrl = product.cover_url;
+          }
+          
+          const comboText = Object.entries(v.combination || {})
+            .map(([key, val]) => `${val}`)
+            .join(' • ');
+          
+          addImage(
+            imageUrl,
+            `${product.title_ar || 'منتج'} - ${comboText || 'خيار'}`,
+            'variation',
+            { 
+              variationId: v.id, 
+              productId: product.id, 
+              isRequired: true, 
+              displayName: comboText || displayName || 'خيار' 
+            }
+          );
+        });
+        
+        const colors = product.colors || product.product_colors || [];
+        colors.forEach((c: any) => {
+          if (c.image_url) {
+            addImage(
+              c.image_url,
+              `${product.title_ar || 'منتج'} - ${c.color_name_ar || 'لون'}`,
+              'color',
+              { colorId: c.id, productId: product.id, isRequired: true, displayName: c.color_name_ar || 'لون' }
+            );
+          }
+        });
+      });
+    }
+    
+    return images;
+  }, [mainProduct, freeProduct, requiredProducts, isBundle, offer?.variation_ids, offer?.result_variation_ids]);
+
   // ============================================================
-  // ✅✅✅ دالة موحدة لتغيير الصورة (مصححة بالكامل)
+  // ✅✅✅ دالة موحدة لتغيير الصورة
   // ============================================================
   const changeImage = useCallback((index: number) => {
-    // ✅ منع التحديثات المتكررة
     if (isImageUpdatingRef.current) return;
     if (index < 0 || index >= offerImages.length) return;
     
     const image = offerImages[index];
     if (!image?.url) return;
     
-    // ✅ منع تحديث نفس الصورة
     if (mainImage === image.url) return;
     
     isImageUpdatingRef.current = true;
     
-    // ✅ إلغاء أي مؤقت سابق
     if (imageUpdateTimeoutRef.current) {
       clearTimeout(imageUpdateTimeoutRef.current);
       imageUpdateTimeoutRef.current = null;
     }
     
-    // ✅ تحديث الصورة فوراً
     setMainImage(image.url);
     setCurrentImageIndex(index);
     
-    // ✅ تحديث الـ selectedOptionId
     if (image.variationId) {
       setSelectedOptionId(image.variationId);
       setIsVariationSelectedFlag(true);
@@ -727,14 +753,13 @@ function OfferDetailPage() {
       setIsVariationSelectedFlag(false);
     }
     
-    // ✅ إعادة تعيين العلم بعد التأخير
     imageUpdateTimeoutRef.current = setTimeout(() => {
       isImageUpdatingRef.current = false;
       imageUpdateTimeoutRef.current = null;
     }, 300);
   }, [offerImages, mainImage]);
 
-  // ✅ حساب السعر النهائي (مع ضرب الكمية)
+  // ✅ حساب السعر النهائي
   const finalPrice = useMemo(() => {
     if (!offer) return 0;
     
@@ -891,7 +916,7 @@ function OfferDetailPage() {
   }, [isBundle, isBogo, isCrossSell, requiredProducts, mainProductWithVariations]);
 
   // ============================================================
-  // ✅ التحقق من اختيار الخيارات (مع دعم المنتجات التي ليس لها خيارات)
+  // ✅ التحقق من اختيار الخيارات
   // ============================================================
   const isVariationSelected = useMemo(() => {
     if (!offer) return false;
@@ -943,6 +968,39 @@ function OfferDetailPage() {
     return true;
   }, [offer, selectionStats, giftStats, mainProductWithVariations, requiredProducts, selectedVariations]);
 
+  // ============================================================
+  // ✅ ترتيب "قد تعجبك" - العروض أولاً + 4 فقط
+  // ============================================================
+  const sortedSimilarListings = useMemo(() => {
+    if (!similarListings || similarListings.length === 0) return [];
+    
+    return [...similarListings]
+      .sort((a: any, b: any) => {
+        const getPriority = (item: any) => {
+          // ✅ 1. عرض ترويجي (BOGO / Bundle / Cross-sell)
+          if (item.has_promo_offer === true || item.has_promo_offer === "true") return 0;
+          // ✅ 2. عرض تخفيضي
+          if (item.is_offer === true || (item.discount_percent && item.discount_percent > 0)) return 1;
+          // ✅ 3. منتج عادي
+          return 2;
+        };
+        return getPriority(a) - getPriority(b);
+      })
+      .slice(0, 4);
+  }, [similarListings]);
+
+  // ============================================================
+  // ✅ الأكثر مبيعاً - 8 منتجات
+  // ============================================================
+  const bestSellingListings = useMemo(() => {
+    if (!trendingListings || trendingListings.length === 0) return [];
+    
+    // ✅ استبعاد المنتج الرئيسي للعرض
+    return trendingListings
+      .filter((item: any) => item.id !== mainProductId)
+      .slice(0, 8);
+  }, [trendingListings.length, mainProductId]);
+
   // ✅ بيانات المتجر
   const storeData = useMemo(() => {
     const logo = offer?.store?.store_logo_url || 
@@ -981,22 +1039,19 @@ function OfferDetailPage() {
   }, [offerImages, mainProduct]);
 
   // ============================================================
-  // ✅✅✅ تغيير الصورة الرئيسية عند اختيار خيار (مصحح بالكامل)
+  // ✅✅✅ تغيير الصورة الرئيسية عند اختيار خيار
   // ============================================================
   useEffect(() => {
     if (!mainProduct) return;
     
-    // ✅ منع التحديث إذا كان هناك تحديث قيد التنفيذ
     if (isImageUpdatingRef.current) return;
     
     const productId = mainProduct.id;
     const selectedMap = selectedVariations[productId] || {};
     const selectedVariationIds = Object.keys(selectedMap).filter(id => selectedMap[id] > 0);
     
-    // ✅ إذا لم يتم اختيار أي شيء → استخدم صور العرض (كوفر)
     if (selectedVariationIds.length === 0) {
       setIsVariationSelectedFlag(false);
-      // ✅ لا تغير الصورة إذا كانت موجودة بالفعل
       const currentImageExists = offerImages.some(img => img.url === mainImage);
       if (offerImages.length > 0 && !currentImageExists) {
         const imageIndex = currentImageIndex % offerImages.length;
@@ -1005,10 +1060,8 @@ function OfferDetailPage() {
       return;
     }
     
-    // ✅ تم اختيار خيار
     setIsVariationSelectedFlag(true);
     
-    // ✅ استخدم آخر ID تم اختياره، أو الـ selectedOptionId
     let targetId = selectedOptionId;
     if (!targetId || !selectedVariationIds.includes(targetId)) {
       targetId = selectedVariationIds[selectedVariationIds.length - 1];
@@ -1018,7 +1071,6 @@ function OfferDetailPage() {
       targetId = selectedVariationIds[0];
     }
     
-    // ✅ تحقق من القيمة الافتراضية
     if (targetId.startsWith('default-')) {
       if (mainProduct.cover_url && mainImage !== mainProduct.cover_url) {
         setMainImage(mainProduct.cover_url);
@@ -1026,11 +1078,9 @@ function OfferDetailPage() {
       return;
     }
     
-    // ✅ تحقق من أن targetId ليس للهدية (يبدأ بـ gift-)
     const isGiftSelection = targetId.startsWith('gift-');
     const cleanTargetId = isGiftSelection ? targetId.replace('gift-', '') : targetId;
     
-    // ✅ 1. ابحث في offerImages عن الصورة المطابقة
     const matchingImage = offerImages.find(img => {
       if (isGiftSelection) {
         return (img.variationId === cleanTargetId || img.colorId === cleanTargetId) && img.isGift === true;
@@ -1040,7 +1090,6 @@ function OfferDetailPage() {
     
     if (matchingImage?.url && mainImage !== matchingImage.url) {
       setMainImage(matchingImage.url);
-      // ✅ تحديث الفهرس
       const index = offerImages.findIndex(img => img.url === matchingImage.url);
       if (index >= 0 && index !== currentImageIndex) {
         setCurrentImageIndex(index);
@@ -1048,11 +1097,9 @@ function OfferDetailPage() {
       return;
     }
     
-    // ✅ 2. استخدم الدالة getVariationImage
     const imageUrl = getVariationImage(mainProduct, cleanTargetId);
     if (imageUrl && mainImage !== imageUrl) {
       setMainImage(imageUrl);
-      // ✅ تحديث الفهرس
       const index = offerImages.findIndex(img => img.url === imageUrl);
       if (index >= 0 && index !== currentImageIndex) {
         setCurrentImageIndex(index);
@@ -1060,14 +1107,13 @@ function OfferDetailPage() {
       return;
     }
     
-    // ✅ 3. استخدام الصورة الافتراضية
     if (mainProduct.cover_url && mainImage !== mainProduct.cover_url) {
       setMainImage(mainProduct.cover_url);
     }
   }, [selectedVariations, mainProduct, selectedOptionId, offerImages, currentImageIndex, getVariationImage]);
 
   // ============================================================
-  // ✅ اختيار تلقائي للخيارات (لـ Bundle) - المصحح
+  // ✅ اختيار تلقائي للخيارات (لـ Bundle)
   // ============================================================
   useEffect(() => {
     if (isBundle && requiredProducts.length > 0) {
@@ -1114,7 +1160,7 @@ function OfferDetailPage() {
   }, [requiredProducts, isBundle]);
 
   // ============================================================
-  // ✅ اختيار تلقائي للخيارات (لـ BOGO و Cross-sell) - المصحح
+  // ✅ اختيار تلقائي للخيارات (لـ BOGO و Cross-sell)
   // ============================================================
   useEffect(() => {
     if ((isBogo || isCrossSell) && mainProductWithVariations) {
@@ -1164,7 +1210,7 @@ function OfferDetailPage() {
   }, [isBogo, isCrossSell, mainProductWithVariations, offer?.variation_ids]);
 
   // ============================================================
-  // ✅ اختيار تلقائي لخيارات الهدية (خيارات أو ألوان)
+  // ✅ اختيار تلقائي لخيارات الهدية
   // ============================================================
   useEffect(() => {
     if (!freeProduct || !offer) return;
@@ -1240,17 +1286,13 @@ function OfferDetailPage() {
 
   // ========== ✅ HANDLERS ==========
   
-  // ✅ دالة تغيير كمية خيار معين (مع تحديث الصورة عند الضغط على اسم الخيار)
   const handleVariationQuantityChange = useCallback((productId: string, variationId: string, delta: number, updateImage: boolean = true) => {
-    // ✅ تحديث الصورة إذا كان الطلب هو اختيار خيار (delta = 0) أو زيادة
     if (updateImage) {
-      // ✅ البحث عن الصورة في offerImages
       const matchingImage = offerImages.find(img => 
         img.variationId === variationId || img.colorId === variationId
       );
       
       if (matchingImage?.url && mainImage !== matchingImage.url) {
-        // ✅ استخدام changeImage لتحديث الصورة
         const index = offerImages.findIndex(img => img.url === matchingImage.url);
         if (index >= 0) {
           changeImage(index);
@@ -1260,7 +1302,6 @@ function OfferDetailPage() {
           setIsVariationSelectedFlag(true);
         }
       } else if (!matchingImage) {
-        // ✅ إذا لم نجد صورة مطابقة، استخدم الصورة الافتراضية
         const product = productId === mainProduct?.id ? mainProduct : 
                        requiredProducts.find((r: any) => r.productId === productId)?.product;
         if (product?.cover_url && mainImage !== product.cover_url) {
@@ -1274,7 +1315,6 @@ function OfferDetailPage() {
       }
     }
     
-    // ✅ تحديث الكمية
     setSelectedVariations(prev => {
       const productMap = prev[productId] || {};
       const currentQty = productMap[variationId] || 0;
@@ -1305,11 +1345,8 @@ function OfferDetailPage() {
     }
   }, [offerImages, mainImage, changeImage, mainProduct, requiredProducts]);
 
-  // ✅ دالة تغيير كمية خيار الهدية (مع تحديث الصورة عند الضغط على اسم الخيار)
   const handleGiftVariationQuantityChange = useCallback((variationId: string, delta: number, updateImage: boolean = true) => {
-    // ✅ تحديث الصورة إذا كان الطلب هو اختيار خيار (delta = 0) أو زيادة
     if (updateImage) {
-      // ✅ البحث عن الصورة في offerImages
       const matchingImage = offerImages.find(img => 
         (img.variationId === variationId || img.colorId === variationId) && img.isGift === true
       );
@@ -1324,7 +1361,6 @@ function OfferDetailPage() {
           setIsVariationSelectedFlag(true);
         }
       } else if (!matchingImage) {
-        // ✅ إذا لم نجد صورة مطابقة، استخدم الصورة الافتراضية للهدية
         if (freeProduct?.cover_url && mainImage !== freeProduct.cover_url) {
           setMainImage(freeProduct.cover_url);
         }
@@ -1336,7 +1372,6 @@ function OfferDetailPage() {
       }
     }
     
-    // ✅ تحديث الكمية
     setSelectedGiftVariations(prev => {
       const currentQty = prev[variationId] || 0;
       const newQty = Math.max(0, currentQty + delta);
@@ -1354,67 +1389,60 @@ function OfferDetailPage() {
     });
   }, [offerImages, mainImage, changeImage, freeProduct]);
 
-  // ✅ دالة اختيار خيار من المنتجات المطلوبة (Bundle) - عند الضغط على اسم الخيار
- const handleRequiredVariationSelect = useCallback((productId: string, variationId: string) => {
-  // ✅ تحديث الصورة فوراً باستخدام changeImage
-  const matchingImage = offerImages.find(img => 
-    img.variationId === variationId || img.colorId === variationId
-  );
-  
-  if (matchingImage?.url && mainImage !== matchingImage.url) {
-    const index = offerImages.findIndex(img => img.url === matchingImage.url);
-    if (index >= 0) {
-      changeImage(index);
+  const handleRequiredVariationSelect = useCallback((productId: string, variationId: string) => {
+    const matchingImage = offerImages.find(img => 
+      img.variationId === variationId || img.colorId === variationId
+    );
+    
+    if (matchingImage?.url && mainImage !== matchingImage.url) {
+      const index = offerImages.findIndex(img => img.url === matchingImage.url);
+      if (index >= 0) {
+        changeImage(index);
+      } else {
+        setMainImage(matchingImage.url);
+        setSelectedOptionId(variationId);
+        setIsVariationSelectedFlag(true);
+      }
+    } else if (matchingImage?.url) {
+      setSelectedOptionId(variationId);
+      setIsVariationSelectedFlag(true);
     } else {
-      setMainImage(matchingImage.url);
+      const product = productId === mainProduct?.id ? mainProduct : 
+                     requiredProducts.find((r: any) => r.productId === productId)?.product;
+      if (product?.cover_url && mainImage !== product.cover_url) {
+        setMainImage(product.cover_url);
+      }
       setSelectedOptionId(variationId);
       setIsVariationSelectedFlag(true);
     }
-  } else if (matchingImage?.url) {
-    setSelectedOptionId(variationId);
-    setIsVariationSelectedFlag(true);
-  } else {
-    // إذا لم نجد صورة، استخدم الصورة الافتراضية للمنتج
-    const product = productId === mainProduct?.id ? mainProduct : 
-                   requiredProducts.find((r: any) => r.productId === productId)?.product;
-    if (product?.cover_url && mainImage !== product.cover_url) {
-      setMainImage(product.cover_url);
-    }
-    setSelectedOptionId(variationId);
-    setIsVariationSelectedFlag(true);
-  }
-}, [offerImages, mainImage, changeImage, mainProduct, requiredProducts]);
-  
-  // ✅ دالة اختيار خيار من الهدية - عند الضغط على اسم الخيار
- const handleGiftVariationSelect = useCallback((variationId: string) => {
-  // ✅ تحديث الصورة فوراً باستخدام changeImage
-  const matchingImage = offerImages.find(img => 
-    (img.variationId === variationId || img.colorId === variationId) && img.isGift === true
-  );
-  
-  if (matchingImage?.url && mainImage !== matchingImage.url) {
-    const index = offerImages.findIndex(img => img.url === matchingImage.url);
-    if (index >= 0) {
-      changeImage(index);
+  }, [offerImages, mainImage, changeImage, mainProduct, requiredProducts]);
+
+  const handleGiftVariationSelect = useCallback((variationId: string) => {
+    const matchingImage = offerImages.find(img => 
+      (img.variationId === variationId || img.colorId === variationId) && img.isGift === true
+    );
+    
+    if (matchingImage?.url && mainImage !== matchingImage.url) {
+      const index = offerImages.findIndex(img => img.url === matchingImage.url);
+      if (index >= 0) {
+        changeImage(index);
+      } else {
+        setMainImage(matchingImage.url);
+        setSelectedOptionId(`gift-${variationId}`);
+        setIsVariationSelectedFlag(true);
+      }
+    } else if (matchingImage?.url) {
+      setSelectedOptionId(`gift-${variationId}`);
+      setIsVariationSelectedFlag(true);
     } else {
-      setMainImage(matchingImage.url);
+      if (freeProduct?.cover_url && mainImage !== freeProduct.cover_url) {
+        setMainImage(freeProduct.cover_url);
+      }
       setSelectedOptionId(`gift-${variationId}`);
       setIsVariationSelectedFlag(true);
     }
-  } else if (matchingImage?.url) {
-    setSelectedOptionId(`gift-${variationId}`);
-    setIsVariationSelectedFlag(true);
-  } else {
-    // إذا لم نجد صورة، استخدم الصورة الافتراضية للهدية
-    if (freeProduct?.cover_url && mainImage !== freeProduct.cover_url) {
-      setMainImage(freeProduct.cover_url);
-    }
-    setSelectedOptionId(`gift-${variationId}`);
-    setIsVariationSelectedFlag(true);
-  }
-}, [offerImages, mainImage, changeImage, freeProduct]);
-  
-  // ✅ دالة توزيع الكمية المتبقية
+  }, [offerImages, mainImage, changeImage, freeProduct]);
+
   const autoDistributeRemaining = useCallback((productId: string, options: any[], totalRequired: number) => {
     const currentMap = selectedVariations[productId] || {};
     const currentTotal = Object.values(currentMap).reduce((sum, qty) => sum + qty, 0);
@@ -1437,7 +1465,6 @@ function OfferDetailPage() {
     });
   }, [selectedVariations]);
 
-  // ✅ دالة توزيع الكمية المتبقية للهدية
   const autoDistributeGiftRemaining = useCallback((options: any[], totalQty: number) => {
     const currentMap = selectedGiftVariations || {};
     const currentTotal = Object.values(currentMap).reduce((sum, qty) => sum + qty, 0);
@@ -1460,9 +1487,6 @@ function OfferDetailPage() {
     });
   }, [selectedGiftVariations]);
 
-  // ============================================================
-  // ✅ دالة مساعدة لاستخراج صورة الخيار
-  // ============================================================
   const getOptionImageUrl = useCallback((
     option: any,
     product: any,
@@ -1513,7 +1537,7 @@ function OfferDetailPage() {
   }, []);
 
   // ============================================================
-  // ✅✅✅ دالة إضافة العرض للسلة - النسخة المصححة مع دعم الكمية ✅✅✅
+  // ✅✅✅ دالة إضافة العرض للسلة
   // ============================================================
   const handleAddToCart = useCallback(async () => {
     if (!app.user) {
@@ -1532,7 +1556,6 @@ function OfferDetailPage() {
       return;
     }
 
-    // ✅ التحقق من تجاوز الكميات المطلوبة (المنتجات)
     if (selectionStats.hasOver) {
       toast.error(
         app.lang === "ar" 
@@ -1542,7 +1565,6 @@ function OfferDetailPage() {
       return;
     }
 
-    // ✅ التحقق من تجاوز كمية الهدية
     if (giftStats.isOver) {
       toast.error(
         app.lang === "ar" 
@@ -1552,7 +1574,6 @@ function OfferDetailPage() {
       return;
     }
 
-    // ✅ التحقق من أن المنتجات كاملة (ليس هناك نقص)
     if (!selectionStats.allComplete) {
       const remaining = totalRequiredQuantity - totalSelectedQuantity;
       toast.warning(
@@ -1563,7 +1584,6 @@ function OfferDetailPage() {
       return;
     }
 
-    // ✅ التحقق من أن الهدية مكتملة (إذا كان هناك خيارات للهدية)
     if (offer?.result_variation_ids?.length > 0 && !giftStats.isComplete) {
       const remaining = giftStats.total - giftStats.selected;
       toast.warning(
@@ -1584,7 +1604,7 @@ function OfferDetailPage() {
     }
 
     // ============================================================
-    // ✅ 1. جمع الخيارات التي اختارها المستخدم
+    // ✅ 1. جمع الخيارات
     // ============================================================
     const requiredVariationsDetails: Record<string, {
       quantity: number;
@@ -1598,7 +1618,6 @@ function OfferDetailPage() {
     let mainListingId = "";
     let mainProductTitle = "";
 
-    // ✅ 1.1 خيارات المنتج الرئيسي (BOGO / Cross-sell)
     if (isBogo || isCrossSell) {
       const productId = mainProduct?.id;
       if (productId) {
@@ -1658,7 +1677,6 @@ function OfferDetailPage() {
       }
     }
 
-    // ✅ 1.2 خيارات Bundle
     if (isBundle) {
       for (const req of requiredProducts) {
         const productId = req.productId;
@@ -1808,7 +1826,7 @@ function OfferDetailPage() {
     }
 
     // ============================================================
-    // ✅✅✅ 4. حساب السعر الإجمالي مع ضرب الكمية ✅✅✅
+    // ✅✅✅ 4. حساب السعر الإجمالي مع ضرب الكمية
     // ============================================================
     let unitPrice = 0;
     for (const [variationId, data] of Object.entries(requiredVariationsDetails)) {
@@ -1852,13 +1870,13 @@ function OfferDetailPage() {
     };
 
     // ============================================================
-    // ✅✅✅ 6. إضافة للسلة باستخدام addToCartMutation ✅✅✅
+    // ✅✅✅ 6. إضافة للسلة
     // ============================================================
     try {
       await addToCartMutation.mutateAsync({
         userId: app.user.id,
         listingId: mainListingId,
-        quantity: quantity, // ✅✅✅ الكمية التي اختارها المستخدم
+        quantity: quantity,
         price: totalPrice,
         currency: app.currency || "SYP",
         variationPrice: unitPrice,
@@ -1874,7 +1892,7 @@ function OfferDetailPage() {
           required_variations: requiredVariationsDetails,
           gift_variations: giftVariationsDetails,
           currency: app.currency || "SYP",
-          quantity: quantity, // ✅✅✅ نمرر الكمية في extraData أيضاً
+          quantity: quantity,
         },
       });
 
@@ -1901,12 +1919,12 @@ function OfferDetailPage() {
             }
           },
           actionButtonStyle: {
-            background: 'linear-gradient(135deg, #f472b6, #ec4899, #db2777)',
+            background: 'linear-gradient(135deg, #1a4f4a, #2a655f, #3a8a82)',
             color: 'white',
             fontWeight: 'bold',
             borderRadius: '12px',
             padding: '8px 24px',
-            boxShadow: '0 8px 30px rgba(236, 72, 153, 0.4)',
+            boxShadow: '0 8px 30px rgba(26, 79, 74, 0.4)',
             border: 'none',
             fontSize: '14px',
           }
@@ -1916,7 +1934,6 @@ function OfferDetailPage() {
     } catch (error: any) {
       console.error(`❌ [handleAddToCart] Error:`, error);
       
-      // ✅ معالجة خطأ تعارض المتجر
       if (error?.message?.includes("store")) {
         setCurrentStoreName(error.currentStoreName || "");
         setNewStoreName(error.newStoreName || "");
@@ -1958,7 +1975,7 @@ function OfferDetailPage() {
     requiredProducts,
     storeData,
     getOptionImageUrl,
-    quantity, // ✅✅✅ أضفنا quantity إلى dependencies
+    quantity,
   ]);
 
   const handleConfirmClearCart = useCallback(async () => {
@@ -1969,7 +1986,6 @@ function OfferDetailPage() {
       setShowStoreConflict(false);
       toast.success(app.lang === "ar" ? "✅ تم تفريغ السلة" : "✅ Cart cleared");
       
-      // ✅ إعادة محاولة الإضافة بعد تفريغ السلة
       await handleAddToCart();
       
     } catch (error: any) {
@@ -1982,22 +1998,21 @@ function OfferDetailPage() {
     }
   }, [app.user, clearCartMutation, pendingAddData, handleAddToCart, app.lang]);
 
-  // ========== ✅ LOADING & ERROR ==========
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="grid md:grid-cols-2 gap-8">
-          <Skeleton className="aspect-square rounded-3xl" />
-          <div className="space-y-6">
-            <Skeleton className="h-10 w-3/4" />
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-14 w-1/3" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleShare = useCallback(async () => {
+    try {
+      await navigator.share({
+        title: offer?.display_text_ar || "عرض ترويجي",
+        text: offer?.display_text_ar || "",
+        url: window.location.href,
+      });
+    } catch {
+      navigator.clipboard?.writeText(window.location.href);
+      toast.success(app.lang === "ar" ? "تم نسخ الرابط 📋" : "Link copied 📋");
+    }
+  }, [offer, app.lang]);
+
+  // ========== ✅ RENDER ==========
+  if (isLoading) return <LoadingSkeleton />;
 
   if (isError || !offer || !offer.is_active) {
     return (
@@ -2010,7 +2025,7 @@ function OfferDetailPage() {
           <p className="text-muted-foreground mt-2">
             {app.lang === "ar" ? "قد يكون تم انتهاؤه أو إلغاؤه" : "It may have expired or been cancelled"}
           </p>
-          <Button className="mt-6 bg-[#2a655f] hover:bg-[#1a4f4a] text-white" onClick={() => navigate({ to: "/" })}>
+          <Button className="mt-6 bg-[#1a4f4a] hover:bg-[#2a655f] text-white" onClick={() => navigate({ to: "/" })}>
             {app.lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
           </Button>
         </div>
@@ -2018,624 +2033,225 @@ function OfferDetailPage() {
     );
   }
 
-  // ========== ✅ RENDER ==========
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <div className="mx-auto max-w-7xl px-4 py-6">
-        {/* ===== Breadcrumb ===== */}
-        <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
-          <Link to="/" className="hover:text-[#d81b60] transition-colors">
-            {app.lang === "ar" ? "الرئيسية" : "Home"}
-          </Link>
-          <ChevronLeft className="h-4 w-4" />
-          <span className="text-foreground font-medium line-clamp-1">
-            {app.lang === "ar" ? offer.display_text_ar : offer.display_text_en}
-          </span>
-        </nav>
+    <ClientOnly fallback={<LoadingSkeleton />}>
+      <div className="min-h-screen bg-[#f8f9fa] pb-24" dir="rtl">
+        
+        {/* ===== شريط علوي ===== */}
+        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-[#eee] px-4 py-3 flex items-center justify-between">
+          <button onClick={() => navigate({ to: -1 })} className="p-2 rounded-full hover:bg-gray-100 transition">
+            <ChevronRight className="h-5 w-5 text-gray-700" />
+          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={handleShare} className="p-2 rounded-full hover:bg-gray-100 transition">
+              <Share2 className="h-5 w-5 text-gray-700" />
+            </button>
+          </div>
+        </div>
 
-        <div className="grid lg:grid-cols-2 gap-10">
-          
-          {/* ===== LEFT - قسم الصور ===== */}
-          <div className="space-y-4">
-            <div 
-              className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-[#fbcfe8]/30 to-[#fdf2f8]/50 dark:from-[#d81b60]/20 dark:to-[#f48fb1]/10 border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer group"
-              onClick={() => setIsLightboxOpen(true)}
-            >
-              
+        {/* ===== عرض الصور - بنفس تصميم listing ===== */}
+        <div className="max-w-xl mx-auto px-4">
+          <div className="relative w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="relative w-full aspect-[4/3] overflow-hidden" onClick={() => setIsZoomed(!isZoomed)}>
               {mainImage ? (
                 <img
                   key={mainImage}
                   src={mainImage}
                   alt={offer.display_text_ar || "Promo offer"}
-                  className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
+                  className={cn(
+                    "w-full h-full object-cover transition-transform duration-300",
+                    isZoomed && "scale-150"
+                  )}
                   loading="eager"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  <GiftIcon className="h-20 w-20 text-[#d81b60]/30" />
+                  <GiftIcon className="h-20 w-20 text-[#1a4f4a]/30" />
                 </div>
               )}
               
-              {/* ✅ أيقونة التكبير */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/90 backdrop-blur rounded-full p-3 shadow-xl border-2 border-[#d81b60]/30">
-                  <svg className="w-8 h-8 text-[#d81b60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m4-6v6" />
-                  </svg>
-                </div>
-              </div>
-              
-              {/* ✅✅✅ أزرار التقليب (تظهر دائماً) - استخدام changeImage */}
               {offerImages.length > 1 && (
                 <>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const newIndex = (currentImageIndex - 1 + offerImages.length) % offerImages.length;
-                      changeImage(newIndex);
-                    }}
-                    className="absolute start-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 backdrop-blur text-[#d81b60] hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110 border-2 border-[#d81b60]/30 z-10"
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); const newIndex = (currentImageIndex - 1 + offerImages.length) % offerImages.length; changeImage(newIndex); }} 
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow"
                   >
-                    <ChevronLeft className="h-6 w-6" />
+                    <ChevronRight className="h-5 w-5" />
                   </button>
-                  
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const newIndex = (currentImageIndex + 1) % offerImages.length;
-                      changeImage(newIndex);
-                    }}
-                    className="absolute end-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 backdrop-blur text-[#d81b60] hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110 border-2 border-[#d81b60]/30 z-10"
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); const newIndex = (currentImageIndex + 1) % offerImages.length; changeImage(newIndex); }} 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow"
                   >
-                    <ChevronRight className="h-6 w-6" />
+                    <ChevronLeft className="h-5 w-5" />
                   </button>
-                  
-                  {/* ✅ مؤشر عدد الصور */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#d81b60]/80 backdrop-blur px-4 py-1.5 rounded-full text-white text-xs font-medium z-10 border border-white/20">
-                    {currentImageIndex + 1} / {offerImages.length}
-                  </div>
-                  
-                  {/* ✅ نقاط التنقل مع أسماء الخيارات - استخدام changeImage */}
-                  <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-2 z-10 flex-wrap justify-center max-w-[80%]">
-                    {offerImages.map((img, index) => (
-                      <button
-                        key={index}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          changeImage(index);
-                        }}
-                        className={cn(
-                          "flex flex-col items-center gap-0.5 transition-all duration-300",
-                          currentImageIndex === index 
-                            ? "scale-110" 
-                            : "opacity-60 hover:opacity-100"
-                        )}
-                        title={img.displayName || img.title}
-                      >
-                        <div className={cn(
-                          "h-2 rounded-full transition-all duration-300",
-                          currentImageIndex === index 
-                            ? "w-6 bg-[#d81b60]" 
-                            : "w-2 bg-[#d81b60]/50 hover:bg-[#d81b60]/80"
-                        )} />
-                      </button>
-                    ))}
-                  </div>
                 </>
               )}
               
-              {/* ✅ أزرار الألوان - استخدام changeImage */}
-              {mainProduct?.colors && mainProduct.colors.length > 0 && (
-                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 bg-[#d81b60]/80 backdrop-blur px-3 py-1.5 rounded-full z-10 border border-white/20">
-                  {mainProduct.colors.map((color: any) => {
-                    const matchingVariation = mainProduct.variations?.find((v: any) => {
-                      if (v.color_id === color.id) return true;
-                      const combo = v.combination || {};
-                      const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
-                      for (const key of colorKeys) {
-                        if (String(combo[key] || "").trim().toLowerCase() === String(color.color_name_ar || "").trim().toLowerCase()) {
-                          return true;
-                        }
-                      }
-                      return false;
-                    });
-                    
-                    const isSelected = matchingVariation && selectedVariations[mainProduct.id]?.[matchingVariation.id] > 0;
-                    
-                    return (
-                      <button
-                        key={color.id}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const index = offerImages.findIndex(img => img.url === color.image_url);
-                          if (index >= 0) {
-                            changeImage(index);
-                          } else if (color.image_url) {
-                            setMainImage(color.image_url);
-                            setIsVariationSelectedFlag(true);
-                            setSelectedOptionId(color.id);
-                          }
-                          
-                          if (matchingVariation && !selectionStats.hasOver) {
-                            const currentQty = selectedVariations[mainProduct.id]?.[matchingVariation.id] || 0;
-                            const totalRequired = mainProductWithVariations?.totalRequiredQuantity || 1;
-                            const currentTotal = Object.values(selectedVariations[mainProduct.id] || {}).reduce((sum, qty) => sum + qty, 0);
-                            
-                            if (currentTotal < totalRequired) {
-                              handleVariationQuantityChange(mainProduct.id, matchingVariation.id, 1);
-                            }
-                          }
-                        }}
-                        className={cn(
-                          "w-6 h-6 rounded-full border-2 transition-all duration-300",
-                          isSelected 
-                            ? "border-white ring-2 ring-[#d81b60] scale-110 shadow-lg shadow-[#d81b60]/50" 
-                            : "border-white/50 hover:scale-110 hover:border-white/80",
-                          mainImage === color.image_url && "ring-2 ring-[#f48fb1] scale-105"
-                        )}
-                        style={{ backgroundColor: color.color_hex || '#ccc' }}
-                        title={color.color_name_ar}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-              
-              <div className="absolute top-4 start-4 flex flex-col gap-2">
-                <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm font-bold animate-pulse">
-                  <Sparkles className="h-3.5 w-3.5 inline mr-1" />
-                  {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
+              {/* العروض والعلامات */}
+              <div className="absolute top-4 right-4 flex flex-col gap-2">
+                <Badge className="bg-gradient-to-r from-[#1a4f4a] to-[#2a655f] text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm font-bold">
+                  🎁 {app.lang === "ar" ? "عرض ترويجي" : "Promo Offer"}
                 </Badge>
                 {discountPercent > 0 && (
-                  <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm font-bold animate-pulse">
-                    🎁 {discountPercent}% OFF
+                  <Badge className="bg-gradient-to-r from-[#1a4f4a] to-[#2a655f] text-white border-0 shadow-lg rounded-full px-4 py-1.5 text-sm font-bold animate-pulse">
+                    🎯 {discountPercent}% OFF
                   </Badge>
                 )}
               </div>
             </div>
-            
-            {/* ✅ معرض الصور المصغرة مع أسماء الخيارات - استخدام changeImage */}
-            {offerImages.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {offerImages.map((img, index) => (
-                  <button
-                    key={index}
-                    onClick={() => changeImage(index)}
-                    className={cn(
-                      "flex flex-col items-center gap-1 transition-all flex-shrink-0",
-                      mainImage === img.url 
-                        ? "scale-105" 
-                        : "opacity-60 hover:opacity-100"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-16 h-16 rounded-lg overflow-hidden border-3 transition-all relative",
-                      mainImage === img.url 
-                        ? "border-[#d81b60] ring-2 ring-[#f48fb1]" 
-                        : "border-transparent hover:border-[#d81b60]/50"
-                    )}>
-                      <img 
-                        src={img.url} 
-                        alt={img.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span className="text-[10px] text-muted-foreground truncate max-w-[60px] text-center">
-                      {img.displayName || 'خيار'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
+        </div>
 
-          {/* ===== RIGHT - معلومات العرض ===== */}
-          <div className="space-y-6">
-            
-            {/* ===== نوع العرض ===== */}
-            <div className="flex items-center gap-3 flex-wrap">
+        <div className="max-w-xl mx-auto px-4 mt-4 space-y-4">
+          
+          {/* ===== العنوان ونوع العرض ===== */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-start justify-between gap-2">
+              <h1 className="text-lg font-bold text-gray-900 flex-1">
+                {app.lang === "ar" ? offer.display_text_ar : offer.display_text_en}
+              </h1>
               {promoType && (
                 <Badge className={cn(
-                  "border-0 text-sm font-bold px-4 py-2 rounded-full",
+                  "border-0 text-xs font-bold px-3 py-1 rounded-full flex-shrink-0",
                   promoType.color,
                   promoType.bg
                 )}>
-                  {promoType.icon && <promoType.icon className="h-4 w-4 inline mr-1.5" />}
+                  {promoType.icon && <promoType.icon className="h-3 w-3 inline ml-1" />}
                   {promoType.label}
                 </Badge>
               )}
-              {offer.is_featured && (
-                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 rounded-full px-3 py-1.5 text-sm">
-                  ⭐ {app.lang === "ar" ? "مميز" : "Featured"}
-                </Badge>
-              )}
-              {!offer.expires_at && (
-                <Badge variant="outline" className="border-[#d81b60]/30 text-[#d81b60] rounded-full px-3 py-1.5">
-                  🔓 {app.lang === "ar" ? "دائم" : "Permanent"}
-                </Badge>
-              )}
             </div>
-
-            <h1 className="text-3xl md:text-4xl font-bold leading-tight text-[#1a4f4a] dark:text-white">
-              {app.lang === "ar" ? offer.display_text_ar : offer.display_text_en}
-            </h1>
-
-            {/* ===== المتجر - زر وردي ===== */}
-            {(offer?.store_id || mainProduct?.owner_id) && (
-              <Link 
-                to="/store/$id" 
-                params={{ id: offer?.store_id || mainProduct?.owner_id }}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-[#fbcfe8]/50 to-[#fdf2f8]/70 dark:from-[#d81b60]/20 dark:to-[#f48fb1]/10 hover:from-[#fbcfe8]/70 hover:to-[#fdf2f8]/90 transition-all border-3 border-[#d81b60]/40 hover:border-[#d81b60]/70 shadow-lg hover:shadow-[#d81b60]/20 group"
-              >
-                <div className="h-14 w-14 rounded-2xl overflow-hidden border-3 border-[#d81b60]/30 shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0 bg-gradient-to-br from-[#d81b60] to-[#f48fb1]">
-                  {storeData.logo ? (
-                    <OptimizedImage
-                      src={storeData.logo}
-                      alt={storeData.name}
-                      width={56}
-                      height={56}
-                      quality={85}
-                      objectFit="cover"
-                      className="h-full w-full"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-white font-bold text-2xl">
-                      {storeData.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex-1">
-                  <div className="font-bold text-lg group-hover:text-[#d81b60] transition">{storeData.name}</div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-emerald-500" />
-                    {app.lang === "ar" ? "متجر موثوق" : "Trusted Store"}
-                  </div>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="group-hover:bg-[#d81b60]/20 group-hover:scale-105 transition-all duration-300 text-[#d81b60] font-bold border-2 border-[#d81b60]/30 hover:border-[#d81b60] hover:text-[#d81b60] hover:bg-[#d81b60]/10 rounded-xl px-4"
-                >
-                  {app.lang === "ar" ? "زيارة المتجر" : "Visit Store"} <ArrowRight className="h-4 w-4 ms-1" />
-                </Button>
-              </Link>
-            )}
-
-            {/* ===== تفاصيل العرض ===== */}
-            <div className="bg-gradient-to-r from-[#fbcfe8]/30 to-[#fdf2f8]/50 dark:from-[#d81b60]/20 dark:to-[#f48fb1]/10 p-6 rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 shadow-inner">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl border border-[#d81b60]/20">
-                  <p className="text-xs text-muted-foreground">
-                    {app.lang === "ar" ? "الكمية المطلوبة للشراء" : "Required Purchase Quantity"}
-                  </p>
-                  <p className="text-2xl font-bold text-[#d81b60]">
-                    {offer.buy_quantity || 2}
-                  </p>
-                </div>
-                <div className="text-center p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl border border-emerald-500/30">
-                  <p className="text-xs text-muted-foreground">
-                    {app.lang === "ar" ? "الكمية المجانية" : "Free Quantity"}
-                  </p>
-                  <p className="text-2xl font-bold text-emerald-600">
-                    {offer.get_quantity || 1}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="mt-4 text-center">
-                <span className="text-sm font-medium text-muted-foreground">
-                  {app.lang === "ar" ? "🎯 اشتري" : "🎯 Buy"} 
-                  <span className="font-bold text-[#d81b60] mx-1">{offer.buy_quantity || 2}</span>
-                  {app.lang === "ar" ? "واحصل على" : "and get"} 
-                  <span className="font-bold text-emerald-600 mx-1">{offer.get_quantity || 1}</span>
-                  {app.lang === "ar" ? "مجاناً 🎁" : "free 🎁"}
+            <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <Tag className="h-3.5 w-3.5 text-[#1a4f4a]" />
+                {app.lang === "ar" ? "اشتري" : "Buy"} 
+                <span className="font-bold text-[#1a4f4a]">{offer.buy_quantity || 2}</span>
+                {app.lang === "ar" ? "واحصل على" : "& get"} 
+                <span className="font-bold text-[#1a4f4a]">{offer.get_quantity || 1}</span>
+                {app.lang === "ar" ? "مجاناً" : "free"}
+              </span>
+              {!offer.expires_at ? (
+                <span className="flex items-center gap-1 text-emerald-600">
+                  <Clock className="h-3.5 w-3.5" />
+                  {app.lang === "ar" ? "🔓 دائم" : "🔓 Permanent"}
                 </span>
-              </div>
-            </div>
-
-            {/* ===== السعر ===== */}
-            <div className="bg-gradient-to-r from-[#d81b60]/10 to-[#f48fb1]/5 p-6 rounded-2xl border-2 border-[#d81b60]/30 dark:border-[#d81b60]/40">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-4 flex-wrap">
-                  <span className="text-4xl md:text-5xl font-black text-[#d81b60]">
-                    {formatPrice(finalPrice, app.currency, app.lang)}
-                  </span>
-                  {discountPercent > 0 && (
-                    <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-0 text-sm font-bold px-3 py-1.5 rounded-full shadow-md shadow-[#d81b60]/30 animate-pulse">
-                      🎁 {discountPercent}% OFF
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* ===== ✅ تقدم اختيار المنتجات المطلوبة ===== */}
-            {(isBundle || isBogo || isCrossSell) && (
-              <div className="p-4 bg-white/50 dark:bg-slate-800/30 rounded-xl border-2 border-[#d81b60]/30 dark:border-[#d81b60]/40 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {app.lang === "ar" ? "📊 تقدم اختيار الكميات (المنتجات)" : "📊 Quantity Progress (Products)"}
-                    </span>
-                    <Badge className={cn(
-                      "border-0 text-[10px]",
-                      selectionStats.allComplete && !selectionStats.hasOver 
-                        ? "bg-emerald-500/20 text-emerald-600" 
-                        : selectionStats.hasOver 
-                          ? "bg-red-500/20 text-red-600"
-                          : "bg-amber-500/20 text-amber-600"
-                    )}>
-                      {selectionStats.allComplete && !selectionStats.hasOver 
-                        ? "✅ مكتمل" 
-                        : selectionStats.hasOver 
-                          ? `⚠️ تجاوز ${totalSelectedQuantity}/${totalRequiredQuantity}`
-                          : `⚠️ ${totalSelectedQuantity}/${totalRequiredQuantity}`}
-                    </Badge>
-                  </div>
-                  <span className="text-xs font-bold text-[#d81b60]">
-                    {totalSelectedQuantity}/{totalRequiredQuantity}
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div 
-                    className={cn(
-                      "h-full rounded-full transition-all duration-500",
-                      selectionStats.allComplete && !selectionStats.hasOver
-                        ? "bg-gradient-to-r from-emerald-500 to-teal-500"
-                        : selectionStats.hasOver
-                          ? "bg-gradient-to-r from-red-500 to-rose-500"
-                          : "bg-gradient-to-r from-[#d81b60] to-[#f48fb1]"
-                    )}
-                    style={{ 
-                      width: `${Math.min(100, (totalSelectedQuantity / totalRequiredQuantity) * 100)}%` 
-                    }}
-                  />
-                </div>
-                
-                {selectionStats.hasOver && (
-                  <div className="mt-2 flex items-center gap-2 p-2 bg-red-50/50 dark:bg-red-950/20 rounded-lg border border-red-200/50 dark:border-red-800/30">
-                    <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                    <p className="text-xs text-red-700 dark:text-red-400">
-                      {app.lang === "ar" 
-                        ? `⚠️ الكمية المختارة (${totalSelectedQuantity}) تتجاوز المطلوب (${totalRequiredQuantity})`
-                        : `⚠️ Selected quantity (${totalSelectedQuantity}) exceeds required (${totalRequiredQuantity})`}
-                    </p>
-                  </div>
-                )}
-
-                {!selectionStats.allComplete && !selectionStats.hasOver && remainingProducts > 0 && (
-                  <div className="mt-2 flex items-center gap-2 p-2 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
-                    <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                    <p className="text-xs text-amber-700 dark:text-amber-400">
-                      {app.lang === "ar" 
-                        ? `⚠️ متبقي ${remainingProducts} منتج${remainingProducts > 1 ? 'ات' : ''} لاستكمال الكميات`
-                        : `⚠️ ${remainingProducts} product${remainingProducts > 1 ? 's' : ''} remaining to complete quantities`}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ===== ✅ المنتجات المطلوبة مع خياراتها (خيارات أو ألوان) ===== */}
-            {(isBundle || isBogo || isCrossSell) && (
-              <div className="border-t-2 border-[#d81b60]/20 pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-sm flex items-center gap-2 text-[#d81b60]">
-                    <Package className="h-4 w-4" />
-                    {app.lang === "ar" ? "المنتجات المطلوبة" : "Required Products"}
-                    <span className="text-xs text-red-500">*</span>
-                  </h3>
-                </div>
-                
-{/* ✅ عرض المنتج الرئيسي لـ BOGO و Cross-sell مع دعم الألوان - المصحح */}
-{(isBogo || isCrossSell) && mainProductWithVariations && (
-  (() => {
-    const item = mainProductWithVariations;
-    const product = item.product;
-    
-    // ✅✅✅ تصفية التشكيلات حسب variation_ids (بدلاً من item.options)
-    const selectedIds = offer?.variation_ids || [];
-    const allVariations = product.variations || [];
-    const filteredOptions = selectedIds.length > 0 
-      ? allVariations.filter((v: any) => selectedIds.includes(v.id))
-      : allVariations;
-    
-    const optionType = item.optionType;
-    const selectedMap = selectedVariations[product.id] || {};
-    const selectedTotal = Object.values(selectedMap).reduce((sum, qty) => sum + qty, 0);
-    const isComplete = selectedTotal === item.totalRequiredQuantity;
-    const isOver = selectedTotal > item.totalRequiredQuantity;
-    const remaining = Math.max(0, item.totalRequiredQuantity - selectedTotal);
-    
-    const defaultKey = `default-${product.id}`;
-    const hasDefault = selectedMap[defaultKey] > 0;
-
-    return (
-      <div key={product.id} className={cn(
-        "p-4 rounded-xl border-3 transition-all duration-300 mb-3",
-        isComplete && !isOver
-          ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300/50 dark:border-emerald-700/50"
-          : isOver
-            ? "bg-red-50/50 dark:bg-red-950/20 border-red-300/50 dark:border-red-700/50"
-            : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-300/50 dark:border-amber-700/50"
-      )}>
-        {/* ===== رأس المنتج ===== */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#d81b60] to-[#f48fb1] flex items-center justify-center text-sm font-bold text-white flex-shrink-0 shadow-md shadow-[#d81b60]/30">
-              {isBogo ? "🎁" : "🔄"}
-            </div>
-            <div>
-              <p className="font-semibold text-slate-900 dark:text-white">
-                {product.title_ar}
-                <span className="text-xs text-muted-foreground font-normal mr-2">
-                  ({app.lang === "ar" ? "المطلوب" : "Required"}: {item.totalRequiredQuantity})
+              ) : (
+                <span className="flex items-center gap-1 text-[#1a4f4a]">
+                  <Clock className="h-3.5 w-3.5" />
+                  {app.lang === "ar" ? "ينتهي" : "Expires"}: {new Date(offer.expires_at).toLocaleDateString(app.lang === "ar" ? "ar-SY" : "en-US")}
                 </span>
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {formatPrice(Number(product.price), app.currency, app.lang)}
-              </p>
+              )}
             </div>
           </div>
-          
-          <Badge className={cn(
-            "border-0 text-[10px] font-bold",
-            isComplete && !isOver
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-              : isOver
-                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-          )}>
-            {isComplete && !isOver
-              ? `✅ ${selectedTotal}/${item.totalRequiredQuantity}`
-              : isOver
-                ? `⚠️ ${selectedTotal}/${item.totalRequiredQuantity}`
-                : `⚠️ ${selectedTotal}/${item.totalRequiredQuantity}`}
-          </Badge>
-        </div>
 
-        {/* ===== عرض الخيارات (فقط التشكيلات المحددة) ===== */}
-        {filteredOptions.length > 0 ? (
-          <div className="mt-3">
+          {/* ===== اسم المتجر مع صورة دائرية ===== */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Layers className="h-3 w-3 text-[#d81b60]" />
-                {app.lang === "ar" ? "🎨 توزيع الكميات" : "🎨 Quantity Distribution"}
-                {remaining > 0 && !isOver && (
-                  <Badge className="bg-amber-500/20 text-amber-600 border-0 text-[9px]">
-                    {app.lang === "ar" ? `متبقي ${remaining}` : `${remaining} remaining`}
+              <span className="text-xs text-gray-500">{app.lang === "ar" ? "المتجر" : "Store"}</span>
+              <Link to="/store/$id" params={{ id: offer?.store_id || mainProduct?.owner_id }} className="flex items-center gap-2 font-semibold text-[#1a4f4a] hover:underline">
+                <span className="text-sm">{storeData.name}</span>
+                <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
+                  {storeData.logo ? (
+                    <OptimizedImage src={storeData.logo} alt={storeData.name} width={24} height={24} className="w-full h-full object-cover" />
+                  ) : (
+                    <Store className="h-3.5 w-3.5 text-gray-500" />
+                  )}
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* ===== السعر ===== */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-600 flex items-center gap-1.5">
+                <Tag className="h-4 w-4 text-[#1a4f4a]" />
+                {app.lang === "ar" ? "السعر" : "Price"}
+              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xl font-black text-[#1a4f4a]">
+                  {formatPrice(finalPrice, app.currency, app.lang)}
+                </span>
+                {discountPercent > 0 && (
+                  <Badge className="bg-[#1a4f4a] text-white border-0 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    🎯 -{discountPercent}%
                   </Badge>
                 )}
-              </span>
-              {remaining > 0 && !isOver && filteredOptions.length > 1 && (
-                <button
-                  onClick={() => autoDistributeRemaining(product.id, filteredOptions, item.totalRequiredQuantity)}
-                  className="text-[10px] text-[#d81b60] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border-2 border-[#d81b60]/30 rounded-lg hover:bg-[#d81b60]/10"
-                >
-                  <Zap className="h-3 w-3" />
-                  {app.lang === "ar" ? `وزع ${remaining} المتبقية` : `Distribute ${remaining} remaining`}
-                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ===== ✅ تقدم اختيار المنتجات المطلوبة ===== */}
+          {(isBundle || isBogo || isCrossSell) && (
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-600">
+                  {app.lang === "ar" ? "📊 تقدم اختيار الكميات" : "📊 Quantity Progress"}
+                </span>
+                <Badge className={cn(
+                  "border-0 text-[10px]",
+                  selectionStats.allComplete && !selectionStats.hasOver 
+                    ? "bg-emerald-500/20 text-emerald-600" 
+                    : selectionStats.hasOver 
+                      ? "bg-red-500/20 text-red-600"
+                      : "bg-amber-500/20 text-amber-600"
+                )}>
+                  {selectionStats.allComplete && !selectionStats.hasOver 
+                    ? "✅ مكتمل" 
+                    : selectionStats.hasOver 
+                      ? `⚠️ تجاوز ${totalSelectedQuantity}/${totalRequiredQuantity}`
+                      : `⚠️ ${totalSelectedQuantity}/${totalRequiredQuantity}`}
+                </Badge>
+              </div>
+              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-2">
+                <div 
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    selectionStats.allComplete && !selectionStats.hasOver
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+                      : selectionStats.hasOver
+                        ? "bg-gradient-to-r from-red-500 to-rose-500"
+                        : "bg-gradient-to-r from-[#1a4f4a] to-[#2a655f]"
+                  )}
+                  style={{ 
+                    width: `${Math.min(100, (totalSelectedQuantity / totalRequiredQuantity) * 100)}%` 
+                  }}
+                />
+              </div>
+              {selectionStats.hasOver && (
+                <div className="mt-2 flex items-center gap-2 p-2 bg-red-50 rounded-lg border border-red-200">
+                  <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                  <p className="text-xs text-red-700">
+                    {app.lang === "ar" 
+                      ? `⚠️ الكمية المختارة (${totalSelectedQuantity}) تتجاوز المطلوب (${totalRequiredQuantity})`
+                      : `⚠️ Selected quantity (${totalSelectedQuantity}) exceeds required (${totalRequiredQuantity})`}
+                  </p>
+                </div>
               )}
             </div>
-            
-            <div className="flex flex-wrap gap-3 mt-2">
-              {filteredOptions.map((opt: any) => {
-                const isColor = optionType === 'color';
-                const displayName = isColor 
-                  ? opt.color_name_ar || opt.color_name_en || 'لون'
-                  : Object.entries(opt.combination || {})
-                      .map(([key, value]) => `${value}`)
-                      .join(' • ');
-                const currentQty = selectedMap[opt.id] || 0;
-                const price = isColor 
-                  ? product.price 
-                  : opt.price || product.price;
-                const image = isColor ? opt.image_url : opt.image_url;
+          )}
 
-                return (
-                  <div key={opt.id} className="flex items-center gap-2 p-2 border-2 rounded-xl border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50 shadow-sm hover:shadow-md transition-all">
-                    {isColor && (
-                      <div 
-                        className="w-4 h-4 rounded-full border-2 border-[#d81b60]/30 flex-shrink-0"
-                        style={{ backgroundColor: opt.color_hex || '#ccc' }}
-                      />
-                    )}
-                    {image && (
-                      <img 
-                        src={image} 
-                        alt={displayName}
-                        className="w-6 h-6 rounded object-cover border border-[#d81b60]/20"
-                      />
-                    )}
-                    {/* ✅ زر اسم الخيار - عند الضغط عليه تعرض الصورة فقط (بدون زيادة الكمية) */}
-                    <button
-                      onClick={() => handleRequiredVariationSelect(product.id, opt.id)}
-                      className="text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-[#d81b60] transition-colors hover:underline"
-                    >
-                      {displayName}
-                    </button>
-                    <span className="text-[10px] text-muted-foreground">
-                      ({formatPrice(Number(price), app.currency, app.lang)})
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleVariationQuantityChange(product.id, opt.id, -1, true)}
-                        className={cn(
-                          "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
-                          currentQty > 0 
-                            ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 border-slate-300"
-                            : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800 border-slate-200"
-                        )}
-                        disabled={currentQty === 0}
-                      >
-                        -
-                      </button>
-                      <span className="w-8 text-center font-bold text-[#d81b60] text-sm">
-                        {currentQty}
-                      </span>
-                      <button
-                        onClick={() => handleVariationQuantityChange(product.id, opt.id, 1, true)}
-                        className={cn(
-                          "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
-                          !isOver || currentQty === 0
-                            ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white border-[#d81b60] shadow-sm shadow-[#d81b60]/30"
-                            : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 border-slate-300"
-                        )}
-                        disabled={isOver}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            
-            {hasDefault && (
-              <div className="mt-2 p-2 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg border-2 border-emerald-300/50">
-                <p className="text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3" />
-                  {app.lang === "ar" 
-                    ? `✅ تم اختيار ${selectedMap[defaultKey]} وحدة تلقائياً (لا يوجد خيارات)`
-                    : `✅ ${selectedMap[defaultKey]} units selected automatically (no options)`}
-                </p>
-              </div>
-            )}
-          </div>
-        ) : (
-          // ===== المنتج ليس لديه خيارات =====
-          <div className="mt-2 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-300/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-emerald-500" />
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                  {app.lang === "ar" ? "✅ هذا المنتج لا يحتوي على خيارات" : "✅ This product has no options"}
-                </p>
-              </div>
-              <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-sm font-bold px-3 py-1">
-                ✅ {selectedTotal || item.totalRequiredQuantity}/{item.totalRequiredQuantity}
-              </Badge>
-            </div>
-            <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-1">
-              {app.lang === "ar" 
-                ? `💡 سيتم إضافة ${item.totalRequiredQuantity} ${app.lang === "ar" ? 'وحدة' : 'unit(s)'} تلقائياً`
-                : `💡 ${item.totalRequiredQuantity} unit(s) will be added automatically`}
-            </p>
-          </div>
-        )}
-      </div>
-    );
-  })()
-)}
-                {/* ✅ عرض المنتجات المطلوبة لـ Bundle مع دعم الألوان */}
-                {isBundle && requiredProducts.map((item: any, index: number) => {
+          {/* ===== ✅ المنتجات المطلوبة مع خياراتها ===== */}
+          {(isBundle || isBogo || isCrossSell) && (
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3" id="variations-section">
+              <h3 className="font-bold text-sm text-gray-900 flex items-center gap-1.5">
+                <Package className="h-4 w-4 text-[#1a4f4a]" />
+                {app.lang === "ar" ? "المنتجات المطلوبة" : "Required Products"}
+                <span className="text-xs text-red-500">*</span>
+              </h3>
+
+              {/* ✅ المنتج الرئيسي لـ BOGO و Cross-sell */}
+              {(isBogo || isCrossSell) && mainProductWithVariations && (
+                (() => {
+                  const item = mainProductWithVariations;
                   const product = item.product;
-                  const options = item.options;
+                  
+                  const selectedIds = offer?.variation_ids || [];
+                  const allVariations = product.variations || [];
+                  const filteredOptions = selectedIds.length > 0 
+                    ? allVariations.filter((v: any) => selectedIds.includes(v.id))
+                    : allVariations;
+                  
                   const optionType = item.optionType;
                   const selectedMap = selectedVariations[product.id] || {};
                   const selectedTotal = Object.values(selectedMap).reduce((sum, qty) => sum + qty, 0);
@@ -2647,47 +2263,33 @@ function OfferDetailPage() {
                   const hasDefault = selectedMap[defaultKey] > 0;
 
                   return (
-                    <div key={product.id} className={cn(
-                      "p-4 rounded-xl border-3 transition-all duration-300 mb-3",
+                    <div className={cn(
+                      "p-3 rounded-xl border-2 transition-all duration-300",
                       isComplete && !isOver
-                        ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300/50 dark:border-emerald-700/50"
+                        ? "bg-emerald-50 border-emerald-300/50"
                         : isOver
-                          ? "bg-red-50/50 dark:bg-red-950/20 border-red-300/50 dark:border-red-700/50"
-                          : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-300/50 dark:border-amber-700/50"
+                          ? "bg-red-50 border-red-300/50"
+                          : "bg-amber-50 border-amber-300/50"
                     )}>
-                      {/* ===== رأس المنتج ===== */}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={cn(
-                            "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 shadow-md",
-                            isComplete && !isOver
-                              ? "bg-emerald-500"
-                              : isOver
-                                ? "bg-red-500"
-                                : "bg-amber-500"
-                          )}>
-                            {index + 1}
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-gradient-to-r from-[#1a4f4a] to-[#2a655f] flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                            {isBogo ? "🎁" : "🔄"}
                           </div>
-                          <div>
-                            <p className="font-semibold text-slate-900 dark:text-white">
-                              {product.title_ar}
-                              <span className="text-xs text-muted-foreground font-normal mr-2">
-                                ({app.lang === "ar" ? "المطلوب" : "Required"}: {item.totalRequiredQuantity})
-                              </span>
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatPrice(Number(product.price), app.currency, app.lang)}
-                            </p>
-                          </div>
+                          <span className="text-sm font-semibold text-gray-800">
+                            {product.title_ar}
+                            <span className="text-xs text-muted-foreground font-normal mr-1">
+                              ({app.lang === "ar" ? "المطلوب" : "Required"}: {item.totalRequiredQuantity})
+                            </span>
+                          </span>
                         </div>
-                        
                         <Badge className={cn(
-                          "border-0 text-[10px] font-bold",
+                          "border-0 text-[10px]",
                           isComplete && !isOver
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                            ? "bg-emerald-100 text-emerald-700"
                             : isOver
-                              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-amber-100 text-amber-700"
                         )}>
                           {isComplete && !isOver
                             ? `✅ ${selectedTotal}/${item.totalRequiredQuantity}`
@@ -2697,12 +2299,11 @@ function OfferDetailPage() {
                         </Badge>
                       </div>
 
-                      {/* ===== عرض الخيارات (خيارات أو ألوان) ===== */}
-                      {options.length > 0 ? (
-                        <div className="mt-3">
+                      {filteredOptions.length > 0 ? (
+                        <div className="mt-2">
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Layers className="h-3 w-3 text-[#d81b60]" />
+                              <Layers className="h-3 w-3 text-[#1a4f4a]" />
                               {app.lang === "ar" ? "🎨 توزيع الكميات" : "🎨 Quantity Distribution"}
                               {remaining > 0 && !isOver && (
                                 <Badge className="bg-amber-500/20 text-amber-600 border-0 text-[9px]">
@@ -2710,19 +2311,19 @@ function OfferDetailPage() {
                                 </Badge>
                               )}
                             </span>
-                            {remaining > 0 && !isOver && options.length > 1 && (
+                            {remaining > 0 && !isOver && filteredOptions.length > 1 && (
                               <button
-                                onClick={() => autoDistributeRemaining(product.id, options, item.totalRequiredQuantity)}
-                                className="text-[10px] text-[#d81b60] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border-2 border-[#d81b60]/30 rounded-lg hover:bg-[#d81b60]/10"
+                                onClick={() => autoDistributeRemaining(product.id, filteredOptions, item.totalRequiredQuantity)}
+                                className="text-[10px] text-[#1a4f4a] hover:underline transition-colors flex items-center gap-1 px-2 py-0.5 border border-[#1a4f4a]/30 rounded-lg hover:bg-[#1a4f4a]/10"
                               >
                                 <Zap className="h-3 w-3" />
-                                {app.lang === "ar" ? `وزع ${remaining} المتبقية` : `Distribute ${remaining} remaining`}
+                                {app.lang === "ar" ? `وزع ${remaining}` : `Distribute ${remaining}`}
                               </button>
                             )}
                           </div>
                           
-                          <div className="flex flex-wrap gap-3 mt-2">
-                            {options.map((opt: any) => {
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {filteredOptions.map((opt: any) => {
                               const isColor = optionType === 'color';
                               const displayName = isColor 
                                 ? opt.color_name_ar || opt.color_name_en || 'لون'
@@ -2736,10 +2337,10 @@ function OfferDetailPage() {
                               const image = isColor ? opt.image_url : opt.image_url;
 
                               return (
-                                <div key={opt.id} className="flex items-center gap-2 p-2 border-2 rounded-xl border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50 shadow-sm hover:shadow-md transition-all">
+                                <div key={opt.id} className="flex items-center gap-1.5 p-1.5 border rounded-xl border-gray-200 bg-white/50 shadow-sm hover:shadow-md transition-all">
                                   {isColor && (
                                     <div 
-                                      className="w-4 h-4 rounded-full border-2 border-[#d81b60]/30 flex-shrink-0"
+                                      className="w-3 h-3 rounded-full border border-gray-300 flex-shrink-0"
                                       style={{ backgroundColor: opt.color_hex || '#ccc' }}
                                     />
                                   )}
@@ -2747,42 +2348,41 @@ function OfferDetailPage() {
                                     <img 
                                       src={image} 
                                       alt={displayName}
-                                      className="w-6 h-6 rounded object-cover border border-[#d81b60]/20"
+                                      className="w-5 h-5 rounded object-cover border border-gray-200"
                                     />
                                   )}
-                                  {/* ✅ زر اسم الخيار - عند الضغط عليه تعرض الصورة + زيادة الكمية */}
                                   <button
                                     onClick={() => handleRequiredVariationSelect(product.id, opt.id)}
-                                    className="text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-[#d81b60] transition-colors hover:underline"
+                                    className="text-xs font-medium text-gray-700 hover:text-[#1a4f4a] transition-colors hover:underline"
                                   >
                                     {displayName}
                                   </button>
                                   <span className="text-[10px] text-muted-foreground">
                                     ({formatPrice(Number(price), app.currency, app.lang)})
                                   </span>
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex items-center gap-0.5">
                                     <button
                                       onClick={() => handleVariationQuantityChange(product.id, opt.id, -1, true)}
                                       className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
+                                        "h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
                                         currentQty > 0 
-                                          ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 border-slate-300"
-                                          : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800 border-slate-200"
+                                          ? "bg-gray-200 hover:bg-gray-300 border-gray-300"
+                                          : "bg-gray-100 text-gray-300 cursor-not-allowed border-gray-200"
                                       )}
                                       disabled={currentQty === 0}
                                     >
                                       -
                                     </button>
-                                    <span className="w-8 text-center font-bold text-[#d81b60] text-sm">
+                                    <span className="w-6 text-center font-bold text-[#1a4f4a] text-sm">
                                       {currentQty}
                                     </span>
                                     <button
                                       onClick={() => handleVariationQuantityChange(product.id, opt.id, 1, true)}
                                       className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
+                                        "h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
                                         !isOver || currentQty === 0
-                                          ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white border-[#d81b60] shadow-sm shadow-[#d81b60]/30"
-                                          : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 border-slate-300"
+                                          ? "bg-[#1a4f4a] hover:bg-[#2a655f] text-white border-[#1a4f4a]"
+                                          : "bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300"
                                       )}
                                       disabled={isOver}
                                     >
@@ -2795,8 +2395,8 @@ function OfferDetailPage() {
                           </div>
                           
                           {hasDefault && (
-                            <div className="mt-2 p-2 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg border-2 border-emerald-300/50">
-                              <p className="text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                            <div className="mt-2 p-2 bg-emerald-50 rounded-lg border border-emerald-300/50">
+                              <p className="text-xs text-emerald-700 flex items-center gap-1">
                                 <CheckCircle className="h-3 w-3" />
                                 {app.lang === "ar" 
                                   ? `✅ تم اختيار ${selectedMap[defaultKey]} وحدة تلقائياً (لا يوجد خيارات)`
@@ -2806,12 +2406,11 @@ function OfferDetailPage() {
                           )}
                         </div>
                       ) : (
-                        // ===== المنتج ليس لديه خيارات =====
-                        <div className="mt-2 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-300/50">
+                        <div className="mt-2 p-2 bg-emerald-50 rounded-xl border border-emerald-300/50">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <CheckCircle className="h-4 w-4 text-emerald-500" />
-                              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                              <p className="text-sm font-medium text-emerald-700">
                                 {app.lang === "ar" ? "✅ هذا المنتج لا يحتوي على خيارات" : "✅ This product has no options"}
                               </p>
                             </div>
@@ -2819,221 +2418,267 @@ function OfferDetailPage() {
                               ✅ {selectedTotal || item.totalRequiredQuantity}/{item.totalRequiredQuantity}
                             </Badge>
                           </div>
-                          <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-1">
-                            {app.lang === "ar" 
-                              ? `💡 سيتم إضافة ${item.totalRequiredQuantity} ${app.lang === "ar" ? 'وحدة' : 'unit(s)'} تلقائياً`
-                              : `💡 ${item.totalRequiredQuantity} unit(s) will be added automatically`}
-                          </p>
                         </div>
                       )}
                     </div>
                   );
-                })}
-              </div>
-            )}
+                })()
+              )}
 
-            {/* ===== ✅ الهدية مع دعم الألوان ===== */}
-            {freeProduct && (
-              <>
-                {/* ===== تقدم اختيار الهدية ===== */}
-                <div className="p-4 bg-white/50 dark:bg-slate-800/30 rounded-xl border-2 border-[#d81b60]/30 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {app.lang === "ar" ? "📊 تقدم اختيار الهدية" : "📊 Gift Progress"}
-                      </span>
+              {/* ✅ المنتجات المطلوبة لـ Bundle */}
+              {isBundle && requiredProducts.map((item: any, index: number) => {
+                const product = item.product;
+                const options = item.options;
+                const optionType = item.optionType;
+                const selectedMap = selectedVariations[product.id] || {};
+                const selectedTotal = Object.values(selectedMap).reduce((sum, qty) => sum + qty, 0);
+                const isComplete = selectedTotal === item.totalRequiredQuantity;
+                const isOver = selectedTotal > item.totalRequiredQuantity;
+                const remaining = Math.max(0, item.totalRequiredQuantity - selectedTotal);
+                
+                const defaultKey = `default-${product.id}`;
+                const hasDefault = selectedMap[defaultKey] > 0;
+
+                return (
+                  <div key={product.id} className={cn(
+                    "p-3 rounded-xl border-2 transition-all duration-300",
+                    isComplete && !isOver
+                      ? "bg-emerald-50 border-emerald-300/50"
+                      : isOver
+                        ? "bg-red-50 border-red-300/50"
+                        : "bg-amber-50 border-amber-300/50"
+                  )}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={cn(
+                          "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0",
+                          isComplete && !isOver
+                            ? "bg-emerald-500"
+                            : isOver
+                              ? "bg-red-500"
+                              : "bg-amber-500"
+                        )}>
+                          {index + 1}
+                        </div>
+                        <span className="text-sm font-semibold text-gray-800">
+                          {product.title_ar}
+                          <span className="text-xs text-muted-foreground font-normal mr-1">
+                            ({app.lang === "ar" ? "المطلوب" : "Required"}: {item.totalRequiredQuantity})
+                          </span>
+                        </span>
+                      </div>
                       <Badge className={cn(
-                        "border-0 text-[10px] font-bold",
-                        giftStats.isComplete && !giftStats.isOver
-                          ? "bg-emerald-500/20 text-emerald-600"
-                          : giftStats.isOver
-                            ? "bg-red-500/20 text-red-600"
-                            : "bg-amber-500/20 text-amber-600"
+                        "border-0 text-[10px]",
+                        isComplete && !isOver
+                          ? "bg-emerald-100 text-emerald-700"
+                          : isOver
+                            ? "bg-red-100 text-red-700"
+                            : "bg-amber-100 text-amber-700"
                       )}>
-                        {giftStats.isComplete && !giftStats.isOver
-                          ? "✅ مكتمل"
-                          : giftStats.isOver
-                            ? `⚠️ تجاوز ${giftStats.selected}/${giftStats.total}`
-                            : `⚠️ ${giftStats.selected}/${giftStats.total}`}
+                        {isComplete && !isOver
+                          ? `✅ ${selectedTotal}/${item.totalRequiredQuantity}`
+                          : isOver
+                            ? `⚠️ ${selectedTotal}/${item.totalRequiredQuantity}`
+                            : `⚠️ ${selectedTotal}/${item.totalRequiredQuantity}`}
                       </Badge>
                     </div>
-                    <span className="text-xs font-bold text-[#d81b60]">
-                      {giftStats.selected}/{giftStats.total}
-                    </span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div 
-                      className={cn(
-                        "h-full rounded-full transition-all duration-500",
-                        giftStats.isComplete && !giftStats.isOver
-                          ? "bg-gradient-to-r from-emerald-500 to-teal-500"
-                          : giftStats.isOver
-                            ? "bg-gradient-to-r from-red-500 to-rose-500"
-                            : "bg-gradient-to-r from-[#d81b60] to-[#f48fb1]"
-                      )}
-                      style={{ 
-                        width: `${Math.min(100, (giftStats.selected / giftStats.total) * 100)}%` 
-                      }}
-                    />
-                  </div>
-                  
-                  {giftStats.isOver && (
-                    <div className="mt-2 flex items-center gap-2 p-2 bg-red-50/50 dark:bg-red-950/20 rounded-lg border border-red-200/50 dark:border-red-800/30">
-                      <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                      <p className="text-xs text-red-700 dark:text-red-400">
-                        {app.lang === "ar" 
-                          ? `⚠️ الكمية المختارة (${giftStats.selected}) تتجاوز الهدية (${giftStats.total})`
-                          : `⚠️ Selected quantity (${giftStats.selected}) exceeds gift (${giftStats.total})`}
-                      </p>
-                    </div>
-                  )}
 
-                  {!giftStats.isComplete && !giftStats.isOver && giftStats.remaining > 0 && (
-                    <div className="mt-2 flex items-center gap-2 p-2 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
-                      <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                      <p className="text-xs text-amber-700 dark:text-amber-400">
-                        {app.lang === "ar" 
-                          ? `⚠️ متبقي ${giftStats.remaining} من الهدية لاستكمال الكميات`
-                          : `⚠️ ${giftStats.remaining} remaining from gift to complete quantities`}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* ===== عرض الهدية مع دعم الألوان ===== */}
-                <div className="border-t-2 border-[#d81b60]/20 pt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-sm flex items-center gap-2 text-[#d81b60]">
-                      <GiftIcon className="h-4 w-4" />
-                      {app.lang === "ar" ? "🎁 الهدية" : "🎁 Gift"}
-                    </h3>
-                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[10px]">
-                      ×{offer.get_quantity || 1}
-                    </Badge>
-                  </div>
-                  
-                  <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-300/50 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      {(() => {
-                        const giftVariationIds = offer?.result_variation_ids || [];
-                        const variations = freeProduct?.variations || [];
-                        const colors = freeProduct?.colors || freeProduct?.product_colors || [];
-                        
-                        let giftImage = freeProduct?.cover_url || null;
-                        let availableOptions: any[] = [];
-                        let optionType: 'variation' | 'color' = 'variation';
-                        
-                        if (giftVariationIds.length > 0) {
-                          const filteredVariations = variations.filter((v: any) => giftVariationIds.includes(v.id));
-                          if (filteredVariations.length > 0) {
-                            availableOptions = filteredVariations;
-                            optionType = 'variation';
-                          } else {
-                            const filteredColors = colors.filter((c: any) => giftVariationIds.includes(c.id));
-                            if (filteredColors.length > 0) {
-                              availableOptions = filteredColors;
-                              optionType = 'color';
-                            }
-                          }
-                        }
-                        
-                        if (availableOptions.length === 0) {
-                          if (variations.length > 0) {
-                            availableOptions = variations;
-                            optionType = 'variation';
-                          } else if (colors.length > 0) {
-                            availableOptions = colors;
-                            optionType = 'color';
-                          }
-                        }
-                        
-                        if (availableOptions.length > 0) {
-                          availableOptions.forEach((opt: any) => {
-                            if (!giftImage) {
-                              if (optionType === 'variation') {
-                                if (opt.image_url) {
-                                  giftImage = opt.image_url;
-                                } else {
-                                  const combo = opt.combination || {};
-                                  const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
-                                  let colorValue = null;
-                                  for (const key of colorKeys) {
-                                    if (combo[key]) {
-                                      colorValue = combo[key];
-                                      break;
-                                    }
-                                  }
-                                  if (colorValue) {
-                                    const productColors = freeProduct?.colors || [];
-                                    const color = productColors.find((c: any) => 
-                                      String(c.color_name_ar || "").trim().toLowerCase() === String(colorValue).trim().toLowerCase()
-                                    );
-                                    if (color?.image_url) {
-                                      giftImage = color.image_url;
-                                    }
-                                  }
-                                }
-                              } else {
-                                if (opt.image_url) {
-                                  giftImage = opt.image_url;
-                                }
-                              }
-                            }
-                          });
-                        }
-                        
-                        return (
-                          <>
-                            {giftImage ? (
-                              <OptimizedImage
-                                src={giftImage}
-                                alt={freeProduct?.title_ar}
-                                width={48}
-                                height={48}
-                                quality={80}
-                                objectFit="cover"
-                                className="h-12 w-12 rounded-lg object-cover border-2 border-emerald-300/50"
-                              />
-                            ) : (
-                              <div className="h-12 w-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center border-2 border-emerald-300/50">
-                                <GiftIcon className="h-6 w-6 text-emerald-400" />
-                              </div>
+                    {options.length > 0 ? (
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Layers className="h-3 w-3 text-[#1a4f4a]" />
+                            {app.lang === "ar" ? "🎨 توزيع الكميات" : "🎨 Quantity Distribution"}
+                            {remaining > 0 && !isOver && (
+                              <Badge className="bg-amber-500/20 text-amber-600 border-0 text-[9px]">
+                                {app.lang === "ar" ? `متبقي ${remaining}` : `${remaining} remaining`}
+                              </Badge>
                             )}
-                            <div className="flex-1">
-                              <p className="font-bold text-emerald-700 dark:text-emerald-300">
-                                {freeProduct?.title_ar}
-                              </p>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Badge className="bg-emerald-500/90 text-white border-0 text-[10px]">
-                                  ✅ {app.lang === "ar" ? "مجاناً" : "FREE"}
-                                </Badge>
-                                <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[10px]">
-                                  ×{offer?.get_quantity || 1}
-                                </Badge>
-                                {availableOptions.length > 0 && (
-                                  <Badge className="bg-[#d81b60]/20 text-[#d81b60] border-0 text-[10px]">
-                                    🎨 {availableOptions.length} {app.lang === "ar" ? "خيار" : "options"}
-                                  </Badge>
+                          </span>
+                          {remaining > 0 && !isOver && options.length > 1 && (
+                            <button
+                              onClick={() => autoDistributeRemaining(product.id, options, item.totalRequiredQuantity)}
+                              className="text-[10px] text-[#1a4f4a] hover:underline transition-colors flex items-center gap-1 px-2 py-0.5 border border-[#1a4f4a]/30 rounded-lg hover:bg-[#1a4f4a]/10"
+                            >
+                              <Zap className="h-3 w-3" />
+                              {app.lang === "ar" ? `وزع ${remaining}` : `Distribute ${remaining}`}
+                            </button>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {options.map((opt: any) => {
+                            const isColor = optionType === 'color';
+                            const displayName = isColor 
+                              ? opt.color_name_ar || opt.color_name_en || 'لون'
+                              : Object.entries(opt.combination || {})
+                                  .map(([key, value]) => `${value}`)
+                                  .join(' • ');
+                            const currentQty = selectedMap[opt.id] || 0;
+                            const price = isColor 
+                              ? product.price 
+                              : opt.price || product.price;
+                            const image = isColor ? opt.image_url : opt.image_url;
+
+                            return (
+                              <div key={opt.id} className="flex items-center gap-1.5 p-1.5 border rounded-xl border-gray-200 bg-white/50 shadow-sm hover:shadow-md transition-all">
+                                {isColor && (
+                                  <div 
+                                    className="w-3 h-3 rounded-full border border-gray-300 flex-shrink-0"
+                                    style={{ backgroundColor: opt.color_hex || '#ccc' }}
+                                  />
                                 )}
-                                {availableOptions.length === 0 && (
-                                  <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[10px]">
-                                    ✅ {app.lang === "ar" ? "لا يوجد خيارات" : "No options"}
-                                  </Badge>
+                                {image && (
+                                  <img 
+                                    src={image} 
+                                    alt={displayName}
+                                    className="w-5 h-5 rounded object-cover border border-gray-200"
+                                  />
                                 )}
+                                <button
+                                  onClick={() => handleRequiredVariationSelect(product.id, opt.id)}
+                                  className="text-xs font-medium text-gray-700 hover:text-[#1a4f4a] transition-colors hover:underline"
+                                >
+                                  {displayName}
+                                </button>
+                                <span className="text-[10px] text-muted-foreground">
+                                  ({formatPrice(Number(price), app.currency, app.lang)})
+                                </span>
+                                <div className="flex items-center gap-0.5">
+                                  <button
+                                    onClick={() => handleVariationQuantityChange(product.id, opt.id, -1, true)}
+                                    className={cn(
+                                      "h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
+                                      currentQty > 0 
+                                        ? "bg-gray-200 hover:bg-gray-300 border-gray-300"
+                                        : "bg-gray-100 text-gray-300 cursor-not-allowed border-gray-200"
+                                    )}
+                                    disabled={currentQty === 0}
+                                  >
+                                    -
+                                  </button>
+                                  <span className="w-6 text-center font-bold text-[#1a4f4a] text-sm">
+                                    {currentQty}
+                                  </span>
+                                  <button
+                                    onClick={() => handleVariationQuantityChange(product.id, opt.id, 1, true)}
+                                    className={cn(
+                                      "h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
+                                      !isOver || currentQty === 0
+                                        ? "bg-[#1a4f4a] hover:bg-[#2a655f] text-white border-[#1a4f4a]"
+                                        : "bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300"
+                                    )}
+                                    disabled={isOver}
+                                  >
+                                    +
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                    
-                    {/* ===== توزيع الكميات على خيارات الهدية ===== */}
+                            );
+                          })}
+                        </div>
+                        
+                        {hasDefault && (
+                          <div className="mt-2 p-2 bg-emerald-50 rounded-lg border border-emerald-300/50">
+                            <p className="text-xs text-emerald-700 flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              {app.lang === "ar" 
+                                ? `✅ تم اختيار ${selectedMap[defaultKey]} وحدة تلقائياً (لا يوجد خيارات)`
+                                : `✅ ${selectedMap[defaultKey]} units selected automatically (no options)`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-2 p-2 bg-emerald-50 rounded-xl border border-emerald-300/50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-emerald-500" />
+                            <p className="text-sm font-medium text-emerald-700">
+                              {app.lang === "ar" ? "✅ هذا المنتج لا يحتوي على خيارات" : "✅ This product has no options"}
+                            </p>
+                          </div>
+                          <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-sm font-bold px-3 py-1">
+                            ✅ {selectedTotal || item.totalRequiredQuantity}/{item.totalRequiredQuantity}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ===== ✅ الهدية ===== */}
+          {freeProduct && (
+            <>
+              {/* ===== تقدم اختيار الهدية ===== */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-600">
+                    {app.lang === "ar" ? "🎁 تقدم اختيار الهدية" : "🎁 Gift Progress"}
+                  </span>
+                  <Badge className={cn(
+                    "border-0 text-[10px]",
+                    giftStats.isComplete && !giftStats.isOver
+                      ? "bg-emerald-500/20 text-emerald-600"
+                      : giftStats.isOver
+                        ? "bg-red-500/20 text-red-600"
+                        : "bg-amber-500/20 text-amber-600"
+                  )}>
+                    {giftStats.isComplete && !giftStats.isOver
+                      ? "✅ مكتمل"
+                      : giftStats.isOver
+                        ? `⚠️ تجاوز ${giftStats.selected}/${giftStats.total}`
+                        : `⚠️ ${giftStats.selected}/${giftStats.total}`}
+                  </Badge>
+                </div>
+                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-2">
+                  <div 
+                    className={cn(
+                      "h-full rounded-full transition-all duration-500",
+                      giftStats.isComplete && !giftStats.isOver
+                        ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+                        : giftStats.isOver
+                          ? "bg-gradient-to-r from-red-500 to-rose-500"
+                          : "bg-gradient-to-r from-[#1a4f4a] to-[#2a655f]"
+                    )}
+                    style={{ 
+                      width: `${Math.min(100, (giftStats.selected / giftStats.total) * 100)}%` 
+                    }}
+                  />
+                </div>
+                {giftStats.isOver && (
+                  <div className="mt-2 flex items-center gap-2 p-2 bg-red-50 rounded-lg border border-red-200">
+                    <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                    <p className="text-xs text-red-700">
+                      {app.lang === "ar" 
+                        ? `⚠️ الكمية المختارة (${giftStats.selected}) تتجاوز الهدية (${giftStats.total})`
+                        : `⚠️ Selected quantity (${giftStats.selected}) exceeds gift (${giftStats.total})`}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* ===== عرض الهدية مع خياراتها ===== */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                <h3 className="font-bold text-sm text-gray-900 flex items-center gap-1.5">
+                  <GiftIcon className="h-4 w-4 text-[#1a4f4a]" />
+                  {app.lang === "ar" ? "🎁 الهدية" : "🎁 Gift"}
+                  <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[10px]">
+                    ×{offer.get_quantity || 1}
+                  </Badge>
+                </h3>
+                
+                <div className="mt-2 p-3 bg-emerald-50 rounded-xl border border-emerald-300/50">
+                  <div className="flex items-center gap-3">
                     {(() => {
                       const giftVariationIds = offer?.result_variation_ids || [];
-                      const totalGiftQty = offer?.get_quantity || 1;
                       const variations = freeProduct?.variations || [];
                       const colors = freeProduct?.colors || freeProduct?.product_colors || [];
                       
+                      let giftImage = freeProduct?.cover_url || null;
                       let availableOptions: any[] = [];
                       let optionType: 'variation' | 'color' = 'variation';
                       
@@ -3061,367 +2706,584 @@ function OfferDetailPage() {
                         }
                       }
                       
-                      if (availableOptions.length === 0) {
-                        return (
-                          <div className="mt-3 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-300/50">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-emerald-500" />
-                                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                                  {app.lang === "ar" ? "✅ الهدية لا تحتوي على خيارات" : "✅ Gift has no options"}
-                                </p>
-                              </div>
-                              <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-sm font-bold px-3 py-1">
-                                ✅ {totalGiftQty}/{totalGiftQty}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-1">
-                              {app.lang === "ar" 
-                                ? `💡 سيتم إضافة ${totalGiftQty} ${app.lang === "ar" ? 'وحدة' : 'unit(s)'} من الهدية تلقائياً`
-                                : `💡 ${totalGiftQty} gift unit(s) will be added automatically`}
-                            </p>
-                          </div>
-                        );
+                      if (availableOptions.length > 0) {
+                        availableOptions.forEach((opt: any) => {
+                          if (!giftImage) {
+                            if (optionType === 'variation') {
+                              if (opt.image_url) {
+                                giftImage = opt.image_url;
+                              } else {
+                                const combo = opt.combination || {};
+                                const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
+                                let colorValue = null;
+                                for (const key of colorKeys) {
+                                  if (combo[key]) {
+                                    colorValue = combo[key];
+                                    break;
+                                  }
+                                }
+                                if (colorValue) {
+                                  const productColors = freeProduct?.colors || [];
+                                  const color = productColors.find((c: any) => 
+                                    String(c.color_name_ar || "").trim().toLowerCase() === String(colorValue).trim().toLowerCase()
+                                  );
+                                  if (color?.image_url) {
+                                    giftImage = color.image_url;
+                                  }
+                                }
+                              }
+                            } else {
+                              if (opt.image_url) {
+                                giftImage = opt.image_url;
+                              }
+                            }
+                          }
+                        });
                       }
                       
-                      const giftSelectedMap = selectedGiftVariations || {};
-                      const giftSelectedTotal = Object.values(giftSelectedMap).reduce((sum, qty) => sum + qty, 0);
-                      const giftIsOver = giftSelectedTotal > totalGiftQty;
-                      const giftRemaining = Math.max(0, totalGiftQty - giftSelectedTotal);
-                      
-                      const isAutoComplete = giftSelectedTotal === totalGiftQty && Object.keys(giftSelectedMap).length > 0;
-                      
                       return (
-                        <div className="mt-3 p-3 bg-white/50 dark:bg-slate-800/30 rounded-xl border-2 border-[#d81b60]/30">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                              🎨 {app.lang === "ar" ? "توزيع كميات الهدية" : "Gift Quantity Distribution"}
-                              {giftRemaining > 0 && !giftIsOver && (
-                                <Badge className="bg-amber-500/20 text-amber-600 border-0 text-[9px]">
-                                  {app.lang === "ar" ? `متبقي ${giftRemaining}` : `${giftRemaining} remaining`}
-                                </Badge>
-                              )}
-                              {isAutoComplete && (
-                                <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px]">
-                                  ✅ {app.lang === "ar" ? "موزع تلقائياً" : "Auto-distributed"}
-                                </Badge>
-                              )}
-                            </span>
-                            {giftRemaining > 0 && !giftIsOver && availableOptions.length > 1 && (
-                              <button
-                                onClick={() => autoDistributeGiftRemaining(availableOptions, totalGiftQty)}
-                                className="text-[10px] text-[#d81b60] hover:underline transition-colors flex items-center gap-1 px-2 py-1 border-2 border-[#d81b60]/30 rounded-lg hover:bg-[#d81b60]/10"
-                              >
-                                <Zap className="h-3 w-3" />
-                                {app.lang === "ar" ? `وزع ${giftRemaining}` : `Distribute ${giftRemaining}`}
-                              </button>
-                            )}
-                          </div>
-                          
-                          <div className="flex flex-wrap gap-2">
-                            {availableOptions.map((opt: any) => {
-                              const isColor = optionType === 'color';
-                              const displayName = isColor 
-                                ? opt.color_name_ar || opt.color_name_en || 'لون'
-                                : Object.entries(opt.combination || {})
-                                    .map(([key, value]) => `${value}`)
-                                    .join(' • ');
-                              const currentQty = selectedGiftVariations[opt.id] || 0;
-                              const price = isColor 
-                                ? freeProduct?.price || 0
-                                : opt.price || freeProduct?.price || 0;
-                              
-                              return (
-                                <div key={opt.id} className="flex items-center gap-2 p-2 border-2 rounded-xl border-[#d81b60]/30 bg-white/50 dark:bg-slate-800/50 shadow-sm hover:shadow-md transition-all">
-                                  {isColor && (
-                                    <div 
-                                      className="w-4 h-4 rounded-full border-2 border-[#d81b60]/30 flex-shrink-0"
-                                      style={{ backgroundColor: opt.color_hex || '#ccc' }}
-                                    />
-                                  )}
-                                  {/* ✅ زر اسم الخيار - عند الضغط عليه تعرض الصورة + زيادة الكمية */}
-                                  <button
-                                    onClick={() => handleGiftVariationSelect(opt.id)}
-                                    className="text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors hover:underline"
-                                  >
-                                    {displayName}
-                                  </button>
-                                  <span className="text-[10px] text-muted-foreground">
-                                    ({formatPrice(Number(price), app.currency, app.lang)})
-                                  </span>
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => handleGiftVariationQuantityChange(opt.id, -1, true)}
-                                      className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
-                                        currentQty > 0 
-                                          ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 border-slate-300"
-                                          : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800 border-slate-200"
-                                      )}
-                                      disabled={currentQty === 0}
-                                    >
-                                      -
-                                    </button>
-                                    <span className="w-8 text-center font-bold text-[#d81b60] text-sm">
-                                      {currentQty}
-                                    </span>
-                                    <button
-                                      onClick={() => handleGiftVariationQuantityChange(opt.id, 1, true)}
-                                      className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2",
-                                        !giftIsOver && (currentQty === 0 || giftRemaining > 0)
-                                          ? "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white border-[#d81b60] shadow-sm shadow-[#d81b60]/30"
-                                          : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 border-slate-300"
-                                      )}
-                                      disabled={giftIsOver || (currentQty > 0 && giftRemaining === 0)}
-                                    >
-                                      +
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          
-                          {giftIsOver && (
-                            <div className="mt-2 flex items-center gap-2 p-2 bg-red-50/50 dark:bg-red-950/20 rounded-lg border border-red-200/50 dark:border-red-800/30">
-                              <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                              <p className="text-xs text-red-700 dark:text-red-400">
-                                {app.lang === "ar" 
-                                  ? `⚠️ الكمية المختارة (${giftSelectedTotal}) تتجاوز الهدية (${totalGiftQty})`
-                                  : `⚠️ Selected quantity (${giftSelectedTotal}) exceeds gift (${totalGiftQty})`}
-                              </p>
+                        <>
+                          {giftImage ? (
+                            <OptimizedImage
+                              src={giftImage}
+                              alt={freeProduct?.title_ar}
+                              width={48}
+                              height={48}
+                              quality={80}
+                              objectFit="cover"
+                              className="h-12 w-12 rounded-lg object-cover border-2 border-emerald-300/50"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center border-2 border-emerald-300/50">
+                              <GiftIcon className="h-6 w-6 text-emerald-400" />
                             </div>
                           )}
-                        </div>
+                          <div className="flex-1">
+                            <p className="font-bold text-emerald-700">
+                              {freeProduct?.title_ar}
+                            </p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge className="bg-emerald-500/90 text-white border-0 text-[10px]">
+                                ✅ {app.lang === "ar" ? "مجاناً" : "FREE"}
+                              </Badge>
+                              {availableOptions.length > 0 && (
+                                <Badge className="bg-[#1a4f4a]/20 text-[#1a4f4a] border-0 text-[10px]">
+                                  🎨 {availableOptions.length} {app.lang === "ar" ? "خيار" : "options"}
+                                </Badge>
+                              )}
+                              {availableOptions.length === 0 && (
+                                <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[10px]">
+                                  ✅ {app.lang === "ar" ? "لا يوجد خيارات" : "No options"}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </>
                       );
                     })()}
                   </div>
-                </div>
-              </>
-            )}
-
-            {/* ===== تنبيه اختيار الخيارات ===== */}
-            {!isVariationSelected && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border-2 border-amber-300/50 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
-                <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                    {app.lang === "ar" 
-                      ? `⚠️ غير مكتمل (المنتجات: ${totalSelectedQuantity}/${totalRequiredQuantity}${offer?.result_variation_ids?.length > 0 ? `, الهدية: ${giftStats.selected}/${giftStats.total}` : ''})`
-                      : `⚠️ Incomplete (Products: ${totalSelectedQuantity}/${totalRequiredQuantity}${offer?.result_variation_ids?.length > 0 ? `, Gift: ${giftStats.selected}/${giftStats.total}` : ''})`}
-                  </p>
-                  <p className="text-xs text-amber-600/80 dark:text-amber-400/70">
-                    {app.lang === "ar" 
-                      ? `يرجى استكمال الكميات المطلوبة`
-                      : `Please complete required quantities`}
-                  </p>
+                  
+                  {/* ===== توزيع الكميات على خيارات الهدية ===== */}
+                  {(() => {
+                    const giftVariationIds = offer?.result_variation_ids || [];
+                    const totalGiftQty = offer?.get_quantity || 1;
+                    const variations = freeProduct?.variations || [];
+                    const colors = freeProduct?.colors || freeProduct?.product_colors || [];
+                    
+                    let availableOptions: any[] = [];
+                    let optionType: 'variation' | 'color' = 'variation';
+                    
+                    if (giftVariationIds.length > 0) {
+                      const filteredVariations = variations.filter((v: any) => giftVariationIds.includes(v.id));
+                      if (filteredVariations.length > 0) {
+                        availableOptions = filteredVariations;
+                        optionType = 'variation';
+                      } else {
+                        const filteredColors = colors.filter((c: any) => giftVariationIds.includes(c.id));
+                        if (filteredColors.length > 0) {
+                          availableOptions = filteredColors;
+                          optionType = 'color';
+                        }
+                      }
+                    }
+                    
+                    if (availableOptions.length === 0) {
+                      if (variations.length > 0) {
+                        availableOptions = variations;
+                        optionType = 'variation';
+                      } else if (colors.length > 0) {
+                        availableOptions = colors;
+                        optionType = 'color';
+                      }
+                    }
+                    
+                    if (availableOptions.length === 0) {
+                      return (
+                        <div className="mt-3 p-3 bg-emerald-50/50 rounded-xl border border-emerald-300/50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-emerald-500" />
+                              <p className="text-sm font-medium text-emerald-700">
+                                {app.lang === "ar" ? "✅ الهدية لا تحتوي على خيارات" : "✅ Gift has no options"}
+                              </p>
+                            </div>
+                            <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-sm font-bold px-3 py-1">
+                              ✅ {totalGiftQty}/{totalGiftQty}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    const giftSelectedMap = selectedGiftVariations || {};
+                    const giftSelectedTotal = Object.values(giftSelectedMap).reduce((sum, qty) => sum + qty, 0);
+                    const giftIsOver = giftSelectedTotal > totalGiftQty;
+                    const giftRemaining = Math.max(0, totalGiftQty - giftSelectedTotal);
+                    
+                    return (
+                      <div className="mt-3 p-3 bg-white/50 rounded-xl border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-gray-700 flex items-center gap-2">
+                            🎨 {app.lang === "ar" ? "توزيع كميات الهدية" : "Gift Quantity Distribution"}
+                            {giftRemaining > 0 && !giftIsOver && (
+                              <Badge className="bg-amber-500/20 text-amber-600 border-0 text-[9px]">
+                                {app.lang === "ar" ? `متبقي ${giftRemaining}` : `${giftRemaining} remaining`}
+                              </Badge>
+                            )}
+                          </span>
+                          {giftRemaining > 0 && !giftIsOver && availableOptions.length > 1 && (
+                            <button
+                              onClick={() => autoDistributeGiftRemaining(availableOptions, totalGiftQty)}
+                              className="text-[10px] text-[#1a4f4a] hover:underline transition-colors flex items-center gap-1 px-2 py-0.5 border border-[#1a4f4a]/30 rounded-lg hover:bg-[#1a4f4a]/10"
+                            >
+                              <Zap className="h-3 w-3" />
+                              {app.lang === "ar" ? `وزع ${giftRemaining}` : `Distribute ${giftRemaining}`}
+                            </button>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {availableOptions.map((opt: any) => {
+                            const isColor = optionType === 'color';
+                            const displayName = isColor 
+                              ? opt.color_name_ar || opt.color_name_en || 'لون'
+                              : Object.entries(opt.combination || {})
+                                  .map(([key, value]) => `${value}`)
+                                  .join(' • ');
+                            const currentQty = selectedGiftVariations[opt.id] || 0;
+                            const price = isColor 
+                              ? freeProduct?.price || 0
+                              : opt.price || freeProduct?.price || 0;
+                            
+                            return (
+                              <div key={opt.id} className="flex items-center gap-1.5 p-1.5 border rounded-xl border-gray-200 bg-white/50 shadow-sm hover:shadow-md transition-all">
+                                {isColor && (
+                                  <div 
+                                    className="w-3 h-3 rounded-full border border-gray-300 flex-shrink-0"
+                                    style={{ backgroundColor: opt.color_hex || '#ccc' }}
+                                  />
+                                )}
+                                <button
+                                  onClick={() => handleGiftVariationSelect(opt.id)}
+                                  className="text-xs font-medium text-gray-700 hover:text-emerald-600 transition-colors hover:underline"
+                                >
+                                  {displayName}
+                                </button>
+                                <span className="text-[10px] text-muted-foreground">
+                                  ({formatPrice(Number(price), app.currency, app.lang)})
+                                </span>
+                                <div className="flex items-center gap-0.5">
+                                  <button
+                                    onClick={() => handleGiftVariationQuantityChange(opt.id, -1, true)}
+                                    className={cn(
+                                      "h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
+                                      currentQty > 0 
+                                        ? "bg-gray-200 hover:bg-gray-300 border-gray-300"
+                                        : "bg-gray-100 text-gray-300 cursor-not-allowed border-gray-200"
+                                    )}
+                                    disabled={currentQty === 0}
+                                  >
+                                    -
+                                  </button>
+                                  <span className="w-6 text-center font-bold text-[#1a4f4a] text-sm">
+                                    {currentQty}
+                                  </span>
+                                  <button
+                                    onClick={() => handleGiftVariationQuantityChange(opt.id, 1, true)}
+                                    className={cn(
+                                      "h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
+                                      !giftIsOver && (currentQty === 0 || giftRemaining > 0)
+                                        ? "bg-[#1a4f4a] hover:bg-[#2a655f] text-white border-[#1a4f4a]"
+                                        : "bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300"
+                                    )}
+                                    disabled={giftIsOver || (currentQty > 0 && giftRemaining === 0)}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {giftIsOver && (
+                          <div className="mt-2 flex items-center gap-2 p-2 bg-red-50 rounded-lg border border-red-200">
+                            <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                            <p className="text-xs text-red-700">
+                              {app.lang === "ar" 
+                                ? `⚠️ الكمية المختارة (${giftSelectedTotal}) تتجاوز الهدية (${totalGiftQty})`
+                                : `⚠️ Selected quantity (${giftSelectedTotal}) exceeds gift (${totalGiftQty})`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
-            )}
+            </>
+          )}
 
-            {/* ===== تم الاختيار ===== */}
-            {isVariationSelected && (
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-300/50 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
-                <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                    ✅ {app.lang === "ar" ? "تم استكمال جميع الكميات" : "All quantities completed"}
-                  </p>
-                  <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70">
-                    {isBundle 
-                      ? `📦 ${requiredProducts.length} ${app.lang === "ar" ? "منتج" : "products"}`
-                      : `🛒 ${app.lang === "ar" ? "جاهز للإضافة للسلة" : "Ready to add to cart"}`}
-                    {Object.keys(selectedGiftVariations).length > 0 && ` 🎁 ${freeProduct?.title_ar}`}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* ===== الكمية ===== */}
-            <div className="flex items-center gap-4">
-              <span className="font-semibold">{app.lang === "ar" ? "الكمية:" : "Quantity:"}</span>
-              <div className="flex items-center border-3 rounded-2xl overflow-hidden shadow-sm border-[#d81b60]/30">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="h-12 w-12 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-lg font-bold text-[#d81b60]"
-                >
-                  <Minus className="h-5 w-5" />
-                </button>
-                <span className="w-16 text-center font-bold text-lg text-[#d81b60]">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="h-12 w-12 flex items-center justify-center hover:bg-[#d81b60]/10 transition text-lg font-bold text-[#d81b60]"
-                >
-                  <Plus className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* ===== زر إضافة للسلة ===== */}
-            <Button 
-              size="lg" 
-              className={cn(
-                "w-full h-14 rounded-2xl text-white shadow-xl shadow-[#d81b60]/30 hover:shadow-2xl hover:shadow-[#d81b60]/40 transition-all hover:scale-[1.02] active:scale-[0.98] text-lg font-bold",
-                "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] border-2 border-[#d81b60]/30",
-                !isVariationSelected && "opacity-60 cursor-not-allowed hover:scale-100 hover:shadow-xl"
-              )}
-              onClick={handleAddToCart}
-              disabled={addToCartMutation.isPending || !isVariationSelected || isSubmitting}
-            >
-              {addToCartMutation.isPending || isSubmitting ? (
-                <div className="flex items-center gap-3">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  {app.lang === "ar" ? "جاري الإضافة..." : "Adding..."}
-                </div>
-              ) : !isVariationSelected ? (
-                <>
-                  <AlertTriangle className="h-5 w-5 me-3" />
+          {/* ===== ✅ تنبيه اختيار الخيارات ===== */}
+          {!isVariationSelected && (
+            <div className="p-3 bg-amber-50 rounded-xl border-2 border-amber-300/50 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-700">
                   {app.lang === "ar" 
-                    ? `⚠️ أكمل الكميات المطلوبة (${totalSelectedQuantity}/${totalRequiredQuantity}${offer?.result_variation_ids?.length > 0 ? `, هدية: ${giftStats.selected}/${giftStats.total}` : ''})`
-                    : `⚠️ Complete required quantities (${totalSelectedQuantity}/${totalRequiredQuantity}${offer?.result_variation_ids?.length > 0 ? `, Gift: ${giftStats.selected}/${giftStats.total}` : ''})`}
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="h-5 w-5 me-3" />
-                  {app.lang === "ar" ? "أضف العرض للسلة" : "Add Offer to Cart"}
-                  <Badge className="bg-white/20 text-white border-0 ms-3">
-                    {quantity}
-                  </Badge>
-                </>
-              )}
-            </Button>
+                    ? `⚠️ غير مكتمل (المنتجات: ${totalSelectedQuantity}/${totalRequiredQuantity}${offer?.result_variation_ids?.length > 0 ? `, الهدية: ${giftStats.selected}/${giftStats.total}` : ''})`
+                    : `⚠️ Incomplete (Products: ${totalSelectedQuantity}/${totalRequiredQuantity}${offer?.result_variation_ids?.length > 0 ? `, Gift: ${giftStats.selected}/${giftStats.total}` : ''})`}
+                </p>
+                <p className="text-xs text-amber-600/80">
+                  {app.lang === "ar" 
+                    ? `يرجى استكمال الكميات المطلوبة`
+                    : `Please complete required quantities`}
+                </p>
+              </div>
+            </div>
+          )}
 
-            {/* ===== مميزات ===== */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t-2 border-[#d81b60]/20">
-              {[
-                { icon: Truck, label: app.lang === "ar" ? "توصيل سريع" : "Fast Delivery" },
-                { icon: Shield, label: app.lang === "ar" ? "دفع آمن" : "Secure Payment" },
-                { icon: Award, label: app.lang === "ar" ? "ضمان الجودة" : "Quality Guarantee" },
-                { icon: Clock, label: app.lang === "ar" ? "دعم 24/7" : "24/7 Support" },
-              ].map((item, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition border border-[#d81b60]/20 hover:border-[#d81b60]/40">
-                  <item.icon className="h-5 w-5 text-[#d81b60]" />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </div>
-              ))}
+          {/* ===== ✅ تم الاختيار ===== */}
+          {isVariationSelected && (
+            <div className="p-3 bg-emerald-50 rounded-xl border-2 border-emerald-300/50 flex items-start gap-3">
+              <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-emerald-700">
+                  ✅ {app.lang === "ar" ? "تم استكمال جميع الكميات" : "All quantities completed"}
+                </p>
+                <p className="text-xs text-emerald-600/80">
+                  {isBundle 
+                    ? `📦 ${requiredProducts.length} ${app.lang === "ar" ? "منتج" : "products"}`
+                    : `🛒 ${app.lang === "ar" ? "جاهز للإضافة للسلة" : "Ready to add to cart"}`}
+                  {Object.keys(selectedGiftVariations).length > 0 && ` 🎁 ${freeProduct?.title_ar}`}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ===== عداد الكمية ===== */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">{app.lang === "ar" ? "الكمية:" : "Quantity:"}</span>
+              <div className="flex items-center bg-[#f4f4f4] rounded-xl px-2 py-1 gap-2 border border-gray-200">
+                <button 
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))} 
+                  className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-gray-700 hover:bg-gray-50 transition"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <span className="font-bold text-sm w-6 text-center text-gray-900">{quantity}</span>
+                <button 
+                  onClick={() => setQuantity(quantity + 1)} 
+                  className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-gray-700 hover:bg-gray-50 transition"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* ===== ✅ Lightbox لعرض الصورة بحجم كبير ===== */}
-      <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none rounded-2xl overflow-hidden">
-          <div className="relative w-full h-full min-h-[60vh] flex items-center justify-center">
-            {mainImage && (
-              <img
-                src={mainImage}
-                alt={offer.display_text_ar || "Promo offer"}
-                className="max-w-full max-h-[85vh] object-contain"
-              />
+          {/* ===== السعر الكلي ===== */}
+          <div className="bg-[#fef9ec] border border-[#fde6b5] rounded-2xl p-4 flex items-center justify-between">
+            <span className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+              <Tag className="h-4 w-4 text-amber-600" />
+              {app.lang === "ar" ? "السعر الكلي" : "Total Price"}
+            </span>
+            <span className="text-xl font-black text-gray-900">
+              {formatPrice(finalPrice, app.currency, app.lang)}
+            </span>
+          </div>
+
+          {/* ===== المنتجات التي قد تعجبك أيضاً (4 فقط — العروض أولاً) ===== */}
+          {sortedSimilarListings.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-[#2a655f] grid place-items-center text-white shadow-sm">
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </div>
+                  <h3 className="font-bold text-base text-gray-900">
+                    {app.lang === "ar" ? "المنتجات التي قد تعجبك أيضاً" : "Products you might also like"}
+                  </h3>
+                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    {sortedSimilarListings.length}
+                  </Badge>
+                </div>
+                <Link 
+                  to="/category/$slug" 
+                  params={{ slug: "all" }}
+                  className="bg-[#f5f5f5] hover:bg-[#e8e8e8] transition-colors px-4 py-1.5 rounded-full text-xs font-medium text-gray-600 hover:text-gray-800"
+                >
+                  {app.lang === "ar" ? "شاهد المزيد" : "View More"}
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {sortedSimilarListings.map((item: any) => {
+                  const hasPromo = item.has_promo_offer === true || item.has_promo_offer === "true";
+                  const hasDiscount = item.is_offer === true || (item.discount_percent && item.discount_percent > 0);
+                  
+                  return (
+                    <Link 
+                      key={item.id} 
+                      to="/listing/$id" 
+                      params={{ id: item.id }} 
+                      className="group relative bg-white rounded-2xl p-2 border border-gray-100 shadow-sm hover:shadow-md hover:border-[#2a655f]/30 transition-all duration-300 block"
+                    >
+                      {/* ✅ Badge العرض الترويجي */}
+                      {hasPromo && (
+                        <div className="absolute top-3 right-3 z-10">
+                          <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 text-[9px] px-2 py-0.5 rounded-full font-bold shadow-lg flex items-center gap-1">
+                            <Gift className="h-2.5 w-2.5" />
+                            {item.promo_offer_type === 'bogo' && 'BOGO'}
+                            {item.promo_offer_type === 'bundle' && (app.lang === "ar" ? 'باقة' : 'Bundle')}
+                            {item.promo_offer_type === 'cross_sell' && (app.lang === "ar" ? 'عرض' : 'Offer')}
+                            {!item.promo_offer_type && (app.lang === "ar" ? 'عرض' : 'Promo')}
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {/* ✅ Badge التخفيض */}
+                      {!hasPromo && hasDiscount && (
+                        <div className="absolute top-3 right-3 z-10">
+                          <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white border-0 text-[9px] px-2 py-0.5 rounded-full font-bold shadow-lg">
+                            🔥 -{item.discount_percent || 20}%
+                          </Badge>
+                        </div>
+                      )}
+
+                      <div className="relative w-full aspect-square overflow-hidden rounded-xl">
+                        <OptimizedImage 
+                          src={item.cover_url} 
+                          alt={item.title_ar} 
+                          width={200} 
+                          height={200} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                      </div>
+                      
+                      <h4 className="text-xs font-medium text-gray-800 mt-2 line-clamp-2 min-h-[2rem] leading-snug">
+                        {app.lang === "ar" ? item.title_ar : (item.title_en || item.title_ar)}
+                      </h4>
+                      
+                      <div className="flex items-center justify-between mt-1.5">
+                        <div className="flex flex-col">
+                          {hasDiscount && item.old_price && (
+                            <span className="text-[10px] text-red-400 line-through">
+                              {formatPrice(Number(item.old_price), app.currency, app.lang)}
+                            </span>
+                          )}
+                          <span className="text-sm font-bold text-[#2a655f]">
+                            {formatPrice(Number(item.price), app.currency, app.lang)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-0.5 text-[10px] text-gray-500">
+                          <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
+                          <span>{Number(item.rating || 0).toFixed(1)}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ===== ✅ الأكثر مبيعاً - كروت عمودية بعرض كامل ===== */}
+          {(trendingLoading || bestSellingListings.length > 0) && (
+            <div className="space-y-3 pt-2">
+              {/* Header */}
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-[#2a655f] grid place-items-center text-white shadow-sm">
+                    <Flame className="h-3.5 w-3.5" />
+                  </div>
+                  <h3 className="font-bold text-base text-gray-900">
+                    {app.lang === "ar" ? "🔥 الأكثر مبيعاً" : "🔥 Best Sellers"}
+                  </h3>
+                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    {bestSellingListings.length}
+                  </Badge>
+                </div>
+                <Link 
+                  to="/products"
+                  className="bg-[#f5f5f5] hover:bg-[#e8e8e8] transition-colors px-4 py-1.5 rounded-full text-xs font-medium text-gray-600 hover:text-gray-800"
+                >
+                  {app.lang === "ar" ? "شاهد المزيد" : "View More"}
+                </Link>
+              </div>
+
+              {/* Vertical List */}
+              {trendingLoading ? (
+                <div className="space-y-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-2xl p-3 border border-gray-100 animate-pulse flex gap-3">
+                      <div className="w-24 h-24 bg-gray-100 rounded-xl shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-100 rounded w-3/4" />
+                        <div className="h-3 bg-gray-100 rounded w-1/2" />
+                        <div className="h-5 bg-gray-100 rounded w-1/3 mt-auto" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : bestSellingListings.length === 0 ? (
+                <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
+                  <Flame className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-xs text-gray-500">
+                    {app.lang === "ar" ? "لا توجد منتجات رائجة حالياً" : "No trending products yet"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {bestSellingListings.map((item: any, index: number) => (
+                    <Link 
+                      key={item.id} 
+                      to="/listing/$id" 
+                      params={{ id: item.id }} 
+                      className="group relative bg-white rounded-2xl p-3 border border-gray-100 shadow-sm hover:shadow-md hover:border-[#2a655f]/30 transition-all duration-300 flex gap-3 items-center"
+                    >
+                      {/* ✅ رقم الترتيب - زيتي */}
+                      <div className="absolute top-3 right-3 z-10 h-6 w-6 rounded-full bg-[#2a655f] flex items-center justify-center shadow-md">
+                        <span className="text-[10px] font-bold text-white">
+                          {index + 1}
+                        </span>
+                      </div>
+
+                      {/* ✅ صورة المنتج */}
+                      <div className="relative w-24 h-24 shrink-0 overflow-hidden rounded-xl">
+                        <OptimizedImage 
+                          src={item.cover_url} 
+                          alt={item.title_ar} 
+                          width={200} 
+                          height={200} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                      </div>
+
+                      {/* ✅ تفاصيل المنتج */}
+                      <div className="flex-1 min-w-0 py-1">
+                        <h4 className="text-sm font-medium text-gray-800 line-clamp-2 leading-snug pe-8">
+                          {app.lang === "ar" ? item.title_ar : (item.title_en || item.title_ar)}
+                        </h4>
+                        
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="flex items-center gap-0.5">
+                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            <span className="text-[10px] text-gray-500">
+                              {Number(item.rating || 0).toFixed(1)}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-gray-300">•</span>
+                          <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[8px] px-1.5 py-0.5 rounded-full font-bold">
+                            <Flame className="h-2 w-2 inline mr-0.5" />
+                            {app.lang === "ar" ? "الأكثر مبيعاً" : "Best"}
+                          </Badge>
+                        </div>
+
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-base font-bold text-[#2a655f]">
+                            {formatPrice(Number(item.price), app.currency, app.lang)}
+                          </span>
+                          <ChevronLeft className="h-4 w-4 text-[#2a655f] group-hover:-translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+
+        {/* ===== شريط الأزرار السفلي ===== */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-3 max-w-xl mx-auto flex gap-3 shadow-lg">
+          <Button
+            onClick={handleAddToCart}
+            className="flex-1 bg-[#fef9ec] hover:bg-[#fde6b5] text-gray-900 font-bold h-12 rounded-xl text-base shadow-md transition border-2 border-[#fde6b5]"
+            disabled={!isVariationSelected || addToCartMutation.isPending || isSubmitting}
+          >
+            {addToCartMutation.isPending || isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-900/30 border-t-gray-900" />
+                {app.lang === "ar" ? "جاري..." : "Loading..."}
+              </div>
+            ) : (
+              app.lang === "ar" ? "اشتري الآن" : "Buy Now"
             )}
-            
-            {/* ✅ أزرار التقليب في Lightbox */}
-            {offerImages.length > 1 && (
+          </Button>
+          <Button
+            onClick={handleAddToCart}
+            className={cn(
+              "flex-1 font-bold h-12 rounded-xl text-base shadow-md transition",
+              "bg-[#1a4f4a] hover:bg-[#2a655f] text-white"
+            )}
+            disabled={!isVariationSelected || addToCartMutation.isPending || isSubmitting}
+          >
+            {addToCartMutation.isPending || isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                {app.lang === "ar" ? "جاري..." : "Loading..."}
+              </div>
+            ) : (
               <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const newIndex = (currentImageIndex - 1 + offerImages.length) % offerImages.length;
-                    changeImage(newIndex);
-                  }}
-                  className="absolute start-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border-2 border-white/20 z-10"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-                
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const newIndex = (currentImageIndex + 1) % offerImages.length;
-                    changeImage(newIndex);
-                  }}
-                  className="absolute end-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border-2 border-white/20 z-10"
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-                
-                {/* ✅ مؤشر عدد الصور في Lightbox */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur px-4 py-1.5 rounded-full text-white text-xs font-medium z-10">
-                  {currentImageIndex + 1} / {offerImages.length}
-                </div>
-                
-                {/* ✅ اسم الصورة الحالية في Lightbox */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur px-4 py-2 rounded-full text-white text-xs font-medium z-10 max-w-[80%] truncate">
-                  {offerImages[currentImageIndex]?.displayName || offerImages[currentImageIndex]?.title || 'صورة'}
-                </div>
+                <ShoppingBag className="h-4 w-4 ml-2" />
+                {app.lang === "ar" ? "أضف العرض للسلة" : "Add Offer to Cart"}
               </>
             )}
-            
-            {/* ✅ زر الإغلاق */}
-            <button
-              onClick={() => setIsLightboxOpen(false)}
-              className="absolute top-4 end-4 h-10 w-10 rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 shadow-lg flex items-center justify-center transition-all hover:scale-110 border-2 border-white/20 z-20"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </Button>
+        </div>
 
-      {/* ===== مودال تعارض المتجر ===== */}
-      <Dialog open={showStoreConflict} onOpenChange={setShowStoreConflict}>
-        <DialogContent className="max-w-md rounded-2xl border-2 border-[#d81b60]/30">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl text-[#d81b60]">
-              <ShoppingCart className="h-6 w-6 text-amber-500" />
-              {app.lang === "ar" ? "⚠️ سلة من متجر آخر" : "⚠️ Cart from another store"}
-            </DialogTitle>
-            <DialogDescription className="text-base">
-              {app.lang === "ar" 
-                ? `لديك منتجات في السلة من "${currentStoreName}"`
-                : `You have items in your cart from "${currentStoreName}"`}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4 space-y-4">
-            <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border-2 border-amber-200 dark:border-amber-800/30">
-              <p className="text-sm text-amber-700 dark:text-amber-400">
+        {/* ===== مودال تعارض المتاجر ===== */}
+        <Dialog open={showStoreConflict} onOpenChange={setShowStoreConflict}>
+          <DialogContent className="max-w-md rounded-2xl bg-white p-6">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900">
+                <ShoppingBag className="h-5 w-5 text-[#1a4f4a]" />
+                {app.lang === "ar" ? "سلة من متجر آخر" : "Cart from another store"}
+              </DialogTitle>
+              <DialogDescription className="text-sm text-gray-600 mt-1">
                 {app.lang === "ar" 
-                  ? `📦 السلة تحتوي على منتجات من "${currentStoreName}"`
-                  : `📦 Your cart currently has items from "${currentStoreName}"`}
-              </p>
-              <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                {app.lang === "ar" 
-                  ? `🛒 العرض الجديد من "${newStoreName}"`
-                  : `🛒 The new offer is from "${newStoreName}"`}
-              </p>
-            </div>
-            
-            <div className="text-sm text-muted-foreground">
-              {app.lang === "ar" 
-                ? "لا يمكن إضافة منتجات من أكثر من متجر واحد في نفس السلة"
-                : "You cannot add products from different stores in the same cart"}
-            </div>
-          </div>
-          
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowStoreConflict(false)} className="border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60]">
-              {app.lang === "ar" ? "إلغاء" : "Cancel"}
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleConfirmClearCart}
-              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-2 border-red-400/30"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {app.lang === "ar" ? "تفريغ السلة وإضافة العرض" : "Clear cart and add offer"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+                  ? `لديك منتجات في السلة من متجر "${currentStoreName}". هل تريد تفريغ السلة وإضافة العرض من "${newStoreName}"؟`
+                  : `You have items in your cart from "${currentStoreName}". Do you want to clear the cart and add the offer from "${newStoreName}"?`}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="mt-4 flex gap-2">
+              <Button variant="outline" onClick={() => setShowStoreConflict(false)} className="rounded-xl">
+                {app.lang === "ar" ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button 
+                onClick={handleConfirmClearCart} 
+                className="bg-[#1a4f4a] hover:bg-[#2a655f] text-white rounded-xl"
+              >
+                {app.lang === "ar" ? "تفريغ السلة وإضافة الجديد" : "Clear cart and add new"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+      </div>
+    </ClientOnly>
   );
 }
 

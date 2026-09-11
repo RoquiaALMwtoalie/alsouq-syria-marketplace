@@ -4,7 +4,8 @@ import {
   Search, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, 
   RefreshCw, X, Filter, Users, User, Phone, ShoppingCart, DollarSign,
   TrendingUp, Award, Sparkles, Rocket, Crown, Star, Medal,
-  ArrowUpRight, ArrowDownRight, Target, Zap, Shield, Heart, Wallet
+  ArrowUpRight, ArrowDownRight, Target, Zap, Shield, Heart, Wallet,
+  Clock,  // ✅ أضف هذا
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -312,7 +313,7 @@ export function CustomersPage() {
             size="sm"
             onClick={exportToExcel}
             disabled={filteredCustomers.length === 0}
-            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
+            className="rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
           >
             <FileSpreadsheet className="h-4 w-4 mr-1.5" />
             Excel
@@ -322,51 +323,47 @@ export function CustomersPage() {
             size="sm"
             onClick={exportToWord}
             disabled={filteredCustomers.length === 0}
-            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 hover:border-[#f9a8d4]/50 transition-all duration-300 hover:scale-105"
+            className="rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
           >
             <FileText className="h-4 w-4 mr-1.5" />
             Word
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="rounded-xl border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 group"
-          >
-            <RefreshCw className="h-4 w-4 mr-1.5 group-hover:rotate-180 transition-transform duration-700" />
-            {app.lang === "ar" ? "تحديث" : "Refresh"}
-          </Button>
+         
         </div>
       </div>
 
-      {/* ===== إحصائيات سريعة - خلفية وردية وبوردر وردي ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* ===== إحصائيات سريعة - بتصميم كروت AdminStores (بوردر رمادي، هوفر رمادي فاتح) ===== */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { key: 'total', label: app.lang === 'ar' ? 'إجمالي العملاء' : 'Total Customers', value: stats.total, icon: Users, color: 'text-[#2a655f]' },
-          { key: 'orders', label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', value: stats.totalOrders, icon: ShoppingCart, color: 'text-[#3a8a82]' },
-          { key: 'spend', label: app.lang === 'ar' ? 'إجمالي الإنفاق' : 'Total Spend', value: formatPrice(stats.totalSpend, app.currency, app.lang), icon: Wallet, color: 'text-emerald-600' },
-          { key: 'avg', label: app.lang === 'ar' ? 'متوسط الطلبات' : 'Avg Orders', value: stats.avgOrders, icon: Award, color: 'text-[#f9a8d4]' },
-        ].map((stat) => (
+          { key: 'total', label: app.lang === 'ar' ? 'إجمالي العملاء' : 'Total Customers', value: stats.total, icon: Users, gradient: 'from-[#2a655f] to-[#1a4f4a]' },
+          { key: 'orders', label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', value: stats.totalOrders, icon: ShoppingCart, gradient: 'from-[#1a4f4a] to-[#3a8a82]' },
+          { key: 'spend', label: app.lang === 'ar' ? 'إجمالي الإنفاق' : 'Total Spend', value: formatPrice(stats.totalSpend, app.currency, app.lang), icon: Wallet, gradient: 'from-emerald-500 to-teal-500' },
+          { key: 'avg', label: app.lang === 'ar' ? 'متوسط الطلبات' : 'Avg Orders', value: stats.avgOrders, icon: Award, gradient: 'from-[#3a8a82] to-[#4a9f95]' },
+        ].map((stat, i) => (
           <div 
-            key={stat.key} 
-            className="group relative bg-[#fbcfe8] dark:bg-[#fbcfe8]/20 rounded-xl border-3 border-[#f9a8d4]/70 dark:border-[#f9a8d4]/40 hover:border-[#d81b60]/60 shadow-sm hover:shadow-2xl hover:shadow-[#f9a8d4]/20 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
+            key={i} 
+            className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative p-4"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="absolute -top-8 -right-8 h-16 w-16 rounded-full bg-[#fbcfe8]/60 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative flex items-center justify-between p-3">
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+              <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-slate-100/50 dark:bg-slate-700/20 blur-3xl animate-pulse" />
+            </div>
+            <div className="flex items-center justify-between relative">
               <div>
-                <p className="text-[10px] font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">
-                  {stat.label}
-                </p>
-                <p className={`text-xl font-bold mt-0.5 ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
-                  {stat.value}
-                </p>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
               </div>
-              <div className={`h-9 w-9 rounded-lg bg-[#f9a8d4]/30 dark:bg-[#f9a8d4]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <div className="h-10 w-10 rounded-xl bg-white dark:bg-[#1e293b] border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
+                  <stat.icon className="h-3.5 w-3.5 text-white" />
+                </div>
               </div>
             </div>
-            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
+            <div className="mt-2 h-0.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+              <div 
+                className={`h-full rounded-full bg-gradient-to-r ${stat.gradient} transition-all duration-1000 animate-shimmer`} 
+                style={{ width: `100%` }}
+              />
+            </div>
           </div>
         ))}
       </div>
@@ -412,10 +409,10 @@ export function CustomersPage() {
         </div>
       )}
 
-      {/* ===== البحث والفلترة - بوردر وردي ===== */}
+      {/* ===== البحث والفلترة - بوردر رمادي، هوفر رمادي فاتح ===== */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 group">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#f9a8d4] transition-colors duration-300" />
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors duration-300" />
           <Input
             value={searchQuery}
             onChange={(e) => {
@@ -423,7 +420,7 @@ export function CustomersPage() {
               setPage(1);
             }}
             placeholder={app.lang === "ar" ? "🔍 بحث عن عميل..." : "🔍 Search customers..."}
-            className="ps-9 h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300"
+            className="ps-9 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300"
           />
         </div>
 
@@ -434,16 +431,16 @@ export function CustomersPage() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[140px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400 group-hover:text-[#f9a8d4]" />
+              <Filter className="h-4 w-4 text-slate-500" />
               <SelectValue placeholder={app.lang === "ar" ? "ترتيب حسب" : "Sort by"} />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <SelectItem value="orders" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">📦 {app.lang === "ar" ? "عدد الطلبات" : "Orders"}</SelectItem>
-            <SelectItem value="spend" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">💰 {app.lang === "ar" ? "الإنفاق" : "Spend"}</SelectItem>
-            <SelectItem value="name" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">👤 {app.lang === "ar" ? "الاسم" : "Name"}</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+            <SelectItem value="orders" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📦 {app.lang === "ar" ? "عدد الطلبات" : "Orders"}</SelectItem>
+            <SelectItem value="spend" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">💰 {app.lang === "ar" ? "الإنفاق" : "Spend"}</SelectItem>
+            <SelectItem value="name" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">👤 {app.lang === "ar" ? "الاسم" : "Name"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -454,12 +451,12 @@ export function CustomersPage() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[100px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
             <SelectValue placeholder={app.lang === "ar" ? "ترتيب" : "Order"} />
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <SelectItem value="desc" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">⬇️ {app.lang === "ar" ? "تنازلي" : "Descending"}</SelectItem>
-            <SelectItem value="asc" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">⬆️ {app.lang === "ar" ? "تصاعدي" : "Ascending"}</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+            <SelectItem value="desc" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⬇️ {app.lang === "ar" ? "تنازلي" : "Descending"}</SelectItem>
+            <SelectItem value="asc" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⬆️ {app.lang === "ar" ? "تصاعدي" : "Ascending"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -470,18 +467,18 @@ export function CustomersPage() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] hover:border-[#f9a8d4]/50 transition-all duration-300 focus:ring-2 focus:ring-[#f9a8d4]/30">
+          <SelectTrigger className="w-[100px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400">{app.lang === "ar" ? "عدد" : "Show"}</span>
               <SelectValue placeholder="10" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-            <SelectItem value="6" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">6</SelectItem>
-            <SelectItem value="10" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">10</SelectItem>
-            <SelectItem value="20" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">20</SelectItem>
-            <SelectItem value="50" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">50</SelectItem>
-            <SelectItem value="100" className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">100</SelectItem>
+          <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+            <SelectItem value="6" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">6</SelectItem>
+            <SelectItem value="10" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">10</SelectItem>
+            <SelectItem value="20" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">20</SelectItem>
+            <SelectItem value="50" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">50</SelectItem>
+            <SelectItem value="100" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">100</SelectItem>
           </SelectContent>
         </Select>
 
@@ -494,36 +491,54 @@ export function CustomersPage() {
             setSortOrder("desc");
             setPage(1);
           }}
-          className="h-10 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/10 transition-all duration-300 group"
+          className="h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 group"
         >
           <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
           {app.lang === "ar" ? "مسح الكل" : "Clear all"}
         </Button>
       </div>
 
-      {/* ===== جدول العملاء - أعمدة فاصلة وردية ===== */}
-      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
+      {/* ===== جدول العملاء - بتصميم جدول AdminStores (بوردر رمادي، هوفر رمادي فاتح) ===== */}
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-gradient-to-r from-[#f9a8d4]/30 via-[#fbcfe8]/20 to-[#f9a8d4]/30 dark:from-[#f9a8d4]/20 dark:via-[#fbcfe8]/10 dark:to-[#f9a8d4]/20 border-b-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30">
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-right min-w-[180px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-                  {app.lang === "ar" ? "الاسم" : "Name"}
+              <TableRow className="border-slate-200 dark:border-slate-700 hover:bg-transparent bg-gradient-to-r from-slate-100/50 via-slate-50/30 to-slate-100/50 dark:from-slate-800/30 dark:via-slate-700/20 dark:to-slate-800/30 border-b-2 border-slate-200 dark:border-slate-700">
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-right min-w-[180px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center gap-2 justify-end">
+                    <User className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                    {app.lang === "ar" ? "الاسم" : "Name"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[140px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-                  {app.lang === "ar" ? "رقم الهاتف" : "Phone"}
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[140px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center justify-center gap-2">
+                    <Phone className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                    {app.lang === "ar" ? "رقم الهاتف" : "Phone"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[100px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-                  {app.lang === "ar" ? "الطلبات" : "Orders"}
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[100px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center justify-center gap-2">
+                    <ShoppingCart className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                    {app.lang === "ar" ? "الطلبات" : "Orders"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[140px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-                  {app.lang === "ar" ? "الإنفاق" : "Spend"}
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[140px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center justify-center gap-2">
+                    <Wallet className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                    {app.lang === "ar" ? "الإنفاق" : "Spend"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
-                  {app.lang === "ar" ? "آخر طلب" : "Last Order"}
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[120px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center justify-center gap-2">
+                    <Clock className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                    {app.lang === "ar" ? "آخر طلب" : "Last Order"}
+                  </div>
                 </TableHead>
-                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[60px]">
-                  {app.lang === "ar" ? "الترتيب" : "Rank"}
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[60px]">
+                  <div className="flex items-center justify-center gap-2">
+                    <Star className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                    {app.lang === "ar" ? "الترتيب" : "Rank"}
+                  </div>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -554,9 +569,9 @@ export function CustomersPage() {
                   return (
                     <TableRow 
                       key={c.id} 
-                      className="border-slate-100 dark:border-slate-800 hover:bg-[#f9a8d4]/15 dark:hover:bg-[#f9a8d4]/10 transition-colors duration-300 group border-b-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10"
+                      className="border-slate-200 dark:border-slate-700 hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition-colors duration-300 group border-b-2 border-slate-200/60 dark:border-slate-700/60"
                     >
-                      <TableCell className="font-semibold text-slate-900 dark:text-white text-right border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                      <TableCell className="font-semibold text-slate-900 dark:text-white text-right border-r-2 border-slate-200/60 dark:border-slate-700/60">
                         <div className="flex items-center gap-2 justify-end">
                           <span className="group-hover:text-[#2a655f] transition-colors">
                             {c.full_name || (app.lang === "ar" ? "عميل" : "Customer")}
@@ -566,18 +581,18 @@ export function CustomersPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-slate-600 dark:text-slate-300 text-center font-mono border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10" dir="ltr">
+                      <TableCell className="text-slate-600 dark:text-slate-300 text-center font-mono border-r-2 border-slate-200/60 dark:border-slate-700/60" dir="ltr">
                         {c.phone || "—"}
                       </TableCell>
-                      <TableCell className="font-medium text-slate-900 dark:text-white text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
-                        <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 group-hover:bg-[#2a655f]/20 transition-colors">
+                      <TableCell className="font-medium text-slate-900 dark:text-white text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                        <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
                           {c.orders || 0}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-center group-hover:scale-110 transition-transform duration-300 border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                      <TableCell className="font-bold text-[#2a655f] dark:text-slate-300 text-center group-hover:scale-110 transition-transform duration-300 border-r-2 border-slate-200/60 dark:border-slate-700/60">
                         {formatPrice(c.spend || 0, app.currency, app.lang)}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-500 text-center border-r-2 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+                      <TableCell className="text-xs text-slate-500 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
                         {c.last_order ? new Date(c.last_order).toLocaleDateString(
                           app.lang === 'ar' ? 'ar-SA' : 'en-US',
                           { year: 'numeric', month: 'short', day: 'numeric' }
@@ -598,12 +613,13 @@ export function CustomersPage() {
 
         {/* ===== Pagination ===== */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t-3 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="px-4 py-3 border-t-2 border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-xs text-slate-500 dark:text-slate-400">
               {filteredCustomers.length === 0 ? (
                 <span>{app.lang === "ar" ? "لا يوجد عملاء" : "No customers"}</span>
               ) : (
-                <span>
+                <span className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60] animate-pulse" />
                   {app.lang === "ar"
                     ? `عرض ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredCustomers.length)} من ${filteredCustomers.length} عميل`
                     : `Showing ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredCustomers.length)} of ${filteredCustomers.length} customers`}
@@ -617,7 +633,7 @@ export function CustomersPage() {
                 size="sm"
                 onClick={() => goToPage(1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <span className="text-xs font-bold">«</span>
               </Button>
@@ -626,7 +642,7 @@ export function CustomersPage() {
                 size="sm"
                 onClick={() => goToPage(page - 1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -650,8 +666,8 @@ export function CustomersPage() {
                       onClick={() => goToPage(pageNum)}
                       className={`h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300 ${
                         page === pageNum
-                          ? "bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white shadow-md shadow-[#2a655f]/25 border-2 border-white/30"
-                          : "border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 hover:text-[#2a655f]"
+                          ? "bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30 border-0 scale-105"
+                          : "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200"
                       }`}
                     >
                       {pageNum}
@@ -665,7 +681,7 @@ export function CustomersPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => goToPage(totalPages)}
-                      className="h-8 min-w-[32px] p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 text-xs"
+                      className="h-8 min-w-[32px] p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 text-xs transition-all duration-300"
                     >
                       {totalPages}
                     </Button>
@@ -677,7 +693,7 @@ export function CustomersPage() {
                 size="sm"
                 onClick={() => goToPage(page + 1)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -686,7 +702,7 @@ export function CustomersPage() {
                 size="sm"
                 onClick={() => goToPage(totalPages)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#f9a8d4]/50 hover:bg-[#f9a8d4]/20 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <span className="text-xs font-bold">»</span>
               </Button>
@@ -695,22 +711,29 @@ export function CustomersPage() {
         )}
 
         {/* ===== Footer ===== */}
-        <div className="px-4 py-2 border-t-3 border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#f9a8d4]/15 via-[#fbcfe8]/10 to-[#f9a8d4]/15 dark:from-[#f9a8d4]/10 dark:via-[#fbcfe8]/5 dark:to-[#f9a8d4]/10">
-          <span>
-            {app.lang === "ar"
-              ? `عرض ${paginatedCustomers.length} من ${filteredCustomers.length} عميل (إجمالي ${rows.length})`
-              : `Showing ${paginatedCustomers.length} of ${filteredCustomers.length} customers (total ${rows.length})`}
+        <div className="px-4 py-2 border-t-2 border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-slate-50/50 to-slate-100/30 dark:from-slate-800/20 dark:to-slate-700/10">
+          <span className="flex items-center gap-2">
+            <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
+              {app.lang === "ar"
+                ? `عرض ${paginatedCustomers.length} من ${filteredCustomers.length}`
+                : `Showing ${paginatedCustomers.length} of ${filteredCustomers.length}`}
+            </Badge>
+            <span className="text-[10px] text-[#d81b60]">
+              {app.lang === "ar" ? `إجمالي ${rows.length}` : `Total ${rows.length}`}
+            </span>
           </span>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20">
+            <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
+              <Filter className="h-3 w-3 mr-1 text-[#d81b60]" />
               {sortBy === "orders" ? (app.lang === "ar" ? "📦 الطلبات" : "📦 Orders") :
                sortBy === "spend" ? (app.lang === "ar" ? "💰 الإنفاق" : "💰 Spend") :
                (app.lang === "ar" ? "👤 الاسم" : "👤 Name")}
               {sortOrder === "desc" ? " ↓" : " ↑"}
             </Badge>
             {searchQuery && (
-              <Badge variant="secondary" className="bg-[#f9a8d4]/10 text-[#2a655f] border-2 border-[#f9a8d4]/20">
-                🔍 {searchQuery}
+              <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
+                <Search className="h-3 w-3 mr-1 text-[#d81b60]" />
+                {searchQuery}
               </Badge>
             )}
           </div>

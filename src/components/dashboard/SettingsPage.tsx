@@ -291,11 +291,11 @@ export function SettingsPage() {
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-6">
         <div className="relative">
-          <div className="h-20 w-20 rounded-full border-4 border-[#f9a8d4]/30 border-t-[#d81b60] animate-spin" />
+          <div className="h-20 w-20 rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f] animate-spin" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <Settings className="h-8 w-8 text-[#d81b60] animate-pulse" />
+            <Settings className="h-8 w-8 text-[#2a655f] animate-pulse" />
           </div>
-          <div className="absolute -inset-4 rounded-full border-2 border-[#f9a8d4]/20 animate-ping" />
+          <div className="absolute -inset-4 rounded-full border-2 border-[#2a655f]/10 animate-ping" />
         </div>
         <div className="text-center space-y-2">
           <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 animate-pulse">
@@ -306,7 +306,7 @@ export function SettingsPage() {
           </p>
         </div>
         <div className="w-64 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-          <div className="h-full w-1/2 bg-gradient-to-r from-[#f9a8d4] to-[#d81b60] rounded-full animate-slide" />
+          <div className="h-full w-1/2 bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] rounded-full animate-slide" />
         </div>
       </div>
     );
@@ -326,39 +326,39 @@ export function SettingsPage() {
       {/* ===== HEADER ===== */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="relative">
-          <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-gradient-to-r from-[#f9a8d4]/20 to-[#d81b60]/10 blur-2xl animate-pulse" />
-          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-gradient-to-r from-[#d81b60]/20 to-[#f9a8d4]/10 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
+          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#f9a8d4]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
           
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
             <div className="relative group">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#f9a8d4]/30 to-[#d81b60]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
-              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#d81b60] to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/30 group-hover:shadow-[#f9a8d4]/50 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+              <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
+              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#f9a8d4]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
                 <Settings className="h-5 w-5 group-hover:animate-spin-slow" />
               </div>
             </div>
             {app.lang === "ar" ? "إعدادات المتجر" : "Store Settings"}
-            <Badge className="bg-gradient-to-r from-[#f9a8d4]/20 to-[#fbcfe8]/30 text-[#d81b60] border-2 border-[#f9a8d4]/50 text-sm px-3 py-1 animate-pulse shadow-md shadow-[#f9a8d4]/20">
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
               <Sliders className="h-3 w-3 mr-1" />
               {app.lang === "ar" ? "تحكم كامل" : "Full Control"}
             </Badge>
           </h1>
           
           <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#f9a8d4]/10 to-[#fbcfe8]/20 border-2 border-[#f9a8d4]/40 hover:border-[#d81b60]/50 transition-all duration-300">
-              <Store className="h-3.5 w-3.5 text-[#d81b60]" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
+              <Store className="h-3.5 w-3.5 text-[#2a655f]" />
               <span className="text-[#2a655f] font-medium">{stats.storeName}</span>
             </span>
-            <span className="w-1 h-1 rounded-full bg-[#f9a8d4]/50" />
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-950/20 dark:to-emerald-950/10 border-2 border-emerald-300/50 hover:border-emerald-400 transition-all duration-300">
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30 transition-colors">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
               <span className="text-emerald-600 dark:text-emerald-400 font-medium">{app.lang === "ar" ? "محمي" : "Secure"}</span>
             </span>
-            <span className="w-1 h-1 rounded-full bg-[#f9a8d4]/50" />
+            <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
             <span className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 transition-all duration-300",
+              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-colors",
               storeActive 
-                ? "bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-950/20 dark:to-emerald-950/10 border-emerald-300/50 hover:border-emerald-400" 
-                : "bg-gradient-to-r from-red-50 to-red-100/50 dark:from-red-950/20 dark:to-red-950/10 border-red-300/50 hover:border-red-400"
+                ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30" 
+                : "bg-red-50 dark:bg-red-950/20 border-red-200/50 dark:border-red-800/30 hover:bg-red-100/50 dark:hover:bg-red-950/30"
             )}>
               {storeActive ? (
                 <Power className="h-3.5 w-3.5 text-emerald-500" />
@@ -376,34 +376,33 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* ===== STATS CARDS - مع بوردرات وردية ===== */}
+      {/* ===== STATS CARDS - نفس تصميم AdminOverview (بوردر زهري) ===== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { key: 'sections', label: app.lang === 'ar' ? 'الأقسام' : 'Sections', value: stats.sections, icon: Layers, color: 'text-[#d81b60]' },
-          { key: 'status', label: app.lang === 'ar' ? 'الحالة' : 'Status', value: stats.active, icon: Power, color: storeActive ? 'text-emerald-500' : 'text-red-500' },
-          { key: 'type', label: app.lang === 'ar' ? 'النوع' : 'Type', value: stats.type, icon: Globe, color: 'text-[#d81b60]' },
-          { key: 'governorate', label: app.lang === 'ar' ? 'المحافظة' : 'Governorate', value: stats.governorate, icon: MapPin, color: 'text-[#d81b60]' },
-        ].map((stat) => (
+          { key: 'sections', label: app.lang === 'ar' ? 'الأقسام' : 'Sections', value: stats.sections, icon: Layers, color: 'text-[#2a655f]', gradient: 'from-[#2a655f] to-[#f9a8d4]' },
+          { key: 'status', label: app.lang === 'ar' ? 'الحالة' : 'Status', value: stats.active, icon: Power, color: storeActive ? 'text-emerald-500' : 'text-red-500', gradient: storeActive ? 'from-emerald-500 to-teal-500' : 'from-red-500 to-rose-500' },
+          { key: 'type', label: app.lang === 'ar' ? 'النوع' : 'Type', value: stats.type, icon: Globe, color: 'text-[#3a8a82]', gradient: 'from-[#3a8a82] to-[#f9a8d4]' },
+          { key: 'governorate', label: app.lang === 'ar' ? 'المحافظة' : 'Governorate', value: stats.governorate, icon: MapPin, color: 'text-[#d81b60]', gradient: 'from-[#d81b60] to-[#f9a8d4]' },
+        ].map((stat, i) => (
           <div 
-            key={stat.key} 
-            className="group relative bg-gradient-to-br from-white to-[#fbcfe8]/40 dark:from-[#1e293b] dark:to-[#fbcfe8]/10 rounded-xl border-3 border-[#f9a8d4]/60 dark:border-[#f9a8d4]/30 hover:border-[#d81b60]/70 shadow-md hover:shadow-2xl hover:shadow-[#f9a8d4]/30 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] overflow-hidden"
+            key={i} 
+            className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 shadow-sm hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-[#f9a8d4]/10 to-[#fbcfe8]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="absolute -top-8 -right-8 h-16 w-16 rounded-full bg-gradient-to-br from-[#f9a8d4]/30 to-[#fbcfe8]/30 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative flex items-center justify-between p-3">
+            <div className="flex items-start justify-between p-4">
               <div>
-                <p className="text-[10px] font-medium text-[#2a655f] dark:text-[#f9a8d4] uppercase tracking-wider">
-                  {stat.label}
-                </p>
-                <p className={`text-xl font-bold mt-0.5 ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
-                  {stat.value}
-                </p>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1 group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
               </div>
-              <div className={`h-9 w-9 rounded-lg bg-gradient-to-br from-[#f9a8d4]/30 to-[#fbcfe8]/30 dark:from-[#f9a8d4]/20 dark:to-[#fbcfe8]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <div className="h-12 w-12 rounded-xl bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                <stat.icon className={cn("h-5 w-5", stat.color)} />
               </div>
             </div>
-            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#d81b60] to-[#f9a8d4] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
+            <div className="mt-0 h-1 w-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+              <div 
+                className={cn("h-full rounded-full bg-gradient-to-r", stat.gradient, "transition-all duration-1000 animate-shimmer")} 
+                style={{ width: `100%` }}
+              />
+            </div>
           </div>
         ))}
       </div>
@@ -412,9 +411,9 @@ export function SettingsPage() {
       {/* ===== ✅ 1. قسم حالة المتجر ===== */}
       {/* ============================================================ */}
       <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-[#f9a8d4]/30 to-[#d81b60]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-400/30 to-[#2a655f]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         <div className={cn(
-          "relative bg-gradient-to-br from-white to-[#fbcfe8]/30 dark:from-[#1e293b] dark:to-[#fbcfe8]/10 rounded-2xl border-3 p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 overflow-hidden",
+          "relative bg-white dark:bg-[#1e293b] rounded-2xl border-2 p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 overflow-hidden",
           storeActive && online 
             ? "border-emerald-400/50 dark:border-emerald-400/30" 
             : "border-red-400/50 dark:border-red-400/30"
@@ -452,7 +451,7 @@ export function SettingsPage() {
                     : (app.lang === "ar" ? "متجرك غير ظاهر للزبائن حالياً" : "Your store is currently hidden from customers")}
                 </p>
                 {!storeActive && storeInactiveReason && (
-                  <div className="mt-2 p-2 bg-gradient-to-r from-amber-50/50 to-amber-100/30 dark:from-amber-950/20 dark:to-amber-950/10 rounded-lg border-2 border-amber-300/50 dark:border-amber-800/30 animate-pulse">
+                  <div className="mt-2 p-2 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border-2 border-amber-300/50 dark:border-amber-800/30 animate-pulse">
                     <p className="text-xs text-amber-700 dark:text-amber-400 flex items-start gap-1.5">
                       <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                       <span><span className="font-medium">{app.lang === "ar" ? "السبب:" : "Reason:"}</span> {storeInactiveReason}</span>
@@ -465,7 +464,7 @@ export function SettingsPage() {
             {storeActive && online ? (
               <Button
                 onClick={() => setShowDeactivateDialog(true)}
-                className="h-16 px-8 rounded-2xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold text-lg shadow-lg shadow-red-500/30 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group border-3 border-red-400/50 hover:border-red-300/70"
+                className="h-16 px-8 rounded-2xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold text-lg shadow-lg shadow-red-500/30 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group border-2 border-red-400/50 hover:border-red-300/70"
               >
                 <PowerOff className="h-6 w-6 mr-3 group-hover:animate-pulse" />
                 {app.lang === "ar" ? "إيقاف المتجر" : "Deactivate Store"}
@@ -473,7 +472,7 @@ export function SettingsPage() {
             ) : (
               <Button
                 onClick={() => setShowActivateDialog(true)}
-                className="h-16 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-lg shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group border-3 border-emerald-400/50 hover:border-emerald-300/70"
+                className="h-16 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-lg shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group border-2 border-emerald-400/50 hover:border-emerald-300/70"
               >
                 <Power className="h-6 w-6 mr-3 group-hover:animate-pulse" />
                 {app.lang === "ar" ? "تفعيل المتجر" : "Activate Store"}
@@ -487,16 +486,16 @@ export function SettingsPage() {
       {/* ===== ✅ 2. إعدادات المتجر الدقيقة ===== */}
       {/* ============================================================ */}
       <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-[#f9a8d4]/30 to-[#d81b60]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative bg-gradient-to-br from-white to-[#fbcfe8]/30 dark:from-[#1e293b] dark:to-[#fbcfe8]/10 rounded-2xl border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30 p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-400/30 to-[#2a655f]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="relative bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 p-6 shadow-lg hover:shadow-2xl hover:shadow-pink-500/20 transition-all duration-500 hover:-translate-y-1">
           <div className="flex items-center gap-2 mb-4">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#f9a8d4]/30 to-[#fbcfe8]/40 border-2 border-[#f9a8d4]/50">
-              <Clock className="h-5 w-5 text-[#d81b60] animate-pulse" />
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-md shadow-[#2a655f]/25">
+              <Clock className="h-5 w-5 text-white animate-pulse" />
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               {app.lang === "ar" ? "إعدادات المتجر الدقيقة" : "Detailed Store Settings"}
             </h2>
-            <Badge className="bg-gradient-to-r from-[#f9a8d4]/30 to-[#fbcfe8]/40 text-[#d81b60] border-2 border-[#f9a8d4]/50 text-[10px] animate-pulse shadow-md shadow-[#f9a8d4]/20">
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-[10px] animate-pulse">
               {app.lang === "ar" ? "متقدم" : "Advanced"}
             </Badge>
           </div>
@@ -504,53 +503,53 @@ export function SettingsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-sm font-medium flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                <Clock className="h-4 w-4 text-[#d81b60]" />
+                <Clock className="h-4 w-4 text-[#2a655f]" />
                 {app.lang === "ar" ? "وقت الفتح" : "Opens at"}
               </Label>
               <Input
                 type="time"
                 value={opensAt}
                 onChange={(e) => setOpensAt(e.target.value)}
-                className="mt-1.5 rounded-xl border-3 border-[#f9a8d4]/50 bg-white/60 dark:border-[#f9a8d4]/30 dark:bg-slate-900/60 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#d81b60]/50"
+                className="mt-1.5 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#f9a8d4]/50"
               />
             </div>
             <div>
               <Label className="text-sm font-medium flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                <Clock className="h-4 w-4 text-[#d81b60]" />
+                <Clock className="h-4 w-4 text-[#2a655f]" />
                 {app.lang === "ar" ? "وقت الإغلاق" : "Closes at"}
               </Label>
               <Input
                 type="time"
                 value={closesAt}
                 onChange={(e) => setClosesAt(e.target.value)}
-                className="mt-1.5 rounded-xl border-3 border-[#f9a8d4]/50 bg-white/60 dark:border-[#f9a8d4]/30 dark:bg-slate-900/60 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#d81b60]/50"
+                className="mt-1.5 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#f9a8d4]/50"
               />
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-            <AlertCircle className="h-3 w-3 text-[#d81b60]" />
+            <AlertCircle className="h-3 w-3 text-[#2a655f]" />
             {app.lang === "ar" ? "خارج هذه الأوقات يظهر المتجر كمغلق تلقائياً" : "Outside these hours your store shows as closed automatically"}
           </p>
 
           <div className="mt-4 space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer p-3 rounded-xl border-2 border-[#f9a8d4]/40 hover:border-[#d81b60]/60 hover:bg-gradient-to-r hover:from-[#f9a8d4]/10 hover:to-[#fbcfe8]/20 transition-all duration-300 group">
+            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer p-3 rounded-xl border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-gray-50/80 dark:hover:bg-gray-700/20 transition-all duration-300 group">
               <input
                 type="checkbox"
                 checked={allowsMessaging}
                 onChange={(e) => setAllowsMessaging(e.target.checked)}
-                className="h-4 w-4 rounded border-[#f9a8d4]/50 accent-[#d81b60]"
+                className="h-4 w-4 rounded border-[#2a655f]/30 accent-[#2a655f]"
               />
-              <MessageSquare className="h-4 w-4 text-[#d81b60] group-hover:scale-110 transition-transform" />
+              <MessageSquare className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
               {app.lang === "ar" ? "السماح للزبائن بمراسلتي" : "Allow customers to message me"}
             </label>
-            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer p-3 rounded-xl border-2 border-[#f9a8d4]/40 hover:border-[#d81b60]/60 hover:bg-gradient-to-r hover:from-[#f9a8d4]/10 hover:to-[#fbcfe8]/20 transition-all duration-300 group">
+            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer p-3 rounded-xl border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-gray-50/80 dark:hover:bg-gray-700/20 transition-all duration-300 group">
               <input
                 type="checkbox"
                 checked={allowsBookings}
                 onChange={(e) => setAllowsBookings(e.target.checked)}
-                className="h-4 w-4 rounded border-[#f9a8d4]/50 accent-[#d81b60]"
+                className="h-4 w-4 rounded border-[#2a655f]/30 accent-[#2a655f]"
               />
-              <BookOpen className="h-4 w-4 text-[#d81b60] group-hover:scale-110 transition-transform" />
+              <BookOpen className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
               {app.lang === "ar" ? "السماح بالحجوزات" : "Accept bookings"}
             </label>
           </div>
@@ -558,7 +557,7 @@ export function SettingsPage() {
           <Button
             onClick={savePrefs}
             disabled={isLoading}
-            className="mt-5 w-full rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f9a8d4] hover:from-[#c2185b] hover:to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/30 hover:shadow-[#d81b60]/50 transition-all duration-300 hover:scale-[1.02] group border-3 border-[#f9a8d4]/50 hover:border-[#f9a8d4]/70"
+            className="mt-5 w-full rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/30 hover:shadow-[#2a655f]/50 transition-all duration-300 hover:scale-[1.02] group border-2 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
@@ -579,16 +578,16 @@ export function SettingsPage() {
       {/* ===== ✅ 3. معلومات المتجر ===== */}
       {/* ============================================================ */}
       <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-[#f9a8d4]/30 to-[#d81b60]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative bg-gradient-to-br from-white to-[#fbcfe8]/30 dark:from-[#1e293b] dark:to-[#fbcfe8]/10 rounded-2xl border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30 p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-400/30 to-[#2a655f]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="relative bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 p-6 shadow-lg hover:shadow-2xl hover:shadow-pink-500/20 transition-all duration-500 hover:-translate-y-1">
           <div className="flex items-center gap-2 mb-4">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#f9a8d4]/30 to-[#fbcfe8]/40 border-2 border-[#f9a8d4]/50">
-              <Store className="h-5 w-5 text-[#d81b60] animate-bounce" />
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-md shadow-[#2a655f]/25">
+              <Store className="h-5 w-5 text-white animate-bounce" />
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               {app.lang === "ar" ? "معلومات المتجر" : "Store Information"}
             </h2>
-            <Badge className="bg-gradient-to-r from-[#f9a8d4]/20 to-[#fbcfe8]/30 text-[#d81b60] border-2 border-[#f9a8d4]/50 text-[10px]">
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-[10px]">
               {app.lang === "ar" ? "رئيسي" : "Primary"}
             </Badge>
           </div>
@@ -596,34 +595,34 @@ export function SettingsPage() {
           <div className="grid gap-4">
             <div>
               <Label className="text-sm font-medium flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                <Store className="h-4 w-4 text-[#d81b60]" />
+                <Store className="h-4 w-4 text-[#2a655f]" />
                 {app.lang === "ar" ? "اسم المتجر" : "Store Name"}
               </Label>
               <Input
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
                 placeholder={app.lang === "ar" ? "أدخل اسم متجرك" : "Enter store name"}
-                className="mt-1.5 rounded-xl border-3 border-[#f9a8d4]/50 bg-white/60 dark:border-[#f9a8d4]/30 dark:bg-slate-900/60 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#d81b60]/50"
+                className="mt-1.5 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#f9a8d4]/50"
               />
             </div>
 
             <div>
               <Label className="text-sm font-medium flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                <Phone className="h-4 w-4 text-[#d81b60]" />
+                <Phone className="h-4 w-4 text-[#2a655f]" />
                 {app.lang === "ar" ? "رقم الهاتف" : "Phone Number"}
               </Label>
               <Input
                 value={storePhone}
                 onChange={(e) => setStorePhone(e.target.value)}
                 placeholder={app.lang === "ar" ? "أدخل رقم هاتف المتجر" : "Enter store phone number"}
-                className="mt-1.5 rounded-xl border-3 border-[#f9a8d4]/50 bg-white/60 dark:border-[#f9a8d4]/30 dark:bg-slate-900/60 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#d81b60]/50"
+                className="mt-1.5 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#f9a8d4]/50"
                 dir="ltr"
               />
             </div>
 
             <div>
               <Label className="text-sm font-medium flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                <FileText className="h-4 w-4 text-[#d81b60]" />
+                <FileText className="h-4 w-4 text-[#2a655f]" />
                 {app.lang === "ar" ? "وصف المتجر" : "Store Description"}
               </Label>
               <Textarea
@@ -631,14 +630,14 @@ export function SettingsPage() {
                 value={storeDesc}
                 onChange={(e) => setStoreDesc(e.target.value)}
                 placeholder={app.lang === "ar" ? "وصف قصير لمتجرك" : "A short description of your store"}
-                className="mt-1.5 rounded-xl border-3 border-[#f9a8d4]/50 bg-white/60 dark:border-[#f9a8d4]/30 dark:bg-slate-900/60 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#d81b60]/50 resize-none"
+                className="mt-1.5 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#f9a8d4]/50 resize-none"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t-2 border-[#f9a8d4]/30 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t-2 border-pink-400/20 pt-4">
               <div>
                 <Label className="text-sm font-medium flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                  <ImageIcon className="h-4 w-4 text-[#d81b60]" />
+                  <ImageIcon className="h-4 w-4 text-[#2a655f]" />
                   {app.lang === "ar" ? "شعار المتجر" : "Store Logo"}
                 </Label>
                 <ImageInput
@@ -649,12 +648,12 @@ export function SettingsPage() {
                   lang={app.lang}
                   label={app.lang === "ar" ? "ارفع شعار المتجر" : "Upload store logo"}
                   hint={app.lang === "ar" ? "مربعة، 500×500 فأعلى" : "Square, 500×500 or higher"}
-                  previewClassName="h-24 w-24 rounded-2xl border-3 border-[#f9a8d4]/50 hover:border-[#d81b60]/70 transition-all duration-300"
+                  previewClassName="h-24 w-24 rounded-2xl border-2 border-pink-400/30 hover:border-[#f9a8d4]/60 transition-all duration-300"
                 />
               </div>
               <div>
                 <Label className="text-sm font-medium flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                  <ImageIcon className="h-4 w-4 text-[#d81b60]" />
+                  <ImageIcon className="h-4 w-4 text-[#2a655f]" />
                   {app.lang === "ar" ? "صورة الغلاف" : "Store Cover"}
                 </Label>
                 <ImageInput
@@ -665,15 +664,15 @@ export function SettingsPage() {
                   lang={app.lang}
                   label={app.lang === "ar" ? "ارفع صورة الغلاف" : "Upload cover image"}
                   hint={app.lang === "ar" ? "أفقية، 1600×600 فأعلى" : "Landscape, 1600×600 or higher"}
-                  previewClassName="h-32 rounded-2xl border-3 border-[#f9a8d4]/50 hover:border-[#d81b60]/70 transition-all duration-300"
+                  previewClassName="h-32 rounded-2xl border-2 border-pink-400/30 hover:border-[#f9a8d4]/60 transition-all duration-300"
                 />
               </div>
             </div>
 
-            <div className="border-t-2 border-[#f9a8d4]/30 pt-4">
+            <div className="border-t-2 border-pink-400/20 pt-4">
               <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                <div className="p-1.5 rounded-lg bg-gradient-to-br from-[#f9a8d4]/30 to-[#fbcfe8]/40 border-2 border-[#f9a8d4]/50">
-                  <MapPin className="h-4 w-4 text-[#d81b60] animate-pulse" />
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white">
+                  <MapPin className="h-4 w-4 text-white animate-pulse" />
                 </div>
                 {app.lang === "ar" ? "موقع المتجر" : "Store Location"}
               </h3>
@@ -688,16 +687,16 @@ export function SettingsPage() {
                   className="flex gap-4 mt-1.5"
                 >
                   <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <RadioGroupItem value="online" id="settings-store-online" className="border-[#f9a8d4]/50 text-[#d81b60]" />
-                    <Label htmlFor="settings-store-online" className="cursor-pointer text-sm hover:text-[#d81b60] transition-colors">
-                      <Globe className="inline h-4 w-4 mr-1 text-[#d81b60]" />
+                    <RadioGroupItem value="online" id="settings-store-online" className="border-[#2a655f]/40 text-[#2a655f]" />
+                    <Label htmlFor="settings-store-online" className="cursor-pointer text-sm hover:text-[#2a655f] transition-colors">
+                      <Globe className="inline h-4 w-4 mr-1 text-[#2a655f]" />
                       {app.lang === "ar" ? "اونلاين" : "Online"}
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <RadioGroupItem value="physical" id="settings-store-physical" className="border-[#f9a8d4]/50 text-[#d81b60]" />
-                    <Label htmlFor="settings-store-physical" className="cursor-pointer text-sm hover:text-[#d81b60] transition-colors">
-                      <Building className="inline h-4 w-4 mr-1 text-[#d81b60]" />
+                    <RadioGroupItem value="physical" id="settings-store-physical" className="border-[#2a655f]/40 text-[#2a655f]" />
+                    <Label htmlFor="settings-store-physical" className="cursor-pointer text-sm hover:text-[#2a655f] transition-colors">
+                      <Building className="inline h-4 w-4 mr-1 text-[#2a655f]" />
                       {app.lang === "ar" ? "متجر حقيقي" : "Physical Store"}
                     </Label>
                   </div>
@@ -706,16 +705,16 @@ export function SettingsPage() {
 
               <div className="mb-3">
                 <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  <MapPin className="inline h-4 w-4 mr-1 text-[#d81b60]" />
+                  <MapPin className="inline h-4 w-4 mr-1 text-[#2a655f]" />
                   {app.lang === "ar" ? "المحافظة" : "Governorate"}
                 </Label>
                 <Select value={governorateId} onValueChange={setGovernorateId}>
-                  <SelectTrigger className="mt-1.5 rounded-xl border-3 border-[#f9a8d4]/50 bg-white/60 dark:border-[#f9a8d4]/30 dark:bg-slate-900/60 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#d81b60]/50">
+                  <SelectTrigger className="mt-1.5 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#f9a8d4]/50">
                     <SelectValue placeholder={app.lang === "ar" ? "اختر المحافظة" : "Select governorate"} />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/50">
+                  <SelectContent className="rounded-xl border-3 border-[#f9a8d4]/30">
                     {governorates.map((gov: any) => (
-                      <SelectItem key={gov.id} value={gov.id} className="hover:bg-gradient-to-r hover:from-[#f9a8d4]/20 hover:to-[#fbcfe8]/30 hover:text-[#d81b60] transition-colors">
+                      <SelectItem key={gov.id} value={gov.id} className="hover:bg-[#f9a8d4]/20 hover:text-[#2a655f] transition-colors">
                         {app.lang === "ar" ? gov.name_ar : gov.name_en}
                       </SelectItem>
                     ))}
@@ -732,19 +731,19 @@ export function SettingsPage() {
                     value={storeAddress}
                     onChange={(e) => setStoreAddress(e.target.value)}
                     placeholder={app.lang === "ar" ? "مثال: شارع الثورة، بناء رقم 10" : "e.g. Al-Thawra St., Building 10"}
-                    className="mt-1.5 rounded-xl border-3 border-[#f9a8d4]/50 bg-white/60 dark:border-[#f9a8d4]/30 dark:bg-slate-900/60 focus:border-[#d81b60] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#d81b60]/50"
+                    className="mt-1.5 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b] focus:border-[#f9a8d4] focus:ring-2 focus:ring-[#f9a8d4]/30 transition-all duration-300 hover:border-[#f9a8d4]/50"
                   />
                 </div>
               )}
 
               <div>
                 <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  <Calendar className="inline h-4 w-4 mr-1 text-[#d81b60]" />
+                  <Calendar className="inline h-4 w-4 mr-1 text-[#2a655f]" />
                   {app.lang === "ar" ? "أيام العطل الأسبوعية" : "Weekly Off Days"}
                 </Label>
-                <div className="flex flex-wrap gap-2 p-3 mt-1.5 rounded-xl border-3 border-[#f9a8d4]/50 bg-white/60 dark:border-[#f9a8d4]/30 dark:bg-slate-900/60">
+                <div className="flex flex-wrap gap-2 p-3 mt-1.5 rounded-xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-white dark:bg-[#1e293b]">
                   {WEEK_DAYS.map((day) => (
-                    <label key={day.value} className="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border-2 border-[#f9a8d4]/30 hover:border-[#d81b60]/60 hover:bg-gradient-to-r hover:from-[#f9a8d4]/10 hover:to-[#fbcfe8]/20 transition-all duration-300 group">
+                    <label key={day.value} className="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border-2 border-[#2a655f]/20 hover:border-[#f9a8d4]/50 hover:bg-gray-50/80 dark:hover:bg-gray-700/20 transition-all duration-300 group">
                       <input
                         type="checkbox"
                         checked={weeklyOffDays.includes(day.value)}
@@ -755,14 +754,14 @@ export function SettingsPage() {
                             setWeeklyOffDays(weeklyOffDays.filter(d => d !== day.value));
                           }
                         }}
-                        className="h-4 w-4 accent-[#d81b60] rounded border-[#f9a8d4]/50"
+                        className="h-4 w-4 accent-[#2a655f] rounded border-[#2a655f]/30"
                       />
-                      <span className="text-sm group-hover:text-[#d81b60] transition-colors">{day.label}</span>
+                      <span className="text-sm group-hover:text-[#2a655f] transition-colors">{day.label}</span>
                     </label>
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3 text-[#d81b60]" />
+                  <AlertCircle className="h-3 w-3 text-[#2a655f]" />
                   {app.lang === "ar" ? "اختر الأيام التي يكون فيها المتجر مغلقاً" : "Select days when the store is closed"}
                 </p>
               </div>
@@ -771,7 +770,7 @@ export function SettingsPage() {
             <Button
               onClick={saveStoreInfo}
               disabled={isLoading}
-              className="mt-4 rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f9a8d4] hover:from-[#c2185b] hover:to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/30 hover:shadow-[#d81b60]/50 transition-all duration-300 hover:scale-[1.02] group w-full border-3 border-[#f9a8d4]/50 hover:border-[#f9a8d4]/70"
+              className="mt-4 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/30 hover:shadow-[#2a655f]/50 transition-all duration-300 hover:scale-[1.02] group w-full border-2 border-[#2a655f]/30 hover:border-[#f9a8d4]/50"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -793,16 +792,16 @@ export function SettingsPage() {
       {/* ===== ✅ 4. إعدادات الإشعارات ===== */}
       {/* ============================================================ */}
       <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-[#f9a8d4]/30 to-[#d81b60]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative bg-gradient-to-br from-white to-[#fbcfe8]/30 dark:from-[#1e293b] dark:to-[#fbcfe8]/10 rounded-2xl border-3 border-[#f9a8d4]/50 dark:border-[#f9a8d4]/30 p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-400/30 to-[#2a655f]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="relative bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 p-6 shadow-lg hover:shadow-2xl hover:shadow-pink-500/20 transition-all duration-500 hover:-translate-y-1">
           <div className="flex items-center gap-2 mb-4">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#f9a8d4]/30 to-[#fbcfe8]/40 border-2 border-[#f9a8d4]/50">
-              <Bell className="h-5 w-5 text-[#d81b60] animate-bounce" />
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-md shadow-[#2a655f]/25">
+              <Bell className="h-5 w-5 text-white animate-bounce" />
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               {app.lang === "ar" ? "إعدادات الإشعارات" : "Notification Settings"}
             </h2>
-            <Badge className="bg-gradient-to-r from-[#f9a8d4]/30 to-[#fbcfe8]/40 text-[#d81b60] border-2 border-[#f9a8d4]/50 text-[10px] animate-pulse shadow-md shadow-[#f9a8d4]/20">
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-[10px] animate-pulse">
               {app.lang === "ar" ? "مهم" : "Important"}
             </Badge>
           </div>
@@ -813,23 +812,23 @@ export function SettingsPage() {
       {/* ===== DIALOGS ===== */}
       {/* Dialog: إيقاف المتجر */}
       <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
-        <DialogContent className="rounded-2xl max-w-md border-3 border-[#d81b60]/50 dark:border-[#d81b60]/30 shadow-[0_0_40px_rgba(216,27,96,0.25)] dark:shadow-[0_0_40px_rgba(216,27,96,0.15)] p-0 overflow-hidden bg-gradient-to-br from-white to-[#fbcfe8]/40 dark:from-[#1e293b] dark:to-[#fbcfe8]/10">
+        <DialogContent className="rounded-2xl max-w-md border-3 border-red-400/50 dark:border-red-400/30 shadow-[0_0_40px_rgba(239,68,68,0.25)] dark:shadow-[0_0_40px_rgba(239,68,68,0.15)] p-0 overflow-hidden bg-white dark:bg-[#1e293b]">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-gradient-to-r hover:from-[#f9a8d4]/20 hover:to-[#fbcfe8]/30 z-20 transition-all duration-300 hover:rotate-90 border-2 border-[#f9a8d4]/30"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-gray-50/80 dark:hover:bg-gray-700/30 z-20 transition-all duration-300 hover:rotate-90 border-2 border-slate-200 dark:border-slate-700"
             onClick={() => {
               setShowDeactivateDialog(false);
               setTempInactiveReason("");
             }}
           >
-            <X className="h-4 w-4 text-[#d81b60]" />
+            <X className="h-4 w-4 text-red-500" />
           </Button>
 
           <div className="p-6">
             <DialogHeader>
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-red-100 to-red-200/50 dark:from-red-950/50 dark:to-red-950/30 flex items-center justify-center animate-pulse border-3 border-red-300/50">
+                <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center animate-pulse border-3 border-red-300/50">
                   <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
@@ -846,7 +845,7 @@ export function SettingsPage() {
             </DialogHeader>
             
             <div className="space-y-4 py-4">
-              <div className="bg-gradient-to-r from-red-50/50 to-red-100/30 dark:from-red-950/20 dark:to-red-950/10 rounded-xl p-4 border-3 border-red-300/50 dark:border-red-800/30">
+              <div className="bg-red-50/50 dark:bg-red-950/20 rounded-xl p-4 border-2 border-red-300/50 dark:border-red-800/30">
                 <p className="text-sm text-red-700 dark:text-red-300 font-medium flex items-center gap-2">
                   <AlertCircle className="h-5 w-5" />
                   {app.lang === "ar"
@@ -890,14 +889,14 @@ export function SettingsPage() {
                   setShowDeactivateDialog(false);
                   setTempInactiveReason("");
                 }}
-                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/50 hover:bg-gradient-to-r hover:from-[#f9a8d4]/20 hover:to-[#fbcfe8]/30 transition-all duration-300 text-[#2a655f] hover:text-[#d81b60]"
+                className="flex-1 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-all duration-300 text-slate-600 dark:text-slate-300"
               >
                 {app.lang === "ar" ? "إلغاء" : "Cancel"}
               </Button>
               <Button
                 onClick={handleDeactivateStore}
                 disabled={isLoading || !tempInactiveReason.trim()}
-                className="flex-1 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 hover:scale-[1.02] border-3 border-red-400/50 hover:border-red-300/70"
+                className="flex-1 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 hover:scale-[1.02] border-2 border-red-400/50 hover:border-red-300/70"
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
@@ -918,11 +917,11 @@ export function SettingsPage() {
 
       {/* Dialog: تفعيل المتجر */}
       <Dialog open={showActivateDialog} onOpenChange={setShowActivateDialog}>
-        <DialogContent className="rounded-2xl max-w-md border-3 border-emerald-400/50 dark:border-emerald-400/30 shadow-[0_0_40px_rgba(16,185,129,0.25)] dark:shadow-[0_0_40px_rgba(16,185,129,0.15)] p-0 overflow-hidden bg-gradient-to-br from-white to-emerald-50/40 dark:from-[#1e293b] dark:to-emerald-950/10">
+        <DialogContent className="rounded-2xl max-w-md border-3 border-emerald-400/50 dark:border-emerald-400/30 shadow-[0_0_40px_rgba(16,185,129,0.25)] dark:shadow-[0_0_40px_rgba(16,185,129,0.15)] p-0 overflow-hidden bg-white dark:bg-[#1e293b]">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-gradient-to-r hover:from-[#f9a8d4]/20 hover:to-[#fbcfe8]/30 z-20 transition-all duration-300 hover:rotate-90 border-2 border-[#f9a8d4]/30"
+            className="absolute top-4 end-4 h-8 w-8 rounded-full hover:bg-gray-50/80 dark:hover:bg-gray-700/30 z-20 transition-all duration-300 hover:rotate-90 border-2 border-slate-200 dark:border-slate-700"
             onClick={() => setShowActivateDialog(false)}
           >
             <X className="h-4 w-4 text-emerald-600" />
@@ -931,7 +930,7 @@ export function SettingsPage() {
           <div className="p-6">
             <DialogHeader>
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200/50 dark:from-emerald-950/50 dark:to-emerald-950/30 flex items-center justify-center animate-bounce border-3 border-emerald-300/50">
+                <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center animate-bounce border-3 border-emerald-300/50">
                   <Power className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
@@ -948,7 +947,7 @@ export function SettingsPage() {
             </DialogHeader>
             
             <div className="space-y-4 py-4">
-              <div className="bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-950/10 rounded-xl p-4 border-3 border-emerald-300/50 dark:border-emerald-800/30">
+              <div className="bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl p-4 border-2 border-emerald-300/50 dark:border-emerald-800/30">
                 <p className="text-sm text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 animate-pulse" />
                   {app.lang === "ar"
@@ -962,14 +961,14 @@ export function SettingsPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowActivateDialog(false)}
-                className="flex-1 rounded-xl border-3 border-[#f9a8d4]/50 hover:bg-gradient-to-r hover:from-[#f9a8d4]/20 hover:to-[#fbcfe8]/30 transition-all duration-300 text-[#2a655f] hover:text-emerald-600"
+                className="flex-1 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-all duration-300 text-slate-600 dark:text-slate-300"
               >
                 {app.lang === "ar" ? "إلغاء" : "Cancel"}
               </Button>
               <Button
                 onClick={handleActivateStore}
                 disabled={isLoading}
-                className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-300 hover:scale-[1.02] border-3 border-emerald-400/50 hover:border-emerald-300/70"
+                className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-300 hover:scale-[1.02] border-2 border-emerald-400/50 hover:border-emerald-300/70"
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">

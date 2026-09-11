@@ -1291,6 +1291,7 @@ function RootComponent() {
     pathname.startsWith("/distributor/review") ||
     pathname.startsWith("/messages") ||
     pathname.startsWith("/messages_") ||
+
     pathname.startsWith("/tracking");
   return (
     <QueryClientProvider client={queryClient}>
@@ -1320,10 +1321,18 @@ function RootContent({
   const app = useApp();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const router = useRouter(); // ✅ أضف هذا
   const [showSplash, setShowSplash] = useState(false);
   const notificationChannelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
   const cacheInvalidationChannelRef = useRef<any>(null);
+
+  // ✅ أضف هذا الـ useMemo لجلب hideFooter من الـ route
+  const hideFooter = useMemo(() => {
+    const matches = router.state.matches;
+    const currentMatch = matches[matches.length - 1];
+    return (currentMatch?.context as any)?.hideFooter || false;
+  }, [router.state.matches]);
 
   // ============================================================
   // 🔔 Push Notifications - تفعيل الإشعارات المنبثقة
@@ -1414,7 +1423,7 @@ function RootContent({
         isSubscribedRef.current = false;
       }
     };
-  }, [app.user?.id]); // ✅ اعتماد فقط على user.id
+  }, [app.user?.id]);
 
   // ✅ ✅ ✅ إبطال الـ Cache عند تعديل البيانات (Realtime) - محسن
   useEffect(() => {
@@ -1422,12 +1431,10 @@ function RootContent({
 
     console.log('📡 [Realtime] Setting up cache invalidation for user:', app.user.id);
 
-    // ✅ استخدام أسماء قنوات فريدة مع userId
     const listingsChannelName = `listings-updates-${app.user.id}`;
     const storesChannelName = `stores-updates-${app.user.id}`;
     const offersChannelName = `offers-updates-${app.user.id}`;
 
-    // ✅ قناة لتحديثات المنتجات
     const listingsChannel = supabase
       .channel(listingsChannelName)
       .on(
@@ -1455,7 +1462,6 @@ function RootContent({
         console.log(`📡 Realtime cache invalidation status (listings): ${status}`);
       });
 
-    // ✅ قناة لتحديثات المتاجر
     const storesChannel = supabase
       .channel(storesChannelName)
       .on(
@@ -1482,7 +1488,6 @@ function RootContent({
         console.log(`📡 Realtime cache invalidation status (stores): ${status}`);
       });
 
-    // ✅ قناة لتحديثات العروض
     const offersChannel = supabase
       .channel(offersChannelName)
       .on(
@@ -1495,9 +1500,8 @@ function RootContent({
         },
         () => {
           console.log('🔄 [Realtime] Offer updated, invalidating caches...');
-          // ✅ استخدام المتغيرات المصدرة من queries.ts
           if (typeof productOffersCache !== 'undefined') {
-            // @ts-ignore - هذه المتغيرات موجودة في queries.ts
+            // @ts-ignore
             productOffersCache = null;
             productOffersTimestamp = 0;
           }
@@ -1528,7 +1532,7 @@ function RootContent({
         cacheInvalidationChannelRef.current = null;
       }
     };
-  }, [app.user?.id]); // ✅ اعتماد فقط على user.id
+  }, [app.user?.id]);
 
   // ✅ ✅ ✅ Prefetch البيانات الرئيسية (لتقليل TTFB)
   useEffect(() => {
@@ -1536,10 +1540,8 @@ function RootContent({
     
     console.log('⏳ [RootContent] Prefetching data...');
     
-    // ✅ استخدم React Query Prefetch مع Cache طويل
     const prefetchQueries = async () => {
       try {
-        // 1. جلب المنتجات مع Cache
         await queryClient.prefetchQuery({
           queryKey: ['listings', { sort: 'popular', limit: 12 }],
           queryFn: async () => {
@@ -1558,7 +1560,6 @@ function RootContent({
           gcTime: 10 * 60 * 1000,
         });
         
-        // 2. جلب العروض مع Cache
         await queryClient.prefetchQuery({
           queryKey: ['product-offers', { isActive: true, limit: 30 }],
           queryFn: async () => {
@@ -1582,7 +1583,6 @@ function RootContent({
       }
     };
     
-    // ✅ تنفيذ الـ Prefetch مع تأخير بسيط
     const timeoutId = setTimeout(() => {
       prefetchQueries();
     }, 100);
@@ -1591,14 +1591,12 @@ function RootContent({
   }, [app.user, queryClient]);
 
   // ✅ ✅ ✅ تأخير العمليات الثقيلة باستخدام requestIdleCallback
-useEffect(() => {
+  useEffect(() => {
     if (!app.user) return;
     
-    // ✅ استخدم requestIdleCallback لتأخير العمليات
     const idleId = requestIdleCallback(() => {
       console.log('⏳ [RootContent] Loading heavy operations in idle time...');
       
-      // ✅ ✅ ✅ فقط prefetch للـ orders (تم حذف prefetch للـ cart)
       queryClient.prefetchQuery({
         queryKey: ['orders', app.user.id],
         queryFn: async () => {
@@ -1619,13 +1617,10 @@ useEffect(() => {
   }, [app.user, queryClient]);
   
   // ✅ إظهار السبلاش
-  useEffect(() => {
-    if (!app?.user) {
-      setShowSplash(false);
-      return;
-    }
-    setShowSplash(true);
-  }, [app?.user?.id]);
+// ✅ ⚠️ السبلاش معطّل مؤقتاً
+useEffect(() => {
+  setShowSplash(false); // ✅ دائماً false
+}, []);[app?.user?.id]);
 
   const handleSplashComplete = () => {
     setShowSplash(false);
@@ -1644,7 +1639,6 @@ useEffect(() => {
 
   return (
     <>
-      {/* ✅ RouteGuard - حماية متقدمة قبل أي شيء */}
       <RouteGuard />
       
       <RealtimeManager />
@@ -1653,15 +1647,15 @@ useEffect(() => {
       
       <ClientOnly>
         <div className="min-h-screen flex flex-col">
-       
           {!hideChrome && <Header />}
           <main className="flex-1"><Outlet /></main>
-          {!hideChrome && <Footer />}
+          {/* ✅ هذا السطر تم تعديله: إخفاء الفوتر عند hideFooter === true */}
+          {!hideChrome && !hideFooter && <Footer />}
         </div>
       </ClientOnly>
       
       <Toaster position="top-center" richColors />
-    
+  
     </>
   );
 }
