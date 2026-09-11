@@ -1,7 +1,7 @@
 // src/routes/store.$id.tsx - الكود المُصحّح بالكامل مع نطاق السعر (من-إلى)
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback, useRef, lazy, Suspense, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense, useMemo } from "react";
 import { 
   Star, MessageCircle, Store as StoreIcon, Loader2, 
   Clock, MapPin, Globe, Building2, Truck,
@@ -37,9 +37,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
-
-// ✅ Lazy Loading للـ ListingCard
-const ListingCard = lazy(() => import("@/components/ListingCard"));
+import ListingCard from "@/components/ListingCard";
 
 export const Route = createFileRoute("/store/$id")({
   component: StorePage,

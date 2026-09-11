@@ -1,7 +1,7 @@
 // src/routes/offers.tsx
 
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, lazy, Suspense } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import {
   SlidersHorizontal, X, Store, Package, Star, Check,
   Sparkles, Filter, Search, MapPin, TrendingUp,
@@ -17,9 +17,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/s
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-
-// ✅ Lazy Loading
-const ListingCard = lazy(() => import("@/components/ListingCard"));
+import ListingCard from "@/components/ListingCard";
 
 export const Route = createFileRoute("/offers")({
   component: OffersPage,

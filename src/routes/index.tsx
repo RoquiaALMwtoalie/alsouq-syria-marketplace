@@ -1,6 +1,6 @@
 // src/routes/index.tsx
 
-import React, { useEffect, useState, useRef, useMemo, useCallback, Suspense, lazy } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback, Suspense } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ShoppingBag, Shirt, Smartphone, Home as HomeIcon, Footprints, Watch, BookOpen,
@@ -21,8 +21,7 @@ import { getCategoryIcon } from "@/lib/categoryIcons";
 import { cn } from "@/lib/utils";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { useInView } from "react-intersection-observer";
-
-const ListingCard = lazy(() => import("@/components/ListingCard"));
+import ListingCard from "@/components/ListingCard";
 
 // ============================================================
 // 🎨 ZOOQ BRAND COLORS

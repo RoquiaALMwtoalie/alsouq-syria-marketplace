@@ -18,41 +18,41 @@ export const iconMap: Record<string, any> = {
   'router': LucideIcons.Wifi,
   'battery': LucideIcons.Battery,
   'chip': LucideIcons.Cpu,
-  
-  // 👕 أزياء
+
+  // 👕 أزياء (مُصحّحة)
   'shirt': LucideIcons.Shirt,
-  'dress': LucideIcons.Dress,
-  'jeans': LucideIcons.Jeans,
+  'dress': LucideIcons.Shirt,
+  'jeans': LucideIcons.ShoppingBag,
   'shoes': LucideIcons.Footprints,
-  'boots': LucideIcons.Boot,
-  'hat': LucideIcons.Hat,
+  'boots': LucideIcons.Footprints,
+  'hat': LucideIcons.HardHat,
   'glasses': LucideIcons.Glasses,
-  'bag': LucideIcons.Bag,
+  'bag': LucideIcons.ShoppingBag,
   'jewelry': LucideIcons.Gem,
-  'perfume': LucideIcons.Perfume,
-  'makeup': LucideIcons.Makeup,
-  'scarf': LucideIcons.Scarf,
-  'belt': LucideIcons.Belt,
-  'socks': LucideIcons.Socks,
-  'tie': LucideIcons.Tie,
-  
-  // 🏠 منزل
+  'perfume': LucideIcons.SprayCan,
+  'makeup': LucideIcons.Palette,
+  'scarf': LucideIcons.Wind,
+  'belt': LucideIcons.Circle,
+  'socks': LucideIcons.Footprints,
+  'tie': LucideIcons.Circle,
+
+  // 🏠 منزل (مُصحّحة)
   'home': LucideIcons.Home,
   'furniture': LucideIcons.Sofa,
   'bed': LucideIcons.Bed,
-  'kitchen': LucideIcons.Kitchen,
-  'fridge': LucideIcons.Fridge,
+  'kitchen': LucideIcons.CookingPot,
+  'fridge': LucideIcons.Refrigerator,
   'washing': LucideIcons.WashingMachine,
   'ac': LucideIcons.AirVent,
   'heater': LucideIcons.Heater,
   'lamp': LucideIcons.Lamp,
-  'tools': LucideIcons.Tools,
-  'vacuum': LucideIcons.Vacuum,
-  'iron': LucideIcons.Iron,
+  'tools': LucideIcons.Wrench,
+  'vacuum': LucideIcons.Wind,
+  'iron': LucideIcons.Zap,
   'fan': LucideIcons.Fan,
-  'mirror': LucideIcons.Mirror,
+  'mirror': LucideIcons.Square,
   'clock': LucideIcons.Clock,
-  
+
   // 📚 كتب
   'book': LucideIcons.BookOpen,
   'magazine': LucideIcons.Book,
@@ -63,69 +63,69 @@ export const iconMap: Record<string, any> = {
   'music': LucideIcons.Music,
   'paper': LucideIcons.FileText,
   'ruler': LucideIcons.Ruler,
-  
-  // 🎮 ألعاب
+
+  // 🎮 ألعاب (مُصحّحة)
   'toys': LucideIcons.ToyBrick,
   'puzzle': LucideIcons.Puzzle,
-  'ball': LucideIcons.Ball,
+  'ball': LucideIcons.Volleyball,
   'bike': LucideIcons.Bike,
-  'swim': LucideIcons.Swimming,
-  'skateboard': LucideIcons.Skateboard,
+  'swim': LucideIcons.Waves,
+  'skateboard': LucideIcons.Skateboard, // ⚠️ إذا استمر الخطأ، استبدله بـ LucideIcons.Bike
   'dumbbell': LucideIcons.Dumbbell,
-  
-  // 🍕 طعام
+
+  // 🍕 طعام (مُصحّحة)
   'food': LucideIcons.Utensils,
   'pizza': LucideIcons.Pizza,
-  'burger': LucideIcons.Burger,
+  'burger': LucideIcons.Sandwich,
   'coffee': LucideIcons.Coffee,
-  'tea': LucideIcons.Tea,
-  'juice': LucideIcons.Juice,
+  'tea': LucideIcons.Coffee,
+  'juice': LucideIcons.CupSoda,
   'cake': LucideIcons.Cake,
   'icecream': LucideIcons.IceCream,
-  'pasta': LucideIcons.Pasta,
-  'sushi': LucideIcons.Sushi,
-  
-  // 🏥 صحة
+  'pasta': LucideIcons.Utensils,
+  'sushi': LucideIcons.Fish,
+
+  // 🏥 صحة (مُصحّحة)
   'health': LucideIcons.HeartPulse,
   'medicine': LucideIcons.Pill,
   'stethoscope': LucideIcons.Stethoscope,
-  'spa': LucideIcons.Spa,
-  'toothbrush': LucideIcons.Toothbrush,
-  'soap': LucideIcons.Soap,
-  
-  // 🚗 سيارات
+  'spa': LucideIcons.Flower2,
+  'toothbrush': LucideIcons.Sparkles,
+  'soap': LucideIcons.Droplets,
+
+  // 🚗 سيارات (مُصحّحة)
   'car': LucideIcons.Car,
   'truck': LucideIcons.Truck,
-  'motorcycle': LucideIcons.Motorcycle,
+  'motorcycle': LucideIcons.Bike,
   'plane': LucideIcons.Plane,
   'ship': LucideIcons.Ship,
   'train': LucideIcons.Train,
-  
-  // 🏢 خدمات
+
+  // 🏢 خدمات (مُصحّحة)
   'office': LucideIcons.Building2,
   'bank': LucideIcons.Landmark,
   'shop': LucideIcons.Store,
-  'restaurant': LucideIcons.Restaurant,
+  'restaurant': LucideIcons.UtensilsCrossed,
   'hotel': LucideIcons.Hotel,
   'school': LucideIcons.School,
-  'mosque': LucideIcons.Mosque,
+  'mosque': LucideIcons.Landmark,
   'church': LucideIcons.Church,
-  
-  // 🎯 رياضة
+
+  // 🎯 رياضة (مُصحّحة)
   'sports': LucideIcons.Dumbbell,
-  'yoga': LucideIcons.Yoga,
-  'running': LucideIcons.Running,
-  'basketball': LucideIcons.Basketball,
-  'football': LucideIcons.Football,
-  'tennis': LucideIcons.Tennis,
-  'golf': LucideIcons.Golf,
-  
-  // 🌿 طبيعة
+  'yoga': LucideIcons.PersonStanding,
+  'running': LucideIcons.Footprints,
+  'basketball': LucideIcons.Circle,
+  'football': LucideIcons.Circle,
+  'tennis': LucideIcons.Circle,
+  'golf': LucideIcons.Flag,
+
+  // 🌿 طبيعة (مُصحّحة)
   'nature': LucideIcons.TreePine,
   'flower': LucideIcons.Flower2,
   'tree': LucideIcons.TreeDeciduous,
   'mountain': LucideIcons.Mountain,
-  'beach': LucideIcons.Beach,
+  'beach': LucideIcons.Umbrella,
   'sun': LucideIcons.Sun,
   'moon': LucideIcons.Moon,
   'star': LucideIcons.Star,
@@ -133,14 +133,14 @@ export const iconMap: Record<string, any> = {
   'cat': LucideIcons.Cat,
   'dog': LucideIcons.Dog,
   'bird': LucideIcons.Bird,
-  
-  // 💰 اقتصاد
-  'money': LucideIcons.Money,
+
+  // 💰 اقتصاد (مُصحّحة)
+  'money': LucideIcons.Banknote,
   'credit': LucideIcons.CreditCard,
   'gift': LucideIcons.Gift,
   'discount': LucideIcons.BadgePercent,
   'barcode': LucideIcons.Barcode,
-  
+
   // 🌐 عام
   'globe': LucideIcons.Globe,
   'location': LucideIcons.MapPin,
