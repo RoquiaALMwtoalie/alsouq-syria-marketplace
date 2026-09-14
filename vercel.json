@@ -1,17 +1,3 @@
 {
-  "version": 2,
-  "routes": [
-    {
-      "src": "/assets/(.*)",
-      "dest": "/client/assets/$1"
-    },
-    {
-      "src": "/favicon.ico",
-      "dest": "/client/favicon.ico"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/server/index.mjs"
-    }
-  ]
+  "version": 2
 }
