@@ -25,8 +25,10 @@ export default defineConfig(({ command }) => {
       tailwindcss(),
       tanstackStart(),
       viteReact(),
-      // ✅ تفعيل Nitro فقط أثناء البناء (build)، وليس أثناء التطوير (dev)
-      isBuild ? nitro({ preset: 'node-server' }) : undefined,
+      // ✅ الكود الصحيح: اختيار preset بناءً على البيئة ليعمل بسلاسة على Vercel أو محلياً
+      isBuild 
+        ? nitro({ preset: process.env.VERCEL ? 'vercel' : 'node-server' }) 
+        : undefined,
     ].filter(Boolean),
     build: {
       chunkSizeWarningLimit: 1000,
