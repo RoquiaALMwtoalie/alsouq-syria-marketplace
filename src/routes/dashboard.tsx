@@ -43,9 +43,8 @@ import {
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
-  head: () => ({ meta: [{ title: "لوحة التحكم — السوق اليك" }] }),
+  head: () => ({ meta: [{ title: "لوحة التحكم — ذوق" }] }),
 });
-
 function Dashboard() {
   const app = useApp();
   const t = useT();

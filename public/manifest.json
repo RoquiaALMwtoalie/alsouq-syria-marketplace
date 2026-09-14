@@ -1,7 +1,7 @@
 {
-  "name": "السوق اليك",
-  "short_name": "السوق اليك",
-  "description": "منصة سوريا الشاملة للتسوق والخدمات",
+  "name": "ذوق",
+  "short_name": "ذوق",
+  "description": "منصة ذوق الشاملة للتسوق والخدمات",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

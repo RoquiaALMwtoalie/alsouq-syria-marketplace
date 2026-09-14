@@ -528,12 +528,12 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
 
   return (
     <>
-      {/* ===== DROPDOWN MENU - PINK & GREEN THEME ===== */}
+      {/* ===== DROPDOWN MENU - OLIVE & SLATE THEME ===== */}
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-[#d81b60]/20 to-[#1b433e]/20 hover:from-[#d81b60]/30 hover:to-[#1b433e]/30 border border-[#f9a8d4]/30 backdrop-blur-md transition-all duration-300 group shadow-lg">
+          <button className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-[#2a655f]/20 to-[#1a4f4a]/20 hover:from-[#2a655f]/30 hover:to-[#1a4f4a]/30 border border-[#3a8a82]/30 backdrop-blur-md transition-all duration-300 group shadow-lg">
             
-            <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-[#1b433e] to-[#2a655f] text-white shadow-md overflow-hidden">
+            <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-[#1a4f4a] to-[#2a655f] text-white shadow-md overflow-hidden">
               <div className="animate-delivery-walk flex items-center justify-center">
                 <Bike className="h-4 w-4 text-emerald-300" />
               </div>
@@ -541,13 +541,13 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
             </div>
 
             <div className="relative">
-              <Avatar className="h-8 w-8 border-2 border-[#f9a8d4]/50 group-hover:border-[#d81b60] transition-all duration-300 shadow-sm">
+              <Avatar className="h-8 w-8 border-2 border-[#3a8a82]/50 group-hover:border-[#2a655f] transition-all duration-300 shadow-sm">
                 <AvatarImage src={userData.avatar_url || undefined} />
-                <AvatarFallback className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white text-xs font-black">
+                <AvatarFallback className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white text-xs font-black">
                   {getInitials(userData.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[#d81b60]" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[#2a655f]" />
             </div>
 
             <div className="hidden md:block text-right">
@@ -563,9 +563,9 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
           </button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-80 rounded-3xl p-1.5 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 shadow-2xl overflow-hidden">
-          {/* Header - PINK & GREEN GRADIENT */}
-          <div className="bg-gradient-to-r from-[#d81b60] via-[#f48fb1] to-[#1b433e] p-4 rounded-2xl text-white shadow-inner relative overflow-hidden">
+        <DropdownMenuContent align="end" className="w-80 rounded-3xl p-1.5 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 shadow-2xl overflow-hidden">
+          {/* Header - OLIVE & SLATE GRADIENT */}
+          <div className="bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] p-4 rounded-2xl text-white shadow-inner relative overflow-hidden">
             <div className="absolute -right-6 -bottom-6 opacity-10 pointer-events-none">
               <Bike className="w-32 h-32" />
             </div>
@@ -573,7 +573,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
             <div className="flex items-center gap-3 relative z-10">
               <Avatar className="h-12 w-12 border-2 border-white/30 shadow-lg">
                 <AvatarImage src={userData.avatar_url || undefined} />
-                <AvatarFallback className="bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white text-base font-black">
+                <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-base font-black">
                   {getInitials(userData.full_name)}
                 </AvatarFallback>
               </Avatar>
@@ -599,48 +599,48 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
           </div>
 
           <div className="p-1.5 space-y-1 mt-1">
-            {/* ✅ تعديل بيانات الشركة - PINK & GREEN */}
+            {/* ✅ تعديل بيانات الشركة - OLIVE & SLATE */}
             <DropdownMenuItem 
               onClick={openEditCompanyDialog}
-              className="rounded-2xl cursor-pointer py-3 px-3.5 hover:bg-[#fbcfe8]/30 dark:hover:bg-[#fbcfe8]/20 group transition-all"
+              className="rounded-2xl cursor-pointer py-3 px-3.5 hover:bg-[#e8f0ee]/30 dark:hover:bg-[#e8f0ee]/20 group transition-all"
             >
               <div className="flex items-center gap-3 w-full">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-r from-[#d81b60]/20 to-[#1b433e]/20 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-                  <Building2 className="h-4 w-4 text-[#d81b60]" />
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-r from-[#2a655f]/20 to-[#1a4f4a]/20 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                  <Building2 className="h-4 w-4 text-[#2a655f]" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">
                     {isArabic ? "🏢 تعديل بيانات الشركة" : "🏢 Edit Company Info"}
                   </p>
                   <p className="text-[10px] text-muted-foreground font-medium">
                     {isArabic ? "تحديث اسم الشركة، رقم الهاتف، والعنوان" : "Update company name, phone, and address"}
                   </p>
                 </div>
-                <Edit3 className="h-3.5 w-3.5 text-[#d81b60] opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Edit3 className="h-3.5 w-3.5 text-[#2a655f] opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </DropdownMenuItem>
 
-            {/* ✅ تغيير كلمة المرور - PINK & GREEN */}
+            {/* ✅ تغيير كلمة المرور - OLIVE & SLATE */}
             <DropdownMenuItem 
               onClick={() => {
                 setShowPasswordDialog(true);
                 setIsOpen(false);
               }}
-              className="rounded-2xl cursor-pointer py-3 px-3.5 hover:bg-[#fbcfe8]/30 dark:hover:bg-[#fbcfe8]/20 group transition-all"
+              className="rounded-2xl cursor-pointer py-3 px-3.5 hover:bg-[#e8f0ee]/30 dark:hover:bg-[#e8f0ee]/20 group transition-all"
             >
               <div className="flex items-center gap-3 w-full">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-r from-[#d81b60]/20 to-[#1b433e]/20 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-                  <KeyRound className="h-4 w-4 text-[#d81b60]" />
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-r from-[#2a655f]/20 to-[#1a4f4a]/20 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                  <KeyRound className="h-4 w-4 text-[#2a655f]" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">
                     {isArabic ? "تغيير كلمة المرور" : "Change Password"}
                   </p>
                   <p className="text-[10px] text-muted-foreground font-medium">
                     {isArabic ? "تحديث وتأمين كلمة مرور حسابك" : "Update and secure your password"}
                   </p>
                 </div>
-                <Sparkles className="h-3.5 w-3.5 text-[#d81b60] opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Sparkles className="h-3.5 w-3.5 text-[#2a655f] opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </DropdownMenuItem>
 
@@ -667,10 +667,10 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
             </DropdownMenuItem>
           </div>
 
-          {/* Footer - PINK & GREEN */}
-          <div className="px-4 py-2.5 bg-gradient-to-r from-[#fbcfe8]/20 to-[#1b433e]/10 dark:from-[#fbcfe8]/10 dark:to-[#1b433e]/20 rounded-2xl mt-1 border border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+          {/* Footer - OLIVE & SLATE */}
+          <div className="px-4 py-2.5 bg-gradient-to-r from-[#e8f0ee]/20 to-[#1a4f4a]/10 dark:from-[#e8f0ee]/10 dark:to-[#1a4f4a]/20 rounded-2xl mt-1 border border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
             <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground">
-              <span className="flex items-center gap-1.5 text-[#d81b60] dark:text-[#f48fb1]">
+              <span className="flex items-center gap-1.5 text-[#2a655f] dark:text-[#3a8a82]">
                 <Shield className="h-3.5 w-3.5" />
                 {isArabic ? "نظام التوصيل الآمن" : "Secure System"}
               </span>
@@ -683,10 +683,10 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* ===== DIALOG: تغيير كلمة المرور - PINK & GREEN THEME ===== */}
+      {/* ===== DIALOG: تغيير كلمة المرور - OLIVE & SLATE THEME ===== */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="max-w-md rounded-3xl overflow-hidden p-0 border-[#f9a8d4]/30 shadow-2xl">
-          <div className="bg-gradient-to-r from-[#d81b60] via-[#f48fb1] to-[#1b433e] p-6 text-white relative overflow-hidden">
+        <DialogContent className="max-w-md rounded-3xl overflow-hidden p-0 border-[#3a8a82]/30 shadow-2xl">
+          <div className="bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] p-6 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 opacity-10 pointer-events-none transform translate-x-4 -translate-y-4">
               <Lock className="w-40 h-40" />
             </div>
@@ -710,7 +710,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
 
           <form onSubmit={handleChangePassword} className="p-6 space-y-4 bg-white dark:bg-slate-900">
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#d81b60] dark:text-[#f48fb1]">
+              <Label className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82]">
                 {isArabic ? "كلمة المرور الحالية" : "Current Password"} *
               </Label>
               <Input
@@ -719,12 +719,12 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                 onChange={(e) => setOldPassword(e.target.value)}
                 placeholder={isArabic ? "أدخل كلمة المرور الحالية" : "Enter current password"}
                 required
-                className="rounded-2xl h-11 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 focus:border-[#d81b60] focus:ring-[#d81b60]/20 text-xs font-medium"
+                className="rounded-2xl h-11 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20 text-xs font-medium"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#d81b60] dark:text-[#f48fb1]">
+              <Label className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82]">
                 {isArabic ? "كلمة المرور الجديدة" : "New Password"} *
               </Label>
               <div className="relative">
@@ -735,12 +735,12 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                   placeholder={isArabic ? "أدخل كلمة المرور الجديدة" : "Enter new password"}
                   required
                   minLength={6}
-                  className="rounded-2xl h-11 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 focus:border-[#d81b60] focus:ring-[#d81b60]/20 pe-10 text-xs font-medium"
+                  className="rounded-2xl h-11 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20 pe-10 text-xs font-medium"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 end-0 flex items-center px-3.5 text-muted-foreground hover:text-[#d81b60] transition-colors"
+                  className="absolute inset-y-0 end-0 flex items-center px-3.5 text-muted-foreground hover:text-[#2a655f] transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -751,7 +751,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#d81b60] dark:text-[#f48fb1]">
+              <Label className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82]">
                 {isArabic ? "تأكيد كلمة المرور الجديدة" : "Confirm New Password"} *
               </Label>
               <Input
@@ -762,7 +762,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                 required
                 minLength={6}
                 className={cn(
-                  "rounded-2xl h-11 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 focus:border-[#d81b60] focus:ring-[#d81b60]/20 text-xs font-medium",
+                  "rounded-2xl h-11 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20 text-xs font-medium",
                   confirmPassword && newPassword !== confirmPassword && "border-red-500 focus-visible:ring-red-500"
                 )}
               />
@@ -774,9 +774,9 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
               )}
             </div>
 
-            <div className="p-3 bg-gradient-to-r from-[#fbcfe8]/30 to-[#1b433e]/20 dark:from-[#fbcfe8]/20 dark:to-[#1b433e]/20 rounded-2xl border border-[#f9a8d4]/30 flex items-start gap-2.5">
-              <PackageCheck className="h-4 w-4 text-[#d81b60] dark:text-[#f48fb1] shrink-0 mt-0.5" />
-              <p className="text-[11px] text-[#d81b60] dark:text-[#f48fb1] font-semibold leading-relaxed">
+            <div className="p-3 bg-gradient-to-r from-[#e8f0ee]/30 to-[#1a4f4a]/20 dark:from-[#e8f0ee]/20 dark:to-[#1a4f4a]/20 rounded-2xl border border-[#3a8a82]/30 flex items-start gap-2.5">
+              <PackageCheck className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] shrink-0 mt-0.5" />
+              <p className="text-[11px] text-[#2a655f] dark:text-[#3a8a82] font-semibold leading-relaxed">
                 {isArabic 
                   ? "سيتم تحديث كلمة المرور فورا وتأمين كافة عمليات التوصيل الخاصة بك." 
                   : "Password will be updated immediately to secure all your deliveries."}
@@ -787,7 +787,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
               <Button
                 type="submit"
                 disabled={loading || !oldPassword || !newPassword || newPassword !== confirmPassword}
-                className="flex-1 bg-gradient-to-r from-[#d81b60] to-[#1b433e] hover:from-[#c2185b] hover:to-[#2a655f] text-white rounded-2xl h-11 text-xs font-bold shadow-lg shadow-[#d81b60]/25"
+                className="flex-1 bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white rounded-2xl h-11 text-xs font-bold shadow-lg shadow-[#2a655f]/25"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
@@ -808,7 +808,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                   setNewPassword("");
                   setConfirmPassword("");
                 }}
-                className="flex-1 rounded-2xl h-11 text-xs font-bold border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 hover:bg-[#fbcfe8]/30 dark:hover:bg-[#fbcfe8]/20"
+                className="flex-1 rounded-2xl h-11 text-xs font-bold border-[#3a8a82]/30 dark:border-[#3a8a82]/20 hover:bg-[#e8f0ee]/30 dark:hover:bg-[#e8f0ee]/20"
               >
                 <X className="h-4 w-4 mr-1.5" />
                 {isArabic ? "إلغاء" : "Cancel"}
@@ -818,11 +818,11 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: تعديل الشركة - PINK & GREEN THEME ===== */}
+      {/* ===== DIALOG: تعديل الشركة - OLIVE & SLATE THEME ===== */}
       <Dialog open={showEditCompanyDialog} onOpenChange={setShowEditCompanyDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 border-[#f9a8d4]/30 shadow-2xl">
-          {/* Header مع زر X - PINK & GREEN */}
-          <div className="bg-gradient-to-r from-[#d81b60] via-[#f48fb1] to-[#1b433e] p-6 text-white relative overflow-hidden sticky top-0 z-10">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 border-[#3a8a82]/30 shadow-2xl">
+          {/* Header مع زر X - OLIVE & SLATE */}
+          <div className="bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] p-6 text-white relative overflow-hidden sticky top-0 z-10">
             
             <button
               type="button"
@@ -864,7 +864,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
               {/* ===== الاسم ===== */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1] flex items-center gap-1">
+                  <Label className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-1">
                     <Building2 className="h-3.5 w-3.5" /> 
                     {isArabic ? "اسم الشركة (عربي)" : "Company Name (Arabic)"} *
                   </Label>
@@ -873,11 +873,11 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                     defaultValue={companyData?.name_ar || ''}
                     placeholder={isArabic ? "شركة التوصيل السريع" : "Fast Delivery Company"}
                     required
-                    className="rounded-2xl h-11 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                    className="rounded-2xl h-11 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1] flex items-center gap-1">
+                  <Label className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-1">
                     <Building2 className="h-3.5 w-3.5" /> 
                     {isArabic ? "اسم الشركة (إنجليزي)" : "Company Name (English)"} *
                   </Label>
@@ -886,7 +886,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                     defaultValue={companyData?.name_en || ''}
                     placeholder={isArabic ? "Fast Delivery Company" : "Fast Delivery Company"}
                     required
-                    className="rounded-2xl h-11 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                    className="rounded-2xl h-11 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                   />
                 </div>
               </div>
@@ -894,7 +894,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
               {/* ===== رقم الهاتف مع التحقق ===== */}
               <div className="grid grid-cols-1 gap-4 mt-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1] flex items-center gap-1">
+                  <Label className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-1">
                     <Phone className="h-3.5 w-3.5" /> 
                     {isArabic ? "رقم الهاتف" : "Phone"} *
                   </Label>
@@ -915,14 +915,14 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                       }}
                       required
                       className={cn(
-                        "rounded-2xl h-11 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 focus:border-[#d81b60] focus:ring-[#d81b60]/20",
+                        "rounded-2xl h-11 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20",
                         isPhoneChanged && phoneAvailable === false && "border-red-500 focus-visible:ring-red-500",
                         isPhoneChanged && phoneAvailable === true && "border-emerald-500 focus-visible:ring-emerald-500"
                       )}
                     />
                     {isPhoneChanged && phoneCheckLoading && (
                       <div className="absolute inset-y-0 end-3 flex items-center">
-                        <Loader2 className="h-4 w-4 animate-spin text-[#d81b60]" />
+                        <Loader2 className="h-4 w-4 animate-spin text-[#2a655f]" />
                       </div>
                     )}
                     {isPhoneChanged && !phoneCheckLoading && phoneAvailable === false && (
@@ -953,7 +953,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
 
               {/* ===== اختيار طريقة إدخال العنوان ===== */}
               <div className="space-y-3 mt-4">
-                <Label className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1]">
+                <Label className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82]">
                   {isArabic ? "📍 طريقة إدخال العنوان" : "📍 Address Input Method"}
                 </Label>
                 
@@ -964,12 +964,12 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                     className={`
                       flex items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300 border-2
                       ${addressMethod === "manual" 
-                        ? "bg-gradient-to-r from-[#fbcfe8]/30 to-[#1b433e]/20 border-[#d81b60] dark:bg-[#fbcfe8]/20" 
-                        : "bg-slate-50 dark:bg-slate-800/50 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 hover:bg-[#fbcfe8]/20 dark:hover:bg-[#fbcfe8]/10"}
+                        ? "bg-gradient-to-r from-[#e8f0ee]/30 to-[#1a4f4a]/20 border-[#2a655f] dark:bg-[#e8f0ee]/20" 
+                        : "bg-slate-50 dark:bg-slate-800/50 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 hover:bg-[#e8f0ee]/20 dark:hover:bg-[#e8f0ee]/10"}
                     `}
                   >
-                    <Edit3 className="h-4 w-4 text-[#d81b60]" />
-                    <span className="text-sm font-medium text-[#d81b60] dark:text-white">
+                    <Edit3 className="h-4 w-4 text-[#2a655f]" />
+                    <span className="text-sm font-medium text-[#2a655f] dark:text-white">
                       {isArabic ? "📝 كتابة يدوية" : "✏️ Manual"}
                     </span>
                   </button>
@@ -980,12 +980,12 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                     className={`
                       flex items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300 border-2
                       ${addressMethod === "map" 
-                        ? "bg-gradient-to-r from-[#fbcfe8]/30 to-[#1b433e]/20 border-[#d81b60] dark:bg-[#fbcfe8]/20" 
-                        : "bg-slate-50 dark:bg-slate-800/50 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 hover:bg-[#fbcfe8]/20 dark:hover:bg-[#fbcfe8]/10"}
+                        ? "bg-gradient-to-r from-[#e8f0ee]/30 to-[#1a4f4a]/20 border-[#2a655f] dark:bg-[#e8f0ee]/20" 
+                        : "bg-slate-50 dark:bg-slate-800/50 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 hover:bg-[#e8f0ee]/20 dark:hover:bg-[#e8f0ee]/10"}
                     `}
                   >
-                    <Map className="h-4 w-4 text-[#d81b60]" />
-                    <span className="text-sm font-medium text-[#d81b60] dark:text-white">
+                    <Map className="h-4 w-4 text-[#2a655f]" />
+                    <span className="text-sm font-medium text-[#2a655f] dark:text-white">
                       {isArabic ? "🗺️ اختيار من الخريطة" : "🗺️ Map"}
                     </span>
                   </button>
@@ -996,7 +996,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
               {addressMethod === "manual" ? (
                 <div className="grid grid-cols-1 gap-4 mt-4 animate-in fade-in-50 duration-300">
                   <div className="space-y-2">
-                    <Label className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1] flex items-center gap-1">
+                    <Label className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-1">
                       <MapPin className="h-3.5 w-3.5" /> 
                       {isArabic ? "العنوان" : "Address"} *
                     </Label>
@@ -1005,17 +1005,17 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                       defaultValue={companyData?.address_ar || ''}
                       placeholder={isArabic ? "مثال: شارع الأندلس، مبنى 5" : "Example: Al-Andalus Street, Building 5"}
                       required
-                      className="rounded-2xl h-11 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="rounded-2xl h-11 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                 </div>
               ) : (
                 <div className="space-y-2 mt-4 animate-in fade-in-50 duration-300">
-                  <Label className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1] flex items-center gap-1">
+                  <Label className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-1">
                     <Map className="h-3.5 w-3.5" /> 
                     {isArabic ? "اختر موقعك على الخريطة" : "Select your location on the map"} *
                   </Label>
-                  <div className="rounded-2xl bg-white dark:bg-slate-800/50 p-3 border-2 border-[#f9a8d4]/30 focus-within:border-[#d81b60] transition-all duration-300">
+                  <div className="rounded-2xl bg-white dark:bg-slate-800/50 p-3 border-2 border-[#3a8a82]/30 focus-within:border-[#2a655f] transition-all duration-300">
                     <AddressPicker 
                       value={location ?? undefined} 
                       onChange={setLocation} 
@@ -1038,7 +1038,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
               {/* ===== الوصف ===== */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1] flex items-center gap-1">
+                  <Label className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-1">
                     <FileText className="h-3.5 w-3.5" /> 
                     {isArabic ? "الوصف (عربي)" : "Description (Arabic)"}
                   </Label>
@@ -1047,11 +1047,11 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                     defaultValue={companyData?.description_ar || ''}
                     placeholder={isArabic ? "وصف الشركة بالعربية" : "Company description in Arabic"}
                     rows={3}
-                    className="rounded-2xl border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                    className="rounded-2xl border-[#3a8a82]/30 dark:border-[#3a8a82]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1] flex items-center gap-1">
+                  <Label className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-1">
                     <FileText className="h-3.5 w-3.5" /> 
                     {isArabic ? "الوصف (إنجليزي)" : "Description (English)"}
                   </Label>
@@ -1060,7 +1060,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                     defaultValue={companyData?.description_en || ''}
                     placeholder={isArabic ? "وصف الشركة بالإنجليزية" : "Company description in English"}
                     rows={3}
-                    className="rounded-2xl border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                    className="rounded-2xl border-[#3a8a82]/30 dark:border-[#3a8a82]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                   />
                 </div>
               </div>
@@ -1068,7 +1068,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
               {/* ===== التسعير ===== */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-[#d81b60] dark:text-[#f48fb1]">
+                  <Label className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82]">
                     {isArabic ? "السعر الأساسي" : "Base Price"} *
                   </Label>
                   <div className="relative">
@@ -1079,12 +1079,12 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                       step="0.01"
                       defaultValue={companyData?.base_price || 0}
                       required
-                      className="rounded-2xl h-10 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 ps-10 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="rounded-2xl h-10 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 ps-10 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-[#d81b60] dark:text-[#f48fb1]">
+                  <Label className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82]">
                     {isArabic ? "سعر الكيلومتر" : "Price per KM"} *
                   </Label>
                   <div className="relative">
@@ -1095,12 +1095,12 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                       step="0.01"
                       defaultValue={companyData?.price_per_km || 0}
                       required
-                      className="rounded-2xl h-10 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 ps-10 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="rounded-2xl h-10 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 ps-10 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-[#d81b60] dark:text-[#f48fb1]">
+                  <Label className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82]">
                     {isArabic ? "الحد الأدنى" : "Min Fee"} *
                   </Label>
                   <div className="relative">
@@ -1111,12 +1111,12 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                       step="0.01"
                       defaultValue={companyData?.min_delivery_fee || 0}
                       required
-                      className="rounded-2xl h-10 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 ps-10 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="rounded-2xl h-10 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 ps-10 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-[#d81b60] dark:text-[#f48fb1]">
+                  <Label className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82]">
                     {isArabic ? "الحد الأقصى" : "Max Fee"} *
                   </Label>
                   <div className="relative">
@@ -1127,7 +1127,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                       step="0.01"
                       defaultValue={companyData?.max_delivery_fee || 999999}
                       required
-                      className="rounded-2xl h-10 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 ps-10 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="rounded-2xl h-10 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 ps-10 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                 </div>
@@ -1136,7 +1136,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
               {/* ===== قيمة التوصيل المجاني ووقت التوصيل ===== */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-[#d81b60] dark:text-[#f48fb1]">
+                  <Label className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82]">
                     {isArabic ? "قيمة التوصيل المجاني" : "Free Delivery Threshold"}
                   </Label>
                   <div className="relative">
@@ -1146,12 +1146,12 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                       type="number"
                       step="0.01"
                       defaultValue={companyData?.free_delivery_threshold || 0}
-                      className="rounded-2xl h-10 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 ps-10 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="rounded-2xl h-10 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 ps-10 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-[#d81b60] dark:text-[#f48fb1]">
+                  <Label className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82]">
                     {isArabic ? "متوسط وقت التوصيل" : "Avg Delivery Time"} *
                   </Label>
                   <Input 
@@ -1159,67 +1159,67 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                     type="number"
                     defaultValue={companyData?.avg_delivery_time || 60}
                     required
-                    className="rounded-2xl h-10 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                    className="rounded-2xl h-10 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                   />
                   <p className="text-[10px] text-muted-foreground">{isArabic ? "بالدقائق" : "In minutes"}</p>
                 </div>
               </div>
 
               {/* ===== الخيارات (Checkboxes) ===== */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gradient-to-r from-[#fbcfe8]/20 to-[#1b433e]/10 dark:from-[#fbcfe8]/10 dark:to-[#1b433e]/20 rounded-xl mt-4">
-                <label className="flex items-center gap-2 text-sm text-[#d81b60] dark:text-[#f48fb1] cursor-pointer">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gradient-to-r from-[#e8f0ee]/20 to-[#1a4f4a]/10 dark:from-[#e8f0ee]/10 dark:to-[#1a4f4a]/20 rounded-xl mt-4">
+                <label className="flex items-center gap-2 text-sm text-[#2a655f] dark:text-[#3a8a82] cursor-pointer">
                   <input 
                     type="checkbox" 
                     name="has_tracking" 
                     defaultChecked={companyData?.has_tracking ?? true}
-                    className="h-4 w-4 rounded border-[#f9a8d4]/30 text-[#d81b60] focus:ring-[#d81b60]/50"
+                    className="h-4 w-4 rounded border-[#3a8a82]/30 text-[#2a655f] focus:ring-[#2a655f]/50"
                   />
                   {isArabic ? "تتبع" : "Tracking"}
                 </label>
-                <label className="flex items-center gap-2 text-sm text-[#d81b60] dark:text-[#f48fb1] cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-[#2a655f] dark:text-[#3a8a82] cursor-pointer">
                   <input 
                     type="checkbox" 
                     name="has_insurance" 
                     defaultChecked={companyData?.has_insurance ?? true}
-                    className="h-4 w-4 rounded border-[#f9a8d4]/30 text-[#d81b60] focus:ring-[#d81b60]/50"
+                    className="h-4 w-4 rounded border-[#3a8a82]/30 text-[#2a655f] focus:ring-[#2a655f]/50"
                   />
                   {isArabic ? "تأمين" : "Insurance"}
                 </label>
-                <label className="flex items-center gap-2 text-sm text-[#d81b60] dark:text-[#f48fb1] cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-[#2a655f] dark:text-[#3a8a82] cursor-pointer">
                   <input 
                     type="checkbox" 
                     name="has_cod" 
                     defaultChecked={companyData?.has_cod ?? true}
-                    className="h-4 w-4 rounded border-[#f9a8d4]/30 text-[#d81b60] focus:ring-[#d81b60]/50"
+                    className="h-4 w-4 rounded border-[#3a8a82]/30 text-[#2a655f] focus:ring-[#2a655f]/50"
                   />
                   {isArabic ? "دفع عند الاستلام" : "Cash on Delivery"}
                 </label>
-                <label className="flex items-center gap-2 text-sm text-[#d81b60] dark:text-[#f48fb1] cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-[#2a655f] dark:text-[#3a8a82] cursor-pointer">
                   <input 
                     type="checkbox" 
                     name="has_express" 
                     defaultChecked={companyData?.has_express ?? true}
-                    className="h-4 w-4 rounded border-[#f9a8d4]/30 text-[#d81b60] focus:ring-[#d81b60]/50"
+                    className="h-4 w-4 rounded border-[#3a8a82]/30 text-[#2a655f] focus:ring-[#2a655f]/50"
                   />
                   {isArabic ? "توصيل سريع" : "Express"}
                 </label>
               </div>
 
               {/* ===== حالة النشاط ===== */}
-              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-[#fbcfe8]/20 to-[#1b433e]/10 dark:from-[#fbcfe8]/10 dark:to-[#1b433e]/20 rounded-xl mt-4">
+              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-[#e8f0ee]/20 to-[#1a4f4a]/10 dark:from-[#e8f0ee]/10 dark:to-[#1a4f4a]/20 rounded-xl mt-4">
                 <input 
                   type="checkbox" 
                   name="is_active" 
                   defaultChecked={companyData?.is_active !== false}
-                  className="h-4 w-4 rounded border-[#f9a8d4]/30 text-[#d81b60] focus:ring-[#d81b60]/50"
+                  className="h-4 w-4 rounded border-[#3a8a82]/30 text-[#2a655f] focus:ring-[#2a655f]/50"
                 />
-                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f48fb1] cursor-pointer">
+                <Label className="text-sm font-medium text-[#2a655f] dark:text-[#3a8a82] cursor-pointer">
                   {isArabic ? "🟢 الشركة نشطة" : "🟢 Company is active"}
                 </Label>
               </div>
 
               {/* ===== أزرار ===== */}
-              <DialogFooter className="pt-6 gap-2 border-t border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 mt-6">
+              <DialogFooter className="pt-6 gap-2 border-t border-[#3a8a82]/30 dark:border-[#3a8a82]/20 mt-6">
                 <Button
                   type="button"
                   variant="outline"
@@ -1228,7 +1228,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                     setIsPhoneChanged(false);
                     setPhoneAvailable(null);
                   }}
-                  className="rounded-2xl h-11 text-sm font-bold border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 hover:bg-[#fbcfe8]/30 dark:hover:bg-[#fbcfe8]/20"
+                  className="rounded-2xl h-11 text-sm font-bold border-[#3a8a82]/30 dark:border-[#3a8a82]/20 hover:bg-[#e8f0ee]/30 dark:hover:bg-[#e8f0ee]/20"
                 >
                   <X className="h-4 w-4 mr-1.5" />
                   {isArabic ? "إلغاء" : "Cancel"}
@@ -1236,7 +1236,7 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
                 <Button
                   type="submit"
                   disabled={editLoading || (isPhoneChanged && phoneAvailable === false)}
-                  className="flex-1 bg-gradient-to-r from-[#d81b60] to-[#1b433e] hover:from-[#c2185b] hover:to-[#2a655f] text-white rounded-2xl h-11 text-sm font-bold shadow-lg shadow-[#d81b60]/25"
+                  className="flex-1 bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white rounded-2xl h-11 text-sm font-bold shadow-lg shadow-[#2a655f]/25"
                 >
                   {editLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-1.5" />

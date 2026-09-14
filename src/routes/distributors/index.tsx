@@ -53,8 +53,8 @@ export const Route = createFileRoute("/distributors/")({
   component: DistributorsPage,
   head: () => ({
     meta: [
-      { title: "الموزعين - Souqi" },
-      { name: "description", content: "جميع الموزعين المتاحين للتوصيل في السوق اليك" },
+      { title: "الموزعين - ذوق" },
+      { name: "description", content: "جميع الموزعين المتاحين للتوصيل في ذوق" },
     ],
   }),
 });

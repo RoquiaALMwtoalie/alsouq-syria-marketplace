@@ -1,6 +1,6 @@
 // src/routes/listing/$id.tsx - مع "قد تعجبك أيضاً" + "الأكثر مبيعاً"
 
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Heart, Share2,
@@ -38,9 +38,8 @@ export const Route = createFileRoute("/listing/$id")({
     hideFooter: true,
   }),
   component: ListingDetailPage,
-  head: () => ({ meta: [{ title: "تفاصيل المنتج — السوق لعندك" }] }),
+  head: () => ({ meta: [{ title: "تفاصيل المنتج — ذوق" }] }),
 });
-
 const LoadingSkeleton = () => (
   <div className="mx-auto max-w-4xl px-4 py-8">
     <Skeleton className="aspect-square rounded-2xl w-full" />
@@ -58,6 +57,7 @@ function ListingDetailPage() {
   const app = useApp();
   const t = useT();
   const navigate = useNavigate();
+  const router = useRouter();
   
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -528,35 +528,35 @@ function ListingDetailPage() {
       
       const detailsText = details.length > 0 ? ` (${details.join(', ')})` : '';
       
-      toast.success(
-        app.lang === "ar" 
-          ? `🛒 تم إضافة ${quantity} × "${listing.title_ar}" للسلة${detailsText}`
-          : `🛒 Added ${quantity} × "${listing.title_en || listing.title_ar}" to cart${detailsText}`,
-        { 
-          duration: 4000,
-          action: {
-            label: app.lang === "ar" ? "🛒 عرض السلة" : "🛒 View Cart",
-            onClick: () => navigate({ to: "/cart" })
-          },
-          style: {
-            background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',
-            border: '1px solid #f9a8d4',
-            borderRadius: '16px',
-            boxShadow: '0 20px 60px rgba(236, 72, 153, 0.25)',
-          },
-          actionButtonStyle: {
-            background: 'linear-gradient(135deg, #1a4f4a, #2a655f)',
-            color: 'white',
-            fontWeight: 'bold',
-            borderRadius: '12px',
-            padding: '8px 24px',
-            boxShadow: '0 8px 30px rgba(26, 79, 74, 0.4)',
-            border: 'none',
-            fontSize: '14px',
-          }
-        }
-      );
-      
+    toast.success(
+  app.lang === "ar" 
+    ? `تمت إضافة "${listing.title_ar}" للسلة`
+    : `"${listing.title_en || listing.title_ar}" added to cart`,
+  { 
+    duration: 3000,
+    action: {
+      label: app.lang === "ar" ? "عرض السلة" : "View Cart",
+      onClick: () => navigate({ to: "/cart" })
+    },
+    style: {
+      background: '#f5f5f5',
+      border: '1px solid #e5e5e5',
+      borderRadius: '14px',
+      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+      color: '#1a1a1a',
+    },
+    actionButtonStyle: {
+      background: '#2a655f',
+      color: 'white',
+      fontWeight: '600',
+      borderRadius: '10px',
+      padding: '6px 18px',
+      boxShadow: 'none',
+      border: 'none',
+      fontSize: '13px',
+    }
+  }
+);
       setQuantity(1);
       
     } catch (error: any) {
@@ -665,6 +665,15 @@ function ListingDetailPage() {
     }
   }, [app.user, listing, isFavorite, toggleFavoriteMutation, app.lang]);
 
+  // ✅ دالة الرجوع الآمنة
+  const handleGoBack = useCallback(() => {
+    if (window.history.length > 1) {
+      router.history.back();
+    } else {
+      navigate({ to: "/" });
+    }
+  }, [router, navigate]);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [id]);
@@ -695,7 +704,11 @@ function ListingDetailPage() {
         
         {/* ===== شريط علوي ===== */}
         <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-[#eee] px-4 py-3 flex items-center justify-between">
-          <button onClick={() => navigate({ to: -1 })} className="p-2 rounded-full hover:bg-gray-100 transition">
+          <button 
+            onClick={handleGoBack} 
+            className="p-2 rounded-full hover:bg-gray-100 transition"
+            aria-label={app.lang === "ar" ? "رجوع" : "Back"}
+          >
             <ChevronRight className="h-5 w-5 text-gray-700" />
           </button>
           <div className="flex items-center gap-2">
@@ -1363,49 +1376,60 @@ function ListingDetailPage() {
 
         </div>
 
-        {/* ===== شريط الأزرار السفلي ===== */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-3 max-w-xl mx-auto flex gap-3 shadow-lg">
-          <Button
-            onClick={async () => {
-              await handleAddToCart();
-              navigate({ to: "/cart" });
-            }}
-            className="flex-1 bg-[#fef9ec] hover:bg-[#fde6b5] text-gray-900 font-bold h-12 rounded-xl text-base shadow-md transition border-2 border-[#fde6b5]"
-            disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
-          >
-            {app.lang === "ar" ? "اشتري الآن" : "Buy Now"}
-          </Button>
-          <Button
-            onClick={handleAddToCart}
-            className={cn(
-              "flex-1 font-bold h-12 rounded-xl text-base shadow-md transition",
-              "bg-[#1a4f4a] hover:bg-[#2a655f] text-white"
-            )}
-            disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
-          >
-            {addToCartMutation.isPending ? (
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                {app.lang === "ar" ? "جاري..." : "Loading..."}
-              </div>
-            ) : isInCart ? (
-              <>
-                <CheckCircle className="h-4 w-4 ml-2" />
-                {app.lang === "ar" ? "✅ موجود في السلة" : "✅ In Cart"}
-                {cartItemCount > 0 && (
-                  <Badge className="bg-white/20 text-white border-0 mr-2 text-[10px]">
-                    {cartItemCount}
-                  </Badge>
-                )}
-              </>
-            ) : (
-              <>
-                <ShoppingBag className="h-4 w-4 ml-2" />
-                {app.lang === "ar" ? "أضف إلى السلة" : "Add to Cart"}
-              </>
-            )}
-          </Button>
+     {/* ===== شريط الأزرار السفلي ===== */}
+<div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-2 sm:px-3 py-2 sm:py-3 shadow-lg">
+  <div className="max-w-xl mx-auto flex gap-1.5 sm:gap-2 md:gap-3">
+    {/* زر اشتري الآن */}
+    <Button
+      onClick={async () => {
+        await handleAddToCart();
+        navigate({ to: "/cart" });
+      }}
+      className="flex-1 bg-[#fef9ec] hover:bg-[#fde6b5] text-gray-900 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition border-2 border-[#fde6b5] px-2 sm:px-3 md:px-4"
+      disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
+    >
+      {app.lang === "ar" ? "اشتري الآن" : "Buy Now"}
+    </Button>
+
+    {/* زر أضف إلى السلة */}
+    <Button
+      onClick={handleAddToCart}
+      className={cn(
+        "flex-1 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition px-2 sm:px-3 md:px-4",
+        "bg-[#1a4f4a] hover:bg-[#2a655f] text-white"
+      )}
+      disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
+    >
+      {addToCartMutation.isPending ? (
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          <span className="whitespace-nowrap">
+            {app.lang === "ar" ? "جاري..." : "Loading..."}
+          </span>
         </div>
+      ) : isInCart ? (
+        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+          <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+          <span className="whitespace-nowrap truncate">
+            {app.lang === "ar" ? "في السلة" : "In Cart"}
+          </span>
+          {cartItemCount > 0 && (
+            <Badge className="bg-white/20 text-white border-0 text-[9px] sm:text-[10px] shrink-0 px-1.5 py-0">
+              {cartItemCount}
+            </Badge>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+          <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+          <span className="whitespace-nowrap truncate">
+            {app.lang === "ar" ? "أضف للسلة" : "Add to Cart"}
+          </span>
+        </div>
+      )}
+    </Button>
+  </div>
+</div>
 
         {/* مودال تعارض المتاجر */}
         <Dialog open={showStoreConflict} onOpenChange={setShowStoreConflict}>

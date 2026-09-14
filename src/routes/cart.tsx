@@ -43,7 +43,7 @@ import { useCartTotal } from "@/lib/hooks/useCartTotal";
 
 export const Route = createFileRoute("/cart")({
   component: CartPage,
-  head: () => ({ meta: [{ title: "سلة التسوق — السوق لعندك" }] }),
+  head: () => ({ meta: [{ title: "سلة التسوق — ذوق" }] }),
 });
 
 function CartPage() {
@@ -766,46 +766,68 @@ function CartPage() {
         return acc;
       }, {});
 
-      for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
-        const itemsList = sellerItems as any[];
-        const total = itemsList.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
+// ✅ ✅ ✅ جلب اسم ورقم العميل من profiles (قبل الحلقة)
+let buyerName = app.user.user_metadata?.full_name || app.user.email?.split('@')[0] || (app.lang === "ar" ? "عميل" : "Customer");
+let buyerPhone = app.user.user_metadata?.phone || '';
 
-        const orderData = {
-          buyer_id: app.user.id,
-          seller_id: sellerId,
-          listing_id: itemsList[0].listing_id,
-          total: total,
-          quantity: itemsList.reduce((sum, item) => sum + item.quantity, 0),
-          delivery_address: selectedAddress.address_text,
-          delivery_lat: selectedAddress.lat || 0,
-          delivery_lng: selectedAddress.lng || 0,
-          status: 'pending',
-          currency: itemsList[0]?.currency || 'SYP',
-          delivery_fee: deliveryFee,
-          promo_discount: promoApplied ? promoDiscount : 0,
-          total_with_delivery: totals.total,
-        };
+try {
+  const { data: buyerProfile } = await supabase
+    .from("profiles")
+    .select("full_name, phone, store_name")
+    .eq("id", app.user.id)
+    .maybeSingle();
 
-        const { data: order, error: orderError } = await supabase
-          .from("orders")
-          .insert(orderData)
-          .select()
-          .single();
+  if (buyerProfile) {
+    buyerName = buyerProfile.full_name || buyerProfile.store_name || buyerName;
+    buyerPhone = buyerProfile.phone || buyerPhone;
+  }
+} catch (err) {
+  console.warn("⚠️ Could not fetch buyer profile:", err);
+}
 
-        if (orderError) throw orderError;
+console.log("📝 [Checkout] Buyer info:", { buyerName, buyerPhone, userId: app.user.id });
 
-        const orderItems = itemsList.map((item: any) => ({
-          order_id: order.id,
-          listing_id: item.listing_id,
-          quantity: item.quantity,
-          price: Number(item.price),
-          currency: item.currency || 'SYP',
-          variation_combination: item.variation_combination || null,
-        }));
+for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
+  const itemsList = sellerItems as any[];
+  const total = itemsList.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
 
-        await supabase.from("order_items").insert(orderItems);
-      }
+  const orderData = {
+    buyer_id: app.user.id,
+    buyer_name: buyerName,           // ✅ ✅ ✅ جديد
+    buyer_phone: buyerPhone,         // ✅ ✅ ✅ جديد
+    seller_id: sellerId,
+    listing_id: itemsList[0].listing_id,
+    total: total,
+    quantity: itemsList.reduce((sum, item) => sum + item.quantity, 0),
+    delivery_address: selectedAddress.address_text,
+    delivery_lat: selectedAddress.lat || 0,
+    delivery_lng: selectedAddress.lng || 0,
+    status: 'pending',
+    currency: itemsList[0]?.currency || 'SYP',
+    delivery_fee: deliveryFee,
+    promo_discount: promoApplied ? promoDiscount : 0,
+    total_with_delivery: totals.total,
+  };
 
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .insert(orderData)
+    .select()
+    .single();
+
+  if (orderError) throw orderError;
+
+  const orderItems = itemsList.map((item: any) => ({
+    order_id: order.id,
+    listing_id: item.listing_id,
+    quantity: item.quantity,
+    price: Number(item.price),
+    currency: item.currency || 'SYP',
+    variation_combination: item.variation_combination || null,
+  }));
+
+  await supabase.from("order_items").insert(orderItems);
+}
       await clearCart.mutateAsync({ userId: app.user.id });
       toast.success(app.lang === "ar" ? "✅ تم إرسال طلبك بنجاح!" : "✅ Order placed successfully!");
       navigate({ to: "/orders" });

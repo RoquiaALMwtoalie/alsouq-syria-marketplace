@@ -922,62 +922,62 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
   // ===== RENDER =====
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       
       {/* ===== HEADER ===== */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25">
-              <ShoppingBag className="h-5 w-5" />
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3 flex-wrap">
+            <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 shrink-0">
+              <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
-            {app.lang === "ar" ? "طلباتي" : "My Orders"}
-            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20 text-sm px-3 py-1">
+            <span className="truncate">{app.lang === "ar" ? "طلباتي" : "My Orders"}</span>
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20 text-xs sm:text-sm px-2 sm:px-3 py-0.5 sm:py-1 shrink-0">
               {stats.total}
             </Badge>
           </h1>
           
-          <div className="flex items-center gap-3 flex-wrap mt-1 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-50 border border-yellow-200/50">
-              <Clock className="h-3.5 w-3.5 text-yellow-500" />
-              {stats.pending} {app.lang === "ar" ? "قيد المراجعة" : "pending"}
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap mt-1.5 text-xs sm:text-sm text-muted-foreground">
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-yellow-50 border border-yellow-200/50">
+              <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-yellow-500" />
+              <span className="text-[10px] sm:text-xs">{stats.pending} {app.lang === "ar" ? "قيد المراجعة" : "pending"}</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/50">
-              <Truck className="h-3.5 w-3.5 text-emerald-500" />
-              {stats.delivered} {app.lang === "ar" ? "تم التوصيل" : "delivered"}
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-50 border border-emerald-200/50">
+              <Truck className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-500" />
+              <span className="text-[10px] sm:text-xs">{stats.delivered} {app.lang === "ar" ? "تم التوصيل" : "delivered"}</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200/50">
-              <Wallet className="h-3.5 w-3.5 text-purple-500" />
-              {formatPrice(totalRevenue, app.currency, app.lang)}
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-purple-50 border border-purple-200/50">
+              <Wallet className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-purple-500" />
+              <span className="text-[10px] sm:text-xs">{formatPrice(totalRevenue, app.currency, app.lang)}</span>
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={exportToExcel} 
             disabled={filteredOrders.length === 0} 
-            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300"
+            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300 h-8 sm:h-9 px-2.5 sm:px-3 text-[11px] sm:text-xs"
           >
-            <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Excel
+            <FileSpreadsheet className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" /> Excel
           </Button>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={exportToWord} 
             disabled={filteredOrders.length === 0} 
-            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300"
+            className="rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#f9a8d4]/50 transition-all duration-300 h-8 sm:h-9 px-2.5 sm:px-3 text-[11px] sm:text-xs"
           >
-            <FileText className="h-4 w-4 mr-1.5" /> Word
+            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" /> Word
           </Button>
      
         </div>
       </div>
 
-      {/* ===== STATS CARDS - بتصميم كروت AdminStores (بوردر رمادي، هوفر رمادي فاتح) ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+      {/* ===== STATS CARDS ===== */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3">
         {[
           { key: 'total', label: app.lang === 'ar' ? 'الإجمالي' : 'Total', value: stats.total, icon: ShoppingBag, gradient: 'from-[#2a655f] to-[#1a4f4a]' },
           { key: 'pending', label: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: stats.pending, icon: Clock, gradient: 'from-amber-500 to-orange-500' },
@@ -990,19 +990,19 @@ export const OrdersPage = React.memo(function OrdersPage() {
         ].map((stat) => (
           <div 
             key={stat.key} 
-            className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative p-4"
+            className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative p-2.5 sm:p-4"
           >
             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
               <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-slate-100/50 dark:bg-slate-700/20 blur-3xl animate-pulse" />
             </div>
             <div className="flex items-center justify-between relative">
-              <div>
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider truncate">{stat.label}</p>
+                <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-white dark:bg-[#1e293b] border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
-                  <stat.icon className="h-3.5 w-3.5 text-white" />
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-white dark:bg-[#1e293b] border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shrink-0">
+                <div className={`h-5 w-5 sm:h-6 sm:w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
+                  <stat.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
                 </div>
               </div>
             </div>
@@ -1017,361 +1017,390 @@ export const OrdersPage = React.memo(function OrdersPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* ✅✅✅ SEARCH & FILTERS (مع فلتر الوقت والتقويم المنبثق) ✅✅✅ */}
+      {/* ✅✅✅ SEARCH & FILTERS - محسّن للموبايل */}
       {/* ============================================================ */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* 🔍 حقل البحث - بوردر رمادي */}
-        <div className="relative flex-1 min-w-[200px] group">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors" />
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-slate-200 dark:border-slate-700 p-3 sm:p-4 shadow-sm">
+        
+        {/* ✅ الصف الأول: البحث */}
+        <div className="relative group mb-3">
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors pointer-events-none" />
           <Input 
             value={searchQuery} 
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
             placeholder={app.lang === "ar" ? "🔍 ابحث برقم الطلب #، اسم العميل، التاريخ..." : "🔍 Search by Order #, Customer, Date..."} 
-            className="ps-9 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300" 
+            className="ps-9 pe-9 h-10 sm:h-11 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 text-sm" 
           />
           {searchQuery && (
             <button
               onClick={() => { setSearchQuery(""); setCurrentPage(1); }}
               className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
+              aria-label={app.lang === "ar" ? "مسح البحث" : "Clear search"}
             >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
-        
-        {/* ✅ فلتر الحالة - بوردر رمادي */}
-        <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[150px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-500" />
-              <SelectValue placeholder={app.lang === "ar" ? "الحالة" : "Status"} />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
-            <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
-            <SelectItem value="pending" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
-            <SelectItem value="accepted" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {app.lang === "ar" ? "مقبول" : "Accepted"}</SelectItem>
-            <SelectItem value="rejected" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">❌ {app.lang === "ar" ? "مرفوض" : "Rejected"}</SelectItem>
-            <SelectItem value="processing" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🔄 {app.lang === "ar" ? "قيد المعالجة" : "Processing"}</SelectItem>
-            <SelectItem value="shipped" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🚚 {app.lang === "ar" ? "تم الشحن" : "Shipped"}</SelectItem>
-            <SelectItem value="delivered" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {app.lang === "ar" ? "تم التوصيل" : "Delivered"}</SelectItem>
-            <SelectItem value="cancelled" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">❌ {app.lang === "ar" ? "ملغي" : "Cancelled"}</SelectItem>
-          </SelectContent>
-        </Select>
 
-        {/* ✅ ✅ ✅ فلتر النطاق الزمني - بوردر رمادي */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-700 rounded-full border border-slate-200 dark:border-slate-600">
-            <Calendar className="h-3.5 w-3.5 text-[#2a655f]" />
-            <span className="text-[10px] font-medium text-[#2a655f] dark:text-[#3a8a82] whitespace-nowrap">
-              {app.lang === "ar" ? "📅 فلتر التاريخ" : "📅 Date Filter"}
-            </span>
-          </div>
+        {/* ✅ الصف الثاني: الفلاتر في Grid متجاوب */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-12 gap-2">
           
-          <Select value={filterDateRange} onValueChange={(v: any) => { 
-            setFilterDateRange(v); 
-            setCurrentPage(1); 
-            if (v !== "custom") {
-              setDateFrom("");
-              setDateTo("");
-              setTempDateFrom("");
-              setTempDateTo("");
-            }
-          }}>
-            <SelectTrigger className="w-[140px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-slate-500" />
-                <SelectValue placeholder={app.lang === "ar" ? "الفترة" : "Period"} />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
-              <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "الكل" : "All"}</SelectItem>
-              <SelectItem value="today" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "اليوم" : "Today"}</SelectItem>
-              <SelectItem value="week" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "آخر 7 أيام" : "Last 7 days"}</SelectItem>
-              <SelectItem value="month" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "آخر شهر" : "Last month"}</SelectItem>
-              <SelectItem value="custom" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "مخصص" : "Custom"}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          {/* Status Filter */}
+          <div className="col-span-1 md:col-span-3">
+            <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20 text-sm">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Filter className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                  <SelectValue placeholder={app.lang === "ar" ? "الحالة" : "Status"} />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+                <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
+                <SelectItem value="pending" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
+                <SelectItem value="accepted" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {app.lang === "ar" ? "مقبول" : "Accepted"}</SelectItem>
+                <SelectItem value="rejected" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">❌ {app.lang === "ar" ? "مرفوض" : "Rejected"}</SelectItem>
+                <SelectItem value="processing" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🔄 {app.lang === "ar" ? "قيد المعالجة" : "Processing"}</SelectItem>
+                <SelectItem value="shipped" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🚚 {app.lang === "ar" ? "تم الشحن" : "Shipped"}</SelectItem>
+                <SelectItem value="delivered" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {app.lang === "ar" ? "تم التوصيل" : "Delivered"}</SelectItem>
+                <SelectItem value="cancelled" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">❌ {app.lang === "ar" ? "ملغي" : "Cancelled"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        {/* ✅ ✅ ✅ فلتر التاريخ المخصص */}
-        {filterDateRange === "custom" && (
-          <div className="relative inline-block">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowDatePicker(!showDatePicker)}
-              className="h-10 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-all duration-300 flex items-center gap-2"
-            >
-              <Calendar className="h-4 w-4 text-[#2a655f]" />
-              <span className="text-sm font-medium">
-                {dateFrom || dateTo 
-                  ? (app.lang === "ar" ? "تعديل التاريخ" : "Edit Date")
-                  : (app.lang === "ar" ? "اختر التاريخ" : "Select Date")}
-              </span>
-              {showDatePicker ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              )}
-              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50/80 dark:bg-blue-950/30 rounded-full border border-blue-200/50 dark:border-blue-800/30">
-                <ClockIcon className="h-3 w-3 text-blue-500" />
-                <span className="text-[9px] text-blue-600 dark:text-blue-400 font-medium">
-                  {app.lang === "ar" ? "الوقت" : "Time"}
+          {/* Date Range Filter */}
+          <div className="col-span-1 md:col-span-3">
+            <Select value={filterDateRange} onValueChange={(v: any) => { 
+              setFilterDateRange(v); 
+              setCurrentPage(1); 
+              if (v !== "custom") {
+                setDateFrom("");
+                setDateTo("");
+                setTempDateFrom("");
+                setTempDateTo("");
+              }
+            }}>
+              <SelectTrigger className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20 text-sm">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Calendar className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                  <SelectValue placeholder={app.lang === "ar" ? "الفترة" : "Period"} />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+                <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "الكل" : "All"}</SelectItem>
+                <SelectItem value="today" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "اليوم" : "Today"}</SelectItem>
+                <SelectItem value="week" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "آخر 7 أيام" : "Last 7 days"}</SelectItem>
+                <SelectItem value="month" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "آخر شهر" : "Last month"}</SelectItem>
+                <SelectItem value="custom" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "مخصص" : "Custom"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Items Per Page */}
+          <div className="col-span-1 md:col-span-2">
+            <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
+              <SelectTrigger className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20 text-sm">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Layers className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                  <SelectValue placeholder="10" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+                <SelectItem value="5" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">5</SelectItem>
+                <SelectItem value="10" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">10</SelectItem>
+                <SelectItem value="20" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">20</SelectItem>
+                <SelectItem value="50" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Custom Date Range Button */}
+          {filterDateRange === "custom" && (
+            <div className="col-span-1 md:col-span-2 relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDatePicker(!showDatePicker)}
+                className="w-full h-10 px-2 sm:px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-all duration-300 flex items-center justify-center gap-1.5 text-xs sm:text-sm"
+              >
+                <Calendar className="h-3.5 w-3.5 text-[#2a655f] shrink-0" />
+                <span className="font-medium truncate">
+                  {dateFrom || dateTo 
+                    ? (app.lang === "ar" ? "تعديل" : "Edit")
+                    : (app.lang === "ar" ? "اختر" : "Select")}
                 </span>
-              </div>
-            </Button>
+                {showDatePicker ? (
+                  <ChevronUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                )}
+              </Button>
 
-            {showDatePicker && (
-              <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[999999] bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-2xl p-5 min-w-[420px] max-w-[95vw] max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-[#2a655f] dark:text-white flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-[#2a655f]" />
-                      {app.lang === "ar" ? "اختر الفترة الزمنية" : "Select Time Period"}
-                    </span>
-                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px] animate-pulse">
-                      {app.lang === "ar" ? "التاريخ والوقت" : "Date & Time"}
-                    </Badge>
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                      <span className="text-[#2a655f]">📅</span>
-                      {app.lang === "ar" ? "من" : "From"}
-                      <span className="text-[10px] text-muted-foreground">(اختر التاريخ والوقت)</span>
-                    </Label>
-                    <div className="relative mt-1">
-                      <Input
-                        type="datetime-local"
-                        value={tempDateFrom}
-                        onChange={(e) => setTempDateFrom(e.target.value)}
-                        className="h-10 w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 bg-white dark:bg-slate-800 text-sm transition-all duration-300 cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                      <span className="text-[#2a655f]">📅</span>
-                      {app.lang === "ar" ? "إلى" : "To"}
-                      <span className="text-[10px] text-muted-foreground">(اختر التاريخ والوقت)</span>
-                    </Label>
-                    <div className="relative mt-1">
-                      <Input
-                        type="datetime-local"
-                        value={tempDateTo}
-                        onChange={(e) => setTempDateTo(e.target.value)}
-                        className="h-10 w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 bg-white dark:bg-slate-800 text-sm transition-all duration-300 cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-700">
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 w-full">
-                      <Zap className="h-3 w-3 text-[#2a655f]" />
-                      {app.lang === "ar" ? "اختيارات سريعة:" : "Quick picks:"}
-                    </span>
-                    {[
-                      { label: app.lang === "ar" ? "اليوم" : "Today", value: "today" },
-                      { label: app.lang === "ar" ? "أمس" : "Yesterday", value: "yesterday" },
-                      { label: app.lang === "ar" ? "آخر 7 أيام" : "Last 7 days", value: "week" },
-                      { label: app.lang === "ar" ? "آخر 30 يوم" : "Last 30 days", value: "month" },
-                    ].map((item) => (
-                      <Button
-                        key={item.value}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const now = new Date();
-                          let from = new Date();
-                          let to = new Date();
-                          
-                          switch (item.value) {
-                            case "today":
-                              from.setHours(0, 0, 0, 0);
-                              to.setHours(23, 59, 59, 999);
-                              break;
-                            case "yesterday":
-                              from.setDate(from.getDate() - 1);
-                              from.setHours(0, 0, 0, 0);
-                              to.setDate(to.getDate() - 1);
-                              to.setHours(23, 59, 59, 999);
-                              break;
-                            case "week":
-                              from.setDate(from.getDate() - 7);
-                              from.setHours(0, 0, 0, 0);
-                              to.setHours(23, 59, 59, 999);
-                              break;
-                            case "month":
-                              from.setMonth(from.getMonth() - 1);
-                              from.setHours(0, 0, 0, 0);
-                              to.setHours(23, 59, 59, 999);
-                              break;
-                          }
-                          
-                          const fromStr = from.toISOString().slice(0, 16);
-                          const toStr = to.toISOString().slice(0, 16);
-                          setTempDateFrom(fromStr);
-                          setTempDateTo(toStr);
-                        }}
-                        className="h-7 px-3 rounded-lg text-[10px] border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-all duration-200"
-                      >
-                        {item.label}
-                      </Button>
-                    ))}
-                  </div>
-                  
-                  {(tempDateFrom || tempDateTo) && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border-2 border-slate-200 dark:border-slate-700 animate-in fade-in duration-300">
-                      <ClockIcon className="h-3.5 w-3.5 text-[#2a655f]" />
-                      <span className="text-xs text-[#2a655f] dark:text-[#3a8a82] truncate">
-                        {tempDateFrom && tempDateTo 
-                          ? `${new Date(tempDateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')} → ${new Date(tempDateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
-                          : tempDateFrom 
-                            ? `${app.lang === 'ar' ? 'من' : 'From'} ${new Date(tempDateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
-                            : `${app.lang === 'ar' ? 'إلى' : 'To'} ${new Date(tempDateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
-                        }
+              {showDatePicker && (
+                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[999999] bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-2xl p-4 sm:p-5 w-[95vw] max-w-[420px] max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-[#2a655f] dark:text-white flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-[#2a655f]" />
+                        {app.lang === "ar" ? "اختر الفترة الزمنية" : "Select Time Period"}
                       </span>
+                      <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[10px] animate-pulse">
+                        {app.lang === "ar" ? "التاريخ والوقت" : "Date & Time"}
+                      </Badge>
                     </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setTempDateFrom("");
-                        setTempDateTo("");
-                        setShowDatePicker(false);
-                      }}
-                      className="h-8 px-3 rounded-xl text-xs text-slate-500 hover:text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-300"
-                    >
-                      <X className="h-3.5 w-3.5 mr-1" />
-                      {app.lang === "ar" ? "إلغاء" : "Cancel"}
-                    </Button>
                     
-                    <div className="flex items-center gap-2">
+                    <div>
+                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                        <span className="text-[#2a655f]">📅</span>
+                        {app.lang === "ar" ? "من" : "From"}
+                        <span className="text-[10px] text-muted-foreground">(اختر التاريخ والوقت)</span>
+                      </Label>
+                      <div className="relative mt-1">
+                        <Input
+                          type="datetime-local"
+                          value={tempDateFrom}
+                          onChange={(e) => setTempDateFrom(e.target.value)}
+                          className="h-10 w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 bg-white dark:bg-slate-800 text-sm transition-all duration-300 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                        <span className="text-[#2a655f]">📅</span>
+                        {app.lang === "ar" ? "إلى" : "To"}
+                        <span className="text-[10px] text-muted-foreground">(اختر التاريخ والوقت)</span>
+                      </Label>
+                      <div className="relative mt-1">
+                        <Input
+                          type="datetime-local"
+                          value={tempDateTo}
+                          onChange={(e) => setTempDateTo(e.target.value)}
+                          className="h-10 w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 bg-white dark:bg-slate-800 text-sm transition-all duration-300 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-700">
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1 w-full">
+                        <Zap className="h-3 w-3 text-[#2a655f]" />
+                        {app.lang === "ar" ? "اختيارات سريعة:" : "Quick picks:"}
+                      </span>
+                      {[
+                        { label: app.lang === "ar" ? "اليوم" : "Today", value: "today" },
+                        { label: app.lang === "ar" ? "أمس" : "Yesterday", value: "yesterday" },
+                        { label: app.lang === "ar" ? "آخر 7 أيام" : "Last 7 days", value: "week" },
+                        { label: app.lang === "ar" ? "آخر 30 يوم" : "Last 30 days", value: "month" },
+                      ].map((item) => (
+                        <Button
+                          key={item.value}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const now = new Date();
+                            let from = new Date();
+                            let to = new Date();
+                            
+                            switch (item.value) {
+                              case "today":
+                                from.setHours(0, 0, 0, 0);
+                                to.setHours(23, 59, 59, 999);
+                                break;
+                              case "yesterday":
+                                from.setDate(from.getDate() - 1);
+                                from.setHours(0, 0, 0, 0);
+                                to.setDate(to.getDate() - 1);
+                                to.setHours(23, 59, 59, 999);
+                                break;
+                              case "week":
+                                from.setDate(from.getDate() - 7);
+                                from.setHours(0, 0, 0, 0);
+                                to.setHours(23, 59, 59, 999);
+                                break;
+                              case "month":
+                                from.setMonth(from.getMonth() - 1);
+                                from.setHours(0, 0, 0, 0);
+                                to.setHours(23, 59, 59, 999);
+                                break;
+                            }
+                            
+                            const fromStr = from.toISOString().slice(0, 16);
+                            const toStr = to.toISOString().slice(0, 16);
+                            setTempDateFrom(fromStr);
+                            setTempDateTo(toStr);
+                          }}
+                          className="h-7 px-2.5 sm:px-3 rounded-lg text-[10px] border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-all duration-200"
+                        >
+                          {item.label}
+                        </Button>
+                      ))}
+                    </div>
+                    
+                    {(tempDateFrom || tempDateTo) && (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border-2 border-slate-200 dark:border-slate-700 animate-in fade-in duration-300">
+                        <ClockIcon className="h-3.5 w-3.5 text-[#2a655f] shrink-0" />
+                        <span className="text-xs text-[#2a655f] dark:text-[#3a8a82] truncate">
+                          {tempDateFrom && tempDateTo 
+                            ? `${new Date(tempDateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')} → ${new Date(tempDateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                            : tempDateFrom 
+                              ? `${app.lang === 'ar' ? 'من' : 'From'} ${new Date(tempDateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                              : `${app.lang === 'ar' ? 'إلى' : 'To'} ${new Date(tempDateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                          }
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => {
                           setTempDateFrom("");
                           setTempDateTo("");
-                          setDateFrom("");
-                          setDateTo("");
                           setShowDatePicker(false);
-                          setCurrentPage(1);
                         }}
-                        className="h-8 px-3 rounded-xl text-xs border-2 border-red-200/50 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-300"
+                        className="h-8 px-3 rounded-xl text-xs text-slate-500 hover:text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-300"
                       >
-                        <Trash2 className="h-3.5 w-3.5 mr-1" />
-                        {app.lang === "ar" ? "مسح" : "Clear"}
+                        <X className="h-3.5 w-3.5 mr-1" />
+                        {app.lang === "ar" ? "إلغاء" : "Cancel"}
                       </Button>
                       
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          if (tempDateFrom) setDateFrom(tempDateFrom);
-                          if (tempDateTo) setDateTo(tempDateTo);
-                          setShowDatePicker(false);
-                          setCurrentPage(1);
-                        }}
-                        className="h-8 px-4 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105 border-2 border-[#2a655f]/30"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                        {app.lang === "ar" ? "تطبيق" : "Apply"}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setTempDateFrom("");
+                            setTempDateTo("");
+                            setDateFrom("");
+                            setDateTo("");
+                            setShowDatePicker(false);
+                            setCurrentPage(1);
+                          }}
+                          className="h-8 px-3 rounded-xl text-xs border-2 border-red-200/50 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-300"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />
+                          {app.lang === "ar" ? "مسح" : "Clear"}
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (tempDateFrom) setDateFrom(tempDateFrom);
+                            if (tempDateTo) setDateTo(tempDateTo);
+                            setShowDatePicker(false);
+                            setCurrentPage(1);
+                          }}
+                          className="h-8 px-4 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105 border-2 border-[#2a655f]/30"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                          {app.lang === "ar" ? "تطبيق" : "Apply"}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {(dateFrom || dateTo) && (
-              <div className="absolute top-full left-0 mt-14 flex items-center gap-2 px-3 py-1.5 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border-2 border-slate-200 dark:border-slate-700 animate-in fade-in duration-300 whitespace-nowrap z-50">
-                <ClockIcon className="h-3.5 w-3.5 text-[#2a655f]" />
-                <span className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82]">
-                  {dateFrom && dateTo 
-                    ? `${new Date(dateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')} → ${new Date(dateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
-                    : dateFrom 
-                      ? `${app.lang === 'ar' ? 'من' : 'From'} ${new Date(dateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
-                      : `${app.lang === 'ar' ? 'إلى' : 'To'} ${new Date(dateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
-                  }
-                </span>
-                <button
-                  onClick={() => {
-                    setDateFrom("");
-                    setDateTo("");
-                    setTempDateFrom("");
-                    setTempDateTo("");
-                    setCurrentPage(1);
-                  }}
-                  className="ml-1 text-[#2a655f]/60 hover:text-red-500 transition-colors"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
+              {(dateFrom || dateTo) && (
+                <div className="absolute top-full left-0 mt-2 flex items-center gap-2 px-3 py-1.5 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border-2 border-slate-200 dark:border-slate-700 animate-in fade-in duration-300 whitespace-nowrap z-50 max-w-[280px] overflow-hidden">
+                  <ClockIcon className="h-3.5 w-3.5 text-[#2a655f] shrink-0" />
+                  <span className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82] truncate">
+                    {dateFrom && dateTo 
+                      ? `${new Date(dateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')} → ${new Date(dateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                      : dateFrom 
+                        ? `${app.lang === 'ar' ? 'من' : 'From'} ${new Date(dateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                        : `${app.lang === 'ar' ? 'إلى' : 'To'} ${new Date(dateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                    }
+                  </span>
+                  <button
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                      setTempDateFrom("");
+                      setTempDateTo("");
+                      setCurrentPage(1);
+                    }}
+                    className="ml-1 text-[#2a655f]/60 hover:text-red-500 transition-colors shrink-0"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Clear All Button */}
+          <div className={cn(
+            "col-span-1",
+            filterDateRange === "custom" ? "md:col-span-2" : "md:col-span-4"
+          )}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => { 
+                setSearchQuery(""); 
+                setFilterStatus("all"); 
+                setFilterDateRange("all");
+                setDateFrom("");
+                setDateTo("");
+                setTempDateFrom("");
+                setTempDateTo("");
+                setItemsPerPage(10); 
+                setCurrentPage(1); 
+              }} 
+              className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 group text-xs"
+            >
+              <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
+              {app.lang === "ar" ? "مسح الكل" : "Clear All"}
+            </Button>
+          </div>
+        </div>
+
+        {/* ✅ عداد النتائج */}
+        {(searchQuery || filterStatus !== "all" || filterDateRange !== "all") && (
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2 flex-wrap">
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+              {app.lang === "ar" 
+                ? `📊 ${filteredOrders.length} نتيجة من أصل ${storeOrders.length}`
+                : `📊 ${filteredOrders.length} of ${storeOrders.length} results`}
+            </span>
+            <button
+              onClick={() => { 
+                setSearchQuery(""); 
+                setFilterStatus("all"); 
+                setFilterDateRange("all");
+                setDateFrom("");
+                setDateTo("");
+                setCurrentPage(1); 
+              }}
+              className="text-[11px] sm:text-xs text-[#2a655f] hover:text-[#d81b60] font-medium transition-colors"
+            >
+              {app.lang === "ar" ? "إعادة تعيين" : "Reset"}
+            </button>
           </div>
         )}
-
-        {/* ✅ عدد العناصر لكل صفحة */}
-        <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[90px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
-            <SelectValue placeholder="10" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
-            <SelectItem value="5" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">5</SelectItem>
-            <SelectItem value="10" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">10</SelectItem>
-            <SelectItem value="20" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">20</SelectItem>
-            <SelectItem value="50" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">50</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* ✅ زر مسح الكل - بوردر رمادي */}
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => { 
-            setSearchQuery(""); 
-            setFilterStatus("all"); 
-            setFilterDateRange("all");
-            setDateFrom("");
-            setDateTo("");
-            setTempDateFrom("");
-            setTempDateTo("");
-            setItemsPerPage(10); 
-            setCurrentPage(1); 
-          }} 
-          className="h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 group"
-        >
-          <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
-          {app.lang === "ar" ? "مسح الكل" : "Clear All"}
-        </Button>
       </div>
 
       {/* ============================================================ */}
-      {/* ✅ ORDERS TABLE - نفس تصميم AdminStores (خلفية بيضاء، بوردر رمادي، هوفر رمادي فاتح) */}
+      {/* ✅ ORDERS TABLE */}
       {/* ============================================================ */}
       {storeOrders.length === 0 ? (
-        <div className="rounded-3xl border-3 border-dashed border-slate-200 dark:border-slate-700 p-20 text-center bg-gradient-to-b from-slate-50/50 to-transparent dark:from-slate-800/20">
-          <div className="h-24 w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto">
-            <ShoppingBag className="h-12 w-12 text-[#2a655f]/60" />
+        <div className="rounded-3xl border-3 border-dashed border-slate-200 dark:border-slate-700 p-10 sm:p-20 text-center bg-gradient-to-b from-slate-50/50 to-transparent dark:from-slate-800/20">
+          <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto">
+            <ShoppingBag className="h-10 w-10 sm:h-12 sm:w-12 text-[#2a655f]/60" />
           </div>
-          <h3 className="text-2xl font-bold mt-6 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] bg-clip-text text-transparent">
+          <h3 className="text-xl sm:text-2xl font-bold mt-4 sm:mt-6 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] bg-clip-text text-transparent">
             {app.lang === "ar" ? "📦 لا توجد طلبات بعد" : "📦 No orders yet"}
           </h3>
-          <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-md mx-auto">
             {app.lang === "ar" 
               ? "عندما يقوم العملاء بشراء منتجاتك، ستظهر طلباتهم هنا" 
               : "When customers purchase your products, their orders will appear here"}
           </p>
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="rounded-3xl border-3 border-dashed border-slate-200 dark:border-slate-700 p-20 text-center">
-          <Search className="h-20 w-20 text-muted-foreground/40 mx-auto" />
-          <h3 className="text-xl font-semibold text-muted-foreground mt-4">
+        <div className="rounded-3xl border-3 border-dashed border-slate-200 dark:border-slate-700 p-10 sm:p-20 text-center">
+          <Search className="h-16 w-16 sm:h-20 sm:w-20 text-muted-foreground/40 mx-auto" />
+          <h3 className="text-lg sm:text-xl font-semibold text-muted-foreground mt-4">
             {app.lang === "ar" ? "🔍 لا توجد نتائج مطابقة" : "🔍 No matching results"}
           </h3>
           <Button 
@@ -1559,8 +1588,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
           {/* ===== PAGINATION ===== */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t-2 border-slate-200 dark:border-slate-700 flex-wrap gap-3">
-              <span className="text-xs text-slate-500 flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-3 sm:gap-4 pt-4 border-t-2 border-slate-200 dark:border-slate-700">
+              <span className="text-xs text-slate-500 flex items-center gap-2 justify-center sm:justify-start w-full sm:w-auto">
                 <TrendingUp className="h-3.5 w-3.5 text-[#2a655f]" />
                 {app.lang === "ar" ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
                 <span className="text-muted-foreground/50">|</span>
@@ -1569,13 +1598,13 @@ export const OrdersPage = React.memo(function OrdersPage() {
                 </span>
               </span>
               
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center w-full sm:w-auto">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setCurrentPage(1)} 
                   disabled={currentPage === 1} 
-                  className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
+                  className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
                 >
                   <span className="text-xs font-bold">«</span>
                 </Button>
@@ -1585,12 +1614,12 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   size="sm" 
                   onClick={() => setCurrentPage(currentPage - 1)} 
                   disabled={currentPage === 1} 
-                  className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
+                  className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 
-                <div className="flex items-center gap-1 px-2">
+                <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-2">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                     let pageNum;
                     if (totalPages <= 5) {
@@ -1610,7 +1639,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
                         className={cn(
-                          "h-8 w-8 p-0 rounded-xl text-xs font-medium transition-all duration-300",
+                          "h-8 w-8 p-0 rounded-lg sm:rounded-xl text-xs font-medium transition-all duration-300",
                           pageNum === currentPage 
                             ? "bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30 border-0 scale-105" 
                             : "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200"
@@ -1627,7 +1656,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   size="sm" 
                   onClick={() => setCurrentPage(currentPage + 1)} 
                   disabled={currentPage === totalPages} 
-                  className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
+                  className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -1637,7 +1666,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   size="sm" 
                   onClick={() => setCurrentPage(totalPages)} 
                   disabled={currentPage === totalPages} 
-                  className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
+                  className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
                 >
                   <span className="text-xs font-bold">»</span>
                 </Button>

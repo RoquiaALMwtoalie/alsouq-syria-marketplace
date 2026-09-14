@@ -59,7 +59,7 @@ export const ConvertToOfferDialog = ({
   const [newPrice, setNewPrice] = useState<number>(0);
   const [error, setError] = useState<string>("");
   
-  // ✅ State للفيرنتات
+  // ✅ State للخيارات
   const [variationPrices, setVariationPrices] = useState<Record<string, number>>({});
   const [variationOldPrices, setVariationOldPrices] = useState<Record<string, number>>({});
   const [bulkDiscountPercent, setBulkDiscountPercent] = useState<number>(0);
@@ -75,7 +75,7 @@ export const ConvertToOfferDialog = ({
       setNewPrice(suggestedPrice);
       setError("");
       
-      // ✅ تعبئة أسعار الفيرنتات
+      // ✅ تعبئة أسعار الخيارات
       if (hasVariations) {
         const prices: Record<string, number> = {};
         const oldPrices: Record<string, number> = {};
@@ -99,14 +99,14 @@ export const ConvertToOfferDialog = ({
 
   const originalPrice = Number(product.price);
   
-  // ✅ حساب الخصم للمنتج بدون فيرنتات
+  // ✅ حساب الخصم للمنتج بدون خيارات
   const discountPercent = originalPrice > 0 && newPrice > 0 && newPrice < originalPrice
     ? Math.round(((originalPrice - newPrice) / originalPrice) * 100)
     : 0;
   
   const isValid = newPrice > 0 && newPrice < originalPrice;
 
-  // ✅ حساب الخصم للفيرنتات
+  // ✅ حساب الخصم للخيارات
   const getVariationDiscount = (varId: string) => {
     const oldPrice = variationOldPrices[varId] || 0;
     const newPriceVar = variationPrices[varId] || 0;
@@ -116,7 +116,7 @@ export const ConvertToOfferDialog = ({
     return 0;
   };
 
-  // ✅ التحقق من صحة الفيرنتات
+  // ✅ التحقق من صحة الخيارات
   const areVariationsValid = () => {
     if (!hasVariations) return true;
     
@@ -132,7 +132,7 @@ export const ConvertToOfferDialog = ({
 
   const isFormValid = hasVariations ? areVariationsValid() : isValid;
 
-  // ✅ تطبيق خصم على كل الفيرنتات
+  // ✅ تطبيق خصم على كل الخيارات
   const applyBulkDiscount = (percent: number) => {
     if (!hasVariations || !product.variations) return;
     
@@ -147,30 +147,33 @@ export const ConvertToOfferDialog = ({
     setBulkDiscountPercent(percent);
   };
 
-  // ✅ تطبيق خصم على كل الفيرنتات (تطبيق فعلي)
+  // ✅ تطبيق خصم على كل الخيارات (تطبيق فعلي)
   const handleApplyBulkDiscount = () => {
     if (bulkDiscountPercent > 0 && bulkDiscountPercent <= 100) {
       applyBulkDiscount(bulkDiscountPercent);
     }
   };
 
-  const handleConfirm = () => {
-    if (!isFormValid) {
-      setError(
-        lang === "ar" 
-          ? "⚠️ الرجاء التأكد من أن السعر الجديد أقل من السعر القديم" 
-          : "⚠️ Please ensure new price is less than old price"
-      );
-      return;
-    }
+const handleConfirm = () => {
+  if (!isFormValid) {
+    setError(
+      lang === "ar" 
+        ? "⚠️ الرجاء التأكد من أن السعر الجديد أقل من السعر القديم" 
+        : "⚠️ Please ensure new price is less than old price"
+    );
+    return;
+  }
 
-    if (hasVariations) {
-      // ✅ تحويل مع فيرنتات
-      onConfirm(product.id, 0, variationPrices, variationOldPrices);
-    } else {
-      onConfirm(product.id, newPrice);
-    }
-  };
+  // ✅ أغلق النافذة فوراً
+  onOpenChange(false);
+
+  // ✅ ثم نفّذ التحويل
+  if (hasVariations) {
+    onConfirm(product.id, 0, variationPrices, variationOldPrices);
+  } else {
+    onConfirm(product.id, newPrice);
+  }
+};
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -220,7 +223,7 @@ export const ConvertToOfferDialog = ({
                   {hasVariations && (
                     <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-0 text-[9px]">
                       <Layers className="h-3 w-3 inline mr-1" />
-                      {product.variations.length} {lang === "ar" ? "فيرنت" : "variations"}
+                      {product.variations.length} {lang === "ar" ? "خيار" : "options"}
                     </Badge>
                   )}
                 </div>
@@ -228,13 +231,13 @@ export const ConvertToOfferDialog = ({
             </div>
           </div>
 
-          {/* ===== عرض الفيرنتات ===== */}
+          {/* ===== عرض الخيارات ===== */}
           {hasVariations && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <Layers className="h-4 w-4 text-[#2a655f]" />
-                  {lang === "ar" ? "أسعار الفيرنتات" : "Variation Prices"}
+                  {lang === "ar" ? "أسعار الخيارات" : "Option Prices"}
                   <span className="text-red-500 text-xs">*</span>
                 </Label>
                 
@@ -378,14 +381,14 @@ export const ConvertToOfferDialog = ({
                 <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
                 <p className="text-[10px] text-amber-600 dark:text-amber-400">
                   {lang === "ar" 
-                    ? "⚠️ كل فيرنت له سعر مستقل. حدد السعر الجديد والقديم لكل فيرنت" 
-                    : "⚠️ Each variation has its own price. Set new and old price for each variation"}
+                    ? "⚠️ كل خيار له سعر مستقل. حدد السعر الجديد والقديم لكل خيار" 
+                    : "⚠️ Each option has its own price. Set new and old price for each option"}
                 </p>
               </div>
             </div>
           )}
 
-          {/* ===== إدخال السعر الجديد (بدون فيرنتات) ===== */}
+          {/* ===== إدخال السعر الجديد (بدون خيارات) ===== */}
           {!hasVariations && (
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2 text-slate-700 dark:text-slate-300">
@@ -490,12 +493,12 @@ export const ConvertToOfferDialog = ({
                   {hasVariations ? (
                     <div className="mt-1">
                       <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-0 text-[9px]">
-                        {lang === "ar" ? "عرض مع فيرنتات" : "Offer with variations"}
+                        {lang === "ar" ? "عرض مع خيارات" : "Offer with options"}
                       </Badge>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         {lang === "ar" 
-                          ? `تحديث أسعار ${product.variations.length} فيرنت` 
-                          : `Updating ${product.variations.length} variations`}
+                          ? `تحديث أسعار ${product.variations.length} خيار` 
+                          : `Updating ${product.variations.length} options`}
                       </p>
                     </div>
                   ) : (
@@ -525,8 +528,8 @@ export const ConvertToOfferDialog = ({
                   <span className="text-blue-600/70 dark:text-blue-400/70">
                     {hasVariations
                       ? (lang === "ar"
-                          ? ` العرض مع فيرنتات متعددة يزيد من فرص البيع`
-                          : ` Offer with multiple variations increases sales chances`)
+                          ? ` العرض مع خيارات متعددة يزيد من فرص البيع`
+                          : ` Offer with multiple options increases sales chances`)
                       : (lang === "ar"
                           ? ` الخصم ${discountPercent}% سيجذب المزيد من العملاء`
                           : ` ${discountPercent}% discount will attract more customers`)

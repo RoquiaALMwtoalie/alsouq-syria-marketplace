@@ -121,7 +121,7 @@ const LiveIndicator = () => (
   </span>
 );
 
-// ✅ ===== سلايدر النظام - زيتي فقط =====
+// ✅ ===== سلايدر النظام - زيتي فقط - محسّن للموبايل - بدون badge و stat =====
 const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
@@ -137,10 +137,6 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
       subtitle_en: "Smart Marketplace Management System",
       desc_ar: "منصة سوق متكاملة تربط البائعين والمشترين في بيئة آمنة وسهلة الاستخدام",
       desc_en: "An integrated marketplace platform connecting buyers and sellers in a secure, user-friendly environment",
-      badge_ar: "🏛️ منصة متكاملة",
-      badge_en: "🏛️ Integrated Platform",
-      stat_ar: "🚀 تحديثات لحظية",
-      stat_en: "🚀 Real-time Updates",
     },
     {
       id: 2,
@@ -151,10 +147,6 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
       subtitle_en: "Complete Security & Protection",
       desc_ar: "نظام حماية المشتري والبائع مع توثيق الهوية ومراقبة الطلبات لحماية جميع الأطراف",
       desc_en: "Buyer and seller protection system with identity verification and order monitoring",
-      badge_ar: "🛡️ حماية متقدمة",
-      badge_en: "🛡️ Advanced Security",
-      stat_ar: "🔒 آمن ومحمي",
-      stat_en: "🔒 Secure & Protected",
     },
     {
       id: 3,
@@ -165,10 +157,6 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
       subtitle_en: "Real-time Analytics & Reports",
       desc_ar: "لوحة تحكم متقدمة تعرض مؤشرات الأداء والإحصائيات لحظياً لاتخاذ قرارات ذكية",
       desc_en: "Advanced dashboard displaying real-time KPIs and statistics for smart decision making",
-      badge_ar: "📊 تحليلات لحظية",
-      badge_en: "📊 Real-time Analytics",
-      stat_ar: "📈 نمو متزايد",
-      stat_en: "📈 Growing",
     },
     {
       id: 4,
@@ -179,10 +167,6 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
       subtitle_en: "Smart Integrated Delivery",
       desc_ar: "نظام توصيل متطور يدعم شركات متعددة وتتبع الطلبات في الوقت الفعلي",
       desc_en: "Advanced delivery system supporting multiple companies and real-time order tracking",
-      badge_ar: "🚚 توصيل سريع",
-      badge_en: "🚚 Fast Delivery",
-      stat_ar: "📦 توصيل فوري",
-      stat_en: "📦 Instant Delivery",
     },
     {
       id: 5,
@@ -193,10 +177,6 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
       subtitle_en: "Unique User Experience",
       desc_ar: "واجهات مستخدم حديثة ومتجاوبة مع دعم كامل للغتين العربية والإنجليزية",
       desc_en: "Modern, responsive user interfaces with full Arabic and English language support",
-      badge_ar: "✨ تجربة متميزة",
-      badge_en: "✨ Premium Experience",
-      stat_ar: "⭐ تقييم عالي",
-      stat_en: "⭐ High Rating",
     },
   ];
 
@@ -226,7 +206,7 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
   const current = slides[currentSlide];
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] shadow-xl shadow-[#2a655f]/20 border-2 border-[#2a655f]/30 group min-h-[90px] md:min-h-[105px]">
+    <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] shadow-xl shadow-[#2a655f]/20 border-2 border-[#2a655f]/30 group min-h-[100px] sm:min-h-[100px] md:min-h-[105px]">
       
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] bg-repeat" />
@@ -235,66 +215,63 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
       <div className="absolute -top-20 -right-20 h-32 w-32 rounded-full bg-[#2a655f]/20 blur-2xl animate-pulse" />
       <div className="absolute -bottom-20 -left-20 h-32 w-32 rounded-full bg-[#2a655f]/20 blur-2xl animate-pulse delay-1000" />
       
-      <div className="relative px-3 py-2.5 md:px-5 md:py-3.5 flex flex-col md:flex-row items-center gap-2 md:gap-3.5 z-10">
+      <div className="relative px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-3.5 flex items-center gap-2.5 sm:gap-3 md:gap-3.5 z-10">
         <div className="flex-shrink-0">
           <div className="relative">
-            <div className="h-9 w-9 md:h-12 md:w-12 rounded-xl bg-white/30 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center text-xl md:text-3xl shadow-lg shadow-[#2a655f]/20 animate-float group-hover:scale-110 transition-transform duration-500">
+            <div className="h-10 w-10 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-xl bg-white/30 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center text-xl sm:text-2xl md:text-3xl shadow-lg shadow-[#2a655f]/20 animate-float group-hover:scale-110 transition-transform duration-500">
               {current.icon}
             </div>
             <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#2a655f]/30 to-[#3a8a82]/30 blur-lg animate-pulse" />
           </div>
         </div>
         
-        <div className="flex-1 text-center md:text-right">
-          <h1 className={`text-sm md:text-lg font-bold text-white mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
+        <div className="flex-1 text-center sm:text-right w-full min-w-0">
+          <h1 className={`text-sm sm:text-sm md:text-lg font-bold text-white mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
             {isRTL ? current.title_ar : current.title_en}
           </h1>
-          <h2 className={`text-xs md:text-base font-bold text-[#e8f0ee] mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
+          <h2 className={`text-xs sm:text-xs md:text-base font-bold text-[#e8f0ee] mb-0.5 tracking-tight ${isRTL ? 'font-arabic' : ''}`}>
             {isRTL ? current.subtitle_ar : current.subtitle_en}
           </h2>
-          <p className={`text-[10px] md:text-xs text-[#e8f0ee]/80 max-w-2xl leading-relaxed hidden sm:block ${isRTL ? 'font-arabic' : ''}`}>
+          <p className={`text-[10px] sm:text-[11px] md:text-xs text-[#e8f0ee]/80 max-w-2xl leading-relaxed hidden sm:block ${isRTL ? 'font-arabic' : ''}`}>
             {isRTL ? current.desc_ar : current.desc_en}
           </p>
-          <div className="flex flex-wrap items-center gap-1.5 mt-1 justify-center md:justify-start">
-            <span className="px-2 py-0.5 rounded-full bg-white/40 backdrop-blur-sm border border-white/30 text-[#2a655f] text-[9px] font-bold">
-              {isRTL ? current.badge_ar : current.badge_en}
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-[#2a655f]/20 backdrop-blur-sm border border-[#2a655f]/30 text-white text-[9px] font-bold">
-              {isRTL ? current.stat_ar : current.stat_en}
-            </span>
-          </div>
         </div>
         
-        <div className="flex-shrink-0 flex flex-row md:flex-col gap-1.5">
+        {/* ✅ أزرار التنقل */}
+        <div className="flex-shrink-0 flex flex-row sm:flex-col gap-1.5 sm:gap-1.5">
           <button
             onClick={prevSlide}
-            className="h-6 w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-white/30 hover:border-white/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
+            className="h-7 w-7 sm:h-7 sm:w-7 md:h-6 md:w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-white/30 hover:border-white/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
+            aria-label="Previous"
           >
-            <ChevronLeft className="h-3.5 w-3.5" />
+            <ChevronLeft className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-3.5 md:w-3.5" />
           </button>
           <button
             onClick={nextSlide}
-            className="h-6 w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-white/30 hover:border-white/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
+            className="h-7 w-7 sm:h-7 sm:w-7 md:h-6 md:w-6 rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/60 text-[#2a655f] border border-white/30 hover:border-white/50 transition-all duration-300 hover:scale-110 flex items-center justify-center"
+            aria-label="Next"
           >
-            <ChevronRight className="h-3.5 w-3.5" />
+            <ChevronRight className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-3.5 md:w-3.5" />
           </button>
         </div>
       </div>
       
-      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-1">
+      {/* ✅ المؤشرات (dots) */}
+      <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
         {Array.from({ length: totalSlides }).map((_, index) => (
           <button
             key={index}
             onClick={() => goToSlide(index)}
+            aria-label={`Slide ${index + 1}`}
             className={cn(
               "h-1 rounded-full transition-all duration-500",
               currentSlide === index
                 ? "w-4 bg-white shadow-lg shadow-white/30"
-                : "w-1.5 bg-white/30 hover:bg-white/50"
+                : "w-1 bg-white/40 hover:bg-white/60"
             )}
           />
         ))}
-        <span className="text-[7px] text-white/50 ml-1 font-mono">
+        <span className="text-[7px] text-white/60 ml-1 font-mono font-bold">
           {currentSlide + 1}/{totalSlides}
         </span>
       </div>
@@ -498,30 +475,30 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
       <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-b-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 shadow-lg shadow-[#2a655f]/10">
         <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#2a655f] to-[#3a8a82] animate-pulse" />
         
-        <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
-          <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="flex items-center gap-3 group">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 relative">
-                <ShieldCheck className="h-4.5 w-4.5 text-white" />
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-2">
+          <div className={`flex items-center gap-2 sm:gap-4 min-w-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div className="flex items-center gap-2 sm:gap-3 group min-w-0">
+              <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 relative shrink-0">
+                <ShieldCheck className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-white" />
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#2a655f]/20 to-transparent animate-pulse" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-lg group-hover:text-[#3a8a82] transition-colors">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-sm sm:text-lg group-hover:text-[#3a8a82] transition-colors truncate">
                     {app.lang === 'ar' ? "لوحة الأدمن" : "Admin Panel"}
                   </span>
-                  <Badge className="text-[8px] px-1.5 py-0.5 bg-[#2a655f]/20 text-[#2a655f] dark:text-[#2a655f] border-0 animate-pulse">
+                  <Badge className="text-[7px] sm:text-[8px] px-1 sm:px-1.5 py-0.5 bg-[#2a655f]/20 text-[#2a655f] dark:text-[#2a655f] border-0 animate-pulse shrink-0">
                     🟢 {app.lang === "ar" ? "نشط" : "Active"}
                   </Badge>
                 </div>
-                <p className="text-[10px] text-[#2a655f] dark:text-[#3a8a82] -mt-0.5 font-semibold">
+                <p className="text-[9px] sm:text-[10px] text-[#2a655f] dark:text-[#3a8a82] -mt-0.5 font-semibold truncate">
                   {app.lang === 'ar' ? 'تحكم كامل في المنصة' : 'Full Platform Control'}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className={`flex items-center gap-2 sm:gap-3 shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 border-2 border-[#2a655f]/20">
               <Clock className="h-3.5 w-3.5 text-[#2a655f]" />
               <span className="text-xs font-mono text-slate-600 dark:text-slate-300">{formattedTime}</span>
@@ -549,75 +526,44 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
             {notificationButton}
             
             {/* ✅ صورة الأدمن مع الاسم */}
-            <div className="relative group flex items-center gap-3">
-              <div className="flex flex-col items-end text-right">
-                <span className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">
+            <div className="relative group flex items-center gap-2 sm:gap-3">
+              <div className="hidden sm:flex flex-col items-end text-right">
+                <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white leading-tight">
                   {app.user?.name || 'Admin'}
                 </span>
-                <span className="text-[9px] text-[#2a655f] dark:text-[#3a8a82] font-semibold">
+                <span className="text-[8px] sm:text-[9px] text-[#2a655f] dark:text-[#3a8a82] font-semibold">
                   {app.lang === 'ar' ? 'مدير النظام' : 'System Administrator'}
                 </span>
               </div>
-              <Avatar className="h-10 w-10 ring-2 ring-[#2a655f]/40 group-hover:ring-[#2a655f]/60 transition-all duration-300 group-hover:scale-105 cursor-pointer">
+              <Avatar className="h-9 w-9 sm:h-10 sm:w-10 ring-2 ring-[#2a655f]/40 group-hover:ring-[#2a655f]/60 transition-all duration-300 group-hover:scale-105 cursor-pointer shrink-0">
                 {app.user?.avatar_url ? (
                   <AvatarImage src={app.user.avatar_url} alt={app.user.name || 'Admin'} className="object-cover" />
                 ) : (
-                  <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-sm font-bold">
+                  <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-xs sm:text-sm font-bold">
                     {app.user?.name?.charAt(0)?.toUpperCase() || 'A'}
                   </AvatarFallback>
                 )}
               </Avatar>
-              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#2a655f] border-2 border-white dark:border-slate-900 animate-pulse shadow-[0_0_12px_rgba(42,101,95,0.8)]" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-[#2a655f] border-2 border-white dark:border-slate-900 animate-pulse shadow-[0_0_12px_rgba(42,101,95,0.8)]" />
             </div>
           </div>
         </div>
       </header>
 
       {/* ===== المحتوى ===== */}
-      <div className="mx-auto max-w-7xl px-4 py-6 relative z-0">
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 py-4 sm:py-6 relative z-0">
         
         {/* ✅ ===== سلايدر النظام - زيتي فقط ===== */}
         {!showSearchResults && (
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <SystemSlider isRTL={isRTL} />
           </div>
         )}
 
-        {/* ===== PAGE HEADER ===== */}
-        <div className={`flex items-center justify-between mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <div className={isRTL ? 'text-right' : ''}>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {showSearchResults ? (
-                <span className="flex items-center gap-3">
-                  <span>{app.lang === 'ar' ? 'نتائج البحث' : 'Search Results'}</span>
-                  <Badge className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white text-sm px-3 py-1 shadow-lg shadow-[#2a655f]/30 border-2 border-white/30">
-                    {searchResults.total} {app.lang === 'ar' ? 'نتيجة' : 'results'}
-                  </Badge>
-                </span>
-              ) : (
-                nav.find(n => n.id === tab)?.label || (app.lang === 'ar' ? "نظرة عامة" : "Overview")
-              )}
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
-              {showSearchResults ? (
-                <span>
-                  {app.lang === 'ar' ? `نتائج البحث عن "${searchQuery}"` : `Results for "${searchQuery}"`}
-                </span>
-              ) : (
-                <span className="flex items-center gap-3">
-                  <span className="text-base md:text-lg font-bold text-[#2a655f] dark:text-[#3a8a82]">
-                    {app.lang === 'ar' ? `مرحبا بك في ذوق يا ${app.user?.name || 'مدير'}` : `Welcome to Zooq, ${app.user?.name || 'Admin'}`}
-                  </span>
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-
         {/* ===== عرض نتائج البحث ===== */}
         {showSearchResults && (
-          <div className="space-y-4 mb-6 animate-in slide-in-from-top-5 duration-300">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="space-y-4 mb-4 sm:mb-6 animate-in slide-in-from-top-5 duration-300">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
               {[
                 { key: 'listings', label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package },
                 { key: 'stores', label: app.lang === 'ar' ? 'المتاجر' : 'Stores', count: searchResults.stores, icon: Store },
@@ -634,19 +580,19 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                       handleTabChange(item.key as any);
                       setShowSearchResultsPage(false);
                     }}
-                    className={`bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-3 text-center hover:shadow-xl transition-all duration-300 hover:scale-[1.03] group ${isActive ? 'ring-2 ring-[#2a655f] border-[#2a655f] shadow-lg shadow-[#2a655f]/20' : ''}`}
+                    className={`bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-2.5 sm:p-3 text-center hover:shadow-xl transition-all duration-300 hover:scale-[1.03] group ${isActive ? 'ring-2 ring-[#2a655f] border-[#2a655f] shadow-lg shadow-[#2a655f]/20' : ''}`}
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <div className={`h-8 w-8 rounded-lg bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border-2 border-[#2a655f]/20`}>
-                        <item.icon className={`h-4 w-4 ${isActive ? 'text-[#2a655f]' : 'text-[#2a655f]'}`} />
+                      <div className={`h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border-2 border-[#2a655f]/20 shrink-0`}>
+                        <item.icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isActive ? 'text-[#2a655f]' : 'text-[#2a655f]'}`} />
                       </div>
-                      <div className="text-left">
-                        <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{item.label}</p>
-                        <p className="text-lg font-bold text-[#2a655f] dark:text-[#3a8a82]">{item.count}</p>
+                      <div className="text-left min-w-0">
+                        <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-300 truncate">{item.label}</p>
+                        <p className="text-base sm:text-lg font-bold text-[#2a655f] dark:text-[#3a8a82]">{item.count}</p>
                       </div>
                     </div>
                     {item.count > 0 && (
-                      <div className="mt-1 text-[10px] text-[#2a655f] font-medium hover:underline transition-all">
+                      <div className="mt-1 text-[9px] sm:text-[10px] text-[#2a655f] font-medium hover:underline transition-all">
                         {app.lang === 'ar' ? 'عرض الكل' : 'View all'} →
                       </div>
                     )}
@@ -656,14 +602,14 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
             </div>
 
             {searchResults.total === 0 && (
-              <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-12 text-center shadow-lg">
-                <div className="h-20 w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
-                  <Search className="h-10 w-10 text-[#2a655f]" />
+              <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-8 sm:p-12 text-center shadow-lg">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                  <Search className="h-8 w-8 sm:h-10 sm:w-10 text-[#2a655f]" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
                   {app.lang === 'ar' ? 'لا توجد نتائج' : 'No results found'}
                 </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
                   {app.lang === 'ar' ? `لم نعثر على أي نتائج تطابق "${searchQuery}"` : `No results match "${searchQuery}"`}
                 </p>
                 <Button 
@@ -678,9 +624,9 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
           </div>
         )}
 
-        {/* ===== TABS NAVIGATION - زيتي فقط ===== */}
+        {/* ===== TABS NAVIGATION - زيتي فقط - محسّن للموبايل ===== */}
         {!showSearchResults && (
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 shadow-xl shadow-[#2a655f]/10 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-[#3a8a82] animate-pulse" />
               
@@ -729,9 +675,16 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                 })}
               </div>
 
-              {/* ✅ Mobile Tabs - زيتي فقط */}
-              <div className="md:hidden p-3">
-                <div className="grid grid-cols-4 gap-1.5">
+              {/* ✅ Mobile Tabs - أفقي قابل للسحب مع scroll snap */}
+              <div className="md:hidden p-2.5">
+                <div 
+                  className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory"
+                  style={{
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    WebkitOverflowScrolling: 'touch',
+                  }}
+                >
                   {nav.map((n) => {
                     const iconConfig = getIconConfig(n.iconKey);
                     const Icon = iconConfig.icon;
@@ -749,25 +702,32 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                           handleTabChange(n.id);
                         }}
                         className={`
-                          relative flex flex-col items-center gap-1 p-2.5 rounded-xl text-xs font-medium transition-all duration-500
+                          relative flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-xl 
+                          text-[10px] font-bold transition-all duration-300 shrink-0 min-w-[85px] snap-start
                           ${isActive 
-                            ? 'bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-xl shadow-[#2a655f]/40 scale-[1.03] border-2 border-[#2a655f]/50' 
-                            : 'text-slate-600 dark:text-slate-300 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20'
+                            ? 'bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/40 border-2 border-[#2a655f]/50 scale-[1.02]' 
+                            : 'text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20'
                           }
                         `}
                       >
-                        <div className={`transition-all duration-500 ${isActive ? 'scale-110 animate-pulse' : ''}`}>
-                          <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#2a655f]'}`} />
-                        </div>
-                        <span className="text-[8px] leading-tight text-center max-w-full break-words font-bold">
+                        <Icon className={`h-4.5 w-4.5 ${isActive ? 'text-white' : 'text-[#2a655f]'}`} />
+                        <span className="leading-tight text-center whitespace-nowrap">
                           {n.label}
                         </span>
                         {isActive && (
-                          <span className="h-0.5 w-6 rounded-full bg-white/60 animate-pulse" />
+                          <span className="absolute -bottom-0.5 h-1 w-6 rounded-full bg-white/70 animate-pulse" />
                         )}
                       </button>
                     );
                   })}
+                </div>
+                
+                {/* ✅ مؤشر بصري إنه في scroll */}
+                <div className="flex items-center justify-center gap-1 mt-2">
+                  <span className="text-[8px] text-[#2a655f]/60 font-semibold">
+                    {app.lang === 'ar' ? 'اسحب للمزيد' : 'Swipe for more'}
+                  </span>
+                  <ChevronLeft className="h-3 w-3 text-[#2a655f]/60 animate-pulse" />
                 </div>
               </div>
             </div>
@@ -790,8 +750,8 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
         </div>
 
         {/* ===== Footer ===== */}
-        <div className="mt-12 pt-6 border-t-2 border-[#2a655f]/20 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
-          <div className="flex items-center gap-4">
+        <div className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t-2 border-[#2a655f]/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-center">
             <span className="text-[#2a655f] dark:text-[#3a8a82] font-medium">{app.lang === 'ar' ? '© 2024 جميع الحقوق محفوظة' : '© 2024 All rights reserved'}</span>
             <span className="h-1 w-1 rounded-full bg-[#2a655f]/50" />
             <span className="flex items-center gap-1 text-[#2a655f] dark:text-[#3a8a82]">
@@ -799,7 +759,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
               {app.lang === 'ar' ? 'النظام يعمل بشكل طبيعي' : 'System operational'}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
             <span className="text-[#2a655f]">v2.0.0</span>
             <span className="h-1 w-1 rounded-full bg-[#2a655f]/50" />
             <span>{app.lang === 'ar' ? 'مدعوم من' : 'Powered by'} <span className="text-[#2a655f] dark:text-[#3a8a82] font-bold hover:text-[#3a8a82] transition-colors duration-300">Zooq</span></span>
@@ -852,6 +812,10 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
         }
         .animate-ping {
           animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        /* ✅ إخفاء scrollbar للتابات على الموبايل */
+        .md\\:hidden .overflow-x-auto::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
     </div>

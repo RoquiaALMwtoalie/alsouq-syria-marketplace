@@ -133,7 +133,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+     { rel: "icon", href: "/images/Logo.png", type: "image/png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" },
@@ -175,15 +175,32 @@ function NotificationPermissionHandler() {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isLoading, setIsLoading] = useState(false);
 
+  // ✅ ref لمنع العرض المتكرر داخل نفس الجلسة
+  const hasShownThisSessionRef = useRef(false);
+
   // ✅ ثوابت localStorage
   const BANNER_SHOWN_KEY = 'notification_banner_shown_v2';
   const BANNER_REMIND_KEY = 'notification_banner_remind_at';
   const BANNER_DISMISSED_KEY = 'notification_banner_dismissed_forever';
+  // ✅ ثابت sessionStorage لمنع التكرار في نفس الجلسة
+  const BANNER_SESSION_KEY = 'notification_banner_session_shown';
 
   useEffect(() => {
     const checkAndRequestPermission = async () => {
       if (!app.user) {
         console.log('⏳ No user, skipping notification request');
+        return;
+      }
+
+      // ✅✅✅ حماية مزدوجة: ref + sessionStorage لمنع الظهور المزدوج
+      if (hasShownThisSessionRef.current) {
+        console.log('✅ [Notif] Already shown this session (ref)');
+        return;
+      }
+
+      if (sessionStorage.getItem(BANNER_SESSION_KEY) === 'true') {
+        console.log('✅ [Notif] Already shown this session (sessionStorage)');
+        hasShownThisSessionRef.current = true;
         return;
       }
       
@@ -227,6 +244,10 @@ function NotificationPermissionHandler() {
         console.log('🔔 Reminder time reached, showing banner');
         localStorage.removeItem(BANNER_REMIND_KEY);
       }
+
+      // ✅✅✅ علّم إنه اتعرض في هالجلسة (ref + sessionStorage)
+      hasShownThisSessionRef.current = true;
+      sessionStorage.setItem(BANNER_SESSION_KEY, 'true');
       
       setTimeout(() => {
         setShowBanner(true);
@@ -234,7 +255,7 @@ function NotificationPermissionHandler() {
     };
     
     checkAndRequestPermission();
-  }, [app.user]);
+  }, [app.user?.id]);  // ✅✅✅ تم التغيير من app.user إلى app.user?.id لمنع التكرار
 
   const handleEnableNotifications = async () => {
     setIsLoading(true);

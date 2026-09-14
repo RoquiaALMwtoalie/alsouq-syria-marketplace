@@ -13,7 +13,7 @@ import webpush from "npm:web-push@3.6.7";
 // ============================================================
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") || "";
 const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") || Deno.env.get("VITE_VAPID_PUBLIC_KEY") || "";
-const WEB_PUSH_CONTACT = "mailto:hello@alsouq.sy";
+const WEB_PUSH_CONTACT = "mailto:hello@zooq.sy";
 
 console.log("🔑 VAPID_PUBLIC_KEY:", VAPID_PUBLIC_KEY ? "✅ موجود" : "❌ غير موجود");
 console.log("🔑 VAPID_PRIVATE_KEY:", VAPID_PRIVATE_KEY ? "✅ موجود" : "❌ غير موجود");
@@ -97,7 +97,7 @@ serve(async (req) => {
 
     // 5.5 بناء بيانات الإشعار
     const payload = JSON.stringify({
-      title: title || "📬 السوق اليك",
+      title: title || "📬 ذوق",
       body: body || "لديك إشعار جديد",
       icon: icon || imageUrl || "/logo-192.png",
       badge: "/badge.png",

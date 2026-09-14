@@ -16,7 +16,7 @@ console.log("🔴 CHAT PAGE LOADED");
 
 export const Route = createFileRoute("/messages_/$userId")({
   component: ChatPage,
-  head: () => ({ meta: [{ title: "المحادثة الفاخرة — السوق اليك" }] }),
+  head: () => ({ meta: [{ title: "المحادثة  — ذوق" }] }),
 });
 
 function ChatPage() {

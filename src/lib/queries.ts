@@ -1937,7 +1937,7 @@ export function useAllListingsAdmin(status?: "pending" | "published" | "archived
       
       let q = supabase
         .from("listings")
-        .select("*, categories(slug, name_ar, name_en), governorates(slug, name_ar, name_en)")
+        .select("*, categories:categories!category_id(slug, name_ar, name_en), governorates:governorates!governorate_id(slug, name_ar, name_en)")
         .order("created_at", { ascending: false });
       
       if (status) q = q.eq("status", status);

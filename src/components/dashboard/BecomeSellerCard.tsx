@@ -7,7 +7,7 @@ import {
   ArrowRight, Sparkles, Rocket, DollarSign, X, ArrowLeft,
   Phone, Image, Info, AlertCircle, Loader2, Star, Heart, Zap,
   Crown, Gem, Flame, Award, Target, Compass, Leaf, Sun, Moon,
-  ChevronLeft, ChevronRight, Search,
+  Search,
   type LucideIcon
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -44,65 +44,6 @@ const WEEK_DAYS = [
   { value: 'Sunday', label: 'الأحد' },
 ];
 
-// ✅ SLIDES خارج المكون - تحسين الأداء
-const SLIDES = [
-  {
-    icon: "🏛️",
-    title_ar: "السوق لعندك",
-    title_en: "Souqi",
-    subtitle_ar: "افتح متجرك الآن",
-    subtitle_en: "Open Your Store Now",
-    desc_ar: "3 خطوات بسيطة تفصلك عن أول بيعة — ابدأ رحلة النجاح اليوم",
-    desc_en: "3 simple steps away from your first sale — start your journey today",
-    gradient: "from-[#0d2e2a] to-[#1a4f4a]",
-    image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/istockphoto-2105032127-612x612.jpg",
-  },
-  {
-    icon: "🚀",
-    title_ar: "السوق لعندك",
-    title_en: "Souqi",
-    subtitle_ar: "انطلق بسرعة",
-    subtitle_en: "Launch Fast",
-    desc_ar: "سجل بياناتك وأضف منتجاتك وابدأ البيع خلال دقائق",
-    desc_en: "Register, add your products, and start selling in minutes",
-    gradient: "from-[#1a4f4a] to-[#2a655f]",
-    image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/42430876-ai-generated-8793863_1920.jpg",
-  },
-  {
-    icon: "💎",
-    title_ar: "السوق لعندك",
-    title_en: "Souqi",
-    subtitle_ar: "متجر احترافي",
-    subtitle_en: "Professional Store",
-    desc_ar: "متجرك يظهر بشكل احترافي مع صور جذابة وتجربة مستخدم فريدة",
-    desc_en: "Your store looks professional with attractive images and unique UX",
-    gradient: "from-[#2a655f] to-[#3a8a82]",
-    image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/mohamed_hassan-systems-icons-3334262_1920.jpg",
-  },
-  {
-    icon: "🛡️",
-    title_ar: "السوق لعندك",
-    title_en: "Souqi",
-    subtitle_ar: "بيع بثقة وأمان",
-    subtitle_en: "Sell With Confidence",
-    desc_ar: "نظام حماية متكامل للبائع والمشتري مع دعم فني على مدار الساعة",
-    desc_en: "Complete protection system for sellers and buyers with 24/7 support",
-    gradient: "from-[#3a8a82] to-[#4a9f95]",
-    image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/regencygirl123-present-8440034_1920.jpg",
-  },
-  {
-    icon: "✨",
-    title_ar: "السوق لعندك",
-    title_en: "Souqi",
-    subtitle_ar: "تجربة فريدة",
-    subtitle_en: "Unique Experience",
-    desc_ar: "واجهات مستخدم حديثة ومتجاوبة مع دعم كامل للغتين العربية والإنجليزية",
-    desc_en: "Modern, responsive user interfaces with full Arabic and English language support",
-    gradient: "from-[#0d2e2a] to-[#1a4f4a]",
-    image: "https://jjqgfjpxaxjpyohvcbfi.supabase.co/storage/v1/object/public/uploads/banners/gonghuimin468-happy-holidays-3040029_1920.jpg",
-  },
-];
-
 // ✅ أيقونة متحركة مع تموجات
 const AnimatedIcon = ({ 
   Icon, 
@@ -136,150 +77,6 @@ const AnimatedIcon = ({
     </div>
   );
 };
-
-// ✅ ✅ ✅ سلايدر متحرك احترافي مع صور واضحة (متل الأدمن) ✅ ✅ ✅
-const HeroSlider = React.memo(({ app }: { app: any }) => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index);
-  };
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
-  };
-
-  const isRTL = app.lang === 'ar';
-  const current = SLIDES[currentSlide];
-
-  return (
-    <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] shadow-2xl shadow-[#0d2e2a]/30 border border-emerald-500/20 group min-h-[280px]">
-      
-      {/* ✅ ✅ ✅ صورة الخلفية (تظهر كاملة مع خلفية) */}
-      <div className="absolute inset-0 overflow-hidden bg-[#0d2e2a]">
-        <img 
-          src={current.image} 
-          alt={current.title_ar}
-          className="w-full h-full object-contain object-center transition-transform duration-1000 group-hover:scale-105"
-        />
-      </div>
-      
-      {/* ✅ تراكب شفاف عشان النصوص تبقى مقروءة */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#0d2e2a]/70 to-[#1a4f4a]/50 mix-blend-multiply" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/60 to-transparent" />
-
-      {/* ✅ خلفية متحركة */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] bg-repeat" />
-      </div>
-
-      {/* ✅ زوايا زخرفية */}
-      <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl animate-pulse" />
-      <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl animate-pulse delay-1000" />
-
-      {/* ✅ المحتوى */}
-      <div className="relative px-6 py-8 md:px-10 md:py-12 flex flex-col md:flex-row items-center gap-6 md:gap-10 z-10">
-        
-        {/* ✅ الأيقونة الكبيرة */}
-        <div className="flex-shrink-0">
-          <div className="relative">
-            <div className="h-20 w-20 md:h-28 md:w-28 rounded-3xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-5xl md:text-7xl shadow-2xl shadow-emerald-500/20 animate-float group-hover:scale-110 transition-transform duration-500">
-              {current.icon}
-            </div>
-            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-emerald-500/30 to-emerald-500/0 blur-xl animate-pulse" />
-          </div>
-        </div>
-
-        {/* ✅ النصوص */}
-        <div className="flex-1 text-center md:text-right">
-          <h1 className={`text-2xl md:text-4xl font-extrabold text-white mb-1 tracking-tight drop-shadow-lg ${isRTL ? 'font-arabic' : ''}`}>
-            {isRTL ? current.title_ar : current.title_en}
-          </h1>
-          <h2 className={`text-lg md:text-2xl font-bold text-emerald-300/90 mb-2 tracking-tight drop-shadow-md ${isRTL ? 'font-arabic' : ''}`}>
-            {isRTL ? current.subtitle_ar : current.subtitle_en}
-          </h2>
-          <p className={`text-sm md:text-base text-white/90 max-w-2xl leading-relaxed drop-shadow-md ${isRTL ? 'font-arabic' : ''}`}>
-            {isRTL ? current.desc_ar : current.desc_en}
-          </p>
-          
-          {/* ✅ شارات إضافية */}
-          <div className="flex flex-wrap items-center gap-2 mt-3 justify-center md:justify-start">
-            <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 text-white/80 text-xs">
-              ✨ {isRTL ? "منصة متكاملة" : "Integrated Platform"}
-            </span>
-            <span className="px-3 py-1 rounded-full bg-emerald-500/20 backdrop-blur-sm border border-emerald-500/20 text-emerald-300 text-xs">
-              🚀 {isRTL ? "تحديثات لحظية" : "Real-time Updates"}
-            </span>
-            <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 text-white/80 text-xs">
-              🔒 {isRTL ? "آمن ومحمي" : "Secure & Protected"}
-            </span>
-          </div>
-          
-          {/* ✅ نقاط التقدم */}
-          <div className="flex items-center gap-2 mt-4 justify-center md:justify-start">
-            {SLIDES.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => goToSlide(index)}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-500",
-                  currentSlide === index
-                    ? "w-10 bg-emerald-400 shadow-lg shadow-emerald-500/50"
-                    : "w-1.5 bg-white/30 hover:bg-white/50"
-                )}
-              />
-            ))}
-            <span className="text-[10px] text-white/40 ml-2 font-mono">
-              {currentSlide + 1}/{SLIDES.length}
-            </span>
-          </div>
-        </div>
-
-        {/* ✅ أزرار التحكم */}
-        <div className="flex-shrink-0 flex flex-row md:flex-col gap-2">
-          <Button
-            onClick={prevSlide}
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/20 hover:border-white/30 transition-all duration-300 hover:scale-110"
-          >
-            {isRTL ? (
-              <ChevronRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
-            ) : (
-              <ChevronLeft className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" />
-            )}
-          </Button>
-          <Button
-            onClick={nextSlide}
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/20 hover:border-white/30 transition-all duration-300 hover:scale-110"
-          >
-            {isRTL ? (
-              <ChevronLeft className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" />
-            ) : (
-              <ChevronRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* ✅ شريط سفلي متحرك */}
-      <div className="relative h-0.5 w-full bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent animate-shimmer" />
-    </div>
-  );
-});
 
 export function BecomeSellerCard() {
   const app = useApp();
@@ -612,9 +409,6 @@ export function BecomeSellerCard() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 md:py-12">
       
-      {/* ✅ ✅ ✅ Hero Slider - احترافي مع صور واضحة (متل الأدمن) ✅ ✅ ✅ */}
-      <HeroSlider app={app} />
-
       {/* Progress Steps - بألوان السستم */}
       <div className="mb-8 mt-6">
         <div className="flex items-center justify-between gap-2">

@@ -21,8 +21,8 @@ export const Route = createFileRoute("/tracking/$trackingNumber")({
   component: TrackingPage,
   head: ({ params }) => ({
     meta: [
-      { title: `تتبع الشحنة #${params.trackingNumber} - السوق اليك` },
-      { name: "description", content: "تتبع حالة شحنتك في السوق اليك" },
+      { title: `تتبع الشحنة #${params.trackingNumber} - ذوق` },
+      { name: "description", content: "تتبع حالة شحنتك في ذوق" },
     ],
   }),
 });

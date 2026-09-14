@@ -8,7 +8,8 @@ import {
   Save, AlertCircle, Info, Star, Shield, Clock, User,
   Camera, Trash2, Edit2, Heart, BookOpen, Cake,
   ChevronRight, ChevronLeft, Zap, Award, TrendingUp, ShieldCheck,
-  ArrowRight, ArrowLeft, Coins, Folder, FolderTree, CornerDownRight
+  ArrowRight, ArrowLeft, Coins, Folder, FolderTree, CornerDownRight,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { useCategories, useGovernorates, type ListingKind } from "@/lib/queries";
+import { useCategoryOptions } from "@/lib/hooks/useCategoryOptions";
 import { ImageInput } from "@/components/ImageInput";
 import { ProductOptionsManager, type Variation, type ColorWithImage } from "./ProductOptionsManager";
 import { toast } from "sonner";
@@ -130,15 +132,7 @@ export function ProductFormDialog({
   
   const isLoadingRef = useRef(false);
   const [form, setForm] = useState(emptyForm);
-  const [options, setOptions] = useState<Record<string, string[]>>({
-    colors: [],
-    sizes: [],
-    models: [],
-    materials: [],
-    weight: [],
-    style: [],
-    brand: [],
-  });
+  const [options, setOptions] = useState<Record<string, string[]>>({});
   const [variations, setVariations] = useState<Variation[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tempColors, setTempColors] = useState<any[]>([]);
@@ -159,6 +153,26 @@ export function ProductFormDialog({
 
   const isFirstLoadRef = useRef(true);
   const isPriceEditingRef = useRef(false);
+
+  // ============================================================
+  // ✅ ✅ ✅ جلب خيارات التصنيف الرئيسي ديناميكياً
+  // ============================================================
+  const { 
+    data: categoryOptions = [], 
+    isLoading: isLoadingCategoryOptions 
+  } = useCategoryOptions(parentCategoryId || null);
+
+  // ✅ بناء الخيارات من الـ DB
+  const availableOptions = useMemo(() => {
+    return categoryOptions.map((opt) => ({
+      key: opt.option_key,
+      name_ar: opt.option_name_ar,
+      name_en: opt.option_name_en,
+      type: opt.option_type,
+      required: opt.is_required,
+      sort_order: opt.sort_order,
+    }));
+  }, [categoryOptions]);
 
   // ============================================================
   // ✅ ✅ ✅ التصنيفات - Hooks جديدة
@@ -236,8 +250,8 @@ export function ProductFormDialog({
         placeholderDesc: lang === "ar" ? "✏️ وصف العرض بالتفصيل..." : "✏️ Detailed offer description...",
         badge: lang === "ar" ? "عرض" : "Offer",
         icon: Gift,
-        iconColor: "text-[#d81b60]",
-        bgGradient: "from-[#d81b60]/5 to-[#d81b60]/10 dark:from-[#d81b60]/20 dark:to-[#d81b60]/10",
+        iconColor: "text-[#1a4f4a]",
+        bgGradient: "from-[#1a4f4a]/5 to-[#1a4f4a]/10 dark:from-[#1a4f4a]/20 dark:to-[#1a4f4a]/10",
       };
     }
     return {
@@ -420,9 +434,10 @@ export function ProductFormDialog({
         setGovernorateSearch(getGovernorateName(product.governorate_id));
       }
       
-      // ✅ تحميل الخيارات
-      const productOptions = product.options || [];
-      const productColors = product.colors || [];
+      // ✅ تحميل الخيارات من metadata
+      const productMetadata = product.metadata || {};
+      const productOptions = productMetadata.options || product.options || [];
+      const productColors = productMetadata.colors || product.colors || [];
       
       const typeMap: Record<string, string> = {
         'color': 'colors',
@@ -433,20 +448,15 @@ export function ProductFormDialog({
         'brand': 'brand',
       };
       
-      const optionsGrouped: Record<string, string[]> = {
-        colors: [], sizes: [], models: [], materials: [],
-        weight: [], style: [], brand: [], fabric: [],
-        season: [], gender: [], storage: [], ram: [],
-        processor: [], battery: [], screen_size: [],
-        camera: [], connectivity: [],
-      };
+      const optionsGrouped: Record<string, string[]> = {};
       
       productOptions.forEach((opt: any) => {
-        const originalType = opt.option_type;
+        const originalType = opt.option_type || opt.key;
         const mappedType = typeMap[originalType] || originalType;
         
-        if (optionsGrouped[mappedType]) {
-          optionsGrouped[mappedType].push(opt.option_value);
+        if (mappedType) {
+          if (!optionsGrouped[mappedType]) optionsGrouped[mappedType] = [];
+          optionsGrouped[mappedType].push(opt.option_value || opt.value);
         }
       });
       
@@ -482,8 +492,9 @@ export function ProductFormDialog({
       }
       
       // ✅ تعيين التركيبات
-      if (product.variations && product.variations.length > 0) {
-        const mappedVariations = product.variations.map((v: any) => ({
+      const productVariations = productMetadata.variations || product.variations || [];
+      if (productVariations && productVariations.length > 0) {
+        const mappedVariations = productVariations.map((v: any) => ({
           id: v.id,
           combination: v.combination || {},
           is_available: v.is_available !== undefined ? v.is_available : v.is_active !== false,
@@ -506,7 +517,7 @@ export function ProductFormDialog({
         ...emptyForm,
         is_offer: productType === "offer",
       });
-      setOptions({ colors: [], sizes: [], models: [], materials: [], weight: [], style: [], brand: [] });
+      setOptions({});
       setVariations([]);
       setTempColors([]);
       setSizes([]);
@@ -771,6 +782,13 @@ export function ProductFormDialog({
     setSubCategoryId("");
     setSubCategorySearch("");
     
+    // ✅ إعادة تصفير الخيارات (لأنها ستُجلب من جديد حسب التصنيف)
+    setOptions({});
+    setTempColors([]);
+    setSizes([]);
+    setColorWithImages([]);
+    setVariations([]);
+    
     // ✅ تحديث form
     setForm(prev => ({ 
       ...prev, 
@@ -797,6 +815,11 @@ export function ProductFormDialog({
     setParentCategorySearch("");
     setSubCategoryId("");
     setSubCategorySearch("");
+    setOptions({});
+    setTempColors([]);
+    setSizes([]);
+    setColorWithImages([]);
+    setVariations([]);
     setForm(prev => ({ 
       ...prev, 
       parent_category_id: "",
@@ -816,8 +839,8 @@ export function ProductFormDialog({
   };
 
   const getProductIcon = () => {
-    if (productType === "offer") return <Gift className="h-6 w-6 text-[#d81b60]" />;
-    return <Package className="h-6 w-6 text-[#2a655f]" />;
+    if (productType === "offer") return <Gift className="h-5 w-5 text-[#1a4f4a]" />;
+    return <Package className="h-5 w-5 text-[#2a655f]" />;
   };
 
   const getProductTitle = () => {
@@ -885,34 +908,34 @@ export function ProductFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-[#d81b60]/20">
+      <DialogContent className="max-w-5xl w-[94vw] max-h-[94vh] overflow-y-auto rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-[#2a655f]/20">
         
         {/* ===== Header ===== */}
-        <div className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 p-4 md:p-6">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#d81b60] to-transparent animate-pulse" />
+        <div className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 p-4 md:p-5">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#2a655f] to-transparent animate-pulse" />
           
           <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-3">
               <div className="relative group">
-                <div className="absolute inset-0 rounded-2xl bg-[#d81b60]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
-                <div className="relative p-3 rounded-2xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/25 group-hover:shadow-[#d81b60]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                <div className="absolute inset-0 rounded-xl bg-[#2a655f]/20 blur-lg group-hover:blur-xl transition-all duration-500" />
+                <div className="relative p-2 rounded-xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-md shadow-[#2a655f]/25 group-hover:shadow-[#2a655f]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
                   {getProductIcon()}
                 </div>
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   {getProductTitle()}
                   {productType === "offer" && (
-                    <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-0 animate-pulse">
+                    <Badge className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white border-0 animate-pulse text-[10px]">
                       🔥 عرض
                     </Badge>
                   )}
                 </h2>
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-[#d81b60] animate-pulse" />
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                  <Sparkles className="h-3 w-3 text-[#2a655f] animate-pulse" />
                   {getProductSubtitle()}
-                  <span className="w-1 h-1 rounded-full bg-[#d81b60]/30" />
-                  <span className="text-xs text-[#d81b60] font-medium">
+                  <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
+                  <span className="text-[10px] text-[#2a655f] font-medium">
                     {product ? (lang === "ar" ? "تعديل" : "Edit") : (lang === "ar" ? "جديد" : "New")}
                   </span>
                 </p>
@@ -921,21 +944,21 @@ export function ProductFormDialog({
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full hover:bg-[#d81b60]/10 dark:hover:bg-[#d81b60]/30 transition-all duration-300 hover:rotate-90 hover:scale-110"
+              className="h-8 w-8 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 hover:rotate-90 hover:scale-110"
               onClick={() => onOpenChange(false)}
             >
-              <X className="h-5 w-5 text-[#d81b60]" />
+              <X className="h-4 w-4 text-[#2a655f]" />
             </Button>
           </div>
           
           {/* شريط التقدم */}
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-medium text-[#d81b60]">
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                <span className="font-medium text-[#2a655f]">
                   {getTabLabel(activeTab)}
                 </span>
-                <span className="text-[10px] text-[#d81b60]/60">
+                <span className="text-[9px] text-[#2a655f]/60">
                   {currentIndex + 1} / {TAB_ORDER.length}
                 </span>
               </div>
@@ -947,9 +970,9 @@ export function ProductFormDialog({
                     <div
                       key={tab}
                       className={cn(
-                        "h-1.5 rounded-full transition-all duration-500 cursor-pointer",
-                        isActive ? "w-8 bg-[#d81b60] shadow-lg shadow-[#d81b60]/30" : 
-                        isCompleted ? "w-4 bg-[#d81b60]/60" : "w-4 bg-slate-200 dark:bg-slate-700"
+                        "h-1 rounded-full transition-all duration-500 cursor-pointer",
+                        isActive ? "w-6 bg-[#2a655f] shadow-md shadow-[#2a655f]/30" : 
+                        isCompleted ? "w-3 bg-[#2a655f]/60" : "w-3 bg-slate-200 dark:bg-slate-700"
                       )}
                       onClick={() => goToTab(tab)}
                     />
@@ -959,11 +982,11 @@ export function ProductFormDialog({
             </div>
           </div>
           
-          {/* Tabs */}
-          <div className="mt-3">
+          {/* ✅ Tabs - كل التابات نفس الحجم مع شبكة متساوية */}
+          <div className="mt-2">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList 
-                className="grid grid-cols-4 gap-1.5 bg-[#fbcfe8]/30 dark:bg-[#d81b60]/20 p-1.5 rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40"
+                className="grid grid-cols-4 gap-1.5 bg-[#e8f0ee]/50 dark:bg-[#2a655f]/20 p-1.5 rounded-xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 w-full h-auto"
                 dir={lang === "ar" ? "rtl" : "ltr"}
               >
                 {TAB_ORDER.map((tab) => {
@@ -973,16 +996,13 @@ export function ProductFormDialog({
                     <TabsTrigger 
                       key={tab}
                       value={tab} 
-                      className="rounded-xl text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-lg data-[state=active]:shadow-[#d81b60]/20 data-[state=active]:border-2 data-[state=active]:border-[#d81b60]/40 transition-all duration-300 group"
+                      className="w-full rounded-lg text-xs font-medium py-2 px-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-md data-[state=active]:shadow-[#2a655f]/20 data-[state=active]:border-2 data-[state=active]:border-[#2a655f]/40 transition-all duration-300 group flex flex-row items-center justify-center gap-1.5"
                     >
                       <Icon className={cn(
-                        "h-3.5 w-3.5 ml-1.5 transition-all duration-300",
-                        isActive ? "text-[#d81b60] animate-pulse" : "text-muted-foreground group-hover:text-[#d81b60]"
+                        "h-3.5 w-3.5 transition-all duration-300 flex-shrink-0",
+                        isActive ? "text-[#2a655f] animate-pulse" : "text-muted-foreground group-hover:text-[#2a655f]"
                       )} />
-                      {getTabLabel(tab)}
-                      {isActive && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60] animate-pulse ml-1" />
-                      )}
+                      <span className="font-medium">{getTabLabel(tab)}</span>
                     </TabsTrigger>
                   );
                 })}
@@ -992,22 +1012,22 @@ export function ProductFormDialog({
         </div>
 
         {/* ===== Body ===== */}
-        <div className="p-4 md:p-6 space-y-6">
+        <div className="p-4 md:p-5 space-y-4">
           
           {/* ===== TAB: Basic ===== */}
           {activeTab === "basic" && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-5 duration-300">
-              <div className="relative overflow-hidden rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-gradient-to-r from-[#d81b60]/5 to-[#d81b60]/10 dark:from-[#d81b60]/20 dark:to-[#d81b60]/10 p-5">
-                <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#d81b60]/5 blur-3xl" />
-                <div className="flex items-start gap-3 relative">
-                  <div className="p-2.5 rounded-xl bg-[#d81b60]/10">
-                    <Info className="h-5 w-5 text-[#d81b60]" />
+              <div className="relative overflow-hidden rounded-xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 p-3">
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-[#2a655f]/5 blur-3xl" />
+                <div className="flex items-start gap-2 relative">
+                  <div className="p-2 rounded-lg bg-[#2a655f]/10">
+                    <Info className="h-4 w-4 text-[#2a655f]" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1]">
+                    <p className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82]">
                       {lang === "ar" ? `📝 ${productType === "offer" ? "معلومات العرض" : "المعلومات الأساسية"}` : `📝 ${productType === "offer" ? "Offer Information" : "Basic Information"}`}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] text-muted-foreground">
                       {lang === "ar" 
                         ? `أدخل ${productType === "offer" ? "اسم العرض" : "اسم المنتج"} ووصفه واختر التصنيف والمحافظة المناسبة` 
                         : `Enter ${productType === "offer" ? "offer" : "product"} name, description and select appropriate category and governorate`}
@@ -1016,28 +1036,25 @@ export function ProductFormDialog({
                 </div>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-4">
                 <div className="relative group">
                   <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     {labels.name}
                     <span className="text-red-500">*</span>
-                    <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[10px] animate-pulse">
-                      {lang === "ar" ? "مطلوب" : "Required"}
-                    </Badge>
                   </Label>
                   <div className="relative mt-1.5">
                     <div className="absolute inset-y-0 start-3 flex items-center">
                       {productType === "offer" ? (
-                        <Gift className="h-4 w-4 text-[#d81b60]/60" />
+                        <Gift className="h-4 w-4 text-[#2a655f]/60" />
                       ) : (
-                        <Package className="h-4 w-4 text-[#d81b60]/60" />
+                        <Package className="h-4 w-4 text-[#2a655f]/60" />
                       )}
                     </div>
                     <Input
                       value={form.title_ar}
                       onChange={(e) => setForm({ ...form, title_ar: e.target.value })}
                       placeholder={labels.placeholderName}
-                      className="ps-10 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
+                      className="ps-10 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                     />
                   </div>
                 </div>
@@ -1051,27 +1068,17 @@ export function ProductFormDialog({
                   </Label>
                   <div className="relative mt-1.5">
                     <Textarea
-                      rows={4}
+                      rows={3}
                       value={form.description_ar}
                       onChange={(e) => setForm({ ...form, description_ar: e.target.value })}
                       placeholder={labels.placeholderDesc}
-                      className="rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 resize-none hover:border-[#d81b60]/30"
+                      className="text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 resize-none hover:border-[#2a655f]/30"
                     />
-                    <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                      <Info className="h-3 w-3 text-[#d81b60]" />
-                      {lang === "ar" 
-                        ? "💡 وصف واضح وشامل يزيد من فرص البيع" 
-                        : "💡 Clear and comprehensive description increases sales chances"}
-                    </p>
                   </div>
                 </div>
 
-                {/* ============================================================ */}
-                {/* ✅ ✅ ✅ التصنيف الرئيسي + الفرعي */}
-                {/* ============================================================ */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   
-                  {/* ✅ التصنيف الرئيسي (إلزامي) */}
                   <div>
                     <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                       <span>📁</span>
@@ -1080,27 +1087,27 @@ export function ProductFormDialog({
                     </Label>
                     <div className="relative mt-1.5">
                       <div className="relative">
-                        <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#d81b60]/60" />
+                        <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#2a655f]/60" />
                         <Input
                           value={parentCategorySearch}
                           onChange={(e) => setParentCategorySearch(e.target.value)}
                           onFocus={() => setIsParentCategoryOpen(true)}
-                          placeholder={lang === "ar" ? "🔍 ابحث عن التصنيف الرئيسي..." : "🔍 Search main category..."}
-                          className="ps-9 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
+                          placeholder={lang === "ar" ? "🔍 ابحث..." : "🔍 Search..."}
+                          className="ps-10 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                         />
                         {parentCategorySearch && (
                           <button
                             onClick={clearParentCategory}
-                            className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#d81b60] transition-colors"
+                            className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
                           >
                             <X className="h-4 w-4" />
                           </button>
                         )}
                       </div>
                       {isParentCategoryOpen && (
-                        <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#d81b60]/20">
+                        <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-lg border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white dark:bg-slate-900 shadow-lg shadow-[#2a655f]/20">
                           {filteredMainCategories.length === 0 ? (
-                            <div className="p-4 text-sm text-muted-foreground text-center">
+                            <div className="p-3 text-sm text-muted-foreground text-center">
                               {lang === "ar" ? "لا توجد نتائج" : "No results found"}
                             </div>
                           ) : (
@@ -1110,17 +1117,17 @@ export function ProductFormDialog({
                                 <button
                                   key={c.id}
                                   className={cn(
-                                    "w-full text-start px-4 py-3 text-sm hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
-                                    parentCategoryId === c.id && "bg-[#d81b60]/10 dark:bg-[#d81b60]/30 text-[#d81b60]"
+                                    "w-full text-start px-3 py-2.5 text-sm hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/20 transition-all flex items-center gap-2 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
+                                    parentCategoryId === c.id && "bg-[#2a655f]/10 dark:bg-[#2a655f]/30 text-[#2a655f]"
                                   )}
                                   onClick={() => handleParentCategorySelect(c)}
                                 >
                                   {parentCategoryId === c.id && (
-                                    <CheckCircle2 className="h-4 w-4 text-[#d81b60] flex-shrink-0" />
+                                    <CheckCircle2 className="h-4 w-4 text-[#2a655f] flex-shrink-0" />
                                   )}
                                   <span className="flex-1">{lang === "ar" ? c.name_ar : c.name_en}</span>
                                   {childCount > 0 && (
-                                    <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[9px]">
+                                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-0 text-[9px]">
                                       {childCount} {lang === "ar" ? "فرعي" : "sub"}
                                     </Badge>
                                   )}
@@ -1133,7 +1140,6 @@ export function ProductFormDialog({
                     </div>
                   </div>
 
-                  {/* ✅ التصنيف الفرعي (اختياري - يظهر فقط إذا للرئيسي فروع) */}
                   <div>
                     <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                       <span>📂</span>
@@ -1144,25 +1150,22 @@ export function ProductFormDialog({
                     </Label>
                     
                     {!parentCategoryId ? (
-                      // لم يُختَر الرئيسي بعد
-                      <div className="mt-1.5 flex items-center gap-2 h-12 px-4 rounded-xl border-3 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
+                      <div className="mt-1.5 flex items-center gap-2 h-11 px-3 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
                         <Info className="h-4 w-4 text-slate-400" />
                         <span className="text-sm text-slate-500">
-                          {lang === "ar" ? "اختر التصنيف الرئيسي أولاً" : "Select main category first"}
+                          {lang === "ar" ? "اختر الرئيسي أولاً" : "Select main first"}
                         </span>
                       </div>
                     ) : !hasSubCategories ? (
-                      // الرئيسي ليس له فروع
-                      <div className="mt-1.5 flex items-center gap-2 h-12 px-4 rounded-xl border-3 border-emerald-200/50 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20">
+                      <div className="mt-1.5 flex items-center gap-2 h-11 px-3 rounded-lg border-2 border-emerald-200/50 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20">
                         <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                         <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
                           {lang === "ar" 
-                            ? "✅ سيتم استخدام التصنيف الرئيسي" 
-                            : "✅ Main category will be used"}
+                            ? "✅ سيتم استخدام الرئيسي" 
+                            : "✅ Main will be used"}
                         </span>
                       </div>
                     ) : (
-                      // الرئيسي له فروع → فعّل البحث
                       <div className="relative mt-1.5">
                         <div className="relative">
                           <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#2a655f]/60" />
@@ -1170,8 +1173,8 @@ export function ProductFormDialog({
                             value={subCategorySearch}
                             onChange={(e) => setSubCategorySearch(e.target.value)}
                             onFocus={() => setIsSubCategoryOpen(true)}
-                            placeholder={lang === "ar" ? "🔍 ابحث عن التصنيف الفرعي..." : "🔍 Search subcategory..."}
-                            className="ps-9 h-12 rounded-xl border-3 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/50"
+                            placeholder={lang === "ar" ? "🔍 ابحث عن الفرعي..." : "🔍 Search sub..."}
+                            className="ps-10 h-11 text-sm rounded-lg border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/50"
                           />
                           {subCategorySearch && (
                             <button
@@ -1183,9 +1186,9 @@ export function ProductFormDialog({
                           )}
                         </div>
                         {isSubCategoryOpen && (
-                          <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#2a655f]/20">
+                          <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-lg border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white dark:bg-slate-900 shadow-lg shadow-[#2a655f]/20">
                             {filteredSubCategories.length === 0 ? (
-                              <div className="p-4 text-sm text-muted-foreground text-center">
+                              <div className="p-3 text-sm text-muted-foreground text-center">
                                 {lang === "ar" ? "لا توجد نتائج" : "No results found"}
                               </div>
                             ) : (
@@ -1193,7 +1196,7 @@ export function ProductFormDialog({
                                 <button
                                   key={c.id}
                                   className={cn(
-                                    "w-full text-start px-4 py-3 text-sm hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
+                                    "w-full text-start px-3 py-2.5 text-sm hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/20 transition-all flex items-center gap-2 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
                                     subCategoryId === c.id && "bg-[#2a655f]/10 dark:bg-[#2a655f]/30 text-[#2a655f]"
                                   )}
                                   onClick={() => handleSubCategorySelect(c)}
@@ -1209,20 +1212,9 @@ export function ProductFormDialog({
                         )}
                       </div>
                     )}
-                    
-                    {/* Info */}
-                    {parentCategoryId && hasSubCategories && (
-                      <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                        <Info className="h-3 w-3 text-[#2a655f]" />
-                        {lang === "ar" 
-                          ? "💡 إذا لم تختر فرعياً، سيتم استخدام الرئيسي" 
-                          : "💡 If not selected, main category will be used"}
-                      </p>
-                    )}
                   </div>
                 </div>
 
-                {/* ✅ المحافظة */}
                 <div>
                   <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     {lang === "ar" ? "المحافظة" : "Governorate"}
@@ -1230,27 +1222,27 @@ export function ProductFormDialog({
                   </Label>
                   <div className="relative mt-1.5">
                     <div className="relative">
-                      <MapPin className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#d81b60]/60" />
+                      <MapPin className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#2a655f]/60" />
                       <Input
                         value={governorateSearch}
                         onChange={(e) => setGovernorateSearch(e.target.value)}
                         onFocus={() => setIsGovernorateOpen(true)}
                         placeholder={lang === "ar" ? "🔍 ابحث عن محافظة..." : "🔍 Search governorate..."}
-                        className="ps-9 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
+                        className="ps-10 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                       />
                       {governorateSearch && (
                         <button
                           onClick={() => setGovernorateSearch("")}
-                          className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#d81b60] transition-colors"
+                          className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
                         >
                           <X className="h-4 w-4" />
                         </button>
                       )}
                     </div>
                     {isGovernorateOpen && (
-                      <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-white dark:bg-slate-900 shadow-xl shadow-[#d81b60]/20">
+                      <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-lg border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white dark:bg-slate-900 shadow-lg shadow-[#2a655f]/20">
                         {filteredGovernorates.length === 0 ? (
-                          <div className="p-4 text-sm text-muted-foreground text-center">
+                          <div className="p-3 text-sm text-muted-foreground text-center">
                             {lang === "ar" ? "لا توجد نتائج" : "No results found"}
                           </div>
                         ) : (
@@ -1258,8 +1250,8 @@ export function ProductFormDialog({
                             <button
                               key={g.id}
                               className={cn(
-                                "w-full text-start px-4 py-3 text-sm hover:bg-[#d81b60]/5 dark:hover:bg-[#d81b60]/20 transition-all flex items-center gap-3 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
-                                form.governorate_id === g.id && "bg-[#d81b60]/10 dark:bg-[#d81b60]/30 text-[#d81b60]"
+                                "w-full text-start px-3 py-2.5 text-sm hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/20 transition-all flex items-center gap-2 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0",
+                                form.governorate_id === g.id && "bg-[#2a655f]/10 dark:bg-[#2a655f]/30 text-[#2a655f]"
                               )}
                               onClick={() => {
                                 setForm({ ...form, governorate_id: g.id });
@@ -1268,7 +1260,7 @@ export function ProductFormDialog({
                               }}
                             >
                               {form.governorate_id === g.id && (
-                                <CheckCircle2 className="h-4 w-4 text-[#d81b60] flex-shrink-0" />
+                                <CheckCircle2 className="h-4 w-4 text-[#2a655f] flex-shrink-0" />
                               )}
                               <span>{lang === "ar" ? g.name_ar : g.name_en}</span>
                             </button>
@@ -1279,27 +1271,24 @@ export function ProductFormDialog({
                   </div>
                 </div>
 
-                {/* ===== Availability ===== */}
                 <div>
                   <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     {lang === "ar" ? "حالة التوفر" : "Availability"}
                   </Label>
-                  <div className="mt-1.5 p-4 bg-gradient-to-r from-[#d81b60]/5 to-transparent dark:from-[#d81b60]/10 dark:to-transparent rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
+                  <div className="mt-1.5 p-3 bg-gradient-to-r from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10 dark:to-transparent rounded-lg border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40">
                     <label className="flex items-center gap-3 text-sm cursor-pointer group">
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={form.is_available === true}
-                          onChange={(e) => {
-                            const newValue = e.target.checked;
-                            setForm(prev => ({ ...prev, is_available: newValue }));
-                          }}
-                          className="h-5 w-5 rounded border-slate-300/50 accent-[#d81b60] cursor-pointer transition-all duration-300 group-hover:scale-110"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={form.is_available === true}
+                        onChange={(e) => {
+                          const newValue = e.target.checked;
+                          setForm(prev => ({ ...prev, is_available: newValue }));
+                        }}
+                        className="h-5 w-5 rounded border-slate-300/50 accent-[#2a655f] cursor-pointer transition-all duration-300 group-hover:scale-110"
+                      />
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className={cn(
-                          "font-semibold transition-all duration-300",
+                          "font-semibold transition-all duration-300 text-sm",
                           form.is_available === true ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                         )}>
                           {form.is_available === true
@@ -1315,12 +1304,12 @@ export function ProductFormDialog({
                             {lang === "ar" ? "غير نشط" : "Inactive"}
                           </Badge>
                         )}
+                        <span className="text-xs text-muted-foreground group-hover:text-[#2a655f] transition-colors">
+                          {form.is_available === true
+                            ? (lang === "ar" ? "🟢 يمكن الشراء" : "🟢 Can purchase")
+                            : (lang === "ar" ? "🔴 غير متاح" : "🔴 Not available")}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground group-hover:text-[#d81b60] transition-colors">
-                        {form.is_available === true
-                          ? (lang === "ar" ? "🟢 العملاء يمكنهم الشراء" : "🟢 Customers can purchase")
-                          : (lang === "ar" ? "🔴 غير متاح للشراء حالياً" : "🔴 Not available for purchase")}
-                      </span>
                     </label>
                   </div>
                 </div>
@@ -1331,17 +1320,17 @@ export function ProductFormDialog({
           {/* ===== TAB: Pricing ===== */}
           {activeTab === "pricing" && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-5 duration-300">
-              <div className="relative overflow-hidden rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-gradient-to-r from-[#d81b60]/5 to-[#d81b60]/10 dark:from-[#d81b60]/20 dark:to-[#d81b60]/10 p-5">
-                <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#d81b60]/5 blur-3xl" />
-                <div className="flex items-start gap-3 relative">
-                  <div className="p-2.5 rounded-xl bg-[#d81b60]/10">
-                    <Coins className="h-5 w-5 text-[#d81b60]" />
+              <div className="relative overflow-hidden rounded-xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 p-3">
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-[#2a655f]/5 blur-3xl" />
+                <div className="flex items-start gap-2 relative">
+                  <div className="p-2 rounded-lg bg-[#2a655f]/10">
+                    <Coins className="h-4 w-4 text-[#2a655f]" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1]">
+                    <p className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82]">
                       {lang === "ar" ? `💰 ${productType === "offer" ? "تسعير العرض" : "تسعير المنتج"}` : `💰 ${productType === "offer" ? "Offer Pricing" : "Product Pricing"}`}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] text-muted-foreground">
                       {lang === "ar" 
                         ? `حدد ${productType === "offer" ? "سعر العرض والسعر القديم" : "السعر المناسب للمنتج"}` 
                         : `Set ${productType === "offer" ? "offer price and old price" : "appropriate product price"}`}
@@ -1353,13 +1342,13 @@ export function ProductFormDialog({
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <Coins className="h-3.5 w-3.5 text-[#d81b60]" />
+                    <Coins className="h-3.5 w-3.5 text-[#2a655f]" />
                     {lang === "ar" ? `السعر (ل.س)` : `Price (SYP)`}
                     <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative mt-1.5">
                     <div className="absolute inset-y-0 start-3 flex items-center">
-                      <span className="text-sm font-bold text-[#d81b60]/60">ل.س</span>
+                      <span className="text-sm font-bold text-[#2a655f]/60">ل.س</span>
                     </div>
                     <Input
                       type="number"
@@ -1367,7 +1356,7 @@ export function ProductFormDialog({
                       value={form.price}
                       onChange={(e) => handlePriceChange(e.target.value, "price")}
                       placeholder="0"
-                      className="ps-12 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
+                      className="ps-12 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                     />
                   </div>
                 </div>
@@ -1375,15 +1364,15 @@ export function ProductFormDialog({
 
               {productType === "offer" && (
                 <>
-                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#d81b60]/10 to-[#f48fb1]/10 dark:from-[#d81b60]/30 dark:to-[#f48fb1]/10 rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
-                    <div className="p-2 rounded-xl bg-[#d81b60]/10 animate-pulse">
-                      <Gift className="h-5 w-5 text-[#d81b60]" />
+                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/10 rounded-lg border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40">
+                    <div className="p-2 rounded-lg bg-[#2a655f]/10 animate-pulse">
+                      <Gift className="h-4 w-4 text-[#2a655f]" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#d81b60] dark:text-[#f48fb1]">
+                      <p className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82]">
                         {lang === "ar" ? "🛍️ هذا المنتج هو عرض خاص" : "🛍️ This product is a special offer"}
                       </p>
-                      <p className="text-xs text-[#d81b60]/70 dark:text-[#f48fb1]/70">
+                      <p className="text-xs text-[#2a655f]/70 dark:text-[#3a8a82]/70">
                         {lang === "ar" 
                           ? "أدخل السعر القديم لعرض الخصم للعملاء" 
                           : "Enter the old price to show the discount to customers"}
@@ -1394,13 +1383,13 @@ export function ProductFormDialog({
                   <div className="grid grid-cols-1 gap-4">
                     <div>
                       <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <Coins className="h-3.5 w-3.5 text-[#d81b60]" />
+                        <Coins className="h-3.5 w-3.5 text-[#2a655f]" />
                         {lang === "ar" ? "السعر القديم (ل.س)" : "Old Price (SYP)"}
                         <span className="text-red-500">*</span>
                       </Label>
                       <div className="relative mt-1.5">
                         <div className="absolute inset-y-0 start-3 flex items-center">
-                          <span className="text-sm font-bold text-[#d81b60]/60">ل.س</span>
+                          <span className="text-sm font-bold text-[#2a655f]/60">ل.س</span>
                         </div>
                         <Input
                           type="number"
@@ -1408,15 +1397,15 @@ export function ProductFormDialog({
                           value={form.old_price}
                           onChange={(e) => handlePriceChange(e.target.value, "old_price")}
                           placeholder="0"
-                          className="ps-12 h-12 rounded-xl border-3 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#d81b60]/50 focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300 hover:border-[#d81b60]/30"
+                          className="ps-12 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                         />
                       </div>
                     </div>
                   </div>
 
                   {form.old_price > form.price && form.old_price > 0 && (
-                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-50 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-950/10 rounded-2xl border-3 border-emerald-200/50 dark:border-emerald-800/30 animate-in fade-in slide-in-from-top-5 duration-300">
-                      <Badge className="bg-gradient-to-r from-[#1a4f4a] to-[#2a655f] text-white border-0 text-sm px-4 py-2 rounded-xl shadow-lg shadow-[#2a655f]/30 animate-pulse">
+                    <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-950/10 rounded-lg border-2 border-emerald-200/50 dark:border-emerald-800/30 animate-in fade-in slide-in-from-top-5 duration-300">
+                      <Badge className="bg-gradient-to-r from-[#1a4f4a] to-[#2a655f] text-white border-0 text-sm px-3 py-1.5 rounded-lg shadow-md shadow-[#2a655f]/30 animate-pulse">
                         🎯 {Math.round(((form.old_price - form.price) / form.old_price) * 100)}% {lang === "ar" ? "خصم" : "OFF"}
                       </Badge>
                       <span className="text-sm text-muted-foreground flex items-center gap-1">
@@ -1435,17 +1424,17 @@ export function ProductFormDialog({
           {/* ===== TAB: Images ===== */}
           {activeTab === "images" && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-5 duration-300">
-              <div className="relative overflow-hidden rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-gradient-to-r from-purple-500/5 to-purple-500/10 dark:from-purple-500/20 dark:to-purple-500/10 p-5">
-                <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-purple-500/5 blur-3xl" />
-                <div className="flex items-start gap-3 relative">
-                  <div className="p-2.5 rounded-xl bg-purple-500/10">
-                    <Camera className="h-5 w-5 text-purple-500" />
+              <div className="relative overflow-hidden rounded-xl border-2 border-purple-500/30 dark:border-purple-500/40 bg-gradient-to-r from-purple-500/5 to-purple-500/10 dark:from-purple-500/20 dark:to-purple-500/10 p-3">
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-purple-500/5 blur-3xl" />
+                <div className="flex items-start gap-2 relative">
+                  <div className="p-2 rounded-lg bg-purple-500/10">
+                    <Camera className="h-4 w-4 text-purple-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-purple-600 dark:text-purple-400">
+                    <p className="text-xs font-bold text-purple-600 dark:text-purple-400">
                       {lang === "ar" ? "📸 صور المنتج" : "📸 Product Images"}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] text-muted-foreground">
                       {lang === "ar" 
                         ? "الصور الجيدة تزيد من فرص البيع بنسبة تصل إلى 80%" 
                         : "Good images increase sales chances by up to 80%"}
@@ -1458,9 +1447,6 @@ export function ProductFormDialog({
                 <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   {lang === "ar" ? "الصورة الرئيسية" : "Main Image"}
                   <span className="text-red-500">*</span>
-                  <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[10px] animate-pulse">
-                    {lang === "ar" ? "مطلوبة" : "Required"}
-                  </Badge>
                 </Label>
                 <div className="mt-1.5">
                   <ImageInput
@@ -1471,25 +1457,22 @@ export function ProductFormDialog({
                     lang={app.lang}
                     label={lang === "ar" ? "📸 اضغط لرفع الصورة الرئيسية" : "📸 Click to upload main image"}
                     hint={lang === "ar" ? "صورة واحدة على الأقل مطلوبة" : "At least one image is required"}
-                    previewClassName="aspect-video h-auto rounded-2xl max-h-[300px] border-3 border-[#d81b60]/30"
+                    previewClassName="aspect-video h-auto rounded-lg max-h-[240px] border-2 border-[#2a655f]/30"
                     required
                   />
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-2xl bg-gradient-to-r from-slate-50/50 to-slate-100/30 dark:from-slate-800/30 dark:to-slate-800/10 p-5 border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40">
+              <div className="space-y-3 rounded-lg bg-gradient-to-r from-slate-50/50 to-slate-100/30 dark:from-slate-800/30 dark:to-slate-800/10 p-4 border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-[#d81b60]/10">
-                      <ImageIcon className="h-4 w-4 text-[#d81b60]" />
+                    <div className="p-1.5 rounded bg-[#2a655f]/10">
+                      <ImageIcon className="h-4 w-4 text-[#2a655f]" />
                     </div>
-                    <Label className="font-semibold text-slate-700 dark:text-slate-300">
+                    <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                       {lang === "ar" ? "صور إضافية" : "Additional Images"}
                     </Label>
                     <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-600 border-slate-200">
-                      {lang === "ar" ? "اختيارية" : "Optional"}
-                    </Badge>
-                    <Badge className="bg-[#d81b60]/10 text-[#d81b60] border-0 text-[10px]">
                       {form.image_urls.length}/6
                     </Badge>
                   </div>
@@ -1499,12 +1482,12 @@ export function ProductFormDialog({
                     variant="outline"
                     onClick={() => setForm({ ...form, image_urls: [...form.image_urls, ""] })}
                     disabled={form.image_urls.length >= 6}
-                    className="rounded-xl border-3 border-[#d81b60]/30 text-[#d81b60] hover:bg-[#d81b60]/10 hover:border-[#d81b60]/50 transition-all duration-300 hover:scale-105"
+                    className="rounded-lg border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 hover:scale-105 h-8 px-3 text-xs"
                   >
-                    <Plus className="h-4 w-4 me-1" /> {lang === "ar" ? "إضافة" : "Add"}
+                    <Plus className="h-3.5 w-3.5 me-1" /> {lang === "ar" ? "إضافة" : "Add"}
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {form.image_urls.map((url, index) => (
                     <ImageInput
                       key={index}
@@ -1519,7 +1502,7 @@ export function ProductFormDialog({
                       lang={app.lang}
                       label={`${lang === "ar" ? "صورة" : "Image"} ${index + 1}`}
                       hint={lang === "ar" ? "اختيارية" : "Optional"}
-                      previewClassName="aspect-video h-auto rounded-2xl border-3 border-slate-200/50"
+                      previewClassName="aspect-video h-auto rounded-lg border-2 border-slate-200/50"
                     />
                   ))}
                 </div>
@@ -1530,17 +1513,17 @@ export function ProductFormDialog({
           {/* ===== TAB: Options ===== */}
           {activeTab === "options" && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-5 duration-300">
-              <div className="relative overflow-hidden rounded-2xl border-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 bg-gradient-to-r from-indigo-500/5 to-indigo-500/10 dark:from-indigo-500/20 dark:to-indigo-500/10 p-5">
-                <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-indigo-500/5 blur-3xl" />
-                <div className="flex items-start gap-3 relative">
-                  <div className="p-2.5 rounded-xl bg-indigo-500/10">
-                    <Layers className="h-5 w-5 text-indigo-500" />
+              <div className="relative overflow-hidden rounded-xl border-2 border-indigo-500/30 dark:border-indigo-500/40 bg-gradient-to-r from-indigo-500/5 to-indigo-500/10 dark:from-indigo-500/20 dark:to-indigo-500/10 p-3">
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-indigo-500/5 blur-3xl" />
+                <div className="flex items-start gap-2 relative">
+                  <div className="p-2 rounded-lg bg-indigo-500/10">
+                    <Layers className="h-4 w-4 text-indigo-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                    <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                       {lang === "ar" ? "⚙️ خيارات وتركيبات المنتج" : "⚙️ Product Options & Variations"}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] text-muted-foreground">
                       {lang === "ar" 
                         ? "أضف الألوان مع الصور والمقاسات والتركيبات المتوفرة" 
                         : "Add colors with images, sizes and available variations"}
@@ -1549,45 +1532,95 @@ export function ProductFormDialog({
                 </div>
               </div>
 
-              <ProductOptionsManager
-                value={options}
-                onChange={setOptions}
-                lang={app.lang}
-                variations={variations}
-                onVariationsChange={setVariations}
-                userId={app.user?.id || ''}
-                onColorsWithImagesChange={handleColorsWithImagesChange}
-                externalColorImages={externalColorImages}
-                sizes={sizes}
-                onSizesChange={handleSizesUpdate}
-                isOffer={productType === "offer"}
-              />
+              {/* ✅ ✅ ✅ عرض الخيارات الديناميكية حسب التصنيف - بدون تكرار */}
+              {!parentCategoryId ? (
+                <div className="p-6 text-center rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
+                  <div className="h-12 w-12 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-2">
+                    <Folder className="h-6 w-6 text-[#2a655f]/50" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    {lang === "ar" ? "الرجاء اختيار التصنيف الرئيسي أولاً" : "Please select a main category first"}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {lang === "ar" 
+                      ? "الخيارات المتاحة تختلف حسب التصنيف المختار" 
+                      : "Available options differ based on the selected category"}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActiveTab("basic")}
+                    className="mt-3 rounded-lg border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 text-xs h-9"
+                  >
+                    {lang === "ar" ? "الذهاب للأساسيات" : "Go to Basic"}
+                  </Button>
+                </div>
+              ) : isLoadingCategoryOptions ? (
+                <div className="p-6 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2a655f]" />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {lang === "ar" ? "جاري تحميل الخيارات..." : "Loading options..."}
+                  </p>
+                </div>
+              ) : availableOptions.length === 0 ? (
+                <div className="p-6 text-center rounded-xl border-2 border-dashed border-amber-200 dark:border-amber-800/30 bg-amber-50/50 dark:bg-amber-950/20">
+                  <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-2">
+                    <AlertCircle className="h-6 w-6 text-amber-500" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                    {lang === "ar" ? "لا توجد خيارات لهذا التصنيف" : "No options for this category"}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {lang === "ar" 
+                      ? "يمكنك المتابعة بدون خيارات" 
+                      : "You can continue without options"}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* ✅ ProductOptionsManager */}
+                  <ProductOptionsManager
+                    value={options}
+                    onChange={setOptions}
+                    lang={app.lang}
+                    variations={variations}
+                    onVariationsChange={setVariations}
+                    userId={app.user?.id || ''}
+                    onColorsWithImagesChange={handleColorsWithImagesChange}
+                    externalColorImages={externalColorImages}
+                    sizes={sizes}
+                    onSizesChange={handleSizesUpdate}
+                    isOffer={productType === "offer"}
+                    availableOptions={availableOptions}
+                  />
+                </>
+              )}
             </div>
           )}
         </div>
 
         {/* ===== Footer ===== */}
-        <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t-3 border-[#d81b60]/30 dark:border-[#d81b60]/40 p-4 md:p-6 rounded-b-2xl">
+        <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 p-4 md:p-5 rounded-b-2xl">
           <div className="flex items-center justify-between gap-3">
             <Button
               variant="outline"
               onClick={goToPrevTab}
               disabled={isFirstTab}
-              className="rounded-xl border-3 border-[#d81b60]/30 text-[#d81b60] hover:bg-[#d81b60]/10 hover:border-[#d81b60]/50 transition-all duration-300 h-12 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg border-2 border-[#2a655f]/30 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 h-10 px-4 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isRTL ? (
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <ArrowRight className="h-4 w-4 ml-1.5" />
               ) : (
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 mr-1.5" />
               )}
               {lang === "ar" ? "السابق" : "Previous"}
             </Button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 onClick={() => onOpenChange(false)}
-                className="rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300 h-12 px-6"
+                className="rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-300 h-10 px-4 text-sm"
               >
                 {lang === "ar" ? "إلغاء" : "Cancel"}
               </Button>
@@ -1596,16 +1629,16 @@ export function ProductFormDialog({
                 <Button
                   onClick={validateAndSubmit}
                   disabled={!isFormValid() || isSaving || isSubmitting}
-                  className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#d81b60]/40 hover:scale-[1.02] hover:from-[#c2185b] hover:to-[#f9a8d4] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-lg bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-md shadow-[#2a655f]/25 transition-all duration-300 h-10 px-5 hover:shadow-[#2a655f]/40 hover:scale-[1.02] hover:from-[#1a4f4a] hover:to-[#2a655f] disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 >
                   {isSaving || isSubmitting ? (
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-1.5">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
                       {lang === "ar" ? "جاري النشر..." : "Publishing..."}
                     </span>
                   ) : (
                     <>
-                      <Save className="h-4 w-4 mr-2" />
+                      <Save className="h-4 w-4 mr-1.5" />
                       {product 
                         ? (lang === "ar" ? "حفظ التغييرات" : "Save Changes")
                         : (productType === "offer"
@@ -1620,13 +1653,13 @@ export function ProductFormDialog({
                 <Button
                   onClick={goToNextTab}
                   disabled={!isTabValid(activeTab)}
-                  className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/25 transition-all duration-300 h-12 px-8 hover:shadow-[#d81b60]/40 hover:scale-[1.02] hover:from-[#c2185b] hover:to-[#f9a8d4] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-lg bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-md shadow-[#2a655f]/25 transition-all duration-300 h-10 px-5 hover:shadow-[#2a655f]/40 hover:scale-[1.02] hover:from-[#1a4f4a] hover:to-[#2a655f] disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 >
                   {lang === "ar" ? "التالي" : "Next"}
                   {isRTL ? (
-                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    <ArrowLeft className="h-4 w-4 mr-1.5" />
                   ) : (
-                    <ArrowRight className="h-4 w-4 ml-2" />
+                    <ArrowRight className="h-4 w-4 ml-1.5" />
                   )}
                 </Button>
               )}

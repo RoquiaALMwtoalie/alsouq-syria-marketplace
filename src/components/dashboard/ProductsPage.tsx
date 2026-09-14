@@ -532,7 +532,12 @@ export const ProductsPage = React.memo(function ProductsPage() {
   }, [productToDelete, del, refetchMyListings, app.lang]);
 
   // ===== تحويل المنتج إلى عرض =====
-  const handleConvertToOffer = useCallback(async (productId: string, newPrice: number) => {
+  const handleConvertToOffer = useCallback(async (
+    productId: string, 
+    newPrice: number,
+    variationPrices?: Record<string, number>,
+    variationOldPrices?: Record<string, number>
+  ) => {
     try {
       setIsConverting(true);
       
@@ -543,14 +548,41 @@ export const ProductsPage = React.memo(function ProductsPage() {
       }
 
       const originalPrice = Number(product.price);
-      const discountPercent = Math.round(((originalPrice - newPrice) / originalPrice) * 100);
+      const hasVar = variationPrices && Object.keys(variationPrices).length > 0;
+      
+      let actualNewPrice = newPrice;
+      let actualOldPrice = originalPrice;
+      
+      if (hasVar) {
+        const prices = Object.values(variationPrices!);
+        const oldPrices = Object.values(variationOldPrices || {});
+        
+        actualNewPrice = prices.length > 0 
+          ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
+          : newPrice;
+        
+        actualOldPrice = oldPrices.length > 0
+          ? Math.round(oldPrices.reduce((a, b) => a + b, 0) / oldPrices.length)
+          : originalPrice;
+      }
+      
+      const discountPercent = actualOldPrice > 0 
+        ? Math.round(((actualOldPrice - actualNewPrice) / actualOldPrice) * 100)
+        : 0;
+      
+      console.log("🔵 [handleConvertToOffer] Final:", {
+        actualNewPrice,
+        actualOldPrice,
+        discountPercent,
+        hasVar,
+      });
       
       await update.mutateAsync({
         id: productId,
         patch: {
           is_offer: true,
-          old_price: originalPrice,
-          price: newPrice,
+          old_price: actualOldPrice,
+          price: actualNewPrice,
           discount_percent: discountPercent,
           status: "published",
           updated_at: new Date().toISOString(),
@@ -560,9 +592,10 @@ export const ProductsPage = React.memo(function ProductsPage() {
       if (product.variations && product.variations.length > 0) {
         const updatedVariations = product.variations.map((v: any) => ({
           ...v,
-          price: newPrice,
-          old_price: v.price,
+          price: variationPrices?.[v.id] || v.price,
+          old_price: variationOldPrices?.[v.id] || v.price,
         }));
+        
         await ProductService.saveVariations(productId, updatedVariations);
       }
 
@@ -735,14 +768,12 @@ export const ProductsPage = React.memo(function ProductsPage() {
     if (isOpeningDialog.current) return;
     isOpeningDialog.current = true;
     
-    // ✅ للعروض الترويجية
     if (product.is_promo_offer && product.promo_offer) {
       handleEditPromoOffer(product.promo_offer);
       setTimeout(() => { isOpeningDialog.current = false; }, 500);
       return;
     }
     
-    // ✅ للمنتجات العادية
     setDialogProduct(product);
     setDialogType(product.is_offer ? "offer" : "product");
     setDialogOpen(true);
@@ -754,7 +785,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
     if (isOpeningDetail.current) return;
     isOpeningDetail.current = true;
     
-    // ✅ للعروض الترويجية → نافذة التفاصيل الخاصة
     if (product.is_promo_offer && product.promo_offer) {
       handleViewPromoOffer(product.promo_offer);
       setTimeout(() => { isOpeningDetail.current = false; }, 500);
@@ -895,76 +925,76 @@ export const ProductsPage = React.memo(function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* ===== HEADER ===== */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="relative">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
-            <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25">
-              <ShoppingBag className="h-5 w-5" />
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
+        <div className="relative min-w-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3 flex-wrap">
+            <div className="relative p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 shrink-0">
+              <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
-            {app.lang === "ar" ? "منتجاتي" : "My Products"}
-            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20 text-sm px-3 py-1">
+            <span className="truncate">{app.lang === "ar" ? "منتجاتي" : "My Products"}</span>
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20 text-xs sm:text-sm px-2 sm:px-3 py-0.5 sm:py-1 shrink-0">
               {stats.total}
             </Badge>
           </h1>
           
-          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10">
-              <Package className="h-3.5 w-3.5 text-[#2a655f]" />
-              <span className="text-[#2a655f] font-medium">{stats.products}</span>
-              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "منتج" : "products"}</span>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10">
+              <Package className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#2a655f]" />
+              <span className="text-[#2a655f] font-medium text-[10px] sm:text-xs">{stats.products}</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground">{app.lang === "ar" ? "منتج" : "products"}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50">
-              <Percent className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">{stats.offers}</span>
-              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "تخفيض" : "discounts"}</span>
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50">
+              <Percent className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-500" />
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium text-[10px] sm:text-xs">{stats.offers}</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground">{app.lang === "ar" ? "تخفيض" : "discounts"}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f9a8d4]/10 border border-[#f9a8d4]/20">
-              <Sparkles className="h-3.5 w-3.5 text-[#d81b60]" />
-              <span className="text-[#d81b60] font-medium">{stats.promo}</span>
-              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "ترويجي" : "promo"}</span>
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-[#f9a8d4]/10 border border-[#f9a8d4]/20">
+              <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#d81b60]" />
+              <span className="text-[#d81b60] font-medium text-[10px] sm:text-xs">{stats.promo}</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground">{app.lang === "ar" ? "ترويجي" : "promo"}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200/50">
-              <Clock className="h-3.5 w-3.5 text-yellow-500" />
-              <span className="text-yellow-600 dark:text-yellow-400 font-medium">{stats.pending}</span>
-              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "قيد المراجعة" : "pending"}</span>
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200/50">
+              <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-yellow-500" />
+              <span className="text-yellow-600 dark:text-yellow-400 font-medium text-[10px] sm:text-xs">{stats.pending}</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground">{app.lang === "ar" ? "قيد المراجعة" : "pending"}</span>
             </span>
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <Button 
             size="sm" 
-            className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:scale-105 transition-all duration-300"
+            className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:scale-105 transition-all duration-300 h-8 sm:h-9 px-2.5 sm:px-3 text-[11px] sm:text-xs"
             onClick={() => openAddDialog("product")}
           >
-            <Plus className="h-4 w-4 mr-1.5" /> 
+            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" /> 
             {app.lang === "ar" ? "أضف منتج" : "Add Product"}
           </Button>
           
           <Button 
             size="sm" 
-            className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-600/25 hover:scale-105 transition-all duration-300"
+            className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-600/25 hover:scale-105 transition-all duration-300 h-8 sm:h-9 px-2.5 sm:px-3 text-[11px] sm:text-xs"
             onClick={() => openAddDialog("offer")}
           >
-            <Percent className="h-4 w-4 mr-1.5" /> 
+            <Percent className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" /> 
             {app.lang === "ar" ? "عرض تخفيض" : "Discount"}
           </Button>
 
           <Button 
             size="sm" 
-            className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/25 hover:scale-105 transition-all duration-300"
+            className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/25 hover:scale-105 transition-all duration-300 h-8 sm:h-9 px-2.5 sm:px-3 text-[11px] sm:text-xs"
             onClick={() => {
               setSelectedOfferProduct(null);
               setEditingOffer(null);
               setOfferDialogOpen(true);
             }}
           >
-            <Sparkles className="h-4 w-4 mr-1.5" /> 
+            <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" /> 
             {app.lang === "ar" ? "عرض ترويجي" : "Promo"}
           </Button>
 
@@ -973,24 +1003,24 @@ export const ProductsPage = React.memo(function ProductsPage() {
             size="sm" 
             onClick={exportToExcel} 
             disabled={filteredProducts.length === 0} 
-            className="rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 transition-all duration-300"
+            className="rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 transition-all duration-300 h-8 sm:h-9 px-2.5 sm:px-3 text-[11px] sm:text-xs"
           >
-            <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Excel
+            <FileSpreadsheet className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" /> Excel
           </Button>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={exportToWord} 
             disabled={filteredProducts.length === 0} 
-            className="rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 transition-all duration-300"
+            className="rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 transition-all duration-300 h-8 sm:h-9 px-2.5 sm:px-3 text-[11px] sm:text-xs"
           >
-            <FileText className="h-4 w-4 mr-1.5" /> Word
+            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" /> Word
           </Button>
         </div>
       </div>
 
       {/* ===== STATS CARDS ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
         {[
           { key: 'total', label: app.lang === 'ar' ? 'الإجمالي' : 'Total', value: stats.total, icon: Package, gradient: 'from-[#2a655f] to-[#f9a8d4]' },
           { key: 'products', label: app.lang === 'ar' ? 'منتجات' : 'Products', value: stats.products, icon: ShoppingBag, gradient: 'from-[#3a8a82] to-[#f9a8d4]' },
@@ -1003,13 +1033,13 @@ export const ProductsPage = React.memo(function ProductsPage() {
             key={i} 
             className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 shadow-sm hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 hover:-translate-y-1 overflow-hidden"
           >
-            <div className="flex items-start justify-between p-4">
-              <div>
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1 group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
+            <div className="flex items-start justify-between p-2.5 sm:p-4">
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider truncate">{stat.label}</p>
+                <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5 sm:mt-1 group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                <stat.icon className="h-5 w-5 text-[#2a655f]" />
+              <div className="h-8 w-8 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shrink-0">
+                <stat.icon className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-[#2a655f]" />
               </div>
             </div>
             <div className="mt-0 h-1 w-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
@@ -1022,108 +1052,151 @@ export const ProductsPage = React.memo(function ProductsPage() {
         ))}
       </div>
 
-      {/* ===== SEARCH & FILTERS ===== */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 group">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-focus-within:text-[#2a655f] transition-colors" />
+      {/* ============================================================ */}
+      {/* ✅ SEARCH & FILTERS - محسّن للموبايل */}
+      {/* ============================================================ */}
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-slate-200 dark:border-slate-700 p-3 sm:p-4 shadow-sm">
+        
+        {/* ✅ الصف الأول: البحث */}
+        <div className="relative group mb-3">
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-focus-within:text-[#2a655f] transition-colors pointer-events-none" />
           <Input 
             value={searchQuery} 
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
             placeholder={app.lang === "ar" ? "🔍 ابحث في منتجاتك..." : "🔍 Search your products..."} 
-            className="ps-9 h-10 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all" 
+            className="ps-9 pe-9 h-10 sm:h-11 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all text-sm" 
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f]">
+            <button 
+              onClick={() => setSearchQuery("")} 
+              className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
+              aria-label={app.lang === "ar" ? "مسح البحث" : "Clear search"}
+            >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
-        
-        <Select value={filterStatus} onValueChange={(v: any) => { setFilterStatus(v); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[150px] h-10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#2a655f]/50 transition-all">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
-              <SelectValue placeholder={app.lang === "ar" ? "الحالة" : "Status"} />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl">
-            <SelectItem value="all">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
-            <SelectItem value="pending">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
-            <SelectItem value="published">✅ {app.lang === "ar" ? "منشور" : "Published"}</SelectItem>
-            <SelectItem value="archived">📁 {app.lang === "ar" ? "مؤرشف" : "Archived"}</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <Select value={filterType} onValueChange={(v: any) => { setFilterType(v); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[170px] h-10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#2a655f]/50 transition-all">
-            <div className="flex items-center gap-2">
-              <Tags className="h-4 w-4 text-slate-400" />
-              <SelectValue placeholder={app.lang === "ar" ? "النوع" : "Type"} />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl">
-            <SelectItem value="all">{app.lang === "ar" ? "الكل" : "All"}</SelectItem>
-            <SelectItem value="product">📦 {app.lang === "ar" ? "منتج" : "Product"}</SelectItem>
-            <SelectItem value="offer">🏷️ {app.lang === "ar" ? "عرض تخفيض" : "Discount"}</SelectItem>
-            <SelectItem value="promo">✨ {app.lang === "ar" ? "عرض ترويجي" : "Promo"}</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
-          <Button 
-            variant={viewMode === "grid" ? "default" : "ghost"} 
-            size="sm" 
-            className={cn(
-              "h-8 px-3 rounded-lg text-xs transition-all",
-              viewMode === "grid" && "bg-[#2a655f] hover:bg-[#3a8a82] text-white"
-            )} 
-            onClick={() => setViewMode("grid")}
-          >
-            <Layers className="h-3.5 w-3.5 mr-1" />
-            {app.lang === "ar" ? "شبكة" : "Grid"}
-          </Button>
-          <Button 
-            variant={viewMode === "list" ? "default" : "ghost"} 
-            size="sm" 
-            className={cn(
-              "h-8 px-3 rounded-lg text-xs transition-all",
-              viewMode === "list" && "bg-[#2a655f] hover:bg-[#3a8a82] text-white"
-            )} 
-            onClick={() => setViewMode("list")}
-          >
-            <Layers className="h-3.5 w-3.5 mr-1 rotate-90" />
-            {app.lang === "ar" ? "قائمة" : "List"}
-          </Button>
+
+        {/* ✅ الصف الثاني: الفلاتر + view mode + clear */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-12 gap-2">
+          
+          {/* Status Filter */}
+          <div className="col-span-1 md:col-span-3">
+            <Select value={filterStatus} onValueChange={(v: any) => { setFilterStatus(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#2a655f]/50 transition-all text-sm">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <SelectValue placeholder={app.lang === "ar" ? "الحالة" : "Status"} />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">📋 {app.lang === "ar" ? "الكل" : "All"}</SelectItem>
+                <SelectItem value="pending">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
+                <SelectItem value="published">✅ {app.lang === "ar" ? "منشور" : "Published"}</SelectItem>
+                <SelectItem value="archived">📁 {app.lang === "ar" ? "مؤرشف" : "Archived"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Type Filter */}
+          <div className="col-span-1 md:col-span-3">
+            <Select value={filterType} onValueChange={(v: any) => { setFilterType(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#2a655f]/50 transition-all text-sm">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Tags className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <SelectValue placeholder={app.lang === "ar" ? "النوع" : "Type"} />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">🎯 {app.lang === "ar" ? "الكل" : "All"}</SelectItem>
+                <SelectItem value="product">📦 {app.lang === "ar" ? "منتج" : "Product"}</SelectItem>
+                <SelectItem value="offer">🏷️ {app.lang === "ar" ? "عرض تخفيض" : "Discount"}</SelectItem>
+                <SelectItem value="promo">✨ {app.lang === "ar" ? "عرض ترويجي" : "Promo"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* View Mode Toggle */}
+          <div className="col-span-1 md:col-span-3 flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 border border-slate-200 dark:border-slate-700 h-10">
+            <Button 
+              variant="ghost"
+              size="sm" 
+              className={cn(
+                "h-9 flex-1 rounded-lg text-[11px] sm:text-xs transition-all",
+                viewMode === "grid" 
+                  ? "bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-sm" 
+                  : "text-slate-500 hover:text-[#2a655f] hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
+              )} 
+              onClick={() => setViewMode("grid")}
+            >
+              <Layers className="h-3.5 w-3.5 mr-1" />
+              <span className="hidden xs:inline">{app.lang === "ar" ? "شبكة" : "Grid"}</span>
+            </Button>
+            <Button 
+              variant="ghost"
+              size="sm" 
+              className={cn(
+                "h-9 flex-1 rounded-lg text-[11px] sm:text-xs transition-all",
+                viewMode === "list" 
+                  ? "bg-[#2a655f] hover:bg-[#3a8a82] text-white shadow-sm" 
+                  : "text-slate-500 hover:text-[#2a655f] hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
+              )} 
+              onClick={() => setViewMode("list")}
+            >
+              <Layers className="h-3.5 w-3.5 mr-1 rotate-90" />
+              <span className="hidden xs:inline">{app.lang === "ar" ? "قائمة" : "List"}</span>
+            </Button>
+          </div>
+          
+          {/* Clear Filters */}
+          <div className="col-span-1 md:col-span-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setCurrentPage(1); }} 
+              className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:hover:bg-red-950/20 transition-all text-xs"
+            >
+              <X className="h-4 w-4 mr-1.5" />
+              {app.lang === "ar" ? "مسح الفلاتر" : "Clear Filters"}
+            </Button>
+          </div>
         </div>
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setCurrentPage(1); }} 
-          className="h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 transition-all"
-        >
-          <X className="h-4 w-4 mr-1.5" />
-          {app.lang === "ar" ? "مسح" : "Clear"}
-        </Button>
+
+        {/* ✅ عداد النتائج */}
+        {(searchQuery || filterStatus !== "all" || filterType !== "all") && (
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2 flex-wrap">
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+              {app.lang === "ar" 
+                ? `📊 ${filteredProducts.length} نتيجة من أصل ${productsWithPromo.length}`
+                : `📊 ${filteredProducts.length} of ${productsWithPromo.length} results`}
+            </span>
+            <button
+              onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setCurrentPage(1); }}
+              className="text-[11px] sm:text-xs text-[#2a655f] hover:text-[#d81b60] font-medium transition-colors"
+            >
+              {app.lang === "ar" ? "إعادة تعيين" : "Reset"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ============================================================ */}
-      {/* ✅ عرض المنتجات - بطريقة السلة (List Mode) */}
+      {/* ✅ عرض المنتجات */}
       {/* ============================================================ */}
       {myListings.length === 0 ? (
-        <div className="rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-transparent">
-          <div className="h-24 w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto">
-            <Package className="h-12 w-12 text-[#2a655f]/60" />
+        <div className="rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-10 sm:p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-transparent">
+          <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto">
+            <Package className="h-10 w-10 sm:h-12 sm:w-12 text-[#2a655f]/60" />
           </div>
-          <h3 className="text-2xl font-bold mt-6 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] bg-clip-text text-transparent">
+          <h3 className="text-xl sm:text-2xl font-bold mt-4 sm:mt-6 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] bg-clip-text text-transparent">
             {app.lang === "ar" ? "🚀 لا توجد منتجات بعد" : "🚀 No products yet"}
           </h3>
-          <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-md mx-auto">
             {app.lang === "ar" 
               ? "ابدأ رحلتك التجارية الآن وأضف منتجك الأول" 
               : "Start your business journey now and add your first product"}
           </p>
-          <div className="flex items-center justify-center gap-3 mt-6 flex-wrap">
+          <div className="flex items-center justify-center gap-3 mt-4 sm:mt-6 flex-wrap">
             <Button 
               className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg hover:scale-105 transition-all"
               onClick={() => openAddDialog("product")}
@@ -1134,9 +1207,9 @@ export const ProductsPage = React.memo(function ProductsPage() {
           </div>
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-20 text-center">
-          <Search className="h-20 w-20 text-muted-foreground/40 mx-auto" />
-          <h3 className="text-xl font-semibold text-muted-foreground mt-4">
+        <div className="rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-10 sm:p-20 text-center">
+          <Search className="h-16 w-16 sm:h-20 sm:w-20 text-muted-foreground/40 mx-auto" />
+          <h3 className="text-lg sm:text-xl font-semibold text-muted-foreground mt-4">
             {app.lang === "ar" ? "🔍 لا توجد نتائج مطابقة" : "🔍 No matching results"}
           </h3>
           <Button 
@@ -1150,10 +1223,10 @@ export const ProductsPage = React.memo(function ProductsPage() {
         </div>
       ) : (
         <>
-          {/* ===== عرض المنتجات - يشبه السلة (كروت بعرض كامل تحت بعض) ===== */}
+          {/* ===== عرض المنتجات ===== */}
           <div className={cn(
             "space-y-3",
-            viewMode === "grid" && "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 space-y-0"
+            viewMode === "grid" && "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 space-y-0"
           )}>
             {paginatedProducts.map((product: any) => {
               const isChild = product.parent_category_id && product.parent_category_id !== product.category_id;
@@ -1184,7 +1257,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                       
-                      {/* ✅ شارات على الصورة */}
                       <div className="absolute top-2 left-2 flex flex-col gap-1">
                         {product.is_promo_offer && (
                           <Badge className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white border-0 text-[9px] px-2 py-0.5 animate-pulse">
@@ -1204,7 +1276,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                     <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
                       
                       <div>
-                        {/* ✅ اسم المنتج */}
                         <h3 
                           className="font-bold text-sm text-slate-900 dark:text-white line-clamp-2 cursor-pointer hover:text-[#2a655f] transition-colors mb-1"
                           onClick={() => openProductDetail(product)}
@@ -1212,7 +1283,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                           {product.title_ar}
                         </h3>
                         
-                        {/* ✅ التصنيف (رئيسي + فرعي) */}
                         {(parentCat || childCat) && (
                           <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 mb-1 flex-wrap">
                             {parentCat && (
@@ -1233,7 +1303,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                           </div>
                         )}
                         
-                        {/* ✅ الحالة والتقييم */}
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <Badge className={cn(
                             "text-[9px] border-0 px-2 py-0.5",
@@ -1257,7 +1326,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                         </div>
                       </div>
                       
-                      {/* ✅ السعر والإجراءات */}
                       <div className="flex items-end justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
                         <div className="flex flex-col">
                           {product.is_offer && product.old_price && (
@@ -1270,9 +1338,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
                           </span>
                         </div>
                         
-                        {/* ✅ أزرار الإجراءات */}
                         <div className="flex items-center gap-1">
-                          {/* عرض */}
                           <Button
                             size="sm"
                             variant="outline"
@@ -1283,7 +1349,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
                           
-                          {/* تعديل */}
                           <Button
                             size="sm"
                             variant="outline"
@@ -1294,7 +1359,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                             <Edit2 className="h-3.5 w-3.5" />
                           </Button>
                           
-                          {/* تحويل لتخفيض (للمنتجات العادية فقط) */}
                           {!product.is_offer && !product.is_promo_offer && (
                             <Button
                               size="sm"
@@ -1307,7 +1371,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                             </Button>
                           )}
                           
-                          {/* إضافة عرض ترويجي */}
                           {!product.is_promo_offer && !product.has_promo && (
                             <Button
                               size="sm"
@@ -1320,16 +1383,26 @@ export const ProductsPage = React.memo(function ProductsPage() {
                             </Button>
                           )}
                           
-                          {/* حذف */}
                           <Button
                             size="sm"
                             variant="outline"
                             className="h-8 w-8 p-0 rounded-lg border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all"
                             onClick={() => {
-                              setProductToDelete(product);
-                              setDeleteDialogOpen(true);
+                              if (product.is_promo_offer && product.promo_offer) {
+                                console.log("🔴 [Inline Delete Button] Detected promo offer:", product.promo_offer);
+                                console.log("🔴 [Inline Delete Button] promo_offer.id:", product.promo_offer.id);
+                                handleRemovePromoOffer(product.promo_offer.id);
+                              } else {
+                                console.log("🔴 [Inline Delete Button] Regular product/discount:", product);
+                                setProductToDelete(product);
+                                setDeleteDialogOpen(true);
+                              }
                             }}
-                            title={app.lang === "ar" ? "حذف" : "Delete"}
+                            title={
+                              product.is_promo_offer
+                                ? (app.lang === "ar" ? "حذف العرض الترويجي" : "Delete Promo Offer")
+                                : (app.lang === "ar" ? "حذف" : "Delete")
+                            }
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -1343,9 +1416,11 @@ export const ProductsPage = React.memo(function ProductsPage() {
           </div>
 
           {/* ===== PAGINATION ===== */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-5 mt-5 border-t border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-3 sm:gap-4 pt-4 sm:pt-5 mt-4 sm:mt-5 border-t border-slate-200 dark:border-slate-700">
+            
+            {/* Info + Items per page */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-start w-full sm:w-auto">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 {app.lang === "ar" 
                   ? `صفحة ${currentPage} من ${totalPages}` 
                   : `Page ${currentPage} of ${totalPages}`}
@@ -1354,8 +1429,8 @@ export const ProductsPage = React.memo(function ProductsPage() {
                 {filteredProducts.length} {app.lang === "ar" ? "منتج" : "products"}
               </Badge>
               
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] sm:text-xs text-muted-foreground">
                   {app.lang === "ar" ? "عرض:" : "Show:"}
                 </span>
                 <Select 
@@ -1365,7 +1440,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
                     setCurrentPage(1); 
                   }}
                 >
-                  <SelectTrigger className="w-[70px] h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+                  <SelectTrigger className="w-[60px] sm:w-[70px] h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
                     <SelectValue placeholder="10" />
                   </SelectTrigger>
                   <SelectContent className="rounded-lg">
@@ -1379,15 +1454,16 @@ export const ProductsPage = React.memo(function ProductsPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Pagination Buttons */}
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => goToPage(1)}
                 disabled={currentPage === 1}
-                className="h-9 w-9 p-0 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
+                className="h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
               >
-                <ChevronsLeft className="h-4 w-4 text-[#2a655f]" />
+                <ChevronsLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#2a655f]" />
               </Button>
               
               <Button
@@ -1395,24 +1471,24 @@ export const ProductsPage = React.memo(function ProductsPage() {
                 size="sm"
                 onClick={prevPage}
                 disabled={currentPage === 1}
-                className="h-9 w-9 p-0 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
+                className="h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
               >
-                <ChevronLeft className="h-4 w-4 text-[#2a655f]" />
+                <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#2a655f]" />
               </Button>
 
-              <div className="flex items-center gap-1 px-2">
-                {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+              <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-2">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let pageNum;
-                  if (totalPages <= 7) pageNum = i + 1;
-                  else if (currentPage <= 4) pageNum = i + 1;
-                  else if (currentPage >= totalPages - 3) pageNum = totalPages - 6 + i;
-                  else pageNum = currentPage - 3 + i;
+                  if (totalPages <= 5) pageNum = i + 1;
+                  else if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else pageNum = currentPage - 2 + i;
                   
-                  if (i === 0 && pageNum > 1 && currentPage > 4) {
-                    return <span key="dots-start" className="px-1 text-muted-foreground">…</span>;
+                  if (i === 0 && pageNum > 1 && currentPage > 3) {
+                    return <span key="dots-start" className="px-1 text-muted-foreground text-xs">…</span>;
                   }
-                  if (i === 6 && pageNum < totalPages - 1 && currentPage < totalPages - 3) {
-                    return <span key="dots-end" className="px-1 text-muted-foreground">…</span>;
+                  if (i === 4 && pageNum < totalPages && currentPage < totalPages - 2) {
+                    return <span key="dots-end" className="px-1 text-muted-foreground text-xs">…</span>;
                   }
                   
                   return (
@@ -1422,7 +1498,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
                       size="sm"
                       onClick={() => goToPage(pageNum)}
                       className={cn(
-                        "h-9 min-w-[36px] px-2.5 rounded-xl text-sm font-medium transition-all",
+                        "h-8 min-w-[30px] sm:h-9 sm:min-w-[36px] px-1.5 sm:px-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all",
                         pageNum === currentPage 
                           ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-md" 
                           : "hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
@@ -1439,9 +1515,9 @@ export const ProductsPage = React.memo(function ProductsPage() {
                 size="sm"
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
-                className="h-9 w-9 p-0 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
+                className="h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
               >
-                <ChevronRight className="h-4 w-4 text-[#2a655f]" />
+                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#2a655f]" />
               </Button>
               
               <Button
@@ -1449,9 +1525,9 @@ export const ProductsPage = React.memo(function ProductsPage() {
                 size="sm"
                 onClick={() => goToPage(totalPages)}
                 disabled={currentPage === totalPages}
-                className="h-9 w-9 p-0 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
+                className="h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
               >
-                <ChevronsRight className="h-4 w-4 text-[#2a655f]" />
+                <ChevronsRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#2a655f]" />
               </Button>
             </div>
           </div>
@@ -1477,7 +1553,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
           {selectedProduct && (
             <div className="flex flex-col lg:flex-row h-[95vh]">
               
-              {/* ✅ الصور */}
               <div className="lg:w-1/2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 flex flex-col h-full relative">
                 <div className="flex-1 flex items-center justify-center p-4 relative overflow-hidden">
                   {(() => {
@@ -1529,13 +1604,11 @@ export const ProductsPage = React.memo(function ProductsPage() {
                 </div>
               </div>
 
-              {/* ✅ التفاصيل */}
               <div className="lg:w-1/2 p-6 md:p-8 overflow-y-auto bg-white dark:bg-slate-900 h-full">
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                   {selectedProduct.title_ar}
                 </h1>
                 
-                {/* ✅ التصنيف (رئيسي + فرعي) */}
                 {(() => {
                   const parentCat = selectedProduct.parent_category_id 
                     ? cats.find((c: any) => c.id === selectedProduct.parent_category_id) 
@@ -1567,7 +1640,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                   );
                 })()}
                 
-                {/* ✅ السعر */}
                 <div className="mt-4 p-4 bg-gradient-to-r from-[#2a655f]/5 to-[#3a8a82]/5 rounded-2xl border border-[#2a655f]/20">
                   <div className="flex items-end gap-4">
                     <div>
@@ -1588,7 +1660,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                   </div>
                 </div>
 
-                {/* ✅ الوصف */}
                 {selectedProduct.description_ar && (
                   <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl">
                     <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -1597,7 +1668,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                   </div>
                 )}
 
-                {/* ✅ أزرار الإجراءات */}
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   <Button
                     variant="outline"

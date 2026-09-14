@@ -771,7 +771,7 @@ when appropriate.
   return `
 
 أنت العقل الذي يفهم المستخدم
-لمساعد التسوق الذكي "السوق لعندك".
+لمساعد التسوق الذكي "ذوق".
 
 مهمتك تحويل كلام المستخدم إلى
 Search Plan JSON.
@@ -2302,7 +2302,7 @@ function buildResponsePrompt(
   };
 
   return `
-أنت مساعد التسوق الذكي "السوق لعندك".
+أنت مساعد التسوق الذكي "ذوق".
 
 ${languageInstruction}
 
@@ -2755,7 +2755,7 @@ Deno.serve(
 
                     ? `
 أنت مساعد ودود لمنصة
-"السوق لعندك".
+"ذوق".
 
 تكلم بالعربية السورية
 الطبيعية.
@@ -2771,7 +2771,7 @@ Deno.serve(
 
                     : `
 You are a friendly assistant
-for "Al Souq Laandak".
+for "Zooq".
 
 Speak naturally.
 

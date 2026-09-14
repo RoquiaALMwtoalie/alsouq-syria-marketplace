@@ -1,4 +1,4 @@
-// src/routes/store.$id.tsx - الكود المُصحّح بالكامل مع نطاق السعر (من-إلى)
+// src/routes/store.$id.tsx - الكود المُصحّح بالكامل (زيتي + رمادي + كروت موحّدة + Infinite Scroll)
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useRef, Suspense, useMemo } from "react";
@@ -8,7 +8,7 @@ import {
   Sparkles, Package, Share2, Flame, BadgeCheck,
   Search, X, ArrowUpDown, Grid3X3, List, ChevronDown,
   RefreshCw, Eye, Heart, TrendingUp, Zap, Gift, Target, Award,
-  LayoutGrid, Check, Tag, Filter
+  LayoutGrid, Check, Tag, Filter, ChevronLeft
 } from "lucide-react";
 import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { useListings, useStoreProfile, useDeliveryCompanies, useProductOffers } from "@/lib/queries";
@@ -38,6 +38,14 @@ import {
 } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import ListingCard from "@/components/ListingCard";
+import { OptimizedImage } from "@/components/OptimizedImage";
+
+// ============================================================
+// 🎨 Brand Colors (زيتي)
+// ============================================================
+const OLIVE = "#2a655f";
+const OLIVE_DARK = "#1a4f4a";
+const OLIVE_LIGHT = "#3a8a82";
 
 export const Route = createFileRoute("/store/$id")({
   component: StorePage,
@@ -79,20 +87,20 @@ function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val
         className={cn(
           "flex items-center gap-2 h-10 px-4 rounded-xl border text-sm font-medium transition-all duration-300 min-w-[170px] group",
           isOpen 
-            ? "border-pink-400/50 bg-pink-500/5 dark:bg-pink-500/10 shadow-lg shadow-pink-500/20" 
-            : "border-pink-300/30 dark:border-pink-400/30 bg-white dark:bg-[#1e293b] hover:border-pink-400/50 hover:shadow-lg hover:shadow-pink-500/10"
+            ? "border-[#2a655f]/50 bg-[#2a655f]/5 shadow-lg shadow-[#2a655f]/20" 
+            : "border-slate-300/60 bg-white dark:bg-slate-800 hover:border-[#2a655f]/50 hover:shadow-lg hover:shadow-[#2a655f]/10"
         )}
       >
         <IconComponent className={cn("h-4 w-4 transition-transform duration-300 group-hover:scale-110", selectedOption.color)} />
         <span className="flex-1 text-start truncate text-slate-700 dark:text-slate-300">{selectedOption.label}</span>
         <ChevronDown className={cn(
-          "h-4 w-4 text-muted-foreground transition-all duration-300 flex-shrink-0",
-          isOpen ? 'rotate-180 text-pink-500' : 'group-hover:text-pink-500'
+          "h-4 w-4 text-slate-400 transition-all duration-300 flex-shrink-0",
+          isOpen ? 'rotate-180 text-[#2a655f]' : 'group-hover:text-[#2a655f]'
         )} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1e293b] rounded-xl border border-pink-300/30 dark:border-pink-400/30 shadow-2xl shadow-pink-500/20 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl shadow-slate-900/10 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="py-2">
             {options.map((option) => {
               const isSelected = value === option.value;
@@ -107,14 +115,14 @@ function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val
                   className={cn(
                     "w-full px-4 py-2.5 text-sm text-start flex items-center gap-3 transition-all duration-200",
                     isSelected 
-                      ? "bg-pink-500/10 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400" 
-                      : "text-slate-700 dark:text-slate-300 hover:bg-pink-500/5 dark:hover:bg-pink-500/10 hover:text-pink-600"
+                      ? "bg-[#2a655f]/10 text-[#2a655f] font-bold" 
+                      : "text-slate-700 dark:text-slate-300 hover:bg-[#2a655f]/5 hover:text-[#2a655f]"
                   )}
                 >
                   <OptIcon className={cn("h-4 w-4", option.color)} />
                   <span className="flex-1 font-medium">{option.label}</span>
                   {isSelected && (
-                    <Check className="h-4 w-4 text-pink-500 animate-bounce" />
+                    <Check className="h-4 w-4 text-[#2a655f] animate-bounce" />
                   )}
                 </button>
               );
@@ -133,6 +141,7 @@ function StorePage() {
   const navigate = useNavigate();
   const [isOpeningConversation, setIsOpeningConversation] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
   
   // ====== State التوصيل ======
   const [deliveryPrice, setDeliveryPrice] = useState<{
@@ -150,7 +159,7 @@ function StorePage() {
 
   // ====== State الفلتر والترتيب ======
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [limit] = useState(8);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "popular" | "price_asc" | "price_desc" | "rating">("recent");
   const [viewFilter, setViewFilter] = useState<"all" | "products" | "offers">("all");
@@ -230,14 +239,12 @@ function StorePage() {
 
   // ✅ دمج كل العناصر مع الترتيب الاحترافي
   const allItems = useMemo(() => {
-    // ✅ منتجات وعروض تخفيضية من useListings
     const listingsItems = rows.map((item: any) => ({
       ...item,
       is_offer: item.is_offer || false,
       is_promo_offer: false,
     }));
     
-    // ✅ عروض ترويجية من product_offers
     const promoItems = promoOffers.map((offer: any) => {
       let mainProduct = null;
       
@@ -288,10 +295,8 @@ function StorePage() {
       };
     });
 
-    // ✅ دمج الكل
     let all = [...listingsItems, ...promoItems];
 
-    // ✅ ترتيب الكل حسب الـ sortBy
     if (sortBy === 'price_asc') {
       all.sort((a, b) => (a.price || 0) - (b.price || 0));
     } else if (sortBy === 'price_desc') {
@@ -328,7 +333,6 @@ function StorePage() {
   const items = useMemo(() => {
     let filtered = filteredByType;
     
-    // ✅ فلتر البحث الذكي
     if (searchQuery && searchQuery.trim()) {
       const s = searchQuery.toLowerCase().trim();
       filtered = filtered.filter((item: any) => {
@@ -344,7 +348,6 @@ function StorePage() {
       });
     }
     
-    // ✅ ✅ ✅ فلتر السعر
     const min = Number(minPrice) || 0;
     const max = Number(maxPrice) || 10000000;
     
@@ -353,7 +356,6 @@ function StorePage() {
       return price >= min && price <= max;
     });
     
-    // ✅ فلتر التوفر
     if (showAvailableOnly) {
       filtered = filtered.filter((r: any) => r.is_available !== false);
     }
@@ -361,32 +363,29 @@ function StorePage() {
     return filtered;
   }, [filteredByType, searchQuery, minPrice, maxPrice, showAvailableOnly]);
 
-  // ✅ عدد العروض (تخفيضية + ترويجية)
+  // ✅ عدد العروض
   const offersCount = useMemo(() => {
     return allItems.filter((item: any) => 
       item.is_offer === true || item.is_promo_offer === true
     ).length;
   }, [allItems]);
 
-  // ✅ عدد المنتجات (بدون عروض)
+  // ✅ عدد المنتجات
   const productsCount = useMemo(() => {
     return allItems.filter((item: any) => 
       !item.is_offer && !item.is_promo_offer
     ).length;
   }, [allItems]);
 
-  // ✅ العناصر المعروضة
   const displayListings = useMemo(() => {
     if (page === 1) return items;
     return items;
   }, [items, page]);
 
-  // ✅ إعادة تعيين الصفحة عند تغيير الفلاتر
   useEffect(() => {
     setPage(1);
   }, [searchQuery, sortBy, viewFilter, minPrice, maxPrice, showAvailableOnly]);
 
-  // ✅ إعادة تعيين الفلاتر
   const resetFilters = useCallback(() => {
     setSearchQuery("");
     setSortBy("recent");
@@ -585,14 +584,52 @@ function StorePage() {
     };
   }, [store, app.user, cartTotalForStore, calculateDistance, calculateDeliveryPrice]);
 
-  // ====== تحميل المزيد ======
-  const loadMore = useCallback(() => {
-    if (page < totalPages && !isFetching) {
-      setPage(prev => prev + 1);
+  // ============================================================
+  // ✅✅✅ INFINITE SCROLL - IntersectionObserver
+  // ============================================================
+  useEffect(() => {
+    // ✅ تنظيف الـ observer القديم
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
     }
-  }, [page, totalPages, isFetching]);
 
-  // ====== فتح المحادثة ======
+    // ✅ إذا وصلنا للنهاية أو لا توجد منتجات → لا داعي للمراقبة
+    if (page >= totalPages || items.length === 0) {
+      return;
+    }
+
+    // ✅ إنشاء observer جديد
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        
+        // ✅ إذا ظهر sentinel في الشاشة + لا يوجد تحميل جارٍ → حمّل الصفحة التالية
+        if (entry.isIntersecting && !isFetching && page < totalPages) {
+          setPage(prev => prev + 1);
+        }
+      },
+      {
+        root: null,                    // ✅ viewport
+        rootMargin: '400px',           // ✅ ابدأ التحميل قبل 400 بكسل من الوصول
+        threshold: 0.01,               // ✅ يكفي ظهور 1%
+      }
+    );
+
+    // ✅ راقب الـ sentinel
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    // ✅ تنظيف عند unmount أو تغيير dependencies
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+    };
+  }, [page, totalPages, isFetching, items.length]);
+
   const handleMessage = async () => {
     if (!app.user) {
       navigate({ to: "/auth/$mode", params: { mode: "login" } });
@@ -627,7 +664,6 @@ function StorePage() {
     }
   };
 
-  // ====== عرض التحميل ======
   if (storeLoading) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-12 space-y-6">
@@ -646,9 +682,9 @@ function StorePage() {
   if (!store) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-20 text-center">
-        <StoreIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+        <StoreIcon className="h-16 w-16 mx-auto mb-4 text-slate-300" />
         <h2 className="text-2xl font-bold">{app.lang === "ar" ? "المتجر غير موجود" : "Store not found"}</h2>
-        <Button className="mt-4 bg-pink-500 hover:bg-pink-600 text-white" onClick={() => navigate({ to: "/" })}>
+        <Button className="mt-4 bg-[#2a655f] hover:bg-[#1a4f4a] text-white" onClick={() => navigate({ to: "/" })}>
           {app.lang === "ar" ? "العودة للرئيسية" : "Back to home"}
         </Button>
       </div>
@@ -661,10 +697,10 @@ function StorePage() {
   const isLoading = listingsLoading || isFetching || promoLoading;
 
   return (
-    <div className="bg-gradient-to-b from-pink-500/5 via-transparent to-rose-500/5 dark:from-pink-500/20 dark:to-rose-500/10 min-h-screen">
+    <div className="bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 min-h-screen">
       
       {/* ====== غلاف المتجر ====== */}
-      <div className="relative h-48 md:h-72 bg-gradient-to-br from-pink-500 to-rose-500 overflow-hidden">
+      <div className="relative h-48 md:h-72 bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] overflow-hidden">
         {store.store_cover_url && (
           <img 
             src={store.store_cover_url} 
@@ -674,12 +710,12 @@ function StorePage() {
             decoding="async"
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/80 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0d2e2a]/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/90 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0d2e2a]/60 to-transparent" />
         
         <div className="absolute top-4 right-4 flex gap-2">
-          <Badge className="bg-white/10 backdrop-blur-sm text-white border-white/20 animate-pulse">
-            <Sparkles className="h-3 w-3 mr-1 animate-spin-slow" />
+          <Badge className="bg-white/15 backdrop-blur-md text-white border-white/30 shadow-lg">
+            <Sparkles className="h-3 w-3 mr-1" />
             {isArabic ? "متجر مميز" : "Featured Store"}
           </Badge>
         </div>
@@ -687,11 +723,11 @@ function StorePage() {
 
       {/* ====== معلومات المتجر ====== */}
       <div className="mx-auto max-w-7xl px-4 -mt-16 relative z-10">
-        <div className="rounded-2xl bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-xl shadow-2xl shadow-pink-500/20 p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4 border border-pink-300/20">
+        <div className="rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl shadow-slate-900/10 p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4 border border-slate-200/80 dark:border-slate-700/80">
           
           {/* شعار المتجر */}
           <div className="relative group">
-            <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 overflow-hidden border-4 border-white dark:border-[#1e293b] shadow-xl grid place-items-center text-white font-black text-3xl flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+            <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl grid place-items-center text-white font-black text-3xl flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
               {store.store_logo_url || store.avatar_url ? (
                 <img 
                   src={store.store_logo_url || store.avatar_url} 
@@ -706,7 +742,7 @@ function StorePage() {
             </div>
             {store.is_featured && (
               <div className="absolute -top-1 -right-1">
-                <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 px-2 py-0.5 text-[8px] animate-bounce">
+                <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 px-2 py-0.5 text-[8px] shadow-lg">
                   <Flame className="h-2.5 w-2.5 inline mr-0.5" />
                   {isArabic ? "رائج" : "Trending"}
                 </Badge>
@@ -717,11 +753,11 @@ function StorePage() {
           {/* تفاصيل المتجر */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl md:text-3xl font-black text-[#0d2e2a] dark:text-white">{name}</h1>
-              <StoreIcon className="h-5 w-5 text-pink-500 animate-pulse" />
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white">{name}</h1>
+              <StoreIcon className="h-5 w-5 text-[#2a655f]" />
               <StoreStatusBadge store={store} lang={app.lang} />
               {store.is_verified && (
-                <Badge className="bg-pink-500/10 text-pink-600 border-pink-500/20">
+                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20">
                   <BadgeCheck className="h-3 w-3 mr-1" />
                   {isArabic ? "موثق" : "Verified"}
                 </Badge>
@@ -729,12 +765,12 @@ function StorePage() {
             </div>
             
             {store.store_description && (
-              <p className="text-muted-foreground mt-1 text-sm">{store.store_description}</p>
+              <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">{store.store_description}</p>
             )}
             
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1 text-pink-500">
-                <Star className="h-4 w-4 fill-current animate-pulse" />
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-slate-600 dark:text-slate-400">
+              <span className="flex items-center gap-1 text-[#2a655f] font-bold">
+                <Star className="h-4 w-4 fill-current" />
                 {Number(store.rating || 0).toFixed(1)}
               </span>
               <span className="flex items-center gap-1">
@@ -742,10 +778,10 @@ function StorePage() {
                 {allItems.length} {t("products_tab")}
               </span>
               
-              <span className="flex items-center gap-1 bg-pink-500/10 px-2.5 py-0.5 rounded-full text-pink-600 text-xs font-medium">
+              <span className="flex items-center gap-1 bg-[#2a655f]/10 px-2.5 py-0.5 rounded-full text-[#2a655f] text-xs font-bold">
                 {storeType === "online" ? (
                   <>
-                    <Globe className="h-3.5 w-3.5 animate-spin-slow" />
+                    <Globe className="h-3.5 w-3.5" />
                     {isArabic ? "متجر إلكتروني" : "Online Store"}
                   </>
                 ) : (
@@ -758,7 +794,7 @@ function StorePage() {
 
               {(store.store_opens_at || store.store_closes_at) && (
                 <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 animate-pulse" />
+                  <Clock className="h-3.5 w-3.5" />
                   {(store.store_opens_at || "--:--").slice(0,5)} — {(store.store_closes_at || "--:--").slice(0,5)}
                 </span>
               )}
@@ -778,7 +814,7 @@ function StorePage() {
               <Button
                 onClick={handleMessage}
                 disabled={isOpeningConversation}
-                className="gap-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg shadow-pink-500/30 hover:shadow-xl transition-all hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 group"
+                className="gap-2 bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] hover:from-[#1a4f4a] hover:to-[#0d2e2a] text-white shadow-lg shadow-[#2a655f]/30 hover:shadow-xl transition-all hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 group"
               >
                 {isOpeningConversation ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -792,7 +828,7 @@ function StorePage() {
               variant="outline"
               size="sm"
               onClick={() => window.open(`/store/${id}`, '_blank')}
-              className="border-pink-300/30 text-pink-600 hover:bg-pink-500/10"
+              className="border-slate-300 text-slate-600 hover:bg-slate-50 hover:border-[#2a655f]/50 hover:text-[#2a655f]"
             >
               <Share2 className="h-3.5 w-3.5 mr-1" />
               {isArabic ? "مشاركة" : "Share"}
@@ -807,10 +843,10 @@ function StorePage() {
           <Card className={cn(
             "border-2 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden",
             deliveryPrice.isFree 
-              ? 'border-pink-400/40 hover:border-pink-500/60 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/20 dark:to-pink-950/10' 
+              ? 'border-[#2a655f]/40 hover:border-[#2a655f]/60 bg-gradient-to-r from-[#2a655f]/5 to-[#3a8a82]/5' 
               : deliveryPrice.governorateMatch 
-                ? 'border-pink-400/30 hover:border-pink-500/50' 
-                : 'border-amber-500/30 hover:border-amber-500/50'
+                ? 'border-slate-200 hover:border-[#2a655f]/40' 
+                : 'border-amber-400/40 hover:border-amber-400/60'
           )}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between flex-wrap gap-4">
@@ -818,14 +854,14 @@ function StorePage() {
                   <div className={cn(
                     "h-12 w-12 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110",
                     deliveryPrice.isFree 
-                      ? "bg-pink-500/20" 
-                      : "bg-pink-500/10"
+                      ? "bg-[#2a655f]/20" 
+                      : "bg-slate-100 dark:bg-slate-800"
                   )}>
                     <Truck className={cn(
                       "h-6 w-6 transition-all duration-500",
                       deliveryPrice.isFree 
-                        ? "text-pink-500 animate-bounce" 
-                        : "text-pink-600 animate-float"
+                        ? "text-[#2a655f]" 
+                        : "text-slate-600"
                     )} />
                   </div>
                   
@@ -833,8 +869,8 @@ function StorePage() {
                     <div className="font-semibold text-sm flex items-center gap-2">
                       {deliveryPrice.isFree ? (
                         <>
-                          <span className="text-pink-600 dark:text-pink-400">🚚 توصيل مجاني</span>
-                          <Badge className="bg-pink-500/20 text-pink-600 border-0 text-[9px] px-2 py-0.5 animate-pulse">
+                          <span className="text-[#2a655f] dark:text-[#3a8a82]">🚚 توصيل مجاني</span>
+                          <Badge className="bg-[#2a655f]/20 text-[#2a655f] border-0 text-[9px] px-2 py-0.5">
                             {isArabic ? "🎉 عرض خاص" : "🎉 Special Offer"}
                           </Badge>
                         </>
@@ -843,10 +879,10 @@ function StorePage() {
                       )}
                       
                       <Badge className={cn(
-                        "border-0 text-[9px] px-2 py-0.5 animate-pulse",
+                        "border-0 text-[9px] px-2 py-0.5",
                         deliveryPrice.governorateMatch 
-                          ? 'bg-pink-500/20 text-pink-600 dark:bg-pink-500/30 dark:text-pink-400' 
-                          : 'bg-amber-500/20 text-amber-600 dark:bg-amber-500/30 dark:text-amber-400'
+                          ? 'bg-[#2a655f]/15 text-[#2a655f] dark:bg-[#2a655f]/30 dark:text-[#3a8a82]' 
+                          : 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/30 dark:text-amber-400'
                       )}>
                         {deliveryPrice.governorateMatch 
                           ? (isArabic ? "📍 نفس المحافظة" : "📍 Same Governorate") 
@@ -854,10 +890,10 @@ function StorePage() {
                       </Badge>
                     </div>
                     
-                    <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
                       <span>{isArabic ? `المسافة: ${deliveryPrice.distance} كم` : `Distance: ${deliveryPrice.distance} km`}</span>
-                      <span className="text-muted-foreground/30">|</span>
-                      <span className="text-pink-600 font-medium">{deliveryPrice.companyName}</span>
+                      <span className="text-slate-300">|</span>
+                      <span className="text-[#2a655f] font-medium">{deliveryPrice.companyName}</span>
                       {deliveryPrice.breakdown?.hasCoordinates ? (
                         <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[8px] px-1.5 py-0">
                           📍 {isArabic ? "موقع دقيق" : "Precise"}
@@ -871,9 +907,9 @@ function StorePage() {
                     
                     {deliveryPrice.freeThreshold > 0 && (
                       <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20">
-                          <Gift className="h-3 w-3 text-pink-500" />
-                          <span className="text-[10px] font-medium text-pink-600 dark:text-pink-400">
+                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2a655f]/10 border border-[#2a655f]/20">
+                          <Gift className="h-3 w-3 text-[#2a655f]" />
+                          <span className="text-[10px] font-medium text-[#2a655f] dark:text-[#3a8a82]">
                             {isArabic 
                               ? `🎯 توصيل مجاني للطلبات التي تتجاوز ${deliveryPrice.freeThreshold} SYP`
                               : `🎯 Free delivery on orders over ${deliveryPrice.freeThreshold} SYP`}
@@ -886,7 +922,7 @@ function StorePage() {
                 
                 <div className="text-right">
                   {deliveryPrice.isFree ? (
-                    <Badge className="bg-pink-500/20 text-pink-600 border-0 text-sm px-4 py-1.5 animate-bounce rounded-xl">
+                    <Badge className="bg-[#2a655f]/20 text-[#2a655f] border-0 text-sm px-4 py-1.5 rounded-xl">
                       <span className="flex items-center gap-1.5">
                         <Sparkles className="h-3.5 w-3.5" />
                         {isArabic ? "🆓 مجاني" : "🆓 Free"}
@@ -894,7 +930,7 @@ function StorePage() {
                     </Badge>
                   ) : (
                     <div className="flex flex-col items-end">
-                      <span className="text-2xl font-bold text-pink-600 dark:text-pink-400">
+                      <span className="text-2xl font-bold text-[#2a655f] dark:text-[#3a8a82]">
                         {deliveryPrice.price} SYP
                       </span>
                     </div>
@@ -903,28 +939,28 @@ function StorePage() {
               </div>
               
               {!deliveryPrice.isFree && deliveryPrice.freeThreshold > 0 && deliveryPrice.remainingForFree > 0 && (
-                <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                <div className="mt-3 pt-3 border-t border-slate-200/70 dark:border-slate-700/70">
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1">
                     <div className="flex items-center gap-2">
-                      <Target className="h-3.5 w-3.5 text-pink-500 animate-pulse" />
-                      <span className="font-medium text-pink-600 dark:text-pink-400">
+                      <Target className="h-3.5 w-3.5 text-[#2a655f]" />
+                      <span className="font-medium text-[#2a655f] dark:text-[#3a8a82]">
                         {isArabic ? "🎯 أضف منتجات بقيمة" : "🎯 Add items worth"}
                       </span>
-                      <span className="font-bold text-pink-600 dark:text-pink-400 text-xs">
+                      <span className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-xs">
                         {deliveryPrice.remainingForFree} SYP
                       </span>
-                      <span className="text-pink-600/70 dark:text-pink-400/70">
+                      <span className="text-[#2a655f]/70 dark:text-[#3a8a82]/70">
                         {isArabic ? "للحصول على توصيل مجاني" : "to get free delivery"}
                       </span>
                     </div>
-                    <Badge className="bg-gradient-to-r from-pink-500/20 to-pink-400/20 text-pink-600 dark:text-pink-300 border-0 text-[9px] px-2 py-0.5 animate-pulse">
+                    <Badge className="bg-gradient-to-r from-[#2a655f]/20 to-[#3a8a82]/20 text-[#2a655f] dark:text-[#3a8a82] border-0 text-[9px] px-2 py-0.5">
                       <Gift className="h-2.5 w-2.5 inline mr-0.5" />
                       {isArabic ? "🎁 عرض" : "🎁 Offer"}
                     </Badge>
                   </div>
-                  <div className="relative h-2 w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full overflow-hidden">
+                  <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-pink-500 via-pink-400 to-rose-500 rounded-full transition-all duration-1000 shadow-lg shadow-pink-500/20"
+                      className="h-full bg-gradient-to-r from-[#2a655f] via-[#3a8a82] to-[#1a4f4a] rounded-full transition-all duration-1000 shadow-lg shadow-[#2a655f]/20"
                       style={{ 
                         width: `${Math.min(100, ((deliveryPrice.orderTotal || 0) / deliveryPrice.freeThreshold) * 100)}%` 
                       }}
@@ -932,24 +968,24 @@ function StorePage() {
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
                   </div>
                   <div className="flex items-center justify-between mt-1 text-[10px]">
-                    <span className="text-muted-foreground/70">
+                    <span className="text-slate-500 dark:text-slate-400">
                       {isArabic ? "📦 قيمة الطلب الحالية" : "📦 Current order value"}
-                      <span className="font-bold text-pink-600 dark:text-pink-400 mr-1">
+                      <span className="font-bold text-[#2a655f] dark:text-[#3a8a82] mr-1">
                         {deliveryPrice.orderTotal || 0} SYP
                       </span>
                     </span>
-                    <span className="text-muted-foreground/50">
+                    <span className="text-slate-400">
                       {isArabic ? "الهدف" : "Target"} 
-                      <span className="font-bold text-[#0d2e2a] dark:text-white mr-1">
+                      <span className="font-bold text-slate-900 dark:text-white mr-1">
                         {deliveryPrice.freeThreshold} SYP
                       </span>
                     </span>
                   </div>
                   
                   {deliveryPrice.remainingForFree > 0 && (
-                    <div className="mt-2 p-2 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/30 dark:to-pink-950/20 rounded-lg border border-pink-200/50 dark:border-pink-800/30 flex items-center gap-2">
-                      <Award className="h-4 w-4 text-pink-500 flex-shrink-0" />
-                      <p className="text-[10px] text-pink-700 dark:text-pink-300 font-medium">
+                    <div className="mt-2 p-2 bg-gradient-to-r from-[#2a655f]/5 to-[#3a8a82]/5 rounded-lg border border-[#2a655f]/15 flex items-center gap-2">
+                      <Award className="h-4 w-4 text-[#2a655f] flex-shrink-0" />
+                      <p className="text-[10px] text-[#2a655f] dark:text-[#3a8a82] font-medium">
                         {isArabic 
                           ? `💡 أضف منتجات بقيمة ${deliveryPrice.remainingForFree} SYP إضافية وستحصل على توصيل مجاني! 🎉`
                           : `💡 Add ${deliveryPrice.remainingForFree} SYP more worth of products and get free delivery! 🎉`}
@@ -960,10 +996,10 @@ function StorePage() {
               )}
 
               {deliveryPrice.isFree && deliveryPrice.freeThreshold > 0 && (
-                <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
-                  <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-pink-50/50 to-pink-100/30 dark:from-pink-950/30 dark:to-pink-950/20 rounded-lg border border-pink-200/50 dark:border-pink-800/30">
-                    <Sparkles className="h-4 w-4 text-pink-500 flex-shrink-0 animate-pulse" />
-                    <p className="text-[10px] text-pink-700 dark:text-pink-300 font-medium">
+                <div className="mt-3 pt-3 border-t border-slate-200/70 dark:border-slate-700/70">
+                  <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-[#2a655f]/5 to-[#3a8a82]/5 rounded-lg border border-[#2a655f]/15">
+                    <Sparkles className="h-4 w-4 text-[#2a655f] flex-shrink-0" />
+                    <p className="text-[10px] text-[#2a655f] dark:text-[#3a8a82] font-medium">
                       {isArabic 
                         ? `🎉 قيمة طلبك (${deliveryPrice.orderTotal || 0} SYP) تجاوزت الحد الأدنى (${deliveryPrice.freeThreshold} SYP) → توصيل مجاني!`
                         : `🎉 Your order value (${deliveryPrice.orderTotal || 0} SYP) exceeded the minimum (${deliveryPrice.freeThreshold} SYP) → Free delivery!`}
@@ -984,7 +1020,7 @@ function StorePage() {
           
           {/* البحث */}
           <div className="relative w-full sm:w-64 group">
-            <Search className="absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted-foreground group-focus-within:text-pink-600 transition-colors" />
+            <Search className="absolute inset-y-0 left-3 my-auto h-4 w-4 text-slate-400 group-focus-within:text-[#2a655f] transition-colors" />
             <Input
               value={searchQuery}
               onChange={(e) => {
@@ -992,14 +1028,14 @@ function StorePage() {
                 setPage(1);
               }}
               placeholder={isArabic ? "🔍 بحث في المتجر..." : "🔍 Search in store..."}
-              className="pl-9 pr-3 h-10 rounded-xl border-pink-300/30 dark:border-pink-400/30 bg-white dark:bg-[#1e293b] focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
+              className="pl-9 pr-3 h-10 rounded-xl border-slate-300 bg-white dark:bg-slate-800 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
                 className="absolute inset-y-0 right-3 my-auto"
               >
-                <X className="h-4 w-4 text-muted-foreground hover:text-pink-600 transition-colors" />
+                <X className="h-4 w-4 text-slate-400 hover:text-[#2a655f] transition-colors" />
               </button>
             )}
           </div>
@@ -1007,9 +1043,8 @@ function StorePage() {
           {/* أزرار الفلتر والترتيب */}
           <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
             
-            {/* ✅ Toggle Buttons */}
-            <div className="flex items-center gap-1 bg-pink-500/5 dark:bg-pink-500/10 rounded-xl p-1 border border-pink-300/20">
-              {/* زر الكل */}
+            {/* Toggle Buttons */}
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
               <button
                 onClick={() => {
                   setViewFilter("all");
@@ -1018,8 +1053,8 @@ function StorePage() {
                 className={cn(
                   "px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5",
                   viewFilter === "all" 
-                    ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30" 
-                    : "text-[#0d2e2a] dark:text-white/60 hover:bg-pink-500/10 hover:text-pink-600"
+                    ? "bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30" 
+                    : "text-slate-600 dark:text-slate-400 hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
                 )}
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
@@ -1028,13 +1063,12 @@ function StorePage() {
                   "text-[9px] px-1.5 py-0",
                   viewFilter === "all" 
                     ? "bg-white/20 text-white" 
-                    : "bg-pink-500/10 text-pink-600"
+                    : "bg-[#2a655f]/10 text-[#2a655f]"
                 )}>
                   {allItems.length}
                 </Badge>
               </button>
               
-              {/* زر منتجات */}
               <button
                 onClick={() => {
                   setViewFilter("products");
@@ -1043,8 +1077,8 @@ function StorePage() {
                 className={cn(
                   "px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5",
                   viewFilter === "products" 
-                    ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30" 
-                    : "text-[#0d2e2a] dark:text-white/60 hover:bg-blue-500/10 hover:text-blue-600"
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30" 
+                    : "text-slate-600 dark:text-slate-400 hover:bg-blue-500/10 hover:text-blue-600"
                 )}
               >
                 <Package className="h-3.5 w-3.5" />
@@ -1059,7 +1093,6 @@ function StorePage() {
                 </Badge>
               </button>
               
-              {/* زر عروض */}
               <button
                 onClick={() => {
                   setViewFilter("offers");
@@ -1068,8 +1101,8 @@ function StorePage() {
                 className={cn(
                   "px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5",
                   viewFilter === "offers" 
-                    ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30" 
-                    : "text-[#0d2e2a] dark:text-white/60 hover:bg-orange-500/10 hover:text-orange-600"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30" 
+                    : "text-slate-600 dark:text-slate-400 hover:bg-amber-500/10 hover:text-amber-600"
                 )}
               >
                 <Flame className="h-3.5 w-3.5" />
@@ -1078,14 +1111,14 @@ function StorePage() {
                   "text-[9px] px-1.5 py-0",
                   viewFilter === "offers" 
                     ? "bg-white/20 text-white" 
-                    : "bg-orange-500/10 text-orange-600"
+                    : "bg-amber-500/10 text-amber-600"
                 )}>
                   {offersCount}
                 </Badge>
               </button>
             </div>
 
-            {/* ✅ ترتيب */}
+            {/* ترتيب */}
             <SortDropdown
               value={sortBy}
               onChange={(val) => {
@@ -1096,12 +1129,12 @@ function StorePage() {
             />
 
             {/* تبديل العرض */}
-            <div className="flex items-center bg-white dark:bg-[#1e293b] rounded-xl border border-pink-300/30 p-1">
+            <div className="flex items-center bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-1">
               <button
                 onClick={() => setViewMode("grid")}
                 className={cn(
                   "p-1.5 rounded-lg transition-all duration-300",
-                  viewMode === "grid" ? "bg-pink-500 text-white" : "text-muted-foreground hover:bg-pink-500/10"
+                  viewMode === "grid" ? "bg-[#2a655f] text-white" : "text-slate-400 hover:bg-[#2a655f]/10"
                 )}
               >
                 <Grid3X3 className="h-4 w-4" />
@@ -1110,7 +1143,7 @@ function StorePage() {
                 onClick={() => setViewMode("list")}
                 className={cn(
                   "p-1.5 rounded-lg transition-all duration-300",
-                  viewMode === "list" ? "bg-pink-500 text-white" : "text-muted-foreground hover:bg-pink-500/10"
+                  viewMode === "list" ? "bg-[#2a655f] text-white" : "text-slate-400 hover:bg-[#2a655f]/10"
                 )}
               >
                 <List className="h-4 w-4" />
@@ -1124,26 +1157,26 @@ function StorePage() {
           
           {/* Sidebar */}
           <aside className="hidden lg:block">
-            <div className="sticky top-32 rounded-2xl bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-sm border border-pink-300/20 p-5 shadow-xl shadow-pink-500/5">
+            <div className="sticky top-32 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-slate-200 dark:border-slate-700 p-5 shadow-xl shadow-slate-900/5">
               <div className="flex items-center justify-between mb-4">
-                <div className="font-bold text-pink-600 dark:text-pink-400 flex items-center gap-2">
-                  <Filter className="h-4 w-4 animate-pulse" />
+                <div className="font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
                   {isArabic ? "فلاتر" : "Filters"}
                 </div>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={resetFilters}
-                  className="text-pink-600 hover:bg-pink-500/10 rounded-xl"
+                  className="text-[#2a655f] hover:bg-[#2a655f]/10 rounded-xl"
                 >
                   <RefreshCw className="h-3.5 w-3.5 transition-transform duration-500 hover:rotate-180" />
                 </Button>
               </div>
               
               <div className="space-y-6">
-                {/* ✅ نطاق السعر */}
+                {/* نطاق السعر */}
                 <div>
-                  <div className="font-semibold mb-2 text-sm text-pink-600 dark:text-pink-400 flex items-center gap-2">
+                  <div className="font-semibold mb-2 text-sm text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-2">
                     <Tag className="h-4 w-4" />
                     {isArabic ? "نطاق السعر" : "Price Range"}
                   </div>
@@ -1158,11 +1191,11 @@ function StorePage() {
                           setPage(1);
                         }}
                         placeholder={isArabic ? "الحد الأدنى" : "Min"}
-                        className="h-10 rounded-xl px-3 border-pink-300/30 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
+                        className="h-10 rounded-xl px-3 border-slate-300 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300"
                         min={0}
                       />
                     </div>
-                    <span className="text-muted-foreground text-sm font-medium px-1">-</span>
+                    <span className="text-slate-400 text-sm font-medium px-1">-</span>
                     <div className="relative flex-1">
                       <Input
                         type="number"
@@ -1173,35 +1206,35 @@ function StorePage() {
                           setPage(1);
                         }}
                         placeholder={isArabic ? "الحد الأعلى" : "Max"}
-                        className="h-10 rounded-xl px-3 border-pink-300/30 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
+                        className="h-10 rounded-xl px-3 border-slate-300 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300"
                         min={0}
                       />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-1.5 text-[10px] text-muted-foreground">
+                  <div className="flex items-center justify-between mt-1.5 text-[10px] text-slate-500">
                     <span>{minPrice === 0 ? "0" : formatPrice(minPrice, app.currency, app.lang)}</span>
-                    <span className="text-pink-500 text-[8px] animate-pulse">●</span>
+                    <span className="text-[#2a655f] text-[8px]">●</span>
                     <span>{maxPrice === 10000000 ? (isArabic ? "غير محدود" : "Unlimited") : formatPrice(maxPrice, app.currency, app.lang)}</span>
                   </div>
                 </div>
 
-                {/* ✅ المتاحة فقط */}
-                <div className="flex items-center gap-3 p-3 bg-pink-500/5 rounded-xl border border-pink-300/20">
+                {/* المتاحة فقط */}
+                <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
                   <Checkbox 
                     checked={showAvailableOnly} 
                     onCheckedChange={(v) => setShowAvailableOnly(v as boolean)}
-                    className="border-pink-300/30 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
+                    className="border-slate-300 data-[state=checked]:bg-[#2a655f] data-[state=checked]:border-[#2a655f]"
                   />
-                  <span className="text-sm text-pink-600 dark:text-pink-400 font-medium">
+                  <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">
                     {isArabic ? "المنتجات المتاحة فقط" : "Available only"}
                   </span>
                 </div>
 
-                {/* ✅ زر إعادة تعيين */}
+                {/* زر إعادة تعيين */}
                 <Button 
                   variant="outline" 
                   onClick={resetFilters}
-                  className="w-full rounded-xl border-pink-300/30 text-pink-600 hover:bg-pink-500/10 hover:border-pink-400/50 transition-all duration-300 group"
+                  className="w-full rounded-xl border-slate-300 text-[#2a655f] hover:bg-[#2a655f]/10 hover:border-[#2a655f]/50 transition-all duration-300 group"
                 >
                   <RefreshCw className="h-4 w-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
                   {isArabic ? "إعادة تعيين" : "Reset"}
@@ -1215,13 +1248,13 @@ function StorePage() {
             
             {/* إحصائيات النتائج */}
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="font-medium text-pink-600">
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                <span className="font-bold text-[#2a655f]">
                   {items.length}
                 </span>
                 {isArabic ? "منتج" : "products"}
                 {searchQuery && (
-                  <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
+                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20">
                     <Search className="h-3 w-3 mr-1" />
                     {searchQuery}
                   </Badge>
@@ -1240,18 +1273,18 @@ function StorePage() {
                 )}
               </div>
               {isLoading && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin text-pink-500" />
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#2a655f]" />
                   {isArabic ? "جاري التحميل..." : "Loading..."}
                 </div>
               )}
             </div>
 
-            {/* ====== قائمة المنتجات ====== */}
+            {/* قائمة المنتجات */}
             {items.length === 0 && !isLoading ? (
-              <div className="rounded-2xl bg-white/80 dark:bg-[#1e293b]/80 backdrop-blur-sm p-12 text-center border border-pink-300/20">
-                <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40 animate-float" />
-                <p className="text-lg font-medium text-[#0d2e2a] dark:text-white">
+              <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-12 text-center border border-slate-200 dark:border-slate-700">
+                <Package className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+                <p className="text-lg font-medium text-slate-900 dark:text-white">
                   {searchQuery
                     ? (isArabic ? "لا توجد منتجات تطابق البحث" : "No products match search")
                     : viewFilter === "offers"
@@ -1262,7 +1295,7 @@ function StorePage() {
                   <Button 
                     variant="outline" 
                     onClick={resetFilters}
-                    className="mt-4 border-pink-300/30 text-pink-600 hover:bg-pink-500/10"
+                    className="mt-4 border-slate-300 text-[#2a655f] hover:bg-[#2a655f]/10"
                   >
                     <RefreshCw className="h-4 w-4 mr-1" />
                     {isArabic ? "إعادة تعيين الفلتر" : "Reset filter"}
@@ -1271,65 +1304,206 @@ function StorePage() {
               </div>
             ) : (
               <>
-                <div className={cn(
-                  "grid gap-4",
-                  viewMode === "grid" 
-                    ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" 
-                    : "grid-cols-1"
-                )}>
-                  {items.map((item: any, index: number) => (
-                    <div 
-                      key={item.id} 
-                      className="animate-fade-up"
-                      style={{ animationDelay: `${(index % 10) * 50}ms` }}
-                    >
-                      <Suspense fallback={<ProductSkeleton />}>
-                        <ListingCard item={item} viewMode={viewMode} />
-                      </Suspense>
-                    </div>
-                  ))}
-                </div>
+                {viewMode === "grid" ? (
+                  /* ===== ✅ Grid View ===== */
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 items-stretch auto-rows-fr">
+                    {items.map((item: any, index: number) => (
+                      <div 
+                        key={item.id} 
+                        className="animate-fade-up h-full flex"
+                        style={{ animationDelay: `${(index % 10) * 50}ms` }}
+                      >
+                        <div className="w-full h-full">
+                          <Suspense fallback={<ProductSkeleton />}>
+                            <ListingCard item={item} viewMode="grid" />
+                          </Suspense>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* ===== ✅ List View - مثل كرت السلة ===== */
+             /* ===== ✅ List View - مبسّط وأنيق ===== */
+/* ===== ✨ List View - تصميم احترافي ===== */
+<div className="space-y-2.5">
+  {items.map((item: any, index: number) => {
+    const hasDiscount = item.is_offer === true || (item.discount_percent && item.discount_percent > 0);
+    const hasPromo = item.is_promo_offer === true || item.has_promotional_offer === true;
+    
+    // ✅ التوجيه الذكي
+    const linkTarget = hasPromo 
+      ? { to: "/offer/$id", params: { id: item.id } } 
+      : { to: "/listing/$id", params: { id: item.id } };
+    
+    return (
+      <Link
+        key={item.id}
+        {...linkTarget}
+        className="animate-fade-up group block relative bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-lg border border-slate-200 dark:border-slate-700 hover:border-[#2a655f]/40 transition-all duration-300 overflow-hidden"
+        style={{ animationDelay: `${(index % 10) * 40}ms` }}
+      >
+        {/* ✅ شريط زيتي على اليسار (يتحول للون الذهبي عند hover) */}
+        <div className={cn(
+          "absolute start-0 top-0 bottom-0 w-1 transition-all duration-300",
+          hasPromo 
+            ? "bg-gradient-to-b from-purple-500 to-indigo-500" 
+            : hasDiscount 
+              ? "bg-gradient-to-b from-[#2a655f] to-[#3a8a82]" 
+              : "bg-transparent group-hover:bg-[#2a655f]/40"
+        )} />
 
+        <div className="flex gap-3.5 p-3 ps-4">
+          
+          {/* ===== الصورة (يمين) - 88×88 ===== */}
+          <div className="relative h-[88px] w-[88px] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/80 dark:border-slate-700/80 group-hover:scale-[1.02] transition-transform duration-500">
+            <OptimizedImage
+              src={item.cover_url || '/placeholder.png'}
+              alt={item.title_ar || ''}
+              width={88}
+              height={88}
+              quality={85}
+              objectFit="cover"
+              className="h-full w-full object-cover"
+            />
+            
+            {/* Overlay خفيف عند hover */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </div>
+
+          {/* ===== التفاصيل (يسار) ===== */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+            
+            {/* ===== الصف العلوي: Badges ===== */}
+            <div className="flex items-center gap-1.5 flex-wrap mb-1">
+              {hasPromo && (
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                  <Gift className="h-2.5 w-2.5" />
+                  {isArabic ? "عرض ترويجي" : "Promo"}
+                </span>
+              )}
+              {!hasPromo && hasDiscount && (
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                  🔥 {isArabic ? `خصم ${item.discount_percent || 20}%` : `${item.discount_percent || 20}% OFF`}
+                </span>
+              )}
+            </div>
+
+            {/* ===== العنوان ===== */}
+            <h3 className="font-bold text-[13px] text-slate-900 dark:text-white line-clamp-2 leading-snug group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82] transition-colors">
+              {isArabic ? item.title_ar : (item.title_en || item.title_ar)}
+            </h3>
+
+            {/* ===== الصف السفلي: السعر + التقييم + سهم ===== */}
+            <div className="flex items-end justify-between gap-2 mt-1.5">
+              
+              {/* السعر */}
+              <div className="flex items-baseline gap-1.5 min-w-0">
+                {hasDiscount && item.old_price && (
+                  <span className="text-[10px] text-slate-400 line-through font-medium shrink-0">
+                    {formatPrice(Number(item.old_price), app.currency, app.lang)}
+                  </span>
+                )}
+                <span className="text-[15px] font-black text-[#2a655f] dark:text-[#3a8a82] tracking-tight">
+                  {formatPrice(Number(item.price), app.currency, app.lang)}
+                </span>
+              </div>
+
+              {/* التقييم + سهم */}
+              <div className="flex items-center gap-2 shrink-0">
+                {Number(item.rating || 0) > 0 && (
+                  <div className="flex items-center gap-0.5 bg-amber-400/15 px-1.5 py-0.5 rounded-full">
+                    <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                      {Number(item.rating).toFixed(1)}
+                    </span>
+                  </div>
+                )}
+                
+                {/* زر دائري صغير */}
+                <div className="h-7 w-7 rounded-full bg-[#2a655f]/10 group-hover:bg-[#2a655f] flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                  <ChevronLeft className="h-3.5 w-3.5 text-[#2a655f] group-hover:text-white transition-colors rtl:rotate-180" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Link>
+    );
+  })}
+</div>
+                )}
+
+                {/* ============================================================ */}
+                {/* ✅✅✅ INFINITE SCROLL SENTINEL */}
+                {/* ============================================================ */}
                 {page < totalPages && (
-                  <div ref={loadMoreRef} className="flex justify-center mt-6">
-                    <Button
-                      variant="outline"
-                      onClick={loadMore}
-                      disabled={isFetching}
-                      className="rounded-xl border-pink-300/30 hover:bg-pink-500/10 text-pink-600"
-                    >
-                      {isFetching ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          {isArabic ? "جاري التحميل..." : "Loading..."}
-                        </>
-                      ) : (
-                        <>
-                          {isArabic ? "عرض المزيد" : "Load More"}
-                          <ChevronDown className="h-4 w-4 ml-1" />
-                        </>
-                      )}
-                    </Button>
+                  <div 
+                    ref={loadMoreRef} 
+                    className="flex flex-col items-center justify-center py-10 mt-6 min-h-[100px]"
+                  >
+                    {isFetching ? (
+                      <div className="flex flex-col items-center gap-3">
+                        {/* ✅ Spinner احترافي */}
+                        <div className="relative">
+                          <div className="h-14 w-14 border-4 border-[#2a655f]/15 rounded-full" />
+                          <div className="absolute inset-0 h-14 w-14 border-4 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
+                          <div className="absolute inset-0 h-14 w-14 flex items-center justify-center">
+                            <Package className="h-5 w-5 text-[#2a655f] animate-pulse" />
+                          </div>
+                        </div>
+                        
+                        {/* ✅ نص التحميل */}
+                        <span className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                          {isArabic ? "جاري تحميل المزيد..." : "Loading more..."}
+                        </span>
+                        
+                        {/* ✅ تقدم التحميل */}
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                          <span className="font-bold text-[#2a655f]">{items.length}</span>
+                          <span>/</span>
+                          <span>{totalCount || allItems.length}</span>
+                          <span className="ms-1">{isArabic ? "منتج" : "products"}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      // ✅ لم يبدأ التحميل بعد (placeholder صغير)
+                      <div className="flex flex-col items-center gap-2 opacity-0">
+                        <div className="h-8 w-8" />
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {page >= totalPages && items.length > limit && (
-                  <div className="flex justify-center mt-6 text-sm text-muted-foreground">
-                    {isArabic ? "🎉 تم تحميل جميع المنتجات" : "🎉 All products loaded"}
+                {/* ============================================================ */}
+                {/* ✅✅✅ رسالة "تم تحميل جميع المنتجات" */}
+                {/* ============================================================ */}
+                {page >= totalPages && items.length > 0 && (
+                  <div className="flex flex-col items-center gap-3 py-10 mt-6 border-t border-slate-200 dark:border-slate-700">
+                    <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#2a655f]/10 to-[#3a8a82]/10 flex items-center justify-center border-2 border-[#2a655f]/20">
+                      <Check className="h-8 w-8 text-[#2a655f] dark:text-[#3a8a82]" />
+                    </div>
+                    <p className="text-base font-black text-[#2a655f] dark:text-[#3a8a82]">
+                      {isArabic ? "🎉 تم تحميل جميع المنتجات" : "🎉 All products loaded"}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      {isArabic 
+                        ? `عرض ${items.length} منتج في هذه القائمة` 
+                        : `Showing ${items.length} products in this list`}
+                    </p>
                   </div>
                 )}
               </>
             )}
 
             {items.length > 0 && (
-              <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground border-t border-pink-300/20 pt-4">
+              <div className="mt-6 flex items-center justify-between text-xs text-slate-500 border-t border-slate-200 dark:border-slate-700 pt-4">
                 <span>
                   {isArabic 
                     ? `عرض ${items.length} من ${viewFilter === "offers" ? offersCount : viewFilter === "products" ? productsCount : allItems.length} ${viewFilter === "offers" ? "عرض" : "منتج"}` 
                     : `Showing ${items.length} of ${viewFilter === "offers" ? offersCount : viewFilter === "products" ? productsCount : allItems.length} ${viewFilter === "offers" ? "offers" : "products"}`}
                 </span>
                 <span className="flex items-center gap-2">
-                  <Badge className="bg-pink-500/10 text-pink-600 border-pink-300/30">
+                  <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20">
                     {isArabic ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
                   </Badge>
                 </span>
@@ -1339,28 +1513,12 @@ function StorePage() {
         </div>
       </section>
 
-      {/* ====== CSS Animations ====== */}
       <style>{`
         @keyframes fade-up {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-up { animation: fade-up 0.5s ease-out forwards; }
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-6px); }
-        }
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-        .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
         @keyframes shimmer {
           0% { background-position: -200% 0; }
           100% { background-position: 200% 0; }
@@ -1369,11 +1527,6 @@ function StorePage() {
           background-size: 200% auto;
           animation: shimmer 2s linear infinite;
         }
-        @keyframes bounce {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.15); }
-        }
-        .animate-bounce { animation: bounce 0.5s ease-in-out infinite; }
       `}</style>
     </div>
   );
@@ -1424,11 +1577,11 @@ function StoreStatusBadge({ store, lang }: { store: any; lang: "ar" | "en" }) {
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-300 ${
       open 
-        ? "bg-pink-500/15 text-pink-600 animate-pulse" 
-        : "bg-muted text-muted-foreground"
+        ? "bg-[#2a655f]/15 text-[#2a655f] dark:text-[#3a8a82]" 
+        : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
     }`}>
       <span className={`h-2 w-2 rounded-full ${
-        open ? "bg-pink-500 animate-pulse" : "bg-muted-foreground"
+        open ? "bg-[#2a655f] animate-pulse" : "bg-slate-400"
       }`} />
       {open 
         ? (lang === "ar" ? "🟢 مفتوح الآن" : "🟢 Open now") 
@@ -1438,17 +1591,17 @@ function StoreStatusBadge({ store, lang }: { store: any; lang: "ar" | "en" }) {
 }
 
 // ============================================================
-// ✅ SKELETON COMPONENT
+// ✅ SKELETON COMPONENT - موحّد الارتفاع
 // ============================================================
 function ProductSkeleton() {
   return (
-    <div className="rounded-xl bg-white dark:bg-[#1e293b] border border-pink-300/20 p-3 animate-pulse">
-      <div className="aspect-square rounded-lg bg-pink-500/10" />
-      <div className="h-4 bg-pink-500/10 rounded mt-3 w-3/4" />
-      <div className="h-3 bg-pink-500/10 rounded mt-2 w-1/2" />
-      <div className="flex items-center gap-2 mt-3">
-        <div className="h-4 bg-pink-500/10 rounded w-1/3" />
-        <div className="h-4 bg-pink-500/10 rounded w-1/4" />
+    <div className="w-full h-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 animate-pulse flex flex-col">
+      <div className="aspect-square rounded-lg bg-slate-100 dark:bg-slate-800 w-full" />
+      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded mt-3 w-3/4" />
+      <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded mt-2 w-1/2" />
+      <div className="flex items-center gap-2 mt-auto pt-3">
+        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-1/3" />
+        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-1/4" />
       </div>
     </div>
   );

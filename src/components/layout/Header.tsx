@@ -53,7 +53,6 @@ import { useCart } from "@/lib/hooks/useCart";
 import { processVoiceSearch } from "@/lib/voiceSearchEngine";
 import { VoiceSearch } from "@/components/VoiceSearch";
 import { detectVoiceCommand, parseVoiceQuery } from "@/lib/voiceSearch";
-// ✅ إضافة import لـ OptimizedImage
 import { OptimizedImage } from "@/components/OptimizedImage";
 
 const ICON_MAP: Record<string, any> = {
@@ -78,7 +77,6 @@ const getNotificationConfig = (type: string) => {
   return NOTIFICATION_CONFIG[type as NotificationType] || NOTIFICATION_CONFIG[NOTIFICATION_TYPES.SYSTEM];
 };
 
-// ✅ أيقونة متحركة ملونة
 const AnimatedIcon = ({ 
   Icon, 
   className = "",
@@ -109,11 +107,11 @@ const AnimatedIcon = ({
   );
 };
 
-// ✅ Mega Menu Component مع أيقونات متحركة ملونة - مع بوردر فوشي غامق
 function MegaMenu({ categories }: { categories: any[] }) {
   const app = useApp();
   const t = useT();
   const [isOpen, setIsOpen] = useState(false);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseEnter = () => {
@@ -136,7 +134,6 @@ function MegaMenu({ categories }: { categories: any[] }) {
     );
   };
 
-  // ✅ ✅ ✅ التصنيفات الرئيسية فقط (بدون parent_id)
   const mainCategories = categories.filter(c => !isPromoCategory(c) && !c.parent_id);
   const promoCategories = categories.filter(c => isPromoCategory(c) && !c.parent_id);
 
@@ -147,11 +144,7 @@ function MegaMenu({ categories }: { categories: any[] }) {
   ];
 
   return (
-    <div
-      className="relative"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <>
       <style>{`
         @keyframes special-dance {
           0%, 100% { transform: scale(1) rotate(0deg); }
@@ -172,130 +165,285 @@ function MegaMenu({ categories }: { categories: any[] }) {
         }
       `}</style>
 
-      <button
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-pink-500/10 transition-all duration-300 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 group shadow-sm hover:shadow-md hover:shadow-pink-500/20 cursor-pointer"
-        onClick={() => setIsOpen(!isOpen)}
+      {/* 🖥️ Desktop Mega Menu — يظهر على md+ */}
+      <div
+        className="relative hidden md:block"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
-        <LayoutGrid className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
-        <span className="hidden md:inline font-semibold text-[#2a655f] dark:text-[#3a8a82]">{t("categories")}</span>
-        <ChevronDown className={`h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
+        <button
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl font-medium text-sm hover:bg-pink-500/10 transition-all duration-300 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 group shadow-sm hover:shadow-md hover:shadow-pink-500/20 cursor-pointer"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <LayoutGrid className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
+          <span className="inline font-semibold text-[#2a655f] dark:text-[#3a8a82] text-xs sm:text-sm">{t("categories")}</span>
+          <ChevronDown className={`h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
 
-      {isOpen && (
-        <div className="absolute top-full start-0 mt-2 w-[900px] max-w-[95vw] bg-card rounded-2xl shadow-2xl border-3 border-[#d81b60]/60 hover:border-[#c2185b] shadow-[0_0_35px_rgba(216,27,96,0.2)] hover:shadow-[0_0_55px_rgba(194,24,91,0.35)] transition-all duration-400 p-6 grid grid-cols-4 gap-6 animate-in slide-in-from-top-5 duration-200 z-50 bg-gradient-to-br from-white via-emerald-50/20 to-[#2a655f]/10 dark:from-gray-950 dark:via-[#173d38]/20 dark:to-[#2a655f]/20 max-h-[80vh] overflow-y-auto">
-          
-          <div className="col-span-3 grid grid-cols-3 gap-x-4 gap-y-1.5">
-            {mainCategories.map((c, index) => {
-              const Icon = getCategoryIcon(c.icon);
-              const color = iconColors[index % iconColors.length];
-              const customBg = c.accent_from && c.accent_to && c.accent_from !== '#000000'
-                ? `linear-gradient(135deg, ${c.accent_from}, ${c.accent_to})`
-                : undefined;
+        {isOpen && (
+          <div className="absolute top-full start-0 mt-2 w-[900px] max-w-[95vw] bg-card rounded-2xl shadow-2xl border-3 border-[#d81b60]/60 hover:border-[#c2185b] shadow-[0_0_35px_rgba(216,27,96,0.2)] hover:shadow-[0_0_55px_rgba(194,24,91,0.35)] transition-all duration-400 p-6 grid grid-cols-4 gap-6 animate-in slide-in-from-top-5 duration-200 z-50 bg-gradient-to-br from-white via-emerald-50/20 to-[#2a655f]/10 dark:from-gray-950 dark:via-[#173d38]/20 dark:to-[#2a655f]/20 max-h-[80vh] overflow-y-auto">
+            
+            <div className="col-span-3 grid grid-cols-3 gap-x-4 gap-y-1.5">
+              {mainCategories.map((c, index) => {
+                const Icon = getCategoryIcon(c.icon);
+                const color = iconColors[index % iconColors.length];
+                const customBg = c.accent_from && c.accent_to && c.accent_from !== '#000000'
+                  ? `linear-gradient(135deg, ${c.accent_from}, ${c.accent_to})`
+                  : undefined;
 
-              return (
-                <Link
-                  key={c.id || index}
-                  to="/category/$slug"
-                  params={{ slug: c.slug }}
-                  className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/25 transition-all duration-300 border border-transparent hover:border-[#2a655f]/30"
-                >
-                  <div 
-                    style={{ background: customBg }}
-                    className={`h-10 w-10 rounded-xl ${!customBg ? 'bg-gradient-to-br from-[#2a655f]/15 to-[#3a8a82]/15 border border-[#2a655f]/20' : 'text-white'} group-hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-sm overflow-hidden`}
+                return (
+                  <Link
+                    key={c.id || index}
+                    to="/category/$slug"
+                    params={{ slug: c.slug }}
+                    className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/25 transition-all duration-300 border border-transparent hover:border-[#2a655f]/30"
                   >
-                    {c.image_url ? (
-                      <OptimizedImage
-                        src={c.image_url}
-                        alt={app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
-                        width={40}
-                        height={40}
-                        quality={80}
-                        objectFit="cover"
-                        className="h-full w-full rounded-xl"
-                      />
-                    ) : (
-                      <AnimatedIcon 
-                        Icon={Icon} 
-                        className="h-4 w-4" 
-                        color={customBg ? "text-white" : color}
-                        delay={index * 50}
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82] transition truncate" dir={app.lang === "ar" ? "rtl" : "ltr"}>
-                      {app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
+                    <div 
+                      style={{ background: customBg }}
+                      className={`h-10 w-10 rounded-xl ${!customBg ? 'bg-gradient-to-br from-[#2a655f]/15 to-[#3a8a82]/15 border border-[#2a655f]/20' : 'text-white'} group-hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-sm overflow-hidden`}
+                    >
+                      {c.image_url ? (
+                        <OptimizedImage
+                          src={c.image_url}
+                          alt={app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
+                          width={40}
+                          height={40}
+                          quality={80}
+                          objectFit="cover"
+                          className="h-full w-full rounded-xl"
+                        />
+                      ) : (
+                        <AnimatedIcon 
+                          Icon={Icon} 
+                          className="h-4 w-4" 
+                          color={customBg ? "text-white" : color}
+                          delay={index * 50}
+                        />
+                      )}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {app.lang === "ar" ? "تصفح المنتجات" : "Browse products"}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82] transition truncate" dir={app.lang === "ar" ? "rtl" : "ltr"}>
+                        {app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {app.lang === "ar" ? "تصفح المنتجات" : "Browse products"}
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* قسم العروض */}
-          <div className="col-span-1 space-y-3 border-s border-[#2a655f]/15 dark:border-[#2a655f]/30 ps-4">
-            <div className="text-[10px] uppercase tracking-wider text-[#2a655f] dark:text-[#3a8a82] font-extrabold flex items-center gap-2">
-              <span className="h-1.5 w-5 rounded-full bg-gradient-to-r from-pink-400 to-pink-600 animate-pulse" />
-              {app.lang === "ar" ? "🎀 عروض خاصة" : "🎀 Special Offers"}
+                  </Link>
+                );
+              })}
             </div>
 
-            {promoCategories.map((c) => {
-              const Icon = getCategoryIcon(c.icon);
-              return (
-                <Link
-                  key={c.id}
-                  to="/category/$slug"
-                  params={{ slug: c.slug }}
-                  className="group flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-pink-100/80 via-pink-200/60 to-pink-300/40 hover:from-pink-200/90 hover:to-pink-400/60 transition-all duration-300 border border-pink-300/50 shadow-md hover:shadow-pink-200/50 animate-glow-pulse"
-                >
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white shadow-md animate-special-dance shrink-0 overflow-hidden">
-                    {c.image_url ? (
-                      <OptimizedImage
-                        src={c.image_url}
-                        alt={app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
-                        width={40}
-                        height={40}
-                        quality={80}
-                        objectFit="cover"
-                        className="h-full w-full rounded-xl"
-                      />
-                    ) : (
-                      <AnimatedIcon Icon={Icon} className="h-4 w-4 text-white" color="text-white" delay={0} />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-bold text-pink-800 dark:text-pink-300 truncate" dir={app.lang === "ar" ? "rtl" : "ltr"}>
-                      {app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
-                    </div>
-                    <div className="text-[10px] text-pink-600 dark:text-pink-400 font-semibold animate-pulse">
-                      {app.lang === "ar" ? "🔥 خصومات تصل إلى 70%" : "🔥 Up to 70% off"}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-            
-            {/* ✅ زر عرض الكل - رمادي مع بوردر وردي */}
-            <Link
-              to="/categories"
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all duration-300 font-bold text-sm text-slate-700 dark:text-slate-200 mt-2 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 group cursor-pointer shadow-sm hover:shadow-md"
-            >
-              {t("view_all")}
-              <ChevronDown className="h-3.5 w-3.5 -rotate-90 group-hover:translate-x-1 transition-transform text-slate-500" />
-            </Link>
-          </div>
+            <div className="col-span-1 space-y-3 border-s border-[#2a655f]/15 dark:border-[#2a655f]/30 ps-4">
+              <div className="text-[10px] uppercase tracking-wider text-[#2a655f] dark:text-[#3a8a82] font-extrabold flex items-center gap-2">
+                <span className="h-1.5 w-5 rounded-full bg-gradient-to-r from-pink-400 to-pink-600 animate-pulse" />
+                {app.lang === "ar" ? "🎀 عروض خاصة" : "🎀 Special Offers"}
+              </div>
 
-        </div>
-      )}
-    </div>
+              {promoCategories.map((c) => {
+                const Icon = getCategoryIcon(c.icon);
+                return (
+                  <Link
+                    key={c.id}
+                    to="/category/$slug"
+                    params={{ slug: c.slug }}
+                    className="group flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-pink-100/80 via-pink-200/60 to-pink-300/40 hover:from-pink-200/90 hover:to-pink-400/60 transition-all duration-300 border border-pink-300/50 shadow-md hover:shadow-pink-200/50 animate-glow-pulse"
+                  >
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white shadow-md animate-special-dance shrink-0 overflow-hidden">
+                      {c.image_url ? (
+                        <OptimizedImage
+                          src={c.image_url}
+                          alt={app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
+                          width={40}
+                          height={40}
+                          quality={80}
+                          objectFit="cover"
+                          className="h-full w-full rounded-xl"
+                        />
+                      ) : (
+                        <AnimatedIcon Icon={Icon} className="h-4 w-4 text-white" color="text-white" delay={0} />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-pink-800 dark:text-pink-300 truncate" dir={app.lang === "ar" ? "rtl" : "ltr"}>
+                        {app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
+                      </div>
+                      <div className="text-[10px] text-pink-600 dark:text-pink-400 font-semibold animate-pulse">
+                        {app.lang === "ar" ? "🔥 خصومات تصل إلى 70%" : "🔥 Up to 70% off"}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+              
+              <Link
+                to="/categories"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all duration-300 font-bold text-sm text-slate-700 dark:text-slate-200 mt-2 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 group cursor-pointer shadow-sm hover:shadow-md"
+              >
+                {t("view_all")}
+                <ChevronDown className="h-3.5 w-3.5 -rotate-90 group-hover:translate-x-1 transition-transform text-slate-500" />
+              </Link>
+            </div>
+
+          </div>
+        )}
+      </div>
+
+      {/* 📱 Mobile */}
+      <div className="block md:hidden">
+        <button
+          onClick={() => setMobileSheetOpen(true)}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl font-medium text-sm hover:bg-pink-500/10 transition-all duration-300 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 group shadow-sm hover:shadow-md hover:shadow-pink-500/20 cursor-pointer shrink-0"
+        >
+          <LayoutGrid className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
+          <span className="inline font-semibold text-[#2a655f] dark:text-[#3a8a82] text-xs">{t("categories")}</span>
+          <ChevronDown className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82]" />
+        </button>
+
+        <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+          <SheetContent 
+            side={app.lang === "ar" ? "right" : "left"} 
+            className="w-[85vw] max-w-[340px] overflow-y-auto p-0"
+          >
+            <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white p-4 shadow-lg">
+              <SheetTitle className="text-lg font-black flex items-center gap-2 text-white">
+                <LayoutGrid className="h-5 w-5" />
+                {t("categories")}
+              </SheetTitle>
+              <p className="text-xs text-white/80 mt-1">
+                {app.lang === "ar" ? "تصفح جميع الأقسام" : "Browse all categories"}
+              </p>
+            </div>
+
+            <div className="p-4 space-y-2">
+              <h3 className="text-xs font-black uppercase tracking-wider text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-2 mb-3">
+                <span className="h-1 w-4 rounded-full bg-[#2a655f]" />
+                {app.lang === "ar" ? "الأقسام الرئيسية" : "Main Categories"}
+              </h3>
+              
+              <div className="grid grid-cols-1 gap-1.5">
+                {mainCategories.map((c, index) => {
+                  const Icon = getCategoryIcon(c.icon);
+                  const color = iconColors[index % iconColors.length];
+                  const customBg = c.accent_from && c.accent_to && c.accent_from !== '#000000'
+                    ? `linear-gradient(135deg, ${c.accent_from}, ${c.accent_to})`
+                    : undefined;
+
+                  return (
+                    <Link
+                      key={c.id || index}
+                      to="/category/$slug"
+                      params={{ slug: c.slug }}
+                      onClick={() => setMobileSheetOpen(false)}
+                      className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/25 transition-all duration-300 border border-transparent hover:border-[#2a655f]/30"
+                    >
+                      <div 
+                        style={{ background: customBg }}
+                        className={`h-11 w-11 rounded-xl ${!customBg ? 'bg-gradient-to-br from-[#2a655f]/15 to-[#3a8a82]/15 border border-[#2a655f]/20' : 'text-white'} group-hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-sm overflow-hidden shrink-0`}
+                      >
+                        {c.image_url ? (
+                          <OptimizedImage
+                            src={c.image_url}
+                            alt={app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
+                            width={44}
+                            height={44}
+                            quality={80}
+                            objectFit="cover"
+                            className="h-full w-full rounded-xl"
+                          />
+                        ) : (
+                          <Icon className={cn("h-5 w-5", customBg ? "text-white" : color)} />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-gray-800 dark:text-gray-100 group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82] transition truncate" dir={app.lang === "ar" ? "rtl" : "ltr"}>
+                          {app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {app.lang === "ar" ? "تصفح المنتجات" : "Browse products"}
+                        </div>
+                      </div>
+                      {app.lang === "ar" ? (
+                        <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:text-[#2a655f] transition shrink-0" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-[#2a655f] transition shrink-0" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {promoCategories.length > 0 && (
+              <div className="p-4 pt-0 space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-pink-600 dark:text-pink-400 flex items-center gap-2 mb-3">
+                  <span className="h-1 w-4 rounded-full bg-pink-500 animate-pulse" />
+                  {app.lang === "ar" ? "🎀 عروض خاصة" : "🎀 Special Offers"}
+                </h3>
+                
+                <div className="grid grid-cols-1 gap-1.5">
+                  {promoCategories.map((c) => {
+                    const Icon = getCategoryIcon(c.icon);
+                    return (
+                      <Link
+                        key={c.id}
+                        to="/category/$slug"
+                        params={{ slug: c.slug }}
+                        onClick={() => setMobileSheetOpen(false)}
+                        className="group flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-pink-100/80 via-pink-200/60 to-pink-300/40 hover:from-pink-200/90 hover:to-pink-400/60 transition-all duration-300 border border-pink-300/50 shadow-sm"
+                      >
+                        <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white shadow-md shrink-0 overflow-hidden">
+                          {c.image_url ? (
+                            <OptimizedImage
+                              src={c.image_url}
+                              alt={app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
+                              width={44}
+                              height={44}
+                              quality={80}
+                              objectFit="cover"
+                              className="h-full w-full rounded-xl"
+                            />
+                          ) : (
+                            <Icon className="h-5 w-5 text-white" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-bold text-pink-800 dark:text-pink-300 truncate" dir={app.lang === "ar" ? "rtl" : "ltr"}>
+                            {app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar)}
+                          </div>
+                          <div className="text-[10px] text-pink-600 dark:text-pink-400 font-semibold">
+                            {app.lang === "ar" ? "🔥 خصومات تصل إلى 70%" : "🔥 Up to 70% off"}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="p-4 pt-0">
+              <Link
+                to="/categories"
+                onClick={() => setMobileSheetOpen(false)}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-[#2a655f] hover:bg-[#1a4f4a] transition-all duration-300 font-bold text-sm text-white shadow-md hover:shadow-lg group"
+              >
+                {t("view_all")}
+                {app.lang === "ar" ? (
+                  <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                )}
+              </Link>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </>
   );
 }
 
 export const Header = memo(function Header() {
-  // ====== ✅ جميع الـ Hooks ======
   const location = useLocation();
   const t = useT();
   const app = useApp();
@@ -306,24 +454,20 @@ export const Header = memo(function Header() {
   const [gov, setGov] = useState("all");
   const [scrolled, setScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // ===== ✅ عدد الرسائل غير المقروءة =====
   const { data: unreadCount = 0 } = useUnreadCount();
   
-  // ===== ✅ تفعيل التحديث الفوري للرسائل =====
   useRealtimeConversations(app.user?.id);
 
-  // ===== ✅ إدارة الصوت والإشعارات =====
   const { isEnabled: soundEnabled, toggleSound } = useNotificationSound();
 
-  // ===== ✅ Hooks الإشعارات V2 =====
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { data: notifications = [], refetch: refetchNotifications } = useUserNotifications(app.user?.id, { limit: 50 });
   const markRead = useMarkNotificationReadV2();
   const markAllRead = useMarkAllNotificationsReadV2();
   const unreadNotificationsCount = notifications.filter((n: any) => !n.is_read).length;
 
-  // ✅ استخدام useMemo لمنع إعادة الحساب
   const isAdmin = useMemo(() => app.roles?.includes("admin") ?? false, [app.roles]);
   const isSeller = useMemo(() => app.roles?.includes("seller") ?? false, [app.roles]);
   const isAuthLoading = useMemo(() => app.authLoading, [app.authLoading]);
@@ -340,7 +484,6 @@ export const Header = memo(function Header() {
   const { data: cart } = useCart(app.user?.id);
   const cartItemsCount = cart?.items?.length || 0;
 
-  // ===== ✅ البحث التلقائي عند تغيير المحافظة =====
   useEffect(() => {
     if (gov !== "all") {
       const query = q.trim();
@@ -354,7 +497,6 @@ export const Header = memo(function Header() {
     }
   }, [gov]);
 
-  // ===== ✅ دالة تعيين الرسائل كمقروءة =====
   const markMessagesAsRead = useCallback(async () => {
     if (!app.user) return;
     try {
@@ -384,7 +526,6 @@ export const Header = memo(function Header() {
     }
   }, [app.user, queryClient]);
 
-  // ===== ✅ دالة البحث الذكي =====
   const doSearch = useCallback(() => {
     const query = q.trim();
     const govParam = gov === "all" ? undefined : gov;
@@ -402,7 +543,6 @@ export const Header = memo(function Header() {
     }
   }, [q, gov, navigate, app.lang]);
 
-  // ✅ ✅ ✅ دالة معالجة البحث الصوتي
   const handleVoiceSearch = useCallback(async (text: string, entities?: any) => {
     console.log("🎤 Voice search result:", text);
     console.log("📊 Entities:", entities);
@@ -493,19 +633,16 @@ export const Header = memo(function Header() {
     }
   }, [app.lang, navigate]);
 
-  // ===== ✅ دالة الذهاب للرئيسية =====
   const goHome = useCallback(() => {
     navigate({ to: "/" });
   }, [navigate]);
 
-  // ===== useEffect للـ Scroll =====
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // ====== شرط إخفاء الهيدر ======
   const isChatPage = 
     location.pathname.startsWith('/messages_/') ||
     location.pathname.startsWith('/messages/') ||
@@ -516,7 +653,6 @@ export const Header = memo(function Header() {
     return null;
   }
 
-  // ===== ✅ دوال الإشعارات V2 =====
   async function handleNotificationClick(notification: any) {
     if (!notification.is_read) {
       try {
@@ -600,7 +736,6 @@ export const Header = memo(function Header() {
           : 'bg-gradient-to-b from-[#2a655f]/5 via-background/50 to-transparent border-b border-transparent'
         }`}>
 
-        {/* ✅ CSS Animations */}
         <style>{`
           @keyframes heartbeat {
             0%, 100% { transform: scale(1); }
@@ -637,133 +772,717 @@ export const Header = memo(function Header() {
           }
         `}</style>
 
-        <div className="mx-auto max-w-7xl px-3 py-2.5 flex items-center gap-2 overflow-visible">
-          {/* Mobile Menu */}
-          <Sheet>
-            <SheetTrigger asChild>
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetContent 
+            side={app.lang === "ar" ? "right" : "left"} 
+            className="w-[85vw] max-w-[380px] overflow-y-auto p-0"
+          >
+            <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white p-4 shadow-lg flex items-center justify-between">
+              <div>
+                <SheetTitle className="text-lg font-black flex items-center gap-2 text-white">
+                  <Menu className="h-5 w-5" />
+                  {app.lang === "ar" ? "القائمة" : "Menu"}
+                </SheetTitle>
+                <p className="text-xs text-white/80 mt-1">
+                  {app.lang === "ar" ? "تصفح الموقع بسهولة" : "Browse the site easily"}
+                </p>
+              </div>
+
+              <button 
+                onClick={() => setMobileMenuOpen(false)}
+                className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {app.user && (
+              <div className="p-4 bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-800/50 dark:via-slate-800/30 dark:to-slate-800/50 border-b-2 border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-3">
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white font-black text-xl shadow-lg overflow-hidden flex-shrink-0 ring-4 ring-white/60 dark:ring-slate-800/80">
+                    {profile?.avatar_url ? (
+                      <OptimizedImage 
+                        src={profile.avatar_url} 
+                        alt={app.user.name} 
+                        width={56}
+                        height={56}
+                        quality={85}
+                        objectFit="cover"
+                        className="h-full w-full"
+                      />
+                    ) : (
+                      <span>{app.user.name?.charAt(0).toUpperCase() || 'U'}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-sm text-slate-900 dark:text-white truncate">
+                      {app.user.name}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate font-semibold mt-0.5" dir="ltr">
+                      {profile?.phone || app.user.phone || (app.lang === 'ar' ? "رقم غير متاح" : "No phone")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="p-4 space-y-2">
+              <Link 
+                to="/favorites"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-pink-500/10 transition-all duration-300 group"
+              >
+                <div className="h-11 w-11 rounded-2xl bg-pink-500/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                  <Heart className="h-5 w-5 text-pink-500 fill-pink-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                    {app.lang === "ar" ? "المفضلة" : "Favorites"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium truncate">
+                    {favoritesCount > 0 
+                      ? (app.lang === "ar" ? `${favoritesCount} منتج` : `${favoritesCount} items`)
+                      : (app.lang === "ar" ? "لا توجد منتجات" : "Empty")
+                    }
+                  </p>
+                </div>
+                {favoritesCount > 0 && (
+                  <Badge className="bg-pink-500 text-white border-0 text-[10px]">
+                    {favoritesCount}
+                  </Badge>
+                )}
+              </Link>
+
+              <Link 
+                to="/cart"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all duration-300 group"
+              >
+                <div className="h-11 w-11 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                  <ShoppingCart className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                    {app.lang === "ar" ? "السلة" : "Cart"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium truncate">
+                    {cartItemsCount > 0 
+                      ? (app.lang === "ar" ? `${cartItemsCount} منتج` : `${cartItemsCount} items`)
+                      : (app.lang === "ar" ? "السلة فارغة" : "Empty")
+                    }
+                  </p>
+                </div>
+                {cartItemsCount > 0 && (
+                  <Badge className="bg-[#2a655f] text-white border-0 text-[10px]">
+                    {cartItemsCount}
+                  </Badge>
+                )}
+              </Link>
+
+              <Link 
+                to="/messages"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all duration-300 group"
+              >
+                <div className="h-11 w-11 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                  <MessageCircle className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                    {app.lang === "ar" ? "الرسائل" : "Messages"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium truncate">
+                    {unreadCount > 0 
+                      ? (app.lang === "ar" ? `${unreadCount} جديدة` : `${unreadCount} new`)
+                      : (app.lang === "ar" ? "لا توجد جديدة" : "No new")
+                    }
+                  </p>
+                </div>
+                {unreadCount > 0 && (
+                  <Badge className="bg-[#2a655f] text-white border-0 text-[10px]">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Badge>
+                )}
+              </Link>
+
+              {app.user && (
+                <Link 
+                  to="/orders"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all duration-300 group"
+                >
+                  <div className="h-11 w-11 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                    <Package className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                      {app.lang === "ar" ? "طلباتي" : "My Orders"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-medium truncate">
+                      {app.lang === "ar" ? "تتبع الطلبات" : "Track orders"}
+                    </p>
+                  </div>
+                  {app.lang === "ar" ? (
+                    <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:-translate-x-1 transition-transform shrink-0" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform shrink-0" />
+                  )}
+                </Link>
+              )}
+
+              {app.user && (
+                <Link 
+                  to="/settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all duration-300 group"
+                >
+                  <div className="h-11 w-11 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-transform shrink-0">
+                    <Settings className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                      {app.lang === "ar" ? "الإعدادات" : "Settings"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-medium truncate">
+                      {app.lang === "ar" ? "الملف الشخصي" : "Profile"}
+                    </p>
+                  </div>
+                  {app.lang === "ar" ? (
+                    <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:-translate-x-1 transition-transform shrink-0" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform shrink-0" />
+                  )}
+                </Link>
+              )}
+
+              <div className="h-px bg-slate-200 dark:bg-slate-700 my-2" />
+
+              <button
+                onClick={() => {
+                  app.setLang(app.lang === "ar" ? "en" : "ar");
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all duration-300 group"
+              >
+                <div className="h-11 w-11 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                  <Globe className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                </div>
+                <div className="flex-1 min-w-0 text-start">
+                  <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                    {app.lang === "ar" ? "English" : "العربية"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium truncate">
+                    {app.lang === "ar" ? "تغيير اللغة" : "Change language"}
+                  </p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  app.toggleTheme();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all duration-300 group"
+              >
+                <div className="h-11 w-11 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                  {app.theme === "dark" ? (
+                    <Sun className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                  ) : (
+                    <Moon className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-start">
+                  <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                    {app.theme === "dark" 
+                      ? (app.lang === "ar" ? "الوضع النهاري" : "Light mode")
+                      : (app.lang === "ar" ? "الوضع الليلي" : "Dark mode")
+                    }
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium truncate">
+                    {app.lang === "ar" ? "تغيير المظهر" : "Change theme"}
+                  </p>
+                </div>
+              </button>
+
+              {app.user && (
+                <button
+                  onClick={() => {
+                    toggleSound();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all duration-300 group"
+                >
+                  <div className="h-11 w-11 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                    {soundEnabled ? (
+                      <Volume2 className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                    ) : (
+                      <VolumeX className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 text-start">
+                    <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                      {soundEnabled 
+                        ? (app.lang === "ar" ? "الصوت مفعل" : "Sound on")
+                        : (app.lang === "ar" ? "الصوت معطل" : "Sound off")
+                      }
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-medium truncate">
+                      {app.lang === "ar" ? "إشعارات صوتية" : "Sound notifications"}
+                    </p>
+                  </div>
+                </button>
+              )}
+
+              <div className="h-px bg-slate-200 dark:bg-slate-700 my-2" />
+
+              {app.user ? (
+                <button
+                  onClick={() => {
+                    app.logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-rose-500/10 transition-all duration-300 group"
+                >
+                  <div className="h-11 w-11 rounded-2xl bg-rose-500/10 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-12 transition-transform shrink-0">
+                    <LogOut className="h-5 w-5 text-rose-500" />
+                  </div>
+                  <div className="flex-1 min-w-0 text-start">
+                    <p className="text-sm font-black text-rose-500 truncate">
+                      {t("logout")}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-medium truncate">
+                      {app.lang === "ar" ? "تسجيل الخروج الآمن" : "Sign out securely"}
+                    </p>
+                  </div>
+                </button>
+              ) : (
+                <>
+                  <Link
+                    to="/auth/$mode"
+                    params={{ mode: "login" }}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white transition-all duration-300 group"
+                  >
+                    <div className="h-11 w-11 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                      <LogIn className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0 text-start">
+                      <p className="text-sm font-black truncate">
+                        {t("login")}
+                      </p>
+                      <p className="text-[10px] text-white/80 font-semibold truncate">
+                        {app.lang === "ar" ? "الدخول لحسابك" : "Access your account"}
+                      </p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    to="/auth/$mode"
+                    params={{ mode: "register" }}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300 group border-2 border-[#2a655f]/20"
+                  >
+                    <div className="h-11 w-11 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center shrink-0">
+                      <UserPlus className="h-5 w-5 text-[#2a655f]" />
+                    </div>
+                    <div className="flex-1 min-w-0 text-start">
+                      <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                        {t("register")}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-semibold truncate">
+                        {app.lang === "ar" ? "إنشاء حساب جديد" : "Create new account"}
+                      </p>
+                    </div>
+                  </Link>
+                </>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <div className="mx-auto max-w-7xl px-3 py-2.5 flex items-center gap-1 sm:gap-2 overflow-visible">
+
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="flex sm:hidden items-center justify-center shrink-0 h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 group border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 shadow-sm"
+            aria-label={app.lang === "ar" ? "القائمة" : "Menu"}
+          >
+            <Menu className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
+          </button>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={goHome}
+                className="flex items-center shrink-0 group cursor-pointer relative"
+                aria-label={app.lang === "ar" ? "الرئيسية - ذوق" : "Home - zooq"}
+              >
+                <div className="absolute -inset-6 rounded-full bg-gradient-to-r from-[#f9a8d4]/0 via-[#f9a8d4]/15 to-[#2a655f]/0 blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none" />
+
+                <div className="relative flex items-center justify-center shrink-0">
+                  <div className="absolute -inset-4 rounded-full bg-[#f9a8d4]/15 blur-xl opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-500" />
+                  <img
+                    src="/images/Logo.png"
+                    alt="ذوق | zooq"
+                    draggable={false}
+                    className="
+                      relative z-10            h-[32px] w-[32px]
+                      xs:h-[36px] xs:w-[36px]
+                      sm:h-[56px] sm:w-[56px]
+                      md:h-[68px] md:w-[68px]
+                      lg:h-[78px] lg:w-[78px]
+                      object-contain
+                      drop-shadow-[0_4px_20px_rgba(42,101,95,0.3)]
+                      group-hover:scale-110
+                      group-hover:drop-shadow-[0_8px_32px_rgba(249,168,212,0.5)]
+                      transition-all duration-500
+                    "
+                  />
+                </div>
+              </button>
+            </TooltipTrigger>
+
+            <TooltipContent
+              side="bottom"
+              sideOffset={10}
+              className="bg-[#071f1c] text-white border border-[#f9a8d4]/30 rounded-xl px-4 py-2.5 shadow-[0_10px_40px_rgba(7,31,28,0.45)]"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#f9a8d4] text-xs">✦</span>
+                  <span className="text-sm font-bold tracking-wide">
+                    {app.lang === "ar" ? "ذوق · كلشي ع ذوقك" : "zooq · Exactly your taste"}
+                  </span>
+                  <span className="text-[#f9a8d4] text-xs">✦</span>
+                </div>
+                <span className="text-[10px] text-white/60 tracking-[0.2em] lowercase font-medium">zooq marketplace</span>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+
+          <MegaMenu categories={categories} />
+
+          {/* ✅ زر السلة — وزر الإشعارات جنبه */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link to="/cart" className="relative group shrink-0">
+                <Button variant="ghost" size="icon" className={cn(
+                  "h-8 w-8 sm:h-10 sm:w-10 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500",
+                  cartItemsCount > 0 && "animate-cart-bounce"
+                )}>
+                  <ShoppingCart className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px] group-hover:scale-110 transition-transform" />
+                  {cartItemsCount > 0 && (
+                    <Badge className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] text-white border-2 border-background"
+                      style={{
+                        background: 'linear-gradient(135deg, #2a655f, #3a8a82)',
+                        boxShadow: '0 0 20px rgba(42,101,95,0.5)'
+                      }}
+                    >
+                      {cartItemsCount > 99 ? '99+' : cartItemsCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p>{app.lang === "ar" ? "السلة" : "Cart"}</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* ✅ زر الإشعارات جنب السلة - في الهيدر العلوي */}
+          {app.user && (
+            <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
               <Tooltip>
                 <TooltipTrigger asChild>
-<Button variant="ghost" size="icon" className="md:hidden h-9 w-9 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 hover:bg-pink-500/10 transition shrink-0">
-  <Menu className="h-4.5 w-4.5" />
-</Button>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="relative group shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 cursor-pointer"
+                    >
+                      <Bell className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px] text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
+                      {unreadNotificationsCount > 0 && (
+                        <Badge 
+                          className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white border-2 border-background animate-pulse"
+                          style={{
+                            background: 'linear-gradient(135deg, #2a655f, #3a8a82)',
+                            boxShadow: '0 0 20px rgba(42,101,95,0.5)'
+                          }}
+                        >
+                          {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </DialogTrigger>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>{app.lang === "ar" ? "القائمة" : "Menu"}</p>
+                <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
+                  <p>{app.lang === "ar" ? "الإشعارات" : "Notifications"}</p>
                 </TooltipContent>
               </Tooltip>
-            </SheetTrigger>
-            <SheetContent side={app.lang === "ar" ? "right" : "left"} className="w-80">
-              <SheetTitle className="text-lg font-bold flex items-center gap-2">
-                <LayoutGrid className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
-                {t("categories")}
-              </SheetTitle>
-              <div className="mt-4 grid gap-1">
-                {categories.map((c: any) => (
-                  <Link
-                    key={c.id}
-                    to="/category/$slug"
-                    params={{ slug: c.slug }}
-                    className="flex items-center justify-between rounded-lg px-3 py-3 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group"
-                  >
-                    <span>{app.lang === "ar" ? c.name_ar : c.name_en}</span>
-                    <ChevronDown className="h-4 w-4 -rotate-90 opacity-50 group-hover:opacity-100 transition" />
-                  </Link>
-                ))}
-              </div>
-              <div className="mt-6 grid gap-2 text-sm">
-                <Link to="/ai" className="rounded-lg px-3 py-3 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 flex items-center gap-2 transition group">
-                  <Sparkles className="h-4 w-4 text-accent group-hover:scale-110 transition-transform" /> {t("ai_insights")}
-                </Link>
-                <Link to="/dashboard" className="rounded-lg px-3 py-3 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition">{t("dashboard")}</Link>
-                <Link to="/reports" className="rounded-lg px-3 py-3 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition">{t("reports")}</Link>
-                <Link to="/messages" className="rounded-lg px-3 py-3 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition">{t("messages")}</Link>
-              </div>
-            </SheetContent>
-          </Sheet>
 
-{/* Home Button - ✦ ZOOQ Premium Brand Identity */}
-<Tooltip>
-  <TooltipTrigger asChild>
-    <button
-      onClick={goHome}
-      className="flex items-center shrink-0 group cursor-pointer relative"
-      aria-label={app.lang === "ar" ? "الرئيسية - ذوق" : "Home - zooq"}
-    >
-      {/* Glow */}
-      <div className="absolute -inset-6 rounded-full bg-gradient-to-r from-[#f9a8d4]/0 via-[#f9a8d4]/15 to-[#2a655f]/0 blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none" />
+              <DialogContent className="max-w-md w-[95vw] rounded-[32px] p-0 overflow-hidden border border-[#2a655f]/50 dark:border-emerald-500/40 shadow-[0_25px_60px_rgba(0,0,0,0.4)] bg-white dark:bg-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300 [&>button]:hidden">
+                
+                <style>{`
+                  @keyframes icon-dance-glow {
+                    0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(42,101,95,0.5)); }
+                    50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(42,101,95,0.9)); }
+                  }
+                  .animate-icon-dance {
+                    animation: icon-dance-glow 2s ease-in-out infinite;
+                  }
+                `}</style>
 
-      {/* LOGO - أصغر قليلاً */}
-      <div className="relative flex items-center justify-center shrink-0">
-        <div className="absolute -inset-4 rounded-full bg-[#f9a8d4]/15 blur-xl opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-500" />
-        <img
-          src="/images/Logo.png"
-          alt="ذوق | zooq"
-          draggable={false}
-          className="
-            relative z-10            h-[36px] w-[36px]
-            xs:h-[40px] xs:w-[40px]
-            sm:h-[56px] sm:w-[56px]
-            md:h-[68px] md:w-[68px]
-            lg:h-[78px] lg:w-[78px]
-            object-contain
-            drop-shadow-[0_4px_20px_rgba(42,101,95,0.3)]
-            group-hover:scale-110
-            group-hover:drop-shadow-[0_8px_32px_rgba(249,168,212,0.5)]
-            transition-all duration-500
-          "
-        />
-      </div>
-    </button>
-  </TooltipTrigger>
+                <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f]/15 via-[#3a8a82]/15 to-[#2a655f]/15 dark:from-[#173d38]/80 dark:to-slate-900 border-b border-[#2a655f]/30 dark:border-[#2a655f]/50 p-4.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 animate-icon-dance">
+                          <Bell className="h-5 w-5 text-white" />
+                        </div>
+                        {unreadNotificationsCount > 0 && (
+                          <span className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full bg-[#2a655f] px-1.5 text-[10px] font-black text-white flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-md">
+                            {unreadNotificationsCount}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <DialogTitle className="text-lg font-black text-slate-900 dark:text-white tracking-wide">
+                          {app.lang === "ar" ? "الإشعارات" : "Notifications"}
+                        </DialogTitle>
+                        <p className="text-xs text-slate-600 dark:text-emerald-300/90 font-bold mt-0.5">
+                          {unreadNotificationsCount > 0
+                            ? app.lang === "ar"
+                              ? `${unreadNotificationsCount} إشعار غير مقروء`
+                              : `${unreadNotificationsCount} unread`
+                            : app.lang === "ar"
+                            ? "كل الإشعارات مقروءة"
+                            : "All caught up"}
+                        </p>
+                      </div>
+                    </div>
 
-  <TooltipContent
-    side="bottom"
-    sideOffset={10}
-    className="bg-[#071f1c] text-white border border-[#f9a8d4]/30 rounded-xl px-4 py-2.5 shadow-[0_10px_40px_rgba(7,31,28,0.45)]"
-  >
-    <div className="flex flex-col items-center gap-1">
-      <div className="flex items-center gap-2">
-        <span className="text-[#f9a8d4] text-xs">✦</span>
-        <span className="text-sm font-bold tracking-wide">
-          {app.lang === "ar" ? "ذوق · كلشي ع ذوقك" : "zooq · Exactly your taste"}
-        </span>
-        <span className="text-[#f9a8d4] text-xs">✦</span>
-      </div>
-      <span className="text-[10px] text-white/60 tracking-[0.2em] lowercase font-medium">zooq marketplace</span>
-    </div>
-  </TooltipContent>
-</Tooltip>
-          {/* Mega Menu */}
-          <div className="hidden md:block">
-            <MegaMenu categories={categories} />
-          </div>
+                    <div className="flex items-center gap-2">
+                      {unreadNotificationsCount > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs font-black gap-1.5 rounded-xl bg-slate-500/10 hover:bg-slate-500/20 dark:bg-slate-500/30 dark:hover:bg-slate-500/40 text-[#2a655f] dark:text-[#3a8a82] transition-all cursor-pointer border border-slate-300/30"
+                          onClick={handleMarkAllAsRead}
+                          disabled={markAllRead.isPending}
+                        >
+                          {markAllRead.isPending ? (
+                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#2a655f] border-t-transparent" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
+                          {app.lang === "ar" ? "تحديد الكل" : "Mark all read"}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-          {/* Desktop Search - ✅ مع تحسين الديزاين */}
+                <div className="max-h-[60vh] overflow-y-auto p-3 space-y-2.5 custom-scrollbar bg-slate-50/50 dark:bg-slate-950/50">
+                  {notifications.length === 0 ? (
+                    <div className="py-16 text-center">
+                      <div className="h-20 w-20 rounded-3xl bg-[#2a655f]/10 border border-[#2a655f]/30 flex items-center justify-center mx-auto mb-4 animate-icon-dance">
+                        <BellOff className="h-10 w-10 text-[#2a655f] dark:text-emerald-400" />
+                      </div>
+                      <p className="text-base font-black text-slate-900 dark:text-white">
+                        {app.lang === "ar" ? "لا توجد إشعارات حالياً" : "No notifications"}
+                      </p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-semibold">
+                        {app.lang === "ar"
+                          ? "ستظهر إشعاراتك وتحديثاتك هنا فور وصولها"
+                          : "Notifications will appear here when received"}
+                      </p>
+                    </div>
+                  ) : (
+                    notifications.map((notification: any) => {
+                      const isUnread = !notification.is_read;
+                      const config = getNotificationConfig(notification.type);
+                      const Icon = ICON_MAP[config.icon] || Bell;
+
+                      return (
+                        <div
+                          key={notification.id}
+                          className={`group relative rounded-2xl transition-all duration-300 border ${
+                            isUnread
+                              ? "bg-[#2a655f]/5 dark:bg-[#2a655f]/15 border-[#2a655f]/40 dark:border-[#3a8a82]/50 shadow-md"
+                              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-[#2a655f]/40"
+                          }`}
+                        >
+                          <div 
+                            className="flex items-start gap-3.5 p-3.5 cursor-pointer" 
+                            onClick={() => handleNotificationClick(notification)}
+                          >
+                            <div className="flex-shrink-0">
+                              {notification.image_url ? (
+                                <div className="relative">
+                                  <OptimizedImage
+                                    src={notification.image_url}
+                                    alt=""
+                                    width={48}
+                                    height={48}
+                                    quality={80}
+                                    objectFit="cover"
+                                    className="h-12 w-12 rounded-2xl object-cover border-2 border-[#2a655f]/40 shadow-sm"
+                                  />
+                                  {isUnread && (
+                                    <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-[#2a655f] ring-2 ring-white dark:ring-slate-900 animate-pulse" />
+                                  )}
+                                </div>
+                              ) : (
+                                <div className={`h-12 w-12 rounded-2xl flex items-center justify-center border border-[#2a655f]/30 shadow-sm bg-[#2a655f]/15 dark:bg-[#2a655f]/30 text-[#2a655f] dark:text-[#3a8a82]`}>
+                                  <Icon className="h-5 w-5" />
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm ${isUnread ? "font-black text-slate-950 dark:text-white" : "font-bold text-slate-900 dark:text-slate-200"}`}>
+                                    {notification.title_ar || notification.title_en || "إشعار"}
+                                  </p>
+                                  <p className={`text-xs mt-1 whitespace-pre-wrap break-words ${isUnread ? "text-slate-800 dark:text-slate-200 font-semibold" : "text-slate-600 dark:text-slate-400 font-medium"}`}>
+                                    {notification.body_ar || notification.body_en || notification.message}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-1 font-bold">
+                                      <Clock className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
+                                      {formatTime(notification.created_at)}
+                                    </span>
+                                    {notification.type && (
+                                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#2a655f]/15 text-[#2a655f] dark:text-[#3a8a82] font-extrabold border border-[#2a655f]/30">
+                                        {isRTL ? config.ar : config.en}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {notification.type === "order_review_request" && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const actionUrl = notification.metadata?.action_url || notification.link_url || `/orders?review=${notification.metadata?.order_id}`;
+                                        navigate({ to: actionUrl });
+                                        setNotificationsOpen(false);
+                                      }}
+                                      className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white font-black text-xs shadow-lg shadow-[#2a655f]/30 transition-all duration-300 hover:scale-[1.02] active:scale-95 group/rate"
+                                    >
+                                      <Star className="h-4 w-4 fill-yellow-300 text-yellow-300 group-hover/rate:scale-125 group-hover/rate:rotate-12 transition-all duration-300" />
+                                      {app.lang === "ar" ? "⭐ قيّم الآن" : "⭐ Rate now"}
+                                      <ChevronLeft className="h-3.5 w-3.5 opacity-70 group-hover/rate:-translate-x-1 transition-transform rtl:rotate-0 ltr:rotate-180" />
+                                    </button>
+                                  )}
+                                </div>
+
+                                <div className="flex-shrink-0 flex items-center gap-1">
+                                  {isUnread && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 rounded-xl bg-slate-500/10 hover:bg-slate-500/20 text-[#2a655f] dark:text-[#3a8a82] transition-all opacity-0 group-hover:opacity-100 cursor-pointer border border-slate-400/30"
+                                      onClick={(e) => handleMarkAsRead(notification.id, e)}
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                                      >
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="rounded-2xl p-1.5 min-w-[170px] border border-slate-300/40 shadow-xl bg-white dark:bg-slate-900">
+                                      {isUnread && (
+                                        <DropdownMenuItem
+                                          className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 hover:bg-slate-500/15 text-slate-900 dark:text-slate-100"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleMarkAsRead(notification.id, e);
+                                          }}
+                                        >
+                                          <Check className="h-4 w-4 text-[#2a655f]" />
+                                          {app.lang === "ar" ? "تحديد كمقروء" : "Mark as read"}
+                                        </DropdownMenuItem>
+                                      )}
+                                      
+                                      <DropdownMenuItem
+                                        className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          try {
+                                            await supabase
+                                              .from('notifications')
+                                              .delete()
+                                              .eq('id', notification.id);
+                                            await refetchNotifications();
+                                            toast.success(app.lang === "ar" ? "تم حذف الإشعار" : "Notification deleted");
+                                          } catch (error) {
+                                            console.error('Error deleting notification:', error);
+                                            toast.error(app.lang === "ar" ? "حدث خطأ أثناء الحذف" : "Error deleting notification");
+                                          }
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        {app.lang === "ar" ? "حذف" : "Delete"}
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {notifications.length > 0 && (
+                  <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t border-[#2a655f]/30 dark:border-[#3a8a82]/50 p-3.5 flex items-center justify-between">
+                    <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">
+                      {notifications.length} {app.lang === "ar" ? "إشعار" : "notifications"}
+                      {unreadNotificationsCount > 0 && ` · ${unreadNotificationsCount} ${app.lang === "ar" ? "غير مقروء" : "unread"}`}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs font-bold rounded-xl text-[#2a655f] dark:text-[#3a8a82] hover:bg-[#2a655f]/15 transition-all cursor-pointer border border-[#2a655f]/30"
+                      onClick={() => setNotificationsOpen(false)}
+                    >
+                      {app.lang === "ar" ? "إغلاق" : "Close"}
+                    </Button>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {/* Desktop Search */}
           <div className="flex-1 max-w-3xl mx-2 hidden lg:flex items-center gap-1.5">
             <div className="relative flex-1 min-w-[160px] group">
               <Search className={`absolute inset-y-0 my-auto start-3 h-4 w-4 transition-colors duration-300 ${searchFocused ? 'text-pink-500 dark:text-pink-400' : 'text-muted-foreground'}`} />
-           <input
-  type="text"
-  value={q}
-  onChange={(e) => setQ(e.target.value)}
-  onKeyDown={(e) => e.key === "Enter" && doSearch()}
-  onFocus={() => setSearchFocused(true)}
-  onBlur={() => setSearchFocused(false)}
-  placeholder={t("search_placeholder")}
-  className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
-    searchFocused
-      ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
-      : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
-  }`}
-/>
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && doSearch()}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                placeholder={t("search_placeholder")}
+                className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
+                  searchFocused
+                    ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
+                    : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
+                }`}
+              />
             </div>
-            
-            <VoiceSearch
-  onResult={handleVoiceSearch}
-  lang={isRTL ? "ar-SA" : "en-US"}
-  buttonSize="md"
-  className="border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/20"
-/>
             
             <button
               onClick={doSearch}
@@ -771,6 +1490,13 @@ export const Header = memo(function Header() {
             >
               <Search className="h-4 w-4 group-hover:scale-110 transition-transform" />
             </button>
+
+            <VoiceSearch
+              onResult={handleVoiceSearch}
+              lang={isRTL ? "ar-SA" : "en-US"}
+              buttonSize="md"
+              className="border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/20"
+            />
 
             <DropdownMenu>
               <Tooltip>
@@ -791,21 +1517,21 @@ export const Header = memo(function Header() {
                   <p>{app.lang === "ar" ? "تصفية حسب الموقع" : "Filter by location"}</p>
                 </TooltipContent>
               </Tooltip>
-<DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
-  <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
-    <Globe className="h-4 w-4 text-muted-foreground group-hover:text-white" />
-    {t("all_governorates")}
-    {gov === "all" && <Check className="h-4 w-4 ms-auto text-pink-500" />}
-  </DropdownMenuItem>
-  <DropdownMenuSeparator />
-  {govs.map((g) => (
-    <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
-      <MapPin className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white" />
-      {app.lang === "ar" ? g.name_ar : g.name_en}
-      {gov === g.slug && <Check className="h-4 w-4 ms-auto text-pink-500" />}
-    </DropdownMenuItem>
-  ))}
-</DropdownMenuContent>
+              <DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
+                <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
+                  <Globe className="h-4 w-4 text-muted-foreground group-hover:text-white" />
+                  {t("all_governorates")}
+                  {gov === "all" && <Check className="h-4 w-4 ms-auto text-pink-500" />}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {govs.map((g) => (
+                  <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white" />
+                    {app.lang === "ar" ? g.name_ar : g.name_en}
+                    {gov === g.slug && <Check className="h-4 w-4 ms-auto text-pink-500" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
@@ -813,28 +1539,21 @@ export const Header = memo(function Header() {
           <div className="flex-1 max-w-lg mx-1.5 hidden md:flex lg:hidden items-center gap-1.5">
             <div className="relative flex-1">
               <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
-            <input
-  type="text"
-  value={q}
-  onChange={(e) => setQ(e.target.value)}
-  onKeyDown={(e) => e.key === "Enter" && doSearch()}
-  onFocus={() => setSearchFocused(true)}
-  onBlur={() => setSearchFocused(false)}
-  placeholder={t("search_placeholder")}
-  className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
-    searchFocused
-      ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
-      : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
-  }`}
-/>
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && doSearch()}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                placeholder={t("search_placeholder")}
+                className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
+                  searchFocused
+                    ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
+                    : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
+                }`}
+              />
             </div>
-            
-           <VoiceSearch
-  onResult={handleVoiceSearch}
-  lang={isRTL ? "ar-SA" : "en-US"}
-  buttonSize="sm"
-  className="border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/20"
-/>
             
             <button
               onClick={doSearch}
@@ -842,6 +1561,13 @@ export const Header = memo(function Header() {
             >
               <Search className="h-4 w-4 group-hover:scale-110 transition-transform" />
             </button>
+
+            <VoiceSearch
+              onResult={handleVoiceSearch}
+              lang={isRTL ? "ar-SA" : "en-US"}
+              buttonSize="sm"
+              className="border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/20"
+            />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -852,32 +1578,31 @@ export const Header = memo(function Header() {
                   )}
                 </button>
               </DropdownMenuTrigger>
-<DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
-  <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
-    <Globe className="h-4 w-4 text-muted-foreground group-hover:text-white" />
-    {t("all_governorates")}
-    {gov === "all" && <Check className="h-4 w-4 ms-auto text-pink-500" />}
-  </DropdownMenuItem>
-  <DropdownMenuSeparator />
-  {govs.map((g) => (
-    <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
-      <MapPin className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white" />
-      {app.lang === "ar" ? g.name_ar : g.name_en}
-      {gov === g.slug && <Check className="h-4 w-4 ms-auto text-pink-500" />}
-    </DropdownMenuItem>
-  ))}
-</DropdownMenuContent>
+              <DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
+                <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
+                  <Globe className="h-4 w-4 text-muted-foreground group-hover:text-white" />
+                  {t("all_governorates")}
+                  {gov === "all" && <Check className="h-4 w-4 ms-auto text-pink-500" />}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {govs.map((g) => (
+                  <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white" />
+                    {app.lang === "ar" ? g.name_ar : g.name_en}
+                    {gov === g.slug && <Check className="h-4 w-4 ms-auto text-pink-500" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
           {/* Actions */}
-          <div className="ms-auto flex items-center gap-0.5 shrink-0">
-            {/* Language */}
+          <div className="ms-auto flex items-center gap-0 sm:gap-1 flex-nowrap min-w-0">
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group shrink-0">
+                    <Button variant="ghost" size="icon" className="hidden sm:flex h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group shrink-0">
                       <Globe className="h-4 w-4 group-hover:scale-110 transition-transform" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -896,7 +1621,6 @@ export const Header = memo(function Header() {
               </TooltipContent>
             </Tooltip>
 
-            {/* Sound toggle */}
             {app.user && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -904,7 +1628,7 @@ export const Header = memo(function Header() {
                     variant="ghost" 
                     size="icon" 
                     onClick={toggleSound} 
-                    className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group shrink-0"
+                    className="hidden sm:flex h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group shrink-0"
                   >
                     {soundEnabled ? (
                       <Volume2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
@@ -923,10 +1647,9 @@ export const Header = memo(function Header() {
               </Tooltip>
             )}
 
-            {/* Theme */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={app.toggleTheme} className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group shrink-0">
+                <Button variant="ghost" size="icon" onClick={app.toggleTheme} className="hidden sm:flex h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition group shrink-0">
                   {app.theme === "dark" ? <Sun className="h-4 w-4 group-hover:rotate-90 transition-transform" /> : <Moon className="h-4 w-4 group-hover:-rotate-90 transition-transform" />}
                 </Button>
               </TooltipTrigger>
@@ -935,7 +1658,6 @@ export const Header = memo(function Header() {
               </TooltipContent>
             </Tooltip>
 
-            {/* Messages - ✅ مع تموج وردي */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link 
@@ -978,639 +1700,261 @@ export const Header = memo(function Header() {
               </TooltipContent>
             </Tooltip>
 
-            {/* Notifications Dialog */}
-            {app.user && (
-              <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 group relative shrink-0 cursor-pointer"
-                      >
-                        <Bell className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform duration-300" />
+            <div className="hidden sm:block">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-slate-100 dark:hover:bg-gray-700/30 transition-all duration-300 group relative shrink-0 border-2 border-slate-200 dark:border-slate-700 hover:border-[#2a655f] shadow-sm hover:shadow-md cursor-pointer overflow-hidden p-0">
+                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none z-10" />
                         
-                        {unreadNotificationsCount > 0 && (
-                          <Badge 
-                            className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white border-2 border-background animate-pulse"
-                            style={{
-                              background: 'linear-gradient(135deg, #f9a8d4, #fbcfe8)',
-                              boxShadow: '0 0 20px rgba(244,114,182,0.5)'
-                            }}
-                          >
-                            {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
-                          </Badge>
+                        {app.user && profile?.avatar_url ? (
+                          <div className="h-full w-full rounded-2xl overflow-hidden relative">
+                            <OptimizedImage 
+                              src={profile.avatar_url} 
+                              alt={app.user.name} 
+                              width={40}
+                              height={40}
+                              quality={85}
+                              objectFit="cover"
+                              className="h-full w-full group-hover:scale-110 transition-transform duration-300"
+                            />
+                          </div>
+                        ) : (
+                          <User className="h-4 w-4 text-[#2a655f] dark:text-slate-300 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300 relative z-10 animate-icon-dance" />
+                        )}
+                        
+                        {app.user && (
+                          <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-background animate-ping z-20" />
+                        )}
+                        {app.user && (
+                          <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background z-20 shadow-[0_0_8px_rgba(16,185,129,1)]" />
                         )}
                       </Button>
-                    </DialogTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
-                    <p>{app.lang === "ar" ? "الإشعارات" : "Notifications"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                    </DropdownMenuTrigger>
 
-                <DialogContent className="max-w-md w-[95vw] rounded-[32px] p-0 overflow-hidden border border-[#2a655f]/50 dark:border-emerald-500/40 shadow-[0_25px_60px_rgba(0,0,0,0.4)] bg-white dark:bg-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300 [&>button]:hidden">
-                  
-                  <style>{`
-                    @keyframes icon-dance-glow {
-                      0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(52,211,153,0.5)); }
-                      50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(52,211,153,0.9)); }
-                    }
-                    .animate-icon-dance {
-                      animation: icon-dance-glow 2s ease-in-out infinite;
-                    }
-                  `}</style>
+                    <DropdownMenuContent align="end" className="w-80 rounded-[28px] p-0 border-2 border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden bg-white dark:bg-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300">
+                      
+                      <style>{`
+                        @keyframes icon-dance-glow {
+                          0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(42,101,95,0.5)); }
+                          50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(42,101,95,0.9)); }
+                        }
+                        .animate-icon-dance {
+                          animation: icon-dance-glow 2s ease-in-out infinite;
+                        }
+                        @keyframes pulse-slow {
+                          0%, 100% { opacity: 0.4; transform: scale(1); }
+                          50% { opacity: 0.8; transform: scale(1.05); }
+                        }
+                        .animate-pulse-slow {
+                          animation: pulse-slow 4s ease-in-out infinite;
+                        }
+                      `}</style>
 
-                  <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f]/15 via-[#3a8a82]/15 to-[#2a655f]/15 dark:from-[#173d38]/80 dark:to-slate-900 border-b border-[#2a655f]/30 dark:border-[#2a655f]/50 p-4.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 animate-icon-dance">
-                            <Bell className="h-5 w-5 text-white" />
-                          </div>
-                          {unreadNotificationsCount > 0 && (
-                            <span className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full bg-pink-400 px-1.5 text-[10px] font-black text-white flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-md">
-                              {unreadNotificationsCount}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <DialogTitle className="text-lg font-black text-slate-900 dark:text-white tracking-wide">
-                            {app.lang === "ar" ? "الإشعارات" : "Notifications"}
-                          </DialogTitle>
-                          <p className="text-xs text-slate-600 dark:text-emerald-300/90 font-bold mt-0.5">
-                            {unreadNotificationsCount > 0
-                              ? app.lang === "ar"
-                                ? `${unreadNotificationsCount} إشعار غير مقروء`
-                                : `${unreadNotificationsCount} unread`
-                              : app.lang === "ar"
-                              ? "كل الإشعارات مقروءة"
-                              : "All caught up"}
-                          </p>
-                        </div>
-                      </div>
+                      {app.user ? (
+                        <>
+                          <div className="bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-800/50 dark:via-slate-800/30 dark:to-slate-800/50 p-5 border-b-2 border-slate-200 dark:border-slate-700 relative overflow-hidden">
+                            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-slate-200/50 dark:bg-slate-700/30 blur-2xl animate-pulse-slow pointer-events-none" />
+                            <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-slate-100/50 dark:bg-slate-700/20 blur-2xl animate-pulse-slow pointer-events-none" style={{ animationDelay: '2s' }} />
 
-                      <div className="flex items-center gap-2">
-                        {unreadNotificationsCount > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs font-black gap-1.5 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 dark:bg-pink-500/30 dark:hover:bg-pink-500/40 text-pink-600 dark:text-pink-300 transition-all cursor-pointer border border-pink-300/30"
-                            onClick={handleMarkAllAsRead}
-                            disabled={markAllRead.isPending}
-                          >
-                            {markAllRead.isPending ? (
-                              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
-                            ) : (
-                              <Check className="h-3.5 w-3.5" />
-                            )}
-                            {app.lang === "ar" ? "تحديد الكل" : "Mark all read"}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="max-h-[60vh] overflow-y-auto p-3 space-y-2.5 custom-scrollbar bg-slate-50/50 dark:bg-slate-950/50">
-                    {notifications.length === 0 ? (
-                      <div className="py-16 text-center">
-                        <div className="h-20 w-20 rounded-3xl bg-[#2a655f]/10 border border-[#2a655f]/30 flex items-center justify-center mx-auto mb-4 animate-icon-dance">
-                          <BellOff className="h-10 w-10 text-[#2a655f] dark:text-emerald-400" />
-                        </div>
-                        <p className="text-base font-black text-slate-900 dark:text-white">
-                          {app.lang === "ar" ? "لا توجد إشعارات حالياً" : "No notifications"}
-                        </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-semibold">
-                          {app.lang === "ar"
-                            ? "ستظهر إشعاراتك وتحديثاتك هنا فور وصولها"
-                            : "Notifications will appear here when received"}
-                        </p>
-                      </div>
-                    ) : (
-                      notifications.map((notification: any) => {
-                        const isUnread = !notification.is_read;
-                        const config = getNotificationConfig(notification.type);
-                        const Icon = ICON_MAP[config.icon] || Bell;
-
-                        return (
-                          <div
-                            key={notification.id}
-                            className={`group relative rounded-2xl transition-all duration-300 border ${
-                              isUnread
-                                ? "bg-pink-500/5 dark:bg-pink-500/15 border-pink-400/40 dark:border-pink-500/50 shadow-md"
-                                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-pink-400/40"
-                            }`}
-                          >
-                            <div 
-                              className="flex items-start gap-3.5 p-3.5 cursor-pointer" 
-                              onClick={() => handleNotificationClick(notification)}
-                            >
-                              <div className="flex-shrink-0">
-                                {notification.image_url ? (
-                                  <div className="relative">
-                                    <OptimizedImage
-                                      src={notification.image_url}
-                                      alt=""
-                                      width={48}
-                                      height={48}
-                                      quality={80}
-                                      objectFit="cover"
-                                      className="h-12 w-12 rounded-2xl object-cover border-2 border-pink-400/40 shadow-sm"
-                                    />
-                                    {isUnread && (
-                                      <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-pink-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
-                                    )}
-                                  </div>
+                            <div className="flex items-center gap-4 relative z-10">
+                              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-[#2a655f]/30 overflow-hidden flex-shrink-0 ring-4 ring-white/60 dark:ring-slate-800/80 transform hover:scale-105 transition-transform duration-300">
+                                {profile?.avatar_url ? (
+                                  <OptimizedImage 
+                                    src={profile.avatar_url} 
+                                    alt={app.user.name} 
+                                    width={56}
+                                    height={56}
+                                    quality={85}
+                                    objectFit="cover"
+                                    className="h-full w-full"
+                                  />
                                 ) : (
-                                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center border border-pink-400/30 shadow-sm bg-pink-500/15 dark:bg-pink-500/30 text-pink-600 dark:text-pink-300`}>
-                                    <Icon className="h-5 w-5" />
-                                  </div>
+                                  <span className="text-white font-black drop-shadow-md">
+                                    {app.user.name?.charAt(0).toUpperCase() || 'U'}
+                                  </span>
                                 )}
                               </div>
-
+                              
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <p className={`text-sm ${isUnread ? "font-black text-slate-950 dark:text-white" : "font-bold text-slate-900 dark:text-slate-200"}`}>
-                                      {notification.title_ar || notification.title_en || "إشعار"}
-                                    </p>
-                                    <p className={`text-xs mt-1 whitespace-pre-wrap break-words ${isUnread ? "text-slate-800 dark:text-slate-200 font-semibold" : "text-slate-600 dark:text-slate-400 font-medium"}`}>
-  {notification.body_ar || notification.body_en || notification.message}
-</p>
-                                    <div className="flex items-center gap-2 mt-2">
-                                      <span className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-1 font-bold">
-                                        <Clock className="h-3 w-3 text-pink-500" />
-                                        {formatTime(notification.created_at)}
-                                      </span>
-                                      {notification.type && (
-                                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-600 dark:text-pink-300 font-extrabold border border-pink-400/30">
-                                          {isRTL ? config.ar : config.en}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  <div className="flex-shrink-0 flex items-center gap-1">
-                                    {isUnread && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 text-pink-600 dark:text-pink-300 transition-all opacity-0 group-hover:opacity-100 cursor-pointer border border-pink-400/30"
-                                        onClick={(e) => handleMarkAsRead(notification.id, e)}
-                                      >
-                                        <Check className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                                        >
-                                          <MoreVertical className="h-4 w-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" className="rounded-2xl p-1.5 min-w-[170px] border border-pink-400/40 shadow-xl bg-white dark:bg-slate-900">
-                                        {isUnread && (
-                                          <DropdownMenuItem
-                                            className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 hover:bg-pink-500/15 text-slate-900 dark:text-slate-100"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleMarkAsRead(notification.id, e);
-                                            }}
-                                          >
-                                            <Check className="h-4 w-4 text-pink-500" />
-                                            {app.lang === "ar" ? "تحديد كمقروء" : "Mark as read"}
-                                          </DropdownMenuItem>
-                                        )}
-                                        
-                                        <DropdownMenuItem
-                                          className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-500/10"
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            try {
-                                              await supabase
-                                                .from('notifications')
-                                                .delete()
-                                                .eq('id', notification.id);
-                                              await refetchNotifications();
-                                              toast.success(app.lang === "ar" ? "تم حذف الإشعار" : "Notification deleted");
-                                            } catch (error) {
-                                              console.error('Error deleting notification:', error);
-                                              toast.error(app.lang === "ar" ? "حدث خطأ أثناء الحذف" : "Error deleting notification");
-                                            }
-                                          }}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                          {app.lang === "ar" ? "حذف" : "Delete"}
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </div>
-                                </div>
+                                <p className="font-black text-base text-slate-900 dark:text-white truncate drop-shadow-sm">
+                                  {app.user.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate font-semibold mt-0.5 tracking-wide" dir="ltr">
+                                  {profile?.phone || app.user.phone || (app.lang === 'ar' ? "رقم غير متاح" : "No phone")}
+                                </p>
                               </div>
+                              
+                              <Badge variant="outline" className="text-[10px] border-[#2a655f]/60 text-[#2a655f] dark:text-slate-300 bg-[#2a655f]/10 flex-shrink-0 font-black px-2.5 py-1 rounded-full shadow-sm animate-pulse">
+                                {isAdmin ? (app.lang === 'ar' ? '⭐ أدمن' : '⭐ Admin') : 
+                                 isSeller ? (app.lang === 'ar' ? '🛍️ بائع' : '🛍️ Seller') : 
+                                 (app.lang === 'ar' ? '👤 عميل' : '👤 Customer')}
+                              </Badge>
                             </div>
                           </div>
-                        );
-                      })
-                    )}
-                  </div>
 
-                  {notifications.length > 0 && (
-                    <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t border-pink-400/30 dark:border-pink-500/50 p-3.5 flex items-center justify-between">
-                      <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">
-                        {notifications.length} {app.lang === "ar" ? "إشعار" : "notifications"}
-                        {unreadNotificationsCount > 0 && ` · ${unreadNotificationsCount} ${app.lang === "ar" ? "غير مقروء" : "unread"}`}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs font-bold rounded-xl text-pink-600 dark:text-pink-300 hover:bg-pink-500/15 transition-all cursor-pointer border border-pink-400/30"
-                        onClick={() => setNotificationsOpen(false)}
-                      >
-                        {app.lang === "ar" ? "إغلاق" : "Close"}
-                      </Button>
-                    </div>
-                  )}
-                </DialogContent>
-              </Dialog>
-            )}
+                          <div className="p-2.5 space-y-1.5">
+                            <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+                              <Link to="/orders" className="flex items-center gap-3.5 w-full">
+                                <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm border-2 border-slate-200 dark:border-slate-700">
+                                  <Package className="h-5 w-5 text-[#2a655f] dark:text-slate-300" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-slate-300 transition-colors">
+                                    {app.lang === "ar" ? "📦 طلباتي" : "📦 My Orders"}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground font-medium">
+                                    {app.lang === "ar" ? "تتبع حالة الطلبات" : "Track orders"}
+                                  </p>
+                                </div>
+                                <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                              </Link>
+                            </DropdownMenuItem>
 
-            {/* ✅ Favorites - قلب معبى بلون زهري دائماً */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link to="/favorites" className="relative group shrink-0">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-9 w-9 rounded-xl hover:bg-pink-500/10 dark:hover:bg-pink-500/20 transition group"
-                  >
-                    <Heart className={cn(
-                      "h-4 w-4 group-hover:scale-110 transition-transform",
-                      // ✅ ✅ ✅ قلب معبى بلون زهري دائماً
-                      "text-pink-500 fill-pink-500"
-                    )} />
-                    {favoritesCount > 0 && (
-                      <Badge 
-                        className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white border-2 border-background animate-pulse"
-                        style={{
-                          background: 'linear-gradient(135deg, #ec4899, #f472b6)',
-                          boxShadow: '0 0 20px rgba(244,114,182,0.5)'
-                        }}
-                      >
-                        {favoritesCount > 99 ? '99+' : favoritesCount}
-                      </Badge>
-                    )}
-                  </Button>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
-                <p>
-                  {app.lang === "ar" ? "❤️ المفضلة" : "❤️ Favorites"}
-                  {favoritesCount > 0 && ` (${favoritesCount})`}
-                </p>
-              </TooltipContent>
-            </Tooltip>
+                            <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+                              <Link to="/settings" className="flex items-center gap-3.5 w-full">
+                                <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 shadow-sm border-2 border-slate-200 dark:border-slate-700">
+                                  <Settings className="h-5 w-5 text-[#2a655f] dark:text-slate-300" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-slate-300 transition-colors">
+                                    {app.lang === "ar" ? "⚙️ الإعدادات" : "⚙️ Settings"}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground font-medium">
+                                    {app.lang === "ar" ? "تعديل الملف الشخصي" : "Edit profile"}
+                                  </p>
+                                </div>
+                                <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                              </Link>
+                            </DropdownMenuItem>
 
-            {/* Cart - ✅ مع حركة ارتداد عند وجود منتجات */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link to="/cart" className="relative group shrink-0">
-                  <Button variant="ghost" size="icon" className={cn(
-                    "h-9 w-9 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition",
-                    cartItemsCount > 0 && "animate-cart-bounce"
-                  )}>
-                    <ShoppingCart className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                    {cartItemsCount > 0 && (
-                      <Badge className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] text-white border-2 border-background"
-                        style={{
-                          background: 'linear-gradient(135deg, #2a655f, #3a8a82)',
-                          boxShadow: '0 0 20px rgba(42,101,95,0.5)'
-                        }}
-                      >
-                        {cartItemsCount > 99 ? '99+' : cartItemsCount}
-                      </Badge>
-                    )}
-                  </Button>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>{app.lang === "ar" ? "السلة" : "Cart"}</p>
-              </TooltipContent>
-            </Tooltip>
+                            <DropdownMenuSeparator className="my-2 bg-slate-200 dark:bg-slate-700" />
 
-{/* User Menu */}
-<Tooltip>
-  <TooltipTrigger asChild>
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-slate-100 dark:hover:bg-gray-700/30 transition-all duration-300 group relative shrink-0 border-2 border-slate-200 dark:border-slate-700 hover:border-[#2a655f] shadow-sm hover:shadow-md cursor-pointer overflow-hidden p-0">
-          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none z-10" />
-          
-          {app.user && profile?.avatar_url ? (
-            <div className="h-full w-full rounded-2xl overflow-hidden relative">
-              <OptimizedImage 
-                src={profile.avatar_url} 
-                alt={app.user.name} 
-                width={40}
-                height={40}
-                quality={85}
-                objectFit="cover"
-                className="h-full w-full group-hover:scale-110 transition-transform duration-300"
-              />
-            </div>
-          ) : (
-            <User className="h-4 w-4 text-[#2a655f] dark:text-slate-300 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300 relative z-10 animate-icon-dance" />
-          )}
-          
-          {app.user && (
-            <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-background animate-ping z-20" />
-          )}
-          {app.user && (
-            <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background z-20 shadow-[0_0_8px_rgba(16,185,129,1)]" />
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent align="end" className="w-80 rounded-[28px] p-0 border-2 border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden bg-white dark:bg-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300">
-        
-        <style>{`
-          @keyframes icon-dance-glow {
-            0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(42,101,95,0.5)); }
-            50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(42,101,95,0.9)); }
-          }
-          .animate-icon-dance {
-            animation: icon-dance-glow 2s ease-in-out infinite;
-          }
-          @keyframes pulse-slow {
-            0%, 100% { opacity: 0.4; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.05); }
-          }
-          .animate-pulse-slow {
-            animation: pulse-slow 4s ease-in-out infinite;
-          }
-          @keyframes shimmer-olive {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-          }
-          .animate-shimmer-olive {
-            background: linear-gradient(90deg, transparent, rgba(42,101,95,0.1), transparent);
-            background-size: 200% 100%;
-            animation: shimmer-olive 3s ease-in-out infinite;
-          }
-        `}</style>
-
-        {app.user ? (
-          <>
-            <div className="bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-800/50 dark:via-slate-800/30 dark:to-slate-800/50 p-5 border-b-2 border-slate-200 dark:border-slate-700 relative overflow-hidden">
-              <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-slate-200/50 dark:bg-slate-700/30 blur-2xl animate-pulse-slow pointer-events-none" />
-              <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-slate-100/50 dark:bg-slate-700/20 blur-2xl animate-pulse-slow pointer-events-none" style={{ animationDelay: '2s' }} />
-
-              <div className="flex items-center gap-4 relative z-10">
-                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-[#2a655f]/30 overflow-hidden flex-shrink-0 ring-4 ring-white/60 dark:ring-slate-800/80 transform hover:scale-105 transition-transform duration-300">
-                  {profile?.avatar_url ? (
-                    <OptimizedImage 
-                      src={profile.avatar_url} 
-                      alt={app.user.name} 
-                      width={56}
-                      height={56}
-                      quality={85}
-                      objectFit="cover"
-                      className="h-full w-full"
-                    />
-                  ) : (
-                    <span className="text-white font-black drop-shadow-md">
-                      {app.user.name?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-black text-base text-slate-900 dark:text-white truncate drop-shadow-sm">
-                      {app.user.name}
-                    </p>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate font-semibold mt-0.5 tracking-wide" dir="ltr">
-                    {profile?.phone || app.user.phone || (app.lang === 'ar' ? "رقم غير متاح" : "No phone")}
-                  </p>
-                </div>
-                
-                <Badge variant="outline" className="text-[10px] border-[#2a655f]/60 text-[#2a655f] dark:text-slate-300 bg-[#2a655f]/10 flex-shrink-0 font-black px-2.5 py-1 rounded-full shadow-sm animate-pulse">
-                  {isAdmin ? (app.lang === 'ar' ? '⭐ أدمن' : '⭐ Admin') : 
-                   isSeller ? (app.lang === 'ar' ? '🛍️ بائع' : '🛍️ Seller') : 
-                   (app.lang === 'ar' ? '👤 عميل' : '👤 Customer')}
-                </Badge>
-              </div>
-              
-              <div className="mt-4 pt-3 border-t-2 border-slate-200 dark:border-slate-700 flex items-center justify-between relative z-10">
-                <Link 
-                  to="/settings" 
-                  className="text-xs text-[#2a655f] dark:text-slate-300 hover:text-[#3a8a82] flex items-center gap-1.5 font-bold transition-colors group/link"
-                >
-                  <div className="h-6 w-6 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center group-hover/link:bg-slate-200 dark:group-hover/link:bg-slate-600 group-hover/link:scale-110 transition-all shadow-inner">
-                    <Camera className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300 group-hover/link:text-[#3a8a82]" />
-                  </div>
-                  {profile?.avatar_url 
-                    ? (app.lang === "ar" ? "تغيير الصورة الشخصية" : "Change photo")
-                    : (app.lang === "ar" ? "إضافة صورة شخصية" : "Add photo")
-                  }
-                </Link>
-                <span className="text-[10px] text-muted-foreground font-bold bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full">
-                  {app.lang === "ar" ? "عضو منذ" : "Since"} {new Date(app.user.created_at || Date.now()).getFullYear()}
-                </span>
-              </div>
-              
-              {app.user.address && (
-                <div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground font-medium relative z-10">
-                  <MapPin className="h-3.5 w-3.5 text-[#2a655f] flex-shrink-0 animate-bounce" />
-                  <span className="truncate">{app.user.address}</span>
-                </div>
-              )}
+                            <DropdownMenuItem onClick={app.logout} className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
+                              <div className="flex items-center gap-3.5 w-full">
+                                <div className="h-10 w-10 rounded-2xl bg-rose-500/10 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300 shadow-sm border-2 border-slate-200 dark:border-slate-700">
+                                  <LogOut className="h-5 w-5 text-rose-500" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-black text-rose-500 group-hover:text-rose-600 transition-colors">
+                                    {t("logout")}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground font-medium">
+                                    {app.lang === "ar" ? "تسجيل الخروج الآمن" : "Sign out securely"}
+                                  </p>
+                                </div>
+                              </div>
+                            </DropdownMenuItem>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="p-7 text-center border-b-2 border-slate-200 dark:border-slate-700 bg-gradient-to-b from-slate-50 to-transparent dark:from-slate-800/50">
+                            <div className="h-18 w-18 rounded-3xl bg-[#2a655f]/10 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center mx-auto mb-3.5 shadow-xl animate-icon-dance">
+                              <User className="h-9 w-9 text-[#2a655f]" />
+                            </div>
+                            <p className="font-black text-lg text-slate-900 dark:text-white">
+                              {app.lang === "ar" ? "أهلاً بك" : "Welcome"}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1 font-medium">
+                              {app.lang === "ar" ? "سجل الدخول للميزات الفاخرة" : "Sign in to access luxury features"}
+                            </p>
+                          </div>
+                          
+                          <div className="p-3 space-y-2">
+                            <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3.5 px-4 transition-all group">
+                              <Link to="/auth/$mode" params={{ mode: "login" }} className="flex items-center gap-3.5 w-full">
+                                <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                  <LogIn className="h-5 w-5 text-[#2a655f]" />
+                                </div>
+                                <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("login")}</span>
+                              </Link>
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3.5 px-4 transition-all group">
+                              <Link to="/auth/$mode" params={{ mode: "register" }} className="flex items-center gap-3.5 w-full">
+                                <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                  <UserPlus className="h-5 w-5 text-[#2a655f]" />
+                                </div>
+                                <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("register")}</span>
+                              </Link>
+                            </DropdownMenuItem>
+                          </div>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="rounded-2xl bg-[#2a655f] text-white border-2 border-[#3a8a82]/50 px-4 py-2 shadow-xl font-bold">
+                  <p>{app.user ? (app.lang === "ar" ? "حسابي" : "My Account") : (app.lang === "ar" ? "تسجيل الدخول" : "Login")}</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
 
-            <div className="p-2.5 space-y-1.5">
-              <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
-                <Link to="/orders" className="flex items-center gap-3.5 w-full">
-                  <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm border-2 border-slate-200 dark:border-slate-700">
-                    <Package className="h-5 w-5 text-[#2a655f] dark:text-slate-300" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-slate-300 transition-colors">
-                      {app.lang === "ar" ? "📦 طلباتي" : "📦 My Orders"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground font-medium">
-                      {app.lang === "ar" ? "تتبع حالة الطلبات" : "Track orders"}
-                    </p>
-                  </div>
-                  <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+            {(() => {
+              if (isAuthLoading) {
+                return <div className="ms-1 px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse h-6 w-16 shrink-0" />;
+              }
+
+              const baseBtn = "ms-0.5 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[9px] sm:text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 sm:gap-1.5 shadow-sm hover:shadow-md cursor-pointer shrink-0 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500";
+
+              const grayStyle = "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200";
+
+              if (app.user) {
+                if (isAdmin) {
+                  return (
+                    <Link to="/admin" className={cn(baseBtn, grayStyle)}>
+                      <LayoutDashboard className="h-3 w-3 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform shrink-0" />
+                      <span className="whitespace-nowrap">{app.lang === "ar" ? "لوحة أدمن" : "Admin Panel"}</span>
+                    </Link>
+                  );
+                }
+                if (isSeller) {
+                  return (
+                    <Link to="/dashboard" className={cn(baseBtn, grayStyle)}>
+                      <Store className="h-3 w-3 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform shrink-0" />
+                      <span className="whitespace-nowrap">{app.lang === "ar" ? "لوحة المتجر" : "Store Dashboard"}</span>
+                    </Link>
+                  );
+                }
+                return (
+                  <Link to="/become-seller" className={cn(baseBtn, grayStyle)}>
+                    <Store className="h-3 w-3 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform shrink-0" />
+                    <span className="whitespace-nowrap">{app.lang === "ar" ? "أنشئ متجرك" : "Create Your Store"}</span>
+                  </Link>
+                );
+              }
+
+              return (
+                <Link to="/become-seller" className={cn(baseBtn, grayStyle)}>
+                  <Store className="h-3 w-3 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform shrink-0" />
+                  <span className="whitespace-nowrap">{app.lang === "ar" ? "أنشئ متجرك" : "Create Your Store"}</span>
                 </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
-                <Link to="/settings" className="flex items-center gap-3.5 w-full">
-                  <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 shadow-sm border-2 border-slate-200 dark:border-slate-700">
-                    <Settings className="h-5 w-5 text-[#2a655f] dark:text-slate-300" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#2a655f] dark:group-hover:text-slate-300 transition-colors">
-                      {app.lang === "ar" ? "⚙️ الإعدادات" : "⚙️ Settings"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground font-medium">
-                      {app.lang === "ar" ? "تعديل الملف الشخصي" : "Edit profile"}
-                    </p>
-                  </div>
-                  <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator className="my-2 bg-slate-200 dark:bg-slate-700" />
-
-              <DropdownMenuItem onClick={app.logout} className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3 px-3.5 group transition-all duration-300">
-                <div className="flex items-center gap-3.5 w-full">
-                  <div className="h-10 w-10 rounded-2xl bg-rose-500/10 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300 shadow-sm border-2 border-slate-200 dark:border-slate-700">
-                    <LogOut className="h-5 w-5 text-rose-500" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-rose-500 group-hover:text-rose-600 transition-colors">
-                      {t("logout")}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground font-medium">
-                      {app.lang === "ar" ? "تسجيل الخروج الآمن" : "Sign out securely"}
-                    </p>
-                  </div>
-                </div>
-              </DropdownMenuItem>
-            </div>
-
-            <div className="px-5 py-3 bg-slate-50 dark:bg-slate-900/60 border-t-2 border-slate-200 dark:border-slate-700">
-              <div className="flex items-center justify-between text-xs font-bold text-muted-foreground">
-                <span>
-                  {app.lang === "ar" ? "الحالة" : "Status"}: <strong className="text-[#2a655f] dark:text-slate-300">آمن ومحمي</strong>
-                </span>
-                <span className="flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-full border-2 border-emerald-500/30">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="text-emerald-600 dark:text-emerald-400 font-black">{app.lang === "ar" ? "متصل الآن" : "Online"}</span>
-                </span>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="p-7 text-center border-b-2 border-slate-200 dark:border-slate-700 bg-gradient-to-b from-slate-50 to-transparent dark:from-slate-800/50">
-              <div className="h-18 w-18 rounded-3xl bg-[#2a655f]/10 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center mx-auto mb-3.5 shadow-xl animate-icon-dance">
-                <User className="h-9 w-9 text-[#2a655f]" />
-              </div>
-              <p className="font-black text-lg text-slate-900 dark:text-white">
-                {app.lang === "ar" ? "أهلاً بك" : "Welcome"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1 font-medium">
-                {app.lang === "ar" ? "سجل الدخول للميزات الفاخرة" : "Sign in to access luxury features"}
-              </p>
-            </div>
-            
-            <div className="p-3 space-y-2">
-              <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3.5 px-4 transition-all group">
-                <Link to="/auth/$mode" params={{ mode: "login" }} className="flex items-center gap-3.5 w-full">
-                  <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <LogIn className="h-5 w-5 text-[#2a655f]" />
-                  </div>
-                  <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("login")}</span>
-                </Link>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem asChild className="rounded-2xl focus:bg-gray-50/80 hover:bg-gray-50/80 dark:focus:bg-gray-700/30 dark:hover:bg-gray-700/30 cursor-pointer py-3.5 px-4 transition-all group">
-                <Link to="/auth/$mode" params={{ mode: "register" }} className="flex items-center gap-3.5 w-full">
-                  <div className="h-10 w-10 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <UserPlus className="h-5 w-5 text-[#2a655f]" />
-                  </div>
-                  <span className="font-black text-sm text-slate-800 dark:text-slate-100">{t("register")}</span>
-                </Link>
-              </DropdownMenuItem>
-            </div>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  </TooltipTrigger>
-  <TooltipContent side="bottom" className="rounded-2xl bg-[#2a655f] text-white border-2 border-[#3a8a82]/50 px-4 py-2 shadow-xl font-bold">
-    <p>{app.user ? (app.lang === "ar" ? "حسابي" : "My Account") : (app.lang === "ar" ? "تسجيل الدخول" : "Login")}</p>
-  </TooltipContent>
-</Tooltip>
-
-{/* Role Button - رمادي مع بوردر وردي فاتح */}
-{(() => {
-  if (isAuthLoading) {
-    return <div className="ms-1 px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse h-6 w-16" />;
-  }
-
-  const baseBtn = "ms-1 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-1.5 shadow-sm hover:shadow-md cursor-pointer shrink-0 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500";
-
-  const grayStyle = "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200";
-
-  if (app.user) {
-    if (isAdmin) {
-      return (
-        <Link to="/admin" className={cn(baseBtn, grayStyle)}>
-          <LayoutDashboard className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform" />
-          {app.lang === "ar" ? "لوحة الأدمن" : "Admin"}
-        </Link>
-      );
-    }
-    if (isSeller) {
-      return (
-        <Link to="/dashboard" className={cn(baseBtn, grayStyle)}>
-          <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform" />
-          {app.lang === "ar" ? "لوحة البائع" : "Seller"}
-        </Link>
-      );
-    }
-    return (
-      <Link to="/become-seller" className={cn(baseBtn, grayStyle)}>
-        <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform" />
-        {app.lang === "ar" ? "🚀 طلب فتح متجر" : "🚀 Open Store"}
-      </Link>
-    );
-  }
-
-  return (
-    <Link to="/become-seller" className={cn(baseBtn, grayStyle)}>
-      <Store className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 group-hover:rotate-12 transition-transform" />
-      {app.lang === "ar" ? "🚀 طلب فتح متجر" : "🚀 Open Store"}
-    </Link>
-  );
-})()}
+              );
+            })()}
           </div>
         </div>
 
-        {/* Mobile Search */}
+        {/* Mobile Search — ✅ زر المفضلة بدل زر المحافظات */}
         <div className="md:hidden px-3 pb-2.5 flex gap-1.5">
           <div className="relative flex-1">
             <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
-           <input
-  type="text"
-  value={q}
-  onChange={(e) => setQ(e.target.value)}
-  onKeyDown={(e) => e.key === "Enter" && doSearch()}
-  onFocus={() => setSearchFocused(true)}
-  onBlur={() => setSearchFocused(false)}
-  placeholder={t("search_placeholder")}
-  className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
-    searchFocused
-      ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
-      : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
-  }`}
-/>
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && doSearch()}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder={t("search_placeholder")}
+              className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
+                searchFocused
+                  ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
+                  : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
+              }`}
+            />
           </div>
-          
-         <VoiceSearch
-  onResult={handleVoiceSearch}
-  lang={isRTL ? "ar-SA" : "en-US"}
-  buttonSize="sm"
-  className="border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/20"
-/>
           
           <Button 
             onClick={doSearch}
@@ -1620,33 +1964,28 @@ export const Header = memo(function Header() {
             <Search className="h-4 w-4" />
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-pink-400/50 hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 flex items-center justify-center group relative">
-                <MapPin className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
-                {gov !== "all" && (
-                  <span className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full bg-pink-500 ring-2 ring-background animate-pulse" />
-                )}
-              </button>
-            </DropdownMenuTrigger>
-<DropdownMenuContent align="end" className="max-h-80 overflow-auto rounded-xl p-1 border-[#2a655f]/20 dark:border-[#2a655f]/30 shadow-xl">
-  <DropdownMenuItem onClick={() => setGov("all")} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
-    <Globe className="h-4 w-4 text-muted-foreground group-hover:text-white" />
-    {t("all_governorates")}
-    {gov === "all" && <Check className="h-4 w-4 ms-auto text-pink-500" />}
-  </DropdownMenuItem>
-  <DropdownMenuSeparator />
-  {govs.map((g) => (
-    <DropdownMenuItem key={g.id} onClick={() => setGov(g.slug)} className="rounded-lg hover:bg-pink-500 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white cursor-pointer flex items-center gap-2 text-sm transition-all duration-200">
-      <MapPin className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white" />
-      {app.lang === "ar" ? g.name_ar : g.name_en}
-      {gov === g.slug && <Check className="h-4 w-4 ms-auto text-pink-500" />}
-    </DropdownMenuItem>
-  ))}
-</DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+          <VoiceSearch
+            onResult={handleVoiceSearch}
+            lang={isRTL ? "ar-SA" : "en-US"}
+            buttonSize="sm"
+            className="border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/20"
+          />
 
+          {/* ✅ زر المفضلة بدل زر المحافظات */}
+          <Link 
+            to="/favorites" 
+            className="relative group shrink-0"
+          >
+            <button className="h-10 w-10 shrink-0 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 hover:bg-pink-500/10 transition-all duration-300 flex items-center justify-center group relative">
+              <Heart className="h-4 w-4 text-pink-500 fill-pink-500 group-hover:scale-110 transition-transform" />
+              {favoritesCount > 0 && (
+                <span className="absolute -top-0.5 -end-0.5 h-4 min-w-4 px-1 rounded-full bg-pink-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
+                  {favoritesCount > 99 ? '99+' : favoritesCount}
+                </span>
+              )}
+            </button>
+          </Link>
+        </div>
 
       </header>
     </TooltipProvider>

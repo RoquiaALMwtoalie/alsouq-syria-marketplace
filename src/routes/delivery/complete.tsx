@@ -15,7 +15,7 @@ import { AddressPicker, type PickedLocation } from "@/components/AddressPicker";
 
 export const Route = createFileRoute("/delivery/complete")({
   component: DeliveryCompletePage,
-  head: () => ({ meta: [{ title: "أكمل بيانات شركتك — السوق اليك" }] }),
+  head: () => ({ meta: [{ title: "أكمل بيانات شركتك — ذوق" }] }),
 });
 
 // ✅ دالة استخراج المحافظة من العنوان
@@ -265,7 +265,7 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
           <div className="text-center text-white mb-6">
             <div className="inline-flex items-center gap-2">
               <div className="h-11 w-11 rounded-xl bg-white/20 backdrop-blur grid place-items-center font-black text-xl">س</div>
-              <div className="font-black text-2xl">السوق اليك</div>
+              <div className="font-black text-2xl">ذوق</div>
             </div>
             <div className="mt-2 text-sm text-white/85">
               {isArabic 

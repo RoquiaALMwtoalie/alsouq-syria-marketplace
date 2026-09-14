@@ -1,66 +1,35 @@
-// vite.config.ts - مع تحسينات إضافية
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig } from "vite";
+import tsConfigPaths from "vite-tsconfig-paths";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import viteReact from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { nitro } from "nitro/vite";
 
-export default defineConfig({
-  tanstackStart: {
-    server: { entry: "server" },
-  },
-  // ✅ إضافة تحسينات الأداء
-  vite: {
-    build: {
-      rollupOptions: {
-        output: {
-          // ✅ ✅ ✅ تحويل manualChunks من Object إلى Function
-          manualChunks(id: string) {
-            // ✅ فصل المكتبات الكبيرة
-            if (id.includes('node_modules')) {
-              // ✅ React + React DOM
-              if (id.includes('react') || id.includes('react-dom')) {
-                return 'vendor';
-              }
-              // ✅ Lucide React
-              if (id.includes('lucide-react')) {
-                return 'lucide';
-              }
-              // ✅ Radix UI
-              if (id.includes('@radix-ui')) {
-                return 'ui';
-              }
-              // ✅ Supabase
-              if (id.includes('@supabase/supabase-js')) {
-                return 'supabase';
-              }
-              // ✅ باقي الـ node_modules
-              return 'vendor';
-            }
-            // ✅ إذا كان الملف مش من node_modules
-            return null;
-          },
-        },
-      },
-      // ✅ تصغير الحجم
-      minify: 'terser',
-      terserOptions: {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-        },
-      },
-      // ✅ تحسين الـ Chunks
-      chunkSizeWarningLimit: 500,
-    },
-    // ✅ تحسين الـ Server
+export default defineConfig(({ command }) => {
+  const isBuild = command === "build";
+
+  return {
     server: {
-      warmup: {
-        clientFiles: [
-          './src/router.tsx',
-          './src/routeTree.gen.ts',
-        ],
+      port: 4000,
+      host: true,
+      hmr: {
+        overlay: false,
+      },
+      watch: {
+        usePolling: true,
+        interval: 100,
       },
     },
-    // ✅ تحسين الـ CSS
-    css: {
-      devSourcemap: true,
+    plugins: [
+      tsConfigPaths(),
+      tailwindcss(),
+      tanstackStart(),
+      viteReact(),
+      // ✅ تفعيل Nitro فقط أثناء البناء (build)، وليس أثناء التطوير (dev)
+      isBuild ? nitro({ preset: 'node-server' }) : undefined,
+    ].filter(Boolean),
+    build: {
+      chunkSizeWarningLimit: 1000,
     },
-  },
+  };
 });

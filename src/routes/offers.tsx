@@ -6,7 +6,8 @@ import {
   SlidersHorizontal, X, Store, Package, Star, Check,
   Sparkles, Filter, Search, MapPin, TrendingUp,
   Grid3X3, List, Tag, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight,
-  Home, Shield, Percent, Gift, Flame, Clock, BadgePercent, Layers
+  Home, Shield, Percent, Gift, Flame, Clock, BadgePercent, Layers,
+  ChevronDown
 } from "lucide-react";
 import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { useGovernorates, useListings, useProductOffers, useCategories } from "@/lib/queries";
@@ -53,6 +54,7 @@ function OffersPage() {
   const [page, setPage] = useState(1);
   const [limit] = useState(12);
   const [offerSourceFilter, setOfferSourceFilter] = useState<"all" | "discount" | "promo">("all");
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
   // ===== Category =====
   const offersCategory = useMemo(() => {
@@ -209,14 +211,12 @@ function OffersPage() {
   const items = useMemo(() => {
     let filtered = allOffers;
 
-    // ✅ فلتر نوع العرض (تخفيض/ترويجي)
     if (offerSourceFilter === "discount") {
       filtered = filtered.filter((item: any) => item.offer_source === "discount");
     } else if (offerSourceFilter === "promo") {
       filtered = filtered.filter((item: any) => item.offer_source === "promo");
     }
 
-    // فلتر البحث
     if (search) {
       const s = search.toLowerCase();
       filtered = filtered.filter((item: any) =>
@@ -227,10 +227,8 @@ function OffersPage() {
       );
     }
 
-    // فلتر التقييم
     if (rating > 0) filtered = filtered.filter((r: any) => Number(r.rating) >= rating);
 
-    // فلتر السعر
     const min = Number(minPrice) || 0;
     const max = Number(maxPrice) || 10000000;
     filtered = filtered.filter((r: any) => {
@@ -238,7 +236,6 @@ function OffersPage() {
       return price >= min && price <= max;
     });
 
-    // فلتر التوفر
     if (showAvailableOnly) filtered = filtered.filter((r: any) => r.is_available !== false);
 
     return filtered;
@@ -277,49 +274,58 @@ function OffersPage() {
 
   const isLoading = listingsLoading || promoLoading;
 
-  // ============================================================
-  // Sidebar Filters
-  // ============================================================
-  const SidebarFilters = (
-    <div className="hidden lg:block space-y-5 bg-white border border-slate-200/80 p-5 rounded-2xl shadow-2xs">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-        <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
-          <Filter className="w-3.5 h-3.5 text-[#2a655f]" />
-          {t("filters")}
-        </h3>
-        <button
-          onClick={resetAll}
-          className="text-[10px] text-[#2a655f] font-bold hover:underline"
-        >
-          {isArabic ? "إعادة ضبط" : "Reset"}
-        </button>
-      </div>
+  // ✅ عدّاد الفلاتر النشطة
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (search) count++;
+    if (gov !== "all") count++;
+    if (rating > 0) count++;
+    if (minPrice > 0) count++;
+    if (maxPrice < 10000000) count++;
+    if (showAvailableOnly) count++;
+    return count;
+  }, [search, gov, rating, minPrice, maxPrice, showAvailableOnly]);
 
+  // ============================================================
+  // Sidebar Filters Content (يُستخدم في الديسكتوب + الموبايل)
+  // ============================================================
+  const FiltersContent = (
+    <div className="space-y-5">
       {/* Search */}
       <div>
-        <label className="block text-[11px] font-bold text-slate-500 mb-1.5">
+        <label className="block text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5">
+          <Search className="w-3.5 h-3.5 text-[#2a655f]" />
           {isArabic ? "بحث" : "Search"}
         </label>
         <div className="relative">
-          <Search className="absolute start-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={isArabic ? "ابحث عن عرض..." : "Search for offer..."}
-            className="bg-slate-50 border-slate-200 text-xs ps-8 h-8 rounded-lg text-slate-800"
+            className="bg-slate-50 border-slate-200 text-sm ps-9 h-10 rounded-xl text-slate-800 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20"
           />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute end-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Governorate */}
       <div>
-        <label className="block text-[11px] font-bold text-slate-500 mb-1.5">
+        <label className="block text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5">
+          <MapPin className="w-3.5 h-3.5 text-[#2a655f]" />
           {isArabic ? "المحافظة" : "Governorate"}
         </label>
         <select
           value={gov}
           onChange={(e) => setGov(e.target.value)}
-          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-8 text-xs text-slate-800 focus:outline-none focus:border-[#2a655f]"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 h-10 text-sm text-slate-800 focus:outline-none focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 cursor-pointer"
         >
           <option value="all">{isArabic ? "جميع المحافظات" : "All Governorates"}</option>
           {govs.map((g: any) => (
@@ -332,7 +338,8 @@ function OffersPage() {
 
       {/* Price */}
       <div>
-        <label className="block text-[11px] font-bold text-slate-500 mb-1.5">
+        <label className="block text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5">
+          <Tag className="w-3.5 h-3.5 text-[#2a655f]" />
           {isArabic ? "نطاق السعر" : "Price Range"}
         </label>
         <div className="flex items-center gap-2">
@@ -341,71 +348,105 @@ function OffersPage() {
             placeholder={isArabic ? "من" : "Min"}
             value={minPrice || ""}
             onChange={(e) => setMinPrice(Number(e.target.value))}
-            className="bg-slate-50 border-slate-200 text-xs h-8 rounded-lg text-slate-800"
+            className="bg-slate-50 border-slate-200 text-sm h-10 rounded-xl text-slate-800 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20"
           />
-          <span className="text-slate-400">-</span>
+          <span className="text-slate-400 font-bold">—</span>
           <Input
             type="number"
             placeholder={isArabic ? "إلى" : "Max"}
             value={maxPrice === 10000000 ? "" : maxPrice}
             onChange={(e) => setMaxPrice(Number(e.target.value))}
-            className="bg-slate-50 border-slate-200 text-xs h-8 rounded-lg text-slate-800"
+            className="bg-slate-50 border-slate-200 text-sm h-10 rounded-xl text-slate-800 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20"
           />
         </div>
-        <div className="flex items-center justify-between mt-2 text-[10px] text-slate-500">
-          <span>{minPrice === 0 ? "0" : formatPrice(minPrice, app.currency, app.lang)}</span>
+        <div className="flex items-center justify-between mt-1.5 text-[10px] text-slate-500">
+          <span>{formatPrice(minPrice || 0, app.currency, app.lang)}</span>
+          <span className="text-slate-300">—</span>
           <span>
-            {maxPrice === 10000000 ? "∞" : formatPrice(maxPrice, app.currency, app.lang)}
+            {maxPrice === 10000000
+              ? (isArabic ? "بلا حد" : "No limit")
+              : formatPrice(maxPrice, app.currency, app.lang)}
           </span>
         </div>
       </div>
 
       {/* Rating */}
       <div>
-        <label className="block text-[11px] font-bold text-slate-500 mb-1.5">
+        <label className="block text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5">
+          <Star className="w-3.5 h-3.5 text-amber-500" />
           {isArabic ? "التقييم الأدنى" : "Minimum rating"}
         </label>
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {[0, 3, 4, 4.5].map((r) => (
             <button
               key={r}
               onClick={() => setRating(r)}
               className={cn(
-                "w-full flex items-center justify-between p-1.5 rounded-lg text-xs transition",
+                "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all border",
                 rating === r
-                  ? "bg-[#2a655f]/10 text-[#2a655f] font-bold border border-[#2a655f]/30"
-                  : "text-slate-600 hover:bg-slate-50"
+                  ? "bg-[#2a655f]/10 text-[#2a655f] font-bold border-[#2a655f]/40 shadow-sm"
+                  : "text-slate-600 hover:bg-slate-50 border-transparent hover:border-slate-200"
               )}
             >
-              <span>
-                {r === 0
-                  ? isArabic ? "كل التقييمات" : "All ratings"
-                  : `${r} ${isArabic ? "نجوم فأكثر" : "stars & up"}`}
+              <span className="flex items-center gap-2">
+                {r === 0 ? (
+                  <>
+                    <Check className={cn("w-3.5 h-3.5", rating === 0 ? "opacity-100" : "opacity-0")} />
+                    {isArabic ? "كل التقييمات" : "All ratings"}
+                  </>
+                ) : (
+                  <>
+                    <Check className={cn("w-3.5 h-3.5", rating === r ? "opacity-100" : "opacity-0")} />
+                    <span className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={cn(
+                            "w-3 h-3",
+                            i < Math.floor(r)
+                              ? "fill-amber-400 text-amber-400"
+                              : i < r
+                              ? "fill-amber-400/50 text-amber-400"
+                              : "text-slate-300"
+                          )}
+                        />
+                      ))}
+                      <span className="text-xs ms-1">
+                        {r} {isArabic ? "فأكثر" : "& up"}
+                      </span>
+                    </span>
+                  </>
+                )}
               </span>
-              {r > 0 && <Star className="w-3 h-3 fill-amber-400 text-amber-400" />}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Available */}
+      {/* Available Only */}
       <div>
-        <label className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50">
+        <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border-2 border-transparent hover:border-[#2a655f]/20 hover:bg-[#2a655f]/5 transition-all">
           <Checkbox
             checked={showAvailableOnly}
             onCheckedChange={(v) => setShowAvailableOnly(v as boolean)}
-            className="border-slate-300 data-[state=checked]:bg-[#2a655f] data-[state=checked]:border-[#2a655f]"
+            className="border-slate-300 data-[state=checked]:bg-[#2a655f] data-[state=checked]:border-[#2a655f] w-5 h-5"
           />
-          <span className="text-xs text-slate-700 font-semibold">
-            {isArabic ? "المتاحة فقط" : "Available only"}
-          </span>
+          <div className="flex-1">
+            <span className="text-sm text-slate-700 font-semibold flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-emerald-500" />
+              {isArabic ? "المتاحة فقط" : "Available only"}
+            </span>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              {isArabic ? "إخفاء العروض غير المتوفرة" : "Hide out-of-stock offers"}
+            </p>
+          </div>
         </label>
       </div>
     </div>
   );
 
   // ============================================================
-  // Main Render (Designer look)
+  // Main Render
   // ============================================================
   return (
     <div className="min-h-screen bg-[#f4f7f6] text-slate-800 pb-20 font-sans selection:bg-[#2a655f]/20">
@@ -478,120 +519,187 @@ function OffersPage() {
         </div>
       </div>
 
-      {/* 🎛️ Glassmorphic Control Bar */}
-      <div className="max-w-7xl mx-auto px-4 mt-6">
-        <div className="flex items-center justify-between gap-4 bg-white/90 backdrop-blur-xl border border-slate-200/80 p-3 rounded-2xl mb-6 shadow-2xs flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* ✅ Discount / Promo / All Filter Pills - قابلة للنقر */}
-            <div className="bg-slate-100 p-1 rounded-xl border border-slate-200 flex items-center gap-1">
-              <button
-                onClick={() => { setOfferSourceFilter("all"); setPage(1); }}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
-                  offerSourceFilter === "all"
-                    ? "bg-[#2a655f] text-white shadow-2xs"
-                    : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                {isArabic ? "الكل" : "All"} ({stats.total})
-              </button>
+      {/* 🎛️ Control Bar — متجاوب لكل الشاشات */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 mt-4 sm:mt-6">
+        <div className="bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-2xl mb-4 sm:mb-6 shadow-2xs overflow-hidden">
 
-              <button
-                onClick={() => { setOfferSourceFilter("discount"); setPage(1); }}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
-                  offerSourceFilter === "discount"
-                    ? "bg-[#2a655f] text-white shadow-2xs"
-                    : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                <Percent className="w-3.5 h-3.5" />
-                {isArabic ? "تخفيضات" : "Discounts"} ({stats.discountCount})
-              </button>
-
-              <button
-                onClick={() => { setOfferSourceFilter("promo"); setPage(1); }}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
-                  offerSourceFilter === "promo"
-                    ? "bg-[#2a655f] text-white shadow-2xs"
-                    : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                <Gift className="w-3.5 h-3.5" />
-                {isArabic ? "ترويجي" : "Promo"} ({stats.promoCount})
-              </button>
+          {/* ===== الصف الأول: Offer Source Tabs ===== */}
+          <div className="border-b border-slate-100 px-2 sm:px-3 pt-2 sm:pt-3 pb-2">
+            <div className="bg-slate-100 p-1 rounded-xl border border-slate-200 flex items-center gap-1 w-full">
+              {[
+                { id: "all" as const, label: isArabic ? "الكل" : "All", count: stats.total, icon: Layers },
+                { id: "discount" as const, label: isArabic ? "تخفيضات" : "Discounts", count: stats.discountCount, icon: Percent },
+                { id: "promo" as const, label: isArabic ? "عروض ترويجية" : "Promo", count: stats.promoCount, icon: Gift },
+              ].map((tb) => {
+                const TabIcon = tb.icon;
+                const isActive = offerSourceFilter === tb.id;
+                return (
+                  <button
+                    key={tb.id}
+                    onClick={() => { setOfferSourceFilter(tb.id); setPage(1); }}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 rounded-lg text-[11px] sm:text-sm font-bold transition-all duration-300 whitespace-nowrap",
+                      isActive
+                        ? "bg-[#2a655f] text-white shadow-md shadow-[#2a655f]/20"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                    )}
+                  >
+                    <TabIcon className={cn("w-3.5 h-3.5 shrink-0", isActive ? "text-white" : "text-slate-400")} />
+                    <span className="truncate">{tb.label}</span>
+                    <span
+                      className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded-full font-black shrink-0",
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : "bg-slate-200 text-slate-600"
+                      )}
+                    >
+                      {tb.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Sort Selector */}
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as any)}
-              className="bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#2a655f] cursor-pointer"
-            >
-              <option value="newest">✨ {isArabic ? "الأحدث" : "Newest"}</option>
-              <option value="popularity">🔥 {isArabic ? "الأكثر رواجاً" : "Most popular"}</option>
-              <option value="price_low">⬇️ {isArabic ? "السعر: من الأقل" : "Price: Low"}</option>
-              <option value="price_high">⬆️ {isArabic ? "السعر: من الأعلى" : "Price: High"}</option>
-              <option value="discount">🏷️ {isArabic ? "أكبر خصم" : "Discount"}</option>
-              <option value="rating">⭐ {isArabic ? "الأعلى تقييماً" : "Top rated"}</option>
-            </select>
-
-            {/* View Mode */}
-            <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={cn(
-                  "p-1.5 rounded-lg",
-                  viewMode === "grid"
-                    ? "bg-white text-[#2a655f] shadow-2xs"
-                    : "text-slate-400"
-                )}
-              >
-                <Grid3X3 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setViewMode("list")}
-                className={cn(
-                  "p-1.5 rounded-lg",
-                  viewMode === "list"
-                    ? "bg-white text-[#2a655f] shadow-2xs"
-                    : "text-slate-400"
-                )}
-              >
-                <List className="w-3.5 h-3.5" />
-              </button>
+          {/* ===== الصف الثاني: Sort + View Mode + Filter Button ===== */}
+          <div className="px-2 sm:px-3 py-2 flex items-center justify-between gap-2">
+            
+            {/* Left: Sort Dropdown */}
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 min-w-0 flex-1 max-w-[220px]">
+                <ArrowUpDown className="w-3.5 h-3.5 text-[#2a655f] shrink-0" />
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as any)}
+                  className="bg-transparent border-0 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer w-full min-w-0 truncate"
+                >
+                  <option value="newest">{isArabic ? "✨ الأحدث" : "✨ Newest"}</option>
+                  <option value="popularity">{isArabic ? "🔥 الأكثر رواجاً" : "🔥 Popular"}</option>
+                  <option value="price_low">{isArabic ? "⬇️ الأقل سعراً" : "⬇️ Low price"}</option>
+                  <option value="price_high">{isArabic ? "⬆️ الأعلى سعراً" : "⬆️ High price"}</option>
+                  <option value="discount">{isArabic ? "🏷️ أكبر خصم" : "🏷️ Discount"}</option>
+                  <option value="rating">{isArabic ? "⭐ الأعلى تقييماً" : "⭐ Top rated"}</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 pointer-events-none" />
+              </div>
             </div>
 
-            {/* Mobile Filter Trigger */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="lg:hidden gap-2 h-8 px-3 rounded-xl border-slate-200 text-xs"
+            {/* Right: View Mode + Filter Button */}
+            <div className="flex items-center gap-1.5 shrink-0">
+
+              {/* View Mode — يظهر فقط على md+ */}
+              <div className="hidden md:flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-colors",
+                    viewMode === "grid"
+                      ? "bg-white text-[#2a655f] shadow-2xs"
+                      : "text-slate-400"
+                  )}
+                  aria-label="Grid view"
                 >
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  {t("filters")}
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side={isArabic ? "right" : "left"}
-                className="w-80 overflow-auto p-4"
-              >
-                <SheetTitle className="mb-4">{t("filters")}</SheetTitle>
-                {SidebarFilters}
-              </SheetContent>
-            </Sheet>
+                  <Grid3X3 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-colors",
+                    viewMode === "list"
+                      ? "bg-white text-[#2a655f] shadow-2xs"
+                      : "text-slate-400"
+                  )}
+                  aria-label="List view"
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Mobile Filter Button + Sheet */}
+              <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+                <SheetTrigger asChild>
+                  <button
+                    className={cn(
+                      "lg:hidden flex items-center gap-1.5 h-9 px-3 rounded-xl border-2 transition-all duration-300 relative font-bold text-xs",
+                      activeFiltersCount > 0
+                        ? "bg-[#2a655f] text-white border-[#2a655f] shadow-md shadow-[#2a655f]/25"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-[#2a655f]/50 hover:text-[#2a655f]"
+                    )}
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    <span>{isArabic ? "الفلاتر" : "Filters"}</span>
+                    {activeFiltersCount > 0 && (
+                      <span className="h-5 min-w-5 px-1.5 rounded-full bg-white text-[#2a655f] text-[10px] font-black flex items-center justify-center">
+                        {activeFiltersCount}
+                      </span>
+                    )}
+                  </button>
+                </SheetTrigger>
+                <SheetContent
+                  side={isArabic ? "right" : "left"}
+                  className="w-[90vw] max-w-[380px] overflow-y-auto p-0"
+                >
+                  {/* Header */}
+                  <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white p-4 shadow-lg">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <SheetTitle className="text-lg font-black flex items-center gap-2 text-white">
+                          <Filter className="h-5 w-5 shrink-0" />
+                          <span>{t("filters")}</span>
+                          {activeFiltersCount > 0 && (
+                            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full shrink-0">
+                              {activeFiltersCount}
+                            </span>
+                          )}
+                        </SheetTitle>
+                        <p className="text-xs text-white/80 mt-1">
+                          {isArabic ? "خصّص نتائج البحث" : "Customize your search"}
+                        </p>
+                      </div>
+
+                      {/* ✅ زر X للخروج */}
+                      <button
+                        onClick={() => setMobileSheetOpen(false)}
+                        className="shrink-0 h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 transition-all flex items-center justify-center border border-white/20"
+                        aria-label={isArabic ? "إغلاق" : "Close"}
+                      >
+                        <X className="h-4 w-4 text-white" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-4">
+                    {FiltersContent}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
 
         {/* ✅ Content Section with Filters Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-          {/* Left Sidebar Filters */}
-          {SidebarFilters}
+          {/* Left Sidebar Filters — Desktop only */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-24 bg-white border border-slate-200/80 p-5 rounded-2xl shadow-2xs">
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-[#2a655f]" />
+                  {t("filters")}
+                </h3>
+                <button
+                  onClick={resetAll}
+                  className="text-[11px] text-[#2a655f] font-bold hover:underline flex items-center gap-1"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  {isArabic ? "إعادة ضبط" : "Reset"}
+                </button>
+              </div>
+              {FiltersContent}
+            </div>
+          </aside>
 
           {/* Main Grid */}
           <div className="lg:col-span-3">
@@ -616,6 +724,7 @@ function OffersPage() {
                   onClick={resetAll}
                   className="rounded-xl bg-[#2a655f] text-white text-xs font-bold h-9"
                 >
+                  <RefreshCw className="w-3.5 h-3.5 me-1.5" />
                   {isArabic ? "إعادة تعيين الفلاتر" : "Reset filters"}
                 </Button>
               </div>

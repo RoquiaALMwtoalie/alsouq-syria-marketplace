@@ -755,7 +755,7 @@ function AuthPage() {
         return;
       }
 
-      const redirect =
+ const redirect =
         await getAuthRedirect(signInData.user);
 
       toast.success(
@@ -764,12 +764,10 @@ function AuthPage() {
           : "✨ Welcome back to Zooq"
       );
 
-      nav({
-        to: redirect.url,
-        state: {
-          showLoginSplash: true,
-        },
-      });
+      // استخدام التوجيه المباشر لتجنب تعليق الفورم
+      setTimeout(() => {
+        window.location.replace(redirect.url);
+      }, 300);
     } catch (err: any) {
       console.error("❌ Login error:", err);
 
@@ -1213,60 +1211,6 @@ function AuthPage() {
           }
         }
 
-        @keyframes side-logo-float {
-          0%, 100% {
-            transform: translateY(0px) scale(1);
-          }
-
-          50% {
-            transform: translateY(-10px) scale(1.035);
-          }
-        }
-
-        @keyframes side-logo-glow {
-          0%, 100% {
-            opacity: .45;
-            transform: scale(.96);
-          }
-
-          50% {
-            opacity: .85;
-            transform: scale(1.06);
-          }
-        }
-
-        @keyframes side-ring-spin {
-          from {
-            transform: rotate(0deg);
-          }
-
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        @keyframes side-ring-spin-reverse {
-          from {
-            transform: rotate(360deg);
-          }
-
-          to {
-            transform: rotate(0deg);
-          }
-        }
-
-        @keyframes slide-enter {
-          from {
-            opacity: 0;
-            transform: translateY(12px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
         .zooq-glass {
           background:
             linear-gradient(
@@ -1392,6 +1336,18 @@ function AuthPage() {
             slide-enter .6s ease both;
         }
 
+        @keyframes slide-enter {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
         .zooq-slide-title-accent {
           position: relative;
           display: inline-block;
@@ -1436,441 +1392,6 @@ function AuthPage() {
               transparent
             );
         }
-
-        /* ====================================================
-           SIDE CARDS
-        ==================================================== */
-
-        .zooq-side-card {
-          position: relative;
-          min-height: 500px;
-          overflow: hidden;
-
-          border-radius: 2rem;
-
-          border:
-            1px solid rgba(249,168,212,.45);
-
-          background:
-            linear-gradient(
-              145deg,
-              rgba(249,168,212,.97),
-              rgba(251,207,232,.94)
-            );
-
-          box-shadow:
-            0 30px 80px rgba(0,0,0,.32),
-            0 0 45px rgba(249,168,212,.10),
-            inset 0 1px 0 rgba(255,255,255,.75);
-
-          backdrop-filter: blur(22px);
-          -webkit-backdrop-filter: blur(22px);
-
-          transition:
-            transform .45s ease,
-            box-shadow .45s ease;
-        }
-
-        .zooq-side-card:hover {
-          transform: translateY(-5px);
-
-          box-shadow:
-            0 40px 100px rgba(0,0,0,.38),
-            0 0 55px rgba(249,168,212,.20),
-            inset 0 1px 0 rgba(255,255,255,.82);
-        }
-
-        .zooq-side-card::before {
-          content: "";
-
-          position: absolute;
-          inset: 0;
-
-          background:
-            radial-gradient(
-              circle at 50% 18%,
-              rgba(255,255,255,.52),
-              transparent 34%
-            );
-
-          pointer-events: none;
-        }
-
-        .zooq-side-card::after {
-          content: "";
-
-          position: absolute;
-
-          left: -30%;
-          right: -30%;
-          bottom: -35%;
-
-          height: 55%;
-
-          border-radius: 50%;
-
-          background:
-            radial-gradient(
-              circle,
-              rgba(42,101,95,.15),
-              transparent 68%
-            );
-
-          filter: blur(22px);
-
-          pointer-events: none;
-        }
-
-        .zooq-side-content {
-          position: relative;
-          z-index: 10;
-
-          min-height: 500px;
-
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-
-          padding: 2rem 1.5rem;
-        }
-
-        .zooq-side-icon {
-          display: flex;
-
-          height: 62px;
-          width: 62px;
-
-          align-items: center;
-          justify-content: center;
-
-          border-radius: 20px;
-
-          border:
-            1px solid rgba(42,101,95,.20);
-
-          background:
-            linear-gradient(
-              135deg,
-              rgba(255,255,255,.68),
-              rgba(42,101,95,.08)
-            );
-
-          box-shadow:
-            0 12px 30px rgba(42,101,95,.12),
-            inset 0 1px 0 rgba(255,255,255,.75);
-        }
-
-        .zooq-side-logo-wrap {
-          position: relative;
-
-          width: 150px;
-          height: 150px;
-
-          margin-top: 2rem;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          animation:
-            side-logo-float 4.5s ease-in-out infinite;
-        }
-
-        .zooq-side-logo-glow {
-          position: absolute;
-
-          inset: 18px;
-
-          border-radius: 999px;
-
-          background:
-            radial-gradient(
-              circle,
-              rgba(255,255,255,.92),
-              rgba(249,168,212,.42) 38%,
-              rgba(42,101,95,.12) 70%,
-              transparent 76%
-            );
-
-          filter: blur(18px);
-
-          animation:
-            side-logo-glow 4s ease-in-out infinite;
-        }
-
-        .zooq-side-logo-ring {
-          position: absolute;
-
-          border-radius: 999px;
-
-          border: 1px solid rgba(42,101,95,.22);
-
-          border-top-color: #2a655f;
-          border-right-color: rgba(249,168,212,.65);
-
-          animation:
-            side-ring-spin 10s linear infinite;
-        }
-
-        .zooq-side-logo-ring-one {
-          inset: 5px;
-        }
-
-        .zooq-side-logo-ring-two {
-          inset: 17px;
-
-          border-color: rgba(249,168,212,.35);
-          border-bottom-color: #2a655f;
-          border-left-color: rgba(42,101,95,.45);
-
-          animation:
-            side-ring-spin-reverse 7s linear infinite;
-        }
-
-        .zooq-side-logo-image {
-          position: relative;
-          z-index: 5;
-
-          height: 112px;
-          width: 112px;
-
-          object-fit: contain;
-
-          filter:
-            drop-shadow(
-              0 18px 28px rgba(42,101,95,.28)
-            );
-
-          user-select: none;
-          pointer-events: none;
-
-          transition:
-            transform .45s ease,
-            filter .45s ease;
-        }
-
-        .zooq-side-card:hover
-        .zooq-side-logo-image {
-          transform:
-            scale(1.08)
-            rotate(-2deg);
-
-          filter:
-            drop-shadow(
-              0 22px 38px rgba(42,101,95,.34)
-            );
-        }
-
-        .zooq-side-logo-shine {
-          position: absolute;
-
-          z-index: 8;
-
-          left: 50%;
-          top: 50%;
-
-          width: 8px;
-          height: 125px;
-
-          transform:
-            translate(-50%, -50%)
-            rotate(28deg);
-
-          border-radius: 999px;
-
-          background:
-            linear-gradient(
-              to bottom,
-              transparent,
-              rgba(255,255,255,.68),
-              transparent
-            );
-
-          filter: blur(5px);
-
-          opacity: .55;
-
-          pointer-events: none;
-
-          animation:
-            side-logo-shine 4s ease-in-out infinite;
-        }
-
-        @keyframes side-logo-shine {
-          0%, 100% {
-            opacity: 0;
-            transform:
-              translate(-50%, -50%)
-              rotate(28deg)
-              translateY(20px);
-          }
-
-          45% {
-            opacity: .7;
-          }
-
-          70% {
-            opacity: 0;
-            transform:
-              translate(-50%, -50%)
-              rotate(28deg)
-              translateY(-20px);
-          }
-        }
-
-        .zooq-side-title {
-          color: #082520;
-
-          text-shadow:
-            0 5px 20px rgba(255,255,255,.32);
-        }
-
-        .zooq-side-text {
-          color: rgba(8,37,32,.68);
-        }
-
-        .zooq-side-dots button {
-          box-shadow:
-            0 2px 8px rgba(42,101,95,.12);
-        }
-
-        /* ====================================================
-           FULL LOGO LEFT CARD
-           الصورة الكاملة بدون قص وبدون أي نص
-        ==================================================== */
-
-        .zooq-logo-full-card {
-          position: relative;
-          min-height: 500px;
-          width: 100%;
-          overflow: hidden;
-          border-radius: 2rem;
-
-          border:
-            1px solid rgba(249,168,212,.45);
-
-          background:
-            linear-gradient(
-              145deg,
-              rgba(249,168,212,.97),
-              rgba(251,207,232,.94)
-            );
-
-          box-shadow:
-            0 30px 80px rgba(0,0,0,.32),
-            0 0 45px rgba(249,168,212,.10),
-            inset 0 1px 0 rgba(255,255,255,.75);
-
-          backdrop-filter: blur(22px);
-          -webkit-backdrop-filter: blur(22px);
-
-          transition:
-            transform .45s ease,
-            box-shadow .45s ease;
-        }
-
-        .zooq-logo-full-card:hover {
-          transform: translateY(-5px);
-
-          box-shadow:
-            0 40px 100px rgba(0,0,0,.38),
-            0 0 55px rgba(249,168,212,.20),
-            inset 0 1px 0 rgba(255,255,255,.82);
-        }
-
-        .zooq-logo-full-card::before {
-          content: "";
-
-          position: absolute;
-          inset: 0;
-
-          background:
-            radial-gradient(
-              circle at 50% 50%,
-              rgba(255,255,255,.38),
-              transparent 58%
-            );
-
-          pointer-events: none;
-        }
-
-        .zooq-logo-full-card::after {
-          content: "";
-
-          position: absolute;
-
-          left: -30%;
-          right: -30%;
-          bottom: -35%;
-
-          height: 55%;
-
-          border-radius: 50%;
-
-          background:
-            radial-gradient(
-              circle,
-              rgba(42,101,95,.13),
-              transparent 68%
-            );
-
-          filter: blur(22px);
-
-          pointer-events: none;
-        }
-
-        .zooq-logo-full-image-wrap {
-          position: relative;
-          z-index: 5;
-
-          min-height: 500px;
-          width: 100%;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          padding: 1.5rem;
-
-          animation:
-            side-logo-float 5s ease-in-out infinite;
-        }
-
-        .zooq-logo-full-image {
-          display: block;
-
-          width: 100%;
-          height: 100%;
-
-          max-width: 100%;
-          max-height: 100%;
-
-          object-fit: contain;
-          object-position: center;
-
-          user-select: none;
-          pointer-events: none;
-
-          filter:
-            drop-shadow(
-              0 22px 38px rgba(42,101,95,.24)
-            );
-
-          transition:
-            transform .5s ease,
-            filter .5s ease;
-        }
-
-        .zooq-logo-full-card:hover
-        .zooq-logo-full-image {
-          transform: scale(1.035);
-
-          filter:
-            drop-shadow(
-              0 28px 48px rgba(42,101,95,.32)
-            );
-        }
       `}</style>
 
       {/* ======================================================
@@ -1884,401 +1405,289 @@ function AuthPage() {
         <div className="absolute start-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fbcfe8]/4 blur-3xl" />
       </div>
 
-    {/* ======================================================
-    MAIN CONTENT
-====================================================== */}
-<div className="relative mx-auto flex min-h-[calc(100vh-140px)] w-full max-w-6xl items-center justify-center px-4 py-7">
-
-  <div className="grid w-full grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_1.2fr_1fr]">
-
-    {/* ==================================================
-        LEFT SIDE CARD (يظهر على اليسار في RTL)
-        عبارات + لوغو صغير متحرك
-    ================================================== */}
-    <div className="hidden lg:block">
-      <div className="zooq-side-card">
-
-        <div className="slide-content zooq-side-content" key={slide + 5}>
-
-          {/* ICON */}
-          <div className="zooq-side-icon mb-5">
-            <CurrentSlideIcon className="h-7 w-7 text-[#2a655f]" />
-          </div>
-
-          {/* TITLE */}
-          <h2 className="zooq-side-title text-center text-2xl font-black leading-tight">
-            {app.lang === "ar" ? (
-              <>
-                {slide === 0 ? (
-                  <>كل <span className="text-[#2a655f]">ذوق</span> … إله مكان.</>
-                ) : slide === 1 ? (
-                  <>مو بس <span className="zooq-slide-title-accent text-[#2a655f]">تسوّق…</span></>
-                ) : slide === 2 ? (
-                  <>الاختيار إلو <span className="text-[#2a655f]">ذوق.</span></>
-                ) : slide === 3 ? (
-                  <>اللي بتدور عليه… <span className="text-[#2a655f]">أقرب</span> مما تتخيّل.</>
-                ) : (
-                  <>خلّي <span className="text-[#2a655f]">ذوقك</span> يحكي.</>
-                )}
-              </>
-            ) : (
-              currentSlide.enTitle
-            )}
-          </h2>
-
-          {/* DESCRIPTION */}
-          <div className="mt-4 flex max-w-xs items-start gap-2 text-start">
-            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f9a8d4] shadow-[0_0_10px_rgba(249,168,212,.7)]" />
-            <p className="zooq-side-text text-sm font-semibold leading-6">
-              {app.lang === "ar" ? currentSlide.arText : currentSlide.enText}
-            </p>
-          </div>
-
+      {/* ======================================================
+          MAIN CONTENT
+      ====================================================== */}
+      <div className="relative mx-auto flex min-h-[calc(100vh-140px)] w-full max-w-6xl items-center justify-center px-4 py-7">
+        <div className="w-full max-w-lg mx-auto">
           {/* ==================================================
-              LOGO UNDER THE PHRASE - متحرك واحترافي
+              FORM CARD
           ================================================== */}
-          <div className="zooq-side-logo-wrap">
+          <div className="zooq-glass relative w-full overflow-hidden rounded-[2.5rem] p-6 shadow-[0_40px_120px_rgba(0,0,0,.55)] sm:p-8">
 
-            <div className="zooq-side-logo-glow" />
+            {/* TOP DECORATIVE LINE */}
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#f9a8d4] to-[#2a655f] opacity-90" />
 
-            <div className="zooq-side-logo-ring zooq-side-logo-ring-one" />
+            {/* ==================================================
+                BRAND NAME ONLY
+            ================================================== */}
+            <div className="relative mb-6 flex flex-col items-center text-center">
 
-            <div className="zooq-side-logo-ring zooq-side-logo-ring-two" />
-
-            <img
-              src="/images/Logo.png"
-              alt="ذوق | zooq"
-              draggable={false}
-              className="zooq-side-logo-image"
-            />
-
-            <div className="zooq-side-logo-shine" />
-          </div>
-
-          {/* SMALL BRAND TEXT */}
-          <div className="mt-1 flex items-center gap-2">
-            <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#2a655f]/40" />
-            <span className="text-[10px] font-black tracking-[.28em] text-[#2a655f]/70">zooq</span>
-            <span className="h-px w-8 bg-gradient-to-l from-transparent to-[#2a655f]/40" />
-          </div>
-
-          {/* DOTS */}
-          <div className="zooq-side-dots mt-5 flex gap-1.5">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setSlide(i)}
-                aria-label={`Slide ${i + 1}`}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-500",
-                  slide === i
-                    ? "w-8 bg-gradient-to-r from-[#2a655f] via-[#f9a8d4] to-[#fbcfe8]"
-                    : "w-1.5 bg-[#2a655f]/20 hover:bg-[#2a655f]/55"
-                )}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {/* ==================================================
-        FORM CARD - بدون لوغو (تم إزالته)
-    ================================================== */}
-    <div className="zooq-glass relative w-full overflow-hidden rounded-[2.5rem] p-6 shadow-[0_40px_120px_rgba(0,0,0,.55)] sm:p-8">
-
-      {/* TOP DECORATIVE LINE */}
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#f9a8d4] to-[#2a655f] opacity-90" />
-
-      {/* ==================================================
-          BRAND NAME ONLY - بدون صورة اللوغو
-      ================================================== */}
-      <div className="relative mb-6 flex flex-col items-center text-center">
-
-        <div className="flex items-center gap-2">
-          <h1
-            className="zooq-brand-title text-3xl font-black leading-none tracking-[-.06em] sm:text-4xl"
-            dir="rtl"
-          >
-            <span className="bg-gradient-to-r from-white via-[#fbcfe8] to-[#f9a8d4] bg-clip-text text-transparent bg-[length:200%_auto] animate-[shimmer-gold_4s_linear_infinite]">
-              ذوق
-            </span>
-          </h1>
-        </div>
-
-        {/* ZOOQ */}
-        <div className="mt-2 flex items-center gap-2">
-          <span className="h-px w-6 bg-gradient-to-r from-transparent to-[#2a655f]/50" />
-          <span className="text-base font-black tracking-[.2em] sm:text-lg">
-            <span className="text-[#2a655f]">z</span>
-            <span className="zooq-o-pink">o</span>
-            <span className="text-[#2a655f]">o</span>
-            <span className="text-[#2a655f]">q</span>
-          </span>
-          <span className="h-px w-6 bg-gradient-to-l from-transparent to-[#f9a8d4]/50" />
-        </div>
-
-        {/* TAGLINE */}
-        <div className="mt-2 flex items-center gap-2 rounded-full border border-[#f9a8d4]/15 bg-gradient-to-r from-[#2a655f]/10 via-[#f9a8d4]/[.045] to-[#fbcfe8]/[.05] px-3 py-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f] shadow-[0_0_12px_rgba(42,101,95,.8)]" />
-          <span className="text-[9px] font-black tracking-[.08em] text-white/60 sm:text-[10px]">
-            {app.lang === "ar" ? "كلشي ع ذوقك" : "Exactly your taste"}
-          </span>
-          <span className="h-1.5 w-1.5 rounded-full bg-[#f9a8d4] shadow-[0_0_12px_rgba(249,168,212,.8)]" />
-        </div>
-      </div>
-
-      {/* DIVIDER */}
-      <div className="relative my-4 flex items-center gap-3">
-        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#2a655f]/30" />
-        <span className="text-[8px] font-black tracking-[.25em] text-white/20">
-          {isLogin ? (app.lang === "ar" ? "دخول" : "LOGIN") : (app.lang === "ar" ? "تسجيل" : "REGISTER")}
-        </span>
-        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#f9a8d4]/30" />
-      </div>
-
-      {/* FORM */}
-      <form className="relative space-y-4" onSubmit={handleSubmit} autoComplete="off">
-
-        {/* FULL NAME */}
-        {isRegister && (
-          <GlassField label={t("full_name") + " *"} icon={<UserIcon className="h-4 w-4 text-[#f9a8d4]" />}>
-            <Input
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              autoComplete="off"
-              className="input-glow rounded-2xl border-0 transition-all duration-300"
-              placeholder={app.lang === "ar" ? "الاسم اللي بتحب نناديك فيه" : "The name you'd like us to call you"}
-            />
-          </GlassField>
-        )}
-
-        {/* PHONE */}
-        <GlassField label={t("phone") + " *"} icon={<Phone className="h-4 w-4 text-[#f9a8d4]" />}>
-          <div className="zooq-input relative rounded-2xl">
-            <Input
-              type="tel"
-              placeholder="+963 9xx xxx xxx"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              autoComplete="off"
-              className={`input-glow rounded-2xl border-0 pe-10 transition-all duration-300 ${
-                phoneError && isRegister ? "border-red-500 focus-visible:ring-red-500" : ""
-              } ${phoneAvailable === true && isRegister && phone.trim().length >= 5 ? "border-[#f9a8d4]" : ""}`}
-            />
-            {isRegister && phone.trim().length >= 5 && (
-              <div className="absolute inset-y-0 end-3 flex items-center">
-                {isCheckingPhone ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-[#f9a8d4]" />
-                ) : phoneAvailable === true ? (
-                  <CheckCircle className="h-4 w-4 text-[#2a655f]" />
-                ) : phoneAvailable === false ? (
-                  <X className="h-4 w-4 text-red-400" />
-                ) : null}
+              <div className="flex items-center gap-2">
+                <h1
+                  className="zooq-brand-title text-3xl font-black leading-none tracking-[-.06em] sm:text-4xl"
+                  dir="rtl"
+                >
+                  <span className="bg-gradient-to-r from-white via-[#fbcfe8] to-[#f9a8d4] bg-clip-text text-transparent bg-[length:200%_auto] animate-[shimmer-gold_4s_linear_infinite]">
+                    ذوق
+                  </span>
+                </h1>
               </div>
-            )}
-          </div>
-        </GlassField>
 
-        {/* PHONE ERROR */}
-        {isRegister && phone.trim().length >= 5 && phoneError && (
-          <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-3.5">
-            <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
-            <p className="text-xs font-semibold text-red-200">{phoneError}</p>
-          </div>
-        )}
-
-        {/* PASSWORD */}
-        <GlassField label={t("password") + " *"} icon={<Lock className="h-4 w-4 text-[#f9a8d4]" />}>
-          <div className="zooq-input relative rounded-2xl">
-            <Input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete="off"
-              className="input-glow rounded-2xl border-0 pe-10 transition-all duration-300"
-              placeholder={app.lang === "ar" ? "كلمة المرور — 6 أحرف على الأقل" : "Password — 6+ characters"}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 end-3 my-auto text-[#f9a8d4]/70 transition hover:text-[#f9a8d4]"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </GlassField>
-
-        {/* ADDRESS */}
-        {isRegister && (
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-xs font-bold text-white/85">
-              <span className="h-1 w-3 rounded-full bg-[#f9a8d4] shadow-[0_0_10px_rgba(249,168,212,.55)]" />
-              {app.lang === "ar" ? "وين بدنا نوصل طلباتك؟ *" : "Where should we deliver? *"}
-            </Label>
-            <div className="rounded-2xl border border-white/10 bg-white/[.96] p-3 text-slate-800 transition-all duration-300 focus-within:border-[#f9a8d4]/60 focus-within:shadow-[0_0_0_3px_rgba(249,168,212,.08)]">
-              <AddressPicker value={location ?? undefined} onChange={setLocation} lang={app.lang} />
-            </div>
-            {location && detectedGovernorate && (
-              <div className="flex items-center gap-2 rounded-xl border border-[#f9a8d4]/20 bg-gradient-to-r from-[#2a655f]/10 to-[#f9a8d4]/[.07] p-2.5">
-                {isExtractingGovernorate ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#f9a8d4]" />
-                ) : (
-                  <MapPin className="h-3.5 w-3.5 text-[#2a655f]" />
-                )}
-                <span className="text-[11px] font-medium text-[#fbcfe8]">
-                  {isExtractingGovernorate
-                    ? app.lang === "ar" ? "عم نحدد منطقتك..." : "Detecting your area..."
-                    : detectedGovernorate
-                      ? app.lang === "ar" ? `المحافظة: ${detectedGovernorate}` : `Governorate: ${detectedGovernorate}`
-                      : app.lang === "ar" ? "⚠️ لم يتم التحديد" : "⚠️ Not detected"}
+              {/* ZOOQ */}
+              <div className="mt-2 flex items-center gap-2">
+                <span className="h-px w-6 bg-gradient-to-r from-transparent to-[#2a655f]/50" />
+                <span className="text-base font-black tracking-[.2em] sm:text-lg">
+                  <span className="text-[#2a655f]">z</span>
+                  <span className="zooq-o-pink">o</span>
+                  <span className="text-[#2a655f]">o</span>
+                  <span className="text-[#2a655f]">q</span>
                 </span>
+                <span className="h-px w-6 bg-gradient-to-l from-transparent to-[#f9a8d4]/50" />
               </div>
-            )}
-          </div>
-        )}
 
-        {/* SUBMIT */}
-        <Button
-          type="submit"
-          size="lg"
-          className="zooq-submit group relative mt-2 h-13 w-full overflow-hidden rounded-2xl border-0 text-base font-black"
-          disabled={loading || (isRegister && (phoneAvailable === false || phoneError !== null))}
-        >
-          <span className="zooq-shine pointer-events-none absolute inset-y-0 -start-1/2 w-1/2 skew-x-[-18deg] bg-white/20 animate-[zooq-shine_2.8s_ease-in-out_infinite]" />
-          {loading ? (
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0d2e2a] border-t-transparent" />
-              {app.lang === "ar" ? "لحظة… عم نجهز كل شي" : "Just a moment..."}
-            </span>
-          ) : (
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              {isLogin ? <Lock className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-              {isLogin
-                ? app.lang === "ar" ? "دخول إلى ذوق" : "Enter Zooq"
-                : app.lang === "ar" ? "ابدأ رحلتك مع ذوق" : "Start your Zooq journey"}
-            </span>
-          )}
-        </Button>
-
-        {/* LINKS */}
-        <div className="space-y-3 pt-2 text-center text-sm text-white/65">
-          {isLogin ? (
-            <>
-              <div>
-                {app.lang === "ar" ? "لسا ما صار عندك حساب؟" : "Don't have an account?"}{" "}
-                <Link to="/auth/$mode" params={{ mode: "register" }} className="zooq-link font-black text-[#f9a8d4]">
-                  {app.lang === "ar" ? "خلينا نبدأ" : "Let's start"}
-                </Link>
+              {/* TAGLINE */}
+              <div className="mt-2 flex items-center gap-2 rounded-full border border-[#f9a8d4]/15 bg-gradient-to-r from-[#2a655f]/10 via-[#f9a8d4]/[.045] to-[#fbcfe8]/[.05] px-3 py-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f] shadow-[0_0_12px_rgba(42,101,95,.8)]" />
+                <span className="text-[9px] font-black tracking-[.08em] text-white/60 sm:text-[10px]">
+                  {app.lang === "ar" ? "كلشي ع ذوقك" : "Exactly your taste"}
+                </span>
+                <span className="h-1.5 w-1.5 rounded-full bg-[#f9a8d4] shadow-[0_0_12px_rgba(249,168,212,.8)]" />
               </div>
-              <button
-                type="button"
-                onClick={handleForgotPasswordClick}
-                className="zooq-link mx-auto flex items-center justify-center gap-1.5 text-xs text-white/40"
-              >
-                <HelpCircle className="h-3.5 w-3.5 text-[#f9a8d4]" />
-                {app.lang === "ar" ? "نسيت كلمة المرور؟" : "Forgot your password?"}
-              </button>
-              {app.user && (
-                <div className="mt-3 space-y-1.5 border-t border-white/8 pt-3">
-                  {isDeliveryCompany && (
-                    <Link to="/delivery/dashboard" className="zooq-link block text-xs text-[#f9a8d4]">
-                      🚚 {app.lang === "ar" ? "لوحة التوصيل" : "Delivery Dashboard"}
-                    </Link>
+            </div>
+
+            {/* DIVIDER */}
+            <div className="relative my-4 flex items-center gap-3">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#2a655f]/30" />
+              <span className="text-[8px] font-black tracking-[.25em] text-white/20">
+                {isLogin ? (app.lang === "ar" ? "دخول" : "LOGIN") : (app.lang === "ar" ? "تسجيل" : "REGISTER")}
+              </span>
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#f9a8d4]/30" />
+            </div>
+
+            {/* FORM */}
+            <form className="relative space-y-4" onSubmit={handleSubmit} autoComplete="off">
+
+              {/* FULL NAME */}
+              {isRegister && (
+                <GlassField label={t("full_name") + " *"} icon={<UserIcon className="h-4 w-4 text-[#f9a8d4]" />}>
+                  <Input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    autoComplete="off"
+                    className="input-glow rounded-2xl border-0 transition-all duration-300"
+                    placeholder={app.lang === "ar" ? "الاسم اللي بتحب نناديك فيه" : "The name you'd like us to call you"}
+                  />
+                </GlassField>
+              )}
+
+              {/* PHONE */}
+              <GlassField label={t("phone") + " *"} icon={<Phone className="h-4 w-4 text-[#f9a8d4]" />}>
+                <div className="zooq-input relative rounded-2xl">
+                  <Input
+                    type="tel"
+                    placeholder="+963 9xx xxx xxx"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                    autoComplete="off"
+                    className={`input-glow rounded-2xl border-0 pe-10 transition-all duration-300 ${
+                      phoneError && isRegister ? "border-red-500 focus-visible:ring-red-500" : ""
+                    } ${phoneAvailable === true && isRegister && phone.trim().length >= 5 ? "border-[#f9a8d4]" : ""}`}
+                  />
+                  {isRegister && phone.trim().length >= 5 && (
+                    <div className="absolute inset-y-0 end-3 flex items-center">
+                      {isCheckingPhone ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-[#f9a8d4]" />
+                      ) : phoneAvailable === true ? (
+                        <CheckCircle className="h-4 w-4 text-[#2a655f]" />
+                      ) : phoneAvailable === false ? (
+                        <X className="h-4 w-4 text-red-400" />
+                      ) : null}
+                    </div>
                   )}
-                  {isDistributor && (
-                    <Link to="/distributor/dashboard" className="zooq-link block text-xs text-[#2a655f]">
-                      📦 {app.lang === "ar" ? "لوحة الموزع" : "Distributor Dashboard"}
-                    </Link>
-                  )}
-                  {isAdmin && (
-                    <Link to="/admin" className="zooq-link block text-xs text-red-300">
-                      ⚡ {app.lang === "ar" ? "لوحة الأدمن" : "Admin Panel"}
-                    </Link>
-                  )}
-                  {isSeller && (
-                    <Link to="/dashboard" className="zooq-link block text-xs text-amber-300">
-                      🏪 {app.lang === "ar" ? "لوحة البائع" : "Seller Dashboard"}
-                    </Link>
+                </div>
+              </GlassField>
+
+              {/* PHONE ERROR */}
+              {isRegister && phone.trim().length >= 5 && phoneError && (
+                <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-3.5">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+                  <p className="text-xs font-semibold text-red-200">{phoneError}</p>
+                </div>
+              )}
+
+              {/* PASSWORD */}
+              <GlassField label={t("password") + " *"} icon={<Lock className="h-4 w-4 text-[#f9a8d4]" />}>
+                <div className="zooq-input relative rounded-2xl">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    autoComplete="off"
+                    className="input-glow rounded-2xl border-0 pe-10 transition-all duration-300"
+                    placeholder={app.lang === "ar" ? "كلمة المرور — 6 أحرف على الأقل" : "Password — 6+ characters"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 end-3 my-auto text-[#f9a8d4]/70 transition hover:text-[#f9a8d4]"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </GlassField>
+
+              {/* ADDRESS */}
+              {isRegister && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2 text-xs font-bold text-white/85">
+                    <span className="h-1 w-3 rounded-full bg-[#f9a8d4] shadow-[0_0_10px_rgba(249,168,212,.55)]" />
+                    {app.lang === "ar" ? "وين بدنا نوصل طلباتك؟ *" : "Where should we deliver? *"}
+                  </Label>
+                  <div className="rounded-2xl border border-white/10 bg-white/[.96] p-3 text-slate-800 transition-all duration-300 focus-within:border-[#f9a8d4]/60 focus-within:shadow-[0_0_0_3px_rgba(249,168,212,.08)]">
+                    <AddressPicker value={location ?? undefined} onChange={setLocation} lang={app.lang} />
+                  </div>
+                  {location && detectedGovernorate && (
+                    <div className="flex items-center gap-2 rounded-xl border border-[#f9a8d4]/20 bg-gradient-to-r from-[#2a655f]/10 to-[#f9a8d4]/[.07] p-2.5">
+                      {isExtractingGovernorate ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-[#f9a8d4]" />
+                      ) : (
+                        <MapPin className="h-3.5 w-3.5 text-[#2a655f]" />
+                      )}
+                      <span className="text-[11px] font-medium text-[#fbcfe8]">
+                        {isExtractingGovernorate
+                          ? app.lang === "ar" ? "عم نحدد منطقتك..." : "Detecting your area..."
+                          : detectedGovernorate
+                            ? app.lang === "ar" ? `المحافظة: ${detectedGovernorate}` : `Governorate: ${detectedGovernorate}`
+                            : app.lang === "ar" ? "⚠️ لم يتم التحديد" : "⚠️ Not detected"}
+                      </span>
+                    </div>
                   )}
                 </div>
               )}
-            </>
-          ) : (
-            <>
-              <div>
-                {app.lang === "ar" ? "عندك حساب معنا؟" : "Already part of Zooq?"}{" "}
-                <Link to="/auth/$mode" params={{ mode: "login" }} className="zooq-link font-black text-[#f9a8d4]">
-                  {app.lang === "ar" ? "فوت لعندنا" : "Sign in"}
-                </Link>
-              </div>
-              <div className="relative pt-4">
-                <div className="absolute inset-x-0 top-0 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#2a655f]/20" />
-                  <span className="text-[9px] font-black tracking-[.25em] text-white/25">
-                    {app.lang === "ar" ? "أو" : "OR"}
+
+              {/* SUBMIT */}
+              <Button
+                type="submit"
+                size="lg"
+                className="zooq-submit group relative mt-2 h-13 w-full overflow-hidden rounded-2xl border-0 text-base font-black"
+                disabled={loading || (isRegister && (phoneAvailable === false || phoneError !== null))}
+              >
+                <span className="zooq-shine pointer-events-none absolute inset-y-0 -start-1/2 w-1/2 skew-x-[-18deg] bg-white/20 animate-[zooq-shine_2.8s_ease-in-out_infinite]" />
+                {loading ? (
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0d2e2a] border-t-transparent" />
+                    {app.lang === "ar" ? "لحظة… عم نجهز كل شي" : "Just a moment..."}
                   </span>
-                  <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#f9a8d4]/20" />
-                </div>
-                <Link to="/" className="block w-full">
-                  <Button
-                    variant="outline"
-                    className="mt-2 h-11 w-full rounded-2xl border-white/10 bg-white/[.035] text-sm font-bold text-white hover:border-[#f9a8d4]/35 hover:bg-[#2a655f]/10 hover:text-white"
-                  >
-                    {app.lang === "ar" ? "خليني اكتشف أول 👀" : "Let me explore first 👀"}
-                  </Button>
-                </Link>
-                <p className="mt-2 text-[10px] text-white/30">
-                  {app.lang === "ar"
-                    ? "تصفح، اكتشف، وخلي التسجيل لوقت ما تكون جاهز."
-                    : "Explore first. Sign up when you're ready."}
-                </p>
+                ) : (
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {isLogin ? <Lock className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                    {isLogin
+                      ? app.lang === "ar" ? "دخول إلى ذوق" : "Enter Zooq"
+                      : app.lang === "ar" ? "ابدأ رحلتك مع ذوق" : "Start your Zooq journey"}
+                  </span>
+                )}
+              </Button>
+
+              {/* LINKS */}
+              <div className="space-y-3 pt-2 text-center text-sm text-white/65">
+                {isLogin ? (
+                  <>
+                    <div>
+                      {app.lang === "ar" ? "لسا ما صار عندك حساب؟" : "Don't have an account?"}{" "}
+                      <Link to="/auth/$mode" params={{ mode: "register" }} className="zooq-link font-black text-[#f9a8d4]">
+                        {app.lang === "ar" ? "خلينا نبدأ" : "Let's start"}
+                      </Link>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleForgotPasswordClick}
+                      className="zooq-link mx-auto flex items-center justify-center gap-1.5 text-xs text-white/40"
+                    >
+                      <HelpCircle className="h-3.5 w-3.5 text-[#f9a8d4]" />
+                      {app.lang === "ar" ? "نسيت كلمة المرور؟" : "Forgot your password?"}
+                    </button>
+                    {app.user && (
+                      <div className="mt-3 space-y-1.5 border-t border-white/8 pt-3">
+                        {isDeliveryCompany && (
+                          <Link to="/delivery/dashboard" className="zooq-link block text-xs text-[#f9a8d4]">
+                            🚚 {app.lang === "ar" ? "لوحة التوصيل" : "Delivery Dashboard"}
+                          </Link>
+                        )}
+                        {isDistributor && (
+                          <Link to="/distributor/dashboard" className="zooq-link block text-xs text-[#2a655f]">
+                            📦 {app.lang === "ar" ? "لوحة الموزع" : "Distributor Dashboard"}
+                          </Link>
+                        )}
+                        {isAdmin && (
+                          <Link to="/admin" className="zooq-link block text-xs text-red-300">
+                            ⚡ {app.lang === "ar" ? "لوحة الأدمن" : "Admin Panel"}
+                          </Link>
+                        )}
+                        {isSeller && (
+                          <Link to="/dashboard" className="zooq-link block text-xs text-amber-300">
+                            🏪 {app.lang === "ar" ? "لوحة البائع" : "Seller Dashboard"}
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      {app.lang === "ar" ? "عندك حساب معنا؟" : "Already part of Zooq?"}{" "}
+                      <Link to="/auth/$mode" params={{ mode: "login" }} className="zooq-link font-black text-[#f9a8d4]">
+                        {app.lang === "ar" ? "فوت لعندنا" : "Sign in"}
+                      </Link>
+                    </div>
+                    <div className="relative pt-4">
+                      <div className="absolute inset-x-0 top-0 flex items-center gap-3">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#2a655f]/20" />
+                        <span className="text-[9px] font-black tracking-[.25em] text-white/25">
+                          {app.lang === "ar" ? "أو" : "OR"}
+                        </span>
+                        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#f9a8d4]/20" />
+                      </div>
+                      <Link to="/" className="block w-full">
+                        <Button
+                          variant="outline"
+                          className="mt-2 h-11 w-full rounded-2xl border-white/10 bg-white/[.035] text-sm font-bold text-white hover:border-[#f9a8d4]/35 hover:bg-[#2a655f]/10 hover:text-white"
+                        >
+                          {app.lang === "ar" ? "خليني اكتشف أول 👀" : "Let me explore first 👀"}
+                        </Button>
+                      </Link>
+                      <p className="mt-2 text-[10px] text-white/30">
+                        {app.lang === "ar"
+                          ? "تصفح، اكتشف، وخلي التسجيل لوقت ما تكون جاهز."
+                          : "Explore first. Sign up when you're ready."}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
-            </>
-          )}
-        </div>
 
-      </form>
+            </form>
 
-      {/* BRAND FOOTER */}
-      <div className="relative mt-6 flex flex-col items-center justify-center gap-2 border-t border-white/7 pt-4 text-center">
-        <div className="flex items-center gap-2">
-          <span className="h-1 w-1 rounded-full bg-[#2a655f] shadow-[0_0_8px_rgba(42,101,95,.8)]" />
-          <span className="text-[9px] font-black tracking-[.28em] text-white/25">zooq</span>
-          <span className="h-1 w-1 rounded-full bg-[#f9a8d4] shadow-[0_0_8px_rgba(249,168,212,.8)]" />
-        </div>
-        <p className="text-[10px] font-semibold text-white/30">
-          {app.lang === "ar" ? "كلشي ع ذوقك" : "Exactly your taste"}
-        </p>
-      </div>
+            {/* BRAND FOOTER */}
+            <div className="relative mt-6 flex flex-col items-center justify-center gap-2 border-t border-white/7 pt-4 text-center">
+              <div className="flex items-center gap-2">
+                <span className="h-1 w-1 rounded-full bg-[#2a655f] shadow-[0_0_8px_rgba(42,101,95,.8)]" />
+                <span className="text-[9px] font-black tracking-[.28em] text-white/25">zooq</span>
+                <span className="h-1 w-1 rounded-full bg-[#f9a8d4] shadow-[0_0_8px_rgba(249,168,212,.8)]" />
+              </div>
+              <p className="text-[10px] font-semibold text-white/30">
+                {app.lang === "ar" ? "كلشي ع ذوقك" : "Exactly your taste"}
+              </p>
+            </div>
 
-    </div>
-
-    {/* ==================================================
-        RIGHT SIDE CARD (يظهر على اليمين في RTL)
-        FULL ZOOQ LOGO - بدون أي نص
-    ================================================== */}
-    <div className="hidden lg:block">
-      <div className="zooq-logo-full-card">
-        <div className="zooq-logo-full-image-wrap">
-          <img
-            src="/images/Logo.png"
-            alt="ذوق | zooq"
-            draggable={false}
-            className="zooq-logo-full-image"
-          />
+          </div>
         </div>
       </div>
-    </div>
-
-  </div>
-</div>
 
       {/* ======================================================
           FOOTER

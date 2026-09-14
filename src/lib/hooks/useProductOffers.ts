@@ -115,6 +115,8 @@ export function useSellerOffers(storeId: string | undefined) {
         queryKey: ["seller-offers", storeId],
         enabled: !!storeId,
         queryFn: async () => {
+            console.log("🔍 [useSellerOffers] Fetching offers for storeId:", storeId);
+            
             const { data, error } = await supabase
                 .from("product_offers")
                 .select(`
@@ -219,6 +221,7 @@ export function useSellerOffers(storeId: string | undefined) {
             }
             
             console.log("✅ [useSellerOffers] Found offers:", data?.length || 0);
+            console.log("📦 [useSellerOffers] Raw data:", data);
             
             // ✅ تحويل البيانات لتشمل تفاصيل الهدية والفيرنتات
             const offersWithDetails = (data || []).map((offer: any) => {
@@ -245,6 +248,8 @@ export function useSellerOffers(storeId: string | undefined) {
             });
             
             console.log("✅ [useSellerOffers] Offers with details:", offersWithDetails.length);
+            console.log("📦 [useSellerOffers] Offer IDs:", offersWithDetails.map((o: any) => o.id));
+            
             return offersWithDetails || [];
         },
     });
@@ -258,6 +263,8 @@ export function useCreateProductOffer() {
     
     return useMutation({
         mutationFn: async (data: any) => {
+            console.log("➕ [useCreateProductOffer] Creating offer:", data);
+            
             const { data: result, error } = await supabase
                 .from("product_offers")
                 .insert({
@@ -281,6 +288,9 @@ export function useCreateProductOffer() {
                 })
                 .select()
                 .single();
+
+            console.log("📦 [useCreateProductOffer] Result:", result);
+            console.log("❌ [useCreateProductOffer] Error:", error);
 
             if (error) throw error;
             return result;
@@ -310,6 +320,8 @@ export function useDeleteProductOffer() {
             console.log("🔴 [useDeleteProductOffer.mutationFn] ===== START =====");
             console.log("🔴 [useDeleteProductOffer.mutationFn] offerId:", id);
             console.log("🔴 [useDeleteProductOffer.mutationFn] typeof id:", typeof id);
+            console.log("🔴 [useDeleteProductOffer.mutationFn] id length:", id?.length);
+            console.log("🔴 [useDeleteProductOffer.mutationFn] starts with 'promo-':", id?.startsWith('promo-'));
             
             // ✅ التحقق من صحة الـ ID
             if (!id) {
@@ -320,6 +332,31 @@ export function useDeleteProductOffer() {
             if (id.length < 10) {
                 console.error("❌ [useDeleteProductOffer.mutationFn] ID seems invalid (too short):", id);
                 throw new Error("Invalid offer ID");
+            }
+            
+            // ✅ ✅ ✅ إضافة: جلب المستخدم الحالي
+            console.log("🔍 [useDeleteProductOffer.mutationFn] Getting current user...");
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            console.log("👤 [useDeleteProductOffer.mutationFn] Current user:", user?.id);
+            console.log("❌ [useDeleteProductOffer.mutationFn] User error:", userError);
+            
+            // ✅ ✅ ✅ إضافة: جلب العرض قبل الحذف للتحقق
+            console.log("🔍 [useDeleteProductOffer.mutationFn] Fetching offer before delete...");
+            const { data: offerBefore, error: beforeError } = await supabase
+                .from("product_offers")
+                .select("id, store_id, listing_id, display_text_ar")
+                .eq("id", id)
+                .maybeSingle();
+            
+            console.log("📦 [useDeleteProductOffer.mutationFn] Offer BEFORE delete:", offerBefore);
+            console.log("📦 [useDeleteProductOffer.mutationFn] Offer store_id:", offerBefore?.store_id);
+            console.log("📦 [useDeleteProductOffer.mutationFn] Current user id:", user?.id);
+            console.log("✅ [useDeleteProductOffer.mutationFn] Match:", offerBefore?.store_id === user?.id);
+            console.log("❌ [useDeleteProductOffer.mutationFn] Fetch error:", beforeError);
+            
+            if (!offerBefore) {
+                console.error("❌ [useDeleteProductOffer.mutationFn] OFFER NOT FOUND IN DATABASE!");
+                throw new Error(`Offer with ID ${id} not found in database`);
             }
             
             console.log("🔄 [useDeleteProductOffer.mutationFn] Calling supabase delete...");
@@ -334,6 +371,7 @@ export function useDeleteProductOffer() {
 
                 console.log("📦 [useDeleteProductOffer.mutationFn] Supabase response received");
                 console.log("📦 [useDeleteProductOffer.mutationFn] data:", data);
+                console.log("📦 [useDeleteProductOffer.mutationFn] data length:", data?.length);
                 console.log("📦 [useDeleteProductOffer.mutationFn] error:", error);
                 
                 if (error) {
@@ -417,6 +455,9 @@ export function useUpdateProductOffer() {
     
     return useMutation({
         mutationFn: async ({ id, ...data }: any) => {
+            console.log("✏️ [useUpdateProductOffer] Updating offer:", id);
+            console.log("✏️ [useUpdateProductOffer] Data:", data);
+            
             const { data: result, error } = await supabase
                 .from("product_offers")
                 .update({
@@ -440,6 +481,9 @@ export function useUpdateProductOffer() {
                 .eq("id", id)
                 .select()
                 .single();
+
+            console.log("📦 [useUpdateProductOffer] Result:", result);
+            console.log("❌ [useUpdateProductOffer] Error:", error);
 
             if (error) throw error;
             return result;

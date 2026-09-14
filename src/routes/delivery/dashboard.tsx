@@ -119,7 +119,7 @@ import { ImageInput } from "@/components/ImageInput";
 import { AddressPicker, type PickedLocation } from "@/components/AddressPicker";
 
 // ============================================================
-// 🎨 ZOOQ BRAND COLORS - زيتي ووردي فقط
+// 🎨 ZOOQ BRAND COLORS - زيتي ورمادي فقط
 // ============================================================
 const COLORS = {
   olive: '#2a655f',
@@ -129,21 +129,21 @@ const COLORS = {
   oliveGlow: 'rgba(42,101,95,0.2)',
   oliveGlowStrong: 'rgba(42,101,95,0.35)',
   
-  pink: '#f9a8d4',
-  pinkLight: '#fbcfe8',
-  pinkDark: '#f48fb1',
-  pinkVeryLight: '#fdf2f8',
-  pinkGlow: 'rgba(249,168,212,0.25)',
-  pinkGlowStrong: 'rgba(249,168,212,0.4)',
+  slate: '#64748b',
+  slateLight: '#94a3b8',
+  slateDark: '#475569',
+  slateVeryLight: '#f1f5f9',
+  slateGlow: 'rgba(100,116,139,0.25)',
+  slateGlowStrong: 'rgba(100,116,139,0.4)',
   
-  fuchsia: '#d81b60',
-  fuchsiaDark: '#c2185b',
-  fuchsiaGlow: 'rgba(216,27,96,0.2)',
-  fuchsiaGlowStrong: 'rgba(194,24,91,0.35)',
+  gray: '#6b7280',
+  grayDark: '#4b5563',
+  grayGlow: 'rgba(107,114,128,0.2)',
+  grayGlowStrong: 'rgba(75,85,99,0.35)',
   
   glowOlive: 'rgba(42,101,95,0.15)',
-  glowPink: 'rgba(249,168,212,0.2)',
-  glowPinkStrong: 'rgba(249,168,212,0.35)',
+  glowSlate: 'rgba(100,116,139,0.2)',
+  glowSlateStrong: 'rgba(100,116,139,0.35)',
 };
 
 // ============================================================
@@ -416,7 +416,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   };
 
   // ============================================================
-  // ✅ دوال الحالة - معدلة (وردية)
+  // ✅ دوال الحالة - معدلة (زيتي)
   // ============================================================
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
@@ -433,10 +433,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      pending: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
-      assigned: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
-      picked_up: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
-      in_transit: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
+      pending: "bg-[#e8f0ee]/60 text-[#2a655f] border-[#2a655f]/30",
+      assigned: "bg-[#e8f0ee]/60 text-[#2a655f] border-[#2a655f]/30",
+      picked_up: "bg-[#e8f0ee]/60 text-[#2a655f] border-[#2a655f]/30",
+      in_transit: "bg-[#e8f0ee]/60 text-[#2a655f] border-[#2a655f]/30",
       delivered: "bg-emerald-500/20 text-emerald-600 border-emerald-500/20",
       cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
       failed: "bg-red-500/10 text-red-500 border-red-500/20",
@@ -628,12 +628,12 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           <title>${title}</title>
           <style>
             body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; direction: ${isArabic ? 'rtl' : 'ltr'}; }
-            h1 { color: #2a655f; border-bottom: 3px solid #f9a8d4; padding-bottom: 10px; }
+            h1 { color: #2a655f; border-bottom: 3px solid #3a8a82; padding-bottom: 10px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th { background-color: #2a655f; color: white; padding: 12px 10px; text-align: ${isArabic ? 'right' : 'left'}; font-weight: bold; }
             td { padding: 10px; border: 1px solid #ddd; }
-            tr:nth-child(even) { background-color: #fdf2f8; }
-            tr:hover { background-color: #fbcfe8; }
+            tr:nth-child(even) { background-color: #f1f5f9; }
+            tr:hover { background-color: #e8f0ee; }
             .footer { margin-top: 30px; color: #666; font-size: 12px; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; }
             .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
             .badge-pending { background: #f59e0b; color: white; }
@@ -1506,10 +1506,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   // ============================================================
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-br from-[#e8f0ee]/40 via-white to-[#fdf2f8] dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#1a4f4a]/10">
+      <div className="min-h-screen bg-gradient-to-br from-[#e8f0ee]/40 via-white to-[#f1f5f9] dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#1a4f4a]/10">
 
 {/* ============================================================
-    HEADER - زيتي مع لمسات وردية
+    HEADER - زيتي مع لمسات رمادية
     ============================================================ */}
 <div className="relative bg-gradient-to-r from-[#0d2e2a]/95 via-[#1a4f4a]/90 to-[#2a655f]/85 backdrop-blur-md text-white overflow-hidden shadow-2xl shadow-[#0d2e2a]/20 border-b border-white/10 sticky top-0 z-50">
   
@@ -1547,12 +1547,12 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   
   <div className="relative h-16 w-16 md:h-20 md:w-20 flex items-center justify-center group-hover:scale-110 transition-all duration-500 flex-shrink-0 animate-float-logo">
     
-    {/* ✅ دوائر وردية حول اللوغو */}
-    <div className="absolute inset-0 rounded-full bg-[#f9a8d4]/20 blur-2xl group-hover:bg-[#f9a8d4]/40 transition-all duration-700 animate-pulse-slow" />
-    <div className="absolute -inset-2 rounded-full border-2 border-[#f9a8d4]/40 animate-spin-slow" />
-    <div className="absolute -inset-4 rounded-full border border-[#f9a8d4]/20 animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '8s' }} />
-    <div className="absolute -inset-6 rounded-full border border-[#f9a8d4]/10 animate-spin-slow" style={{ animationDuration: '10s' }} />
-    <div className="absolute -inset-8 rounded-full border border-[#f9a8d4]/5 animate-spin-slow" style={{ animationDuration: '12s', animationDirection: 'reverse' }} />
+    {/* ✅ دوائر زيتية حول اللوغو */}
+    <div className="absolute inset-0 rounded-full bg-[#2a655f]/20 blur-2xl group-hover:bg-[#2a655f]/40 transition-all duration-700 animate-pulse-slow" />
+    <div className="absolute -inset-2 rounded-full border-2 border-[#3a8a82]/40 animate-spin-slow" />
+    <div className="absolute -inset-4 rounded-full border border-[#3a8a82]/20 animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '8s' }} />
+    <div className="absolute -inset-6 rounded-full border border-[#3a8a82]/10 animate-spin-slow" style={{ animationDuration: '10s' }} />
+    <div className="absolute -inset-8 rounded-full border border-[#3a8a82]/5 animate-spin-slow" style={{ animationDuration: '12s', animationDirection: 'reverse' }} />
     
     <img 
       src="/images/Logo.png" 
@@ -1561,13 +1561,13 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
       loading="eager"
     />
     
-    {/* ✅ نقاط وردية حول اللوغو */}
-    <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#f9a8d4] animate-ping" />
-    <div className="absolute -bottom-1 -left-1 h-2.5 w-2.5 rounded-full bg-[#f9a8d4] animate-ping" style={{ animationDelay: '0.5s' }} />
-    <div className="absolute top-1/2 -right-3 h-2 w-2 rounded-full bg-[#f9a8d4] animate-pulse" style={{ animationDelay: '1s' }} />
-    <div className="absolute top-1/2 -left-3 h-2 w-2 rounded-full bg-[#f9a8d4] animate-pulse" style={{ animationDelay: '1.5s' }} />
-    <div className="absolute -top-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#f9a8d4] animate-bounce" />
-    <div className="absolute -bottom-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#f9a8d4] animate-bounce" style={{ animationDelay: '0.7s' }} />
+    {/* ✅ نقاط زيتية حول اللوغو */}
+    <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#3a8a82] animate-ping" />
+    <div className="absolute -bottom-1 -left-1 h-2.5 w-2.5 rounded-full bg-[#3a8a82] animate-ping" style={{ animationDelay: '0.5s' }} />
+    <div className="absolute top-1/2 -right-3 h-2 w-2 rounded-full bg-[#3a8a82] animate-pulse" style={{ animationDelay: '1s' }} />
+    <div className="absolute top-1/2 -left-3 h-2 w-2 rounded-full bg-[#3a8a82] animate-pulse" style={{ animationDelay: '1.5s' }} />
+    <div className="absolute -top-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#3a8a82] animate-bounce" />
+    <div className="absolute -bottom-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#3a8a82] animate-bounce" style={{ animationDelay: '0.7s' }} />
   </div>
   
   <div className="flex flex-col min-w-0">
@@ -1666,7 +1666,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
       </span>
       <span className="text-[8px] md:text-[10px] text-white/30">|</span>
       <span className="text-[8px] md:text-[10px] text-white/50 flex items-center gap-0.5">
-        <Sparkles className="h-2 w-2 md:h-2.5 md:w-2.5 animate-spin-slow text-[#f9a8d4]" />
+        <Sparkles className="h-2 w-2 md:h-2.5 md:w-2.5 animate-spin-slow text-[#3a8a82]" />
         {isArabic ? "توصيل سريع" : "Fast Delivery"}
       </span>
     </div>
@@ -1697,16 +1697,16 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   </div>
 </div>
 
-{/* ✅ DIALOG: الإشعارات - وردي */}
+{/* ✅ DIALOG: الإشعارات - زيتي */}
 <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-  <DialogContent className="max-w-md rounded-2xl border-[#f9a8d4]/30 shadow-2xl">
+  <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/30 shadow-2xl">
     <DialogHeader>
       <div className="flex items-center justify-between">
-        <DialogTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
-          <Bell className="h-5 w-5 text-[#d81b60]" />
+        <DialogTitle className="flex items-center gap-2 text-[#2a655f] dark:text-[#3a8a82]">
+          <Bell className="h-5 w-5 text-[#2a655f]" />
           {isArabic ? "الإشعارات" : "Notifications"}
           {unreadNotificationsCount > 0 && (
-            <Badge className="bg-[#d81b60] text-white border-0 text-[10px]">
+            <Badge className="bg-[#2a655f] text-white border-0 text-[10px]">
               {unreadNotificationsCount}
             </Badge>
           )}
@@ -1716,7 +1716,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
             variant="ghost"
             size="sm"
             onClick={handleMarkAllAsRead}
-            className="text-xs text-[#d81b60] hover:bg-[#f9a8d4]/20 rounded-xl"
+            className="text-xs text-[#2a655f] hover:bg-[#e8f0ee]/20 rounded-xl"
           >
             {isArabic ? "تحديد الكل كمقروء" : "Mark all as read"}
           </Button>
@@ -1744,20 +1744,20 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 "p-3 rounded-xl border cursor-pointer transition-all duration-200 hover:shadow-md",
                 isRead 
                   ? "bg-white dark:bg-slate-900 border-slate-200/50 dark:border-slate-700/50" 
-                  : "bg-[#fbcfe8]/30 border-[#f9a8d4]/40 hover:bg-[#fbcfe8]/50"
+                  : "bg-[#e8f0ee]/30 border-[#2a655f]/40 hover:bg-[#e8f0ee]/50"
               )}
             >
               <div className="flex items-start gap-3">
                 <div className={cn(
                   "h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0",
-                  isRead ? "bg-slate-100 dark:bg-slate-800" : "bg-[#f9a8d4]/30"
+                  isRead ? "bg-slate-100 dark:bg-slate-800" : "bg-[#3a8a82]/30"
                 )}>
-                  <Icon className="h-4 w-4 text-[#d81b60]" />
+                  <Icon className="h-4 w-4 text-[#2a655f]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={cn(
                     "text-sm font-semibold",
-                    isRead ? "text-slate-700 dark:text-slate-300" : "text-[#d81b60]"
+                    isRead ? "text-slate-700 dark:text-slate-300" : "text-[#2a655f]"
                   )}>
                     {isArabic ? notification.title_ar : notification.title_en || notification.title_ar}
                   </p>
@@ -1769,7 +1769,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                   </p>
                 </div>
                 {!isRead && (
-                  <div className="h-2 w-2 rounded-full bg-[#d81b60] animate-pulse flex-shrink-0 mt-1" />
+                  <div className="h-2 w-2 rounded-full bg-[#2a655f] animate-pulse flex-shrink-0 mt-1" />
                 )}
               </div>
             </div>
@@ -1782,7 +1782,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
       <Button 
         variant="outline" 
         onClick={() => setNotificationsOpen(false)} 
-        className="rounded-xl border-[#f9a8d4]/30 text-[#d81b60] hover:bg-[#fbcfe8]/30"
+        className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#e8f0ee]/30"
       >
         {isArabic ? "إغلاق" : "Close"}
       </Button>
@@ -1790,12 +1790,12 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   </DialogContent>
 </Dialog>
 
-{/* ✅ DIALOG: حساب الموزع - وردي */}
+{/* ✅ DIALOG: حساب الموزع - زيتي */}
 <Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
-  <DialogContent className="max-w-md rounded-2xl border-[#f9a8d4]/30 shadow-2xl">
+  <DialogContent className="max-w-md rounded-2xl border-[#2a655f]/30 shadow-2xl">
     <DialogHeader>
-      <DialogTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
-        <UserCircle className="h-5 w-5 text-[#d81b60]" />
+      <DialogTitle className="flex items-center gap-2 text-[#2a655f] dark:text-[#3a8a82]">
+        <UserCircle className="h-5 w-5 text-[#2a655f]" />
         {isArabic ? "حساب الموزع" : "Distributor Account"}
       </DialogTitle>
       <DialogDescription>
@@ -1806,8 +1806,8 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
     <div className="space-y-4 py-4">
       {currentDistributor && (
         <>
-          <div className="flex items-center gap-4 p-3 bg-[#fbcfe8]/20 rounded-xl border border-[#f9a8d4]/30">
-            <div className="h-12 w-12 rounded-full bg-[#f9a8d4]/30 flex items-center justify-center overflow-hidden">
+          <div className="flex items-center gap-4 p-3 bg-[#e8f0ee]/20 rounded-xl border border-[#2a655f]/30">
+            <div className="h-12 w-12 rounded-full bg-[#3a8a82]/30 flex items-center justify-center overflow-hidden">
               {currentDistributor.avatar_url ? (
                 <img 
                   src={currentDistributor.avatar_url} 
@@ -1815,11 +1815,11 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <User className="h-6 w-6 text-[#d81b60]" />
+                <User className="h-6 w-6 text-[#2a655f]" />
               )}
             </div>
             <div>
-              <p className="font-bold text-[#d81b60] dark:text-[#f9a8d4]">
+              <p className="font-bold text-[#2a655f] dark:text-[#3a8a82]">
                 {currentDistributor.full_name_ar || currentDistributor.full_name_en}
               </p>
               <p className="text-xs text-muted-foreground" dir="ltr">
@@ -1829,24 +1829,24 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30">
+            <div className="p-3 bg-[#e8f0ee]/20 dark:bg-[#e8f0ee]/10 rounded-xl border border-[#2a655f]/30">
               <p className="text-xs text-muted-foreground">{isArabic ? "الحالة" : "Status"}</p>
-              <p className="font-semibold text-[#d81b60] dark:text-[#f9a8d4]">
+              <p className="font-semibold text-[#2a655f] dark:text-[#3a8a82]">
                 {currentDistributor.is_available 
                   ? (isArabic ? "🟢 متاح" : "🟢 Available") 
                   : (isArabic ? "🔴 غير متاح" : "🔴 Unavailable")}
               </p>
             </div>
-            <div className="p-3 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30">
+            <div className="p-3 bg-[#e8f0ee]/20 dark:bg-[#e8f0ee]/10 rounded-xl border border-[#2a655f]/30">
               <p className="text-xs text-muted-foreground">{isArabic ? "التقييم" : "Rating"}</p>
-              <p className="font-semibold text-[#d81b60] dark:text-[#f9a8d4] flex items-center gap-1">
+              <p className="font-semibold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-1">
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                 {currentDistributor.rating || 0}
               </p>
             </div>
-            <div className="p-3 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30 col-span-2">
+            <div className="p-3 bg-[#e8f0ee]/20 dark:bg-[#e8f0ee]/10 rounded-xl border border-[#2a655f]/30 col-span-2">
               <p className="text-xs text-muted-foreground">{isArabic ? "العنوان" : "Address"}</p>
-              <p className="font-semibold text-[#d81b60] dark:text-[#f9a8d4] text-sm">
+              <p className="font-semibold text-[#2a655f] dark:text-[#3a8a82] text-sm">
                 {currentDistributor.address_ar || currentDistributor.address_en || (isArabic ? "غير محدد" : "Not specified")}
               </p>
             </div>
@@ -1859,7 +1859,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
       <Button 
         variant="outline" 
         onClick={() => setShowDistributorDialog(false)} 
-        className="rounded-xl border-[#f9a8d4]/30 text-[#d81b60] hover:bg-[#fbcfe8]/30"
+        className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#e8f0ee]/30"
       >
         {isArabic ? "إغلاق" : "Close"}
       </Button>
@@ -1867,7 +1867,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   </DialogContent>
 </Dialog>
 
-{/* ===== STATS - وردية (StatCard بدلاً من ModernStatCard) ===== */}
+{/* ===== STATS - زيتية ===== */}
 <div className="mx-auto max-w-7xl px-4 py-6">
   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
     <StatCard
@@ -1880,19 +1880,19 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
       icon={Clock}
       label={isArabic ? "قيد المراجعة" : "Pending"}
       value={stats.pending}
-      color="pink"
+      color="slate"
     />
     <StatCard
       icon={UserCheck}
       label={isArabic ? "تم التعيين" : "Assigned"}
       value={stats.assigned}
-      color="pink"
+      color="slate"
     />
     <StatCard
       icon={Truck}
       label={isArabic ? "قيد التوصيل" : "In Transit"}
       value={stats.inTransit}
-      color="pink"
+      color="slate"
     />
     <StatCard
       icon={CheckCircle}
@@ -1904,7 +1904,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
       icon={Coins}
       label={isArabic ? "الإيرادات" : "Revenue"}
       value={stats.totalRevenue.toLocaleString()}
-      color="pink"
+      color="slate"
     />
     <StatCard
       icon={TrendingUp}
@@ -1915,30 +1915,30 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   </div>
 </div>
 
-{/* ===== TABS - زيتي ووردي مع أيقونات احترافية ===== */}
+{/* ===== TABS - زيتي ورمادي مع أيقونات احترافية ===== */}
 <div className="mx-auto max-w-7xl px-4">
-  <div className="flex items-center gap-2 border-b border-[#f9a8d4]/30 mb-6 overflow-x-auto">
+  <div className="flex items-center gap-2 border-b border-[#2a655f]/30 mb-6 overflow-x-auto">
     {[
       { 
         id: "orders", 
         label: isArabic ? "الطلبات" : "Orders", 
         icon: ShoppingBag,
-        iconBg: "from-[#d81b60] to-[#f48fb1]",
-        iconColor: "text-[#d81b60]"
+        iconBg: "from-[#2a655f] to-[#3a8a82]",
+        iconColor: "text-[#2a655f]"
       },
       { 
         id: "distributors", 
         label: isArabic ? "الموزعين" : "Distributors", 
         icon: Users,
-        iconBg: "from-[#2a655f] to-[#3a8a82]",
+        iconBg: "from-[#1a4f4a] to-[#2a655f]",
         iconColor: "text-[#2a655f]"
       },
       { 
         id: "analytics", 
         label: isArabic ? "التحليلات" : "Analytics", 
         icon: TrendingUp,
-        iconBg: "from-[#d81b60] to-[#f9a8d4]",
-        iconColor: "text-[#d81b60]"
+        iconBg: "from-[#2a655f] to-[#3a8a82]",
+        iconColor: "text-[#2a655f]"
       },
       { 
         id: "admins", 
@@ -1953,15 +1953,15 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
         onClick={() => setActiveTab(tab.id as any)}
         className={`flex items-center gap-3 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 whitespace-nowrap group ${
           activeTab === tab.id
-            ? "border-[#d81b60] text-[#d81b60] dark:text-[#f9a8d4]"
-            : "border-transparent text-muted-foreground hover:text-[#d81b60] hover:border-[#f9a8d4]/50"
+            ? "border-[#2a655f] text-[#2a655f] dark:text-[#3a8a82]"
+            : "border-transparent text-muted-foreground hover:text-[#2a655f] hover:border-[#3a8a82]/50"
         }`}
       >
         <div className={cn(
           "h-8 w-8 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6",
           activeTab === tab.id
-            ? `bg-gradient-to-br ${tab.iconBg} text-white shadow-lg shadow-[#d81b60]/25`
-            : "bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:bg-[#fbcfe8]/30 group-hover:text-[#d81b60]"
+            ? `bg-gradient-to-br ${tab.iconBg} text-white shadow-lg shadow-[#2a655f]/25`
+            : "bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:bg-[#e8f0ee]/30 group-hover:text-[#2a655f]"
         )}>
           <tab.icon className="h-4 w-4" />
         </div>
@@ -1969,7 +1969,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           {tab.label}
         </span>
         {activeTab === tab.id && (
-          <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60] animate-pulse" />
+          <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f] animate-pulse" />
         )}
       </button>
     ))}
@@ -1980,22 +1980,22 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
     <div className="animate-in slide-in-from-top-5 duration-300">
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <div className="relative flex-1 min-w-[200px] max-w-sm group">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#d81b60] transition-colors duration-300" />
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#2a655f] transition-colors duration-300" />
           <Input
             placeholder={isArabic ? "🔍 بحث عن طلب..." : "🔍 Search orders..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="ps-9 h-10 rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 transition-all duration-300"
+            className="ps-9 h-10 rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20 transition-all duration-300"
           />
         </div>
 
       <div className="flex items-center gap-2">
-  <Filter className="h-4 w-4 text-[#d81b60] animate-pulse" />
+  <Filter className="h-4 w-4 text-[#2a655f] animate-pulse" />
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button 
         variant="outline" 
-        className="h-10 px-4 rounded-xl border-2 border-[#f9a8d4]/40 hover:border-[#d81b60]/50 hover:bg-[#fbcfe8]/30 transition-all duration-300 flex items-center gap-2 min-w-[160px] justify-between"
+        className="h-10 px-4 rounded-xl border-2 border-[#2a655f]/40 hover:border-[#2a655f]/50 hover:bg-[#e8f0ee]/30 transition-all duration-300 flex items-center gap-2 min-w-[160px] justify-between"
       >
         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
           {statusFilter === "all" ? (isArabic ? "📋 جميع الحالات" : "📋 All status") :
@@ -2006,22 +2006,22 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
            statusFilter === "delivered" ? (isArabic ? "✅ تم التوصيل" : "✅ Delivered") :
            (isArabic ? "جميع الحالات" : "All status")}
         </span>
-        <ChevronDown className="h-4 w-4 text-[#d81b60]" />
+        <ChevronDown className="h-4 w-4 text-[#2a655f]" />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="start" className="w-[220px] rounded-xl border-2 border-[#f9a8d4]/30 shadow-xl p-1">
+    <DropdownMenuContent align="start" className="w-[220px] rounded-xl border-2 border-[#2a655f]/30 shadow-xl p-1">
       
       <DropdownMenuItem 
         onClick={() => setStatusFilter("all")}
         className={cn(
           "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
-          statusFilter === "all" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+          statusFilter === "all" ? "bg-[#e8f0ee]/50 text-[#2a655f] font-semibold" : "hover:bg-[#e8f0ee]/30 hover:text-[#2a655f]"
         )}
       >
         <span className="flex items-center gap-2 w-full">
           <span className="text-base">📋</span>
           <span className="flex-1">{isArabic ? "جميع الحالات" : "All status"}</span>
-          {statusFilter === "all" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+          {statusFilter === "all" && <CheckIcon className="h-4 w-4 text-[#2a655f]" />}
         </span>
       </DropdownMenuItem>
       
@@ -2029,13 +2029,13 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
         onClick={() => setStatusFilter("pending")}
         className={cn(
           "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
-          statusFilter === "pending" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+          statusFilter === "pending" ? "bg-[#e8f0ee]/50 text-[#2a655f] font-semibold" : "hover:bg-[#e8f0ee]/30 hover:text-[#2a655f]"
         )}
       >
         <span className="flex items-center gap-2 w-full">
           <span className="text-base">⏳</span>
           <span className="flex-1">{isArabic ? "قيد المراجعة" : "Pending"}</span>
-          {statusFilter === "pending" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+          {statusFilter === "pending" && <CheckIcon className="h-4 w-4 text-[#2a655f]" />}
         </span>
       </DropdownMenuItem>
       
@@ -2043,13 +2043,13 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
         onClick={() => setStatusFilter("assigned")}
         className={cn(
           "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
-          statusFilter === "assigned" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+          statusFilter === "assigned" ? "bg-[#e8f0ee]/50 text-[#2a655f] font-semibold" : "hover:bg-[#e8f0ee]/30 hover:text-[#2a655f]"
         )}
       >
         <span className="flex items-center gap-2 w-full">
           <span className="text-base">📌</span>
           <span className="flex-1">{isArabic ? "تم التعيين" : "Assigned"}</span>
-          {statusFilter === "assigned" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+          {statusFilter === "assigned" && <CheckIcon className="h-4 w-4 text-[#2a655f]" />}
         </span>
       </DropdownMenuItem>
       
@@ -2057,13 +2057,13 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
         onClick={() => setStatusFilter("picked_up")}
         className={cn(
           "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
-          statusFilter === "picked_up" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+          statusFilter === "picked_up" ? "bg-[#e8f0ee]/50 text-[#2a655f] font-semibold" : "hover:bg-[#e8f0ee]/30 hover:text-[#2a655f]"
         )}
       >
         <span className="flex items-center gap-2 w-full">
           <span className="text-base">📦</span>
           <span className="flex-1">{isArabic ? "تم الاستلام" : "Picked up"}</span>
-          {statusFilter === "picked_up" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+          {statusFilter === "picked_up" && <CheckIcon className="h-4 w-4 text-[#2a655f]" />}
         </span>
       </DropdownMenuItem>
       
@@ -2071,13 +2071,13 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
         onClick={() => setStatusFilter("in_transit")}
         className={cn(
           "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
-          statusFilter === "in_transit" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+          statusFilter === "in_transit" ? "bg-[#e8f0ee]/50 text-[#2a655f] font-semibold" : "hover:bg-[#e8f0ee]/30 hover:text-[#2a655f]"
         )}
       >
         <span className="flex items-center gap-2 w-full">
           <span className="text-base">🚚</span>
           <span className="flex-1">{isArabic ? "قيد التوصيل" : "In transit"}</span>
-          {statusFilter === "in_transit" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+          {statusFilter === "in_transit" && <CheckIcon className="h-4 w-4 text-[#2a655f]" />}
         </span>
       </DropdownMenuItem>
       
@@ -2085,13 +2085,13 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
         onClick={() => setStatusFilter("delivered")}
         className={cn(
           "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
-          statusFilter === "delivered" ? "bg-[#fbcfe8]/50 text-[#d81b60] font-semibold" : "hover:bg-[#fbcfe8]/30 hover:text-[#d81b60]"
+          statusFilter === "delivered" ? "bg-[#e8f0ee]/50 text-[#2a655f] font-semibold" : "hover:bg-[#e8f0ee]/30 hover:text-[#2a655f]"
         )}
       >
         <span className="flex items-center gap-2 w-full">
           <span className="text-base">✅</span>
           <span className="flex-1">{isArabic ? "تم التوصيل" : "Delivered"}</span>
-          {statusFilter === "delivered" && <CheckIcon className="h-4 w-4 text-[#d81b60]" />}
+          {statusFilter === "delivered" && <CheckIcon className="h-4 w-4 text-[#2a655f]" />}
         </span>
       </DropdownMenuItem>
       
@@ -2106,10 +2106,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 variant="outline"
                 size="sm"
                 onClick={() => exportToCSV(filteredOrders, 'الطلبات')}
-                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+                className="h-9 rounded-xl border-[#2a655f]/30 hover:bg-[#e8f0ee]/30 transition-all duration-300 group"
               >
                 <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "Excel" : "Excel"}</span>
+                <span className="hidden sm:inline text-xs mr-1 text-[#2a655f]">{isArabic ? "Excel" : "Excel"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isArabic ? "تصدير إلى Excel" : "Export to Excel"}</TooltipContent>
@@ -2121,10 +2121,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 variant="outline"
                 size="sm"
                 onClick={() => exportToWord(filteredOrders, 'تقرير الطلبات')}
-                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+                className="h-9 rounded-xl border-[#2a655f]/30 hover:bg-[#e8f0ee]/30 transition-all duration-300 group"
               >
                 <FileText className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "Word" : "Word"}</span>
+                <span className="hidden sm:inline text-xs mr-1 text-[#2a655f]">{isArabic ? "Word" : "Word"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isArabic ? "تصدير إلى Word" : "Export to Word"}</TooltipContent>
@@ -2136,10 +2136,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 variant="outline"
                 size="sm"
                 onClick={handlePrint}
-                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+                className="h-9 rounded-xl border-[#2a655f]/30 hover:bg-[#e8f0ee]/30 transition-all duration-300 group"
               >
-                <Printer className="h-4 w-4 text-[#d81b60] group-hover:scale-110 transition-transform" />
-                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "طباعة" : "Print"}</span>
+                <Printer className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs mr-1 text-[#2a655f]">{isArabic ? "طباعة" : "Print"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isArabic ? "طباعة التقرير" : "Print Report"}</TooltipContent>
@@ -2154,9 +2154,9 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           ))}
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border-2 border-dashed border-[#f9a8d4]/40">
-          <div className="h-20 w-20 rounded-full bg-[#fbcfe8]/30 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
-            <Package className="h-10 w-10 text-[#d81b60]/40" />
+        <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border-2 border-dashed border-[#2a655f]/40">
+          <div className="h-20 w-20 rounded-full bg-[#e8f0ee]/30 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
+            <Package className="h-10 w-10 text-[#2a655f]/40" />
           </div>
           <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
             {isArabic ? "لا توجد طلبات" : "No orders"}
@@ -2199,7 +2199,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           </div>
 
           {filteredOrders.length > 0 && totalPages > 1 && (
-            <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-[#f9a8d4]/30">
+            <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-[#2a655f]/30">
               <p className="text-sm text-muted-foreground">
                 {isArabic 
                   ? `عرض ${(currentPage - 1) * itemsPerPage + 1} - ${Math.min(currentPage * itemsPerPage, filteredOrders.length)} من ${filteredOrders.length} طلب`
@@ -2211,9 +2211,9 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="rounded-xl h-9 w-9 p-0 border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
+                  className="rounded-xl h-9 w-9 p-0 border-[#2a655f]/30 hover:bg-[#e8f0ee]/30"
                 >
-                  <ChevronLeft className="h-4 w-4 text-[#d81b60]" />
+                  <ChevronLeft className="h-4 w-4 text-[#2a655f]" />
                 </Button>
                 {[...Array(Math.min(totalPages, 7))].map((_, i) => {
                   let pageNum;
@@ -2235,7 +2235,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                         variant="outline"
                         size="sm"
                         onClick={() => setCurrentPage(1)}
-                        className="rounded-xl h-9 min-w-[36px] px-2 text-xs border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
+                        className="rounded-xl h-9 min-w-[36px] px-2 text-xs border-[#2a655f]/30 hover:bg-[#e8f0ee]/30"
                       >
                         1
                       </Button>
@@ -2262,7 +2262,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                       onClick={() => setCurrentPage(pageNum)}
                       className={cn(
                         "rounded-xl h-9 min-w-[36px] px-2 text-xs",
-                        currentPage === pageNum && "bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white shadow-md shadow-[#d81b60]/30"
+                        currentPage === pageNum && "bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-md shadow-[#2a655f]/30"
                       )}
                     >
                       {pageNum}
@@ -2274,9 +2274,9 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="rounded-xl h-9 w-9 p-0 border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
+                  className="rounded-xl h-9 w-9 p-0 border-[#2a655f]/30 hover:bg-[#e8f0ee]/30"
                 >
-                  <ChevronRight className="h-4 w-4 text-[#d81b60]" />
+                  <ChevronRight className="h-4 w-4 text-[#2a655f]" />
                 </Button>
               </div>
               <div className="flex items-center gap-2">
@@ -2286,7 +2286,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                     setItemsPerPage(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="h-9 px-2 rounded-xl border border-[#f9a8d4]/30 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#d81b60]/20 transition-all duration-300"
+                  className="h-9 px-2 rounded-xl border border-[#2a655f]/30 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300"
                 >
                   <option value="5">5</option>
                   <option value="10">10</option>  
@@ -2309,8 +2309,8 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h3 className="text-xl font-bold text-[#d81b60] dark:text-[#f9a8d4] flex items-center gap-2">
-            <Users className="h-5 w-5 text-[#d81b60]" />
+          <h3 className="text-xl font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-2">
+            <Users className="h-5 w-5 text-[#2a655f]" />
             {isArabic ? "الموزعين" : "Distributors"}
             <span className="text-sm font-normal text-muted-foreground">
               ({allDistributors.length})
@@ -2327,10 +2327,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 variant="outline"
                 size="sm"
                 onClick={() => exportToCSV(allDistributors, 'الموزعين')}
-                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+                className="h-9 rounded-xl border-[#2a655f]/30 hover:bg-[#e8f0ee]/30 transition-all duration-300 group"
               >
                 <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "Excel" : "Excel"}</span>
+                <span className="hidden sm:inline text-xs mr-1 text-[#2a655f]">{isArabic ? "Excel" : "Excel"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isArabic ? "تصدير الموزعين إلى Excel" : "Export distributors to Excel"}</TooltipContent>
@@ -2342,10 +2342,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 variant="outline"
                 size="sm"
                 onClick={() => exportToWord(allDistributors, 'تقرير الموزعين')}
-                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+                className="h-9 rounded-xl border-[#2a655f]/30 hover:bg-[#e8f0ee]/30 transition-all duration-300 group"
               >
                 <FileText className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "Word" : "Word"}</span>
+                <span className="hidden sm:inline text-xs mr-1 text-[#2a655f]">{isArabic ? "Word" : "Word"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isArabic ? "تصدير الموزعين إلى Word" : "Export distributors to Word"}</TooltipContent>
@@ -2357,10 +2357,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 variant="outline"
                 size="sm"
                 onClick={handlePrint}
-                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+                className="h-9 rounded-xl border-[#2a655f]/30 hover:bg-[#e8f0ee]/30 transition-all duration-300 group"
               >
-                <Printer className="h-4 w-4 text-[#d81b60] group-hover:scale-110 transition-transform" />
-                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "طباعة" : "Print"}</span>
+                <Printer className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs mr-1 text-[#2a655f]">{isArabic ? "طباعة" : "Print"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isArabic ? "طباعة تقرير الموزعين" : "Print distributors report"}</TooltipContent>
@@ -2368,15 +2368,15 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
 
           <Dialog open={showAddDistributorDialog} onOpenChange={setShowAddDistributorDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] transition-all duration-300 hover:scale-105 shadow-lg shadow-[#d81b60]/30">
+              <Button className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white hover:from-[#1a4f4a] hover:to-[#2a655f] transition-all duration-300 hover:scale-105 shadow-lg shadow-[#2a655f]/30">
                 <UserPlus className="h-4 w-4 mr-1" />
                 {isArabic ? "إضافة موزع" : "Add Distributor"}
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-2xl max-h-[90vh] overflow-y-auto border-[#f9a8d4]/30">
+            <DialogContent className="rounded-2xl max-h-[90vh] overflow-y-auto border-[#2a655f]/30">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-[#d81b60] dark:text-[#f9a8d4] flex items-center gap-2">
-                  <UserPlus className="h-6 w-6 text-[#d81b60]" />
+                <DialogTitle className="text-2xl font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-2">
+                  <UserPlus className="h-6 w-6 text-[#2a655f]" />
                   {isArabic ? "➕ إضافة موزع جديد" : "➕ Add New Distributor"}
                 </DialogTitle>
                 <DialogDescription>
@@ -2386,7 +2386,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddDistributor} className="space-y-4 py-4">
-                <div className="flex flex-col items-center gap-3 p-4 bg-[#fbcfe8]/20 rounded-xl border border-[#f9a8d4]/30">
+                <div className="flex flex-col items-center gap-3 p-4 bg-[#e8f0ee]/20 rounded-xl border border-[#2a655f]/30">
                   <ImageInput
                     value={avatarUrl || ""}
                     onChange={(value) => setAvatarUrl(value)}
@@ -2394,40 +2394,40 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                     folder="distributors"
                     lang={app.lang}
                     label={isArabic ? "صورة الموزع" : "Distributor Photo"}
-                    previewClassName="h-24 w-24 rounded-full object-cover border-4 border-[#f9a8d4]/50"
+                    previewClassName="h-24 w-24 rounded-full object-cover border-4 border-[#3a8a82]/50"
                     hint={isArabic ? "اضغط لرفع صورة الموزع" : "Click to upload distributor photo"}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "الاسم (عربي) *" : "Name (Arabic) *"}</Label>
+                    <Label className="text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "الاسم (عربي) *" : "Name (Arabic) *"}</Label>
                     <Input
                       name="full_name_ar"
                       placeholder={isArabic ? "أحمد محمد" : "Ahmed"}
                       dir="rtl"
                       required
-                      className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "الاسم (إنجليزي)" : "Name (English)"}</Label>
+                    <Label className="text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "الاسم (إنجليزي)" : "Name (English)"}</Label>
                     <Input
                       name="full_name_en"
                       placeholder="Ahmed Mohamad"
-                      className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "رقم الهاتف *" : "Phone *"}</Label>
+                  <Label className="text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "رقم الهاتف *" : "Phone *"}</Label>
                   <Input
                     name="phone"
                     placeholder="0962XXXXXX"
                     dir="ltr"
                     required
-                    className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                    className="rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                   />
                   <p className="text-xs text-muted-foreground">
                     {isArabic ? "سيستخدم هذا الرقم لتسجيل الدخول" : "This number will be used for login"}
@@ -2435,7 +2435,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "كلمة المرور *" : "Password *"}</Label>
+                  <Label className="text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "كلمة المرور *" : "Password *"}</Label>
                   <div className="relative">
                     <Input
                       name="password"
@@ -2443,12 +2443,12 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                       placeholder="********"
                       required
                       minLength={6}
-                      className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 pe-10"
+                      className="rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20 pe-10"
                     />
                     <button
                       type="button"
                       onClick={() => setShowDistributorPassword(!showDistributorPassword)}
-                      className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-[#d81b60] transition-colors"
+                      className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-[#2a655f] transition-colors"
                     >
                       {showDistributorPassword ? <EyeOff className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                     </button>
@@ -2459,7 +2459,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "المحافظة" : "Governorate"}</Label>
+                  <Label className="text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "المحافظة" : "Governorate"}</Label>
                   <Select
                     onValueChange={(value) => {
                       const form = document.querySelector('form');
@@ -2474,7 +2474,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                       }
                     }}
                   >
-                    <SelectTrigger className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20">
+                    <SelectTrigger className="rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20">
                       <SelectValue placeholder={isArabic ? "اختر المحافظة" : "Select governorate"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -2489,27 +2489,27 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "العنوان (عربي)" : "Address (Arabic)"}</Label>
+                    <Label className="text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "العنوان (عربي)" : "Address (Arabic)"}</Label>
                     <Input
                       name="address_ar"
                       placeholder={isArabic ? "دمشق" : "Damascus"}
                       dir="rtl"
-                      className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "العنوان (إنجليزي)" : "Address (English)"}</Label>
+                    <Label className="text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "العنوان (إنجليزي)" : "Address (English)"}</Label>
                     <Input
                       name="address_en"
                       placeholder="Damascus"
-                      className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "نوع الموزع" : "Distributor Type"}</Label>
+                    <Label className="text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "نوع الموزع" : "Distributor Type"}</Label>
                     <Select
                       defaultValue="freelance"
                       onValueChange={(value) => {
@@ -2525,7 +2525,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                         }
                       }}
                     >
-                      <SelectTrigger className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20">
+                      <SelectTrigger className="rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -2535,7 +2535,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[#d81b60] dark:text-[#f9a8d4]">{isArabic ? "متاح للعمل" : "Available"}</Label>
+                    <Label className="text-[#2a655f] dark:text-[#3a8a82]">{isArabic ? "متاح للعمل" : "Available"}</Label>
                     <Select
                       defaultValue="available"
                       onValueChange={(value) => {
@@ -2551,7 +2551,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                         }
                       }}
                     >
-                      <SelectTrigger className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20">
+                      <SelectTrigger className="rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -2563,21 +2563,21 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 </div>
 
                 {company && (
-                  <div className="text-xs text-muted-foreground bg-[#fbcfe8]/20 p-3 rounded-xl border border-[#f9a8d4]/30">
+                  <div className="text-xs text-muted-foreground bg-[#e8f0ee]/20 p-3 rounded-xl border border-[#2a655f]/30">
                     {isArabic
                       ? `🔗 سيتم ربط الموزع بشركة "${company.name_ar}"`
                       : `🔗 Distributor will be linked to company "${company.name_en}"`}
                   </div>
                 )}
 
-                <DialogFooter className="gap-2 pt-4 border-t border-[#f9a8d4]/30">
-                  <Button type="button" variant="outline" onClick={() => setShowAddDistributorDialog(false)} className="border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30">
+                <DialogFooter className="gap-2 pt-4 border-t border-[#2a655f]/30">
+                  <Button type="button" variant="outline" onClick={() => setShowAddDistributorDialog(false)} className="border-[#2a655f]/30 hover:bg-[#e8f0ee]/30">
                     <X className="h-4 w-4 mr-1" />
                     {isArabic ? "إلغاء" : "Cancel"}
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] transition-all duration-300 shadow-lg shadow-[#d81b60]/30"
+                    className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white hover:from-[#1a4f4a] hover:to-[#2a655f] transition-all duration-300 shadow-lg shadow-[#2a655f]/30"
                   >
                     <UserPlus className="h-4 w-4 mr-1" />
                     {isArabic ? "إضافة الموزع" : "Add Distributor"}
@@ -2588,7 +2588,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           </Dialog>
 
           <Link to="/delivery/distributors" className="inline-block">
-            <Button variant="outline" className="border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 text-[#d81b60]">
+            <Button variant="outline" className="border-[#2a655f]/30 hover:bg-[#e8f0ee]/30 transition-all duration-300 text-[#2a655f]">
               <Users className="h-4 w-4 mr-1" />
               {isArabic ? "إدارة الموزعين" : "Manage Distributors"}
             </Button>
@@ -2603,9 +2603,9 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           ))}
         </div>
       ) : allDistributors.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border-2 border-dashed border-[#f9a8d4]/40">
+        <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border-2 border-dashed border-[#2a655f]/40">
           <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <h3 className="text-xl font-semibold text-[#d81b60] dark:text-[#f9a8d4]">
+          <h3 className="text-xl font-semibold text-[#2a655f] dark:text-[#3a8a82]">
             {isArabic ? "لا يوجد موزعين" : "No distributors"}
           </h3>
           <p className="text-muted-foreground text-sm">
@@ -2632,8 +2632,8 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
     <div className="animate-in slide-in-from-top-5 duration-300">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-[#d81b60] dark:text-[#f9a8d4] flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-[#d81b60]" />
+          <h3 className="text-xl font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-[#2a655f]" />
             {isArabic ? "📈 التحليلات" : "📈 Analytics"}
           </h3>
           <p className="text-sm text-muted-foreground">
@@ -2688,10 +2688,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                   ];
                   exportToCSV(analyticsData, 'التقارير_التحليلية');
                 }}
-                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+                className="h-9 rounded-xl border-[#2a655f]/30 hover:bg-[#e8f0ee]/30 transition-all duration-300 group"
               >
                 <FileSpreadsheet className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "Excel" : "Excel"}</span>
+                <span className="hidden sm:inline text-xs mr-1 text-[#2a655f]">{isArabic ? "Excel" : "Excel"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isArabic ? "تصدير التحليلات إلى Excel" : "Export analytics to Excel"}</TooltipContent>
@@ -2703,10 +2703,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 variant="outline"
                 size="sm"
                 onClick={handlePrint}
-                className="h-9 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30 transition-all duration-300 group"
+                className="h-9 rounded-xl border-[#2a655f]/30 hover:bg-[#e8f0ee]/30 transition-all duration-300 group"
               >
-                <Printer className="h-4 w-4 text-[#d81b60] group-hover:scale-110 transition-transform" />
-                <span className="hidden sm:inline text-xs mr-1 text-[#d81b60]">{isArabic ? "طباعة" : "Print"}</span>
+                <Printer className="h-4 w-4 text-[#2a655f] group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs mr-1 text-[#2a655f]">{isArabic ? "طباعة" : "Print"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isArabic ? "طباعة التحليلات" : "Print analytics"}</TooltipContent>
@@ -2715,9 +2715,9 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border-2 border-[#f9a8d4]/40 hover:border-[#d81b60]/60 transition-all duration-300 shadow-xl shadow-[#f9a8d4]/10">
+        <Card className="border-2 border-[#2a655f]/40 hover:border-[#2a655f]/60 transition-all duration-300 shadow-xl shadow-[#2a655f]/10">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
+            <CardTitle className="flex items-center gap-2 text-[#2a655f] dark:text-[#3a8a82]">
               <Coins className="h-5 w-5 text-emerald-500" />
               {isArabic ? "📈 الإيرادات" : "📈 Revenue"}
             </CardTitle>
@@ -2736,10 +2736,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-[#f9a8d4]/40 hover:border-[#d81b60]/60 transition-all duration-300 shadow-xl shadow-[#f9a8d4]/10">
+        <Card className="border-2 border-[#2a655f]/40 hover:border-[#2a655f]/60 transition-all duration-300 shadow-xl shadow-[#2a655f]/10">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
-              <TrendingUp className="h-5 w-5 text-[#d81b60]" />
+            <CardTitle className="flex items-center gap-2 text-[#2a655f] dark:text-[#3a8a82]">
+              <TrendingUp className="h-5 w-5 text-[#2a655f]" />
               {isArabic ? "📊 توزيع الطلبات" : "📊 Orders Distribution"}
             </CardTitle>
             <CardDescription>
@@ -2749,9 +2749,9 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           <CardContent>
             <div className="space-y-2">
               {[
-                { label: isArabic ? "قيد المراجعة" : "Pending", value: stats.pending, color: "bg-[#f9a8d4]" },
-                { label: isArabic ? "تم التعيين" : "Assigned", value: stats.assigned, color: "bg-[#f48fb1]" },
-                { label: isArabic ? "قيد التوصيل" : "In Transit", value: stats.inTransit, color: "bg-[#d81b60]" },
+                { label: isArabic ? "قيد المراجعة" : "Pending", value: stats.pending, color: "bg-[#3a8a82]" },
+                { label: isArabic ? "تم التعيين" : "Assigned", value: stats.assigned, color: "bg-[#2a655f]" },
+                { label: isArabic ? "قيد التوصيل" : "In Transit", value: stats.inTransit, color: "bg-[#1a4f4a]" },
                 { label: isArabic ? "تم التوصيل" : "Delivered", value: stats.delivered, color: "bg-emerald-500" },
                 { label: isArabic ? "ملغي" : "Cancelled", value: stats.cancelled, color: "bg-red-500" },
               ].map((item) => (
@@ -2772,33 +2772,33 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2 border-2 border-[#f9a8d4]/40 hover:border-[#d81b60]/60 transition-all duration-300 shadow-xl shadow-[#f9a8d4]/10">
+        <Card className="md:col-span-2 border-2 border-[#2a655f]/40 hover:border-[#2a655f]/60 transition-all duration-300 shadow-xl shadow-[#2a655f]/10">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[#d81b60] dark:text-[#f9a8d4]">
-              <Activity className="h-5 w-5 text-[#d81b60]" />
+            <CardTitle className="flex items-center gap-2 text-[#2a655f] dark:text-[#3a8a82]">
+              <Activity className="h-5 w-5 text-[#2a655f]" />
               {isArabic ? "⚡ مقاييس الأداء" : "⚡ Performance Metrics"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-[#fbcfe8]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
-                <Activity className="h-6 w-6 text-[#d81b60] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
-                <p className="text-2xl font-bold text-[#d81b60]">{stats.completionRate}%</p>
+              <div className="text-center p-4 bg-[#e8f0ee]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
+                <Activity className="h-6 w-6 text-[#2a655f] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
+                <p className="text-2xl font-bold text-[#2a655f]">{stats.completionRate}%</p>
                 <p className="text-xs text-muted-foreground">{isArabic ? "نسبة الإنجاز" : "Completion Rate"}</p>
               </div>
-              <div className="text-center p-4 bg-[#fbcfe8]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
-                <Clock className="h-6 w-6 text-[#d81b60] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
-                <p className="text-2xl font-bold text-[#d81b60]">{stats.avgDeliveryTime} {isArabic ? "د" : "min"}</p>
+              <div className="text-center p-4 bg-[#e8f0ee]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
+                <Clock className="h-6 w-6 text-[#2a655f] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
+                <p className="text-2xl font-bold text-[#2a655f]">{stats.avgDeliveryTime} {isArabic ? "د" : "min"}</p>
                 <p className="text-xs text-muted-foreground">{isArabic ? "متوسط وقت التوصيل" : "Avg Delivery Time"}</p>
               </div>
-              <div className="text-center p-4 bg-[#fbcfe8]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
-                <Package className="h-6 w-6 text-[#d81b60] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
-                <p className="text-2xl font-bold text-[#d81b60]">{stats.delivered}</p>
+              <div className="text-center p-4 bg-[#e8f0ee]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
+                <Package className="h-6 w-6 text-[#2a655f] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
+                <p className="text-2xl font-bold text-[#2a655f]">{stats.delivered}</p>
                 <p className="text-xs text-muted-foreground">{isArabic ? "تم التوصيل" : "Delivered"}</p>
               </div>
-              <div className="text-center p-4 bg-[#fbcfe8]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
-                <DollarSign className="h-6 w-6 text-[#d81b60] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
-                <p className="text-2xl font-bold text-[#d81b60]">{stats.totalRevenue.toLocaleString()}</p>
+              <div className="text-center p-4 bg-[#e8f0ee]/20 rounded-xl hover:shadow-md transition-all group hover:scale-105">
+                <DollarSign className="h-6 w-6 text-[#2a655f] mx-auto mb-2 group-hover:rotate-12 transition-transform" />
+                <p className="text-2xl font-bold text-[#2a655f]">{stats.totalRevenue.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">{isArabic ? "إجمالي الإيرادات" : "Total Revenue"}</p>
               </div>
             </div>
@@ -2813,7 +2813,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
     <div className="animate-in slide-in-from-top-5 duration-300">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-[#d81b60] dark:text-[#f9a8d4] flex items-center gap-2">
+          <h3 className="text-xl font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-2">
             <Crown className="h-5 w-5 text-amber-500" />
             {isArabic ? " المدراء" : " Managers"}
           </h3>
@@ -2831,10 +2831,10 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   )}
 </div>
 
-{/* ===== ACCEPT DELIVERY DIALOG - وردي ===== */}
+{/* ===== ACCEPT DELIVERY DIALOG - زيتي ===== */}
 <Dialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
-  <DialogContent className="max-w-lg rounded-2xl border-[#f9a8d4]/40 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-[#d81b60]/20 overflow-hidden max-h-[90vh] flex flex-col">
-    <div className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] p-5 text-white flex-shrink-0">
+  <DialogContent className="max-w-lg rounded-2xl border-[#2a655f]/40 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-[#2a655f]/20 overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] p-5 text-white flex-shrink-0">
       <div className="flex items-center gap-3">
         <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
           <Truck className="h-6 w-6 text-white" />
@@ -2855,7 +2855,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
     <div className="p-5 flex-1 overflow-y-auto">
       {distributorsLoading ? (
         <div className="flex flex-col items-center justify-center py-8">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#d81b60]/20 border-t-[#d81b60]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f]" />
           <p className="text-sm text-muted-foreground mt-2">
             {isArabic ? "جاري تحميل الموزعين..." : "Loading distributors..."}
           </p>
@@ -2880,7 +2880,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
               placeholder={isArabic ? "🔍 ابحث باسم أو رقم الموزع..." : "🔍 Search by name or phone..."}
               value={distributorSearch}
               onChange={(e) => setDistributorSearch(e.target.value)}
-              className="ps-9 h-10 rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+              className="ps-9 h-10 rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
             />
             {distributorSearch && (
               <button
@@ -2919,12 +2919,12 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                     className={cn(
                       "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-md",
                       selectedDistributorId === dist.id
-                        ? "border-[#d81b60] bg-[#fbcfe8]/30 shadow-md shadow-[#d81b60]/20"
-                        : "border-[#f9a8d4]/30 hover:border-[#d81b60]/50 hover:bg-[#fbcfe8]/20"
+                        ? "border-[#2a655f] bg-[#e8f0ee]/30 shadow-md shadow-[#2a655f]/20"
+                        : "border-[#2a655f]/30 hover:border-[#2a655f]/50 hover:bg-[#e8f0ee]/20"
                     )}
                   >
                     {/* صورة الموزع */}
-                    <div className="h-12 w-12 rounded-full bg-[#fbcfe8]/40 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-[#f9a8d4]/40">
+                    <div className="h-12 w-12 rounded-full bg-[#e8f0ee]/40 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-[#2a655f]/40">
                       {dist.avatar_url ? (
                         <img 
                           src={dist.avatar_url} 
@@ -2935,7 +2935,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                           }}
                         />
                       ) : (
-                        <span className="text-lg font-bold text-[#d81b60]">
+                        <span className="text-lg font-bold text-[#2a655f]">
                           {dist.full_name_ar?.charAt(0) || dist.full_name_en?.charAt(0) || "M"}
                         </span>
                       )}
@@ -2972,7 +2972,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                     {/* ✅ إحصائيات الموزع */}
                     <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                       {isLoadingStats ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-[#d81b60]" />
+                        <Loader2 className="h-4 w-4 animate-spin text-[#2a655f]" />
                       ) : (
                         <>
                           <div className="flex items-center gap-1.5">
@@ -3009,8 +3009,8 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                     <div className={cn(
                       "h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
                       selectedDistributorId === dist.id
-                        ? "border-[#d81b60] bg-[#d81b60]"
-                        : "border-[#f9a8d4]/50"
+                        ? "border-[#2a655f] bg-[#2a655f]"
+                        : "border-[#2a655f]/50"
                     )}>
                       {selectedDistributorId === dist.id && (
                         <Check className="h-4 w-4 text-white" />
@@ -3039,9 +3039,9 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
             </div>
           )}
 
-          <div className="mt-4 p-4 bg-[#fbcfe8]/20 rounded-xl border border-[#f9a8d4]/30">
+          <div className="mt-4 p-4 bg-[#e8f0ee]/20 rounded-xl border border-[#2a655f]/30">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-3">
-              <Clock className="h-3.5 w-3.5 text-[#d81b60]" />
+              <Clock className="h-3.5 w-3.5 text-[#2a655f]" />
               {isArabic ? "⏰ الوقت المتوقع للوصول" : "⏰ Estimated Delivery Time"}
             </p>
             
@@ -3057,7 +3057,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                     step={0.5}
                     value={estimatedDeliveryHours}
                     onChange={(e) => setEstimatedDeliveryHours(parseFloat(e.target.value) || 0)}
-                    className="h-9 rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 w-full"
+                    className="h-9 rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20 w-full"
                   />
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {isArabic ? "ساعة" : "hrs"}
@@ -3084,7 +3084,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                     step={0.25}
                     value={estimatedPickupHours}
                     onChange={(e) => setEstimatedPickupHours(parseFloat(e.target.value) || 0)}
-                    className="h-9 rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 w-full"
+                    className="h-9 rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20 w-full"
                   />
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {isArabic ? "ساعة" : "hrs"}
@@ -3105,7 +3105,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
       )}
     </div>
 
-    <div className="p-4 border-t border-[#f9a8d4]/30 bg-[#fbcfe8]/20 flex-shrink-0">
+    <div className="p-4 border-t border-[#2a655f]/30 bg-[#e8f0ee]/20 flex-shrink-0">
       <div className="flex items-center gap-3">
         <Button
           variant="outline"
@@ -3116,7 +3116,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
             setSelectedDistributorId("");
             setDistributorSearch("");
           }}
-          className="flex-1 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
+          className="flex-1 rounded-xl border-[#2a655f]/30 hover:bg-[#e8f0ee]/30"
         >
           <X className="h-4 w-4 mr-1.5" />
           {isArabic ? "إلغاء" : "Cancel"}
@@ -3124,7 +3124,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
         <Button
           onClick={handleAcceptDelivery}
           disabled={!selectedDistributorId || isProcessing}
-          className="flex-1 rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] shadow-lg shadow-[#d81b60]/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+          className="flex-1 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white hover:from-[#1a4f4a] hover:to-[#2a655f] shadow-lg shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
         >
           {isProcessing ? (
             <>
@@ -3143,7 +3143,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   </DialogContent>
 </Dialog>
 
-{/* ===== REJECT DELIVERY DIALOG - وردي ===== */}
+{/* ===== REJECT DELIVERY DIALOG - زيتي ===== */}
 <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
   <DialogContent className="max-w-md rounded-2xl border-red-200/50 dark:border-red-800/30 bg-white dark:bg-slate-900 p-0 shadow-2xl shadow-red-500/10 overflow-hidden">
     <div className="bg-gradient-to-r from-red-600 to-rose-600 p-5 text-white">
@@ -3252,7 +3252,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   </DialogContent>
 </Dialog>
 
-{/* ===== DEACTIVATE DISTRIBUTOR DIALOG - زيتي ووردي ===== */}
+{/* ===== DEACTIVATE DISTRIBUTOR DIALOG - زيتي ورمادي ===== */}
 <Dialog open={showDeactivateDistributorDialog} onOpenChange={setShowDeactivateDistributorDialog}>
   <DialogContent className="max-w-md rounded-2xl border-0 p-0 overflow-hidden shadow-2xl bg-white dark:bg-slate-900">
     <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-6 text-white">
@@ -3357,7 +3357,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
 
 {/* ===== ORDER DETAILS DIALOG - مع دعم العروض الترويجية ===== */}
 <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#f9a8d4]/30 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-[#2a655f]/30 bg-white dark:bg-slate-900 p-6 shadow-2xl">
     <Button
       variant="ghost"
       size="icon"
@@ -3373,7 +3373,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
       if (!orderData) {
         return (
           <div className="py-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#d81b60]" />
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2a655f]" />
             <p className="text-sm text-muted-foreground mt-2">{isArabic ? "جاري تحميل تفاصيل الطلب..." : "Loading order details..."}</p>
           </div>
         );
@@ -3521,13 +3521,13 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                <div className="p-2 rounded-2xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white shadow-lg shadow-[#d81b60]/30">
+                <div className="p-2 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/30">
                   <ShoppingBag className="h-5 w-5" />
                 </div>
                 {isArabic ? "تفاصيل الطلب" : "Order Details"}
               </h2>
               <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
                 {isArabic ? `طلب #${orderData.id?.substring(0, 8) || 'غير معروف'}` : `Order #${orderData.id?.substring(0, 8) || 'Unknown'}`}
               </p>
             </div>
@@ -3569,23 +3569,23 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           </div>
 
           {/* ===== معلومات المتجر والعميل ===== */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-[#e8f0ee]/20 dark:bg-[#e8f0ee]/10 rounded-xl border border-[#2a655f]/30 mb-4">
             {/* ✅ المتجر */}
             <div className="flex items-center gap-3">
               {storeLogo ? (
                 <img 
                   src={storeLogo} 
                   alt={storeName}
-                  className="h-12 w-12 rounded-xl object-cover border-2 border-[#f9a8d4]/30"
+                  className="h-12 w-12 rounded-xl object-cover border-2 border-[#2a655f]/30"
                 />
               ) : (
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white font-bold text-lg">
+                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white font-bold text-lg">
                   {storeName.charAt(0).toUpperCase()}
                 </div>
               )}
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                  <Store className="h-3 w-3 text-[#d81b60]" />
+                  <Store className="h-3 w-3 text-[#2a655f]" />
                   {isArabic ? "المتجر" : "Store"}
                 </p>
                 <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{storeName}</p>
@@ -3601,7 +3601,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
             {/* ✅ العميل */}
             <div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                <User className="h-3 w-3 text-[#d81b60]" />
+                <User className="h-3 w-3 text-[#2a655f]" />
                 {isArabic ? "العميل" : "Customer"}
               </p>
               <div className="mt-1 flex items-center gap-2">
@@ -3609,11 +3609,11 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                   <img 
                     src={buyerAvatar} 
                     alt={buyerName}
-                    className="h-8 w-8 rounded-full object-cover border-2 border-[#f9a8d4]/30"
+                    className="h-8 w-8 rounded-full object-cover border-2 border-[#2a655f]/30"
                   />
                 ) : (
-                  <div className="h-8 w-8 rounded-full bg-[#fbcfe8]/30 flex items-center justify-center border-2 border-[#f9a8d4]/30">
-                    <User className="h-4 w-4 text-[#d81b60]" />
+                  <div className="h-8 w-8 rounded-full bg-[#e8f0ee]/30 flex items-center justify-center border-2 border-[#2a655f]/30">
+                    <User className="h-4 w-4 text-[#2a655f]" />
                   </div>
                 )}
                 <div>
@@ -3630,20 +3630,20 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           </div>
 
           {/* ===== عنوان التوصيل ===== */}
-          <div className="p-3 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30 mb-4">
+          <div className="p-3 bg-[#e8f0ee]/20 dark:bg-[#e8f0ee]/10 rounded-xl border border-[#2a655f]/30 mb-4">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-              <MapPin className="h-3 w-3 text-[#d81b60]" />
+              <MapPin className="h-3 w-3 text-[#2a655f]" />
               {isArabic ? "عنوان التوصيل" : "Delivery Address"}
             </p>
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mt-1">{deliveryAddress}</p>
           </div>
 
           {/* ===== المنتجات مع تفاصيل الفيرنتات والعروض الترويجية ===== */}
-          <div className="border-t border-[#f9a8d4]/30 pt-4">
-            <h4 className="font-bold text-sm flex items-center gap-2 mb-3 text-[#d81b60]">
-              <Package className="h-4 w-4 text-[#d81b60]" />
+          <div className="border-t border-[#2a655f]/30 pt-4">
+            <h4 className="font-bold text-sm flex items-center gap-2 mb-3 text-[#2a655f]">
+              <Package className="h-4 w-4 text-[#2a655f]" />
               {isArabic ? "المنتجات" : "Products"}
-              <Badge className="bg-[#fbcfe8]/30 text-[#d81b60] border-0 text-[10px]">
+              <Badge className="bg-[#e8f0ee]/30 text-[#2a655f] border-0 text-[10px]">
                 {orderItems.length}
               </Badge>
             </h4>
@@ -3670,7 +3670,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                         "p-3 rounded-xl border-2 transition-all duration-300",
                         isPromo 
                           ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50 hover:border-purple-400/70" 
-                          : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50 hover:border-[#f9a8d4]/50"
+                          : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/50"
                       )}
                     >
                       {/* ===== عرض العرض الترويجي ===== */}
@@ -3822,9 +3822,9 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                               {itemQuantity > 1 && (
                                 <>
                                   <span className="text-muted-foreground/30">|</span>
-                                  <span className="flex items-center gap-1 bg-[#fbcfe8]/30 px-2 py-0.5 rounded-full border border-[#f9a8d4]/30">
-                                    <span className="font-medium text-[#d81b60]">{isArabic ? "الإجمالي:" : "Total:"}</span>
-                                    <span className="font-bold text-[#d81b60]">{formatPrice(totalPrice, currency || app.currency, app.lang)}</span>
+                                  <span className="flex items-center gap-1 bg-[#e8f0ee]/30 px-2 py-0.5 rounded-full border border-[#2a655f]/30">
+                                    <span className="font-medium text-[#2a655f]">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                                    <span className="font-bold text-[#2a655f]">{formatPrice(totalPrice, currency || app.currency, app.lang)}</span>
                                   </span>
                                 </>
                               )}
@@ -3832,8 +3832,8 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                               {hasVariation && variationDisplay && (
                                 <>
                                   <span className="text-muted-foreground/30">•</span>
-                                  <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#fbcfe8]/20 px-2 py-0.5 rounded-full border border-[#f9a8d4]/20">
-                                    <Layers className="h-3 w-3 text-[#d81b60]" />
+                                  <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#e8f0ee]/20 px-2 py-0.5 rounded-full border border-[#2a655f]/20">
+                                    <Layers className="h-3 w-3 text-[#2a655f]" />
                                     {variationDisplay}
                                     {imageUrl && (
                                       <img 
@@ -3859,8 +3859,8 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                               {item.selected_options?.selected_color && (
                                 <>
                                   <span className="text-muted-foreground/30">•</span>
-                                  <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#fbcfe8]/20 px-2 py-0.5 rounded-full">
-                                    <span className="font-medium text-[#d81b60]">🎨</span>
+                                  <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#e8f0ee]/20 px-2 py-0.5 rounded-full">
+                                    <span className="font-medium text-[#2a655f]">🎨</span>
                                     {item.selected_options.selected_color}
                                     {item.selected_options.selected_size && ` (${item.selected_options.selected_size})`}
                                   </span>
@@ -3897,7 +3897,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                   
                   return (
                     <div className="space-y-3">
-                      <div className="flex items-center gap-4 p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#f9a8d4]/50 transition-all duration-300">
+                      <div className="flex items-center gap-4 p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#2a655f]/50 transition-all duration-300">
                         <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
                           {oldImageUrl ? (
                             <img src={oldImageUrl} alt="" className="h-full w-full object-cover" />
@@ -3929,8 +3929,8 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                             {oldHasVariation && oldVariationDisplay && (
                               <>
                                 <span className="text-muted-foreground/30">•</span>
-                                <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#fbcfe8]/20 px-2 py-0.5 rounded-full border border-[#f9a8d4]/20">
-                                  <Layers className="h-3 w-3 text-[#d81b60]" />
+                                <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#e8f0ee]/20 px-2 py-0.5 rounded-full border border-[#2a655f]/20">
+                                  <Layers className="h-3 w-3 text-[#2a655f]" />
                                   {oldVariationDisplay}
                                   {oldImageUrl && (
                                     <img src={oldImageUrl} alt="" className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5" />
@@ -3978,17 +3978,17 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
           )}
 
           {/* ===== إجمالي الطلب ===== */}
-          <div className="p-4 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border border-[#f9a8d4]/30">
+          <div className="p-4 bg-[#e8f0ee]/20 dark:bg-[#e8f0ee]/10 rounded-xl border border-[#2a655f]/30">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">
                 {isArabic ? "المجموع الفرعي" : "Subtotal"}
               </span>
-              <span className="text-lg font-bold text-[#d81b60] dark:text-[#f9a8d4]">
+              <span className="text-lg font-bold text-[#2a655f] dark:text-[#3a8a82]">
                 {formatPrice(subtotal, currency || app.currency, app.lang)}
               </span>
             </div>
             
-            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#f9a8d4]/20">
+            <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/20">
               <span className="text-sm text-muted-foreground">
                 {isArabic ? "سعر التوصيل" : "Delivery Fee"}
               </span>
@@ -3996,7 +3996,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 "text-sm font-medium",
                 deliveryFee === 0 
                   ? "text-emerald-500 font-bold" 
-                  : "text-[#d81b60]"
+                  : "text-[#2a655f]"
               )}>
                 {deliveryFee === 0 
                   ? (isArabic ? "🆓 مجاني" : "🆓 Free")
@@ -4006,7 +4006,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
             </div>
             
             {promoDiscount > 0 && (
-              <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#f9a8d4]/20 text-emerald-500">
+              <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#2a655f]/20 text-emerald-500">
                 <span className="text-sm">
                   {isArabic ? "💚 الخصم" : "💚 Discount"}
                 </span>
@@ -4016,11 +4016,11 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
               </div>
             )}
             
-            <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#f9a8d4]/30">
-              <span className="text-sm font-semibold text-[#d81b60] dark:text-white">
+            <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#2a655f]/30">
+              <span className="text-sm font-semibold text-[#2a655f] dark:text-white">
                 {isArabic ? "الإجمالي الكامل" : "Total"}
               </span>
-              <span className="text-2xl font-bold text-[#d81b60] dark:text-[#f9a8d4]">
+              <span className="text-2xl font-bold text-[#2a655f] dark:text-[#3a8a82]">
                 {formatPrice(totalWithDelivery, currency || app.currency, app.lang)}
               </span>
             </div>
@@ -4043,7 +4043,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
             <Button
               variant="outline"
               onClick={() => setShowOrderDetails(false)}
-              className="rounded-xl border-[#f9a8d4]/30 text-[#d81b60] hover:bg-[#fbcfe8]/30"
+              className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#e8f0ee]/30"
             >
               {isArabic ? "إغلاق" : "Close"}
             </Button>
@@ -4052,7 +4052,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
-                  className="rounded-xl bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] shadow-lg shadow-[#d81b60]/30 transition-all duration-300 hover:scale-105"
+                  className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white hover:from-[#1a4f4a] hover:to-[#2a655f] shadow-lg shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105"
                   onClick={() => {
                     setShowOrderDetails(false);
                     const orderId = orderData.order?.id || orderData.id;
@@ -4169,8 +4169,8 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   }
 
   @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 20px rgba(216,27,96,0.1); }
-    50% { box-shadow: 0 0 40px rgba(216,27,96,0.2); }
+    0%, 100% { box-shadow: 0 0 20px rgba(42,101,95,0.1); }
+    50% { box-shadow: 0 0 40px rgba(42,101,95,0.2); }
   }
   .animate-pulse-glow {
     animation: pulse-glow 3s ease-in-out infinite;
@@ -4186,8 +4186,8 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
   }
 
   @keyframes pulse-glow {
-    0%, 100% { filter: drop-shadow(0 0 15px rgba(249,168,212,0.3)); }
-    50% { filter: drop-shadow(0 0 30px rgba(249,168,212,0.6)); }
+    0%, 100% { filter: drop-shadow(0 0 15px rgba(42,101,95,0.3)); }
+    50% { filter: drop-shadow(0 0 30px rgba(42,101,95,0.6)); }
   }
   .animate-pulse-glow {
     animation: pulse-glow 3s ease-in-out infinite;
@@ -4208,18 +4208,18 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
 }
 
 // ============================================================
-// 📦 StatCard - وردية (مطابقة لصفحة الموزع)
+// 📦 StatCard - زيتية (مطابقة لصفحة الموزع)
 // ============================================================
-function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: "olive" | "pink"; }) {
+function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: "olive" | "slate"; }) {
   return (
-    <div className="bg-[#fbcfe8] dark:bg-[#fbcfe8]/30 rounded-xl p-4 shadow-sm border-2 border-[#f9a8d4]/60 dark:border-[#f9a8d4]/30 hover:shadow-lg hover:border-[#d81b60]/60 transition-all duration-300 hover:scale-[1.03] group cursor-pointer">
+    <div className="bg-[#e8f0ee] dark:bg-[#e8f0ee]/30 rounded-xl p-4 shadow-sm border-2 border-[#3a8a82]/60 dark:border-[#3a8a82]/30 hover:shadow-lg hover:border-[#2a655f]/60 transition-all duration-300 hover:scale-[1.03] group cursor-pointer">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium text-[#2a655f] dark:text-[#f9a8d4] group-hover:text-[#d81b60] transition-colors duration-300">{label}</p>
+          <p className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82] group-hover:text-[#2a655f] transition-colors duration-300">{label}</p>
           <p className="text-xl font-bold mt-1 text-slate-900 dark:text-white group-hover:scale-105 transition-transform duration-300">{value}</p>
         </div>
-        <div className="h-8 w-8 rounded-lg bg-[#f9a8d4]/50 dark:bg-[#f9a8d4]/30 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 group-hover:bg-[#f9a8d4]/70">
-          <Icon className="h-4 w-4 text-[#d81b60]" />
+        <div className="h-8 w-8 rounded-lg bg-[#3a8a82]/50 dark:bg-[#3a8a82]/30 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 group-hover:bg-[#3a8a82]/70">
+          <Icon className="h-4 w-4 text-[#2a655f]" />
         </div>
       </div>
     </div>
@@ -4227,7 +4227,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
 }
 
 // ============================================================
-// 📦 OrderCard - وردي
+// 📦 OrderCard - زيتي
 // ============================================================
 function OrderCard({ 
   order, 
@@ -4300,10 +4300,10 @@ function OrderCard({
   };
 
   const statusColors: Record<string, string> = {
-    pending: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
-    assigned: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
-    picked_up: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
-    in_transit: "bg-[#fbcfe8]/40 text-[#d81b60] border-[#f9a8d4]/30",
+    pending: "bg-[#e8f0ee]/60 text-[#2a655f] border-[#2a655f]/30",
+    assigned: "bg-[#e8f0ee]/60 text-[#2a655f] border-[#2a655f]/30",
+    picked_up: "bg-[#e8f0ee]/60 text-[#2a655f] border-[#2a655f]/30",
+    in_transit: "bg-[#e8f0ee]/60 text-[#2a655f] border-[#2a655f]/30",
     delivered: "bg-emerald-500/20 text-emerald-600 border-emerald-500/20",
     cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
     failed: "bg-red-500/10 text-red-500 border-red-500/20",
@@ -4323,41 +4323,41 @@ function OrderCard({
   const itemsCount = orderDetails?.order_items?.length || 0;
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-[#f9a8d4]/60 transition-all duration-300 hover:scale-[1.01] group">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-[#2a655f]/60 transition-all duration-300 hover:scale-[1.01] group">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          <div className="h-10 w-10 rounded-xl bg-[#fbcfe8]/40 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-            <Package className="h-5 w-5 text-[#d81b60] dark:text-[#f9a8d4]" />
+          <div className="h-10 w-10 rounded-xl bg-[#e8f0ee]/40 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+            <Package className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-bold text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors duration-300">
+              <p className="font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors duration-300">
                 #{order.tracking_number || order.id.substring(0, 8)}
               </p>
               <Badge className={cn("border transition-all duration-300 hover:scale-105", statusColors[order.status] || "bg-slate-500/10 text-slate-500")}>
                 {statusLabels[order.status] || order.status}
               </Badge>
               {itemsCount > 0 && (
-                <Badge className="bg-[#fbcfe8]/30 text-[#d81b60] border-0 text-[9px]">
+                <Badge className="bg-[#e8f0ee]/30 text-[#2a655f] border-0 text-[9px]">
                   {itemsCount} {isArabic ? "منتج" : "items"}
                 </Badge>
               )}
             </div>
             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
-                <User className="h-3 w-3 text-[#d81b60]" />
+                <User className="h-3 w-3 text-[#2a655f]" />
                 {getCustomerName()}
               </span>
               
               <span className="text-muted-foreground/30">|</span>
               
-              <span className="flex items-center gap-1 group-hover:text-[#d81b60] transition-colors duration-300">
+              <span className="flex items-center gap-1 group-hover:text-[#2a655f] transition-colors duration-300">
                 <MapPin className="h-3 w-3 group-hover:scale-110 transition-transform duration-300" />
                 {order.delivery_address?.substring(0, 30) || (isArabic ? "عنوان غير محدد" : "No address")}
               </span>
               <span className="text-muted-foreground/30">|</span>
               
-              <span className="flex items-center gap-1 text-[#d81b60]">
+              <span className="flex items-center gap-1 text-[#2a655f]">
                 <Clock className="h-3 w-3" />
                 {formatTime(order.created_at)}
               </span>
@@ -4368,7 +4368,7 @@ function OrderCard({
               </span>
               
               {loadingDetails ? (
-                <span className="flex items-center gap-1 text-[#d81b60]">
+                <span className="flex items-center gap-1 text-[#2a655f]">
                   <Loader2 className="h-3 w-3 animate-spin" />
                 </span>
               ) : detailsError ? (
@@ -4376,7 +4376,7 @@ function OrderCard({
               ) : orderDetails ? (
                 <>
                   <span className="text-muted-foreground/30">|</span>
-                  <span className="font-medium text-[#d81b60] flex items-center gap-1">
+                  <span className="font-medium text-[#2a655f] flex items-center gap-1">
                     <Truck className="h-3 w-3" />
                     {isArabic ? "توصيل:" : "Delivery:"}
                     {getDeliveryFee() === 0 
@@ -4386,14 +4386,14 @@ function OrderCard({
                   </span>
 
                   <span className="text-muted-foreground/30">|</span>
-                  <span className="font-bold text-[#d81b60] flex items-center gap-1">
+                  <span className="font-bold text-[#2a655f] flex items-center gap-1">
                     <Wallet className="h-3 w-3" />
                     {isArabic ? "الإجمالي:" : "Total:"}
                     {formatPrice(getTotal(), app.currency, app.lang)}
                   </span>
                 </>
               ) : (
-                <span className="font-medium text-[#d81b60]">
+                <span className="font-medium text-[#2a655f]">
                   {order.delivery_fee?.toLocaleString()} {app.currency}
                 </span>
               )}
@@ -4406,7 +4406,7 @@ function OrderCard({
             <div className="flex items-center gap-1.5">
               <Button
                 size="sm"
-                className="h-7 px-2.5 rounded-lg bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white text-[10px] font-bold shadow-md shadow-[#d81b60]/30 transition-all duration-300 hover:scale-105"
+                className="h-7 px-2.5 rounded-lg bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white text-[10px] font-bold shadow-md shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAccept();
@@ -4434,7 +4434,7 @@ function OrderCard({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-3 rounded-xl hover:bg-[#fbcfe8]/30 transition-all duration-300 group-hover:scale-110 text-[#d81b60]"
+            className="h-8 px-3 rounded-xl hover:bg-[#e8f0ee]/30 transition-all duration-300 group-hover:scale-110 text-[#2a655f]"
             onClick={() => {
               onViewDetails(orderDetails || order);
             }}
@@ -4448,7 +4448,7 @@ function OrderCard({
 }
 
 // ============================================================
-// 📦 DistributorCard - وردي مع بوردر ملفت
+// 📦 DistributorCard - زيتي مع بوردر ملفت
 // ============================================================
 function DistributorCard({ 
   distributor, 
@@ -4462,18 +4462,18 @@ function DistributorCard({
   const isActive = distributor.is_active !== false;
   
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border-3 border-[#d81b60]/40 hover:border-[#d81b60] hover:shadow-xl shadow-[#d81b60]/10 transition-all duration-300 hover:scale-[1.03] group">
+    <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border-3 border-[#2a655f]/40 hover:border-[#2a655f] hover:shadow-xl shadow-[#2a655f]/10 transition-all duration-300 hover:scale-[1.03] group">
       <div className="flex items-start gap-4">
-        <div className="h-12 w-12 rounded-full bg-[#fbcfe8]/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all duration-300 border-2 border-[#f9a8d4]/50">
+        <div className="h-12 w-12 rounded-full bg-[#e8f0ee]/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-all duration-300 border-2 border-[#3a8a82]/50">
           {distributor.avatar_url ? (
             <img src={distributor.avatar_url} alt="" className="h-full w-full object-cover rounded-full" />
           ) : (
-            <Users className="h-6 w-6 text-[#d81b60]" />
+            <Users className="h-6 w-6 text-[#2a655f]" />
           )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-bold text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors duration-300 line-clamp-1">
+            <p className="font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors duration-300 line-clamp-1">
               {isArabic ? distributor.full_name_ar : distributor.full_name_en || distributor.full_name_ar}
             </p>
             {isActive ? (

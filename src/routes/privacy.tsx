@@ -8,7 +8,7 @@ export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
   head: () => ({ 
     meta: [{ 
-      title: "سياسة الخصوصية - السوق لعندك" 
+      title: "سياسة الخصوصية - ذوق" 
     }] 
   }),
 });
@@ -114,7 +114,7 @@ function PrivacyPage() {
           
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <span className="h-1 w-12 rounded-full bg-gradient-to-r from-[#2a655f] to-[#3a8a82]" />
-            <span>{isRTL ? "السوق عندك" : "Souqi"}</span>
+            <span>{isRTL ? "ذوق" : "Zooq"}</span>
             <span className="h-1 w-12 rounded-full bg-gradient-to-r from-[#2a655f] to-[#3a8a82]" />
           </div>
         </div>

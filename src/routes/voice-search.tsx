@@ -16,8 +16,8 @@ export const Route = createFileRoute("/voice-search")({
   component: VoiceSearchPage,
   head: () => ({
     meta: [
-      { title: "البحث الصوتي المتقدم — السوق عندك" },
-      { name: "description", content: "ابحث بصوتك عن المنتجات والمتاجر والتصنيفات في السوق عندك" },
+      { title: "البحث الصوتي المتقدم — ذوق" },
+      { name: "description", content: "ابحث بصوتك عن المنتجات والمتاجر والتصنيفات في ذوق" },
     ],
   }),
 });

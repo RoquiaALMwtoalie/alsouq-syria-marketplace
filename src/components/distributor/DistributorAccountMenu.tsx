@@ -371,18 +371,18 @@ export function DistributorAccountMenu({
 
   return (
     <>
-      {/* ===== DROPDOWN MENU - PINK THEME ===== */}
+      {/* ===== DROPDOWN MENU - OLIVE THEME ===== */}
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 group">
             <div className="relative">
-              <Avatar className="h-10 w-10 border-2 border-[#f9a8d4]/30 group-hover:border-[#f9a8d4]/60 transition-all duration-300">
+              <Avatar className="h-10 w-10 border-2 border-[#3a8a82]/30 group-hover:border-[#3a8a82]/60 transition-all duration-300">
                 <AvatarImage src={localUserData.avatar_url || undefined} />
-                <AvatarFallback className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white text-sm font-bold">
+                <AvatarFallback className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white text-sm font-bold">
                   {getInitials(localUserData.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[#f9a8d4]" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[#3a8a82]" />
             </div>
             <div className="hidden md:block text-right">
               <p className="text-xs font-medium text-white truncate max-w-[100px]">
@@ -400,9 +400,9 @@ export function DistributorAccountMenu({
           </button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-80 rounded-2xl p-1 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20 shadow-2xl overflow-hidden">
-          {/* Header - PINK GRADIENT */}
-          <div className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] p-4 text-white border-b border-white/10">
+        <DropdownMenuContent align="end" className="w-80 rounded-2xl p-1 border-[#3a8a82]/30 dark:border-[#3a8a82]/20 shadow-2xl overflow-hidden">
+          {/* Header - OLIVE GRADIENT */}
+          <div className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] p-4 text-white border-b border-white/10">
             <div className="flex items-center gap-3">
               <Avatar className="h-14 w-14 border-2 border-white/30 shadow-lg">
                 <AvatarImage src={localUserData.avatar_url || undefined} />
@@ -438,10 +438,10 @@ export function DistributorAccountMenu({
             </div>
           </div>
 
-          {/* ✅ الأرباح والطلبات والتقييم - PINK THEME */}
+          {/* ✅ الأرباح والطلبات والتقييم - OLIVE THEME */}
           {showEarnings && (
-            <div className="grid grid-cols-3 gap-1.5 p-3 border-b border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
-              <div className="text-center p-2 bg-[#fbcfe8]/30 dark:bg-[#fbcfe8]/20 rounded-lg hover:bg-[#fbcfe8]/50 transition">
+            <div className="grid grid-cols-3 gap-1.5 p-3 border-b border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+              <div className="text-center p-2 bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/20 rounded-lg hover:bg-[#e8f0ee]/50 transition">
                 <DollarSign className="h-4 w-4 text-emerald-500 mx-auto mb-0.5" />
                 <p className="text-sm font-bold text-slate-900 dark:text-white">
                   {earnings.toLocaleString()}
@@ -450,7 +450,7 @@ export function DistributorAccountMenu({
                   {isArabic ? "الأرباح" : "Earnings"}
                 </p>
               </div>
-              <div className="text-center p-2 bg-[#fbcfe8]/30 dark:bg-[#fbcfe8]/20 rounded-lg hover:bg-[#fbcfe8]/50 transition">
+              <div className="text-center p-2 bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/20 rounded-lg hover:bg-[#e8f0ee]/50 transition">
                 <Package className="h-4 w-4 text-blue-500 mx-auto mb-0.5" />
                 <p className="text-sm font-bold text-slate-900 dark:text-white">
                   {ordersCount}
@@ -459,7 +459,7 @@ export function DistributorAccountMenu({
                   {isArabic ? "الطلبات" : "Orders"}
                 </p>
               </div>
-              <div className="text-center p-2 bg-[#fbcfe8]/30 dark:bg-[#fbcfe8]/20 rounded-lg hover:bg-[#fbcfe8]/50 transition">
+              <div className="text-center p-2 bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/20 rounded-lg hover:bg-[#e8f0ee]/50 transition">
                 <Star className="h-4 w-4 text-yellow-500 mx-auto mb-0.5 fill-yellow-400" />
                 <p className="text-sm font-bold text-slate-900 dark:text-white">
                   {rating.toFixed(1)}
@@ -471,13 +471,13 @@ export function DistributorAccountMenu({
             </div>
           )}
 
-          {/* ✅ تعديل الملف الشخصي - PINK THEME */}
+          {/* ✅ تعديل الملف الشخصي - OLIVE THEME */}
           <DropdownMenuItem 
             onClick={() => {
               setShowProfileDialog(true);
               setIsOpen(false);
             }}
-            className="rounded-xl cursor-pointer py-2.5 px-3 hover:bg-[#fbcfe8]/30 dark:hover:bg-[#fbcfe8]/20 group"
+            className="rounded-xl cursor-pointer py-2.5 px-3 hover:bg-[#e8f0ee]/30 dark:hover:bg-[#e8f0ee]/20 group"
           >
             <div className="flex items-center gap-3 w-full">
               <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition">
@@ -497,13 +497,13 @@ export function DistributorAccountMenu({
 
           <DropdownMenuSeparator className="my-1.5" />
 
-          {/* ✅ تغيير كلمة المرور - PINK THEME */}
+          {/* ✅ تغيير كلمة المرور - OLIVE THEME */}
           <DropdownMenuItem 
             onClick={() => {
               setShowPasswordDialog(true);
               setIsOpen(false);
             }}
-            className="rounded-xl cursor-pointer py-2.5 px-3 hover:bg-[#fbcfe8]/30 dark:hover:bg-[#fbcfe8]/20 group"
+            className="rounded-xl cursor-pointer py-2.5 px-3 hover:bg-[#e8f0ee]/30 dark:hover:bg-[#e8f0ee]/20 group"
           >
             <div className="flex items-center gap-3 w-full">
               <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition">
@@ -542,11 +542,11 @@ export function DistributorAccountMenu({
             </div>
           </DropdownMenuItem>
 
-          {/* Footer - PINK THEME */}
-          <div className="px-4 py-2 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 border-t border-[#f9a8d4]/20 dark:border-[#f9a8d4]/10">
+          {/* Footer - OLIVE THEME */}
+          <div className="px-4 py-2 bg-[#e8f0ee]/20 dark:bg-[#e8f0ee]/10 border-t border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
               <span className="flex items-center gap-1">
-                <Shield className="h-3 w-3 text-[#d81b60]" />
+                <Shield className="h-3 w-3 text-[#2a655f]" />
                 {isArabic ? "حساب نشط" : "Active account"}
               </span>
               <span className="flex items-center gap-1">
@@ -558,11 +558,11 @@ export function DistributorAccountMenu({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* ===== DIALOG: تعديل الملف الشخصي - PINK THEME ===== */}
+      {/* ===== DIALOG: تعديل الملف الشخصي - OLIVE THEME ===== */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-0">
-          {/* Header - PINK GRADIENT */}
-          <div className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] p-6 text-white sticky top-0 z-10">
+          {/* Header - OLIVE GRADIENT */}
+          <div className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] p-6 text-white sticky top-0 z-10">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
                 <UserCog className="h-6 w-6 text-white" />
@@ -583,7 +583,7 @@ export function DistributorAccountMenu({
           {/* Body */}
           <form onSubmit={handleUpdateProfile} className="p-6 space-y-4">
             {/* ✅ صورة الموزع */}
-            <div className="flex flex-col items-center gap-3 p-4 bg-[#fbcfe8]/20 dark:bg-[#fbcfe8]/10 rounded-xl border-2 border-[#f9a8d4]/30 dark:border-[#f9a8d4]/20">
+            <div className="flex flex-col items-center gap-3 p-4 bg-[#e8f0ee]/20 dark:bg-[#e8f0ee]/10 rounded-xl border-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
               <ImageInput
                 value={localUserData.avatar_url || ""}
                 onChange={handleImageChange}
@@ -591,7 +591,7 @@ export function DistributorAccountMenu({
                 folder="distributors"
                 lang={isArabic ? "ar" : "en"}
                 label={isArabic ? "صورة الموزع" : "Distributor Photo"}
-                previewClassName="h-24 w-24 rounded-full object-cover border-4 border-[#f9a8d4]/50"
+                previewClassName="h-24 w-24 rounded-full object-cover border-4 border-[#3a8a82]/50"
                 hint={isArabic ? "اضغط لرفع صورة الموزع" : "Click to upload distributor photo"}
               />
               <p className="text-xs text-muted-foreground">
@@ -602,7 +602,7 @@ export function DistributorAccountMenu({
             {/* ✅ الاسم */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
+                <Label className="text-sm font-medium text-[#2a655f] dark:text-[#3a8a82]">
                   {isArabic ? "الاسم (عربي)" : "Name (Arabic)"} *
                 </Label>
                 <Input
@@ -610,25 +610,25 @@ export function DistributorAccountMenu({
                   onChange={(e) => setProfileData({ ...profileData, full_name_ar: e.target.value })}
                   placeholder={isArabic ? "أحمد محمد" : "Ahmed Mohamad"}
                   required
-                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                  className="rounded-xl border-[#3a8a82]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
+                <Label className="text-sm font-medium text-[#2a655f] dark:text-[#3a8a82]">
                   {isArabic ? "الاسم (إنجليزي)" : "Name (English)"}
                 </Label>
                 <Input
                   value={profileData.full_name_en}
                   onChange={(e) => setProfileData({ ...profileData, full_name_en: e.target.value })}
                   placeholder="Ahmed Mohamad"
-                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                  className="rounded-xl border-[#3a8a82]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                 />
               </div>
             </div>
 
             {/* ✅ رقم الهاتف */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
+              <Label className="text-sm font-medium text-[#2a655f] dark:text-[#3a8a82]">
                 {isArabic ? "رقم الهاتف" : "Phone Number"} *
               </Label>
               <Input
@@ -637,46 +637,46 @@ export function DistributorAccountMenu({
                 type="tel"
                 placeholder="09XXXXXXXX"
                 required
-                className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                className="rounded-xl border-[#3a8a82]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
               />
             </div>
 
             {/* ✅ العنوان */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
+                <Label className="text-sm font-medium text-[#2a655f] dark:text-[#3a8a82]">
                   {isArabic ? "العنوان (عربي)" : "Address (Arabic)"}
                 </Label>
                 <Input
                   value={profileData.address_ar}
                   onChange={(e) => setProfileData({ ...profileData, address_ar: e.target.value })}
                   placeholder={isArabic ? "دمشق، سوريا" : "Damascus, Syria"}
-                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                  className="rounded-xl border-[#3a8a82]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
+                <Label className="text-sm font-medium text-[#2a655f] dark:text-[#3a8a82]">
                   {isArabic ? "العنوان (إنجليزي)" : "Address (English)"}
                 </Label>
                 <Input
                   value={profileData.address_en}
                   onChange={(e) => setProfileData({ ...profileData, address_en: e.target.value })}
                   placeholder="Damascus, Syria"
-                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                  className="rounded-xl border-[#3a8a82]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                 />
               </div>
             </div>
 
             {/* ✅ المحافظة */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
+              <Label className="text-sm font-medium text-[#2a655f] dark:text-[#3a8a82]">
                 {isArabic ? "المحافظة" : "Governorate"}
               </Label>
               <Select
                 value={profileData.governorate_id}
                 onValueChange={(value) => setProfileData({ ...profileData, governorate_id: value })}
               >
-                <SelectTrigger className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20">
+                <SelectTrigger className="rounded-xl border-[#3a8a82]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20">
                   <SelectValue placeholder={isArabic ? "اختر المحافظة" : "Select governorate"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -689,13 +689,13 @@ export function DistributorAccountMenu({
               </Select>
             </div>
 
-            {/* ✅ أزرار الإرسال - PINK THEME */}
-            <DialogFooter className="pt-4 border-t border-[#f9a8d4]/20 gap-2 sticky bottom-0 bg-white dark:bg-slate-900 py-4">
+            {/* ✅ أزرار الإرسال - OLIVE THEME */}
+            <DialogFooter className="pt-4 border-t border-[#3a8a82]/20 gap-2 sticky bottom-0 bg-white dark:bg-slate-900 py-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setShowProfileDialog(false)}
-                className="flex-1 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
+                className="flex-1 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/30"
               >
                 <X className="h-4 w-4 mr-1.5" />
                 {isArabic ? "إلغاء" : "Cancel"}
@@ -703,7 +703,7 @@ export function DistributorAccountMenu({
               <Button
                 type="submit"
                 disabled={profileLoading}
-                className="flex-1 bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] rounded-xl shadow-lg shadow-[#d81b60]/30"
+                className="flex-1 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white hover:from-[#1a4f4a] hover:to-[#2a655f] rounded-xl shadow-lg shadow-[#2a655f]/30"
               >
                 {profileLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
@@ -720,10 +720,10 @@ export function DistributorAccountMenu({
         </DialogContent>
       </Dialog>
 
-      {/* ===== DIALOG: تغيير كلمة المرور - PINK THEME ===== */}
+      {/* ===== DIALOG: تغيير كلمة المرور - OLIVE THEME ===== */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <DialogContent className="max-w-md rounded-2xl overflow-hidden p-0">
-          <div className="bg-gradient-to-r from-[#d81b60] to-[#f48fb1] p-6 text-white">
+          <div className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] p-6 text-white">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
                 <KeyRound className="h-6 w-6 text-white" />
@@ -743,7 +743,7 @@ export function DistributorAccountMenu({
 
           <form onSubmit={handleChangePassword} className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
+              <Label className="text-sm font-medium text-[#2a655f] dark:text-[#3a8a82]">
                 {isArabic ? "كلمة المرور الحالية" : "Current Password"} *
               </Label>
               <div className="relative">
@@ -753,13 +753,13 @@ export function DistributorAccountMenu({
                   onChange={(e) => setOldPassword(e.target.value)}
                   placeholder={isArabic ? "أدخل كلمة المرور الحالية" : "Enter current password"}
                   required
-                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                  className="rounded-xl border-[#3a8a82]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
+              <Label className="text-sm font-medium text-[#2a655f] dark:text-[#3a8a82]">
                 {isArabic ? "كلمة المرور الجديدة" : "New Password"} *
               </Label>
               <div className="relative">
@@ -770,12 +770,12 @@ export function DistributorAccountMenu({
                   placeholder={isArabic ? "أدخل كلمة المرور الجديدة" : "Enter new password"}
                   required
                   minLength={6}
-                  className="rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 pe-10"
+                  className="rounded-xl border-[#3a8a82]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20 pe-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-[#d81b60] transition-colors"
+                  className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-[#2a655f] transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -786,7 +786,7 @@ export function DistributorAccountMenu({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#d81b60] dark:text-[#f9a8d4]">
+              <Label className="text-sm font-medium text-[#2a655f] dark:text-[#3a8a82]">
                 {isArabic ? "تأكيد كلمة المرور" : "Confirm Password"} *
               </Label>
               <Input
@@ -797,7 +797,7 @@ export function DistributorAccountMenu({
                 required
                 minLength={6}
                 className={cn(
-                  "rounded-xl border-[#f9a8d4]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20",
+                  "rounded-xl border-[#3a8a82]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20",
                   confirmPassword && newPassword !== confirmPassword && "border-red-500 focus-visible:ring-red-500"
                 )}
               />
@@ -809,7 +809,7 @@ export function DistributorAccountMenu({
               )}
             </div>
 
-            <DialogFooter className="pt-4 border-t border-[#f9a8d4]/20 gap-2">
+            <DialogFooter className="pt-4 border-t border-[#3a8a82]/20 gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -819,7 +819,7 @@ export function DistributorAccountMenu({
                   setNewPassword("");
                   setConfirmPassword("");
                 }}
-                className="flex-1 rounded-xl border-[#f9a8d4]/30 hover:bg-[#fbcfe8]/30"
+                className="flex-1 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/30"
               >
                 <X className="h-4 w-4 mr-1.5" />
                 {isArabic ? "إلغاء" : "Cancel"}
@@ -827,7 +827,7 @@ export function DistributorAccountMenu({
               <Button
                 type="submit"
                 disabled={loading || !oldPassword || !newPassword || newPassword !== confirmPassword}
-                className="flex-1 bg-gradient-to-r from-[#d81b60] to-[#f48fb1] text-white hover:from-[#c2185b] hover:to-[#f9a8d4] rounded-xl shadow-lg shadow-[#d81b60]/30"
+                className="flex-1 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white hover:from-[#1a4f4a] hover:to-[#2a655f] rounded-xl shadow-lg shadow-[#2a655f]/30"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />

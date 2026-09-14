@@ -11,8 +11,8 @@ export type Currency = "SYP" | "USD" | "EUR" | "TRY";
 type Dict = Record<string, { ar: string; en: string }>;
 
 export const t_dict: Dict = {
-  brand: { ar: "السوق لعندك", en: "AlSouq Leindak" },
-  tagline: { ar: "السوق لعندك - كل شي بتحتاجه بلحظتها", en: "AlSouq Leindak - Everything you need, instantly" },
+  brand: { ar: "ذوق", en: "Zooq" },
+  tagline: { ar: "ذوق - كل شي بتحتاجه بلحظتها", en: "Zooq - Everything you need, instantly" },
   search_placeholder: { ar: "ابحث عن متجر أو منتج...", en: "Search stores or products..." },
   home: { ar: "الرئيسية", en: "Home" },
   categories: { ar: "الأقسام", en: "Categories" },
@@ -27,7 +27,7 @@ export const t_dict: Dict = {
   profile: { ar: "الملف الشخصي", en: "Profile" },
   dashboard: { ar: "لوحة التحكم", en: "Dashboard" },
   store_dashboard: { ar: "لوحة التحكم بمتجرك", en: "Your store dashboard" },
-  ai_insights: { ar: "سوقي AI", en: "Souqi AI" },
+  ai_insights: { ar: "ذوق AI", en: "Zooq AI" },
   reports: { ar: "التقارير", en: "Reports" },
   list_business: { ar: "اشترك معنا كبائع", en: "Join as a seller" },
   all_governorates: { ar: "كل المحافظات", en: "All Governorates" },

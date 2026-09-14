@@ -12,8 +12,8 @@ export const Route = createFileRoute("/delivery/")({
   component: DeliveryCompaniesPage,
   head: () => ({
     meta: [
-      { title: "شركات التوصيل - Souqi" },
-      { name: "description", content: "جميع شركات التوصيل المتاحة في السوق اليك" },
+      { title: "شركات التوصيل - ذوق" },
+      { name: "description", content: "جميع شركات التوصيل المتاحة في ذوق" },
     ],
   }),
 });

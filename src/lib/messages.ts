@@ -51,7 +51,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/messages")({
   component: MessagesPage,
-  head: () => ({ meta: [{ title: "الرسائل — السوق اليك" }] }),
+  head: () => ({ meta: [{ title: "الرسائل — ذوق" }] }),
 });
 
 function MessagesPage() {

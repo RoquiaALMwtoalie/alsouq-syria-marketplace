@@ -46,7 +46,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/distributor/messages")({
   component: DistributorMessagesPage,
-  head: () => ({ meta: [{ title: "مراسلة العملاء — السوق لعندك" }] }),
+  head: () => ({ meta: [{ title: "مراسلة العملاء — ذوق" }] }),
 });
 
 function DistributorMessagesPage() {

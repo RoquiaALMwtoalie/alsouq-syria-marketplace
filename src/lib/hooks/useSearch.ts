@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useApp } from "@/lib/i18n";
 
+// ============================================================
+// ✅ الأنواع
+// ============================================================
 export interface SearchResult {
   id: string;
   title: string;
@@ -18,7 +21,7 @@ export interface SearchResult {
   slug?: string;
   created_at?: string;
   governorate_id?: string;
-  // ✅ ✅ ✅ حقول إضافية لـ ListingCard
+  // ✅ حقول ListingCard
   title_ar?: string;
   title_en?: string;
   description_ar?: string;
@@ -44,7 +47,20 @@ export interface SearchResult {
   delivery_method?: string;
   is_featured?: boolean;
   featured_sort?: number;
+  // ✅ للمتاجر
+  store_logo_url?: string;
+  store_cover_url?: string;
+  store_description?: string;
+  listing_count?: number;
+  is_verified?: boolean;
+  // ✅ للأقسام
+  parent_id?: string | null;
+  icon?: string;
+  image_url?: string;
+  is_main_category?: boolean;
 }
+
+export type SearchResultType = 'all' | 'products' | 'stores' | 'categories';
 
 interface SearchFilters {
   category?: string;
@@ -55,6 +71,41 @@ interface SearchFilters {
   sortBy?: 'popularity' | 'newest' | 'price_low' | 'price_high' | 'discount' | 'rating';
 }
 
+// ============================================================
+// ✅ حساب الصلة (relevance score)
+// ============================================================
+function calculateRelevance(text: string, query: string): number {
+  if (!text || !query) return 0;
+  
+  const normalizedText = text.toLowerCase().trim();
+  const normalizedQuery = query.toLowerCase().trim();
+  
+  // ✅ مطابقة كاملة
+  if (normalizedText === normalizedQuery) return 100;
+  
+  // ✅ يبدأ بـ query
+  if (normalizedText.startsWith(normalizedQuery)) return 80;
+  
+  // ✅ يحتوي على query ككلمة كاملة
+  const words = normalizedText.split(/\s+/);
+  if (words.includes(normalizedQuery)) return 70;
+  
+  // ✅ يحتوي على query كجزء
+  if (normalizedText.includes(normalizedQuery)) return 50;
+  
+  // ✅ كل كلمات query موجودة
+  const queryWords = normalizedQuery.split(/\s+/).filter(w => w.length > 1);
+  if (queryWords.length > 1) {
+    const matchedWords = queryWords.filter(qw => normalizedText.includes(qw));
+    return (matchedWords.length / queryWords.length) * 40;
+  }
+  
+  return 0;
+}
+
+// ============================================================
+// ✅ Hook الرئيسي
+// ============================================================
 export function useSearch() {
   const app = useApp();
   const [query, setQuery] = useState("");
@@ -66,21 +117,44 @@ export function useSearch() {
     sortBy: 'popularity',
   });
   const [totalResults, setTotalResults] = useState(0);
+  const [productsCount, setProductsCount] = useState(0);
+  const [storesCount, setStoresCount] = useState(0);
+  const [categoriesCount, setCategoriesCount] = useState(0);
+  const [activeType, setActiveType] = useState<SearchResultType>('all');
   const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(1);
+  
   const abortControllerRef = useRef<AbortController | null>(null);
   const suggestionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ ✅ ✅ Refs لتجنب إعادة التنفيذ اللانهائية
+  const lastSearchedRef = useRef<string>("");
+  const lastSuggestRef = useRef<string>("");
+  const isMountedRef = useRef<boolean>(true);
 
   const debouncedQuery = useDebounce(query, 400);
   const debouncedSuggestQuery = useDebounce(query, 150);
 
-  // ====== ✅ البحث الرئيسي (محسن للبحث الذكي مع بيانات كاملة) ======
+  // ✅ ✅ ✅ Track mount/unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // ============================================================
+  // ✅ البحث الرئيسي
+  // ============================================================
   const performSearch = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     const searchTerm = debouncedQuery.trim();
     
     if (!searchTerm && !filters.category && !filters.governorate) {
       setResults([]);
       setTotalResults(0);
+      setProductsCount(0);
+      setStoresCount(0);
+      setCategoriesCount(0);
       setHasMore(false);
       return;
     }
@@ -97,7 +171,9 @@ export function useSearch() {
       const limit = 20;
       const offset = (pageNum - 1) * limit;
 
-      // ✅ ✅ ✅ 1. البحث في المنتجات (listings) - بيانات كاملة
+      // ============================================================
+      // ✅ 1. المنتجات (listings)
+      // ============================================================
       let productsQuery = supabase
         .from("listings")
         .select(`
@@ -171,18 +247,16 @@ export function useSearch() {
         .eq("status", "published")
         .eq("is_available", true);
 
-      // ✅ ✅ ✅ البحث الذكي: تقسيم الكلمات والبحث عن كل كلمة (OR)
+      // ✅ بحث ذكي بالكلمات
       if (searchTerm) {
         const searchWords = searchTerm.trim().split(' ').filter(w => w.length > 1);
         
         if (searchWords.length > 1) {
-          // ✅ كلمات متعددة: بحث عن أي كلمة (OR) - ذكي
           const conditions = searchWords.map(term => 
             `title_ar.ilike.%${term}%,title_en.ilike.%${term}%,description_ar.ilike.%${term}%,description_en.ilike.%${term}%`
           ).join(',');
           productsQuery = productsQuery.or(conditions);
         } else {
-          // ✅ كلمة واحدة: بحث عادي
           productsQuery = productsQuery.or(
             `title_ar.ilike.%${searchTerm}%,` +
             `title_en.ilike.%${searchTerm}%,` +
@@ -192,30 +266,14 @@ export function useSearch() {
         }
       }
 
-      // ✅ فلتر التصنيف
-      if (filters.category) {
-        productsQuery = productsQuery.eq("category_id", filters.category);
-      }
+      // ✅ الفلاتر
+      if (filters.category) productsQuery = productsQuery.eq("category_id", filters.category);
+      if (filters.governorate) productsQuery = productsQuery.eq("governorate_id", filters.governorate);
+      if (filters.minPrice) productsQuery = productsQuery.gte("price", filters.minPrice);
+      if (filters.maxPrice) productsQuery = productsQuery.lte("price", filters.maxPrice);
+      if (filters.rating) productsQuery = productsQuery.gte("rating", filters.rating);
 
-      // ✅ فلتر المحافظة
-      if (filters.governorate) {
-        productsQuery = productsQuery.eq("governorate_id", filters.governorate);
-      }
-
-      // ✅ فلتر السعر
-      if (filters.minPrice) {
-        productsQuery = productsQuery.gte("price", filters.minPrice);
-      }
-      if (filters.maxPrice) {
-        productsQuery = productsQuery.lte("price", filters.maxPrice);
-      }
-
-      // ✅ فلتر التقييم
-      if (filters.rating) {
-        productsQuery = productsQuery.gte("rating", filters.rating);
-      }
-
-      // ✅ ترتيب النتائج - مثل نون
+      // ✅ الترتيب
       switch (filters.sortBy) {
         case 'newest':
           productsQuery = productsQuery.order("created_at", { ascending: false });
@@ -240,13 +298,17 @@ export function useSearch() {
           break;
       }
 
-      const { data: products, count, error: productsError } = await productsQuery
+      const { data: products, count: productsTotal, error: productsError } = await productsQuery
         .range(offset, offset + limit - 1);
 
       if (productsError) throw productsError;
 
-      // ✅ 2. البحث في المتاجر (profiles) - محسن للبحث الذكي
+      // ============================================================
+      // ✅ 2. المتاجر (profiles) — مع عدد المنتجات (استعلام منفصل)
+      // ============================================================
       let stores: any[] = [];
+      let storesTotal = 0;
+
       if (searchTerm || filters.governorate) {
         let storesQuery = supabase
           .from("profiles")
@@ -259,24 +321,25 @@ export function useSearch() {
             store_cover_url,
             store_description,
             governorate_id,
-            created_at,
-            is_verified
-          `)
-          .not("store_name", "is", null);
+            store_active,
+            created_at
+          `, { count: 'exact' })
+          .not("store_name", "is", null)
+          .eq("store_active", true);
 
         if (searchTerm) {
           const storeWords = searchTerm.trim().split(' ').filter(w => w.length > 1);
           
           if (storeWords.length > 1) {
-            // ✅ بحث ذكي في المتاجر
             const storeConditions = storeWords.map(term => 
-              `store_name.ilike.%${term}%,full_name.ilike.%${term}%`
+              `store_name.ilike.%${term}%,full_name.ilike.%${term}%,store_description.ilike.%${term}%`
             ).join(',');
             storesQuery = storesQuery.or(storeConditions);
           } else {
             storesQuery = storesQuery.or(
               `store_name.ilike.%${searchTerm}%,` +
-              `full_name.ilike.%${searchTerm}%`
+              `full_name.ilike.%${searchTerm}%,` +
+              `store_description.ilike.%${searchTerm}%`
             );
           }
         }
@@ -285,12 +348,50 @@ export function useSearch() {
           storesQuery = storesQuery.eq("governorate_id", filters.governorate);
         }
 
-        const { data: storesData } = await storesQuery.limit(5);
-        stores = storesData || [];
+        const { data: storesData, count, error: storesError } = await storesQuery.limit(10);
+        
+        if (storesError) {
+          console.error("❌ Stores search error:", storesError);
+        } else {
+          stores = storesData || [];
+          storesTotal = count || 0;
+
+          // ✅ ✅ ✅ جلب عدد المنتجات لكل متجر (استعلام منفصل مضمون)
+          if (stores.length > 0) {
+            const storeIds = stores.map((s: any) => s.id);
+
+            const { data: countsData, error: countsError } = await supabase
+              .from("listings")
+              .select("owner_id")
+              .in("owner_id", storeIds)
+              .eq("status", "published")
+              .eq("is_available", true);
+
+            if (countsError) {
+              console.error("❌ Listing counts error:", countsError);
+            } else {
+              // ✅ حساب العدد لكل متجر
+              const countsMap: Record<string, number> = {};
+              (countsData || []).forEach((row: any) => {
+                countsMap[row.owner_id] = (countsMap[row.owner_id] || 0) + 1;
+              });
+
+              // ✅ إضافة العدد لكل متجر
+              stores = stores.map((s: any) => ({
+                ...s,
+                listing_count: countsMap[s.id] || 0,
+              }));
+            }
+          }
+        }
       }
 
-      // ✅ 3. البحث في التصنيفات (categories) - محسن للبحث الذكي
+      // ============================================================
+      // ✅ 3. الأقسام (categories) - مع parent_id
+      // ============================================================
       let categories: any[] = [];
+      let categoriesTotal = 0;
+
       if (!filters.category && searchTerm) {
         let categoryQuery = supabase
           .from("categories")
@@ -301,13 +402,13 @@ export function useSearch() {
             slug,
             icon,
             image_url,
+            parent_id,
             created_at
-          `);
+          `, { count: 'exact' });
 
         const catWords = searchTerm.trim().split(' ').filter(w => w.length > 1);
         
         if (catWords.length > 1) {
-          // ✅ بحث ذكي في التصنيفات
           const catConditions = catWords.map(term => 
             `name_ar.ilike.%${term}%,name_en.ilike.%${term}%`
           ).join(',');
@@ -318,16 +419,29 @@ export function useSearch() {
           );
         }
 
-        const { data: categoriesData } = await categoryQuery.limit(5);
-        categories = categoriesData || [];
+        const { data: categoriesData, count, error: categoriesError } = await categoryQuery.limit(10);
+        
+        if (categoriesError) {
+          console.error("❌ Categories search error:", categoriesError);
+        } else {
+          categories = categoriesData || [];
+          categoriesTotal = count || 0;
+        }
       }
 
-      // ✅ ✅ ✅ 4. تجميع النتائج مع بيانات كاملة
-      const formattedResults: SearchResult[] = [
-        // ✅ المنتجات - بيانات كاملة
-        ...(products || []).map((p: any) => ({
+      // ✅ ✅ ✅ إذا تم unmount، لا تحدّث الحالة
+      if (!isMountedRef.current) return;
+
+      // ============================================================
+      // ✅ 4. حساب الصلة وترتيب النتائج
+      // ============================================================
+      const productsFormatted: SearchResult[] = (products || []).map((p: any) => {
+        const title = app.lang === "ar" ? p.title_ar : (p.title_en || p.title_ar);
+        const relevance = calculateRelevance(title || "", searchTerm);
+        
+        return {
           id: p.id,
-          title: app.lang === "ar" ? p.title_ar : (p.title_en || p.title_ar),
+          title: title || "",
           title_ar: p.title_ar,
           title_en: p.title_en,
           description: app.lang === "ar" ? p.description_ar : (p.description_en || p.description_ar),
@@ -364,12 +478,22 @@ export function useSearch() {
           delivery_method: p.delivery_method,
           is_featured: p.is_featured,
           featured_sort: p.featured_sort,
-        })),
-        // ✅ المتاجر
-        ...stores.map((s: any) => ({
+          // ✅ حفظ الصلة للترتيب
+          _relevance: relevance,
+        } as any;
+      });
+
+      const storesFormatted: SearchResult[] = stores.map((s: any) => {
+        const title = s.store_name || s.full_name || "متجر";
+        const relevance = calculateRelevance(title, searchTerm);
+
+        // ✅ ✅ ✅ عدد المنتجات جاهز من الاستعلام المنفصل
+        const listingCount = s.listing_count ?? 0;
+        
+        return {
           id: s.id,
-          title: s.store_name || s.full_name || "متجر",
-          description: s.store_description || (app.lang === "ar" ? "متجر على السوق" : "Store on Alsouq"),
+          title,
+          description: s.store_description || (app.lang === "ar" ? "متجر على ذوق" : "Store on Zooq"),
           image: s.store_logo_url || s.avatar_url,
           cover_url: s.store_cover_url || s.store_logo_url || s.avatar_url,
           type: 'store' as const,
@@ -396,17 +520,31 @@ export function useSearch() {
           delivery_method: null,
           is_featured: false,
           featured_sort: 0,
-        })),
-        // ✅ التصنيفات
-        ...categories.map((c: any) => ({
+          // ✅ حقول المتجر
+          store_logo_url: s.store_logo_url,
+          store_cover_url: s.store_cover_url,
+          store_description: s.store_description,
+          is_verified: s.store_active === true,
+          // ✅ ✅ ✅ عدد المنتجات
+          listing_count: listingCount,
+          // ✅ حفظ الصلة
+          _relevance: relevance,
+        } as any;
+      });
+
+      const categoriesFormatted: SearchResult[] = categories.map((c: any) => {
+        const title = app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar);
+        const relevance = calculateRelevance(title, searchTerm);
+        
+        return {
           id: c.id,
-          title: app.lang === "ar" ? c.name_ar : (c.name_en || c.name_ar),
-          description: app.lang === "ar" ? "تصفح المنتجات في هذا التصنيف" : "Browse products in this category",
+          title: title || "",
+          description: app.lang === "ar" ? "تصفح المنتجات في هذا القسم" : "Browse products in this category",
           image: c.image_url || c.icon || "/category-placeholder.png",
           cover_url: c.image_url || c.icon || "/category-placeholder.png",
           type: 'category' as const,
           url: `/category/${c.slug}`,
-          badge: "📂 تصنيف",
+          badge: c.parent_id ? (app.lang === "ar" ? "📂 قسم فرعي" : "📂 Subcategory") : (app.lang === "ar" ? "📂 قسم رئيسي" : "📂 Main Category"),
           slug: c.slug,
           created_at: c.created_at,
           store_name: null,
@@ -429,7 +567,26 @@ export function useSearch() {
           delivery_method: null,
           is_featured: false,
           featured_sort: 0,
-        })),
+          // ✅ حقول القسم
+          parent_id: c.parent_id,
+          icon: c.icon,
+          image_url: c.image_url,
+          is_main_category: !c.parent_id,
+          // ✅ حفظ الصلة
+          _relevance: relevance,
+        } as any;
+      });
+
+      // ✅ ترتيب حسب الصلة
+      productsFormatted.sort((a: any, b: any) => (b._relevance || 0) - (a._relevance || 0));
+      storesFormatted.sort((a: any, b: any) => (b._relevance || 0) - (a._relevance || 0));
+      categoriesFormatted.sort((a: any, b: any) => (b._relevance || 0) - (a._relevance || 0));
+
+      // ✅ دمج الكل
+      const formattedResults: SearchResult[] = [
+        ...productsFormatted,
+        ...storesFormatted,
+        ...categoriesFormatted,
       ];
 
       if (append) {
@@ -438,7 +595,11 @@ export function useSearch() {
         setResults(formattedResults);
       }
 
-      setTotalResults(count || 0);
+      // ✅ الإحصائيات الصحيحة
+      setProductsCount(productsTotal || 0);
+      setStoresCount(storesTotal || 0);
+      setCategoriesCount(categoriesTotal || 0);
+      setTotalResults((productsTotal || 0) + (storesTotal || 0) + (categoriesTotal || 0));
       setHasMore((products?.length || 0) === limit);
       setPage(pageNum);
 
@@ -447,30 +608,31 @@ export function useSearch() {
         console.error("Search error:", error);
       }
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
       abortControllerRef.current = null;
     }
-  }, [debouncedQuery, filters, app.lang]);
+  }, [debouncedQuery, filters.category, filters.governorate, filters.minPrice, filters.maxPrice, filters.rating, filters.sortBy, app.lang]);
 
-  // ====== ✅ الاقتراحات الفورية (محسنة للبحث الذكي) ======
+  // ============================================================
+  // ✅ الاقتراحات الفورية
+  // ============================================================
   const getSuggestions = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim() || searchQuery.length < 2) {
-      setSuggestions([]);
+      if (isMountedRef.current) {
+        setSuggestions([]);
+      }
       return;
     }
 
     setIsSuggesting(true);
 
     try {
-      // ✅ اقتراحات المنتجات - بحث ذكي
+      // ✅ المنتجات
       let productQuery = supabase
         .from("listings")
-        .select(`
-          id,
-          title_ar,
-          title_en,
-          cover_url
-        `)
+        .select(`id, title_ar, title_en, cover_url`)
         .eq("status", "published")
         .eq("is_available", true);
 
@@ -487,23 +649,16 @@ export function useSearch() {
         );
       }
 
-      if (filters.governorate) {
-        productQuery = productQuery.eq("governorate_id", filters.governorate);
-      }
+      if (filters.governorate) productQuery = productQuery.eq("governorate_id", filters.governorate);
 
       const { data: productSuggestions } = await productQuery.limit(5);
 
-      // ✅ اقتراحات المتاجر - بحث ذكي
+      // ✅ المتاجر
       let storeQuery = supabase
         .from("profiles")
-        .select(`
-          id,
-          store_name,
-          full_name,
-          store_logo_url,
-          avatar_url
-        `)
-        .not("store_name", "is", null);
+        .select(`id, store_name, full_name, store_logo_url, avatar_url`)
+        .not("store_name", "is", null)
+        .eq("store_active", true);
 
       const storeWords = searchQuery.trim().split(' ').filter(w => w.length > 1);
       
@@ -513,24 +668,19 @@ export function useSearch() {
         ).join(',');
         storeQuery = storeQuery.or(storeConditions);
       } else {
-        storeQuery = storeQuery.ilike("store_name", `%${searchQuery}%`);
+        storeQuery = storeQuery.or(
+          `store_name.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`
+        );
       }
 
-      if (filters.governorate) {
-        storeQuery = storeQuery.eq("governorate_id", filters.governorate);
-      }
+      if (filters.governorate) storeQuery = storeQuery.eq("governorate_id", filters.governorate);
 
       const { data: storeSuggestions } = await storeQuery.limit(3);
 
-      // ✅ اقتراحات التصنيفات - بحث ذكي
+      // ✅ الأقسام
       let categoryQuery = supabase
         .from("categories")
-        .select(`
-          id,
-          name_ar,
-          name_en,
-          slug
-        `);
+        .select(`id, name_ar, name_en, slug, parent_id`);
 
       const catWords = searchQuery.trim().split(' ').filter(w => w.length > 1);
       
@@ -546,6 +696,9 @@ export function useSearch() {
       }
 
       const { data: categorySuggestions } = await categoryQuery.limit(3);
+
+      // ✅ ✅ ✅ إذا تم unmount، لا تحدّث الحالة
+      if (!isMountedRef.current) return;
 
       const allSuggestions: SearchResult[] = [
         ...(productSuggestions || []).map((p: any) => ({
@@ -576,80 +729,115 @@ export function useSearch() {
     } catch (error) {
       console.error("Suggestions error:", error);
     } finally {
-      setIsSuggesting(false);
+      if (isMountedRef.current) {
+        setIsSuggesting(false);
+      }
     }
   }, [app.lang, filters.governorate]);
 
-  // ====== ✅ تأثير الـ debounce على الاقتراحات ======
+  // ============================================================
+  // ✅ الـ Debounce
+  // ============================================================
   useEffect(() => {
-    if (suggestionsTimeoutRef.current) {
-      clearTimeout(suggestionsTimeoutRef.current);
+    if (suggestionsTimeoutRef.current) clearTimeout(suggestionsTimeoutRef.current);
+    
+    const currentKey = `${debouncedSuggestQuery}|${filters.governorate || ""}`;
+    
+    // ✅ إذا نفس البحث — لا تعيد التنفيذ
+    if (lastSuggestRef.current === currentKey) {
+      return;
     }
-
+    
+    lastSuggestRef.current = currentKey;
+    
     suggestionsTimeoutRef.current = setTimeout(() => {
       getSuggestions(debouncedSuggestQuery);
     }, 100);
-
+    
     return () => {
-      if (suggestionsTimeoutRef.current) {
-        clearTimeout(suggestionsTimeoutRef.current);
-      }
+      if (suggestionsTimeoutRef.current) clearTimeout(suggestionsTimeoutRef.current);
     };
-  }, [debouncedSuggestQuery, getSuggestions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSuggestQuery, filters.governorate]);
 
-  // ====== ✅ تأثير الـ debounce على البحث ======
   useEffect(() => {
+    const currentKey = `${debouncedQuery}|${filters.category || ""}|${filters.governorate || ""}`;
+    
+    // ✅ إذا نفس البحث — لا تعيد التنفيذ
+    if (lastSearchedRef.current === currentKey) {
+      return;
+    }
+    
+    lastSearchedRef.current = currentKey;
+    
     if (!debouncedQuery.trim() && !filters.category && !filters.governorate) {
       setResults([]);
       setTotalResults(0);
+      setProductsCount(0);
+      setStoresCount(0);
+      setCategoriesCount(0);
+      setHasMore(false);
       return;
     }
     
     performSearch(1, false);
-  }, [performSearch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, filters.category, filters.governorate]);
 
-  // ====== ✅ تحميل المزيد ======
+  // ============================================================
+  // ✅ الدوال المساعدة
+  // ============================================================
   const loadMore = useCallback(() => {
     if (hasMore && !isLoading) {
       performSearch(page + 1, true);
     }
   }, [hasMore, isLoading, page, performSearch]);
 
-  // ====== ✅ تغيير الفلاتر ======
   const setFilter = useCallback((key: keyof SearchFilters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  // ====== ✅ إعادة تعيين الفلاتر ======
   const resetFilters = useCallback(() => {
     setFilters({ sortBy: 'popularity' });
+    setActiveType('all');
   }, []);
 
-  // ====== ✅ البحث المباشر ======
   const search = useCallback(() => {
     performSearch(1, false);
   }, [performSearch]);
 
-  // ====== ✅ تنظيف ======
+  // ✅ تصفية النتائج حسب النوع النشط
+  const filteredResults = useCallback(() => {
+    if (activeType === 'all') return results;
+    if (activeType === 'products') {
+      return results.filter(r => r.type === 'product' || r.type === 'offer');
+    }
+    if (activeType === 'stores') return results.filter(r => r.type === 'store');
+    if (activeType === 'categories') return results.filter(r => r.type === 'category');
+    return results;
+  }, [results, activeType]);
+
   useEffect(() => {
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      if (suggestionsTimeoutRef.current) {
-        clearTimeout(suggestionsTimeoutRef.current);
-      }
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+      if (suggestionsTimeoutRef.current) clearTimeout(suggestionsTimeoutRef.current);
     };
   }, []);
 
   return {
     query,
     setQuery,
-    results,
+    results: filteredResults(),
+    allResults: results,
     suggestions,
     isLoading,
     isSuggesting,
     totalResults,
+    productsCount,
+    storesCount,
+    categoriesCount,
+    activeType,
+    setActiveType,
     hasMore,
     loadMore,
     filters,

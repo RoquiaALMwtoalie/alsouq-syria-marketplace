@@ -272,50 +272,50 @@ export function CustomersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* ===== العنوان ===== */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="relative">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
+        <div className="relative min-w-0">
           <div className="absolute -top-6 -left-6 h-20 w-20 rounded-full bg-[#2a655f]/5 blur-2xl animate-pulse" />
           <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-[#f9a8d4]/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
           
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
-            <div className="relative group">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3 flex-wrap">
+            <div className="relative group shrink-0">
               <div className="absolute inset-0 rounded-2xl bg-[#2a655f]/20 blur-xl group-hover:blur-2xl transition-all duration-500" />
-              <div className="relative p-2.5 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#f9a8d4]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                <Users className="h-5 w-5 group-hover:animate-bounce" />
+              <div className="relative p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] text-white shadow-lg shadow-[#2a655f]/25 group-hover:shadow-[#f9a8d4]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 group-hover:animate-bounce" />
               </div>
             </div>
-            {app.lang === "ar" ? "العملاء" : "Customers"}
-            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-sm px-3 py-1 animate-pulse">
+            <span className="truncate">{app.lang === "ar" ? "العملاء" : "Customers"}</span>
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-xs sm:text-sm px-2 sm:px-3 py-0.5 sm:py-1 animate-pulse shrink-0">
               {stats.total}
             </Badge>
           </h1>
           
-          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
-              <ShoppingCart className="h-3.5 w-3.5 text-[#2a655f] animate-pulse" />
-              <span className="text-[#2a655f] font-medium">{stats.totalOrders}</span>
-              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "طلب" : "orders"}</span>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
+              <ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#2a655f] animate-pulse" />
+              <span className="text-[#2a655f] font-medium text-[10px] sm:text-xs">{stats.totalOrders}</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground">{app.lang === "ar" ? "طلب" : "orders"}</span>
             </span>
             <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30 transition-colors">
-              <Wallet className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">{formatPrice(stats.totalSpend, app.currency, app.lang)}</span>
-              <span className="text-xs text-muted-foreground">{app.lang === "ar" ? "إنفاق" : "spend"}</span>
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30 transition-colors">
+              <Wallet className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-500" />
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium text-[10px] sm:text-xs">{formatPrice(stats.totalSpend, app.currency, app.lang)}</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground">{app.lang === "ar" ? "إنفاق" : "spend"}</span>
             </span>
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
             onClick={exportToExcel}
             disabled={filteredCustomers.length === 0}
-            className="rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
+            className="rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 h-8 sm:h-9 px-2.5 sm:px-3 text-[11px] sm:text-xs"
           >
-            <FileSpreadsheet className="h-4 w-4 mr-1.5" />
+            <FileSpreadsheet className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
             Excel
           </Button>
           <Button
@@ -323,17 +323,17 @@ export function CustomersPage() {
             size="sm"
             onClick={exportToWord}
             disabled={filteredCustomers.length === 0}
-            className="rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
+            className="rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 h-8 sm:h-9 px-2.5 sm:px-3 text-[11px] sm:text-xs"
           >
-            <FileText className="h-4 w-4 mr-1.5" />
+            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
             Word
           </Button>
          
         </div>
       </div>
 
-      {/* ===== إحصائيات سريعة - بتصميم كروت AdminStores (بوردر رمادي، هوفر رمادي فاتح) ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* ===== إحصائيات سريعة ===== */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
         {[
           { key: 'total', label: app.lang === 'ar' ? 'إجمالي العملاء' : 'Total Customers', value: stats.total, icon: Users, gradient: 'from-[#2a655f] to-[#1a4f4a]' },
           { key: 'orders', label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', value: stats.totalOrders, icon: ShoppingCart, gradient: 'from-[#1a4f4a] to-[#3a8a82]' },
@@ -342,19 +342,19 @@ export function CustomersPage() {
         ].map((stat, i) => (
           <div 
             key={i} 
-            className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative p-4"
+            className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden relative p-2.5 sm:p-4"
           >
             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
               <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-slate-100/50 dark:bg-slate-700/20 blur-3xl animate-pulse" />
             </div>
             <div className="flex items-center justify-between relative">
-              <div>
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider truncate">{stat.label}</p>
+                <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors">{stat.value}</p>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-white dark:bg-[#1e293b] border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                <div className={`h-6 w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
-                  <stat.icon className="h-3.5 w-3.5 text-white" />
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-white dark:bg-[#1e293b] border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shrink-0">
+                <div className={`h-5 w-5 sm:h-6 sm:w-6 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
+                  <stat.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
                 </div>
               </div>
             </div>
@@ -370,25 +370,25 @@ export function CustomersPage() {
 
       {/* ===== أفضل عميل ===== */}
       {stats.topCustomer && (
-        <div className="bg-gradient-to-r from-[#2a655f]/10 via-[#2a655f]/5 to-[#f9a8d4]/10 dark:from-[#2a655f]/20 dark:via-[#2a655f]/10 dark:to-[#f9a8d4]/20 rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-5 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 group">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 group-hover:scale-110 transition-transform duration-500">
-                <Crown className="h-7 w-7 text-white animate-bounce" />
+        <div className="bg-gradient-to-r from-[#2a655f]/10 via-[#2a655f]/5 to-[#f9a8d4]/10 dark:from-[#2a655f]/20 dark:via-[#2a655f]/10 dark:to-[#f9a8d4]/20 rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4 sm:p-5 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 group">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="relative shrink-0">
+              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-br from-[#2a655f] to-[#f9a8d4] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 group-hover:scale-110 transition-transform duration-500">
+                <Crown className="h-6 w-6 sm:h-7 sm:w-7 text-white animate-bounce" />
               </div>
-              <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#f9a8d4] flex items-center justify-center text-[8px] font-bold text-[#2a655f] animate-pulse border-2 border-white">
+              <div className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-[#f9a8d4] flex items-center justify-center text-[7px] sm:text-[8px] font-bold text-[#2a655f] animate-pulse border-2 border-white">
                 🏆
               </div>
             </div>
-            <div>
-              <p className="text-xs text-[#2a655f] dark:text-[#f9a8d4] font-medium flex items-center gap-1.5">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs text-[#2a655f] dark:text-[#f9a8d4] font-medium flex items-center gap-1.5">
                 <Sparkles className="h-3 w-3 animate-pulse text-[#f9a8d4]" />
                 {app.lang === 'ar' ? 'أفضل عميل' : 'Best Customer'}
               </p>
-              <p className="font-bold text-slate-900 dark:text-white text-lg group-hover:text-[#2a655f] transition-colors">
+              <p className="font-bold text-slate-900 dark:text-white text-base sm:text-lg group-hover:text-[#2a655f] transition-colors truncate">
                 {stats.topCustomer.full_name || (app.lang === 'ar' ? 'عميل' : 'Customer')}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <span className="flex items-center gap-1">
                   <Wallet className="h-3 w-3 text-emerald-500" />
                   {formatPrice(stats.topCustomer.spend || 0, app.currency, app.lang)}
@@ -400,8 +400,8 @@ export function CustomersPage() {
                 </span>
               </p>
             </div>
-            <div className="mr-auto">
-              <Badge className="bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white border-2 border-white/30 shadow-lg shadow-[#2a655f]/30 animate-pulse">
+            <div className="shrink-0">
+              <Badge className="bg-gradient-to-r from-[#2a655f] to-[#f9a8d4] text-white border-2 border-white/30 shadow-lg shadow-[#2a655f]/30 animate-pulse text-[10px] sm:text-xs">
                 ⭐ VIP
               </Badge>
             </div>
@@ -409,10 +409,14 @@ export function CustomersPage() {
         </div>
       )}
 
-      {/* ===== البحث والفلترة - بوردر رمادي، هوفر رمادي فاتح ===== */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 group">
-          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors duration-300" />
+      {/* ============================================================ */}
+      {/* ✅ SEARCH & FILTERS - محسّن للموبايل */}
+      {/* ============================================================ */}
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-slate-200 dark:border-slate-700 p-3 sm:p-4 shadow-sm">
+        
+        {/* ✅ الصف الأول: البحث */}
+        <div className="relative group mb-3">
+          <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors duration-300 pointer-events-none" />
           <Input
             value={searchQuery}
             onChange={(e) => {
@@ -420,85 +424,132 @@ export function CustomersPage() {
               setPage(1);
             }}
             placeholder={app.lang === "ar" ? "🔍 بحث عن عميل..." : "🔍 Search customers..."}
-            className="ps-9 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300"
+            className="ps-9 pe-9 h-10 sm:h-11 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 text-sm"
           />
+          {searchQuery && (
+            <button
+              onClick={() => { setSearchQuery(""); setPage(1); }}
+              className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
+              aria-label={app.lang === "ar" ? "مسح البحث" : "Clear search"}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
-        <Select
-          value={sortBy}
-          onValueChange={(value: any) => {
-            setSortBy(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-500" />
-              <SelectValue placeholder={app.lang === "ar" ? "ترتيب حسب" : "Sort by"} />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
-            <SelectItem value="orders" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📦 {app.lang === "ar" ? "عدد الطلبات" : "Orders"}</SelectItem>
-            <SelectItem value="spend" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">💰 {app.lang === "ar" ? "الإنفاق" : "Spend"}</SelectItem>
-            <SelectItem value="name" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">👤 {app.lang === "ar" ? "الاسم" : "Name"}</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* ✅ الصف الثاني: الفلاتر في Grid متجاوب */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-12 gap-2">
+          
+          {/* Sort By */}
+          <div className="col-span-1 md:col-span-3">
+            <Select
+              value={sortBy}
+              onValueChange={(value: any) => {
+                setSortBy(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20 text-sm">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Filter className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                  <SelectValue placeholder={app.lang === "ar" ? "ترتيب حسب" : "Sort by"} />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+                <SelectItem value="orders" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📦 {app.lang === "ar" ? "عدد الطلبات" : "Orders"}</SelectItem>
+                <SelectItem value="spend" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">💰 {app.lang === "ar" ? "الإنفاق" : "Spend"}</SelectItem>
+                <SelectItem value="name" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">👤 {app.lang === "ar" ? "الاسم" : "Name"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Select
-          value={sortOrder}
-          onValueChange={(value: any) => {
-            setSortOrder(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
-            <SelectValue placeholder={app.lang === "ar" ? "ترتيب" : "Order"} />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
-            <SelectItem value="desc" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⬇️ {app.lang === "ar" ? "تنازلي" : "Descending"}</SelectItem>
-            <SelectItem value="asc" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⬆️ {app.lang === "ar" ? "تصاعدي" : "Ascending"}</SelectItem>
-          </SelectContent>
-        </Select>
+          {/* Sort Order */}
+          <div className="col-span-1 md:col-span-2">
+            <Select
+              value={sortOrder}
+              onValueChange={(value: any) => {
+                setSortOrder(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20 text-sm">
+                <SelectValue placeholder={app.lang === "ar" ? "ترتيب" : "Order"} />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+                <SelectItem value="desc" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⬇️ {app.lang === "ar" ? "تنازلي" : "Descending"}</SelectItem>
+                <SelectItem value="asc" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⬆️ {app.lang === "ar" ? "تصاعدي" : "Ascending"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Select
-          value={String(limit)}
-          onValueChange={(value) => {
-            setLimit(Number(value));
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">{app.lang === "ar" ? "عدد" : "Show"}</span>
-              <SelectValue placeholder="10" />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
-            <SelectItem value="6" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">6</SelectItem>
-            <SelectItem value="10" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">10</SelectItem>
-            <SelectItem value="20" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">20</SelectItem>
-            <SelectItem value="50" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">50</SelectItem>
-            <SelectItem value="100" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">100</SelectItem>
-          </SelectContent>
-        </Select>
+          {/* Limit */}
+          <div className="col-span-1 md:col-span-2">
+            <Select
+              value={String(limit)}
+              onValueChange={(value) => {
+                setLimit(Number(value));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20 text-sm">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] sm:text-xs text-slate-400 shrink-0">{app.lang === "ar" ? "عدد" : "Show"}</span>
+                  <SelectValue placeholder="10" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
+                <SelectItem value="6" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">6</SelectItem>
+                <SelectItem value="10" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">10</SelectItem>
+                <SelectItem value="20" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">20</SelectItem>
+                <SelectItem value="50" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">50</SelectItem>
+                <SelectItem value="100" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setSearchQuery("");
-            setSortBy("orders");
-            setSortOrder("desc");
-            setPage(1);
-          }}
-          className="h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 group"
-        >
-          <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
-          {app.lang === "ar" ? "مسح الكل" : "Clear all"}
-        </Button>
+          {/* Clear All Button */}
+          <div className="col-span-1 md:col-span-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("");
+                setSortBy("orders");
+                setSortOrder("desc");
+                setPage(1);
+              }}
+              className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 group text-xs"
+            >
+              <X className="h-4 w-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
+              {app.lang === "ar" ? "مسح الكل" : "Clear all"}
+            </Button>
+          </div>
+        </div>
+
+        {/* ✅ عداد النتائج */}
+        {(searchQuery || sortBy !== "orders" || sortOrder !== "desc") && (
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2 flex-wrap">
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+              {app.lang === "ar" 
+                ? `📊 ${filteredCustomers.length} نتيجة من أصل ${rows.length}`
+                : `📊 ${filteredCustomers.length} of ${rows.length} results`}
+            </span>
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSortBy("orders");
+                setSortOrder("desc");
+                setPage(1);
+              }}
+              className="text-[11px] sm:text-xs text-[#2a655f] hover:text-[#d81b60] font-medium transition-colors"
+            >
+              {app.lang === "ar" ? "إعادة تعيين" : "Reset"}
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* ===== جدول العملاء - بتصميم جدول AdminStores (بوردر رمادي، هوفر رمادي فاتح) ===== */}
+      {/* ===== جدول العملاء ===== */}
       <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
         <div className="overflow-x-auto">
           <Table>
@@ -614,11 +665,11 @@ export function CustomersPage() {
         {/* ===== Pagination ===== */}
         {totalPages > 1 && (
           <div className="px-4 py-3 border-t-2 border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-start w-full sm:w-auto">
               {filteredCustomers.length === 0 ? (
                 <span>{app.lang === "ar" ? "لا يوجد عملاء" : "No customers"}</span>
               ) : (
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 justify-center sm:justify-start">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#d81b60] animate-pulse" />
                   {app.lang === "ar"
                     ? `عرض ${(page - 1) * limit + 1}-${Math.min(page * limit, filteredCustomers.length)} من ${filteredCustomers.length} عميل`
@@ -627,13 +678,13 @@ export function CustomersPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => goToPage(1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <span className="text-xs font-bold">«</span>
               </Button>
@@ -642,11 +693,11 @@ export function CustomersPage() {
                 size="sm"
                 onClick={() => goToPage(page - 1)}
                 disabled={page === 1}
-                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5 sm:gap-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let pageNum: number;
                   if (totalPages <= 5) {
@@ -664,7 +715,7 @@ export function CustomersPage() {
                       variant={page === pageNum ? "default" : "outline"}
                       size="sm"
                       onClick={() => goToPage(pageNum)}
-                      className={`h-8 min-w-[32px] p-0 rounded-xl text-xs font-medium transition-all duration-300 ${
+                      className={`h-8 min-w-[30px] sm:min-w-[32px] p-0 rounded-lg sm:rounded-xl text-xs font-medium transition-all duration-300 ${
                         page === pageNum
                           ? "bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30 border-0 scale-105"
                           : "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200"
@@ -681,7 +732,7 @@ export function CustomersPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => goToPage(totalPages)}
-                      className="h-8 min-w-[32px] p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 text-xs transition-all duration-300"
+                      className="h-8 min-w-[30px] sm:min-w-[32px] p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 text-xs transition-all duration-300"
                     >
                       {totalPages}
                     </Button>
@@ -693,7 +744,7 @@ export function CustomersPage() {
                 size="sm"
                 onClick={() => goToPage(page + 1)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -702,7 +753,7 @@ export function CustomersPage() {
                 size="sm"
                 onClick={() => goToPage(totalPages)}
                 disabled={page === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
+                className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-50"
               >
                 <span className="text-xs font-bold">»</span>
               </Button>
@@ -711,7 +762,7 @@ export function CustomersPage() {
         )}
 
         {/* ===== Footer ===== */}
-        <div className="px-4 py-2 border-t-2 border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-slate-50/50 to-slate-100/30 dark:from-slate-800/20 dark:to-slate-700/10">
+        <div className="px-4 py-2 border-t-2 border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-slate-50/50 to-slate-100/30 dark:from-slate-800/20 dark:to-slate-700/10">
           <span className="flex items-center gap-2">
             <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
               {app.lang === "ar"
@@ -722,7 +773,7 @@ export function CustomersPage() {
               {app.lang === "ar" ? `إجمالي ${rows.length}` : `Total ${rows.length}`}
             </span>
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
             <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
               <Filter className="h-3 w-3 mr-1 text-[#d81b60]" />
               {sortBy === "orders" ? (app.lang === "ar" ? "📦 الطلبات" : "📦 Orders") :

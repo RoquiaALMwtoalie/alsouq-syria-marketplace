@@ -81,7 +81,7 @@ export function SearchFilters({
             {app.lang === "ar" ? "فلتر البحث" : "Search Filters"}
           </h3>
           {activeFiltersCount > 0 && (
-            <Badge className="bg-blue-600 text-white">
+            <Badge className="bg-[#2a655f] text-white">
               {activeFiltersCount}
             </Badge>
           )}
@@ -112,7 +112,7 @@ export function SearchFilters({
         <AccordionItem value="governorate" className="border rounded-xl px-1">
           <AccordionTrigger className="hover:no-underline py-3 px-3">
             <div className="flex items-center gap-2 text-sm font-medium">
-              <MapPin className="h-4 w-4 text-blue-600" />
+              <MapPin className="h-4 w-4 text-[#2a655f]" />
               {app.lang === "ar" ? "المحافظة" : "Governorate"}
             </div>
           </AccordionTrigger>
@@ -122,7 +122,7 @@ export function SearchFilters({
                 onClick={() => setFilter("governorate", undefined)}
                 className={cn(
                   "w-full text-left px-3 py-2 rounded-lg text-sm transition hover:bg-muted",
-                  !filters.governorate && "bg-blue-500/10 text-blue-600 font-medium"
+                  !filters.governorate && "bg-[#2a655f]/10 text-[#2a655f] font-medium"
                 )}
               >
                 {app.lang === "ar" ? "كل المحافظات" : "All Governorates"}
@@ -133,7 +133,7 @@ export function SearchFilters({
                   onClick={() => setFilter("governorate", gov.id)}
                   className={cn(
                     "w-full text-left px-3 py-2 rounded-lg text-sm transition hover:bg-muted",
-                    filters.governorate === gov.id && "bg-blue-500/10 text-blue-600 font-medium"
+                    filters.governorate === gov.id && "bg-[#2a655f]/10 text-[#2a655f] font-medium"
                   )}
                 >
                   {app.lang === "ar" ? gov.name_ar : gov.name_en}
@@ -228,7 +228,7 @@ export function SearchFilters({
               </div>
               <Button
                 onClick={applyPriceRange}
-                className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                className="w-full rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white"
                 size="sm"
               >
                 {app.lang === "ar" ? "تطبيق السعر" : "Apply Price"}
@@ -289,7 +289,7 @@ export function SearchFilters({
       {onClose && (
         <Button
           onClick={onClose}
-          className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+          className="w-full rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white"
         >
           {app.lang === "ar" ? "تطبيق الفلاتر" : "Apply Filters"}
         </Button>

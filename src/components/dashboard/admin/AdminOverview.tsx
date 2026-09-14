@@ -35,7 +35,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // ============================================================
-// 🎨 ZOOQ BRAND COLORS
+// 🎨 ZOOQ BRAND COLORS - زيتي ورمادي فقط
 // ============================================================
 const COLORS = {
   olive: '#2a655f',
@@ -45,21 +45,21 @@ const COLORS = {
   oliveGlow: 'rgba(42,101,95,0.2)',
   oliveGlowStrong: 'rgba(42,101,95,0.35)',
   
-  pink: '#f9a8d4',
-  pinkLight: '#fbcfe8',
-  pinkDark: '#f48fb1',
-  pinkVeryLight: '#fdf2f8',
-  pinkGlow: 'rgba(249,168,212,0.25)',
-  pinkGlowStrong: 'rgba(249,168,212,0.4)',
+  slate: '#64748b',
+  slateLight: '#94a3b8',
+  slateDark: '#475569',
+  slateVeryLight: '#f1f5f9',
+  slateGlow: 'rgba(100,116,139,0.25)',
+  slateGlowStrong: 'rgba(100,116,139,0.4)',
   
-  fuchsia: '#d81b60',
-  fuchsiaDark: '#c2185b',
-  fuchsiaGlow: 'rgba(216,27,96,0.2)',
-  fuchsiaGlowStrong: 'rgba(194,24,91,0.35)',
+  gray: '#6b7280',
+  grayDark: '#4b5563',
+  grayGlow: 'rgba(107,114,128,0.2)',
+  grayGlowStrong: 'rgba(75,85,99,0.35)',
   
   glowOlive: 'rgba(42,101,95,0.15)',
-  glowPink: 'rgba(249,168,212,0.2)',
-  glowPinkStrong: 'rgba(249,168,212,0.35)',
+  glowSlate: 'rgba(100,116,139,0.2)',
+  glowSlateStrong: 'rgba(100,116,139,0.35)',
 };
 
 // ============================================================
@@ -67,8 +67,8 @@ const COLORS = {
 // ============================================================
 const CHART_COLORS = {
   green: ['#2a655f', '#3a8a82', '#1a4f4a', '#4a9f95', '#6bb5aa', '#8dcfc6'],
-  pink: ['#f9a8d4', '#fbcfe8', '#f48fb1', '#fdf2f8', '#f9a8d4'],
-  fuchsia: ['#d81b60', '#c2185b', '#f48fb1', '#fbcfe8'],
+  slate: ['#94a3b8', '#cbd5e1', '#64748b', '#e2e8f0', '#94a3b8'],
+  gray: ['#4b5563', '#6b7280', '#9ca3af', '#d1d5db'],
 };
 
 const GRADIENT_COLORS = {
@@ -76,8 +76,8 @@ const GRADIENT_COLORS = {
   secondary: 'from-[#1a4f4a] to-[#3a8a82]',
   tertiary: 'from-[#3a8a82] to-[#4a9f95]',
   accent: 'from-[#4a9f95] to-[#6bb5aa]',
-  pink: 'from-[#f9a8d4] to-[#fbcfe8]',
-  fuchsia: 'from-[#d81b60] to-[#f48fb1]',
+  slate: 'from-[#94a3b8] to-[#cbd5e1]',
+  gray: 'from-[#4b5563] to-[#6b7280]',
 };
 
 interface AdminOverviewProps {
@@ -203,7 +203,7 @@ const stores = storesData?.data || [];
     const archived = all.filter((p: any) => p.status === 'archived').length;
     return [
       { name: app.lang === 'ar' ? 'منشور' : 'Published', value: published, color: CHART_COLORS.green[0] },
-      { name: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: pendingCount, color: CHART_COLORS.pink[0] },
+      { name: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: pendingCount, color: CHART_COLORS.slate[0] },
       { name: app.lang === 'ar' ? 'مؤرشف' : 'Archived', value: archived, color: CHART_COLORS.green[2] },
     ];
   }, [all, app.lang]);
@@ -213,7 +213,7 @@ const stores = storesData?.data || [];
     const banned = stores.filter((s: any) => s.store_active === false).length;
     return [
       { name: app.lang === 'ar' ? 'نشط' : 'Active', value: active, color: CHART_COLORS.green[0] },
-      { name: app.lang === 'ar' ? 'محظور' : 'Banned', value: banned, color: CHART_COLORS.fuchsia[0] },
+      { name: app.lang === 'ar' ? 'محظور' : 'Banned', value: banned, color: CHART_COLORS.gray[0] },
     ];
   }, [stores, app.lang]);
 
@@ -254,8 +254,8 @@ const stores = storesData?.data || [];
       change: `${totalOrders > 0 ? '+' : ''}${totalOrders > 0 ? Math.round((totalOrders / (sellerOrdersRaw.length || 1)) * 100) : 0}%`,
       changeType: totalOrders > 0 ? 'up' : 'down',
       color: 'text-[#2a655f]',
-      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
-      gradient: 'from-[#2a655f] to-[#f9a8d4]',
+      border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
+      gradient: 'from-[#2a655f] to-[#3a8a82]',
     },
     { 
       label: app.lang === 'ar' ? 'إجمالي المستخدمين' : 'Total Users', 
@@ -264,8 +264,8 @@ const stores = storesData?.data || [];
       change: `${stores.length > 0 ? '+' : ''}${stores.length > 0 ? Math.round((stores.length / (all.length || 1)) * 100) : 0}%`,
       changeType: stores.length > 0 ? 'up' : 'down',
       color: 'text-[#3a8a82]',
-      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
-      gradient: 'from-[#3a8a82] to-[#f9a8d4]',
+      border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
+      gradient: 'from-[#3a8a82] to-[#4a9f95]',
     },
     { 
       label: app.lang === 'ar' ? 'متوسط الطلب' : 'Avg Order', 
@@ -274,8 +274,8 @@ const stores = storesData?.data || [];
       change: `${totalOrders > 0 ? '+' : ''}${totalOrders > 0 ? Math.round(((totalRevenue / totalOrders) / (totalRevenue / (totalOrders || 1))) * 100) : 0}%`,
       changeType: totalOrders > 0 ? 'up' : 'down',
       color: 'text-[#1a4f4a]',
-      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
-      gradient: 'from-[#1a4f4a] to-[#f9a8d4]',
+      border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
+      gradient: 'from-[#1a4f4a] to-[#3a8a82]',
     },
   ];
 
@@ -286,28 +286,28 @@ const stores = storesData?.data || [];
       value: activeBanners.length,
       icon: LayoutDashboard,
       gradient: 'from-[#2a655f] to-[#1a4f4a]',
-      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+      border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
     },
     {
       label: app.lang === 'ar' ? 'الإعلانات النشطة' : 'Active Announcements',
       value: activeAnnouncements.length,
       icon: Megaphone,
       gradient: 'from-[#1a4f4a] to-[#3a8a82]',
-      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+      border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
     },
     {
       label: app.lang === 'ar' ? 'التصنيفات' : 'Categories',
       value: categories.length,
       icon: Tags,
       gradient: 'from-[#3a8a82] to-[#4a9f95]',
-      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+      border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
     },
     {
       label: app.lang === 'ar' ? 'الإشعارات غير المقروءة' : 'Unread Notifications',
       value: unreadNotifications.length,
       icon: Bell,
       gradient: 'from-[#4a9f95] to-[#6bb5aa]',
-      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+      border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
     },
   ];
 
@@ -318,7 +318,7 @@ const stores = storesData?.data || [];
       value: pending.length, 
       icon: Package,
       gradient: 'from-[#2a655f] to-[#1a4f4a]',
-      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+      border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
       to: 'listings',
       glow: 'shadow-[#2a655f]/20',
     },
@@ -327,7 +327,7 @@ const stores = storesData?.data || [];
       value: pendingApps.length, 
       icon: ShieldCheck,
       gradient: 'from-[#1a4f4a] to-[#3a8a82]',
-      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+      border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
       to: 'applications',
       glow: 'shadow-[#1a4f4a]/20',
     },
@@ -336,7 +336,7 @@ const stores = storesData?.data || [];
       value: stores.length, 
       icon: Store,
       gradient: 'from-[#3a8a82] to-[#4a9f95]',
-      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+      border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
       to: 'stores',
       glow: 'shadow-[#3a8a82]/20',
     },
@@ -345,7 +345,7 @@ const stores = storesData?.data || [];
       value: all.length, 
       icon: LayoutDashboard,
       gradient: 'from-[#4a9f95] to-[#6bb5aa]',
-      border: 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500',
+      border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
       to: 'listings',
       glow: 'shadow-[#4a9f95]/20',
     },
@@ -444,10 +444,10 @@ const stores = storesData?.data || [];
         .badge-red { background: #fee2e2; color: #991b1b; }
         .badge-blue { background: #dbeafe; color: #1e40af; }
       </style></head>
-      <body>
-        <div class="header"><h1>📊 تقرير نظرة عامة</h1><p>${now} | السوق لعندك</p></div>
-        <div class="stats-grid">
-    `;
+     <body>
+  <div class="header"><h1>📊 تقرير نظرة عامة</h1><p>${now} | ذوق</p></div>
+  <div class="stats-grid">
+`;
     const statsItems = [
       { label: app.lang === 'ar' ? 'إجمالي الإيرادات' : 'Total Revenue', value: formatPrice(totalRevenue, app.currency, app.lang), change: `${growthData.isPositive ? '+' : ''}${growthData.growth}%`, changeType: growthData.isPositive ? 'up' : 'down' },
       { label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', value: totalOrders, change: `${totalOrders > 0 ? '+' : ''}${totalOrders > 0 ? Math.round((totalOrders / (sellerOrdersRaw.length || 1)) * 100) : 0}%`, changeType: totalOrders > 0 ? 'up' : 'down' },
@@ -476,11 +476,11 @@ const stores = storesData?.data || [];
     tableData.forEach((item, index) => {
       htmlContent += `<tr><td>${index + 1}</td><td>${item.label}</td><td><strong>${item.value}</strong></td><td><span class="badge ${item.badge}">${item.status}</span></td></tr>`;
     });
-    htmlContent += `
-        </tbody></table>
-        <div class="footer">تم التصدير من السوق لعندك | ${now}</div>
-      </body></html>
-    `;
+   htmlContent += `
+  </tbody></table>
+  <div class="footer">تم التصدير من ذوق | ${now}</div>
+</body></html>
+`;
     const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
     saveAs(blob, `نظرة_عامة_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.doc`);
     toast.success(app.lang === "ar" ? "✅ تم تصدير نظرة عامة إلى Word" : "✅ Overview exported to Word");
@@ -523,9 +523,9 @@ const stores = storesData?.data || [];
                   <span className="text-xs text-muted-foreground">{app.lang === 'ar' ? 'إيرادات' : 'revenue'}</span>
                 </span>
                 <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f9a8d4]/10 border border-[#f9a8d4]/20 hover:bg-[#f9a8d4]/20 transition-colors">
-                  <ShoppingCart className="h-3.5 w-3.5 text-[#f9a8d4]" />
-                  <span className="text-[#f9a8d4] font-medium">{totalOrders}</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-500/10 border border-slate-400/20 hover:bg-slate-500/20 transition-colors">
+                  <ShoppingCart className="h-3.5 w-3.5 text-slate-600" />
+                  <span className="text-slate-700 dark:text-slate-300 font-medium">{totalOrders}</span>
                   <span className="text-xs text-muted-foreground">{app.lang === 'ar' ? 'طلبات' : 'orders'}</span>
                 </span>
                 <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
@@ -542,7 +542,7 @@ const stores = storesData?.data || [];
         {/* ✅ أزرار التصدير */}
         {!searchQuery.trim() && (
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-pink-400/60 dark:border-pink-400/40 shadow-sm">
+            <div className="flex items-center gap-1 bg-white dark:bg-[#1e293b] rounded-xl p-1 border border-[#2a655f]/40 dark:border-[#3a8a82]/30 shadow-sm">
               <Button
                 variant="ghost"
                 size="sm"
@@ -561,7 +561,7 @@ const stores = storesData?.data || [];
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline text-xs font-medium">Word</span>
               </Button>
-              <div className="w-px h-6 bg-pink-400/40" />
+              <div className="w-px h-6 bg-[#2a655f]/30" />
               <Button
                 variant="ghost"
                 size="sm"
@@ -594,7 +594,7 @@ const stores = storesData?.data || [];
                 else if (item.key === 'stores') onGoto('stores');
                 else if (item.key === 'applications') onGoto('applications');
               }}
-              className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 p-4 text-center hover:shadow-xl hover:shadow-pink-500/20 transition-all hover:scale-[1.02]"
+              className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f] p-4 text-center hover:shadow-xl hover:shadow-[#2a655f]/20 transition-all hover:scale-[1.02]"
             >
               <div className="flex items-center justify-center gap-3">
                 <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg shadow-[#2a655f]/20 group-hover:scale-110 transition-all duration-300`}>
@@ -617,7 +617,7 @@ const stores = storesData?.data || [];
 
       {/* ===== إذا لم يتم العثور على نتائج ===== */}
       {searchQuery.trim() && searchResults.total === 0 && (
-        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 p-12 text-center">
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30 p-12 text-center">
           <div className="h-20 w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
             <Search className="h-10 w-10 text-[#2a655f]/40" />
           </div>
@@ -632,7 +632,7 @@ const stores = storesData?.data || [];
         </div>
       )}
 
-      {/* ===== بطاقات الإحصائيات السريعة - خلفية بيضاء وبوردر زهري ===== */}
+      {/* ===== بطاقات الإحصائيات السريعة ===== */}
       {!searchQuery.trim() && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -642,7 +642,7 @@ const stores = storesData?.data || [];
                 className={cn(
                   "group bg-white dark:bg-[#1e293b] rounded-xl border-2 transition-all duration-300 hover:shadow-xl",
                   stat.border,
-                  "hover:shadow-pink-500/20 hover:-translate-y-1 hover:scale-[1.02]"
+                  "hover:shadow-[#2a655f]/20 hover:-translate-y-1 hover:scale-[1.02]"
                 )}
               >
                 <div className="flex items-start justify-between p-4">
@@ -653,16 +653,16 @@ const stores = storesData?.data || [];
                       {stat.changeType === 'up' ? (
                         <ArrowUpRight className="h-3 w-3 text-[#2a655f] animate-bounce-slow" />
                       ) : (
-                        <ArrowDownRight className="h-3 w-3 text-[#d81b60]" />
+                        <ArrowDownRight className="h-3 w-3 text-slate-500" />
                       )}
-                      <span className={`text-xs font-medium ${stat.changeType === 'up' ? 'text-[#2a655f]' : 'text-[#d81b60]'}`}>
+                      <span className={`text-xs font-medium ${stat.changeType === 'up' ? 'text-[#2a655f]' : 'text-slate-500'}`}>
                         {stat.change}
                       </span>
                     </div>
                   </div>
                   <div className={cn(
                     "h-12 w-12 rounded-xl flex items-center justify-center",
-                    "bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40",
+                    "bg-white dark:bg-[#1e293b] border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30",
                     "group-hover:scale-110 group-hover:rotate-6 transition-all duration-300"
                   )}>
                     <stat.icon className={cn("h-5 w-5", stat.color)} />
@@ -682,14 +682,14 @@ const stores = storesData?.data || [];
             ))}
           </div>
 
-          {/* ===== بطاقات حالة المنصة - خلفية بيضاء وبوردر زهري ===== */}
+          {/* ===== بطاقات حالة المنصة ===== */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {platformStats.map((item) => (
               <button
                 key={item.label}
                 onClick={() => onGoto(item.to as any)}
                 className={cn(
-                  "group bg-white dark:bg-[#1e293b] rounded-xl p-4 border-2 transition-all hover:shadow-xl hover:shadow-pink-500/20 hover:scale-[1.02] text-start relative overflow-hidden",
+                  "group bg-white dark:bg-[#1e293b] rounded-xl p-4 border-2 transition-all hover:shadow-xl hover:shadow-[#2a655f]/20 hover:scale-[1.02] text-start relative overflow-hidden",
                   item.border
                 )}
               >
@@ -703,9 +703,9 @@ const stores = storesData?.data || [];
                   </div>
                   <div className={cn(
                     "h-12 w-12 rounded-xl flex items-center justify-center",
-                    "bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40",
+                    "bg-white dark:bg-[#1e293b] border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30",
                     "group-hover:scale-110 transition-all duration-300",
-                    "shadow-lg shadow-pink-500/10"
+                    "shadow-lg shadow-[#2a655f]/10"
                   )}>
                     <div className={cn("h-6 w-6 rounded-lg bg-gradient-to-br", item.gradient, "flex items-center justify-center")}>
                       <item.icon className="h-3.5 w-3.5 text-white" />
@@ -732,208 +732,20 @@ const stores = storesData?.data || [];
           {/* ===== الرسوم البيانية ===== */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* ✅ مخطط المبيعات الشهرية */}
-            <div className="lg:col-span-1 bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 p-5 hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
-              <div className={`flex items-center justify-between mb-4 ${isRTL ? 'flex-row-reverse' : ''} relative`}>
-                <div className={isRTL ? 'text-right' : ''}>
-                  <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                    <LineChartIcon className="h-4 w-4 text-[#2a655f] animate-float" />
-                    {app.lang === 'ar' ? "تحليل المبيعات" : "Sales Analytics"}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {app.lang === 'ar' ? "الإيرادات والطلبات الشهرية" : "Monthly revenue & orders"}
-                  </p>
-                </div>
-                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20">
-                  <TrendingUp className="h-3 w-3 mr-1 animate-pulse" />
-                  {growthData.isPositive ? '+' : ''}{growthData.growth}%
-                </Badge>
-              </div>
-              <div className="h-[260px] relative">
-                {monthlySalesData.length > 0 && monthlySalesData.some(d => d.revenue > 0 || d.orders > 0) ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={monthlySalesData}>
-                      <defs>
-                        <linearGradient id="revenueGradientGreen" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#2a655f" stopOpacity={0.3}/>
-                          <stop offset="50%" stopColor="#1a4f4a" stopOpacity={0.1}/>
-                          <stop offset="100%" stopColor="#f9a8d4" stopOpacity={0}/>
-                        </linearGradient>
-                        <linearGradient id="orderGradientGreen" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#f9a8d4" stopOpacity={0.2}/>
-                          <stop offset="100%" stopColor="#f9a8d4" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="4 4" stroke="#e2e8f0" opacity={0.3} vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                      <YAxis yAxisId="left" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                      <Tooltip 
-                        contentStyle={{ 
-                          borderRadius: '12px', 
-                          border: '2px solid #f9a8d4/50', 
-                          boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
-                          background: 'rgba(255,255,255,0.95)'
-                        }}
-                        formatter={(v: any) => typeof v === 'number' ? v.toLocaleString() : v}
-                      />
-                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '6px' }} />
-                      <Area 
-                        yAxisId="left" 
-                        type="monotone" 
-                        dataKey="revenue" 
-                        name={app.lang === 'ar' ? "الإيرادات" : "Revenue"} 
-                        stroke="#2a655f" 
-                        strokeWidth={2.5} 
-                        fill="url(#revenueGradientGreen)"
-                        dot={{ fill: '#2a655f', r: 4 }}
-                        activeDot={{ r: 6, fill: '#f9a8d4' }}
-                        animationDuration={2000}
-                        animationEasing="ease-in-out"
-                      />
-                      <Bar 
-                        yAxisId="right" 
-                        dataKey="orders" 
-                        name={app.lang === 'ar' ? "الطلبات" : "Orders"} 
-                        fill="#f9a8d4" 
-                        radius={[4,4,0,0]} 
-                        barSize={24}
-                        animationDuration={2000}
-                        animationEasing="ease-in-out"
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-sm text-slate-500">
-                    {app.lang === 'ar' ? "لا توجد بيانات كافية" : "Insufficient data"}
-                  </div>
-                )}
-              </div>
-            </div>
+           
 
-            {/* ✅ حالة المتاجر - تم نقلها إلى هنا بدلاً من توزيع المنتجات */}
-            <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 p-5 hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#1a4f4a]/5 blur-3xl animate-pulse delay-500" />
-              <div className={isRTL ? 'text-right' : ''}>
-                <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                  <Store className="h-4 w-4 text-[#1a4f4a] animate-float" />
-                  {app.lang === 'ar' ? "حالة المتاجر" : "Store Status"}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {app.lang === 'ar' ? "نشط مقابل محظور" : "Active vs Banned"}
-                </p>
-              </div>
-              <div className="h-[260px] mt-2">
-                {storeStatusData.some(d => d.value > 0) ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie 
-                        data={storeStatusData} 
-                        cx="50%" 
-                        cy="45%" 
-                        innerRadius={45} 
-                        outerRadius={80} 
-                        paddingAngle={3} 
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        labelLine={false}
-                        animationDuration={2000}
-                        animationEasing="ease-in-out"
-                      >
-                        {storeStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} className="hover:opacity-80 transition-opacity duration-300 cursor-pointer" />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ 
-                          borderRadius: '12px', 
-                          border: '2px solid #f9a8d4/50', 
-                          boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
-                          background: 'rgba(255,255,255,0.95)'
-                        }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '4px' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-sm text-slate-500">
-                    {app.lang === 'ar' ? "لا توجد متاجر" : "No stores"}
-                  </div>
-                )}
-              </div>
-            </div>
+        
           </div>
 
-          {/* ===== صف ثاني: أفضل البائعين ===== */}
-          <div className="grid grid-cols-1 gap-6">
-            <div className="bg-white dark:bg-[#1e293b] rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 p-5 hover:shadow-xl hover:shadow-pink-500/20 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-[#f9a8d4]/5 blur-3xl animate-pulse delay-1000" />
-              <div className={isRTL ? 'text-right' : ''}>
-                <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                  <Award className="h-4 w-4 text-[#f9a8d4] animate-bounce-slow" />
-                  {app.lang === 'ar' ? "أفضل البائعين" : "Top Sellers"}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {app.lang === 'ar' ? "حسب الإيرادات" : "By revenue"}
-                </p>
-              </div>
-              <div className="h-[200px] mt-2">
-                {topSellers.length > 0 && topSellers.some((s: any) => s.revenue > 0) ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={topSellers} layout="vertical">
-                      <defs>
-                        <linearGradient id="sellerGradientGreen" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="#2a655f" />
-                          <stop offset="50%" stopColor="#1a4f4a" />
-                          <stop offset="100%" stopColor="#f9a8d4" />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="4 4" stroke="#e2e8f0" opacity={0.3} horizontal={false} />
-                      <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                      <YAxis 
-                        dataKey="name" 
-                        type="category" 
-                        tick={{ fontSize: 10, fill: '#94a3b8' }} 
-                        axisLine={false} 
-                        tickLine={false} 
-                        width={80} 
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          borderRadius: '12px', 
-                          border: '2px solid #f9a8d4/50', 
-                          boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
-                          background: 'rgba(255,255,255,0.95)'
-                        }}
-                        formatter={(v: any) => formatPrice(v, app.currency, app.lang)}
-                      />
-                      <Bar 
-                        dataKey="revenue" 
-                        fill="url(#sellerGradientGreen)" 
-                        radius={[0, 4, 4, 0]} 
-                        barSize={20}
-                        animationDuration={2000}
-                        animationEasing="ease-in-out"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-sm text-slate-500">
-                    {app.lang === 'ar' ? "لا توجد مبيعات" : "No sales yet"}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+       
 
-          {/* ===== إحصائيات إضافية - خلفية بيضاء وبوردر زهري ===== */}
+          {/* ===== إحصائيات إضافية ===== */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {additionalStats.map((stat, i) => (
               <div 
                 key={i} 
                 className={cn(
-                  "group bg-white dark:bg-[#1e293b] rounded-xl p-4 border-2 transition-all hover:shadow-xl hover:shadow-pink-500/20 hover:scale-[1.02] relative overflow-hidden",
+                  "group bg-white dark:bg-[#1e293b] rounded-xl p-4 border-2 transition-all hover:shadow-xl hover:shadow-[#2a655f]/20 hover:scale-[1.02] relative overflow-hidden",
                   stat.border
                 )}
               >
@@ -943,9 +755,9 @@ const stores = storesData?.data || [];
                 <div className="flex items-center gap-3 relative">
                   <div className={cn(
                     "h-10 w-10 rounded-xl flex items-center justify-center",
-                    "bg-white dark:bg-[#1e293b] border-2 border-pink-400/60 dark:border-pink-400/40",
+                    "bg-white dark:bg-[#1e293b] border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30",
                     "group-hover:scale-110 transition-all duration-300",
-                    "shadow-lg shadow-pink-500/10"
+                    "shadow-lg shadow-[#2a655f]/10"
                   )}>
                     <div className={cn("h-6 w-6 rounded-lg bg-gradient-to-br", stat.gradient, "flex items-center justify-center")}>
                       <stat.icon className="h-3.5 w-3.5 text-white" />
@@ -971,15 +783,15 @@ const stores = storesData?.data || [];
           </div>
 
           {/* ===== شريط سفلي متحرك ===== */}
-          <div className="relative w-full overflow-hidden rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] p-3">
+          <div className="relative w-full overflow-hidden rounded-xl border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30 bg-white dark:bg-[#1e293b] p-3">
             <div className="flex items-center justify-center gap-6 animate-marquee-slow">
               <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
                 <Rocket className="h-4 w-4 text-[#2a655f] animate-float" />
-                {app.lang === 'ar' ? '🚀 السوق لعندك - منصة متكاملة' : '🚀 Souqi - Integrated Platform'}
+                {app.lang === 'ar' ? '🚀 ذوق - منصة متكاملة' : '🚀 Zooq - Integrated Platform'}
               </span>
               <span className="text-[#2a655f]/20">|</span>
               <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                <Gem className="h-4 w-4 text-[#f9a8d4] animate-spin-slow" />
+                <Gem className="h-4 w-4 text-[#3a8a82] animate-spin-slow" />
                 {app.lang === 'ar' ? '💎 أداء عالي وسرعة فائقة' : '💎 High Performance & Speed'}
               </span>
               <span className="text-[#2a655f]/20">|</span>

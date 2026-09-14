@@ -1,6 +1,6 @@
 // src/routes/offer/$id.tsx - نفس تصميم listing/$id مع الحفاظ على كل اللوجيك
 
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useApp, formatPrice } from "@/lib/i18n";
 import { useProductOfferByIdV2 } from "@/lib/hooks/useProductOffers";
@@ -38,7 +38,7 @@ export const Route = createFileRoute("/offer/$id")({
     hideFooter: true,
   }),
   component: OfferDetailPage,
-  head: () => ({ meta: [{ title: "تفاصيل العرض الترويجي — السوق لعندك" }] }),
+  head: () => ({ meta: [{ title: "تفاصيل العرض الترويجي — ذوق" }] }),
 });
 
 const LoadingSkeleton = () => (
@@ -57,6 +57,7 @@ function OfferDetailPage() {
   const { id } = Route.useParams();
   const app = useApp();
   const navigate = useNavigate();
+  const router = useRouter();
   const addToCartMutation = useAddToCart();
   const clearCartMutation = useClearCart();
 
@@ -1896,37 +1897,37 @@ function OfferDetailPage() {
         },
       });
 
+            // ✅ ✅ ✅ إشعار رمادي هادئ احترافي
+      const offerTitle = app.lang === "ar" 
+        ? (offer.display_text_ar || mainProduct?.title_ar || "العرض") 
+        : (offer.display_text_en || mainProduct?.title_en || mainProduct?.title_ar || "Offer");
+      
       toast.success(
         app.lang === "ar" 
-          ? `✅ تم إضافة ${quantity} ${quantity > 1 ? 'عروض' : 'عرض'} للسلة بنجاح!`
-          : `✅ ${quantity} offer${quantity > 1 ? 's' : ''} added to cart successfully!`,
+          ? `تمت إضافة "${offerTitle}" للسلة`
+          : `"${offerTitle}" added to cart`,
         { 
-          duration: 4000,
-          icon: '🛒',
-          style: {
-            background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',
-            color: '#831843',
-            borderRadius: '16px',
-            border: '1px solid #f9a8d4',
-            boxShadow: '0 20px 60px rgba(236, 72, 153, 0.25)',
-          },
-          className: 'font-bold',
+          duration: 3000,
           action: {
-            label: app.lang === "ar" ? "🛒 عرض السلة 🛒" : "🛒 View Cart 🛒",
-            onClick: () => {
-              navigate({ to: "/cart" });
-              toast.dismiss();
-            }
+            label: app.lang === "ar" ? "عرض السلة" : "View Cart",
+            onClick: () => navigate({ to: "/cart" })
+          },
+          style: {
+            background: '#f5f5f5',
+            border: '1px solid #e5e5e5',
+            borderRadius: '14px',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+            color: '#1a1a1a',
           },
           actionButtonStyle: {
-            background: 'linear-gradient(135deg, #1a4f4a, #2a655f, #3a8a82)',
+            background: '#2a655f',
             color: 'white',
-            fontWeight: 'bold',
-            borderRadius: '12px',
-            padding: '8px 24px',
-            boxShadow: '0 8px 30px rgba(26, 79, 74, 0.4)',
+            fontWeight: '600',
+            borderRadius: '10px',
+            padding: '6px 18px',
+            boxShadow: 'none',
             border: 'none',
-            fontSize: '14px',
+            fontSize: '13px',
           }
         }
       );
@@ -2011,6 +2012,15 @@ function OfferDetailPage() {
     }
   }, [offer, app.lang]);
 
+  // ✅ دالة الرجوع الآمنة
+  const handleGoBack = useCallback(() => {
+    if (window.history.length > 1) {
+      router.history.back();
+    } else {
+      navigate({ to: "/" });
+    }
+  }, [router, navigate]);
+
   // ========== ✅ RENDER ==========
   if (isLoading) return <LoadingSkeleton />;
 
@@ -2039,7 +2049,11 @@ function OfferDetailPage() {
         
         {/* ===== شريط علوي ===== */}
         <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-[#eee] px-4 py-3 flex items-center justify-between">
-          <button onClick={() => navigate({ to: -1 })} className="p-2 rounded-full hover:bg-gray-100 transition">
+          <button 
+            onClick={handleGoBack} 
+            className="p-2 rounded-full hover:bg-gray-100 transition"
+            aria-label={app.lang === "ar" ? "رجوع" : "Back"}
+          >
             <ChevronRight className="h-5 w-5 text-gray-700" />
           </button>
           <div className="flex items-center gap-2">
@@ -3216,43 +3230,56 @@ function OfferDetailPage() {
 
         </div>
 
-        {/* ===== شريط الأزرار السفلي ===== */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-3 max-w-xl mx-auto flex gap-3 shadow-lg">
-          <Button
-            onClick={handleAddToCart}
-            className="flex-1 bg-[#fef9ec] hover:bg-[#fde6b5] text-gray-900 font-bold h-12 rounded-xl text-base shadow-md transition border-2 border-[#fde6b5]"
-            disabled={!isVariationSelected || addToCartMutation.isPending || isSubmitting}
-          >
-            {addToCartMutation.isPending || isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-900/30 border-t-gray-900" />
-                {app.lang === "ar" ? "جاري..." : "Loading..."}
-              </div>
-            ) : (
-              app.lang === "ar" ? "اشتري الآن" : "Buy Now"
-            )}
-          </Button>
-          <Button
-            onClick={handleAddToCart}
-            className={cn(
-              "flex-1 font-bold h-12 rounded-xl text-base shadow-md transition",
-              "bg-[#1a4f4a] hover:bg-[#2a655f] text-white"
-            )}
-            disabled={!isVariationSelected || addToCartMutation.isPending || isSubmitting}
-          >
-            {addToCartMutation.isPending || isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                {app.lang === "ar" ? "جاري..." : "Loading..."}
-              </div>
-            ) : (
-              <>
-                <ShoppingBag className="h-4 w-4 ml-2" />
-                {app.lang === "ar" ? "أضف العرض للسلة" : "Add Offer to Cart"}
-              </>
-            )}
-          </Button>
+      {/* ===== شريط الأزرار السفلي ===== */}
+<div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-2 sm:px-3 py-2 sm:py-3 shadow-lg">
+  <div className="max-w-xl mx-auto flex gap-1.5 sm:gap-2 md:gap-3">
+    {/* زر اشتري الآن */}
+    <Button
+      onClick={handleAddToCart}
+      className="flex-1 bg-[#fef9ec] hover:bg-[#fde6b5] text-gray-900 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition border-2 border-[#fde6b5] px-2 sm:px-3 md:px-4"
+      disabled={!isVariationSelected || addToCartMutation.isPending || isSubmitting}
+    >
+      {addToCartMutation.isPending || isSubmitting ? (
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-gray-900/30 border-t-gray-900" />
+          <span className="whitespace-nowrap">
+            {app.lang === "ar" ? "جاري..." : "Loading..."}
+          </span>
         </div>
+      ) : (
+        <span className="whitespace-nowrap">
+          {app.lang === "ar" ? "اشتري الآن" : "Buy Now"}
+        </span>
+      )}
+    </Button>
+
+    {/* زر أضف العرض للسلة */}
+    <Button
+      onClick={handleAddToCart}
+      className={cn(
+        "flex-1 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition px-2 sm:px-3 md:px-4",
+        "bg-[#1a4f4a] hover:bg-[#2a655f] text-white"
+      )}
+      disabled={!isVariationSelected || addToCartMutation.isPending || isSubmitting}
+    >
+      {addToCartMutation.isPending || isSubmitting ? (
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          <span className="whitespace-nowrap">
+            {app.lang === "ar" ? "جاري..." : "Loading..."}
+          </span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+          <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+          <span className="whitespace-nowrap truncate">
+            {app.lang === "ar" ? "أضف للسلة" : "Add to Cart"}
+          </span>
+        </div>
+      )}
+    </Button>
+  </div>
+</div>
 
         {/* ===== مودال تعارض المتاجر ===== */}
         <Dialog open={showStoreConflict} onOpenChange={setShowStoreConflict}>

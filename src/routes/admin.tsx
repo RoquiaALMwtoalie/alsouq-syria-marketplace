@@ -6,7 +6,7 @@ import { AdminDashboard } from "@/components/dashboard/admin/AdminDashboard";
 
 export const Route = createFileRoute("/admin")({
   component: AdminRoute,
-  head: () => ({ meta: [{ title: "لوحة الأدمن — السوق اليك" }] }),
+  head: () => ({ meta: [{ title: "لوحة الأدمن — ذوق" }] }),
 });
 
 function AdminRoute() {

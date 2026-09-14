@@ -28,6 +28,16 @@ export function isPushSupported() {
   );
 }
 
+// ✅ ✅ ✅ فحص بيئة التطوير
+const IS_DEV = 
+  typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.port === '3000' ||
+    window.location.port === '3001' ||
+    window.location.port === '5173'
+  );
+
 export async function requestPushPermission(): Promise<boolean> {
   if (!isPushSupported()) {
     console.warn('الـ Push غير مدعوم في هذا المتصفح');
@@ -46,6 +56,12 @@ export async function requestPushPermission(): Promise<boolean> {
 export async function subscribeToPush(userId: string): Promise<boolean> {
   if (!isPushSupported()) {
     console.warn('⚠️ Push غير مدعوم');
+    return false;
+  }
+
+  // ✅ ✅ ✅ DEV MODE: تخطّي Push في التطوير
+  if (IS_DEV) {
+    console.log('🔧 [Push] Dev mode - skipping push subscription');
     return false;
   }
   

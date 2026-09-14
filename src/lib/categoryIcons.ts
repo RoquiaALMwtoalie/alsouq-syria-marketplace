@@ -70,7 +70,7 @@ export const iconMap: Record<string, any> = {
   'ball': LucideIcons.Volleyball,
   'bike': LucideIcons.Bike,
   'swim': LucideIcons.Waves,
-  'skateboard': LucideIcons.Skateboard, // ⚠️ إذا استمر الخطأ، استبدله بـ LucideIcons.Bike
+  'skateboard': LucideIcons.Bike, // ✅ مُصحّح - Skateboard غير موجودة في lucide-react
   'dumbbell': LucideIcons.Dumbbell,
 
   // 🍕 طعام (مُصحّحة)

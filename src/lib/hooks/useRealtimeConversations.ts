@@ -337,7 +337,7 @@ export function useRealtimeConversations(userId: string | undefined) {
                 0
               );
               if (unreadCount > 0) {
-                document.title = `(${unreadCount}) السوق اليك`;
+                document.title = `(${unreadCount}) ذوق`;
               }
             }
           }
@@ -444,7 +444,7 @@ export function useRealtimeConversations(userId: string | undefined) {
           (total, conv) => total + (conv.unread_count_participant1 || 0) + (conv.unread_count_participant2 || 0),
           0
         );
-        document.title = unreadCount > 0 ? `(${unreadCount}) السوق اليك` : "السوق اليك";
+        document.title = unreadCount > 0 ? `(${unreadCount}) ذوق` : "ذوق";
       };
 
       const unsubscribeStore = useConversationStore.subscribe(updateTitle);
@@ -457,7 +457,7 @@ export function useRealtimeConversations(userId: string | undefined) {
         console.log("🧹 Cleaning up Realtime channels");
         cleanupChannels();
         unsubscribeStore();
-        document.title = "السوق اليك";
+        document.title = "ذوق";
         isRealtimeSetup = false;
         currentUserId = null;
       };

@@ -19,8 +19,8 @@ export const Route = createFileRoute("/categories")({
   component: CategoriesPage,
   head: () => ({
     meta: [
-      { title: "جميع التصنيفات - السوق لعندك" },
-      { name: "description", content: "استكشف جميع التصنيفات والمنتجات بكل سهولة في السوق لعندك" },
+      { title: "جميع التصنيفات - ذوق" },
+      { name: "description", content: "استكشف جميع التصنيفات والمنتجات بكل سهولة في ذوق" },
     ],
   }),
 });

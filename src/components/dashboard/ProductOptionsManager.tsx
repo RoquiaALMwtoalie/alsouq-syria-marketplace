@@ -34,12 +34,23 @@ export interface Variation {
   price?: number;
   old_price?: number;
   is_new?: boolean;
+  stock_quantity?: number;
 }
 
 export interface ColorWithImage {
   name: string;
   image: string;
   hex?: string;
+}
+
+// ✅ ✅ ✅ واجهة الخيارات المتاحة من الـ DB
+export interface AvailableOption {
+  key: string;
+  name_ar: string;
+  name_en: string;
+  type: "text" | "select" | "color" | "number";
+  required: boolean;
+  sort_order: number;
 }
 
 interface ProductOptionsManagerProps {
@@ -55,6 +66,8 @@ interface ProductOptionsManagerProps {
   sizes?: string[];
   onSizesChange?: (sizes: string[]) => void;
   isOffer?: boolean;
+  // ✅ ✅ ✅ الخيارات المتاحة من التصنيف
+  availableOptions?: AvailableOption[];
 }
 
 export function ProductOptionsManager({ 
@@ -70,37 +83,88 @@ export function ProductOptionsManager({
   sizes = [],
   onSizesChange,
   isOffer = false,
+  availableOptions = [],
 }: ProductOptionsManagerProps) {
   const app = useApp();
   
-  // ✅ دالة ترجمة الخيارات حسب اللغة
-  const getTranslatedOptions = useCallback(() => {
+  // ✅ ✅ ✅ قاموس شامل لكل الخيارات الممكنة (للأيقونات والألوان)
+  const ALL_OPTION_TYPES: Record<string, { icon: any; emoji: string; color: string; description_ar: string; description_en: string }> = {
+    colors: { icon: Palette, emoji: '🎨', color: '#2a655f', description_ar: 'أضف ألوان المنتج مع صور', description_en: 'Add product colors with images' },
+    sizes: { icon: Ruler, emoji: '📏', color: '#2a655f', description_ar: 'أضف المقاسات المتوفرة', description_en: 'Add available sizes' },
+    size: { icon: Ruler, emoji: '📏', color: '#2a655f', description_ar: 'أضف الحجم', description_en: 'Add size' },
+    models: { icon: Box, emoji: '📐', color: '#2a655f', description_ar: 'أضف النماذج المختلفة', description_en: 'Add different models' },
+    materials: { icon: Droplet, emoji: '🧵', color: '#2a655f', description_ar: 'أضف أنواع المواد', description_en: 'Add material types' },
+    fabric: { icon: Shirt, emoji: '👕', color: '#2a655f', description_ar: 'أضف أنواع الأقمشة', description_en: 'Add fabric types' },
+    style: { icon: Sparkles, emoji: '✨', color: '#2a655f', description_ar: 'أضف أنماط التصميم', description_en: 'Add design styles' },
+    season: { icon: Calendar, emoji: '🌤️', color: '#2a655f', description_ar: 'أضف المواسم', description_en: 'Add seasons' },
+    gender: { icon: User, emoji: '👫', color: '#2a655f', description_ar: 'أضف الفئات الجنسية', description_en: 'Add gender categories' },
+    brand: { icon: Tag, emoji: '🏷️', color: '#2a655f', description_ar: 'أضف الماركات', description_en: 'Add brands' },
+    storage: { icon: HardDrive, emoji: '💾', color: '#2a655f', description_ar: 'أضف سعات التخزين', description_en: 'Add storage capacities' },
+    ram: { icon: Cpu, emoji: '🧠', color: '#2a655f', description_ar: 'أضف سعات الذاكرة', description_en: 'Add RAM capacities' },
+    processor: { icon: Cpu, emoji: '⚡', color: '#2a655f', description_ar: 'أضف أنواع المعالجات', description_en: 'Add processor types' },
+    battery: { icon: Battery, emoji: '🔋', color: '#2a655f', description_ar: 'أضف سعات البطارية', description_en: 'Add battery capacities' },
+    screen_size: { icon: Smartphone, emoji: '📱', color: '#2a655f', description_ar: 'أضف أحجام الشاشات', description_en: 'Add screen sizes' },
+    camera: { icon: Camera, emoji: '📷', color: '#2a655f', description_ar: 'أضف دقات الكاميرا', description_en: 'Add camera resolutions' },
+    connectivity: { icon: Wifi, emoji: '📶', color: '#2a655f', description_ar: 'أضف أنواع الاتصال', description_en: 'Add connectivity types' },
+    dimensions: { icon: Ruler, emoji: '📐', color: '#2a655f', description_ar: 'أضف الأبعاد', description_en: 'Add dimensions' },
+    weight: { icon: Weight, emoji: '⚖️', color: '#2a655f', description_ar: 'أضف الأوزان', description_en: 'Add weights' },
+    volume: { icon: Droplet, emoji: '🧴', color: '#2a655f', description_ar: 'أضف الأحجام', description_en: 'Add volumes' },
+    concentration: { icon: Droplet, emoji: '💧', color: '#2a655f', description_ar: 'أضف التركيزات', description_en: 'Add concentrations' },
+    notes: { icon: Star, emoji: '🌸', color: '#2a655f', description_ar: 'أضف المكونات العطرية', description_en: 'Add fragrance notes' },
+    language: { icon: Globe, emoji: '🌐', color: '#2a655f', description_ar: 'أضف اللغات', description_en: 'Add languages' },
+    pages: { icon: BookOpen, emoji: '📖', color: '#2a655f', description_ar: 'أضف عدد الصفحات', description_en: 'Add page count' },
+    author: { icon: User, emoji: '✍️', color: '#2a655f', description_ar: 'أضف المؤلفين', description_en: 'Add authors' },
+    publisher: { icon: Home, emoji: '🏢', color: '#2a655f', description_ar: 'أضف الناشرين', description_en: 'Add publishers' },
+    age_group: { icon: User, emoji: '👶', color: '#2a655f', description_ar: 'أضف الفئات العمرية', description_en: 'Add age groups' },
+    platform: { icon: Gamepad2, emoji: '🎮', color: '#2a655f', description_ar: 'أضف المنصات', description_en: 'Add platforms' },
+    pet_type: { icon: Heart, emoji: '🐾', color: '#2a655f', description_ar: 'أضف أنواع الحيوانات', description_en: 'Add pet types' },
+    occasion: { icon: Gift, emoji: '🎉', color: '#2a655f', description_ar: 'أضف المناسبات', description_en: 'Add occasions' },
+    expiry: { icon: Clock, emoji: '📅', color: '#2a655f', description_ar: 'أضف تاريخ الانتهاء', description_en: 'Add expiry date' },
+    discount_type: { icon: BadgePercent, emoji: '🏷️', color: '#2a655f', description_ar: 'أضف نوع الخصم', description_en: 'Add discount type' },
+    discount_value: { icon: BadgePercent, emoji: '💰', color: '#2a655f', description_ar: 'أضف قيمة الخصم', description_en: 'Add discount value' },
+    shades: { icon: Palette, emoji: '🎨', color: '#2a655f', description_ar: 'أضف الدرجات', description_en: 'Add shades' },
+    skin_type: { icon: User, emoji: '💆', color: '#2a655f', description_ar: 'أضف أنواع البشرة', description_en: 'Add skin types' },
+  };
+
+  // ✅ ✅ ✅ بناء OPTION_TYPES من availableOptions فقط
+  const OPTION_TYPES = useMemo(() => {
+    if (!availableOptions || availableOptions.length === 0) {
+      return [];
+    }
+    
     const isArabic = app.lang === 'ar';
     
-    return [
-      { id: 'colors', label: isArabic ? 'الألوان' : 'Colors', icon: Palette, color: '#2a655f', emoji: '🎨', description: isArabic ? 'أضف ألوان المنتج مع صور' : 'Add product colors with images' },
-      { id: 'sizes', label: isArabic ? 'المقاسات' : 'Sizes', icon: Ruler, color: '#2a655f', emoji: '📏', description: isArabic ? 'أضف المقاسات المتوفرة' : 'Add available sizes' },
-      { id: 'models', label: isArabic ? 'النماذج' : 'Models', icon: Box, color: '#2a655f', emoji: '📐', description: isArabic ? 'أضف النماذج المختلفة' : 'Add different models' },
-      { id: 'materials', label: isArabic ? 'المواد' : 'Materials', icon: Droplet, color: '#2a655f', emoji: '🧵', description: isArabic ? 'أضف أنواع المواد' : 'Add material types' },
-      { id: 'fabric', label: isArabic ? 'نوع القماش' : 'Fabric', icon: Shirt, color: '#2a655f', emoji: '👕', description: isArabic ? 'أضف أنواع الأقمشة' : 'Add fabric types' },
-      { id: 'style', label: isArabic ? 'النمط' : 'Style', icon: Sparkles, color: '#2a655f', emoji: '✨', description: isArabic ? 'أضف أنماط التصميم' : 'Add design styles' },
-      { id: 'season', label: isArabic ? 'الموسم' : 'Season', icon: Calendar, color: '#2a655f', emoji: '🌤️', description: isArabic ? 'أضف المواسم' : 'Add seasons' },
-      { id: 'gender', label: isArabic ? 'الجنس' : 'Gender', icon: User, color: '#2a655f', emoji: '👫', description: isArabic ? 'أضف الفئات الجنسية' : 'Add gender categories' },
-      { id: 'brand', label: isArabic ? 'الماركة' : 'Brand', icon: Tag, color: '#2a655f', emoji: '🏷️', description: isArabic ? 'أضف الماركات' : 'Add brands' },
-      { id: 'storage', label: isArabic ? 'سعة التخزين' : 'Storage', icon: HardDrive, color: '#2a655f', emoji: '💾', description: isArabic ? 'أضف سعات التخزين' : 'Add storage capacities' },
-      { id: 'ram', label: isArabic ? 'الذاكرة (RAM)' : 'RAM', icon: Cpu, color: '#2a655f', emoji: '🧠', description: isArabic ? 'أضف سعات الذاكرة' : 'Add RAM capacities' },
-      { id: 'processor', label: isArabic ? 'المعالج' : 'Processor', icon: Cpu, color: '#2a655f', emoji: '⚡', description: isArabic ? 'أضف أنواع المعالجات' : 'Add processor types' },
-      { id: 'battery', label: isArabic ? 'سعة البطارية' : 'Battery', icon: Battery, color: '#2a655f', emoji: '🔋', description: isArabic ? 'أضف سعات البطارية' : 'Add battery capacities' },
-      { id: 'screen_size', label: isArabic ? 'حجم الشاشة' : 'Screen Size', icon: Smartphone, color: '#2a655f', emoji: '📱', description: isArabic ? 'أضف أحجام الشاشات' : 'Add screen sizes' },
-      { id: 'camera', label: isArabic ? 'دقة الكاميرا' : 'Camera', icon: Camera, color: '#2a655f', emoji: '📷', description: isArabic ? 'أضف دقات الكاميرا' : 'Add camera resolutions' },
-      { id: 'connectivity', label: isArabic ? 'الاتصال' : 'Connectivity', icon: Wifi, color: '#2a655f', emoji: '📶', description: isArabic ? 'أضف أنواع الاتصال' : 'Add connectivity types' },
-    ];
-  }, [app.lang]);
+    return availableOptions
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((opt) => {
+        const meta = ALL_OPTION_TYPES[opt.key] || {
+          icon: Tag,
+          emoji: '📦',
+          color: '#2a655f',
+          description_ar: 'خيار مخصص',
+          description_en: 'Custom option',
+        };
+        
+        return {
+          id: opt.key,
+          label: isArabic ? opt.name_ar : opt.name_en,
+          icon: meta.icon,
+          color: meta.color,
+          emoji: meta.emoji,
+          description: isArabic ? meta.description_ar : meta.description_en,
+          type: opt.type,
+          required: opt.required,
+        };
+      });
+  }, [availableOptions, app.lang]);
 
-  const OPTION_TYPES = getTranslatedOptions();
+  // ✅ ✅ ✅ إضافة الألوان تلقائياً إذا كان في availableOptions
+  const hasColorsOption = useMemo(() => {
+    return availableOptions.some(opt => opt.key === 'colors' || opt.key === 'shades');
+  }, [availableOptions]);
 
   const [newValue, setNewValue] = useState("");
-  const [activeType, setActiveType] = useState<string>("colors");
+  const [activeType, setActiveType] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [localVariations, setLocalVariations] = useState<Variation[]>(variations);
   const [colorImages, setColorImages] = useState<Record<string, string>>(externalColorImages);
@@ -118,6 +182,13 @@ export function ProductOptionsManager({
   const [deletedVariationsBackup, setDeletedVariationsBackup] = useState<Variation[]>([]);
   const [showRestoreButton, setShowRestoreButton] = useState(false);
   const isInitialLoadRef = useRef(true);
+
+  // ✅ ✅ ✅ تعيين activeType تلقائياً لأول خيار متاح
+  useEffect(() => {
+    if (OPTION_TYPES.length > 0 && !activeType) {
+      setActiveType(OPTION_TYPES[0].id);
+    }
+  }, [OPTION_TYPES, activeType]);
 
   const getActiveOptionsCount = (options: Record<string, string[]>): number => {
     return Object.values(options).filter(arr => arr && arr.length > 0).length;
@@ -594,7 +665,7 @@ export function ProductOptionsManager({
     toast.success(lang === "ar" ? "✅ تم حذف التركيبة" : "✅ Variation deleted");
   };
 
-  const totalOptions = Object.values(value).reduce((acc, arr) => acc + arr.length, 0);
+  const totalOptions = Object.values(value).reduce((acc, arr) => acc + (arr?.length || 0), 0);
   const availableVariations = localVariations.filter(v => v.is_available).length;
   const unavailableVariations = localVariations.filter(v => !v.is_available).length;
   const newVariationsCount = localVariations.filter(v => v.is_new).length;
@@ -610,77 +681,43 @@ export function ProductOptionsManager({
     type.emoji.includes(searchTerm)
   );
 
-  return (
-    <div className="space-y-6">
-      {showHelp && (
-        <div className="relative overflow-hidden rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 bg-gradient-to-r from-[#2a655f]/5 to-[#2a655f]/10 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 p-5 animate-in fade-in slide-in-from-top-5 duration-300">
-          <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#2a655f]/5 blur-3xl" />
-          <div className="flex items-start justify-between relative">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-[#2a655f]/10 animate-pulse">
-                <HelpCircle className="h-5 w-5 text-[#2a655f]" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82]">
-                  {lang === "ar" ? "💡 كيف تعمل خيارات المنتج؟" : "💡 How do product options work?"}
-                </p>
-                <div className="text-xs text-muted-foreground space-y-1 mt-1">
-                  <p className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
-                    {lang === "ar" 
-                      ? "1️⃣ اختر نوع الخيار (ألوان، مقاسات، إلخ)" 
-                      : "1️⃣ Select option type (Colors, Sizes, etc.)"}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
-                    {lang === "ar" 
-                      ? "2️⃣ اكتب القيمة وارفع صورة (للألوان فقط)" 
-                      : "2️⃣ Enter value and upload image (for colors only)"}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
-                    {lang === "ar" 
-                      ? "3️⃣ اضغط 'إضافة' لإضافة الخيار" 
-                      : "3️⃣ Click 'Add' to add the option"}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
-                    {lang === "ar" 
-                      ? "4️⃣ بعد إضافة خيارين على الأقل، تتولد التركيبات تلقائياً" 
-                      : "4️⃣ After adding at least 2 options, variations generate automatically"}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
-                    {lang === "ar" 
-                      ? "5️⃣ التركيبات الجديدة تظهر باللون الأصفر وتطلب إدخال السعر" 
-                      : "5️⃣ New variations appear in yellow and require price input"}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-300 hover:rotate-90"
-              onClick={() => setShowHelp(false)}
-            >
-              <X className="h-4 w-4 text-[#2a655f]" />
-            </Button>
-          </div>
+  // ✅ ✅ ✅ إذا ما في خيارات متاحة
+  if (OPTION_TYPES.length === 0) {
+    return (
+      <div className="p-6 text-center rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
+        <div className="h-12 w-12 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-2">
+          <Layers className="h-6 w-6 text-[#2a655f]/50" />
         </div>
-      )}
+        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+          {lang === "ar" ? "لا توجد خيارات متاحة لهذا التصنيف" : "No options available for this category"}
+        </h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          {lang === "ar" 
+            ? "اختر تصنيفاً رئيسياً من قسم الأساسيات لعرض الخيارات المتاحة" 
+            : "Select a main category from Basic section to show available options"}
+        </p>
+      </div>
+    );
+  }
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white shadow-lg shadow-[#2a655f]/20 animate-pulse">
-            <Layers className="h-5 w-5" />
+  return (
+    <div className="space-y-3">
+      {/* ===== Header ===== */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#2a655f] to-[#3a8a82] flex items-center justify-center text-white shadow-md shadow-[#2a655f]/20 shrink-0">
+            <Layers className="h-4 w-4" />
           </div>
-          <div>
-            <h4 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <div className="min-w-0 flex-1">
+            <h4 className="text-sm font-semibold text-slate-900 dark:text-white truncate">
               {lang === "ar" ? "خيارات المنتج" : "Product Options"}
             </h4>
-            <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+            <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
               <span>{lang === "ar" ? `${totalOptions} خيار` : `${totalOptions} options`}</span>
+              <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+              <span className="text-[#2a655f] dark:text-[#3a8a82] font-medium">
+                {lang === "ar" ? `${OPTION_TYPES.length} نوع متاح` : `${OPTION_TYPES.length} types available`}
+              </span>
               {localVariations.length > 0 && (
                 <>
                   <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
@@ -700,39 +737,42 @@ export function ProductOptionsManager({
             </div>
           </div>
         </div>
-        {!readOnly && localVariations.length > 0 && (
-          <div className="flex items-center gap-2">
-            {showRestoreButton && deletedVariationsBackup.length > 0 && (
+        <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+          {!readOnly && localVariations.length > 0 && (
+            <>
+              {showRestoreButton && deletedVariationsBackup.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-800/30 transition-all duration-300 hover:scale-105 h-8 px-3 text-xs"
+                  onClick={restoreVariations}
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                  {lang === "ar" ? "استعادة" : "Restore"}
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
-                className="text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-800/30 transition-all duration-300 hover:scale-105"
-                onClick={restoreVariations}
+                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200/50 dark:border-red-800/30 transition-all duration-300 hover:scale-105 h-8 px-3 text-xs"
+                onClick={removeAllVariations}
               >
-                <RefreshCw className="h-4 w-4 mr-1.5" />
-                {lang === "ar" ? "استعادة" : "Restore"}
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                {lang === "ar" ? "حذف الكل" : "Delete All"}
               </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200/50 dark:border-red-800/30 transition-all duration-300 hover:scale-105"
-              onClick={removeAllVariations}
-            >
-              <Trash2 className="h-4 w-4 mr-1.5" />
-              {lang === "ar" ? "حذف الكل" : "Delete All"}
-            </Button>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
+      {/* ===== Search ===== */}
       <div className="relative group">
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder={lang === "ar" ? "🔍 ابحث عن خيار..." : "🔍 Search for an option..."}
-          className="w-full h-10 px-4 rounded-xl border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 text-sm hover:border-[#2a655f]/30"
+          className="w-full h-10 sm:h-11 px-4 rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 text-xs sm:text-sm hover:border-[#2a655f]/30"
         />
         {searchTerm && (
           <button
@@ -744,7 +784,8 @@ export function ProductOptionsManager({
         )}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 max-h-[300px] overflow-y-auto p-1">
+      {/* ===== Types Tabs ===== */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5 sm:gap-2">
         {filteredTypes.map((type) => {
           const count = value[type.id]?.length || 0;
           const Icon = type.icon;
@@ -755,33 +796,34 @@ export function ProductOptionsManager({
               key={type.id}
               onClick={() => !readOnly && setActiveType(type.id)}
               className={cn(
-                "flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all duration-300 group",
+                "relative flex flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-lg border-2 transition-all duration-300 group min-w-0",
                 isActive && !readOnly
-                  ? "border-[#2a655f] bg-[#2a655f]/10 dark:bg-[#2a655f]/20 shadow-lg shadow-[#2a655f]/20 scale-105"
+                  ? "border-[#2a655f] bg-[#2a655f]/10 dark:bg-[#2a655f]/20 shadow-md shadow-[#2a655f]/20"
                   : "border-slate-200/50 dark:border-slate-800/50 hover:border-[#2a655f]/30 hover:bg-[#2a655f]/5 dark:hover:bg-[#2a655f]/10",
                 readOnly && "cursor-default opacity-75"
               )}
             >
-              <span className="text-lg group-hover:scale-110 transition-transform duration-300">{type.emoji}</span>
-              <span className="text-[11px] font-medium text-center leading-tight group-hover:text-[#2a655f] transition-colors">{type.label}</span>
+              {type.required && (
+                <span className="absolute -top-1 -end-1 text-red-500 text-[10px] font-bold bg-white dark:bg-slate-900 rounded-full w-3.5 h-3.5 flex items-center justify-center shadow-sm z-10">*</span>
+              )}
+              <span className="text-sm sm:text-base group-hover:scale-110 transition-transform duration-300 flex-shrink-0">{type.emoji}</span>
+              <span className="text-[11px] sm:text-xs font-medium group-hover:text-[#2a655f] transition-colors truncate">{type.label}</span>
               {count > 0 && (
-                <Badge className="bg-[#2a655f] text-white border-0 text-[10px] px-1.5 py-0 animate-pulse">
+                <Badge className="bg-[#2a655f] text-white border-0 text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-3.5 sm:h-4 min-w-3.5 sm:min-w-4 flex items-center justify-center shrink-0">
                   {count}
                 </Badge>
-              )}
-              {isActive && (
-                <span className="h-1 w-4 rounded-full bg-[#2a655f] animate-pulse" />
               )}
             </button>
           );
         })}
       </div>
 
+      {/* ===== Active Type Panel ===== */}
       {activeType && !readOnly && (
-        <div className="rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4 bg-gradient-to-r from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-lg">
+        <div className="rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-3 bg-gradient-to-r from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="text-base">
                 {OPTION_TYPES.find(t => t.id === activeType)?.emoji}
               </span>
               <Label className="text-sm font-semibold text-[#2a655f] dark:text-[#3a8a82]">
@@ -790,9 +832,14 @@ export function ProductOptionsManager({
               <Badge variant="outline" className="text-[10px] border-[#2a655f]/30 text-[#2a655f]">
                 {value[activeType]?.length || 0}
               </Badge>
+              {OPTION_TYPES.find(t => t.id === activeType)?.required && (
+                <Badge className="text-[10px] bg-red-100 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/30 animate-pulse">
+                  ⚠️ {lang === "ar" ? "مطلوب" : "Required"}
+                </Badge>
+              )}
               {activeType === 'colors' && (
                 <Badge className="text-[10px] bg-red-100 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/30 animate-pulse">
-                  📸 صورة مطلوبة
+                  📸 {lang === "ar" ? "صورة مطلوبة" : "Image required"}
                 </Badge>
               )}
             </div>
@@ -800,7 +847,7 @@ export function ProductOptionsManager({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50/50 dark:hover:bg-red-950/20 h-7 px-2 rounded-lg transition-all duration-300 hover:scale-105"
+                className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50/50 dark:hover:bg-red-950/20 h-7 px-2 rounded-lg transition-all duration-300 hover:scale-105 self-start sm:self-auto"
                 onClick={() => removeAll(activeType)}
               >
                 <Trash2 className="h-3 w-3 mr-1" />
@@ -809,6 +856,7 @@ export function ProductOptionsManager({
             )}
           </div>
 
+          {/* عرض الألوان المضافة */}
           {activeType === 'colors' && colorList.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {colorList.map(({ name, image }) => (
@@ -830,6 +878,7 @@ export function ProductOptionsManager({
             </div>
           )}
 
+          {/* عرض القيم المضافة لباقي الأنواع */}
           {activeType !== 'colors' && value[activeType]?.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {value[activeType].map((val: string) => (
@@ -846,8 +895,9 @@ export function ProductOptionsManager({
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            <div className="flex-1 min-w-[150px]">
+          {/* حقل الإضافة */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 min-w-0">
               <Input
                 value={newValue}
                 onChange={(e) => setNewValue(e.target.value)}
@@ -870,13 +920,13 @@ export function ProductOptionsManager({
                     ? `أضف ${OPTION_TYPES.find(t => t.id === activeType)?.label || ''}...` 
                     : `Add ${OPTION_TYPES.find(t => t.id === activeType)?.id || ''}...`
                 }
-                className="h-9 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                className="h-10 sm:h-11 text-xs sm:text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
               />
             </div>
             
-            {activeType === 'colors' && (
-              <div className="flex items-center gap-2">
-                <div className="relative">
+            <div className="flex items-center gap-2 shrink-0">
+              {activeType === 'colors' && (
+                <div className="relative shrink-0">
                   <ImageInput
                     value={tempColorImage}
                     onChange={(url) => {
@@ -886,38 +936,38 @@ export function ProductOptionsManager({
                     folder="product-colors"
                     lang={lang}
                     label=""
-                    previewClassName="h-9 w-12 rounded-lg object-cover border-2 border-[#2a655f]/20 hover:border-[#2a655f]/40 transition-all"
+                    previewClassName="h-10 sm:h-11 w-12 sm:w-14 rounded-lg object-cover border-2 border-[#2a655f]/20 hover:border-[#2a655f]/40 transition-all"
                     showLabel={false}
                   />
                   {!tempColorImage && (
-                    <p className="absolute -bottom-5 left-0 text-[8px] text-red-500 whitespace-nowrap">
+                    <p className="absolute -bottom-5 left-0 text-[10px] text-red-500 whitespace-nowrap">
                       {lang === "ar" ? "صورة مطلوبة" : "Image required"}
                     </p>
                   )}
                 </div>
-              </div>
-            )}
-            
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                if (activeType === 'colors') {
-                  if (!tempColorImage || !tempColorImage.trim()) {
-                    toast.error(lang === "ar" ? "⚠️ الرجاء رفع صورة للون" : "⚠️ Please upload color image");
-                    return;
+              )}
+              
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  if (activeType === 'colors') {
+                    if (!tempColorImage || !tempColorImage.trim()) {
+                      toast.error(lang === "ar" ? "⚠️ الرجاء رفع صورة للون" : "⚠️ Please upload color image");
+                      return;
+                    }
+                    const success = addOption(activeType, tempColorImage);
+                    if (success) setTempColorImage("");
+                  } else {
+                    addOption(activeType);
                   }
-                  const success = addOption(activeType, tempColorImage);
-                  if (success) setTempColorImage("");
-                } else {
-                  addOption(activeType);
-                }
-              }}
-              className="h-9 px-4 rounded-lg bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-md shadow-[#2a655f]/20 hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105"
-            >
-              <Plus className="h-4 w-4 mr-1.5" />
-              {lang === "ar" ? "إضافة" : "Add"}
-            </Button>
+                }}
+                className="h-10 sm:h-11 px-4 sm:px-5 rounded-lg bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-md shadow-[#2a655f]/20 hover:shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105 text-xs sm:text-sm shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 me-1 sm:me-1.5" />
+                {lang === "ar" ? "إضافة" : "Add"}
+              </Button>
+            </div>
           </div>
 
           {value[activeType]?.length === 0 && (
@@ -932,7 +982,8 @@ export function ProductOptionsManager({
       )}
 
       {!readOnly && (
-        <div className="space-y-4">
+        <div className="space-y-3">
+          {/* تنبيه التوليد التلقائي */}
           {Object.keys(value).filter(key => value[key] && value[key].length > 0).length >= 2 && (
             <div className="rounded-xl border-2 border-emerald-200/50 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-3">
               <p className="text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
@@ -944,12 +995,13 @@ export function ProductOptionsManager({
             </div>
           )}
 
+          {/* زر التوليد اليدوي */}
           {Object.keys(value).filter(key => value[key] && value[key].length > 0).length >= 2 && (
             <div className="flex items-center gap-2">
               <Button
                 type="button"
                 onClick={generateVariations}
-                className="flex-1 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-[1.02] group"
+                className="flex-1 rounded-lg bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-md shadow-[#2a655f]/25 hover:shadow-[#2a655f]/40 transition-all duration-300 hover:scale-[1.02] group h-11 text-sm"
               >
                 <RefreshCw className="h-4 w-4 mr-2 group-hover:rotate-180 transition-transform duration-700" />
                 {lang === "ar" ? "🔄 توليد التركيبات يدوياً" : "🔄 Generate Variations Manually"}
@@ -957,6 +1009,7 @@ export function ProductOptionsManager({
             </div>
           )}
 
+          {/* تنبيه الحاجة لخيارين */}
           {Object.keys(value).filter(key => value[key] && value[key].length > 0).length < 2 && (
             <div className="rounded-xl border-2 border-yellow-200/50 dark:border-yellow-800/30 bg-yellow-50/50 dark:bg-yellow-950/20 p-3 animate-pulse">
               <p className="text-xs text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
@@ -968,10 +1021,11 @@ export function ProductOptionsManager({
             </div>
           )}
 
+          {/* قسم التركيبات */}
           {localVariations.length > 0 && (
-            <div className="rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-4 bg-gradient-to-r from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+            <div className="rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-3 bg-gradient-to-r from-[#2a655f]/5 to-transparent dark:from-[#2a655f]/10">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-semibold text-[#2a655f] dark:text-[#3a8a82]">
                     {lang === "ar" ? "📊 التركيبات" : "📊 Variations"}
                   </span>
@@ -989,7 +1043,7 @@ export function ProductOptionsManager({
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-start sm:self-auto">
                   {showRestoreButton && deletedVariationsBackup.length > 0 && (
                     <Button
                       variant="ghost"
@@ -1013,7 +1067,8 @@ export function ProductOptionsManager({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+              {/* قائمة التركيبات - مقيّدة الارتفاع */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 max-h-[300px] sm:max-h-[320px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#2a655f]/30 scrollbar-track-transparent pe-1">
                 {localVariations.map((variation) => {
                   const isAvailable = variation.is_available;
                   const comboKeys = Object.keys(variation.combination);
@@ -1049,7 +1104,7 @@ export function ProductOptionsManager({
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {isNew && (
-                            <Badge className="mr-1 bg-yellow-500 text-white text-[8px] px-1.5 py-0 animate-pulse">
+                            <Badge className="mr-1 bg-yellow-500 text-white text-[10px] px-1.5 py-0 animate-pulse">
                               {lang === "ar" ? "جديد" : "NEW"}
                             </Badge>
                           )}
@@ -1070,11 +1125,11 @@ export function ProductOptionsManager({
                       
                       <div className="flex flex-col gap-1.5 mt-1.5 pt-1.5 border-t border-slate-200/50 dark:border-slate-700/50">
                         
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center gap-1">
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <div className="flex-1 flex items-center gap-1 min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-muted-foreground whitespace-nowrap shrink-0">
                               {isOffer 
-                                ? (lang === "ar" ? "💰 السعر الجديد:" : "💰 New Price:")
+                                ? (lang === "ar" ? "💰 جديد:" : "💰 New:")
                                 : (lang === "ar" ? "💰 السعر:" : "💰 Price:")
                               }
                               <span className="text-red-500">*</span>
@@ -1099,7 +1154,7 @@ export function ProductOptionsManager({
                               onKeyDown={(e) => e.stopPropagation()}
                               onClick={(e) => e.stopPropagation()}
                               className={cn(
-                                "h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300",
+                                "h-7 sm:h-8 text-[11px] sm:text-xs rounded-lg border-2 w-full min-w-[60px] px-1.5 transition-all duration-300",
                                 (!variation.price || variation.price <= 0) && isNew
                                   ? "border-red-500 dark:border-red-500 bg-red-50/50 dark:bg-red-950/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                                   : (!variation.price || variation.price <= 0)
@@ -1111,21 +1166,21 @@ export function ProductOptionsManager({
                           </div>
                           
                           {variation.price && variation.price > 0 ? (
-                            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                            <span className="text-[9px] sm:text-[10px] font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0">
                               {variation.price} ل.س
                             </span>
                           ) : (
-                            <span className="text-[10px] font-medium text-red-500 animate-pulse whitespace-nowrap">
+                            <span className="text-[9px] sm:text-[10px] font-medium text-red-500 animate-pulse whitespace-nowrap shrink-0">
                               {lang === "ar" ? "⛔ مطلوب" : "⛔ Required"}
                             </span>
                           )}
                         </div>
 
                         {isOffer && (
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 flex items-center gap-1">
-                              <span className="text-[10px] text-muted-foreground whitespace-nowrap line-through">
-                                {lang === "ar" ? "📌 السعر القديم:" : "📌 Old Price:"}
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <div className="flex-1 flex items-center gap-1 min-w-0">
+                              <span className="text-[9px] sm:text-[10px] text-muted-foreground whitespace-nowrap line-through shrink-0">
+                                {lang === "ar" ? "📌 قديم:" : "📌 Old:"}
                               </span>
                               <Input
                                 type="number"
@@ -1146,17 +1201,17 @@ export function ProductOptionsManager({
                                 onMouseDown={(e) => e.stopPropagation()}
                                 onKeyDown={(e) => e.stopPropagation()}
                                 onClick={(e) => e.stopPropagation()}
-                                className="h-6 text-xs rounded-lg border-2 w-24 px-1.5 transition-all duration-300 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
+                                className="h-7 sm:h-8 text-[11px] sm:text-xs rounded-lg border-2 w-full min-w-[60px] px-1.5 transition-all duration-300 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
                                 placeholder={lang === "ar" ? "اختياري" : "Optional"}
                               />
                             </div>
                             
                             {variation.old_price && variation.old_price > 0 ? (
-                              <span className="text-[10px] font-medium text-red-400 line-through whitespace-nowrap">
+                              <span className="text-[9px] sm:text-[10px] font-medium text-red-400 line-through whitespace-nowrap shrink-0">
                                 {variation.old_price} ل.س
                               </span>
                             ) : (
-                              <span className="text-[10px] font-medium text-muted-foreground/50 whitespace-nowrap">
+                              <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground/50 whitespace-nowrap shrink-0">
                                 {lang === "ar" ? "—" : "—"}
                               </span>
                             )}
@@ -1168,7 +1223,8 @@ export function ProductOptionsManager({
                 })}
               </div>
 
-              <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+              {/* Legend */}
+              <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                   {lang === "ar" ? "متوفر" : "Available"}
@@ -1193,14 +1249,15 @@ export function ProductOptionsManager({
         </div>
       )}
 
+      {/* ===== Footer Summary ===== */}
       {totalOptions > 0 && (
-        <div className="rounded-xl bg-gradient-to-r from-[#2a655f]/10 to-[#2a655f]/5 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-[#2a655f] dark:text-[#3a8a82]">
-            <CheckCircle2 className="h-4 w-4 animate-pulse" />
-            <span>
+        <div className="rounded-xl bg-gradient-to-r from-[#2a655f]/10 to-[#2a655f]/5 dark:from-[#2a655f]/20 dark:to-[#2a655f]/10 border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-[#2a655f] dark:text-[#3a8a82] min-w-0 flex-1">
+            <CheckCircle2 className="h-4 w-4 animate-pulse shrink-0" />
+            <span className="truncate">
               {lang === "ar" ? "✅ تم إضافة " : "✅ Added "}
               {Object.entries(value)
-                .filter(([_, values]) => values.length > 0)
+                .filter(([_, values]) => values && values.length > 0)
                 .map(([type, values]) => {
                   const typeInfo = OPTION_TYPES.find(t => t.id === type);
                   return `${values.length} ${typeInfo?.label || type}`;
@@ -1209,7 +1266,7 @@ export function ProductOptionsManager({
             </span>
           </div>
           {localVariations.length > 0 && (
-            <Badge className="bg-[#2a655f] text-white border-0">
+            <Badge className="bg-[#2a655f] text-white border-0 self-start sm:self-auto shrink-0">
               {localVariations.length} {lang === "ar" ? "تركيبة" : "variations"}
               {newVariationsCount > 0 && (
                 <span className="ml-1 text-yellow-300">
