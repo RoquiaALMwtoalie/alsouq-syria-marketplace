@@ -96,7 +96,6 @@ export const SINGULAR_MAP: Record<string, string> = {
   // خيارات إضافية
   'age_groups': 'age_group',
   'material_types': 'material_type',
-  'occasions': 'occasion',
 };
 
 /**
