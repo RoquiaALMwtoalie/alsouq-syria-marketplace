@@ -17,7 +17,7 @@ export default defineConfig({
     tailwindcss(),
     tanstackStart(),
     viteReact(),
-    nitro(), // ✅ بدون أي preset — Nitro يكتشف Vercel تلقائياً
+    nitro(), // ✅ بدون preset — Nitro يكتشف Vercel تلقائياً
   ],
   build: {
     chunkSizeWarningLimit: 1000,
