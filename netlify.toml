@@ -5,10 +5,12 @@
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS = "VITE_VAPID_PUBLIC_KEY,VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_ANON_KEY"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# 🚨 أهم خطوة: احذف الـ redirect القديم
+# ❌ شيل هاد الجزء
+# [[redirects]]
+#   from = "/*"
+#   to = "/index.html"
+#   status = 200
 
 [[headers]]
   for = "/*"
