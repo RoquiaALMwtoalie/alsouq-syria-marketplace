@@ -1,7 +1,11 @@
 // src/lib/pushNotifications.ts
 import { supabase } from "@/integrations/supabase/client";
 
-const VAPID_PUBLIC_KEY = 'BP1RKVDzJaNmBtgeyIxDWTXx5TH7H96xS5VgPKMu77_ZOpsonDHctEl3xvS8DJkBOZbUHaAydwAzXdZU2hB9IRc';
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string;
+
+if (!VAPID_PUBLIC_KEY) {
+  console.warn('⚠️ VAPID public key not configured');
+}
 
 console.log('🔑 VAPID_PUBLIC_KEY loaded');
 
