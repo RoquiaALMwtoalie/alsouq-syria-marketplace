@@ -1569,28 +1569,56 @@ function RootContent({
   // ============================================================
   // ✅ تأخير العمليات الثقيلة
   // ============================================================
+  // ============================================================
+  // ✅ تأخير العمليات الثقيلة (متوافق مع iOS Safari)
+  // ============================================================
   useEffect(() => {
     if (!app.user) return;
     
-    const idleId = requestIdleCallback(() => {
-      console.log('⏳ [RootContent] Loading heavy operations in idle time...');
-      
-      queryClient.prefetchQuery({
-        queryKey: ['orders', app.user.id],
-        queryFn: async () => {
-          const { data } = await supabase
-            .from('orders')
-            .select('*')
-            .or(`buyer_id.eq.${app.user.id},seller_id.eq.${app.user.id}`);
-          return data || [];
+    // ✅ Polyfill: requestIdleCallback غير مدعوم في iOS Safari < 17
+    const requestIdle = typeof window !== 'undefined' && typeof (window as any).requestIdleCallback !== 'undefined'
+      ? (window as any).requestIdleCallback
+      : (cb: any) => setTimeout(cb, 1);
+    
+    const cancelIdle = typeof window !== 'undefined' && typeof (window as any).cancelIdleCallback !== 'undefined'
+      ? (window as any).cancelIdleCallback
+      : clearTimeout;
+    
+    let idleId: any = null;
+    
+    try {
+      idleId = requestIdle(() => {
+        try {
+          console.log('⏳ [RootContent] Loading heavy operations in idle time...');
+          
+          queryClient.prefetchQuery({
+            queryKey: ['orders', app.user.id],
+            queryFn: async () => {
+              const { data } = await supabase
+                .from('orders')
+                .select('*')
+                .or(`buyer_id.eq.${app.user.id},seller_id.eq.${app.user.id}`);
+              return data || [];
+            }
+          });
+          
+          console.log('✅ [RootContent] Heavy operations loaded');
+        } catch (error) {
+          console.warn('⚠️ [RootContent] Heavy operations failed:', error);
         }
-      });
-      
-      console.log('✅ [RootContent] Heavy operations loaded');
-    }, { timeout: 3000 });
+      }, { timeout: 3000 });
+    } catch (error) {
+      console.warn('⚠️ [RootContent] Failed to schedule idle callback:', error);
+    }
     
     return () => {
-      if (idleId) cancelIdleCallback(idleId);
+      if (idleId) {
+        try {
+          cancelIdle(idleId);
+        } catch (error) {
+          // تجاهل أخطاء الإلغاء
+        }
+      }
     };
   }, [app.user, queryClient]);
   
