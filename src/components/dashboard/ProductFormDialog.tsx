@@ -1353,8 +1353,9 @@ export function ProductFormDialog({
                     <Input
                       type="number"
                       min="0"
-                      value={form.price}
+                      value={form.price === 0 ? "" : form.price}
                       onChange={(e) => handlePriceChange(e.target.value, "price")}
+                      onFocus={(e) => e.target.select()}
                       placeholder="0"
                       className="ps-12 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                     />
@@ -1394,8 +1395,9 @@ export function ProductFormDialog({
                         <Input
                           type="number"
                           min="0"
-                          value={form.old_price}
+                          value={form.old_price === 0 ? "" : form.old_price}
                           onChange={(e) => handlePriceChange(e.target.value, "old_price")}
+                          onFocus={(e) => e.target.select()}
                           placeholder="0"
                           className="ps-12 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                         />

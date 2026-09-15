@@ -37,6 +37,7 @@ const OLIVE = "#2a655f";
 interface FilterContentProps {
   isRtl: boolean;
   isMobile?: boolean;
+  onClose?: () => void;
   search: string;
   setSearch: (v: string) => void;
   gov: string;
@@ -58,6 +59,7 @@ interface FilterContentProps {
 function FilterContent({
   isRtl,
   isMobile = false,
+  onClose,
   search,
   setSearch,
   gov,
@@ -251,11 +253,7 @@ function FilterContent({
       {isMobile && (
         <Button
           onClick={() => {
-            const sheet = document.querySelector('[data-state="open"]');
-            if (sheet) {
-              const closeBtn = sheet.querySelector('button[aria-label="Close"]') as HTMLButtonElement;
-              if (closeBtn) closeBtn.click();
-            }
+            onClose?.();
           }}
           className="w-full bg-[#2a655f] hover:bg-[#1a4f4a] text-white font-bold h-11 rounded-xl shadow-lg shadow-[#2a655f]/20 mt-2"
         >
@@ -1030,7 +1028,11 @@ function CategoryPage() {
                       </div>
                     )}
 
-                    <FilterContent {...filterProps} isMobile={true} />
+                    <FilterContent 
+                      {...filterProps} 
+                      isMobile={true} 
+                      onClose={() => setMobileSheetOpen(false)}
+                    />
                   </div>
                 </SheetContent>
               </Sheet>
