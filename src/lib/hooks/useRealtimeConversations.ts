@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useConversationStore } from "@/lib/stores/conversationStore";
 import { toast } from "sonner";
 import { useApp } from "@/lib/i18n";
+import { realtimeManager } from "@/lib/utils/realtimeManager";
 
 // ====== Query Keys ======
 const QUERY_KEYS = {
@@ -112,7 +113,7 @@ let setupTimeout: NodeJS.Timeout | null = null;
 let currentUserId: string | null = null;
 
 // ============================================================
-// 🔥 HOOK: حالة المستخدم مع Realtime (محدثة لحظياً) ✅ NEW
+// 🔥 HOOK: حالة المستخدم مع Realtime (محدثة لحظياً)
 // ============================================================
 export function useRealtimeUserStatus(userId: string | undefined) {
   const [isOnline, setIsOnline] = useState(false);
@@ -153,30 +154,34 @@ export function useRealtimeUserStatus(userId: string | undefined) {
 
     fetchUserStatus();
 
-    // ✅ الاشتراك في التحديثات اللحظية (Realtime)
-    const channel = supabase
-      .channel(`user-status-${userId}`)
-      .on(
-        "postgres_changes",
+    // ✅ استخدام realtimeManager بدل supabase.channel المباشر
+    const channelName = `user-status-${userId}`;
+    
+    realtimeManager.createChannel({
+      name: channelName,
+      handlers: [
         {
-          event: "UPDATE",
-          schema: "public",
-          table: "profiles",
-          filter: `id=eq.${userId}`,
+          type: 'postgres_changes',
+          config: {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${userId}`,
+          },
+          callback: (payload: any) => {
+            if (!isMounted) return;
+            const updated = payload.new as any;
+            setData(updated);
+            setIsOnline(updated?.is_online || false);
+          },
         },
-        (payload) => {
-          if (!isMounted) return;
-          const updated = payload.new as any;
-          setData(updated);
-          setIsOnline(updated?.is_online || false);
-        }
-      )
-      .subscribe();
+      ],
+    });
 
     // ✅ تنظيف القناة عند إزالة المكون
     return () => {
       isMounted = false;
-      supabase.removeChannel(channel);
+      realtimeManager.removeChannel(channelName);
     };
   }, [userId]);
 
@@ -184,34 +189,31 @@ export function useRealtimeUserStatus(userId: string | undefined) {
 }
 
 // ============================================================
-// ====== الـ Hook الرئيسي (مُحسّن لمنع الـ Re-renders اللانهائية)
+// ====== الـ Hook الرئيسي (مُحسّن — قناتين موحّدتين)
 // ============================================================
 export function useRealtimeConversations(userId: string | undefined) {
   const queryClient = useQueryClient();
   const app = useApp();
   
-  // استخدام الـ Refs لتثبيت قيم اللغات والحالات لمنع إعادة تهيئة القنوات
+  // استخدام الـ Refs لتثبيت قيم اللغات والحالات
   const langRef = useRef(app.lang);
   useEffect(() => {
     langRef.current = app.lang;
   }, [app.lang]);
 
-  // Refs لتتبع القنوات وحمايتها من التكرار
+  // Refs لتتبع القنوات
   const channelsRef = useRef<{
-    messages?: any;
-    conversations?: any;
-    presence?: any;
-    typing?: any;
+    db?: string;
+    realtime?: string;
   }>({});
 
   const cleanupChannels = useCallback(() => {
-    Object.values(channelsRef.current).forEach((channel) => {
-      if (channel) {
-        try {
-          supabase.removeChannel(channel);
-        } catch {}
-      }
-    });
+    if (channelsRef.current.db) {
+      realtimeManager.removeChannel(channelsRef.current.db);
+    }
+    if (channelsRef.current.realtime) {
+      realtimeManager.removeChannel(channelsRef.current.realtime);
+    }
     channelsRef.current = {};
     isRealtimeSetup = false;
     currentUserId = null;
@@ -260,7 +262,7 @@ export function useRealtimeConversations(userId: string | undefined) {
       if (!userId) return;
       
       // ✅ إذا كانت القنوات مفعلة مسبقاً، لا داعي لإعادة إنشائها
-      if (channelsRef.current.messages && isRealtimeSetup) {
+      if (channelsRef.current.db && isRealtimeSetup) {
         console.log('⏳ [useRealtimeConversations] Channels already exist, skipping...');
         return;
       }
@@ -269,175 +271,217 @@ export function useRealtimeConversations(userId: string | undefined) {
       isRealtimeSetup = true;
       currentUserId = userId;
 
-      // 1️⃣ قناة الرسائل الجديدة
-      const messagesChannel = supabase
-        .channel(`messages-${userId}`)
-        .on(
-          "postgres_changes",
+      // ============================================================
+      // 📡 القناة 1: db-${userId} — postgres_changes
+      // ============================================================
+      const dbChannelName = `db-${userId}`;
+
+      realtimeManager.createChannel({
+        name: dbChannelName,
+        handlers: [
+          // ============================================================
+          // 1️⃣ messages INSERT — رسائل جديدة فورية
+          // ============================================================
           {
-            event: "INSERT",
-            schema: "public",
-            table: "messages",
-            filter: `receiver_id=eq.${userId}`,
-          },
-          async (payload) => {
-            const newMessage = payload.new as any;
-            console.log("📩 New message received:", newMessage);
+            type: 'postgres_changes',
+            config: {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'messages',
+              filter: `receiver_id=eq.${userId}`,
+            },
+            callback: async (payload: any) => {
+              const newMessage = payload.new as any;
+              console.log("📩 New message received:", newMessage);
 
-            queryClient.invalidateQueries({
-              queryKey: QUERY_KEYS.messages(newMessage.conversation_id),
-            });
-            queryClient.invalidateQueries({
-              queryKey: QUERY_KEYS.conversations(userId),
-            });
-            queryClient.invalidateQueries({
-              queryKey: QUERY_KEYS.unreadCount(userId),
-            });
+              queryClient.invalidateQueries({
+                queryKey: QUERY_KEYS.messages(newMessage.conversation_id),
+              });
+              queryClient.invalidateQueries({
+                queryKey: QUERY_KEYS.conversations(userId),
+              });
+              queryClient.invalidateQueries({
+                queryKey: QUERY_KEYS.unreadCount(userId),
+              });
 
-            const store = useConversationStore.getState();
-            store.addMessage(newMessage.conversation_id, newMessage);
+              const store = useConversationStore.getState();
+              store.addMessage(newMessage.conversation_id, newMessage);
 
-            store.updateConversation({
-              id: newMessage.conversation_id,
-              last_message: newMessage.content,
-              last_message_at: newMessage.created_at,
-              last_message_sender_id: newMessage.sender_id,
-            } as any);
+              store.updateConversation({
+                id: newMessage.conversation_id,
+                last_message: newMessage.content,
+                last_message_at: newMessage.created_at,
+                last_message_sender_id: newMessage.sender_id,
+              } as any);
 
-            const isActive = store.activeConversationId === newMessage.conversation_id;
-            
-            if (!isActive) {
-              const isAr = langRef.current === "ar";
-              toast.info(
-                isAr ? "📩 رسالة جديدة" : "📩 New message",
-                {
-                  description: newMessage.content?.substring(0, 60) || (isAr ? "رسالة جديدة" : "New message"),
-                  duration: 6000,
-                  position: "top-right",
-                  action: {
-                    label: isAr ? "عرض" : "View",
-                    onClick: () => {
-                      window.location.href = `/messages/${newMessage.sender_id}?cid=${newMessage.conversation_id}`;
+              const isActive = store.activeConversationId === newMessage.conversation_id;
+              
+              if (!isActive) {
+                const isAr = langRef.current === "ar";
+                toast.info(
+                  isAr ? "📩 رسالة جديدة" : "📩 New message",
+                  {
+                    description: newMessage.content?.substring(0, 60) || (isAr ? "رسالة جديدة" : "New message"),
+                    duration: 6000,
+                    position: "top-right",
+                    action: {
+                      label: isAr ? "عرض" : "View",
+                      onClick: () => {
+                        window.location.href = `/messages/${newMessage.sender_id}?cid=${newMessage.conversation_id}`;
+                      },
                     },
-                  },
+                  }
+                );
+
+                playNotificationSound();
+
+                sendBrowserNotification(
+                  isAr ? "📩 رسالة جديدة" : "📩 New Message",
+                  newMessage.content?.substring(0, 80) || (isAr ? "لديك رسالة جديدة" : "You have a new message"),
+                  '/favicon.ico'
+                );
+
+                const { conversations } = useConversationStore.getState();
+                const unreadCount = conversations.reduce(
+                  (total, conv) => total + (conv.unread_count_participant1 || 0) + (conv.unread_count_participant2 || 0),
+                  0
+                );
+                if (unreadCount > 0) {
+                  document.title = `(${unreadCount}) ذوق`;
                 }
-              );
-
-              playNotificationSound();
-
-              sendBrowserNotification(
-                isAr ? "📩 رسالة جديدة" : "📩 New Message",
-                newMessage.content?.substring(0, 80) || (isAr ? "لديك رسالة جديدة" : "You have a new message"),
-                '/favicon.ico'
-              );
-
-              const { conversations } = useConversationStore.getState();
-              const unreadCount = conversations.reduce(
-                (total, conv) => total + (conv.unread_count_participant1 || 0) + (conv.unread_count_participant2 || 0),
-                0
-              );
-              if (unreadCount > 0) {
-                document.title = `(${unreadCount}) ذوق`;
               }
-            }
-          }
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "messages",
-            filter: `receiver_id=eq.${userId}`,
+            },
           },
-          (payload) => {
-            const updated = payload.new as any;
-            queryClient.invalidateQueries({
-              queryKey: QUERY_KEYS.messages(updated.conversation_id),
-            });
-          }
-        )
-        .subscribe((status) => {
-          console.log(`📡 Messages channel status: ${status}`);
-        });
-
-      // 2️⃣ قناة تحديثات المحادثات
-      const conversationsChannel = supabase
-        .channel(`conversations-${userId}`)
-        .on(
-          "postgres_changes",
+          
+          // ============================================================
+          // 2️⃣ messages UPDATE — تحديث القراءة
+          // ============================================================
           {
-            event: "UPDATE",
-            schema: "public",
-            table: "conversations",
-            filter: `participant1_id=eq.${userId}`,
+            type: 'postgres_changes',
+            config: {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'messages',
+              filter: `receiver_id=eq.${userId}`,
+            },
+            callback: (payload: any) => {
+              const updated = payload.new as any;
+              queryClient.invalidateQueries({
+                queryKey: QUERY_KEYS.messages(updated.conversation_id),
+              });
+            },
           },
-          (payload) => {
-            const updated = payload.new as any;
-            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
-            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.unreadCount(userId) });
-            useConversationStore.getState().updateConversation(updated);
-          }
-        )
-        .on(
-          "postgres_changes",
+          
+          // ============================================================
+          // 3️⃣ conversations UPDATE — participant1
+          // ============================================================
           {
-            event: "UPDATE",
-            schema: "public",
-            table: "conversations",
-            filter: `participant2_id=eq.${userId}`,
+            type: 'postgres_changes',
+            config: {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'conversations',
+              filter: `participant1_id=eq.${userId}`,
+            },
+            callback: (payload: any) => {
+              const updated = payload.new as any;
+              queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
+              queryClient.invalidateQueries({ queryKey: QUERY_KEYS.unreadCount(userId) });
+              useConversationStore.getState().updateConversation(updated);
+            },
           },
-          (payload) => {
-            const updated = payload.new as any;
-            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
-            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.unreadCount(userId) });
-            useConversationStore.getState().updateConversation(updated);
-          }
-        )
-        .subscribe((status) => {
-          console.log(`📡 Conversations channel status: ${status}`);
-        });
-
-      // 3️⃣ قناة حالة المستخدمين (Online/Offline)
-      const presenceChannel = supabase
-        .channel(`presence-${userId}`)
-        .on(
-          "postgres_changes",
+          
+          // ============================================================
+          // 4️⃣ conversations UPDATE — participant2
+          // ============================================================
           {
-            event: "UPDATE",
-            schema: "public",
-            table: "profiles",
+            type: 'postgres_changes',
+            config: {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'conversations',
+              filter: `participant2_id=eq.${userId}`,
+            },
+            callback: (payload: any) => {
+              const updated = payload.new as any;
+              queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
+              queryClient.invalidateQueries({ queryKey: QUERY_KEYS.unreadCount(userId) });
+              useConversationStore.getState().updateConversation(updated);
+            },
           },
-          (payload) => {
-            const updated = payload.new as any;
-            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.onlineStatus(updated.id) });
-            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(userId) });
-          }
-        )
-        .subscribe((status) => {
-          console.log(`📡 Presence channel status: ${status}`);
-        });
+          
+          // ============================================================
+          // 5️⃣ profiles UPDATE — تحديث البروفايل (جديد)
+          // 
+          // ✅ هذا الـ handler يخدم useProfileWithUpdate
+          // ✅ يطلق CustomEvent بدل إنشاء WebSocket منفصل
+          // ✅ نفس الفورية (postgres_changes)
+          // ============================================================
+          {
+            type: 'postgres_changes',
+            config: {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'profiles',
+              filter: `id=eq.${userId}`,
+            },
+            callback: (payload: any) => {
+              console.log('👤 [Realtime] Profile updated:', payload.new);
+              
+              // ✅ أطلق CustomEvent — يسمعه useProfileWithUpdate
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(
+                  new CustomEvent('profile-updated', { 
+                    detail: payload.new 
+                  })
+                );
+              }
+            },
+          },
+        ],
+      });
 
-      // 4️⃣ قناة مؤشر الكتابة (Typing)
-      const typingChannel = supabase
-        .channel(`typing-${userId}`)
-        .on("broadcast", { event: "typing" }, (payload) => {
-          const { userId: typingUserId, conversationId, isTyping } = payload.payload;
-          if (typingUserId === userId) return;
-          useConversationStore.getState().setTyping(conversationId, typingUserId, isTyping);
-        })
-        .subscribe((status) => {
-          console.log(`📡 Typing channel status: ${status}`);
-        });
+      // ============================================================
+      // 📡 القناة 2: realtime-${userId} — presence + typing
+      // ============================================================
+      const realtimeChannelName = `realtime-${userId}`;
 
+      realtimeManager.createChannel({
+        name: realtimeChannelName,
+        handlers: [
+          // ============================================================
+          // 1️⃣ presence — من متصل الآن
+          // ============================================================
+          {
+            type: 'presence',
+            config: { event: 'sync' },
+            callback: () => {
+              // ✅ presence sync — لا نعمل شي، لكن القناة موجودة
+            },
+          },
+          
+          // ============================================================
+          // 2️⃣ broadcast typing — من يكتب الآن
+          // ============================================================
+          {
+            type: 'broadcast',
+            config: { event: 'typing' },
+            callback: (payload: any) => {
+              const { userId: typingUserId, conversationId, isTyping } = payload.payload;
+              if (typingUserId === userId) return;
+              useConversationStore.getState().setTyping(conversationId, typingUserId, isTyping);
+            },
+          },
+        ],
+      });
+
+      // ✅ تخزين أسماء القنوات
       channelsRef.current = {
-        messages: messagesChannel,
-        conversations: conversationsChannel,
-        presence: presenceChannel,
-        typing: typingChannel,
+        db: dbChannelName,
+        realtime: realtimeChannelName,
       };
 
-      // 5️⃣ تحديث عنوان الصفحة ديناميكياً
+      // ✅ تحديث عنوان الصفحة ديناميكياً
       const updateTitle = () => {
         const { conversations } = useConversationStore.getState();
         const unreadCount = conversations.reduce(
@@ -473,7 +517,7 @@ export function useRealtimeConversations(userId: string | undefined) {
         setupTimeout = null;
       }
     };
-  }, [userId]); // ✅ إزالة queryClient و cleanupChannels من dependencies
+  }, [userId]);
 
   // إرجاع دالة لإعادة تعيين الحالة عند الحاجة
   return {
@@ -502,31 +546,26 @@ export function useSendTypingIndicator(
       timeoutRef.current = null;
     }
 
+    // ✅ استخدام realtimeManager
     try {
-      supabase.channel(`typing-${userId}`).send({
-        type: "broadcast",
-        event: "typing",
-        payload: { userId, conversationId, isTyping },
-        shouldRetry: true,
+      const channelName = `realtime-${userId}`;
+      realtimeManager.sendBroadcast(channelName, 'typing', {
+        userId,
+        conversationId,
+        isTyping,
       });
-    } catch {
-      try {
-        supabase.channel(`typing-${userId}`).httpSend({
-          type: "broadcast",
-          event: "typing",
-          payload: { userId, conversationId, isTyping },
-        });
-      } catch {}
+    } catch (e) {
+      console.warn('⚠️ [Typing] Failed to send typing indicator:', e);
     }
 
     if (isTyping) {
       timeoutRef.current = setTimeout(() => {
         try {
-          supabase.channel(`typing-${userId}`).send({
-            type: "broadcast",
-            event: "typing",
-            payload: { userId, conversationId, isTyping: false },
-            shouldRetry: true,
+          const channelName = `realtime-${userId}`;
+          realtimeManager.sendBroadcast(channelName, 'typing', {
+            userId,
+            conversationId,
+            isTyping: false,
           });
         } catch {}
         timeoutRef.current = null;
@@ -625,7 +664,7 @@ export function usePushNotifications() {
         toast.success(app.lang === "ar" ? "✅ تم تفعيل الإشعارات" : "✅ Notifications enabled");
         return true;
       } else {
-        toast.error(app.lang === "ar" ? "❌ تم رفض الإشعارات" : "❌ Notifications denied");
+        toast.error(app.lang === "ar" ? "❌ تم رفض الإشعارات" : "❌ Notifications rejected");
         return false;
       }
     } catch (error) {

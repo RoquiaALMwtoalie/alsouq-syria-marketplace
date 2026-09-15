@@ -827,6 +827,50 @@ for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
   }));
 
   await supabase.from("order_items").insert(orderItems);
+
+  // ============================================================
+  // ✅ ✅ ✅ إشعار البائع بالطلب الجديد
+  // ============================================================
+  try {
+    const orderTitle = itemsList[0]?.displayTitle || itemsList[0]?.listing?.title_ar || "طلب جديد";
+    const orderTotal = formatPrice(total, app.currency, app.lang);
+    
+    const notificationData = {
+      user_id: sellerId,
+      actor_id: app.user.id,
+      type: "order",
+      title_ar: "🎉 طلب جديد!",
+      title_en: "🎉 New Order!",
+      body_ar: `لديك طلب جديد من ${buyerName} بقيمة ${orderTotal} - "${orderTitle}"`,
+      body_en: `You have a new order from ${buyerName} worth ${orderTotal} - "${orderTitle}"`,
+      reference_id: order.id,
+      link_url: `/dashboard?tab=orders`,
+      is_read: false,
+      metadata: {
+        order_id: order.id,
+        buyer_id: app.user.id,
+        buyer_name: buyerName,
+        buyer_phone: buyerPhone,
+        total: total,
+        currency: app.currency || 'SYP',
+        items_count: itemsList.length,
+        first_item_title: orderTitle,
+      },
+      created_at: new Date().toISOString(),
+    };
+
+    const { error: notifError } = await supabase
+      .from("notifications")
+      .insert(notificationData);
+
+    if (notifError) {
+      console.error("❌ [Checkout] Failed to send notification:", notifError);
+    } else {
+      console.log("✅ [Checkout] Notification sent to seller:", sellerId);
+    }
+  } catch (notifError) {
+    console.error("❌ [Checkout] Notification error:", notifError);
+  }
 }
       await clearCart.mutateAsync({ userId: app.user.id });
       toast.success(app.lang === "ar" ? "✅ تم إرسال طلبك بنجاح!" : "✅ Order placed successfully!");

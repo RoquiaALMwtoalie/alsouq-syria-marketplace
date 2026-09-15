@@ -9,7 +9,6 @@ import {
   NOTIFICATION_CONFIG as NOTIFICATION_CONFIG_V2, 
   NotificationType as NotificationTypeV2 
 } from "@/types/notificationTypes";
-import { channelManager } from "@/lib/channelManager";
 import { useEffect, useRef, useMemo } from "react";
 import type { ListingRow, ListingKind, ListingWithRelations } from "@/types";
 import { DeliveryCompany, Distributor, DeliveryOrder, calculateDeliveryFee } from "@/types/delivery";
@@ -1059,19 +1058,40 @@ export function useSellerReviews(sellerId: string | undefined) {
 // ============================================================
 // ✅ Profile (مع Realtime محسّن)
 // ============================================================
+// ✅ useProfile — يستمع لـ CustomEvent بدل channelManager
 export function useProfile(userId: string | undefined) {
   const queryClient = useQueryClient();
 
+  // ============================================================
+  // ✅ 1. الاستماع لـ CustomEvent('profile-updated')
+  // 
+  // 🔄 التغيير:
+  // - قبل: channelManager.subscribe (WebSocket منفصل)
+  // - بعد: CustomEvent من useRealtimeConversations
+  // 
+  // ✅ الفايدة:
+  // - WebSocket واحد أقل
+  // - نفس الفورية (<100ms)
+  // - نفس اللوجيك (queryClient.setQueryData)
+  // ============================================================
   useEffect(() => {
     if (!userId) return;
 
-    const channelName = `profile-${userId}`;
-    const unsubscribe = channelManager.subscribe(channelName, (payload) => {
-      queryClient.setQueryData(['profile', userId], payload.new);
-      console.log('✅ Profile updated in realtime:', payload.new);
-    });
+    const handleProfileUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const payload = customEvent.detail;
 
-    return unsubscribe;
+      if (payload && payload.id === userId) {
+        queryClient.setQueryData(['profile', userId], payload);
+        console.log('✅ [useProfile] Profile updated via CustomEvent:', payload);
+      }
+    };
+
+    window.addEventListener('profile-updated', handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener('profile-updated', handleProfileUpdate);
+    };
   }, [userId, queryClient]);
 
   return useQuery({
@@ -1099,7 +1119,6 @@ export function useProfile(userId: string | undefined) {
     },
   });
 }
-
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({

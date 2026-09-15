@@ -1032,26 +1032,19 @@ function ListingDetailPage() {
                   <table className="w-full text-xs">
                     <thead className="bg-gray-50">
                       <tr>
-                        {(() => {
-                          const keys = new Set<string>();
-                          sortedVariations.forEach((v: any) => {
-                            if (v.combination) {
-                              Object.keys(v.combination).forEach(key => keys.add(key));
-                            }
-                          });
-                          return Array.from(keys).map((key) => (
-                            <th key={key} className="px-2 py-1.5 text-right font-medium text-[#1a4f4a]">
-                              {key === 'color' || key === 'colors' ? (app.lang === "ar" ? "اللون" : "Color") :
-                               key === 'size' ? (app.lang === "ar" ? "المقاس" : "Size") :
-                               key === 'fabric' ? (app.lang === "ar" ? "الخامة" : "Fabric") :
-                               key === 'season' ? (app.lang === "ar" ? "الموسم" : "Season") :
-                               key === 'material' ? (app.lang === "ar" ? "المادة" : "Material") :
-                               key === 'style' ? (app.lang === "ar" ? "النمط" : "Style") :
-                               key === 'brand' ? (app.lang === "ar" ? "الماركة" : "Brand") :
-                               key}
-                            </th>
-                          ));
-                        })()}
+                       {(() => {
+  const keys = new Set<string>();
+  sortedVariations.forEach((v: any) => {
+    if (v.combination) {
+      Object.keys(v.combination).forEach(key => keys.add(key));
+    }
+  });
+  return Array.from(keys).map((key) => (
+    <th key={key} className="px-2 py-1.5 text-right font-medium text-[#1a4f4a]">
+      {translateOptionType(key, app.lang)}
+    </th>
+  ));
+})()}
                         <th className="px-2 py-1.5 text-right font-medium text-[#1a4f4a]">{app.lang === "ar" ? "السعر" : "Price"}</th>
                         <th className="px-2 py-1.5 text-center font-medium text-[#1a4f4a]">{app.lang === "ar" ? "اختيار" : "Select"}</th>
                       </tr>

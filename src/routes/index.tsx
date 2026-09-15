@@ -331,6 +331,11 @@ function Home() {
   const [totalCount, setTotalCount] = useState(0);
   const LIMIT = 8;
 
+  // ✅ ref لمنع تشغيل Infinite Scroll أكثر من مرة
+  const hasTriggeredLoadMoreRef = useRef(false);
+  // ✅ ref لتتبع آخر مجموعة بيانات تم تحميلها
+  const lastLoadedKeyRef = useRef<string>('');
+
   const { ref: loadMoreRef, inView } = useInView({ threshold: 0.1, triggerOnce: false });
 
   // ====== البيانات ======
@@ -414,7 +419,15 @@ function Home() {
     return [...discountOffers, ...promoOffers];
   }, [discountOffersFromData, promoOffersForTodayAsListings]);
 
-  const paginatedItems = useMemo(() => productsData.data || [], [productsData.data]);
+  // ✅ paginatedItems — تعتمد على عدد العناصر + أول ID (مفاتيح بدائية)
+  const paginatedItems = useMemo(
+    () => productsData.data || [],
+    [
+      productsData.data?.length,
+      productsData.data?.[0]?.id,
+      productsData.data?.[productsData.data?.length - 1]?.id,
+    ]
+  );
 
   useEffect(() => { setTotalCount(productsData.count || 0); }, [productsData.count]);
 
@@ -424,18 +437,63 @@ function Home() {
     setHasMore(loaded < total);
   }, [productsData.count, page, LIMIT]);
 
+  // ============================================================
+  // ✅ تحديث allItems — مع منع التكرار
+  // 
+  // 🔴 المشكلة السابقة:
+  //   - `paginatedItems` مرجع جديد كل render → useEffect يستدعي setAllItems → loop
+  // 
+  // ✅ الحل:
+  //   - استخدم key فريد (IDs) بدل المرجع
+  //   - إذا نفس الـ key → لا تعمل شي
+  // ============================================================
   useEffect(() => {
+    // ✅ key فريد لكل مجموعة بيانات
+    const currentKey = paginatedItems.map((i: any) => i?.id).join(',');
+
+    if (currentKey === lastLoadedKeyRef.current) {
+      return; // ✅ نفس البيانات — لا تعمل شي
+    }
+
+    lastLoadedKeyRef.current = currentKey;
     setAllItems(paginatedItems);
     setIsInitialLoad(false);
     setIsLoadingMore(false);
   }, [paginatedItems]);
 
+  // ============================================================
+  // ✅ Infinite Scroll — محسّن لمنع Infinite Loop
+  // ============================================================
   useEffect(() => {
-    if (inView && hasMore && !isLoadingMore && !isFetching && !isInitialLoad) {
-      setIsLoadingMore(true);
-      setPage(prev => prev + 1);
+    // ✅ 1. إذا اختفى inView — أعد تعيين الـ ref
+    if (!inView) {
+      hasTriggeredLoadMoreRef.current = false;
+      return;
     }
+
+    // ✅ 2. شروط صارمة: لا يعمل إلا مرة واحدة
+    if (
+      !hasMore ||
+      isLoadingMore ||
+      isFetching ||
+      isInitialLoad ||
+      hasTriggeredLoadMoreRef.current
+    ) {
+      return;
+    }
+
+    // ✅ 3. علّم إنه اشتغل
+    hasTriggeredLoadMoreRef.current = true;
+    setIsLoadingMore(true);
+    setPage(prev => prev + 1);
   }, [inView, hasMore, isLoadingMore, isFetching, isInitialLoad]);
+
+  // ✅ إعادة تعيين الـ ref لما ينتهي الـ fetch
+  useEffect(() => {
+    if (!isFetching && !isLoadingMore) {
+      hasTriggeredLoadMoreRef.current = false;
+    }
+  }, [isFetching, isLoadingMore]);
 
   const { data: stores = [], isLoading: sLoading } = useAllStores(8);
 

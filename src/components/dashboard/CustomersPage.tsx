@@ -5,7 +5,7 @@ import {
   RefreshCw, X, Filter, Users, User, Phone, ShoppingCart, DollarSign,
   TrendingUp, Award, Sparkles, Rocket, Crown, Star, Medal,
   ArrowUpRight, ArrowDownRight, Target, Zap, Shield, Heart, Wallet,
-  Clock,  // ✅ أضف هذا
+  Clock,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -44,8 +44,6 @@ export function CustomersPage() {
 
   // ===== State للبحث والفلترة والـ Pagination =====
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"orders" | "spend" | "name">("orders");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
@@ -92,7 +90,7 @@ export function CustomersPage() {
     };
   }, []);
 
-  // ===== فلترة وترتيب العملاء =====
+  // ===== فلترة العملاء =====
   const filteredCustomers = useMemo(() => {
     let result = rows;
 
@@ -105,22 +103,8 @@ export function CustomersPage() {
       });
     }
 
-    result = [...result].sort((a: any, b: any) => {
-      let aVal = a[sortBy] || 0;
-      let bVal = b[sortBy] || 0;
-      if (sortBy === 'name') {
-        aVal = (a.full_name || '').toLowerCase();
-        bVal = (b.full_name || '').toLowerCase();
-      }
-      if (sortOrder === 'asc') {
-        return aVal > bVal ? 1 : -1;
-      } else {
-        return aVal < bVal ? 1 : -1;
-      }
-    });
-
     return result;
-  }, [rows, searchQuery, sortBy, sortOrder]);
+  }, [rows, searchQuery]);
 
   // ===== Pagination =====
   const totalPages = Math.ceil(filteredCustomers.length / limit);
@@ -139,7 +123,7 @@ export function CustomersPage() {
     topCustomer: rows.length > 0 ? rows.reduce((a: any, b: any) => (a.spend || 0) > (b.spend || 0) ? a : b) : null,
   };
 
-  // ===== تغيير الصفحة (تم إزالة window.scrollTo) =====
+  // ===== تغيير الصفحة =====
   const goToPage = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setPage(newPage);
@@ -161,11 +145,11 @@ export function CustomersPage() {
     XLSX.utils.book_append_sheet(wb, ws, 'العملاء');
     
     ws['!cols'] = [
-      { wch: 25 }, // الاسم
-      { wch: 18 }, // رقم الهاتف
-      { wch: 15 }, // عدد الطلبات
-      { wch: 20 }, // إجمالي الإنفاق
-      { wch: 20 }, // آخر طلب
+      { wch: 25 },
+      { wch: 18 },
+      { wch: 15 },
+      { wch: 20 },
+      { wch: 20 },
     ];
 
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
@@ -440,50 +424,8 @@ export function CustomersPage() {
         {/* ✅ الصف الثاني: الفلاتر في Grid متجاوب */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-12 gap-2">
           
-          {/* Sort By */}
-          <div className="col-span-1 md:col-span-3">
-            <Select
-              value={sortBy}
-              onValueChange={(value: any) => {
-                setSortBy(value);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20 text-sm">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <Filter className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                  <SelectValue placeholder={app.lang === "ar" ? "ترتيب حسب" : "Sort by"} />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
-                <SelectItem value="orders" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📦 {app.lang === "ar" ? "عدد الطلبات" : "Orders"}</SelectItem>
-                <SelectItem value="spend" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">💰 {app.lang === "ar" ? "الإنفاق" : "Spend"}</SelectItem>
-                <SelectItem value="name" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">👤 {app.lang === "ar" ? "الاسم" : "Name"}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Sort Order */}
-          <div className="col-span-1 md:col-span-2">
-            <Select
-              value={sortOrder}
-              onValueChange={(value: any) => {
-                setSortOrder(value);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20 text-sm">
-                <SelectValue placeholder={app.lang === "ar" ? "ترتيب" : "Order"} />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
-                <SelectItem value="desc" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⬇️ {app.lang === "ar" ? "تنازلي" : "Descending"}</SelectItem>
-                <SelectItem value="asc" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⬆️ {app.lang === "ar" ? "تصاعدي" : "Ascending"}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Limit */}
-          <div className="col-span-1 md:col-span-2">
+          <div className="col-span-1 md:col-span-3">
             <Select
               value={String(limit)}
               onValueChange={(value) => {
@@ -514,8 +456,6 @@ export function CustomersPage() {
               size="sm"
               onClick={() => {
                 setSearchQuery("");
-                setSortBy("orders");
-                setSortOrder("desc");
                 setPage(1);
               }}
               className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 group text-xs"
@@ -527,7 +467,7 @@ export function CustomersPage() {
         </div>
 
         {/* ✅ عداد النتائج */}
-        {(searchQuery || sortBy !== "orders" || sortOrder !== "desc") && (
+        {searchQuery && (
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2 flex-wrap">
             <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
               {app.lang === "ar" 
@@ -537,8 +477,6 @@ export function CustomersPage() {
             <button
               onClick={() => {
                 setSearchQuery("");
-                setSortBy("orders");
-                setSortOrder("desc");
                 setPage(1);
               }}
               className="text-[11px] sm:text-xs text-[#2a655f] hover:text-[#d81b60] font-medium transition-colors"
@@ -774,13 +712,6 @@ export function CustomersPage() {
             </span>
           </span>
           <div className="flex items-center gap-2 flex-wrap justify-center">
-            <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
-              <Filter className="h-3 w-3 mr-1 text-[#d81b60]" />
-              {sortBy === "orders" ? (app.lang === "ar" ? "📦 الطلبات" : "📦 Orders") :
-               sortBy === "spend" ? (app.lang === "ar" ? "💰 الإنفاق" : "💰 Spend") :
-               (app.lang === "ar" ? "👤 الاسم" : "👤 Name")}
-              {sortOrder === "desc" ? " ↓" : " ↑"}
-            </Badge>
             {searchQuery && (
               <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-600">
                 <Search className="h-3 w-3 mr-1 text-[#d81b60]" />

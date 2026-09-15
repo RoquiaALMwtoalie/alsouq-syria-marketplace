@@ -517,11 +517,7 @@ const stores = storesData?.data || [];
               <span>{app.lang === 'ar' ? `نتائج البحث عن "${searchQuery}"` : `Results for "${searchQuery}"`}</span>
             ) : (
               <>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a655f]/5 border border-[#2a655f]/10 hover:bg-[#2a655f]/10 transition-colors">
-                  <DollarSign className="h-3.5 w-3.5 text-[#2a655f]" />
-                  <span className="text-[#2a655f] font-medium">{formatPrice(totalRevenue, app.currency, app.lang)}</span>
-                  <span className="text-xs text-muted-foreground">{app.lang === 'ar' ? 'إيرادات' : 'revenue'}</span>
-                </span>
+               
                 <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-500/10 border border-slate-400/20 hover:bg-slate-500/20 transition-colors">
                   <ShoppingCart className="h-3.5 w-3.5 text-slate-600" />

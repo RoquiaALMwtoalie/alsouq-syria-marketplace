@@ -9,19 +9,18 @@ export default defineConfig({
   server: {
     port: 4000,
     host: true,
-    hmr: {
-      overlay: false,
-    },
-    watch: {
-      usePolling: true,
-      interval: 100,
-    },
+    hmr: { overlay: false },
+    watch: { usePolling: true, interval: 100 },
   },
   plugins: [
     tsConfigPaths(),
     tailwindcss(),
     tanstackStart(),
-    netlify(), // ✅ استبدلنا nitro بهذا الـ plugin
+    netlify({
+      dev: {
+        edgeFunctions: { enabled: false } // ✅ عطل Edge Functions محلياً
+      }
+    }),
     viteReact(),
   ].filter(Boolean),
   build: {

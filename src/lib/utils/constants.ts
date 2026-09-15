@@ -1,309 +1,350 @@
 // src/lib/utils/constants.ts
 
 /**
- * 🔥 خريطة ذكية لتحويل أي كلمة من جمع إلى مفرد
- * هذي الخريطة تغطي 99% من كلمات اللغة الإنجليزية
+ * 🔥 خريطة المفرد → الجمع (للتوحيد على الجمع)
+ * ⚠️ النظام موحّد على الجمع — هذه الخريطة للتحويل من مفرد إلى جمع
  */
-export const SINGULAR_MAP: Record<string, string> = {
-  // خيارات المنتج الأساسية
-  'colors': 'color',
-  'sizes': 'size',
-  'models': 'model',
-  'materials': 'material',
-  'fabrics': 'fabric',
-  'styles': 'style',
-  'seasons': 'season',
-  'genders': 'gender',
-  'brands': 'brand',
+export const PLURAL_MAP: Record<string, string> = {
+  // أساسيات
+  'color': 'colors',
+  'size': 'sizes',
+  'model': 'models',
+  'material': 'materials',
+  'fabric': 'fabrics',
+  'style': 'styles',
+  'season': 'seasons',
+  'gender': 'genders',
+  'brand': 'brands',
   
-  // خيارات الأجهزة والإلكترونيات
-  'storages': 'storage',
-  'rams': 'ram',
-  'ram': 'ram',
-  'processors': 'processor',
-  'batteries': 'battery',
-  'cameras': 'camera',
-  'connectivities': 'connectivity',
-  'bluetooths': 'bluetooth',
-  'dimensions': 'dimension',
-  'weights': 'weight',
-  'weight_kg': 'weight',
-  'weight': 'weight',
-  'screen_sizes': 'screen_size',
-  'screen_size': 'screen_size',
+  // إلكترونيات
+  'storage': 'storages',
+  'ram': 'rams',
+  'processor': 'processors',
+  'battery': 'batteries',
+  'screen_size': 'screen_sizes',
+  'camera': 'cameras',
+  'connectivity': 'connectivities',
+  'bluetooth': 'bluetooths',
+  'dimension': 'dimensions',
   
-  // خيارات الملابس والأحذية
-  'shoes': 'shoe',
-  'watches': 'watch',
-  'occasions': 'occasion',
-  'accessories': 'accessory',
-  'shoe_sizes': 'shoe_size',
-  'shoe_types': 'shoe_type',
-  'watch_bands': 'watch_band',
+  // أوزان
+  'weight': 'weights',
   
-  // خيارات عامة
-  'types': 'type',
-  'categories': 'category',
-  'groups': 'group',
-  'levels': 'level',
-  'grades': 'grade',
-  'classes': 'class',
-  'ranks': 'rank',
-  'statuses': 'status',
+  // ملابس وأحذية
+  'material_type': 'material_types',
+  'shoe_size': 'shoe_sizes',
+  'shoe_type': 'shoe_types',
+  'watch_band': 'watch_bands',
   
-  // خيارات المكان والزمان
-  'locations': 'location',
-  'regions': 'region',
-  'cities': 'city',
-  'countries': 'country',
-  'months': 'month',
-  'years': 'year',
-  'days': 'day',
-  'times': 'time',
+  // مناسبات
+  'occasion': 'occasions',
+  'age_group': 'age_groups',
   
-  // خيارات الألوان والمواد
-  'shades': 'shade',
-  'tones': 'tone',
-  'textures': 'texture',
-  'patterns': 'pattern',
-  'prints': 'print',
-  'finishes': 'finish',
+  // عامة
+  'type': 'types',
+  'category': 'categories',
+  'group': 'groups',
+  'level': 'levels',
+  'grade': 'grades',
+  'class': 'classes',
+  'rank': 'ranks',
+  'status': 'statuses',
   
-  // خيارات القياسات
-  'lengths': 'length',
-  'widths': 'width',
-  'heights': 'height',
-  'depths': 'depth',
-  'volumes': 'volume',
+  // مكان وزمان
+  'location': 'locations',
+  'region': 'regions',
+  'city': 'cities',
+  'country': 'countries',
+  'month': 'months',
+  'year': 'years',
+  'day': 'days',
+  'time': 'times',
   
-  // خيارات المنتجات الرقمية
-  'formats': 'format',
-  'resolutions': 'resolution',
-  'qualities': 'quality',
-  'speeds': 'speed',
-  'powers': 'power',
+  // ألوان ومواد
+  'shade': 'shades',
+  'tone': 'tones',
+  'texture': 'textures',
+  'pattern': 'patterns',
+  'print': 'prints',
+  'finish': 'finishes',
   
-  // خيارات المنتجات الغذائية
-  'flavors': 'flavor',
-  'tastes': 'taste',
-  'ingredients': 'ingredient',
-  'nutritions': 'nutrition',
+  // قياسات
+  'length': 'lengths',
+  'width': 'widths',
+  'height': 'heights',
+  'depth': 'depths',
+  'volume': 'volumes',
   
-  // خيارات المنتجات الطبية
-  'doses': 'dose',
-  'strengths': 'strength',
+  // رقمية
+  'format': 'formats',
+  'resolution': 'resolutions',
+  'quality': 'qualities',
+  'speed': 'speeds',
+  'power': 'powers',
   
-  // خيارات إضافية
-  'age_groups': 'age_group',
-  'material_types': 'material_type',
+  // غذائية
+  'flavor': 'flavors',
+  'taste': 'tastes',
+  'ingredient': 'ingredients',
+  'nutrition': 'nutritions',
+  
+  // طبية
+  'dose': 'doses',
+  'strength': 'strengths',
 };
 
 /**
  * 📋 القيم المسموحة في قاعدة البيانات (option_type)
- * جميعها بصيغة المفرد
+ * ✅ موحّدة على الجمع فقط
  */
 export const ALLOWED_OPTION_TYPES = [
   // أساسيات
-  'color', 'size', 'model', 'material', 'fabric', 'style', 'season',
-  'gender', 'brand',
+  'colors',
+  'sizes',
+  'models',
+  'materials',
+  'fabrics',
+  'styles',
+  'seasons',
+  'genders',
+  'brands',
   
   // إلكترونيات
-  'storage', 'ram', 'processor', 'battery', 'screen_size', 'camera',
-  'connectivity', 'bluetooth', 'dimension',
+  'storages',
+  'rams',
+  'processors',
+  'batteries',
+  'screen_sizes',
+  'cameras',
+  'connectivities',
+  'bluetooths',
+  'dimensions',
   
   // أوزان
-  'weight_kg', 'weight',
+  'weight_kg',
+  'weights',
   
   // ملابس وأحذية
-  'material_type', 'shoe_size', 'shoe_type', 'watch_band',
+  'material_types',
+  'shoe_sizes',
+  'shoe_types',
+  'watch_bands',
   
   // مناسبات
-  'occasion', 'age_group',
+  'occasions',
+  'age_groups',
   
   // عامة
-  'type', 'category', 'group', 'level', 'grade', 'class', 'rank', 'status',
+  'types',
+  'categories',
+  'groups',
+  'levels',
+  'grades',
+  'classes',
+  'ranks',
+  'statuses',
   
   // مكان وزمان
-  'location', 'region', 'city', 'country', 'month', 'year', 'day', 'time',
+  'locations',
+  'regions',
+  'cities',
+  'countries',
+  'months',
+  'years',
+  'days',
+  'times',
   
   // ألوان ومواد
-  'shade', 'tone', 'texture', 'pattern', 'print', 'finish',
+  'shades',
+  'tones',
+  'textures',
+  'patterns',
+  'prints',
+  'finishes',
   
   // قياسات
-  'length', 'width', 'height', 'depth', 'volume',
+  'lengths',
+  'widths',
+  'heights',
+  'depths',
+  'volumes',
   
   // رقمية
-  'format', 'resolution', 'quality', 'speed', 'power',
+  'formats',
+  'resolutions',
+  'qualities',
+  'speeds',
+  'powers',
   
   // غذائية
-  'flavor', 'taste', 'ingredient', 'nutrition',
+  'flavors',
+  'tastes',
+  'ingredients',
+  'nutritions',
   
   // طبية
-  'dose', 'strength',
+  'doses',
+  'strengths',
 ];
 
 /**
- * 🔥 دالة ذكية لتحويل أي كلمة من جمع إلى مفرد
+ * 🔥 دالة toSingular — ترجع المفتاح كما هو
+ * ✅ النظام موحّد على الجمع — لا نحتاج تحويل
  */
 export function toSingular(word: string): string {
-  // 1️⃣ إذا كانت الكلمة موجودة في الخريطة، استخدمها
-  if (SINGULAR_MAP[word]) {
-    return SINGULAR_MAP[word];
-  }
-  
-  // 2️⃣ إذا كانت الكلمة تنتهي بـ 'ies' → 'y'
-  if (word.endsWith('ies') && word.length > 3) {
-    return word.slice(0, -3) + 'y';
-  }
-  
-  // 3️⃣ إذا كانت الكلمة تنتهي بـ 'ves' → 'f'
-  if (word.endsWith('ves') && word.length > 3) {
-    return word.slice(0, -3) + 'f';
-  }
-  
-  // 4️⃣ إذا كانت الكلمة تنتهي بـ 's' (وليس 'ss' أو 'us' أو 'is')
-  if (word.endsWith('s') && 
-      !word.endsWith('ss') && 
-      !word.endsWith('us') && 
-      !word.endsWith('is') &&
-      word.length > 1) {
-    return word.slice(0, -1);
-  }
-  
-  // 5️⃣ إذا لم يتم التعرف، أرجع الكلمة كما هي
   return word;
 }
 
 /**
- * ✅ دالة للتحقق مما إذا كان النوع مسموحاً به (مع دعم الجمع)
+ * 🔥 دالة toPlural — تحوّل المفرد للجمع (احتياطي)
+ * تُستخدم إذا احتجنا تحويل مفتاح مفرد إلى جمع
+ */
+export function toPlural(word: string): string {
+  // إذا موجودة بالخريطة
+  if (PLURAL_MAP[word]) {
+    return PLURAL_MAP[word];
+  }
+  
+  // إذا كانت الكلمة أصلًا جمع (موجودة في ALLOWED_OPTION_TYPES)
+  if (ALLOWED_OPTION_TYPES.includes(word)) {
+    return word;
+  }
+  
+  // إذا ما لقيناها، أرجعها كما هي
+  return word;
+}
+
+/**
+ * ✅ دالة للتحقق مما إذا كان النوع مسموحاً به
  */
 export function isOptionTypeAllowed(type: string): boolean {
   // تحقق مباشر
   if (ALLOWED_OPTION_TYPES.includes(type)) return true;
   
-  // حاول التحويل من جمع إلى مفرد
-  const singular = toSingular(type);
-  return ALLOWED_OPTION_TYPES.includes(singular);
+  // حاول التحويل من مفرد إلى جمع
+  const plural = toPlural(type);
+  return ALLOWED_OPTION_TYPES.includes(plural);
 }
 
 /**
- * ✅ دالة للحصول على النوع المفرد الصحيح للتخزين في قاعدة البيانات
+ * ✅ دالة للحصول على النوع الصحيح للتخزين في قاعدة البيانات
+ * ✅ ترجع الجمع دائمًا
  */
 export function getNormalizedOptionType(type: string): string {
-  // إذا كان مسموحاً مباشرة، أرجع كما هو
+  // إذا كان جمعاً مسموحاً، أرجع كما هو
   if (ALLOWED_OPTION_TYPES.includes(type)) return type;
   
-  // حاول التحويل من جمع إلى مفرد
-  const singular = toSingular(type);
-  if (ALLOWED_OPTION_TYPES.includes(singular)) return singular;
+  // حاول التحويل من مفرد إلى جمع
+  const plural = toPlural(type);
+  if (ALLOWED_OPTION_TYPES.includes(plural)) return plural;
   
   // إذا لم يتم التعرف، أرجع الأصل (مع تحذير)
   console.warn(`⚠️ Unknown option type: "${type}", will be saved as is`);
   return type;
 }
 
-// ✅ خريطة ترجمة أسماء الخيارات
+// ✅ خريطة ترجمة أسماء الخيارات (الجمع فقط)
 export const OPTION_TYPE_TRANSLATIONS: Record<string, { ar: string; en: string }> = {
   // أساسيات
-  'color': { ar: 'اللون', en: 'Color' },
-  'size': { ar: 'المقاس', en: 'Size' },
-  'model': { ar: 'الموديل', en: 'Model' },
-  'material': { ar: 'المادة', en: 'Material' },
-  'fabric': { ar: 'نوع القماش', en: 'Fabric' },
-  'style': { ar: 'النمط', en: 'Style' },
-  'season': { ar: 'الموسم', en: 'Season' },
-  'gender': { ar: 'الجنس', en: 'Gender' },
-  'brand': { ar: 'الماركة', en: 'Brand' },
+  'colors': { ar: 'الألوان', en: 'Colors' },
+  'sizes': { ar: 'المقاسات', en: 'Sizes' },
+  'models': { ar: 'الموديلات', en: 'Models' },
+  'materials': { ar: 'الخامات', en: 'Materials' },
+  'fabrics': { ar: 'الأقمشة', en: 'Fabrics' },
+  'styles': { ar: 'الأنماط', en: 'Styles' },
+  'seasons': { ar: 'المواسم', en: 'Seasons' },
+  'genders': { ar: 'الفئات الجنسية', en: 'Genders' },
+  'brands': { ar: 'الماركات', en: 'Brands' },
   
   // إلكترونيات
-  'storage': { ar: 'سعة التخزين', en: 'Storage' },
-  'ram': { ar: 'الذاكرة (RAM)', en: 'RAM' },
-  'processor': { ar: 'المعالج', en: 'Processor' },
-  'battery': { ar: 'سعة البطارية', en: 'Battery' },
-  'screen_size': { ar: 'حجم الشاشة', en: 'Screen Size' },
-  'camera': { ar: 'دقة الكاميرا', en: 'Camera' },
-  'connectivity': { ar: 'الاتصال', en: 'Connectivity' },
-  'bluetooth': { ar: 'البلوتوث', en: 'Bluetooth' },
-  'dimension': { ar: 'الأبعاد', en: 'Dimensions' },
+  'storages': { ar: 'سعات التخزين', en: 'Storages' },
+  'rams': { ar: 'سعات الذاكرة', en: 'RAMs' },
+  'processors': { ar: 'المعالجات', en: 'Processors' },
+  'batteries': { ar: 'البطاريات', en: 'Batteries' },
+  'screen_sizes': { ar: 'أحجام الشاشات', en: 'Screen Sizes' },
+  'cameras': { ar: 'الكاميرات', en: 'Cameras' },
+  'connectivities': { ar: 'أنواع الاتصال', en: 'Connectivities' },
+  'bluetooths': { ar: 'البلوتوث', en: 'Bluetooths' },
+  'dimensions': { ar: 'الأبعاد', en: 'Dimensions' },
   
   // أوزان
   'weight_kg': { ar: 'الوزن (كغم)', en: 'Weight (kg)' },
-  'weight': { ar: 'الوزن', en: 'Weight' },
+  'weights': { ar: 'الأوزان', en: 'Weights' },
   
   // ملابس وأحذية
-  'material_type': { ar: 'نوع المادة', en: 'Material Type' },
-  'shoe_size': { ar: 'مقاس الحذاء', en: 'Shoe Size' },
-  'shoe_type': { ar: 'نوع الحذاء', en: 'Shoe Type' },
-  'watch_band': { ar: 'نوع السوار', en: 'Watch Band' },
+  'material_types': { ar: 'أنواع المواد', en: 'Material Types' },
+  'shoe_sizes': { ar: 'مقاسات الأحذية', en: 'Shoe Sizes' },
+  'shoe_types': { ar: 'أنواع الأحذية', en: 'Shoe Types' },
+  'watch_bands': { ar: 'أنواع السوار', en: 'Watch Bands' },
   
   // مناسبات
-  'occasion': { ar: 'المناسبة', en: 'Occasion' },
-  'age_group': { ar: 'الفئة العمرية', en: 'Age Group' },
+  'occasions': { ar: 'المناسبات', en: 'Occasions' },
+  'age_groups': { ar: 'الفئات العمرية', en: 'Age Groups' },
   
   // عامة
-  'type': { ar: 'النوع', en: 'Type' },
-  'category': { ar: 'التصنيف', en: 'Category' },
-  'group': { ar: 'المجموعة', en: 'Group' },
-  'level': { ar: 'المستوى', en: 'Level' },
-  'grade': { ar: 'الدرجة', en: 'Grade' },
-  'class': { ar: 'الفئة', en: 'Class' },
-  'rank': { ar: 'الرتبة', en: 'Rank' },
-  'status': { ar: 'الحالة', en: 'Status' },
+  'types': { ar: 'الأنواع', en: 'Types' },
+  'categories': { ar: 'التصنيفات', en: 'Categories' },
+  'groups': { ar: 'المجموعات', en: 'Groups' },
+  'levels': { ar: 'المستويات', en: 'Levels' },
+  'grades': { ar: 'الدرجات', en: 'Grades' },
+  'classes': { ar: 'الفئات', en: 'Classes' },
+  'ranks': { ar: 'الرتب', en: 'Ranks' },
+  'statuses': { ar: 'الحالات', en: 'Statuses' },
   
   // مكان وزمان
-  'location': { ar: 'الموقع', en: 'Location' },
-  'region': { ar: 'المنطقة', en: 'Region' },
-  'city': { ar: 'المدينة', en: 'City' },
-  'country': { ar: 'الدولة', en: 'Country' },
-  'month': { ar: 'الشهر', en: 'Month' },
-  'year': { ar: 'السنة', en: 'Year' },
-  'day': { ar: 'اليوم', en: 'Day' },
-  'time': { ar: 'الوقت', en: 'Time' },
+  'locations': { ar: 'المواقع', en: 'Locations' },
+  'regions': { ar: 'المناطق', en: 'Regions' },
+  'cities': { ar: 'المدن', en: 'Cities' },
+  'countries': { ar: 'الدول', en: 'Countries' },
+  'months': { ar: 'الأشهر', en: 'Months' },
+  'years': { ar: 'السنوات', en: 'Years' },
+  'days': { ar: 'الأيام', en: 'Days' },
+  'times': { ar: 'الأوقات', en: 'Times' },
   
   // ألوان ومواد
-  'shade': { ar: 'الدرجة اللونية', en: 'Shade' },
-  'tone': { ar: 'النغمة', en: 'Tone' },
-  'texture': { ar: 'القوام', en: 'Texture' },
-  'pattern': { ar: 'النقش', en: 'Pattern' },
-  'print': { ar: 'الطباعة', en: 'Print' },
-  'finish': { ar: 'التشطيب', en: 'Finish' },
+  'shades': { ar: 'الدرجات', en: 'Shades' },
+  'tones': { ar: 'النغمات', en: 'Tones' },
+  'textures': { ar: 'الأقوام', en: 'Textures' },
+  'patterns': { ar: 'النقوش', en: 'Patterns' },
+  'prints': { ar: 'الطبعات', en: 'Prints' },
+  'finishes': { ar: 'التشطيبات', en: 'Finishes' },
   
   // قياسات
-  'length': { ar: 'الطول', en: 'Length' },
-  'width': { ar: 'العرض', en: 'Width' },
-  'height': { ar: 'الارتفاع', en: 'Height' },
-  'depth': { ar: 'العمق', en: 'Depth' },
-  'volume': { ar: 'الحجم', en: 'Volume' },
+  'lengths': { ar: 'الأطوال', en: 'Lengths' },
+  'widths': { ar: 'العروض', en: 'Widths' },
+  'heights': { ar: 'الارتفاعات', en: 'Heights' },
+  'depths': { ar: 'الأعماق', en: 'Depths' },
+  'volumes': { ar: 'الأحجام', en: 'Volumes' },
   
   // رقمية
-  'format': { ar: 'التنسيق', en: 'Format' },
-  'resolution': { ar: 'الدقة', en: 'Resolution' },
-  'quality': { ar: 'الجودة', en: 'Quality' },
-  'speed': { ar: 'السرعة', en: 'Speed' },
-  'power': { ar: 'الطاقة', en: 'Power' },
+  'formats': { ar: 'التنسيقات', en: 'Formats' },
+  'resolutions': { ar: 'الدقات', en: 'Resolutions' },
+  'qualities': { ar: 'الجودات', en: 'Qualities' },
+  'speeds': { ar: 'السرعات', en: 'Speeds' },
+  'powers': { ar: 'الطاقات', en: 'Powers' },
   
   // غذائية
-  'flavor': { ar: 'النكهة', en: 'Flavor' },
-  'taste': { ar: 'الطعم', en: 'Taste' },
-  'ingredient': { ar: 'المكون', en: 'Ingredient' },
-  'nutrition': { ar: 'القيمة الغذائية', en: 'Nutrition' },
+  'flavors': { ar: 'النكهات', en: 'Flavors' },
+  'tastes': { ar: 'الأطعمة', en: 'Tastes' },
+  'ingredients': { ar: 'المكونات', en: 'Ingredients' },
+  'nutritions': { ar: 'القيم الغذائية', en: 'Nutritions' },
   
   // طبية
-  'dose': { ar: 'الجرعة', en: 'Dose' },
-  'strength': { ar: 'القوة', en: 'Strength' },
+  'doses': { ar: 'الجرعات', en: 'Doses' },
+  'strengths': { ar: 'القوى', en: 'Strengths' },
 };
 
 /**
- * ✅ دالة لترجمة اسم الخيار حسب اللغة (تدعم الجمع والمفرد)
+ * ✅ دالة لترجمة اسم الخيار حسب اللغة
  */
 export function translateOptionType(type: string, lang: string): string {
-  // 1️⃣ حاول الترجمة مباشرة
+  // 1️⃣ حاول الترجمة مباشرة (الجمع)
   let translation = OPTION_TYPE_TRANSLATIONS[type];
   
-  // 2️⃣ إذا لم توجد، حاول تحويل الجمع إلى مفرد (colors → color)
+  // 2️⃣ إذا لم توجد، حاول التحويل من مفرد إلى جمع
   if (!translation) {
-    const singular = toSingular(type);
-    translation = OPTION_TYPE_TRANSLATIONS[singular];
+    const plural = toPlural(type);
+    translation = OPTION_TYPE_TRANSLATIONS[plural];
   }
   
   // 3️⃣ إذا ما زال لا يوجد، أرجع النص الأصلي
@@ -317,70 +358,70 @@ export function translateOptionType(type: string, lang: string): string {
  */
 export function getSupportedOptionTypes(lang: string): Array<{ id: string; label: string; emoji: string }> {
   const emojiMap: Record<string, string> = {
-    'color': '🎨',
-    'size': '📏',
-    'model': '📐',
-    'material': '🧵',
-    'fabric': '👕',
-    'style': '✨',
-    'season': '🌤️',
-    'gender': '👫',
-    'brand': '🏷️',
-    'storage': '💾',
-    'ram': '🧠',
-    'processor': '⚡',
-    'battery': '🔋',
-    'screen_size': '📱',
-    'camera': '📷',
-    'connectivity': '📶',
-    'bluetooth': '📶',
-    'dimension': '📐',
+    'colors': '🎨',
+    'sizes': '📏',
+    'models': '📐',
+    'materials': '🧵',
+    'fabrics': '👕',
+    'styles': '✨',
+    'seasons': '🌤️',
+    'genders': '👫',
+    'brands': '🏷️',
+    'storages': '💾',
+    'rams': '🧠',
+    'processors': '⚡',
+    'batteries': '🔋',
+    'screen_sizes': '📱',
+    'cameras': '📷',
+    'connectivities': '📶',
+    'bluetooths': '📶',
+    'dimensions': '📐',
     'weight_kg': '⚖️',
-    'weight': '⚖️',
-    'material_type': '🧵',
-    'shoe_size': '👟',
-    'shoe_type': '👟',
-    'watch_band': '⌚',
-    'occasion': '🎉',
-    'age_group': '👤',
-    'type': '📋',
-    'category': '📂',
-    'group': '👥',
-    'level': '📊',
-    'grade': '⭐',
-    'class': '📚',
-    'rank': '🏆',
-    'status': '📌',
-    'location': '📍',
-    'region': '🗺️',
-    'city': '🏙️',
-    'country': '🌍',
-    'month': '📅',
-    'year': '📆',
-    'day': '📅',
-    'time': '⏰',
-    'shade': '🎨',
-    'tone': '🎨',
-    'texture': '🧶',
-    'pattern': '🔄',
-    'print': '🖨️',
-    'finish': '✨',
-    'length': '📏',
-    'width': '📏',
-    'height': '📏',
-    'depth': '📏',
-    'volume': '📦',
-    'format': '📄',
-    'resolution': '🖥️',
-    'quality': '⭐',
-    'speed': '🚀',
-    'power': '⚡',
-    'flavor': '🍽️',
-    'taste': '🍽️',
-    'ingredient': '🥗',
-    'nutrition': '🥗',
-    'dose': '💊',
-    'strength': '💪',
+    'weights': '⚖️',
+    'material_types': '🧵',
+    'shoe_sizes': '👟',
+    'shoe_types': '👟',
+    'watch_bands': '⌚',
+    'occasions': '🎉',
+    'age_groups': '👤',
+    'types': '📋',
+    'categories': '📂',
+    'groups': '👥',
+    'levels': '📊',
+    'grades': '⭐',
+    'classes': '📚',
+    'ranks': '🏆',
+    'statuses': '📌',
+    'locations': '📍',
+    'regions': '🗺️',
+    'cities': '🏙️',
+    'countries': '🌍',
+    'months': '📅',
+    'years': '📆',
+    'days': '📅',
+    'times': '⏰',
+    'shades': '🎨',
+    'tones': '🎨',
+    'textures': '🧶',
+    'patterns': '🔄',
+    'prints': '🖨️',
+    'finishes': '✨',
+    'lengths': '📏',
+    'widths': '📏',
+    'heights': '📏',
+    'depths': '📏',
+    'volumes': '📦',
+    'formats': '📄',
+    'resolutions': '🖥️',
+    'qualities': '⭐',
+    'speeds': '🚀',
+    'powers': '⚡',
+    'flavors': '🍽️',
+    'tastes': '🍽️',
+    'ingredients': '🥗',
+    'nutritions': '🥗',
+    'doses': '💊',
+    'strengths': '💪',
   };
 
   return ALLOWED_OPTION_TYPES.map(id => ({

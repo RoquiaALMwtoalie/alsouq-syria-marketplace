@@ -1,4 +1,4 @@
-// src/__root.tsx - الكود المصحح بالكامل مع AI Assistant وحماية متقدمة للـ Routes
+// src/__root.tsx
 
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
@@ -53,7 +53,8 @@ import { ClientOnly } from "@/components/ClientOnly";
 import {
   useProfileWithUpdate,
   useFavoritesRealtime,
-  useListingsRealtime,
+  // ✅ useListingsRealtime — معطّل (cache-invalidation-${userId} في __root يغطيه)
+  // useListingsRealtime,
   useCartRealtime,
   useOrdersRealtime,
 
@@ -67,6 +68,9 @@ import {
   invalidateListingsCache,
   invalidateStoresCache,
 } from "@/lib/queries";
+
+// ===== ✅ استيراد realtimeManager =====
+import { realtimeManager } from "@/lib/utils/realtimeManager";
 
 
 
@@ -124,9 +128,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
      meta: [
     { charSet: "utf-8" },
     { name: "viewport", content: "width=device-width, initial-scale=1" },
-    { title: "ذوق | Zooq — Syria's Super Marketplace" },  // ✅ تم التغيير
-    { name: "description", content: "ذوق | Zooq: منصة سوريا الشاملة للتسوق..." },  // ✅ تم التغيير
-    { property: "og:title", content: "ذوق | Zooq — Syria's Super Marketplace" },  // ✅ تم التغيير
+    { title: "ذوق | Zooq — Syria's Super Marketplace" },
+    { name: "description", content: "ذوق | Zooq: منصة سوريا الشاملة للتسوق..." },
+    { property: "og:title", content: "ذوق | Zooq — Syria's Super Marketplace" },
     { property: "og:description", content: "اكتشف كل ما تحتاجه في سوريا بمكان واحد: متاجر، خدمات، عقارات، أطباء وأكثر." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
@@ -175,14 +179,11 @@ function NotificationPermissionHandler() {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ ref لمنع العرض المتكرر داخل نفس الجلسة
   const hasShownThisSessionRef = useRef(false);
 
-  // ✅ ثوابت localStorage
   const BANNER_SHOWN_KEY = 'notification_banner_shown_v2';
   const BANNER_REMIND_KEY = 'notification_banner_remind_at';
   const BANNER_DISMISSED_KEY = 'notification_banner_dismissed_forever';
-  // ✅ ثابت sessionStorage لمنع التكرار في نفس الجلسة
   const BANNER_SESSION_KEY = 'notification_banner_session_shown';
 
   useEffect(() => {
@@ -192,7 +193,6 @@ function NotificationPermissionHandler() {
         return;
       }
 
-      // ✅✅✅ حماية مزدوجة: ref + sessionStorage لمنع الظهور المزدوج
       if (hasShownThisSessionRef.current) {
         console.log('✅ [Notif] Already shown this session (ref)');
         return;
@@ -245,7 +245,6 @@ function NotificationPermissionHandler() {
         localStorage.removeItem(BANNER_REMIND_KEY);
       }
 
-      // ✅✅✅ علّم إنه اتعرض في هالجلسة (ref + sessionStorage)
       hasShownThisSessionRef.current = true;
       sessionStorage.setItem(BANNER_SESSION_KEY, 'true');
       
@@ -255,7 +254,7 @@ function NotificationPermissionHandler() {
     };
     
     checkAndRequestPermission();
-  }, [app.user?.id]);  // ✅✅✅ تم التغيير من app.user إلى app.user?.id لمنع التكرار
+  }, [app.user?.id]);
 
   const handleEnableNotifications = async () => {
     setIsLoading(true);
@@ -784,7 +783,8 @@ function RealtimeManager() {
 
   useProfileWithUpdate();
   useFavoritesRealtime(app.user?.id);
-  useListingsRealtime();
+  // ✅ useListingsRealtime — معطّل (cache-invalidation-${userId} يغطي تحديثات listings)
+  // useListingsRealtime();
   useCartRealtime(app.user?.id);
   useOrdersRealtime(app.user?.id);
 
@@ -801,11 +801,11 @@ const roleCache = {
   data: null as string[] | null,
   userId: null as string | null,
   timestamp: 0,
-  ttl: 5 * 60 * 1000, // 5 دقائق
+  ttl: 5 * 60 * 1000,
 };
 
 // ============================================================
-// ✅ ✅ ✅ مكون RouteGuard الاحترافي - مع حل مشكلة Cache
+// ✅ ✅ ✅ مكون RouteGuard الاحترافي
 // ============================================================
 function RouteGuard() {
   const app = useApp();
@@ -818,13 +818,11 @@ function RouteGuard() {
   const currentPathRef = useRef(pathname);
   const previousPathRef = useRef<string | null>(null);
 
-  // ✅ تحديث الـ ref عند تغيير المسار
   useEffect(() => {
     previousPathRef.current = currentPathRef.current;
     currentPathRef.current = pathname;
   }, [pathname]);
 
-  // ✅ تنظيف الـ timeout عند unmount
   useEffect(() => {
     return () => {
       if (redirectTimeoutRef.current) {
@@ -833,7 +831,6 @@ function RouteGuard() {
     };
   }, []);
 
-  // ✅ ✅ ✅ حل مشكلة Cache القديم
   const clearCacheIfUserChanged = useCallback(() => {
     if (!app.user) return;
     
@@ -847,21 +844,17 @@ function RouteGuard() {
       console.log('✅ [RouteGuard] Cache cleared for new user');
     }
     
-    // ✅ إذا لم يكن هناك cached_user_id، قم بتعيينه
     if (!cachedUserId) {
       sessionStorage.setItem('cached_user_id', currentUserId);
       console.log('✅ [RouteGuard] cached_user_id set to:', currentUserId);
     }
   }, [app.user]);
 
-  // ✅ تنفيذ مسح الـ Cache عند تغيير المستخدم
   useEffect(() => {
     clearCacheIfUserChanged();
   }, [app.user, clearCacheIfUserChanged]);
 
-  // ✅ دوال التحقق من الصلاحيات - مع Cache المتقدم + sessionStorage
 const checkAuthorization = useCallback(async () => {
-  // ✅ إذا لم يكن هناك مستخدم، السماح بالوصول (لصفحات التسجيل والدخول)
   if (!app.user) {
     setLoading(false);
     setIsAuthorized(true);
@@ -869,7 +862,6 @@ const checkAuthorization = useCallback(async () => {
   }
 
   try {
-    // ✅ التحقق من sessionStorage أولاً
     const cachedRoles = sessionStorage.getItem('user_roles');
     const cachedUserId = sessionStorage.getItem('cached_user_id');
     
@@ -922,11 +914,7 @@ const checkAuthorization = useCallback(async () => {
     console.log("🔍 [RouteGuard] Path:", pathname);
     console.log("🔍 [RouteGuard] Roles:", { isAdmin, isDeliveryCompany, isDistributor, isSeller });
 
-    // ============================================================
-    // ✅ ✅ ✅ منع الأدوار الأخرى من الوصول إلى /become-seller
-    // ============================================================
     if (pathname === "/become-seller" || pathname.startsWith("/become-seller")) {
-      // ✅ إذا كان المستخدم عادي (ليس لديه أي دور) أو زائر → يسمح
       const hasAnyRole = roles.some(r => 
         r === 'admin' || r === 'seller' || 
         r === 'delivery_company' || r === 'distributor' ||
@@ -940,15 +928,11 @@ const checkAuthorization = useCallback(async () => {
         return;
       }
       
-      // ❌ أي دور آخر → يمنع
       console.log('🚫 [RouteGuard] Blocked: /become-seller for role:', roles);
       redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
       return;
     }
 
-    // ============================================================
-    // ❌ منع الوصول لـ /dashboard لجميع الأدوار عدا البائع
-    // ============================================================
     if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
       if (isSeller) {
         console.log('✅ [RouteGuard] Seller → access granted to /dashboard');
@@ -962,12 +946,6 @@ const checkAuthorization = useCallback(async () => {
       return;
     }
 
-    // ============================================================
-    // ✅ المسارات العامة
-    // ============================================================
-  // ============================================================
-// ✅ صفحات المصادقة (مسموحة للجميع - مشتري، بائع، موزع، شركة توصيل، أدمن)
-// ============================================================
 const isAuthPath = 
   pathname.startsWith("/auth") || 
   pathname.startsWith("/reset-password");
@@ -979,9 +957,6 @@ if (isAuthPath) {
   return;
 }
 
-// ============================================================
-// ✅ المسارات العامة (مسموحة للمشتري والبائع والأدمن، ممنوعة للموزع وشركة التوصيل)
-// ============================================================
 const publicPaths = [
   "/",
   "/products",
@@ -1009,25 +984,19 @@ const isPublicPath = publicPaths.some(path =>
 );
 
 if (isPublicPath) {
-  // ❌ منع الموزع وشركة التوصيل
   if (isDistributor || isDeliveryCompany) {
     console.log('🚫 [RouteGuard] Blocked: public path for distributor/delivery:', pathname);
     redirectToSafePage(isAdmin, isDeliveryCompany, isDistributor);
     return;
   }
   
-  // ✅ السماح للمشتري والبائع والأدمن
   console.log('✅ [RouteGuard] Public path, access granted:', pathname);
   setLoading(false);
   setIsAuthorized(true);
   return;
 }
-    // ============================================================
-    // ✅ المسارات الخاصة بالمسؤول (Admin)
-    // ============================================================
     const adminPaths = [
       "/admin",
-
       "/admin/users",
       "/admin/orders",
       "/admin/products",
@@ -1056,7 +1025,6 @@ if (isPublicPath) {
       "/admin/tools",
     ];
 
-    // ✅ المسارات الخاصة بشركة التوصيل
     const deliveryPaths = [
       "/delivery/dashboard",
       "/delivery/orders",
@@ -1074,7 +1042,6 @@ if (isPublicPath) {
       "/delivery/tracking",
     ];
 
-    // ✅ المسارات الخاصة بالموزع
     const distributorPaths = [
       "/distributor/dashboard",
       "/distributor/messages",
@@ -1088,7 +1055,6 @@ if (isPublicPath) {
       "/distributor/profile",
     ];
 
-    // ✅ إذا كان المستخدم مسؤول (Admin)
     if (isAdmin) {
       console.log('✅ [RouteGuard] Admin, access granted:', pathname);
       setLoading(false);
@@ -1096,7 +1062,6 @@ if (isPublicPath) {
       return;
     }
 
-    // ✅ إذا كان المستخدم شركة توصيل
     if (isDeliveryCompany) {
       const isDeliveryPath = deliveryPaths.some(path => 
         pathname === path || pathname.startsWith(path + '/')
@@ -1123,7 +1088,6 @@ if (isPublicPath) {
       }
     }
 
-    // ✅ إذا كان المستخدم موزع
     if (isDistributor) {
       const isDistributorPath = distributorPaths.some(path => 
         pathname === path || pathname.startsWith(path + '/')
@@ -1150,7 +1114,6 @@ if (isPublicPath) {
       }
     }
 
-    // ✅ مستخدم عادي (بدون دور) - السماح بالوصول للمسارات العامة فقط
     if (!isAdmin && !isDeliveryCompany && !isDistributor && !isSeller) {
       const isRestrictedPath = adminPaths.some(path => 
         pathname === path || pathname.startsWith(path + '/')
@@ -1167,7 +1130,6 @@ if (isPublicPath) {
       }
     }
 
-    // ✅ إذا لم يتم العثور على أي قاعدة، السماح بالوصول
     console.log('✅ [RouteGuard] No restriction found, access granted:', pathname);
     setLoading(false);
     setIsAuthorized(true);
@@ -1178,18 +1140,16 @@ if (isPublicPath) {
     setIsAuthorized(true);
   }
 }, [app.user, pathname, navigate, isArabic]);
-  // ✅ دالة التوجيه إلى الصفحة الآمنة
+
   const redirectToSafePage = useCallback((
     isAdmin: boolean,
     isDeliveryCompany: boolean,
     isDistributor: boolean
   ) => {
-    // ✅ منع التوجيه المتكرر لنفس المسار
     if (redirectTimeoutRef.current) {
       clearTimeout(redirectTimeoutRef.current);
     }
 
-    // ✅ تحديد الصفحة الآمنة حسب الدور
     let safePath = '/auth/login';
     
    if (isAdmin) safePath = '/admin'; 
@@ -1197,7 +1157,6 @@ if (isPublicPath) {
     else if (isDeliveryCompany) safePath = '/delivery/dashboard';
     else safePath = '/auth/login';
 
-    // ✅ إذا كنا بالفعل في الصفحة الآمنة، لا تفعل شيئاً
     if (pathname === safePath) {
       setLoading(false);
       setIsAuthorized(true);
@@ -1206,15 +1165,12 @@ if (isPublicPath) {
 
     console.log(`🔄 [RouteGuard] Redirecting to: ${safePath}`);
 
-    // ✅ تأخير التوجيه لمنع التنقل السريع
     redirectTimeoutRef.current = setTimeout(() => {
       setLoading(false);
       setIsAuthorized(false);
       
-      // ✅ استخدام replace بدلاً من navigate لمنع إضافة الصفحة المحظورة إلى التاريخ
       navigate({ to: safePath, replace: true });
       
-      // ✅ عرض رسالة للمستخدم
       toast.warning(
         isArabic 
           ? "⚠️ غير مسموح بالوصول إلى هذه الصفحة. تم إعادة توجيهك." 
@@ -1223,12 +1179,10 @@ if (isPublicPath) {
     }, 300);
   }, [pathname, navigate, isArabic]);
 
-  // ✅ تنفيذ التحقق
   useEffect(() => {
     checkAuthorization();
   }, [checkAuthorization]);
 
-  // ✅ عرض شاشة تحميل أثناء التحقق (مع تحسين الأداء)
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-950/80 z-[9999]">
@@ -1247,7 +1201,6 @@ if (isPublicPath) {
     );
   }
 
-  // ✅ إذا لم يكن مصرحاً، لا نعرض المحتوى (سيتم التوجيه)
   if (!isAuthorized) {
     return null;
   }
@@ -1265,7 +1218,6 @@ function RootComponent() {
   
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  // ✅ شريط التقدم - محسن بـ requestAnimationFrame
   useEffect(() => {
     let ticking = false;
     
@@ -1287,12 +1239,10 @@ function RootComponent() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // ✅ ضبط السكرول إلى الأعلى
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  // ✅ صفحات تخفي الهيدر والفوتر
   const hideChrome = 
     pathname.startsWith("/auth") || 
     pathname.startsWith("/reset-password") ||
@@ -1328,7 +1278,7 @@ function RootComponent() {
 }
 
 // ============================================================
-// ✅ RootContent - يستخدم useApp (داخل AppProvider) مع Realtime للإشعارات و AI Assistant
+// ✅ RootContent - يستخدم useApp (داخل AppProvider) مع Realtime للإشعارات
 // ============================================================
 function RootContent({ 
   hideChrome, 
@@ -1342,19 +1292,16 @@ function RootContent({
   const app = useApp();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const router = useRouter(); // ✅ أضف هذا
+  const router = useRouter();
   
-  // ============================================================
-  // ✅ ✅ ✅ Flag للتحكم في LoginSplash (معطّل حالياً)
-  // ============================================================
-  const ENABLE_LOGIN_SPLASH = false; // ← غيّرها لـ true لتفعيل السبلاش
+  const ENABLE_LOGIN_SPLASH = false;
   
   const [showSplash, setShowSplash] = useState(false);
-  const notificationChannelRef = useRef<any>(null);
-  const isSubscribedRef = useRef(false);
-  const cacheInvalidationChannelRef = useRef<any>(null);
+  
+  // ✅ استخدام realtimeManager بدل الـ refs
+  const notificationChannelName = useRef<string | null>(null);
+  const cacheChannelName = useRef<string | null>(null);
 
-  // ✅ أضف هذا الـ useMemo لجلب hideFooter من الـ route
   const hideFooter = useMemo(() => {
     const matches = router.state.matches;
     const currentMatch = matches[matches.length - 1];
@@ -1362,7 +1309,7 @@ function RootContent({
   }, [router.state.matches]);
 
   // ============================================================
-  // 🔔 Push Notifications - تفعيل الإشعارات المنبثقة
+  // 🔔 Push Notifications
   // ============================================================
   useEffect(() => {
     if (app.user) {
@@ -1380,188 +1327,190 @@ function RootContent({
     }
   }, [app.user]);
 
-  // ✅ ✅ ✅ إضافة Realtime للإشعارات - مع منع التكرار (محسن)
+  // ============================================================
+  // 📡 Realtime: الإشعارات الفورية (قناة مستقلة)
+  // ============================================================
   useEffect(() => {
     if (!app.user) return;
-    if (isSubscribedRef.current) {
-      console.log('📡 [Realtime] Already subscribed, skipping...');
+    
+    const channelName = `notifications-${app.user.id}`;
+    
+    // ✅ إذا القناة موجودة — لا نعيد الإنشاء
+    if (realtimeManager.hasChannel(channelName)) {
+      console.log('📡 [Realtime] Notifications channel already exists');
+      notificationChannelName.current = channelName;
       return;
     }
 
     console.log('📡 [Realtime] Setting up notifications channel for user:', app.user.id);
 
-    const channel = supabase
-      .channel(`notifications-${app.user.id}`)
-      .on(
-        'postgres_changes',
+    realtimeManager.createChannel({
+      name: channelName,
+      handlers: [
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${app.user.id}`,
-        },
-        (payload) => {
-          const notification = payload.new as any;
-          
-          console.log('📬 [Realtime] New notification received:', notification);
-          
-          queryClient.invalidateQueries({ 
-            queryKey: ['notifications', app.user.id] 
-          });
-          
-          toast.info(notification.body_ar || '📬 لديك إشعار جديد', {
-            duration: 5000,
-            position: 'bottom-right',
-            icon: '🔔',
-            action: {
-              label: 'عرض',
-              onClick: () => {
-                if (notification.link_url) {
-                  navigate({ to: notification.link_url });
+          type: 'postgres_changes',
+          config: {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${app.user.id}`,
+          },
+          callback: (payload: any) => {
+            const notification = payload.new as any;
+            
+            console.log('📬 [Realtime] New notification received:', notification);
+            
+            queryClient.invalidateQueries({ 
+              queryKey: ['notifications', app.user.id] 
+            });
+            
+            toast.info(notification.body_ar || '📬 لديك إشعار جديد', {
+              duration: 5000,
+              position: 'bottom-right',
+              icon: '🔔',
+              action: {
+                label: 'عرض',
+                onClick: () => {
+                  if (notification.link_url) {
+                    navigate({ to: notification.link_url });
+                  }
                 }
               }
-            }
-          });
+            });
 
-          try {
-            const audio = new Audio('/notification.mp3');
-            audio.volume = 0.5;
-            audio.play().catch(() => {});
-          } catch (e) {}
-        }
-      )
-      .subscribe((status) => {
-        console.log(`📡 Realtime notifications status: ${status}`);
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
-        }
-        if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          isSubscribedRef.current = false;
-        }
-      });
+            try {
+              const audio = new Audio('/notification.mp3');
+              audio.volume = 0.5;
+              audio.play().catch(() => {});
+            } catch (e) {}
+          },
+        },
+      ],
+    });
 
-    notificationChannelRef.current = channel;
+    notificationChannelName.current = channelName;
 
     return () => {
-      if (notificationChannelRef.current) {
+      if (notificationChannelName.current) {
         console.log('🧹 [Realtime] Cleaning up notifications channel');
-        supabase.removeChannel(notificationChannelRef.current);
-        notificationChannelRef.current = null;
-        isSubscribedRef.current = false;
+        realtimeManager.removeChannel(notificationChannelName.current);
+        notificationChannelName.current = null;
       }
     };
   }, [app.user?.id]);
 
-  // ✅ ✅ ✅ إبطال الـ Cache عند تعديل البيانات (Realtime) - محسن
+  // ============================================================
+  // 📡 Realtime: Cache Invalidation (قناة موحّدة — 3 handlers)
+  // ============================================================
   useEffect(() => {
     if (!app.user) return;
 
-    console.log('📡 [Realtime] Setting up cache invalidation for user:', app.user.id);
+    const channelName = `cache-invalidation-${app.user.id}`;
 
-    const listingsChannelName = `listings-updates-${app.user.id}`;
-    const storesChannelName = `stores-updates-${app.user.id}`;
-    const offersChannelName = `offers-updates-${app.user.id}`;
+    // ✅ إذا القناة موجودة — لا نعيد الإنشاء
+    if (realtimeManager.hasChannel(channelName)) {
+      console.log('📡 [Realtime] Cache invalidation channel already exists');
+      cacheChannelName.current = channelName;
+      return;
+    }
 
-    const listingsChannel = supabase
-      .channel(listingsChannelName)
-      .on(
-        'postgres_changes',
+    console.log('📡 [Realtime] Setting up cache invalidation channel for user:', app.user.id);
+
+    realtimeManager.createChannel({
+      name: channelName,
+      handlers: [
+        // ============================================================
+        // 1️⃣ listings → تحديثات المنتجات
+        // ============================================================
         {
-          event: '*',
-          schema: 'public',
-          table: 'listings',
-          filter: `owner_id=eq.${app.user.id}`,
+          type: 'postgres_changes',
+          config: {
+            event: '*',
+            schema: 'public',
+            table: 'listings',
+            filter: `owner_id=eq.${app.user.id}`,
+          },
+          callback: () => {
+            console.log('🔄 [Realtime] Listing updated, invalidating caches...');
+            invalidateAllCaches();
+            queryClient.invalidateQueries({ queryKey: ['listings'] });
+            queryClient.invalidateQueries({ queryKey: ['stores'] });
+            queryClient.invalidateQueries({ queryKey: ['product-offers'] });
+            
+            toast.info('🔄 تم تحديث البيانات بعد التعديل', {
+              duration: 3000,
+              position: 'bottom-right',
+            });
+          },
         },
-        () => {
-          console.log('🔄 [Realtime] Listing updated, invalidating caches...');
-          invalidateAllCaches();
-          queryClient.invalidateQueries({ queryKey: ['listings'] });
-          queryClient.invalidateQueries({ queryKey: ['stores'] });
-          queryClient.invalidateQueries({ queryKey: ['product-offers'] });
-          
-          toast.info('🔄 تم تحديث البيانات بعد التعديل', {
-            duration: 3000,
-            position: 'bottom-right',
-          });
-        }
-      )
-      .subscribe((status) => {
-        console.log(`📡 Realtime cache invalidation status (listings): ${status}`);
-      });
-
-    const storesChannel = supabase
-      .channel(storesChannelName)
-      .on(
-        'postgres_changes',
+        
+        // ============================================================
+        // 2️⃣ profiles → تحديثات المتاجر
+        // ============================================================
         {
-          event: '*',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${app.user.id}`,
+          type: 'postgres_changes',
+          config: {
+            event: '*',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${app.user.id}`,
+          },
+          callback: () => {
+            console.log('🔄 [Realtime] Store updated, invalidating caches...');
+            invalidateStoresCache();
+            queryClient.invalidateQueries({ queryKey: ['stores'] });
+            queryClient.invalidateQueries({ queryKey: ['profile', app.user.id] });
+            
+            toast.info('🔄 تم تحديث بيانات المتجر', {
+              duration: 3000,
+              position: 'bottom-right',
+            });
+          },
         },
-        () => {
-          console.log('🔄 [Realtime] Store updated, invalidating caches...');
-          invalidateStoresCache();
-          queryClient.invalidateQueries({ queryKey: ['stores'] });
-          queryClient.invalidateQueries({ queryKey: ['profile', app.user.id] });
-          
-          toast.info('🔄 تم تحديث بيانات المتجر', {
-            duration: 3000,
-            position: 'bottom-right',
-          });
-        }
-      )
-      .subscribe((status) => {
-        console.log(`📡 Realtime cache invalidation status (stores): ${status}`);
-      });
-
-    const offersChannel = supabase
-      .channel(offersChannelName)
-      .on(
-        'postgres_changes',
+        
+        // ============================================================
+        // 3️⃣ product_offers → تحديثات العروض
+        // ============================================================
         {
-          event: '*',
-          schema: 'public',
-          table: 'product_offers',
-          filter: `store_id=eq.${app.user.id}`,
+          type: 'postgres_changes',
+          config: {
+            event: '*',
+            schema: 'public',
+            table: 'product_offers',
+            filter: `store_id=eq.${app.user.id}`,
+          },
+          callback: () => {
+            console.log('🔄 [Realtime] Offer updated, invalidating caches...');
+            if (typeof productOffersCache !== 'undefined') {
+              // @ts-ignore
+              productOffersCache = null;
+              productOffersTimestamp = 0;
+            }
+            queryClient.invalidateQueries({ queryKey: ['product-offers'] });
+            
+            toast.info('🔄 تم تحديث العروض', {
+              duration: 3000,
+              position: 'bottom-right',
+            });
+          },
         },
-        () => {
-          console.log('🔄 [Realtime] Offer updated, invalidating caches...');
-          if (typeof productOffersCache !== 'undefined') {
-            // @ts-ignore
-            productOffersCache = null;
-            productOffersTimestamp = 0;
-          }
-          queryClient.invalidateQueries({ queryKey: ['product-offers'] });
-          
-          toast.info('🔄 تم تحديث العروض', {
-            duration: 3000,
-            position: 'bottom-right',
-          });
-        }
-      )
-      .subscribe((status) => {
-        console.log(`📡 Realtime cache invalidation status (offers): ${status}`);
-      });
+      ],
+    });
 
-    cacheInvalidationChannelRef.current = {
-      listings: listingsChannel,
-      stores: storesChannel,
-      offers: offersChannel,
-    };
+    cacheChannelName.current = channelName;
 
     return () => {
-      if (cacheInvalidationChannelRef.current) {
-        console.log('🧹 [Realtime] Cleaning up cache invalidation channels');
-        supabase.removeChannel(cacheInvalidationChannelRef.current.listings);
-        supabase.removeChannel(cacheInvalidationChannelRef.current.stores);
-        supabase.removeChannel(cacheInvalidationChannelRef.current.offers);
-        cacheInvalidationChannelRef.current = null;
+      if (cacheChannelName.current) {
+        console.log('🧹 [Realtime] Cleaning up cache invalidation channel');
+        realtimeManager.removeChannel(cacheChannelName.current);
+        cacheChannelName.current = null;
       }
     };
   }, [app.user?.id]);
 
-  // ✅ ✅ ✅ Prefetch البيانات الرئيسية (لتقليل TTFB)
+  // ============================================================
+  // ✅ Prefetch البيانات الرئيسية
+  // ============================================================
   useEffect(() => {
     if (!app.user) return;
     
@@ -1617,7 +1566,9 @@ function RootContent({
     return () => clearTimeout(timeoutId);
   }, [app.user, queryClient]);
 
-  // ✅ ✅ ✅ تأخير العمليات الثقيلة باستخدام requestIdleCallback
+  // ============================================================
+  // ✅ تأخير العمليات الثقيلة
+  // ============================================================
   useEffect(() => {
     if (!app.user) return;
     
@@ -1643,9 +1594,8 @@ function RootContent({
     };
   }, [app.user, queryClient]);
   
-  // ✅ إظهار السبلاش - معطّل حالياً عبر Flag
+  // ✅ إظهار السبلاش
   useEffect(() => {
-    // ⚠️ السبلاش معطّل حالياً - لن يظهر
     if (!ENABLE_LOGIN_SPLASH) {
       setShowSplash(false);
       return;
@@ -1685,7 +1635,6 @@ function RootContent({
         <div className="min-h-screen flex flex-col">
           {!hideChrome && <Header />}
           <main className="flex-1"><Outlet /></main>
-          {/* ✅ هذا السطر تم تعديله: إخفاء الفوتر عند hideFooter === true */}
           {!hideChrome && !hideFooter && <Footer />}
         </div>
       </ClientOnly>

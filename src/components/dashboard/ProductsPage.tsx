@@ -123,7 +123,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
   
   // State
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "pending" | "published" | "archived">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "pending" | "published">("all");
   const [filterType, setFilterType] = useState<"all" | "product" | "offer" | "promo">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -1093,7 +1093,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
                 <SelectItem value="all">📋 {app.lang === "ar" ? "الكل" : "All"}</SelectItem>
                 <SelectItem value="pending">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
                 <SelectItem value="published">✅ {app.lang === "ar" ? "منشور" : "Published"}</SelectItem>
-                <SelectItem value="archived">📁 {app.lang === "ar" ? "مؤرشف" : "Archived"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1307,12 +1306,10 @@ export const ProductsPage = React.memo(function ProductsPage() {
                           <Badge className={cn(
                             "text-[9px] border-0 px-2 py-0.5",
                             product.status === 'published' && "bg-emerald-500/10 text-emerald-600",
-                            product.status === 'pending' && "bg-amber-500/10 text-amber-600",
-                            product.status === 'archived' && "bg-slate-500/10 text-slate-600"
+                            product.status === 'pending' && "bg-amber-500/10 text-amber-600"
                           )}>
                             {product.status === 'published' && '✅ ' + (app.lang === "ar" ? "منشور" : "Published")}
                             {product.status === 'pending' && '⏳ ' + (app.lang === "ar" ? "قيد المراجعة" : "Pending")}
-                            {product.status === 'archived' && '📁 ' + (app.lang === "ar" ? "مؤرشف" : "Archived")}
                           </Badge>
                           
                           {product.avg_rating > 0 && (

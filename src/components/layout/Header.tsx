@@ -1162,308 +1162,6 @@ export const Header = memo(function Header() {
 
           <MegaMenu categories={categories} />
 
-          {/* ✅ زر السلة — وزر الإشعارات جنبه */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link to="/cart" className="relative group shrink-0">
-                <Button variant="ghost" size="icon" className={cn(
-                  "h-8 w-8 sm:h-10 sm:w-10 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500",
-                  cartItemsCount > 0 && "animate-cart-bounce"
-                )}>
-                  <ShoppingCart className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px] group-hover:scale-110 transition-transform" />
-                  {cartItemsCount > 0 && (
-                    <Badge className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] text-white border-2 border-background"
-                      style={{
-                        background: 'linear-gradient(135deg, #2a655f, #3a8a82)',
-                        boxShadow: '0 0 20px rgba(42,101,95,0.5)'
-                      }}
-                    >
-                      {cartItemsCount > 99 ? '99+' : cartItemsCount}
-                    </Badge>
-                  )}
-                </Button>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p>{app.lang === "ar" ? "السلة" : "Cart"}</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* ✅ زر الإشعارات جنب السلة - في الهيدر العلوي */}
-          {app.user && (
-            <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="relative group shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 cursor-pointer"
-                    >
-                      <Bell className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px] text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
-                      {unreadNotificationsCount > 0 && (
-                        <Badge 
-                          className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white border-2 border-background animate-pulse"
-                          style={{
-                            background: 'linear-gradient(135deg, #2a655f, #3a8a82)',
-                            boxShadow: '0 0 20px rgba(42,101,95,0.5)'
-                          }}
-                        >
-                          {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
-                        </Badge>
-                      )}
-                    </Button>
-                  </DialogTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
-                  <p>{app.lang === "ar" ? "الإشعارات" : "Notifications"}</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <DialogContent className="max-w-md w-[95vw] rounded-[32px] p-0 overflow-hidden border border-[#2a655f]/50 dark:border-emerald-500/40 shadow-[0_25px_60px_rgba(0,0,0,0.4)] bg-white dark:bg-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300 [&>button]:hidden">
-                
-                <style>{`
-                  @keyframes icon-dance-glow {
-                    0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(42,101,95,0.5)); }
-                    50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(42,101,95,0.9)); }
-                  }
-                  .animate-icon-dance {
-                    animation: icon-dance-glow 2s ease-in-out infinite;
-                  }
-                `}</style>
-
-                <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f]/15 via-[#3a8a82]/15 to-[#2a655f]/15 dark:from-[#173d38]/80 dark:to-slate-900 border-b border-[#2a655f]/30 dark:border-[#2a655f]/50 p-4.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 animate-icon-dance">
-                          <Bell className="h-5 w-5 text-white" />
-                        </div>
-                        {unreadNotificationsCount > 0 && (
-                          <span className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full bg-[#2a655f] px-1.5 text-[10px] font-black text-white flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-md">
-                            {unreadNotificationsCount}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <DialogTitle className="text-lg font-black text-slate-900 dark:text-white tracking-wide">
-                          {app.lang === "ar" ? "الإشعارات" : "Notifications"}
-                        </DialogTitle>
-                        <p className="text-xs text-slate-600 dark:text-emerald-300/90 font-bold mt-0.5">
-                          {unreadNotificationsCount > 0
-                            ? app.lang === "ar"
-                              ? `${unreadNotificationsCount} إشعار غير مقروء`
-                              : `${unreadNotificationsCount} unread`
-                            : app.lang === "ar"
-                            ? "كل الإشعارات مقروءة"
-                            : "All caught up"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {unreadNotificationsCount > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs font-black gap-1.5 rounded-xl bg-slate-500/10 hover:bg-slate-500/20 dark:bg-slate-500/30 dark:hover:bg-slate-500/40 text-[#2a655f] dark:text-[#3a8a82] transition-all cursor-pointer border border-slate-300/30"
-                          onClick={handleMarkAllAsRead}
-                          disabled={markAllRead.isPending}
-                        >
-                          {markAllRead.isPending ? (
-                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#2a655f] border-t-transparent" />
-                          ) : (
-                            <Check className="h-3.5 w-3.5" />
-                          )}
-                          {app.lang === "ar" ? "تحديد الكل" : "Mark all read"}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="max-h-[60vh] overflow-y-auto p-3 space-y-2.5 custom-scrollbar bg-slate-50/50 dark:bg-slate-950/50">
-                  {notifications.length === 0 ? (
-                    <div className="py-16 text-center">
-                      <div className="h-20 w-20 rounded-3xl bg-[#2a655f]/10 border border-[#2a655f]/30 flex items-center justify-center mx-auto mb-4 animate-icon-dance">
-                        <BellOff className="h-10 w-10 text-[#2a655f] dark:text-emerald-400" />
-                      </div>
-                      <p className="text-base font-black text-slate-900 dark:text-white">
-                        {app.lang === "ar" ? "لا توجد إشعارات حالياً" : "No notifications"}
-                      </p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-semibold">
-                        {app.lang === "ar"
-                          ? "ستظهر إشعاراتك وتحديثاتك هنا فور وصولها"
-                          : "Notifications will appear here when received"}
-                      </p>
-                    </div>
-                  ) : (
-                    notifications.map((notification: any) => {
-                      const isUnread = !notification.is_read;
-                      const config = getNotificationConfig(notification.type);
-                      const Icon = ICON_MAP[config.icon] || Bell;
-
-                      return (
-                        <div
-                          key={notification.id}
-                          className={`group relative rounded-2xl transition-all duration-300 border ${
-                            isUnread
-                              ? "bg-[#2a655f]/5 dark:bg-[#2a655f]/15 border-[#2a655f]/40 dark:border-[#3a8a82]/50 shadow-md"
-                              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-[#2a655f]/40"
-                          }`}
-                        >
-                          <div 
-                            className="flex items-start gap-3.5 p-3.5 cursor-pointer" 
-                            onClick={() => handleNotificationClick(notification)}
-                          >
-                            <div className="flex-shrink-0">
-                              {notification.image_url ? (
-                                <div className="relative">
-                                  <OptimizedImage
-                                    src={notification.image_url}
-                                    alt=""
-                                    width={48}
-                                    height={48}
-                                    quality={80}
-                                    objectFit="cover"
-                                    className="h-12 w-12 rounded-2xl object-cover border-2 border-[#2a655f]/40 shadow-sm"
-                                  />
-                                  {isUnread && (
-                                    <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-[#2a655f] ring-2 ring-white dark:ring-slate-900 animate-pulse" />
-                                  )}
-                                </div>
-                              ) : (
-                                <div className={`h-12 w-12 rounded-2xl flex items-center justify-center border border-[#2a655f]/30 shadow-sm bg-[#2a655f]/15 dark:bg-[#2a655f]/30 text-[#2a655f] dark:text-[#3a8a82]`}>
-                                  <Icon className="h-5 w-5" />
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <p className={`text-sm ${isUnread ? "font-black text-slate-950 dark:text-white" : "font-bold text-slate-900 dark:text-slate-200"}`}>
-                                    {notification.title_ar || notification.title_en || "إشعار"}
-                                  </p>
-                                  <p className={`text-xs mt-1 whitespace-pre-wrap break-words ${isUnread ? "text-slate-800 dark:text-slate-200 font-semibold" : "text-slate-600 dark:text-slate-400 font-medium"}`}>
-                                    {notification.body_ar || notification.body_en || notification.message}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-1 font-bold">
-                                      <Clock className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
-                                      {formatTime(notification.created_at)}
-                                    </span>
-                                    {notification.type && (
-                                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#2a655f]/15 text-[#2a655f] dark:text-[#3a8a82] font-extrabold border border-[#2a655f]/30">
-                                        {isRTL ? config.ar : config.en}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {notification.type === "order_review_request" && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const actionUrl = notification.metadata?.action_url || notification.link_url || `/orders?review=${notification.metadata?.order_id}`;
-                                        navigate({ to: actionUrl });
-                                        setNotificationsOpen(false);
-                                      }}
-                                      className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white font-black text-xs shadow-lg shadow-[#2a655f]/30 transition-all duration-300 hover:scale-[1.02] active:scale-95 group/rate"
-                                    >
-                                      <Star className="h-4 w-4 fill-yellow-300 text-yellow-300 group-hover/rate:scale-125 group-hover/rate:rotate-12 transition-all duration-300" />
-                                      {app.lang === "ar" ? "⭐ قيّم الآن" : "⭐ Rate now"}
-                                      <ChevronLeft className="h-3.5 w-3.5 opacity-70 group-hover/rate:-translate-x-1 transition-transform rtl:rotate-0 ltr:rotate-180" />
-                                    </button>
-                                  )}
-                                </div>
-
-                                <div className="flex-shrink-0 flex items-center gap-1">
-                                  {isUnread && (
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 rounded-xl bg-slate-500/10 hover:bg-slate-500/20 text-[#2a655f] dark:text-[#3a8a82] transition-all opacity-0 group-hover:opacity-100 cursor-pointer border border-slate-400/30"
-                                      onClick={(e) => handleMarkAsRead(notification.id, e)}
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                                      >
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="rounded-2xl p-1.5 min-w-[170px] border border-slate-300/40 shadow-xl bg-white dark:bg-slate-900">
-                                      {isUnread && (
-                                        <DropdownMenuItem
-                                          className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 hover:bg-slate-500/15 text-slate-900 dark:text-slate-100"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleMarkAsRead(notification.id, e);
-                                          }}
-                                        >
-                                          <Check className="h-4 w-4 text-[#2a655f]" />
-                                          {app.lang === "ar" ? "تحديد كمقروء" : "Mark as read"}
-                                        </DropdownMenuItem>
-                                      )}
-                                      
-                                      <DropdownMenuItem
-                                        className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-500/10"
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          try {
-                                            await supabase
-                                              .from('notifications')
-                                              .delete()
-                                              .eq('id', notification.id);
-                                            await refetchNotifications();
-                                            toast.success(app.lang === "ar" ? "تم حذف الإشعار" : "Notification deleted");
-                                          } catch (error) {
-                                            console.error('Error deleting notification:', error);
-                                            toast.error(app.lang === "ar" ? "حدث خطأ أثناء الحذف" : "Error deleting notification");
-                                          }
-                                        }}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                        {app.lang === "ar" ? "حذف" : "Delete"}
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {notifications.length > 0 && (
-                  <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t border-[#2a655f]/30 dark:border-[#3a8a82]/50 p-3.5 flex items-center justify-between">
-                    <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">
-                      {notifications.length} {app.lang === "ar" ? "إشعار" : "notifications"}
-                      {unreadNotificationsCount > 0 && ` · ${unreadNotificationsCount} ${app.lang === "ar" ? "غير مقروء" : "unread"}`}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs font-bold rounded-xl text-[#2a655f] dark:text-[#3a8a82] hover:bg-[#2a655f]/15 transition-all cursor-pointer border border-[#2a655f]/30"
-                      onClick={() => setNotificationsOpen(false)}
-                    >
-                      {app.lang === "ar" ? "إغلاق" : "Close"}
-                    </Button>
-                  </div>
-                )}
-              </DialogContent>
-            </Dialog>
-          )}
-
           {/* Desktop Search */}
           <div className="flex-1 max-w-3xl mx-2 hidden lg:flex items-center gap-1.5">
             <div className="relative flex-1 min-w-[160px] group">
@@ -1657,6 +1355,308 @@ export const Header = memo(function Header() {
                 <p>{app.theme === "dark" ? (app.lang === "ar" ? "الوضع النهاري" : "Light mode") : (app.lang === "ar" ? "الوضع الليلي" : "Dark mode")}</p>
               </TooltipContent>
             </Tooltip>
+
+            {/* ✅ زر السلة — منقول إلى قسم Actions */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link to="/cart" className="relative group shrink-0">
+                  <Button variant="ghost" size="icon" className={cn(
+                    "h-8 w-8 sm:h-10 sm:w-10 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500",
+                    cartItemsCount > 0 && "animate-cart-bounce"
+                  )}>
+                    <ShoppingCart className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px] group-hover:scale-110 transition-transform" />
+                    {cartItemsCount > 0 && (
+                      <Badge className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] text-white border-2 border-background"
+                        style={{
+                          background: 'linear-gradient(135deg, #2a655f, #3a8a82)',
+                          boxShadow: '0 0 20px rgba(42,101,95,0.5)'
+                        }}
+                      >
+                        {cartItemsCount > 99 ? '99+' : cartItemsCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>{app.lang === "ar" ? "السلة" : "Cart"}</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* ✅ زر الإشعارات — منقول إلى قسم Actions (يسار زر المراسلة) */}
+            {app.user && (
+              <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="relative group shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 cursor-pointer"
+                      >
+                        <Bell className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px] text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
+                        {unreadNotificationsCount > 0 && (
+                          <Badge 
+                            className="absolute -top-1 -end-1 h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white border-2 border-background animate-pulse"
+                            style={{
+                              background: 'linear-gradient(135deg, #2a655f, #3a8a82)',
+                              boxShadow: '0 0 20px rgba(42,101,95,0.5)'
+                            }}
+                          >
+                            {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                          </Badge>
+                        )}
+                      </Button>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
+                    <p>{app.lang === "ar" ? "الإشعارات" : "Notifications"}</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <DialogContent className="max-w-md w-[95vw] rounded-[32px] p-0 overflow-hidden border border-[#2a655f]/50 dark:border-emerald-500/40 shadow-[0_25px_60px_rgba(0,0,0,0.4)] bg-white dark:bg-slate-950 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-300 [&>button]:hidden">
+                  
+                  <style>{`
+                    @keyframes icon-dance-glow {
+                      0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(42,101,95,0.5)); }
+                      50% { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(42,101,95,0.9)); }
+                    }
+                    .animate-icon-dance {
+                      animation: icon-dance-glow 2s ease-in-out infinite;
+                    }
+                  `}</style>
+
+                  <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f]/15 via-[#3a8a82]/15 to-[#2a655f]/15 dark:from-[#173d38]/80 dark:to-slate-900 border-b border-[#2a655f]/30 dark:border-[#2a655f]/50 p-4.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 animate-icon-dance">
+                            <Bell className="h-5 w-5 text-white" />
+                          </div>
+                          {unreadNotificationsCount > 0 && (
+                            <span className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full bg-[#2a655f] px-1.5 text-[10px] font-black text-white flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-md">
+                              {unreadNotificationsCount}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <DialogTitle className="text-lg font-black text-slate-900 dark:text-white tracking-wide">
+                            {app.lang === "ar" ? "الإشعارات" : "Notifications"}
+                          </DialogTitle>
+                          <p className="text-xs text-slate-600 dark:text-emerald-300/90 font-bold mt-0.5">
+                            {unreadNotificationsCount > 0
+                              ? app.lang === "ar"
+                                ? `${unreadNotificationsCount} إشعار غير مقروء`
+                                : `${unreadNotificationsCount} unread`
+                              : app.lang === "ar"
+                              ? "كل الإشعارات مقروءة"
+                              : "All caught up"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {unreadNotificationsCount > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs font-black gap-1.5 rounded-xl bg-slate-500/10 hover:bg-slate-500/20 dark:bg-slate-500/30 dark:hover:bg-slate-500/40 text-[#2a655f] dark:text-[#3a8a82] transition-all cursor-pointer border border-slate-300/30"
+                            onClick={handleMarkAllAsRead}
+                            disabled={markAllRead.isPending}
+                          >
+                            {markAllRead.isPending ? (
+                              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#2a655f] border-t-transparent" />
+                            ) : (
+                              <Check className="h-3.5 w-3.5" />
+                            )}
+                            {app.lang === "ar" ? "تحديد الكل" : "Mark all read"}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="max-h-[60vh] overflow-y-auto p-3 space-y-2.5 custom-scrollbar bg-slate-50/50 dark:bg-slate-950/50">
+                    {notifications.length === 0 ? (
+                      <div className="py-16 text-center">
+                        <div className="h-20 w-20 rounded-3xl bg-[#2a655f]/10 border border-[#2a655f]/30 flex items-center justify-center mx-auto mb-4 animate-icon-dance">
+                          <BellOff className="h-10 w-10 text-[#2a655f] dark:text-emerald-400" />
+                        </div>
+                        <p className="text-base font-black text-slate-900 dark:text-white">
+                          {app.lang === "ar" ? "لا توجد إشعارات حالياً" : "No notifications"}
+                        </p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-semibold">
+                          {app.lang === "ar"
+                            ? "ستظهر إشعاراتك وتحديثاتك هنا فور وصولها"
+                            : "Notifications will appear here when received"}
+                        </p>
+                      </div>
+                    ) : (
+                      notifications.map((notification: any) => {
+                        const isUnread = !notification.is_read;
+                        const config = getNotificationConfig(notification.type);
+                        const Icon = ICON_MAP[config.icon] || Bell;
+
+                        return (
+                          <div
+                            key={notification.id}
+                            className={`group relative rounded-2xl transition-all duration-300 border ${
+                              isUnread
+                                ? "bg-[#2a655f]/5 dark:bg-[#2a655f]/15 border-[#2a655f]/40 dark:border-[#3a8a82]/50 shadow-md"
+                                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-[#2a655f]/40"
+                            }`}
+                          >
+                            <div 
+                              className="flex items-start gap-3.5 p-3.5 cursor-pointer" 
+                              onClick={() => handleNotificationClick(notification)}
+                            >
+                              <div className="flex-shrink-0">
+                                {notification.image_url ? (
+                                  <div className="relative">
+                                    <OptimizedImage
+                                      src={notification.image_url}
+                                      alt=""
+                                      width={48}
+                                      height={48}
+                                      quality={80}
+                                      objectFit="cover"
+                                      className="h-12 w-12 rounded-2xl object-cover border-2 border-[#2a655f]/40 shadow-sm"
+                                    />
+                                    {isUnread && (
+                                      <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-[#2a655f] ring-2 ring-white dark:ring-slate-900 animate-pulse" />
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center border border-[#2a655f]/30 shadow-sm bg-[#2a655f]/15 dark:bg-[#2a655f]/30 text-[#2a655f] dark:text-[#3a8a82]`}>
+                                    <Icon className="h-5 w-5" />
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-sm ${isUnread ? "font-black text-slate-950 dark:text-white" : "font-bold text-slate-900 dark:text-slate-200"}`}>
+                                      {notification.title_ar || notification.title_en || "إشعار"}
+                                    </p>
+                                    <p className={`text-xs mt-1 whitespace-pre-wrap break-words ${isUnread ? "text-slate-800 dark:text-slate-200 font-semibold" : "text-slate-600 dark:text-slate-400 font-medium"}`}>
+                                      {notification.body_ar || notification.body_en || notification.message}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <span className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-1 font-bold">
+                                        <Clock className="h-3 w-3 text-[#2a655f] dark:text-[#3a8a82]" />
+                                        {formatTime(notification.created_at)}
+                                      </span>
+                                      {notification.type && (
+                                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#2a655f]/15 text-[#2a655f] dark:text-[#3a8a82] font-extrabold border border-[#2a655f]/30">
+                                          {isRTL ? config.ar : config.en}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {notification.type === "order_review_request" && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const actionUrl = notification.metadata?.action_url || notification.link_url || `/orders?review=${notification.metadata?.order_id}`;
+                                          navigate({ to: actionUrl });
+                                          setNotificationsOpen(false);
+                                        }}
+                                        className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white font-black text-xs shadow-lg shadow-[#2a655f]/30 transition-all duration-300 hover:scale-[1.02] active:scale-95 group/rate"
+                                      >
+                                        <Star className="h-4 w-4 fill-yellow-300 text-yellow-300 group-hover/rate:scale-125 group-hover/rate:rotate-12 transition-all duration-300" />
+                                        {app.lang === "ar" ? "⭐ قيّم الآن" : "⭐ Rate now"}
+                                        <ChevronLeft className="h-3.5 w-3.5 opacity-70 group-hover/rate:-translate-x-1 transition-transform rtl:rotate-0 ltr:rotate-180" />
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  <div className="flex-shrink-0 flex items-center gap-1">
+                                    {isUnread && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-xl bg-slate-500/10 hover:bg-slate-500/20 text-[#2a655f] dark:text-[#3a8a82] transition-all opacity-0 group-hover:opacity-100 cursor-pointer border border-slate-400/30"
+                                        onClick={(e) => handleMarkAsRead(notification.id, e)}
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                                        >
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="rounded-2xl p-1.5 min-w-[170px] border border-slate-300/40 shadow-xl bg-white dark:bg-slate-900">
+                                        {isUnread && (
+                                          <DropdownMenuItem
+                                            className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 hover:bg-slate-500/15 text-slate-900 dark:text-slate-100"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleMarkAsRead(notification.id, e);
+                                            }}
+                                          >
+                                            <Check className="h-4 w-4 text-[#2a655f]" />
+                                            {app.lang === "ar" ? "تحديد كمقروء" : "Mark as read"}
+                                          </DropdownMenuItem>
+                                        )}
+                                        
+                                        <DropdownMenuItem
+                                          className="rounded-xl text-xs font-bold cursor-pointer gap-2.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            try {
+                                              await supabase
+                                                .from('notifications')
+                                                .delete()
+                                                .eq('id', notification.id);
+                                              await refetchNotifications();
+                                              toast.success(app.lang === "ar" ? "تم حذف الإشعار" : "Notification deleted");
+                                            } catch (error) {
+                                              console.error('Error deleting notification:', error);
+                                              toast.error(app.lang === "ar" ? "حدث خطأ أثناء الحذف" : "Error deleting notification");
+                                            }
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                          {app.lang === "ar" ? "حذف" : "Delete"}
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {notifications.length > 0 && (
+                    <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t border-[#2a655f]/30 dark:border-[#3a8a82]/50 p-3.5 flex items-center justify-between">
+                      <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">
+                        {notifications.length} {app.lang === "ar" ? "إشعار" : "notifications"}
+                        {unreadNotificationsCount > 0 && ` · ${unreadNotificationsCount} ${app.lang === "ar" ? "غير مقروء" : "unread"}`}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs font-bold rounded-xl text-[#2a655f] dark:text-[#3a8a82] hover:bg-[#2a655f]/15 transition-all cursor-pointer border border-[#2a655f]/30"
+                        onClick={() => setNotificationsOpen(false)}
+                      >
+                        {app.lang === "ar" ? "إغلاق" : "Close"}
+                      </Button>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            )}
 
             <Tooltip>
               <TooltipTrigger asChild>

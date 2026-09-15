@@ -275,9 +275,10 @@ class ChannelManager {
 // ✅ تصدير نسخة واحدة (Singleton)
 export const channelManager = new ChannelManager();
 
-// ✅ تنظيف تلقائي كل دقيقة
-if (typeof window !== 'undefined') {
-  setInterval(() => {
-    channelManager.cleanupExpiredChannels();
-  }, 60 * 1000);
-}
+// ✅ معطّل مؤقتاً — نستخدم realtimeManager
+// (لا حاجة لـ cleanup تلقائي — القنوات تُدار من useProfile الآن عبر CustomEvent)
+// if (typeof window !== 'undefined') {
+//   setInterval(() => {
+//     channelManager.cleanupExpiredChannels();
+//   }, 60 * 1000);
+// }
