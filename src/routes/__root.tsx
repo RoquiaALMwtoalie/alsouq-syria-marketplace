@@ -1681,11 +1681,14 @@ function RootContent({
       <NotificationPermissionHandler />
       <ProgressBar progress={scrollProgress} />
       
-           <div className="min-h-screen flex flex-col">
-        {!hideChrome && <ClientOnly><Header /></ClientOnly>}
-        <main className="flex-1"><Outlet /></main>
-        {!hideChrome && !hideFooter && <ClientOnly><Footer /></ClientOnly>}
-      </div>
+      <ClientOnly>
+        <div className="min-h-screen flex flex-col">
+          {!hideChrome && <Header />}
+          <main className="flex-1"><Outlet /></main>
+          {/* ✅ هذا السطر تم تعديله: إخفاء الفوتر عند hideFooter === true */}
+          {!hideChrome && !hideFooter && <Footer />}
+        </div>
+      </ClientOnly>
       
       <Toaster position="top-center" richColors />
   
