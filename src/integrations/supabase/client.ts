@@ -16,7 +16,6 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
       new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     }
 
-    // New Supabase API keys are opaque strings, not bearer JWTs.
     if (isNewSupabaseApiKey(supabaseKey) && headers.get('Authorization') === `Bearer ${supabaseKey}`) {
       headers.delete('Authorization');
     }
@@ -26,20 +25,58 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
+// ✅ دالة موحدة لقراءة المتغيرات من أي مصدر
+function getEnv(key: string): string | undefined {
+  // 1. Vite client-side
+  try {
+    const viteEnv = import.meta.env as Record<string, string | undefined>;
+    if (viteEnv?.[key]) return viteEnv[key];
+  } catch {}
+  
+  // 2. Node.js SSR
+  if (typeof process !== 'undefined' && process.env?.[key]) {
+    return process.env[key];
+  }
+  
+  // 3. Global fallback
+  if (typeof globalThis !== 'undefined' && (globalThis as any)[key]) {
+    return (globalThis as any)[key];
+  }
+  
+  return undefined;
+}
 
 function createSupabaseClient() {
-  // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+  // ✅ Vercel يضع المتغيرات كـ VITE_* في import.meta.env وقت البناء
+  // ✅ وفي SSR runtime تكون متاحة عبر process.env (لأنها تُسرّب)
+  const SUPABASE_URL = 
+    getEnv('VITE_SUPABASE_URL') ||
+    getEnv('SUPABASE_URL');
+
+  const SUPABASE_PUBLISHABLE_KEY = 
+    getEnv('VITE_SUPABASE_PUBLISHABLE_KEY') ||
+    getEnv('VITE_SUPABASE_ANON_KEY') ||
+    getEnv('SUPABASE_PUBLISHABLE_KEY') ||
+    getEnv('SUPABASE_ANON_KEY');
+
+  // ✅ Log تشخيصي
+  console.log('[Supabase] Env check:', {
+    hasUrl: !!SUPABASE_URL,
+    hasKey: !!SUPABASE_PUBLISHABLE_KEY,
+    urlPrefix: SUPABASE_URL?.substring(0, 30),
+    keyPrefix: SUPABASE_PUBLISHABLE_KEY?.substring(0, 20),
+    availableEnvKeys: typeof process !== 'undefined' 
+      ? Object.keys(process.env).filter(k => k.includes('SUPABASE'))
+      : 'no-process',
+  });
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
+      ...(!SUPABASE_URL ? ['VITE_SUPABASE_URL'] : []),
+      ...(!SUPABASE_PUBLISHABLE_KEY ? ['VITE_SUPABASE_PUBLISHABLE_KEY or VITE_SUPABASE_ANON_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
+    const message = `[Supabase] Missing env variables: ${missing.join(', ')}`;
+    console.error(message);
     throw new Error(message);
   }
 
@@ -57,12 +94,15 @@ function createSupabaseClient() {
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+// ✅ Lazy proxy - لا ينشئ client حتى يُستدعى فعلاً
 export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>, {
   get(_, prop, receiver) {
-    if (!_supabase) _supabase = createSupabaseClient();
-    return Reflect.get(_supabase, prop, receiver);
+    try {
+      if (!_supabase) _supabase = createSupabaseClient();
+      return Reflect.get(_supabase, prop, receiver);
+    } catch (error) {
+      console.error('[Supabase] Failed to create client:', error);
+      throw error;
+    }
   },
 });
-

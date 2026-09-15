@@ -101,19 +101,48 @@ function NotFoundComponent() {
 // ===== دالة Error =====
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
-  useEffect(() => { reportLovableError(error, { boundary: "root" }); }, [error]);
+  
+  useEffect(() => { 
+    console.error('🚨 [Root Error]', error);
+    reportLovableError(error, { boundary: "root" }); 
+  }, [error]);
+  
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold">This page didn't load</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Something went wrong.</p>
-        <button
-          onClick={() => { router.invalidate(); reset(); }}
-          className="mt-6 inline-flex rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm"
-        >
-          Try again
-        </button>
-      </div>
+    <div style={{ 
+      minHeight: '100vh', 
+      padding: 40, 
+      fontFamily: 'monospace', 
+      direction: 'ltr',
+      background: '#fff',
+      color: '#000',
+    }}>
+      <h1 style={{ color: 'red' }}>🚨 Root Error</h1>
+      <h2>{error?.message || 'Unknown error'}</h2>
+      <pre style={{ 
+        whiteSpace: 'pre-wrap', 
+        background: '#f5f5f5', 
+        padding: 20,
+        borderRadius: 8,
+        fontSize: 12,
+        overflow: 'auto',
+        maxHeight: '60vh',
+      }}>
+        {error?.stack || 'No stack trace'}
+      </pre>
+      <button
+        onClick={() => { router.invalidate(); reset(); }}
+        style={{ 
+          marginTop: 20, 
+          padding: '10px 20px', 
+          background: '#2a655f', 
+          color: 'white',
+          border: 'none',
+          borderRadius: 6,
+          cursor: 'pointer',
+        }}
+      >
+        Try again
+      </button>
     </div>
   );
 }
