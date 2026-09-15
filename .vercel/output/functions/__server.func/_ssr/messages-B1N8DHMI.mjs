@@ -1,0 +1,286 @@
+import { r as reactExports, j as jsxRuntimeExports } from "../_libs/react.mjs";
+import { e as useNavigate } from "../_libs/tanstack__react-router.mjs";
+import { u as useApp, aI as useConversations, aJ as useUnreadCount, aK as useDeleteConversation, aL as useGetOrCreateConversation, aM as useConversationStore, b as Button, B as Badge, I as Input, P as Avatar, O as OptimizedImage, U as AvatarFallback, $ as DropdownMenu, a0 as DropdownMenuTrigger, a1 as DropdownMenuContent, a2 as DropdownMenuItem } from "./router-BU7AgYzK.mjs";
+import { t as toast } from "../_libs/sonner.mjs";
+import { a2 as ArrowRight, A as ArrowLeft, o as MessageCircle, q as Search, c as Store, C as ChevronRight, E as EllipsisVertical, v as Trash2 } from "../_libs/lucide-react.mjs";
+import "../_libs/tanstack__router-core.mjs";
+import "../_libs/tanstack__history.mjs";
+import "../_libs/cookie-es.mjs";
+import "../_libs/seroval.mjs";
+import "../_libs/seroval-plugins.mjs";
+import "node:stream/web";
+import "node:stream";
+import "../_libs/react-dom.mjs";
+import "util";
+import "crypto";
+import "async_hooks";
+import "stream";
+import "../_libs/isbot.mjs";
+import "../_libs/tanstack__react-query.mjs";
+import "../_libs/tanstack__query-core.mjs";
+import "./client-DEhnCGNP.mjs";
+import "../_libs/supabase__supabase-js.mjs";
+import "../_libs/supabase__postgrest-js.mjs";
+import "../_libs/supabase__realtime-js.mjs";
+import "../_libs/supabase__phoenix.mjs";
+import "../_libs/supabase__storage-js.mjs";
+import "../_libs/iceberg-js.mjs";
+import "../_libs/supabase__auth-js.mjs";
+import "tslib";
+import "../_libs/supabase__functions-js.mjs";
+import "../_libs/clsx.mjs";
+import "../_libs/tailwind-merge.mjs";
+import "../_libs/radix-ui__react-slot.mjs";
+import "../_libs/radix-ui__react-compose-refs.mjs";
+import "../_libs/class-variance-authority.mjs";
+import "../_libs/radix-ui__react-dropdown-menu.mjs";
+import "../_libs/radix-ui__primitive.mjs";
+import "../_libs/radix-ui__react-context.mjs";
+import "../_libs/@radix-ui/react-use-controllable-state+[...].mjs";
+import "../_libs/@radix-ui/react-use-layout-effect+[...].mjs";
+import "../_libs/@radix-ui/react-use-effect-event+[...].mjs";
+import "../_libs/radix-ui__react-primitive.mjs";
+import "../_libs/radix-ui__react-menu.mjs";
+import "../_libs/radix-ui__react-collection.mjs";
+import "../_libs/radix-ui__react-direction.mjs";
+import "../_libs/@radix-ui/react-dismissable-layer+[...].mjs";
+import "../_libs/@radix-ui/react-use-callback-ref+[...].mjs";
+import "../_libs/radix-ui__react-focus-guards.mjs";
+import "../_libs/radix-ui__react-focus-scope.mjs";
+import "../_libs/radix-ui__react-popper.mjs";
+import "../_libs/floating-ui__react-dom.mjs";
+import "../_libs/floating-ui__dom.mjs";
+import "../_libs/floating-ui__core.mjs";
+import "../_libs/floating-ui__utils.mjs";
+import "../_libs/radix-ui__react-use-size.mjs";
+import "../_libs/radix-ui__react-portal.mjs";
+import "../_libs/radix-ui__react-presence.mjs";
+import "../_libs/radix-ui__react-roving-focus.mjs";
+import "../_libs/radix-ui__react-id.mjs";
+import "../_libs/@radix-ui/react-use-is-hydrated+[...].mjs";
+import "../_libs/aria-hidden.mjs";
+import "../_libs/react-remove-scroll.mjs";
+import "../_libs/react-remove-scroll-bar.mjs";
+import "../_libs/react-style-singleton.mjs";
+import "../_libs/get-nonce.mjs";
+import "../_libs/use-sidecar.mjs";
+import "../_libs/use-callback-ref.mjs";
+import "../_libs/radix-ui__react-dialog.mjs";
+import "../_libs/radix-ui__react-tooltip.mjs";
+import "../_libs/@radix-ui/react-visually-hidden+[...].mjs";
+import "../_libs/zustand.mjs";
+import "../_libs/radix-ui__react-label.mjs";
+import "../_libs/react-intersection-observer.mjs";
+import "../_libs/radix-ui__react-tabs.mjs";
+import "../_libs/radix-ui__react-radio-group.mjs";
+import "../_libs/radix-ui__react-select.mjs";
+import "../_libs/radix-ui__number.mjs";
+import "../_libs/radix-ui__react-use-previous.mjs";
+import "../_libs/radix-ui__react-alert-dialog.mjs";
+import "../_libs/radix-ui__react-checkbox.mjs";
+import "../_libs/radix-ui__react-avatar.mjs";
+import "../_libs/framer-motion.mjs";
+import "../_libs/motion-dom.mjs";
+import "../_libs/motion-utils.mjs";
+function MessagesPage() {
+  const app = useApp();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = reactExports.useState("");
+  const [isCreating, setIsCreating] = reactExports.useState(false);
+  const isRtl = app.lang === "ar";
+  const {
+    data: conversations = [],
+    isLoading,
+    refetch
+  } = useConversations();
+  const {
+    data: unreadCount = 0
+  } = useUnreadCount();
+  const deleteConversation = useDeleteConversation();
+  const getOrCreateConversation = useGetOrCreateConversation();
+  const {
+    setConversations,
+    deleteConversation: deleteFromStore
+  } = useConversationStore();
+  reactExports.useEffect(() => {
+    if (conversations.length > 0) {
+      setConversations(conversations);
+    }
+  }, [conversations, setConversations]);
+  reactExports.useEffect(() => {
+    if (!app.authLoading && !app.user) {
+      navigate({
+        to: "/auth/$mode",
+        params: {
+          mode: "login"
+        }
+      });
+    }
+  }, [app.authLoading, app.user, navigate]);
+  const openConversation = async (otherUserId) => {
+    if (!app.user) return;
+    setIsCreating(true);
+    try {
+      const conversation = await getOrCreateConversation.mutateAsync({
+        userId: app.user.id,
+        otherUserId
+      });
+      navigate({
+        to: "/messages/$userId",
+        params: {
+          userId: otherUserId
+        },
+        search: {
+          cid: conversation.id
+        }
+      });
+    } catch (error) {
+      console.error("❌ Error opening conversation:", error);
+      toast.error(app.lang === "ar" ? "فشل فتح المحادثة" : "Failed to open conversation");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+  const handleDeleteConversation = async (convId, e) => {
+    e.stopPropagation();
+    if (!app.user) return;
+    const confirmMessage = app.lang === "ar" ? "هل أنت متأكد من حذف هذه المحادثة؟" : "Are you sure?";
+    if (!confirm(confirmMessage)) return;
+    try {
+      await deleteConversation.mutateAsync({
+        conversationId: convId,
+        userId: app.user.id
+      });
+      deleteFromStore(convId);
+      refetch();
+    } catch (error) {
+      toast.error(app.lang === "ar" ? "حدث خطأ" : "An error occurred");
+    }
+  };
+  if (app.authLoading || isLoading) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "container max-w-4xl mx-auto px-4 py-20 text-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-10 w-10 animate-spin rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f] mx-auto shadow-md" }) });
+  }
+  if (!app.user) return null;
+  const filteredConversations = conversations.filter((conv) => {
+    const otherUser = conv.participant1_id === app.user.id ? conv.participant2 : conv.participant1;
+    const name = otherUser?.store_name || otherUser?.full_name || "";
+    return name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+  const getOtherUser = (conv) => {
+    return conv.participant1_id === app.user.id ? conv.participant2 : conv.participant1;
+  };
+  const getUserName = (user) => {
+    return user?.store_name || user?.full_name || (app.lang === "ar" ? "مستخدم" : "User");
+  };
+  const getUserAvatar = (user) => {
+    return user?.store_logo_url || user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName(user))}&background=2a655f&color=fff&size=128`;
+  };
+  const formatTime = (date) => {
+    if (!date) return "";
+    const now = /* @__PURE__ */ new Date();
+    const then = new Date(date);
+    const diffMins = Math.floor((now.getTime() - then.getTime()) / 6e4);
+    if (app.lang === "ar") {
+      if (diffMins < 1) return "الآن";
+      if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
+      if (diffMins < 1440) return `منذ ${Math.floor(diffMins / 60)} ساعة`;
+      return then.toLocaleDateString("ar-SA", {
+        day: "numeric",
+        month: "short"
+      });
+    } else {
+      if (diffMins < 1) return "Just now";
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+      return then.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short"
+      });
+    }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "container max-w-4xl mx-auto px-4 py-8", dir: isRtl ? "rtl" : "ltr", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("style", { children: `
+        @keyframes float-gentle {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-3px) rotate(2deg); }
+        }
+        .animate-float-icon {
+          animation: float-gentle 3s ease-in-out infinite;
+        }
+      ` }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mb-6", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: "ghost", onClick: () => navigate({
+      to: "/"
+    }), className: "group flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#2a655f]/10 hover:bg-[#2a655f]/20 text-[#2a655f] dark:text-[#3a8a82] font-semibold text-sm transition-all duration-300 border border-[#2a655f]/20", children: [
+      isRtl ? /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "h-4 w-4 group-hover:translate-x-1 transition-transform" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowLeft, { className: "h-4 w-4 group-hover:-translate-x-1 transition-transform" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isRtl ? "العودة للرئيسية" : "Back to Home" })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 bg-gradient-to-r from-[#173d38]/10 via-[#2a655f]/10 to-[#173d38]/10 p-6 rounded-3xl border border-[#2a655f]/20 backdrop-blur-sm", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("h1", { className: "text-2xl md:text-3xl font-bold flex items-center gap-3 text-slate-900 dark:text-white", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-3 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/30 animate-float-icon", children: /* @__PURE__ */ jsxRuntimeExports.jsx(MessageCircle, { className: "h-6 w-6" }) }),
+          app.lang === "ar" ? "الرسائل والمحادثات" : "Messages & Chats"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 mt-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-medium", children: app.lang === "ar" ? `لديك ${conversations.length} محادثة نشطة` : `You have ${conversations.length} active conversations` }),
+          unreadCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { className: "bg-[#2a655f] text-white rounded-full px-3 py-1 font-bold shadow-sm animate-pulse", children: [
+            unreadCount,
+            " ",
+            app.lang === "ar" ? "غير مقروءة" : "unread"
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#2a655f]" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: app.lang === "ar" ? "بحث في المحادثات..." : "Search conversations...", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), className: "pl-9 w-full md:w-64 rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] bg-white/80 dark:bg-slate-900/80 shadow-inner" })
+      ] })
+    ] }),
+    isCreating ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center justify-center py-20", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-10 w-10 animate-spin rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f]" }) }) : filteredConversations.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white dark:bg-slate-900 rounded-3xl border border-[#2a655f]/20 p-12 text-center shadow-lg", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-20 w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-4 animate-float-icon", children: /* @__PURE__ */ jsxRuntimeExports.jsx(MessageCircle, { className: "h-10 w-10 text-[#2a655f]" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-xl font-bold text-slate-900 dark:text-white", children: searchQuery ? app.lang === "ar" ? "لا توجد نتائج مطابقة" : "No results found" : app.lang === "ar" ? "لا توجد محادثات حالياً" : "No conversations yet" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground mt-1 max-w-sm mx-auto", children: searchQuery ? app.lang === "ar" ? `لا توجد محادثات تطابق "${searchQuery}"` : `No conversations match "${searchQuery}"` : app.lang === "ar" ? "ابدأ محادثة جديدة مع أي متجر أو بائع لتظهر هنا" : "Start a new conversation with a store or seller" })
+    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", children: filteredConversations.map((conv) => {
+      const otherUser = getOtherUser(conv);
+      const name = getUserName(otherUser);
+      const avatar = getUserAvatar(otherUser);
+      const isStore = !!otherUser?.store_name;
+      const unread = conv.unread_count_participant1 > 0 || conv.unread_count_participant2 > 0;
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group cursor-pointer", onClick: () => openConversation(otherUser.id), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `
+                    bg-white dark:bg-slate-900 rounded-2xl border p-4 hover:shadow-xl transition-all duration-300
+                    hover:border-[#2a655f]/60 hover:-translate-y-0.5
+                    ${unread ? "border-[#2a655f]/50 bg-[#2a655f]/5 shadow-md" : "border-slate-200/60 dark:border-slate-800"}
+                  `, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Avatar, { className: "h-14 w-14 ring-2 ring-[#2a655f]/30 group-hover:ring-[#2a655f] transition duration-300 shadow-sm", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(OptimizedImage, { src: avatar, alt: name, width: 56, height: 56, quality: 85, objectFit: "cover", className: "h-full w-full object-cover" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(AvatarFallback, { className: "bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-sm font-bold", children: name.charAt(0).toUpperCase() })
+            ] }),
+            isStore && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-[#2a655f] border-2 border-white dark:border-slate-900 flex items-center justify-center shadow", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Store, { className: "h-2.5 w-2.5 text-white" }) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-bold truncate text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors", children: name }),
+                isStore && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: "secondary", className: "text-[9px] px-2 py-0.5 h-4 bg-[#2a655f]/15 text-[#2a655f] dark:text-[#3a8a82] border-[#2a655f]/30 rounded-full font-bold", children: app.lang === "ar" ? "متجر معتمد" : "Verified Store" })
+              ] }),
+              conv.last_message_at && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground whitespace-nowrap font-medium", children: formatTime(conv.last_message_at) })
+            ] }),
+            conv.last_message && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground truncate mt-1", children: conv.last_message })
+          ] }),
+          unread && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { className: "bg-[#2a655f] text-white rounded-full px-2.5 py-0.5 text-xs font-bold animate-pulse shadow-sm", children: conv.unread_count_participant1 || conv.unread_count_participant2 }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronRight, { className: "h-4 w-4 text-[#2a655f]/50 group-hover:translate-x-1.5 transition-transform duration-300" })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DropdownMenu, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "ghost", size: "icon", className: "h-8 w-8 rounded-full hover:bg-[#2a655f]/10 text-slate-600 dark:text-slate-300", children: /* @__PURE__ */ jsxRuntimeExports.jsx(EllipsisVertical, { className: "h-4 w-4" }) }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(DropdownMenuContent, { align: "end", className: "rounded-xl border-[#2a655f]/20 shadow-lg", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DropdownMenuItem, { className: "text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer font-medium", onClick: (e) => handleDeleteConversation(conv.id, e), children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "h-4 w-4 mr-2" }),
+            app.lang === "ar" ? "حذف المحادثة" : "Delete conversation"
+          ] }) })
+        ] }) })
+      ] }, conv.id);
+    }) })
+  ] });
+}
+export {
+  MessagesPage as component
+};

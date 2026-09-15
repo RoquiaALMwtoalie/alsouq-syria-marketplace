@@ -17,7 +17,14 @@ export default defineConfig({
     tailwindcss(),
     tanstackStart(),
     viteReact(),
-    nitro(), // ✅ بدون preset — Nitro يكتشف Vercel تلقائياً
+    nitro({
+      preset: "vercel",
+      output: {
+        dir: ".vercel/output",
+        serverDir: ".vercel/output/functions/__server.func",
+        publicDir: ".vercel/output/static",
+      },
+    }),
   ],
   build: {
     chunkSizeWarningLimit: 1000,
