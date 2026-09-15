@@ -1,20 +1,6 @@
 [build]
-  command = "npm run build"
-  publish = ".output/public"
+  command = "vite build"
+  publish = "dist/client"
 
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS = "VITE_VAPID_PUBLIC_KEY,VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_ANON_KEY"
-
-# 🚨 أهم خطوة: احذف الـ redirect القديم
-# ❌ شيل هاد الجزء
-# [[redirects]]
-#   from = "/*"
-#   to = "/index.html"
-#   status = 200
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
