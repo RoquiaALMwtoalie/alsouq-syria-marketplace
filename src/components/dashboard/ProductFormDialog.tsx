@@ -1054,7 +1054,7 @@ export function ProductFormDialog({
                       value={form.title_ar}
                       onChange={(e) => setForm({ ...form, title_ar: e.target.value })}
                       placeholder={labels.placeholderName}
-                      className="ps-10 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                      className="ps-10 h-11 text-base sm:text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                     />
                   </div>
                 </div>
@@ -1072,7 +1072,7 @@ export function ProductFormDialog({
                       value={form.description_ar}
                       onChange={(e) => setForm({ ...form, description_ar: e.target.value })}
                       placeholder={labels.placeholderDesc}
-                      className="text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 resize-none hover:border-[#2a655f]/30"
+                      className="text-base sm:text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 resize-none hover:border-[#2a655f]/30"
                     />
                   </div>
                 </div>
@@ -1093,7 +1093,7 @@ export function ProductFormDialog({
                           onChange={(e) => setParentCategorySearch(e.target.value)}
                           onFocus={() => setIsParentCategoryOpen(true)}
                           placeholder={lang === "ar" ? "🔍 ابحث..." : "🔍 Search..."}
-                          className="ps-10 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                          className="ps-10 h-11 text-base sm:text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                         />
                         {parentCategorySearch && (
                           <button
@@ -1174,7 +1174,7 @@ export function ProductFormDialog({
                             onChange={(e) => setSubCategorySearch(e.target.value)}
                             onFocus={() => setIsSubCategoryOpen(true)}
                             placeholder={lang === "ar" ? "🔍 ابحث عن الفرعي..." : "🔍 Search sub..."}
-                            className="ps-10 h-11 text-sm rounded-lg border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/50"
+                            className="ps-10 h-11 text-base sm:text-sm rounded-lg border-2 border-[#2a655f]/30 dark:border-[#2a655f]/40 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/50"
                           />
                           {subCategorySearch && (
                             <button
@@ -1228,7 +1228,7 @@ export function ProductFormDialog({
                         onChange={(e) => setGovernorateSearch(e.target.value)}
                         onFocus={() => setIsGovernorateOpen(true)}
                         placeholder={lang === "ar" ? "🔍 ابحث عن محافظة..." : "🔍 Search governorate..."}
-                        className="ps-10 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                        className="ps-10 h-11 text-base sm:text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                       />
                       {governorateSearch && (
                         <button
@@ -1357,7 +1357,7 @@ export function ProductFormDialog({
                       onChange={(e) => handlePriceChange(e.target.value, "price")}
                       onFocus={(e) => e.target.select()}
                       placeholder="0"
-                      className="ps-12 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                      className="ps-12 h-11 text-base sm:text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                     />
                   </div>
                 </div>
@@ -1399,7 +1399,7 @@ export function ProductFormDialog({
                           onChange={(e) => handlePriceChange(e.target.value, "old_price")}
                           onFocus={(e) => e.target.select()}
                           placeholder="0"
-                          className="ps-12 h-11 text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                          className="ps-12 h-11 text-base sm:text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
                         />
                       </div>
                     </div>

@@ -772,7 +772,7 @@ export function ProductOptionsManager({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder={lang === "ar" ? "🔍 ابحث عن خيار..." : "🔍 Search for an option..."}
-          className="w-full h-10 sm:h-11 px-4 rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 text-xs sm:text-sm hover:border-[#2a655f]/30"
+          className="w-full h-10 sm:h-11 px-4 rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 text-base sm:text-sm hover:border-[#2a655f]/30"
         />
         {searchTerm && (
           <button
@@ -920,7 +920,7 @@ export function ProductOptionsManager({
                     ? `أضف ${OPTION_TYPES.find(t => t.id === activeType)?.label || ''}...` 
                     : `Add ${OPTION_TYPES.find(t => t.id === activeType)?.id || ''}...`
                 }
-                className="h-10 sm:h-11 text-xs sm:text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
+                className="h-10 sm:h-11 text-base sm:text-sm rounded-lg border-2 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 hover:border-[#2a655f]/30"
               />
             </div>
             
@@ -1154,7 +1154,7 @@ export function ProductOptionsManager({
                               onKeyDown={(e) => e.stopPropagation()}
                               onClick={(e) => e.stopPropagation()}
                               className={cn(
-                                "h-7 sm:h-8 text-[11px] sm:text-xs rounded-lg border-2 w-full min-w-[60px] px-1.5 transition-all duration-300",
+                                "h-7 sm:h-8 text-base sm:text-xs rounded-lg border-2 w-full min-w-[60px] px-1.5 transition-all duration-300",
                                 (!variation.price || variation.price <= 0) && isNew
                                   ? "border-red-500 dark:border-red-500 bg-red-50/50 dark:bg-red-950/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                                   : (!variation.price || variation.price <= 0)
@@ -1201,7 +1201,7 @@ export function ProductOptionsManager({
                                 onMouseDown={(e) => e.stopPropagation()}
                                 onKeyDown={(e) => e.stopPropagation()}
                                 onClick={(e) => e.stopPropagation()}
-                                className="h-7 sm:h-8 text-[11px] sm:text-xs rounded-lg border-2 w-full min-w-[60px] px-1.5 transition-all duration-300 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
+                                className="h-7 sm:h-8 text-base sm:text-xs rounded-lg border-2 w-full min-w-[60px] px-1.5 transition-all duration-300 border-slate-200/50 dark:border-slate-800/50 focus:border-[#2a655f]"
                                 placeholder={lang === "ar" ? "اختياري" : "Optional"}
                               />
                             </div>

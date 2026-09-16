@@ -456,6 +456,11 @@ export const Header = memo(function Header() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // ✅ Refs لحقول البحث (لإعادة التركيز بعد المسح)
+  const desktopSearchRef = useRef<HTMLInputElement>(null);
+  const tabletSearchRef = useRef<HTMLInputElement>(null);
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
+
   const { data: unreadCount = 0 } = useUnreadCount();
   
   useRealtimeConversations(app.user?.id);
@@ -636,6 +641,15 @@ export const Header = memo(function Header() {
   const goHome = useCallback(() => {
     navigate({ to: "/" });
   }, [navigate]);
+
+  // ✅ دالة مسح البحث
+  const clearSearch = useCallback((ref?: React.RefObject<HTMLInputElement>) => {
+    setQ("");
+    // إعادة التركيز للـ input بعد المسح
+    if (ref?.current) {
+      ref.current.focus();
+    }
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -1167,6 +1181,7 @@ export const Header = memo(function Header() {
             <div className="relative flex-1 min-w-[160px] group">
               <Search className={`absolute inset-y-0 my-auto start-3 h-4 w-4 transition-colors duration-300 ${searchFocused ? 'text-pink-500 dark:text-pink-400' : 'text-muted-foreground'}`} />
               <input
+                ref={desktopSearchRef}
                 type="text"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -1174,12 +1189,23 @@ export const Header = memo(function Header() {
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
                 placeholder={t("search_placeholder")}
-                className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
+                className={`w-full h-10 ps-9 pe-9 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
                   searchFocused
                     ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
                     : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
                 }`}
               />
+              {/* ✅ زر مسح البحث - Desktop */}
+              {q && (
+                <button
+                  type="button"
+                  onClick={() => clearSearch(desktopSearchRef)}
+                  className="absolute inset-y-0 my-auto end-2 flex items-center justify-center h-6 w-6 rounded-full hover:bg-pink-500/10 dark:hover:bg-pink-500/20 transition-all duration-200 group/clear"
+                  aria-label={app.lang === "ar" ? "مسح البحث" : "Clear search"}
+                >
+                  <X className="h-3.5 w-3.5 text-muted-foreground group-hover/clear:text-pink-500 transition-colors" />
+                </button>
+              )}
             </div>
             
             <button
@@ -1238,6 +1264,7 @@ export const Header = memo(function Header() {
             <div className="relative flex-1">
               <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
               <input
+                ref={tabletSearchRef}
                 type="text"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -1245,12 +1272,23 @@ export const Header = memo(function Header() {
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
                 placeholder={t("search_placeholder")}
-                className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
+                className={`w-full h-10 ps-9 pe-9 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
                   searchFocused
                     ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
                     : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
                 }`}
               />
+              {/* ✅ زر مسح البحث - Tablet */}
+              {q && (
+                <button
+                  type="button"
+                  onClick={() => clearSearch(tabletSearchRef)}
+                  className="absolute inset-y-0 my-auto end-2 flex items-center justify-center h-6 w-6 rounded-full hover:bg-pink-500/10 dark:hover:bg-pink-500/20 transition-all duration-200 group/clear"
+                  aria-label={app.lang === "ar" ? "مسح البحث" : "Clear search"}
+                >
+                  <X className="h-3.5 w-3.5 text-muted-foreground group-hover/clear:text-pink-500 transition-colors" />
+                </button>
+              )}
             </div>
             
             <button
@@ -1936,11 +1974,12 @@ export const Header = memo(function Header() {
           </div>
         </div>
 
-        {/* Mobile Search — ✅ زر المفضلة بدل زر المحافظات */}
+        {/* Mobile Search — ✅ زر المفضلة بدل زر المحافظات + ✅ زر مسح البحث */}
         <div className="md:hidden px-3 pb-2.5 flex gap-1.5">
           <div className="relative flex-1">
             <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
             <input
+              ref={mobileSearchRef}
               type="text"
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -1948,12 +1987,23 @@ export const Header = memo(function Header() {
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               placeholder={t("search_placeholder")}
-              className={`w-full h-10 ps-9 pe-3 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
+              className={`w-full h-10 ps-9 pe-9 bg-muted/50 border-2 rounded-xl transition-all duration-300 focus:outline-none text-sm ${
                 searchFocused
                   ? 'border-pink-500 bg-card shadow-lg shadow-pink-500/20 dark:shadow-pink-400/30'
                   : 'border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500'
               }`}
             />
+            {/* ✅ زر مسح البحث - Mobile */}
+            {q && (
+              <button
+                type="button"
+                onClick={() => clearSearch(mobileSearchRef)}
+                className="absolute inset-y-0 my-auto end-2 flex items-center justify-center h-6 w-6 rounded-full hover:bg-pink-500/10 dark:hover:bg-pink-500/20 transition-all duration-200 group/clear"
+                aria-label={app.lang === "ar" ? "مسح البحث" : "Clear search"}
+              >
+                <X className="h-3.5 w-3.5 text-muted-foreground group-hover/clear:text-pink-500 transition-colors" />
+              </button>
+            )}
           </div>
           
           <Button 

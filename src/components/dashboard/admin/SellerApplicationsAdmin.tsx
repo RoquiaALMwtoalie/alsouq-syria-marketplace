@@ -1114,14 +1114,32 @@ export function SellerApplicationsAdmin() {
                       </TableCell>
                       
                       <TableCell className="text-sm text-slate-600 dark:text-slate-300 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
-                        <div className="flex items-center justify-center gap-1">
-                          <Calendar className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-400" />
-                          {new Date(a.created_at).toLocaleDateString(
-                            isRTL ? "ar-SA" : "en-US",
-                            { year: "numeric", month: "short", day: "numeric" }
-                          )}
-                        </div>
-                      </TableCell>
+  <div className="flex flex-col items-center justify-center gap-0.5">
+    {/* التاريخ */}
+    <div className="flex items-center gap-1">
+      <Calendar className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-400" />
+      <span className="text-xs">
+        {new Date(a.created_at).toLocaleDateString(
+          isRTL ? "ar-SA" : "en-US",
+          { year: "numeric", month: "short", day: "numeric" }
+        )}
+      </span>
+    </div>
+    {/* ✅ الوقت: الساعة:الدقيقة:الثانية */}
+    <div className="flex items-center gap-1 text-[10px] text-[#d81b60] dark:text-pink-400 font-mono">
+      <Clock className="h-3 w-3" />
+      {new Date(a.created_at).toLocaleTimeString(
+        isRTL ? "ar-SA" : "en-US",
+        { 
+          hour: "2-digit", 
+          minute: "2-digit", 
+          second: "2-digit",
+          hour12: true 
+        }
+      )}
+    </div>
+  </div>
+</TableCell>
                       
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1.5 flex-wrap">

@@ -488,26 +488,30 @@ export const ProductsPage = React.memo(function ProductsPage() {
       await refetchMyListings();
 
       if (!isEditing) {
-        getUserDisplayName(app.user!.id).then(async (userName) => {
-          const { data: existingApp } = await supabase
-            .from("seller_applications")
-            .select("id, status")
-            .eq("user_id", app.user!.id)
-            .eq("status", "pending")
-            .limit(1)
-            .maybeSingle();
+  getUserDisplayName(app.user!.id).then(async (userName) => {
+    // ✅ التحقق فقط من وجود طلب "فتح متجر" pending
+    // إذا لم تتم الموافقة على المتجر بعد → لا يُنشأ طلب منتج
+    const { data: existingStoreApp } = await supabase
+      .from("seller_applications")
+      .select("id, status")
+      .eq("user_id", app.user!.id)
+      .eq("status", "pending")
+      .eq("application_type", "store")
+      .limit(1)
+      .maybeSingle();
 
-          if (!existingApp) {
-            await supabase.from("seller_applications").insert({
-              user_id: app.user!.id,
-              store_name: userName,
-              store_description: `طلب إضافة منتج: ${productTitle}`,
-              application_type: 'product',
-              status: 'pending',
-            });
-          }
-        }).catch(console.error);
-      }
+    if (!existingStoreApp) {
+      // ✅ يُنشئ طلب منتج دائماً (حتى لو كان هناك طلبات منتجات pending سابقة)
+      await supabase.from("seller_applications").insert({
+        user_id: app.user!.id,
+        store_name: userName,
+        store_description: `طلب إضافة منتج: ${productTitle}`,
+        application_type: 'product',
+        status: 'pending',
+      });
+    }
+  }).catch(console.error);
+}
       
     } catch (e) {
       console.error("❌ Error in handleSaveProduct:", e);

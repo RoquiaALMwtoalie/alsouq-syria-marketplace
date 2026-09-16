@@ -24,7 +24,8 @@ import {
   ChevronLeft, ChevronRight, Package, Store, DollarSign,
   Eye, Sparkles, Layers, Zap, Crown, Star, Gem,
   TrendingUp, Award, Shield, Rocket, Tags,
-  Loader2, AlertTriangle, X, Send, MessageCircle
+  Loader2, AlertTriangle, X, Send, MessageCircle,
+  Calendar, CalendarClock
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import * as fileSaver from 'file-saver';
@@ -271,28 +272,59 @@ export function AdminListings() {
     }
   }, [setFeatured, refetch, isRTL]);
 
+  // ✅ ===== دالة مساعدة لتنسيق التاريخ الكامل =====
+  const formatFullDateTime = useCallback((dateString: string) => {
+    if (!dateString) return { date: '—', time: '—' };
+    const date = new Date(dateString);
+    
+    const dateStr = date.toLocaleDateString(
+      isRTL ? "ar-SA" : "en-US",
+      { 
+        year: "numeric", 
+        month: "short", 
+        day: "numeric" 
+      }
+    );
+    
+    const timeStr = date.toLocaleTimeString(
+      isRTL ? "ar-SA" : "en-US",
+      { 
+        hour: "2-digit", 
+        minute: "2-digit", 
+        second: "2-digit",
+        hour12: true 
+      }
+    );
+    
+    return { date: dateStr, time: timeStr };
+  }, [isRTL]);
+
   // ✅ ===== تصدير إلى Excel =====
   const exportToExcel = useCallback(() => {
-    const exportData = filteredRows.map((r: any) => ({
-      'اسم المنتج': isRTL ? r.title_ar : (r.title_en || r.title_ar),
-      'المتجر': r.profiles?.store_name || r.profiles?.full_name || '—',
-      'السعر': `${r.price} ${r.currency}`,
-      'التصنيف': r.categories?.[isRTL ? "name_ar" : "name_en"] || '—',
-      'الحالة': r.status === 'pending' ? 'قيد المراجعة' : r.status === 'published' ? 'منشور' : 'مؤرشف',
-      'رائج': r.is_featured ? 'نعم' : 'لا',
-      'سبب الرفض': r.rejection_reason || '—',
-      'تاريخ الإضافة': new Date(r.created_at).toLocaleDateString('ar-SA'),
-    }));
+    const exportData = filteredRows.map((r: any) => {
+      const { date, time } = formatFullDateTime(r.created_at);
+      return {
+        'اسم المنتج': isRTL ? r.title_ar : (r.title_en || r.title_ar),
+        'المتجر': r.profiles?.store_name || r.profiles?.full_name || '—',
+        'السعر': `${r.price} ${r.currency}`,
+        'التصنيف': r.categories?.[isRTL ? "name_ar" : "name_en"] || '—',
+        'الحالة': r.status === 'pending' ? 'قيد المراجعة' : r.status === 'published' ? 'منشور' : 'مؤرشف',
+        'رائج': r.is_featured ? 'نعم' : 'لا',
+        'سبب الرفض': r.rejection_reason || '—',
+        'تاريخ الإضافة': date,
+        'وقت الإضافة': time,
+      };
+    });
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'المنتجات');
-    ws['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 12 }, { wch: 25 }, { wch: 20 }];
+    ws['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 12 }, { wch: 25 }, { wch: 20 }, { wch: 18 }];
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
     saveAs(blob, `المنتجات_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.xlsx`);
     toast.success(isRTL ? "✅ تم تصدير البيانات إلى Excel" : "✅ Data exported to Excel");
-  }, [filteredRows, isRTL]);
+  }, [filteredRows, isRTL, formatFullDateTime]);
 
   // ✅ ===== تصدير إلى Word =====
   const exportToWord = useCallback(() => {
@@ -315,10 +347,12 @@ export function AdminListings() {
         .status-archived { color: #3a8a82; font-weight: bold; }
         .footer { margin-top: 20px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
         .badge-featured { background: #f9a8d4; color: #2a655f; padding: 2px 10px; border-radius: 20px; font-size: 11px; }
+        .date-cell { font-size: 11px; }
+        .time-cell { font-size: 10px; color: #d81b60; font-family: monospace; }
       </style></head>
       <body>
         <h1>📊 تقرير المنتجات</h1>
-        <p style="text-align: center; color: #64748b;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</p>
+        <p style="text-align: center; color: #64748b;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')} - ${new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</p>
         <div class="stats-grid">
           <div class="stat-card"><div class="value">${stats.total}</div><div class="label">إجمالي المنتجات</div></div>
           <div class="stat-card"><div class="value">${stats.pending}</div><div class="label">قيد المراجعة</div></div>
@@ -326,11 +360,12 @@ export function AdminListings() {
           <div class="stat-card"><div class="value">${stats.archived}</div><div class="label">مؤرشف</div></div>
           <div class="stat-card"><div class="value">${stats.featured}</div><div class="label">رائج</div></div>
         </div>
-        <table><thead><tr><th>#</th><th>اسم المنتج</th><th>المتجر</th><th>السعر</th><th>الحالة</th><th>رائج</th><th>سبب الرفض</th></tr></thead><tbody>
+        <table><thead><tr><th>#</th><th>اسم المنتج</th><th>المتجر</th><th>السعر</th><th>الحالة</th><th>رائج</th><th>سبب الرفض</th><th>تاريخ الإضافة</th><th>وقت الإضافة</th></tr></thead><tbody>
     `;
     filteredRows.forEach((r: any, index: number) => {
       const statusClass = r.status === 'pending' ? 'status-pending' : r.status === 'published' ? 'status-published' : 'status-archived';
       const statusText = r.status === 'pending' ? 'قيد المراجعة' : r.status === 'published' ? 'منشور' : 'مؤرشف';
+      const { date, time } = formatFullDateTime(r.created_at);
       htmlContent += `
         <tr>
           <td>${index + 1}</td>
@@ -340,6 +375,8 @@ export function AdminListings() {
           <td class="${statusClass}">${statusText}</td>
           <td>${r.is_featured ? '<span class="badge-featured">★ رائج</span>' : '—'}</td>
           <td>${r.rejection_reason || '—'}</td>
+          <td class="date-cell">${date}</td>
+          <td class="time-cell">${time}</td>
         </tr>
       `;
     });
@@ -351,7 +388,7 @@ export function AdminListings() {
     const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
     saveAs(blob, `المنتجات_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.doc`);
     toast.success(isRTL ? "✅ تم تصدير البيانات إلى Word" : "✅ Data exported to Word");
-  }, [filteredRows, stats, isRTL]);
+  }, [filteredRows, stats, isRTL, formatFullDateTime]);
 
   // ✅ ===== دالة مساعدة لجلب اسم المتجر =====
   const getStoreName = useCallback((product: any) => {
@@ -603,6 +640,13 @@ export function AdminListings() {
                     {isRTL ? "الحالة" : "Status"}
                   </div>
                 </TableHead>
+                {/* ✅ عمود التاريخ والوقت الجديد */}
+                <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[150px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center justify-center gap-2">
+                    <CalendarClock className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                    {isRTL ? "تاريخ ووقت الطلب" : "Date & Time"}
+                  </div>
+                </TableHead>
                 <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[340px]">
                   <div className="flex items-center justify-center gap-2">
                     <Zap className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300 animate-pulse" />
@@ -614,7 +658,7 @@ export function AdminListings() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12">
+                  <TableCell colSpan={6} className="text-center py-12">
                     <div className="flex items-center justify-center gap-3">
                       <Loader2 className="h-6 w-6 animate-spin text-[#2a655f]" />
                       <span className="text-slate-500">{isRTL ? "جار التحميل..." : "Loading..."}</span>
@@ -624,7 +668,7 @@ export function AdminListings() {
               )}
               {!isLoading && paginatedRows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12">
+                  <TableCell colSpan={6} className="text-center py-12">
                     <div className="flex flex-col items-center gap-3">
                       <div className="h-16 w-16 rounded-full bg-[#2a655f]/10 flex items-center justify-center animate-bounce-slow">
                         <Package className="h-8 w-8 text-[#2a655f]/40" />
@@ -646,6 +690,7 @@ export function AdminListings() {
                 const isFeatured = r.is_featured === true;
                 const isProcessing = setStatusMut.isPending;
                 const hasRejectionReason = r.rejection_reason && r.rejection_reason.trim() !== "";
+                const { date, time } = formatFullDateTime(r.created_at);
                 
                 return (
                   <TableRow
@@ -735,6 +780,22 @@ export function AdminListings() {
                            (isRTL ? "مؤرشف" : "Archived")}
                         </span>
                       </Badge>
+                    </TableCell>
+                    
+                    {/* ✅ عمود التاريخ والوقت الكامل (ساعة:دقيقة:ثانية) */}
+                    <TableCell className="text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        {/* التاريخ */}
+                        <div className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                          <Calendar className="h-3 w-3 text-[#2a655f] dark:text-slate-400" />
+                          <span>{date}</span>
+                        </div>
+                        {/* الوقت: ساعة:دقيقة:ثانية */}
+                        <div className="flex items-center gap-1 text-[10px] font-mono text-[#d81b60] dark:text-pink-400 bg-[#d81b60]/5 dark:bg-pink-500/10 px-2 py-0.5 rounded-full border border-[#d81b60]/20 dark:border-pink-500/20">
+                          <Clock className="h-2.5 w-2.5" />
+                          <span>{time}</span>
+                        </div>
+                      </div>
                     </TableCell>
                     
                     {/* ✅ عمود الإجراءات - كل الأزرار رمادية مع هوفر رمادي فاتح */}
