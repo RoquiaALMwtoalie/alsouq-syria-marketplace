@@ -1,5 +1,5 @@
 // src/components/VoiceSearch.tsx
-// 🎤 مكون البحث الصوتي - نسخة محسنة مع زر إغلاق Dropdown وتجاوب كامل وإيقاف تلقائي عند السكوت
+// 🎤 مكون البحث الصوتي - نسخة احترافية متجاوبة + إيقاف تلقائي عند السكوت
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Mic, MicOff, X, Loader2, RefreshCw, Volume2 } from "lucide-react";
@@ -40,12 +40,19 @@ export function VoiceSearch({
   const [permissionStatus, setPermissionStatus] = useState<"prompt" | "granted" | "denied">("prompt");
   const [searchResponse, setSearchResponse] = useState<any>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  
+
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null); // مؤقت السكوت الاحترافي
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
+  const accumulatedTranscriptRef = useRef<string>("");
   const isArabic = lang === 'ar-SA';
+
+  // ============================================================
+  // ⏱️ إعدادات السكوت (Silence Detection)
+  // ============================================================
+  const SILENCE_TIMEOUT_MS = 1500; // 1.5 ثانية سكوت → إيقاف تلقائي
+  const MAX_LISTENING_MS = 15000;  // 15 ثانية كحد أقصى
 
   // ✅ حجم الزر
   const sizeClasses = {
@@ -66,7 +73,6 @@ export function VoiceSearch({
       console.warn("⚠️ المتصفح لا يدعم البحث الصوتي");
     }
     
-    // ✅ تهيئة Speech Synthesis
     if ('speechSynthesis' in window) {
       synthRef.current = window.speechSynthesis;
     }
@@ -125,6 +131,7 @@ export function VoiceSearch({
       
     } catch (error: any) {
       console.error("❌ [Permission] Microphone permission error:", error);
+      
       setError(null);
       
       if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
@@ -147,14 +154,55 @@ export function VoiceSearch({
   }, []);
 
   // ============================================================
+  // 🔇 مسح مؤقت السكوت
+  // ============================================================
+  
+  const clearSilenceTimeout = useCallback(() => {
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+  }, []);
+
+  // ============================================================
+  // 🔇 إعادة ضبط مؤقت السكوت (عند كل كلمة جديدة)
+  // ============================================================
+  
+  const resetSilenceTimeout = useCallback((recognition: any) => {
+    clearSilenceTimeout();
+    
+    silenceTimeoutRef.current = setTimeout(() => {
+      console.log('🤫 [VoiceSearch] Silence detected - stopping recognition');
+      
+      const finalText = accumulatedTranscriptRef.current.trim();
+      
+      if (finalText) {
+        console.log('📝 [VoiceSearch] Final text from silence:', finalText);
+      }
+      
+      try {
+        recognition.stop();
+      } catch (e) {
+        console.warn('⚠️ Error stopping recognition:', e);
+      }
+    }, SILENCE_TIMEOUT_MS);
+  }, [clearSilenceTimeout, SILENCE_TIMEOUT_MS]);
+
+  // ============================================================
   // 🔍 معالجة النتيجة الصوتية
   // ============================================================
   
   const handleVoiceResult = useCallback(async (text: string) => {
+    if (!text.trim()) {
+      console.log('⏭️ [VoiceSearch] Empty text, skipping');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       const response = await processVoiceSearch(text, lang === 'ar-SA' ? 'ar' : 'en');
+      
       console.log('🎯 [VoiceSearch] Response:', response);
       
       setSearchResponse(response);
@@ -166,10 +214,16 @@ export function VoiceSearch({
       if (response.results.length > 0) {
         const firstResult = response.results[0];
         onResult(firstResult.title, response.entities);
-        toast.success(`🔍 ${response.totalCount} نتيجة لـ "${text}"`, { duration: 3000 });
+        
+        toast.success(
+          `🔍 ${response.totalCount} نتيجة لـ "${text}"`,
+          { duration: 3000 }
+        );
+        
       } else if (response.suggestions && response.suggestions.length > 0) {
         toast.info(response.suggestions[0], { duration: 5000 });
         onResult(text, response.entities);
+        
       } else {
         toast.warning(`😕 لم أجد نتائج لـ "${text}"`, { duration: 3000 });
         onResult(text, response.entities);
@@ -190,7 +244,7 @@ export function VoiceSearch({
   }, [lang, onResult, onSearchResponse, enableTTS, speakText]);
 
   // ============================================================
-  // 🎙️ إنشاء كائن التعرف الصوتي (مع ميزة إيقاف السكوت التلقائي الاحترافي)
+  // 🎙️ إنشاء كائن التعرف الصوتي
   // ============================================================
   
   const createRecognition = useCallback(() => {
@@ -199,14 +253,15 @@ export function VoiceSearch({
 
     const recognition = new SpeechRecognition();
     recognition.lang = lang;
-    recognition.continuous = true; // تفعيل الوضع المستمر لالتقاط الجمل بالكامل
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 3;
+    recognition.continuous = true;        // ✅ استمر بالاستماع
+    recognition.interimResults = true;    // ✅ نتائج مؤقتة
+    recognition.maxAlternatives = 1;
 
+    // ✅ كلمات نهاية اختيارية (للسرعة)
     const END_PHRASES = [
       'خلصت', 'انتهيت', 'هذا كل شيء', 'هذا كلو', 'خلص',
       'thank you', 'that is all', 'done', 'finished',
-      'enough', 'that\'s it', 'ok'
+      'enough', "that's it"
     ];
 
     const checkForEndPhrase = (text: string): boolean => {
@@ -219,62 +274,65 @@ export function VoiceSearch({
       return false;
     };
 
+    recognition.onstart = () => {
+      console.log('🎤 [VoiceSearch] Recognition started');
+      accumulatedTranscriptRef.current = "";
+    };
+
     recognition.onresult = async (event: any) => {
       let finalTranscript = "";
       let interimTranscript = "";
-      let bestConfidence = 0;
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
-        const confidence = event.results[i][0].confidence;
         
         if (event.results[i].isFinal) {
-          if (confidence > bestConfidence) {
-            finalTranscript = transcript;
-            bestConfidence = confidence;
-          }
+          finalTranscript += transcript + " ";
         } else {
           interimTranscript += transcript;
           
           if (checkForEndPhrase(transcript)) {
             console.log('🛑 [VoiceSearch] End phrase detected:', transcript);
-            recognition.stop();
+            clearSilenceTimeout();
+            
+            try {
+              recognition.stop();
+            } catch (e) {
+              console.warn('⚠️ Error stopping:', e);
+            }
             return;
           }
         }
       }
 
-      // ⏱️ إعادة ضبط مؤقت السكوت (Silence Detection) كلما تكلم المستخدم كلمة جديدة
-      if (silenceTimerRef.current) {
-        clearTimeout(silenceTimerRef.current);
-      }
-
-      // إذا توقف المستخدم عن التحدث لمدة 1.5 ثانية (1500 ميلي ثانية)، يتم إيقاف التسجيل وبدء البحث تلقائياً كالنظم الاحترافية
-      silenceTimerRef.current = setTimeout(() => {
-        console.log('⏱️ [VoiceSearch] User stopped speaking (Silence detected). Stopping recognition...');
-        try {
-          recognition.stop();
-        } catch (e) {
-          console.error(e);
-        }
-      }, 1500);
-
+      // ✅ تراكم النص النهائي
       if (finalTranscript) {
-        setTranscript(finalTranscript);
-        setInterimTranscript("");
-        setIsListening(false);
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-        await handleVoiceResult(finalTranscript);
+        accumulatedTranscriptRef.current += finalTranscript;
       }
 
+      // ✅ تحديث العرض
+      setTranscript(accumulatedTranscriptRef.current.trim());
+      
       if (interimTranscript) {
         setInterimTranscript(interimTranscript);
+      } else {
+        setInterimTranscript("");
+      }
+
+      // ✅ ✅ ✅ إعادة ضبط مؤقت السكوت
+      if (interimTranscript) {
+        // المستخدم لسا يتكلم → أعد ضبط المؤقت
+        resetSilenceTimeout(recognition);
+      } else if (finalTranscript && !interimTranscript) {
+        // انتهت كلمة كاملة → ابدأ مؤقت السكوت
+        resetSilenceTimeout(recognition);
       }
     };
 
     recognition.onerror = (event: any) => {
       console.error("❌ خطأ في التعرف الصوتي:", event.error);
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      
+      clearSilenceTimeout();
       
       if (event.error === "not-allowed") {
         setError("الرجاء السماح باستخدام الميكروفون");
@@ -285,6 +343,8 @@ export function VoiceSearch({
       } else if (event.error === "audio-capture") {
         setError("تعذر الوصول إلى الميكروفون");
         toast.error("❌ تعذر الوصول إلى الميكروفون");
+      } else if (event.error === "aborted") {
+        console.log('ℹ️ [VoiceSearch] Recognition aborted');
       } else {
         setError(`حدث خطأ: ${event.error}`);
         toast.error(`❌ حدث خطأ: ${event.error}`);
@@ -294,18 +354,36 @@ export function VoiceSearch({
       setIsLoading(false);
     };
 
-    recognition.onend = () => {
+    recognition.onend = async () => {
+      console.log('🔚 [VoiceSearch] Recognition ended');
+      
+      clearSilenceTimeout();
+      
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      
       setIsListening(false);
-      setIsLoading(false);
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       
       if (onListeningChange) {
         onListeningChange(false);
       }
+
+      // ✅ ✅ ✅ إرسال النص النهائي بعد الإيقاف
+      const finalText = accumulatedTranscriptRef.current.trim();
+      
+      if (finalText) {
+        console.log('✅ [VoiceSearch] Processing final text:', finalText);
+        accumulatedTranscriptRef.current = "";
+        await handleVoiceResult(finalText);
+      } else {
+        setIsLoading(false);
+      }
     };
 
     return recognition;
-  }, [lang, handleVoiceResult, onListeningChange]);
+  }, [lang, handleVoiceResult, onListeningChange, resetSilenceTimeout, clearSilenceTimeout]);
 
   // ============================================================
   // ⏯️ التحكم في الاستماع
@@ -332,9 +410,15 @@ export function VoiceSearch({
       return;
     }
 
-    if (!recognitionRef.current) {
-      recognitionRef.current = createRecognition();
+    // ✅ تنظيف أي recognition قديم
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+      recognitionRef.current = null;
     }
+
+    recognitionRef.current = createRecognition();
 
     if (!recognitionRef.current) {
       toast.error("❌ فشل إنشاء التعرف الصوتي");
@@ -347,6 +431,7 @@ export function VoiceSearch({
       setInterimTranscript("");
       setSearchResponse(null);
       setIsLoading(true);
+      accumulatedTranscriptRef.current = "";
       
       recognitionRef.current.start();
       setIsListening(true);
@@ -355,18 +440,21 @@ export function VoiceSearch({
         onListeningChange(true);
       }
 
+      // ✅ حد أقصى عام (احتياطي)
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      // الحد الأقصى لجلسة الاستماع الطويلة (12 ثانية كحماية)
       timeoutRef.current = setTimeout(() => {
-        if (isListening) {
-          recognitionRef.current?.stop();
-          setIsListening(false);
-          setIsLoading(false);
-          toast.info("⏳ انتهى وقت الاستماع، حاول مرة أخرى");
+        if (recognitionRef.current) {
+          console.log('⏰ [VoiceSearch] Max listening time reached');
+          try {
+            recognitionRef.current.stop();
+          } catch (e) {}
         }
-      }, 12000);
+      }, MAX_LISTENING_MS);
+
+      // ✅ ✅ ✅ ابدأ مؤقت السكوت فوراً
+      resetSilenceTimeout(recognitionRef.current);
 
     } catch (error) {
       console.error("❌ فشل بدء التعرف الصوتي:", error);
@@ -374,13 +462,18 @@ export function VoiceSearch({
       setIsLoading(false);
       toast.error("❌ فشل بدء التعرف الصوتي");
     }
-  }, [isSupported, requestMicrophonePermission, createRecognition, onListeningChange, isListening]);
+  }, [
+    isSupported, 
+    requestMicrophonePermission, 
+    createRecognition, 
+    onListeningChange,
+    resetSilenceTimeout,
+    MAX_LISTENING_MS
+  ]);
 
   const stopListening = useCallback(() => {
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
+    clearSilenceTimeout();
+    
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -390,7 +483,6 @@ export function VoiceSearch({
     }
     
     setIsListening(false);
-    setIsLoading(false);
     setInterimTranscript("");
     
     if (timeoutRef.current) {
@@ -401,15 +493,25 @@ export function VoiceSearch({
     if (onListeningChange) {
       onListeningChange(false);
     }
-  }, [onListeningChange]);
+  }, [onListeningChange, clearSilenceTimeout]);
 
   const closeDropdown = useCallback(() => {
+    clearSilenceTimeout();
+    
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+    }
+    
     setSearchResponse(null);
     setTranscript("");
     setInterimTranscript("");
     setIsListening(false);
+    setIsLoading(false);
     setError(null);
-  }, []);
+    accumulatedTranscriptRef.current = "";
+  }, [clearSilenceTimeout]);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
@@ -419,10 +521,15 @@ export function VoiceSearch({
     }
   }, [isListening, startListening, stopListening]);
 
+  // ✅ تنظيف عند إزالة المكون
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
@@ -436,6 +543,10 @@ export function VoiceSearch({
     };
   }, []);
 
+  // ============================================================
+  // 📱 عرض المكون
+  // ============================================================
+  
   if (!isSupported) {
     return (
       <Button
@@ -454,24 +565,26 @@ export function VoiceSearch({
     );
   }
 
+  const isDropdownOpen = showStatus && (isListening || isLoading || interimTranscript || transcript || searchResponse || error);
+
   return (
-    <div className="relative inline-block w-full sm:w-auto">
+    <div className="relative inline-block">
       {/* ✅ زر الميكروفون الرئيسي */}
       <Button
         variant={isListening ? "default" : "outline"}
         size="icon"
         onClick={toggleListening}
-        disabled={isLoading}
+        disabled={isLoading && !isListening}
         className={cn(
           "relative transition-all duration-300 group",
           sizeClasses[buttonSize],
           isListening && "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30 animate-pulse",
-          isLoading && "opacity-70 cursor-wait",
+          isLoading && !isListening && "opacity-70 cursor-wait",
           className
         )}
         title={isListening ? "إيقاف الاستماع" : "بدء البحث الصوتي"}
       >
-        {isLoading ? (
+        {isLoading && !isListening ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : isListening ? (
           <>
@@ -486,150 +599,183 @@ export function VoiceSearch({
         )}
       </Button>
 
-      {/* ✅ لوحة منبثقة (Dropdown) متجاوبة بالكامل مع جميع الشاشات (موبايل، تابلت، سطح مكتب) */}
-      {showStatus && (isListening || isLoading || interimTranscript || searchResponse || error) && (
-        <div className="absolute left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 top-full mt-2 w-[90vw] max-w-[340px] sm:w-[320px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-[#2a655f]/20 p-3 z-50 animate-in slide-in-from-top-2 duration-200">
-          
-          {/* رأس القائمة */}
-          <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#2a655f]/10">
-            <span className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82]">
-              {isArabic ? "🔍 نتائج البحث الصوتي" : "🔍 Voice Search Results"}
-            </span>
-            <button
-              onClick={closeDropdown}
-              className="p-1 rounded-lg hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition-all duration-200 text-slate-500 hover:text-red-500"
-              aria-label="Close dropdown"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+      {/* ✅ ✅ ✅ Dropdown متجاوب — عرض مختلف لكل شاشة */}
+      {isDropdownOpen && (
+        <>
+          {/* ✅ Overlay للموبايل (خلفية معتمة) */}
+          <div
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 sm:hidden"
+            onClick={closeDropdown}
+          />
 
-          {/* حالة الاستماع والمعالجة */}
-          <div className="flex items-center gap-3">
-            {isListening && (
-              <div className="flex items-center gap-0.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse delay-150" />
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse delay-300" />
-              </div>
+          {/* ✅ Dropdown */}
+          <div
+            className={cn(
+              "bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-[#2a655f]/20 z-50 animate-in slide-in-from-top-2 duration-200",
+              
+              // ✅ موبايل: fixed في وسط الشاشة
+              "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+              "w-[calc(100vw-2rem)] max-w-[400px]",
+              "max-h-[80vh] overflow-y-auto",
+              "p-4",
+              
+              // ✅ تابلت (sm): تحت الزر مباشرة
+              "sm:absolute sm:top-full sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-0",
+              "sm:mt-2 sm:w-[350px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[500px]",
+              
+              // ✅ ديسكوب (md+): عرض ثابت 380px
+              "md:w-[380px]"
             )}
+          >
             
-            {isLoading && (
-              <Loader2 className="h-4 w-4 animate-spin text-[#2a655f]" />
-            )}
-
-            <div className="flex-1 min-w-0">
-              {isListening ? (
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  🎤 {isArabic ? "تفضل، استمع إليك..." : "Listening..."}
-                </p>
-              ) : isLoading ? (
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  {isArabic ? "⏳ جاري المعالجة..." : "⏳ Processing..."}
-                </p>
-              ) : null}
-              
-              {interimTranscript && (
-                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5 break-words">
-                  {interimTranscript}
-                </p>
-              )}
-              
-              {transcript && !isListening && !isLoading && (
-                <p className="text-xs font-medium text-[#2a655f] line-clamp-2 mt-0.5 break-words">
-                  ✅ {transcript}
-                </p>
-              )}
-              
-              {searchResponse && searchResponse.totalCount > 0 && (
-                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  🔍 {searchResponse.totalCount} {isArabic ? 'نتيجة مطابقة' : 'results'}
-                </p>
-              )}
-            </div>
-
-            {isListening && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 rounded-full hover:bg-red-50 dark:hover:bg-red-950/20 shrink-0"
-                onClick={stopListening}
-                title="إيقاف"
+            {/* ✅ رأس Dropdown */}
+            <div className="flex items-center justify-between mb-3 pb-3 border-b border-[#2a655f]/10">
+              <span className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-2">
+                <Mic className="h-4 w-4" />
+                {isArabic ? "البحث الصوتي" : "Voice Search"}
+              </span>
+              <button
+                onClick={closeDropdown}
+                className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 text-slate-500 hover:text-red-500"
+                aria-label="Close"
               >
-                <X className="h-3.5 w-3.5 text-red-500" />
-              </Button>
-            )}
-          </div>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-          {/* عرض النتائج */}
-          {searchResponse && searchResponse.results.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
-              <p className="text-[10px] text-muted-foreground font-bold">
-                {isArabic ? '📋 النتائج:' : '📋 Results:'}
-              </p>
-              {searchResponse.results.slice(0, 3).map((result: any, index: number) => (
-                <div key={index} className="text-xs text-slate-700 dark:text-slate-300 flex items-center justify-between gap-1.5">
-                  <div className="flex items-center gap-1 min-w-0 flex-1">
-                    <span className="text-[10px] text-[#2a655f] shrink-0">•</span>
-                    <span className="truncate">{result.title}</span>
-                  </div>
-                  {result.price && (
-                    <span className="text-[10px] font-bold text-emerald-600 shrink-0">
-                      {result.price} SYP
-                    </span>
-                  )}
+            {/* ✅ حالة الاستماع */}
+            <div className="flex items-center gap-3 min-h-[40px]">
+              {isListening && (
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse delay-150" />
+                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse delay-300" />
                 </div>
-              ))}
-              {searchResponse.totalCount > 3 && (
-                <p className="text-[10px] text-muted-foreground">
-                  +{searchResponse.totalCount - 3} {isArabic ? 'أخرى' : 'more'}
-                </p>
               )}
-            </div>
-          )}
+              
+              {isLoading && !isListening && (
+                <Loader2 className="h-5 w-5 animate-spin text-[#2a655f] flex-shrink-0" />
+              )}
 
-          {/* اقتراحات */}
-          {searchResponse?.suggestions && searchResponse.suggestions.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <p className="text-[10px] text-amber-600 dark:text-amber-400 break-words">
-                {searchResponse.suggestions[0]}
-              </p>
-            </div>
-          )}
+              <div className="flex-1 min-w-0">
+                {isListening ? (
+                  <p className="text-sm font-bold text-red-600 dark:text-red-400">
+                    🎤 {isArabic ? "استمع..." : "Listening..."}
+                  </p>
+                ) : isLoading ? (
+                  <p className="text-sm font-bold text-[#2a655f]">
+                    {isArabic ? "⏳ جاري المعالجة..." : "⏳ Processing..."}
+                  </p>
+                ) : transcript ? (
+                  <p className="text-sm font-bold text-[#2a655f] line-clamp-2">
+                    ✅ {transcript}
+                  </p>
+                ) : null}
+                
+                {interimTranscript && isListening && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1 italic">
+                    "{interimTranscript}"
+                  </p>
+                )}
+              </div>
 
-          {/* أخطاء */}
-          {error && (
-            <div className="mt-1.5 pt-1.5 border-t border-red-100 dark:border-red-900/20">
-              <p className="text-xs text-red-500 break-words">⚠️ {error}</p>
-              {permissionStatus === "denied" && (
+              {isListening && (
                 <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    setError(null);
-                    const granted = await requestMicrophonePermission();
-                    if (granted) {
-                      startListening();
-                    }
-                  }}
-                  className="mt-1.5 text-xs h-7 px-3 rounded-lg border-red-200/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full hover:bg-red-50 dark:hover:bg-red-950/20 flex-shrink-0"
+                  onClick={stopListening}
+                  title="إيقاف"
                 >
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  {isArabic ? "إعادة المحاولة" : "Retry"}
+                  <X className="h-4 w-4 text-red-500" />
                 </Button>
               )}
             </div>
-          )}
 
-          {/* تلميحات */}
-          {isListening && (
-            <p className="text-[10px] text-muted-foreground mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-700/50">
-              {isArabic 
-                ? "💡 يتوقف التسجيل تلقائياً فور انتهائك من الكلام..." 
-                : "💡 Recording stops automatically when you finish speaking..."}
-            </p>
-          )}
-        </div>
+            {/* ✅ عدد النتائج */}
+            {searchResponse && searchResponse.totalCount > 0 && (
+              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  🔍 {searchResponse.totalCount} {isArabic ? 'نتيجة' : 'results'}
+                </p>
+              </div>
+            )}
+
+            {/* ✅ عرض أول 3 نتائج */}
+            {searchResponse && searchResponse.results.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                  {isArabic ? '📋 النتائج:' : '📋 Results:'}
+                </p>
+                {searchResponse.results.slice(0, 3).map((result: any, index: number) => (
+                  <div key={index} className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    <span className="text-[#2a655f] font-bold flex-shrink-0">•</span>
+                    <span className="truncate flex-1">{result.title}</span>
+                    {result.price && (
+                      <span className="text-[10px] font-bold text-emerald-600 flex-shrink-0">
+                        {result.price} SYP
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {searchResponse.totalCount > 3 && (
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    +{searchResponse.totalCount - 3} {isArabic ? 'أخرى' : 'more'}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* ✅ اقتراحات */}
+            {searchResponse?.suggestions && searchResponse.suggestions.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  💡 {searchResponse.suggestions[0]}
+                </p>
+              </div>
+            )}
+
+            {/* ✅ رسالة الخطأ */}
+            {error && (
+              <div className="mt-2 pt-2 border-t border-red-100 dark:border-red-900/20">
+                <p className="text-xs text-red-500 font-medium">⚠️ {error}</p>
+                {permissionStatus === "denied" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      setError(null);
+                      const granted = await requestMicrophonePermission();
+                      if (granted) {
+                        startListening();
+                      }
+                    }}
+                    className="mt-2 text-xs h-8 px-3 rounded-lg border-red-200/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 w-full"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    {isArabic ? "إعادة المحاولة" : "Retry"}
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* ✅ نصائح للمستخدم */}
+            {isListening && (
+              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  {isArabic 
+                    ? "💡 تحدث بوضوح. سأتوقف تلقائياً عند السكوت."
+                    : "💡 Speak clearly. I'll stop automatically when you pause."}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
+                  {isArabic
+                    ? "📝 مثال: 'جوال سامسونج تحت 1000' أو 'متاجر في دمشق'"
+                    : "📝 Example: 'Samsung phone under 1000' or 'Stores in Damascus'"}
+                </p>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
