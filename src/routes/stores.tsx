@@ -1,4 +1,4 @@
-// src/routes/stores.tsx - الكود المُصحّح بالكامل (زيتي + رمادي)
+// src/routes/stores.tsx - الكود المُصحّح بالكامل (نمط index.tsx - بطاقات مضغوطة)
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useEffect } from "react";
@@ -18,10 +18,158 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { OptimizedImage } from "@/components/OptimizedImage";
 
+// ============================================================
+// 🎨 ZOOQ BRAND COLORS
+// ============================================================
+const OLIVE = "#2a655f";
+const OLIVE_LIGHT = "#3a8a82";
+const OLIVE_DARK = "#1a4f4a";
+
+// ============================================================
+// 📐 GRID — نفس نمط index.tsx (عمودين على الموبايل)
+// ============================================================
+const GRID_STORES = "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 items-stretch";
+
 export const Route = createFileRoute("/stores")({
   component: StoresPage,
   head: () => ({ meta: [{ title: "جميع المتاجر — ذوق" }] }),
 });
+
+// ============================================================
+// 🏪 STORE CARD — نفس النمط من index.tsx
+// ============================================================
+function StoreCard({ 
+  store, 
+  delivery, 
+  onChat,
+  lang,
+  t,
+}: { 
+  store: any; 
+  delivery?: any;
+  onChat: (e: React.MouseEvent, storeId: string) => void;
+  lang: string;
+  t: (key: string) => string;
+}) {
+  const isRtl = lang === "ar";
+
+  const storeName = store.store_name || store.full_name || (isRtl ? "متجر مميز" : "Featured Store");
+  const coverUrl = store.store_cover_url;
+  const logoUrl = store.store_logo_url || store.avatar_url;
+  const rating = Number(store.avg_rating ?? 0).toFixed(1);
+  const productsCount = store.listing_count ?? 0;
+  const storeType = store.store_type || "online";
+  const allowsMessaging = store.allows_messaging !== false;
+
+  return (
+    <Link
+      to="/store/$id"
+      params={{ id: store.id }}
+      className="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 h-full relative"
+    >
+      {/* Cover مصغّر */}
+      <div className="relative h-[55px] sm:h-[70px] md:h-[80px] w-full overflow-hidden shrink-0">
+        {coverUrl ? (
+          <OptimizedImage
+            src={coverUrl}
+            alt={storeName}
+            width={400}
+            height={150}
+            quality={75}
+            objectFit="cover"
+            className="absolute inset-0 h-full w-full group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${OLIVE}, ${OLIVE_LIGHT})` }} />
+        )}
+
+        {/* Badge النوع */}
+        <div className="absolute top-1.5 start-1.5 z-10">
+          <Badge className="bg-black/50 backdrop-blur text-white border-0 text-[9px] px-1.5 py-0">
+            {storeType === "physical" ? "🏪" : "🌐"}
+          </Badge>
+        </div>
+
+        {/* زر المراسلة */}
+        {allowsMessaging && (
+          <button
+            onClick={(e) => onChat(e, store.id)}
+            className="absolute top-1.5 end-1.5 z-10 p-1.5 rounded-full bg-white/95 hover:bg-white shadow-md hover:shadow-lg transition-all hover:scale-110"
+            title={isRtl ? "مراسلة المتجر" : "Message store"}
+          >
+            <MessageCircle className="h-3 w-3 text-[#2a655f]" />
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-col items-center text-center px-2 pb-2.5 flex-1">
+        {/* Logo مصغّر */}
+        <div className="-mt-6 relative z-10">
+          <div
+            className="h-11 w-11 sm:h-12 sm:w-12 rounded-full bg-white p-0.5 shadow-md overflow-hidden grid place-items-center"
+            style={{ boxShadow: `0 0 0 2px white, 0 3px 8px rgba(15,23,42,0.12)` }}
+          >
+            {logoUrl ? (
+              <OptimizedImage
+                src={logoUrl}
+                alt={storeName}
+                width={60}
+                height={60}
+                quality={80}
+                objectFit="cover"
+                className="h-full w-full rounded-full"
+              />
+            ) : (
+              <div
+                className="h-full w-full rounded-full text-white font-black text-sm flex items-center justify-center"
+                style={{ backgroundColor: OLIVE }}
+              >
+                {storeName.charAt(0)?.toUpperCase() || <Store className="h-4 w-4" />}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* الاسم */}
+        <h3 className="mt-1.5 font-bold text-[11px] sm:text-xs text-slate-800 dark:text-slate-100 line-clamp-1">
+          {storeName}
+        </h3>
+
+        {/* التقييم + العدد */}
+        <div className="flex items-center gap-1.5 mt-0.5 text-[9px] sm:text-[10px] text-muted-foreground font-medium">
+          <span className="flex items-center gap-0.5">
+            <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
+            {rating}
+          </span>
+          <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/50" />
+          <span>{productsCount} {isRtl ? "منتج" : "products"}</span>
+        </div>
+
+        {/* سعر التوصيل */}
+        {delivery && (
+          <div className="mt-1 flex items-center justify-center gap-1 text-[9px] sm:text-[10px]">
+            <Truck className="h-2.5 w-2.5 text-[#2a655f]" />
+            {delivery.price === null ? (
+              <span className="text-slate-400">{isRtl ? "—" : "—"}</span>
+            ) : delivery.isFree ? (
+              <span className="text-[#2a655f] font-bold">{isRtl ? "مجاني" : "Free"}</span>
+            ) : (
+              <span className="text-[#2a655f] font-bold">{delivery.price} SYP</span>
+            )}
+          </div>
+        )}
+
+        {/* زر الزيارة */}
+        <span
+          className="mt-2 flex items-center justify-center w-full rounded-lg py-1.5 text-[10px] sm:text-[11px] font-bold text-white mt-auto"
+          style={{ backgroundColor: OLIVE }}
+        >
+          {isRtl ? "زيارة" : "Visit"}
+        </span>
+      </div>
+    </Link>
+  );
+}
 
 function StoresPage() {
   const app = useApp();
@@ -207,58 +355,27 @@ function StoresPage() {
     });
   };
 
-  // ✅ عرض سعر التوصيل - بألوان زيتية
-  const renderDeliveryPrice = (storeId: string) => {
-    const delivery = deliveryPrices[storeId];
-    if (!delivery) return null;
-    
-    if (delivery.price === null) {
-      return (
-        <span className="text-[10px] text-slate-500 dark:text-slate-400">
-          {app.lang === "ar" ? "غير متاح" : "N/A"}
-        </span>
-      );
-    }
-    
-    return (
-      <div className="flex items-center gap-1.5">
-        {delivery.isFree ? (
-          <Badge className="bg-[#2a655f]/20 text-[#2a655f] border-0 text-[9px] px-1.5 py-0 font-bold">
-            {app.lang === "ar" ? "✅ مجاني" : "✅ Free"}
-          </Badge>
-        ) : (
-          <span className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82]">
-            {delivery.price} SYP
-          </span>
-        )}
-        {!delivery.sameGovernorate && (
-          <span className="text-[8px] text-amber-500">⚠️</span>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      <div className="mx-auto max-w-7xl px-4 py-8">
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 py-6 sm:py-8">
         
         {/* ===== HEADER ===== */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
             <Link 
               to="/" 
-              className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-[#2a655f] transition-colors mb-2"
+              className="inline-flex items-center gap-2 text-xs sm:text-sm text-slate-500 hover:text-[#2a655f] transition-colors mb-2"
             >
-              <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+              <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 rtl:rotate-180" />
               {app.lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
             </Link>
-            <h1 className="text-3xl font-bold flex items-center gap-3 text-slate-900 dark:text-white">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2 sm:gap-3 text-slate-900 dark:text-white">
               <span>{app.lang === "ar" ? "🏪 جميع المتاجر" : "🏪 All Stores"}</span>
-              <Badge className="bg-[#2a655f]/15 text-[#2a655f] dark:bg-[#2a655f]/30 dark:text-[#3a8a82] border-0 text-sm px-3 py-1 font-bold">
+              <Badge className="bg-[#2a655f]/15 text-[#2a655f] dark:bg-[#2a655f]/30 dark:text-[#3a8a82] border-0 text-xs sm:text-sm px-2 sm:px-3 py-0.5 sm:py-1 font-bold">
                 {searchStats.filtered}
               </Badge>
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
               {searchQuery.trim() ? (
                 app.lang === "ar" 
                   ? `نتائج البحث عن "${searchQuery}" (${searchStats.filtered} متجر)` 
@@ -280,7 +397,7 @@ function StoresPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={app.lang === "ar" ? "🔍 ابحث عن متجر..." : "🔍 Search for store..."}
-              className="ps-12 h-14 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-[#2a655f] focus:ring-4 focus:ring-[#2a655f]/10 transition-all text-lg"
+              className="ps-12 h-12 sm:h-14 text-base sm:text-lg rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-[#2a655f] focus:ring-4 focus:ring-[#2a655f]/10 transition-all"
               autoFocus
             />
             {searchQuery && (
@@ -311,15 +428,15 @@ function StoresPage() {
         </div>
 
         {/* ===== FILTERS ===== */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-[#2a655f]" />
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
               {app.lang === "ar" ? "تصفية:" : "Filter:"}
             </span>
           </div>
           
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {[
               { value: "all", label: app.lang === "ar" ? "الكل" : "All" },
               { value: "online", label: app.lang === "ar" ? "🌐 اونلاين" : "🌐 Online" },
@@ -329,7 +446,7 @@ function StoresPage() {
                 key={f.value}
                 onClick={() => setFilterType(f.value as any)}
                 className={cn(
-                  "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+                  "px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all",
                   filterType === f.value
                     ? "bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white shadow-md shadow-[#2a655f]/25"
                     : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-[#2a655f]"
@@ -343,7 +460,7 @@ function StoresPage() {
 
         {/* ===== SUGGESTIONS ===== */}
         {suggestions.length > 0 && (
-          <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700">
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
               {app.lang === "ar" ? "💡 اقتراحات:" : "💡 Suggestions:"}
             </p>
@@ -365,18 +482,26 @@ function StoresPage() {
 
         {/* ===== STORES GRID ===== */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className={GRID_STORES}>
             {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-72 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+              <div 
+                key={i} 
+                className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2 animate-pulse h-full"
+              >
+                <div className="h-[55px] sm:h-[70px] rounded-md bg-slate-200 dark:bg-slate-700" />
+                <div className="h-11 w-11 rounded-full bg-slate-200 dark:bg-slate-700 mx-auto -mt-6 border-4 border-white dark:border-slate-900" />
+                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded mt-2 w-3/4 mx-auto" />
+                <div className="h-2.5 bg-slate-200 dark:bg-slate-700 rounded mt-1.5 w-1/2 mx-auto" />
+              </div>
             ))}
           </div>
         ) : filteredStores.length === 0 ? (
-          <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700">
-            <div className="text-7xl mb-4">🔍</div>
-            <h3 className="text-2xl font-semibold text-slate-900 dark:text-white">
+          <div className="text-center py-16 sm:py-20 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700">
+            <div className="text-5xl sm:text-7xl mb-4">🔍</div>
+            <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white">
               {app.lang === "ar" ? "لا توجد نتائج" : "No results found"}
             </h3>
-            <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto">
+            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto px-4">
               {app.lang === "ar" 
                 ? `لم نعثر على متاجر تطابق "${searchQuery}"` 
                 : `No stores match "${searchQuery}"`}
@@ -393,129 +518,22 @@ function StoresPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredStores.map((s: any) => {
-              const allowsMessaging = s.allows_messaging !== false;
-              const storeType = s.store_type || "online";
-              const address = s.store_address || "";
-              const opensAt = s.store_opens_at || "";
-              const closesAt = s.store_closes_at || "";
-              const offDays = s.weekly_off_days || [];
-              const delivery = deliveryPrices[s.id];
-              
-              return (
-                <Link
-                  key={s.id}
-                  to="/store/$id"
-                  params={{ id: s.id }}
-                  className="group rounded-2xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700 hover:border-[#2a655f]/40 hover:shadow-xl transition-all hover:-translate-y-1"
-                >
-                  <div className="relative h-28 bg-gradient-to-br from-[#2a655f] to-[#1a4f4a]">
-                    {s.store_cover_url && (
-                      <OptimizedImage
-                        src={s.store_cover_url}
-                        alt={s.store_name || "Store"}
-                        width={400}
-                        height={150}
-                        quality={80}
-                        objectFit="cover"
-                        className="absolute inset-0 h-full w-full"
-                      />
-                    )}
-                    
-                    <div className="absolute top-2 end-2 flex gap-1">
-                      <Badge className="bg-black/50 backdrop-blur text-white border-0 text-[10px]">
-                        {storeType === "physical" ? "🏪" : "🌐"}
-                      </Badge>
-                    </div>
-
-                    {allowsMessaging && (
-                      <button
-                        onClick={(e) => goToChat(e, s.id)}
-                        className="absolute bottom-2 end-2 p-2.5 rounded-full bg-white/95 hover:bg-white shadow-lg hover:shadow-xl transition-all hover:scale-110 group/chat"
-                        title={app.lang === "ar" ? "مراسلة المتجر" : "Message store"}
-                      >
-                        <MessageCircle className="h-4 w-4 text-[#2a655f] group-hover/chat:text-[#1a4f4a]" />
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div className="p-4 -mt-8 relative">
-                    <div className="h-14 w-14 rounded-xl bg-white dark:bg-slate-900 border-4 border-white dark:border-slate-900 shadow-md overflow-hidden grid place-items-center text-[#2a655f] font-black text-xl">
-                      {s.store_logo_url || s.avatar_url ? (
-                        <OptimizedImage
-                          src={s.store_logo_url || s.avatar_url}
-                          alt={s.store_name || "Store"}
-                          width={60}
-                          height={60}
-                          quality={85}
-                          objectFit="cover"
-                          className="h-full w-full"
-                        />
-                      ) : (
-                        (s.store_name || s.full_name || "?")[0]
-                      )}
-                    </div>
-                    
-                    <div className="mt-2 font-bold line-clamp-1 text-lg group-hover:text-[#2a655f] transition text-slate-900 dark:text-white">
-                      {s.store_name || s.full_name || (app.lang === "ar" ? "متجر" : "Store")}
-                    </div>
-                    
-                    <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 min-h-8">
-                      {s.store_description || (app.lang === "ar" ? "متجر على ذوق" : "A store on Zooq")}
-                    </div>
-                    
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
-                      {storeType === "physical" && address && (
-                        <span className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                          <MapPin className="h-2.5 w-2.5 text-[#2a655f]" />
-                          <span className="truncate max-w-[80px]">{address}</span>
-                        </span>
-                      )}
-                      
-                      {(opensAt || closesAt) && (
-                        <span className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                          <Clock className="h-2.5 w-2.5 text-[#2a655f]" />
-                          {opensAt.slice(0,5)}-{closesAt.slice(0,5)}
-                        </span>
-                      )}
-                      
-                      {offDays.length > 0 && (
-                        <span className="flex items-center gap-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">
-                          <span>📅</span>
-                          {offDays.length > 2 
-                            ? `${offDays.length} ${app.lang === "ar" ? "أيام" : "days"}` 
-                            : offDays.map((d: string) => d.slice(0,3)).join(',')}
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex items-center gap-3 text-xs">
-                        <span className="flex items-center gap-1 text-[#2a655f] font-bold">
-                          <Star className="h-3.5 w-3.5 fill-current" />
-                          {Number(s.avg_rating ?? 0).toFixed(1)}
-                        </span>
-                        <span className="text-slate-500 dark:text-slate-400">
-                          <Package className="h-3.5 w-3.5 inline mr-1" />
-                          {s.listing_count ?? 0} {t("products_tab")}
-                        </span>
-                      </div>
-                      
-                      {delivery && (
-                        <div className="flex items-center gap-1 bg-[#2a655f]/10 px-2 py-0.5 rounded-full">
-                          <Truck className="h-3 w-3 text-[#2a655f]" />
-                          {renderDeliveryPrice(s.id)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+          <div className={GRID_STORES}>
+            {filteredStores.map((s: any) => (
+              <StoreCard
+                key={s.id}
+                store={s}
+                delivery={deliveryPrices[s.id]}
+                onChat={goToChat}
+                lang={app.lang}
+                t={t}
+              />
+            ))}
           </div>
         )}
       </div>
     </div>
   );
 }
+
+export default StoresPage;

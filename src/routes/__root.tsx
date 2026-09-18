@@ -1303,10 +1303,15 @@ function RootContent({
   const cacheChannelName = useRef<string | null>(null);
 
   const hideFooter = useMemo(() => {
-    const matches = router.state.matches;
-    const currentMatch = matches[matches.length - 1];
-    return (currentMatch?.context as any)?.hideFooter || false;
-  }, [router.state.matches]);
+  // ✅ إخفاء الفوتر في صفحة السلة (cart) إذا كانت السلة غير فارغة
+  if (location?.pathname === "/cart") {
+    return true;
+  }
+  
+  const matches = router.state.matches;
+  const currentMatch = matches[matches.length - 1];
+  return (currentMatch?.context as any)?.hideFooter || false;
+}, [router.state.matches, location?.pathname]);
 
   // ============================================================
   // 🔔 Push Notifications

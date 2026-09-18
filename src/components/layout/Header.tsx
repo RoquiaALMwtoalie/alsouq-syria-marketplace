@@ -289,16 +289,16 @@ function MegaMenu({ categories }: { categories: any[] }) {
         )}
       </div>
 
-      {/* 📱 Mobile */}
-      <div className="block md:hidden">
-        <button
-          onClick={() => setMobileSheetOpen(true)}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-xl font-medium text-sm hover:bg-pink-500/10 transition-all duration-300 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 group shadow-sm hover:shadow-md hover:shadow-pink-500/20 cursor-pointer shrink-0"
-        >
-          <LayoutGrid className="h-4 w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
-          <span className="inline font-semibold text-[#2a655f] dark:text-[#3a8a82] text-xs">{t("categories")}</span>
-          <ChevronDown className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#3a8a82]" />
-        </button>
+    {/* 📱 Mobile — تم تصغير زر الأقسام */}
+<div className="block md:hidden">
+  <button
+    onClick={() => setMobileSheetOpen(true)}
+    className="flex items-center gap-0.5 min-[360px]:gap-1 sm:gap-1.5 px-1 min-[360px]:px-1.5 sm:px-2 py-1.5 min-[360px]:py-1.5 sm:py-2 rounded-lg min-[360px]:rounded-xl font-medium text-sm hover:bg-pink-500/10 transition-all duration-300 bg-gradient-to-r from-[#2a655f]/10 to-[#3a8a82]/10 dark:from-[#2a655f]/30 dark:to-[#3a8a82]/20 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 group shadow-sm hover:shadow-md hover:shadow-pink-500/20 cursor-pointer shrink-0"
+  >
+    <LayoutGrid className="h-3 w-3 min-[360px]:h-3.5 min-[360px]:w-3.5 sm:h-4 sm:w-4 text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
+    <span className="inline font-semibold text-[#2a655f] dark:text-[#3a8a82] text-[9px] min-[360px]:text-[10px] sm:text-[11px]">{t("categories")}</span>
+    <ChevronDown className="h-2.5 w-2.5 min-[360px]:h-3 min-[360px]:w-3 text-[#2a655f] dark:text-[#3a8a82]" />
+  </button>
 
         <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
           <SheetContent 
@@ -867,6 +867,7 @@ export const Header = memo(function Header() {
                 )}
               </Link>
 
+              {/* ✅ السلة — داخل الشيت للشاشات الصغيرة جداً */}
               <Link 
                 to="/cart"
                 onClick={() => setMobileMenuOpen(false)}
@@ -892,6 +893,37 @@ export const Header = memo(function Header() {
                   </Badge>
                 )}
               </Link>
+
+              {/* ✅ الإشعارات — داخل الشيت للشاشات الصغيرة جداً */}
+              {app.user && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setNotificationsOpen(true);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/20 transition-all duration-300 group"
+                >
+                  <div className="h-11 w-11 rounded-2xl bg-[#2a655f]/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                    <Bell className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
+                  </div>
+                  <div className="flex-1 min-w-0 text-start">
+                    <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                      {app.lang === "ar" ? "الإشعارات" : "Notifications"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-medium truncate">
+                      {unreadNotificationsCount > 0 
+                        ? (app.lang === "ar" ? `${unreadNotificationsCount} غير مقروء` : `${unreadNotificationsCount} unread`)
+                        : (app.lang === "ar" ? "لا توجد جديدة" : "No new")
+                      }
+                    </p>
+                  </div>
+                  {unreadNotificationsCount > 0 && (
+                    <Badge className="bg-[#2a655f] text-white border-0 text-[10px]">
+                      {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                    </Badge>
+                  )}
+                </button>
+              )}
 
               <Link 
                 to="/messages"
@@ -1135,23 +1167,24 @@ export const Header = memo(function Header() {
 
                 <div className="relative flex items-center justify-center shrink-0">
                   <div className="absolute -inset-4 rounded-full bg-[#f9a8d4]/15 blur-xl opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-500" />
-                  <img
-                    src="/images/Logo.png"
-                    alt="ذوق | zooq"
-                    draggable={false}
-                    className="
-                      relative z-10            h-[32px] w-[32px]
-                      xs:h-[36px] xs:w-[36px]
-                      sm:h-[56px] sm:w-[56px]
-                      md:h-[68px] md:w-[68px]
-                      lg:h-[78px] lg:w-[78px]
-                      object-contain
-                      drop-shadow-[0_4px_20px_rgba(42,101,95,0.3)]
-                      group-hover:scale-110
-                      group-hover:drop-shadow-[0_8px_32px_rgba(249,168,212,0.5)]
-                      transition-all duration-500
-                    "
-                  />
+              <img
+  src="/images/Logo.png"
+  alt="ذوق | zooq"
+  draggable={false}
+  className="
+    relative z-10            
+    h-[38px] w-[38px]
+    min-[360px]:h-[52px] min-[360px]:w-[52px]
+    sm:h-[56px] sm:w-[56px]
+    md:h-[68px] md:w-[68px]
+    lg:h-[78px] lg:w-[78px]
+    object-contain
+    drop-shadow-[0_4px_20px_rgba(42,101,95,0.3)]
+    group-hover:scale-110
+    group-hover:drop-shadow-[0_8px_32px_rgba(249,168,212,0.5)]
+    transition-all duration-500
+  "
+/>
                 </div>
               </button>
             </TooltipTrigger>
@@ -1333,7 +1366,7 @@ export const Header = memo(function Header() {
           </div>
 
           {/* Actions */}
-          <div className="ms-auto flex items-center gap-0 sm:gap-1 flex-nowrap min-w-0">
+          <div className="flex items-center gap-1 min-[360px]:gap-1.5 sm:gap-2 sm:ms-auto flex-nowrap min-w-0">
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenu>
@@ -1394,10 +1427,10 @@ export const Header = memo(function Header() {
               </TooltipContent>
             </Tooltip>
 
-            {/* ✅ زر السلة — منقول إلى قسم Actions */}
+            {/* ✅ زر السلة — يظهر على كل الموبايلات (min-[360px] وأكبر) */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link to="/cart" className="relative group shrink-0">
+                <Link to="/cart" className="hidden min-[360px]:block relative group shrink-0">
                   <Button variant="ghost" size="icon" className={cn(
                     "h-8 w-8 sm:h-10 sm:w-10 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500",
                     cartItemsCount > 0 && "animate-cart-bounce"
@@ -1421,7 +1454,7 @@ export const Header = memo(function Header() {
               </TooltipContent>
             </Tooltip>
 
-            {/* ✅ زر الإشعارات — منقول إلى قسم Actions (يسار زر المراسلة) */}
+            {/* ✅ زر الإشعارات — يظهر على كل الموبايلات (min-[360px] وأكبر) */}
             {app.user && (
               <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
                 <Tooltip>
@@ -1430,7 +1463,7 @@ export const Header = memo(function Header() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="relative group shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 cursor-pointer"
+                        className="hidden min-[360px]:flex relative group shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-xl hover:bg-[#2a655f]/10 dark:hover:bg-[#2a655f]/30 transition border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 cursor-pointer"
                       >
                         <Bell className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px] text-[#2a655f] dark:text-[#3a8a82] group-hover:scale-110 transition-transform" />
                         {unreadNotificationsCount > 0 && (
@@ -1935,7 +1968,7 @@ export const Header = memo(function Header() {
                 return <div className="ms-1 px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse h-6 w-16 shrink-0" />;
               }
 
-              const baseBtn = "ms-0.5 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[9px] sm:text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 sm:gap-1.5 shadow-sm hover:shadow-md cursor-pointer shrink-0 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500";
+              const baseBtn = "ms-0 px-1 min-[360px]:px-1.5 sm:px-3 py-0.5 min-[360px]:py-1 sm:py-1.5 rounded-lg min-[360px]:rounded-xl text-[8px] min-[360px]:text-[9px] sm:text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap flex items-center gap-0.5 sm:gap-1.5 shadow-sm hover:shadow-md cursor-pointer shrink-0 border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500";
 
               const grayStyle = "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200";
 

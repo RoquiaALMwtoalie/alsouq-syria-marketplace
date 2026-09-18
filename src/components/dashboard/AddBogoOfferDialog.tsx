@@ -933,16 +933,15 @@ function AddBogoOfferDialogComponent({
                                 <div className="relative">
                                     <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-[#2a655f]/60" />
                                     <Input
-                                        ref={parentCategoryInputRef}
-                                        value={parentCategorySearch}
-                                        onChange={(e) => {
-                                            setParentCategorySearch(e.target.value);
-                                            setIsParentCategoryOpen(true);
-                                        }}
-                                        onFocus={() => setIsParentCategoryOpen(true)}
-                                        placeholder={isArabic ? "🔍 ابحث عن التصنيف الرئيسي..." : "🔍 Search main category..."}
-                                        className="ps-9 h-11 rounded-xl border-3 border-[#2a655f]/30 dark:border-[#2a655f]/40 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 bg-white dark:bg-slate-900"
-                                    />
+    ref={parentCategoryInputRef}
+    value={parentCategorySearch}
+    onChange={(e) => {
+        setParentCategorySearch(e.target.value);
+        setIsParentCategoryOpen(true);
+    }}
+    placeholder={isArabic ? "🔍 ابحث عن التصنيف الرئيسي..." : "🔍 Search main category..."}
+    className="ps-9 h-11 rounded-xl border-3 border-[#2a655f]/30 dark:border-[#2a655f]/40 focus:border-[#2a655f]/50 focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 bg-white dark:bg-slate-900"
+/>
                                     {parentCategorySearch && (
                                         <button
                                             type="button"
