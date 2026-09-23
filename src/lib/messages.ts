@@ -280,7 +280,7 @@ function MessagesPage() {
             placeholder={app.lang === "ar" ? "بحث في المحادثات..." : "Search conversations..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 w-full md:w-64 rounded-xl border-slate-200/50 dark:border-slate-800/50"
+            className="pl-9 w-full md:w-64 text-base sm:text-sm rounded-xl border-slate-200/50 dark:border-slate-800/50"
           />
         </div>
       </div>

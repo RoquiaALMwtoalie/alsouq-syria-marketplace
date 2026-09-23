@@ -32,6 +32,66 @@ import * as fileSaver from 'file-saver';
 import { cn } from "@/lib/utils";
 const { saveAs } = fileSaver;
 
+// ============================================================
+// ✅ دوال تنسيق التاريخ (ميلادي + سوري)
+// ============================================================
+const formatDate = (date: string | Date, lang: string, withTime = false) => {
+  if (!date) return "—";
+  const locale = lang === "ar" ? "ar-SY" : "en-US";
+  const options: Intl.DateTimeFormatOptions = {
+    calendar: "gregory", // ✅ ميلادي
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    ...(withTime && { hour: "2-digit", minute: "2-digit" }),
+  };
+  try {
+    return new Date(date).toLocaleDateString(locale, options);
+  } catch {
+    return new Date(date).toLocaleDateString("en-GB", options);
+  }
+};
+
+const formatDateLong = (date: string | Date, lang: string) => {
+  if (!date) return "—";
+  const locale = lang === "ar" ? "ar-SY" : "en-US";
+  const options: Intl.DateTimeFormatOptions = {
+    calendar: "gregory",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  };
+  try {
+    return new Date(date).toLocaleDateString(locale, options);
+  } catch {
+    return new Date(date).toLocaleDateString("en-GB", options);
+  }
+};
+
+// ✅ الوقت بصيغة 12 ساعة بدون تقويم
+const formatTime = (date: string | Date) => {
+  if (!date) return "—";
+  try {
+    return new Date(date).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return "—";
+  }
+};
+
+// ✅ لاسم الملف (بدون مشاكل مع / )
+const formatDateForFilename = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 export function AdminListings() {
   const app = useApp();
   const [statusFilter, setStatusFilter] = useState<"pending" | "published" | "archived" | "all">("pending");
@@ -272,32 +332,14 @@ export function AdminListings() {
     }
   }, [setFeatured, refetch, isRTL]);
 
-  // ✅ ===== دالة مساعدة لتنسيق التاريخ الكامل =====
+  // ✅ ===== دالة مساعدة لتنسيق التاريخ الكامل (ميلادي) =====
   const formatFullDateTime = useCallback((dateString: string) => {
     if (!dateString) return { date: '—', time: '—' };
-    const date = new Date(dateString);
-    
-    const dateStr = date.toLocaleDateString(
-      isRTL ? "ar-SA" : "en-US",
-      { 
-        year: "numeric", 
-        month: "short", 
-        day: "numeric" 
-      }
-    );
-    
-    const timeStr = date.toLocaleTimeString(
-      isRTL ? "ar-SA" : "en-US",
-      { 
-        hour: "2-digit", 
-        minute: "2-digit", 
-        second: "2-digit",
-        hour12: true 
-      }
-    );
-    
-    return { date: dateStr, time: timeStr };
-  }, [isRTL]);
+    return {
+      date: formatDate(dateString, app.lang),
+      time: formatTime(dateString),
+    };
+  }, [app.lang]);
 
   // ✅ ===== تصدير إلى Excel =====
   const exportToExcel = useCallback(() => {
@@ -322,7 +364,7 @@ export function AdminListings() {
     ws['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 12 }, { wch: 25 }, { wch: 20 }, { wch: 18 }];
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
-    saveAs(blob, `المنتجات_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.xlsx`);
+    saveAs(blob, `المنتجات_${formatDateForFilename()}.xlsx`);
     toast.success(isRTL ? "✅ تم تصدير البيانات إلى Excel" : "✅ Data exported to Excel");
   }, [filteredRows, isRTL, formatFullDateTime]);
 
@@ -352,7 +394,7 @@ export function AdminListings() {
       </style></head>
       <body>
         <h1>📊 تقرير المنتجات</h1>
-        <p style="text-align: center; color: #64748b;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')} - ${new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</p>
+        <p style="text-align: center; color: #64748b;">تاريخ التقرير: ${formatDate(new Date(), 'ar')} - ${formatTime(new Date())}</p>
         <div class="stats-grid">
           <div class="stat-card"><div class="value">${stats.total}</div><div class="label">إجمالي المنتجات</div></div>
           <div class="stat-card"><div class="value">${stats.pending}</div><div class="label">قيد المراجعة</div></div>
@@ -386,7 +428,7 @@ export function AdminListings() {
       </body></html>
     `;
     const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
-    saveAs(blob, `المنتجات_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.doc`);
+    saveAs(blob, `المنتجات_${formatDateForFilename()}.doc`);
     toast.success(isRTL ? "✅ تم تصدير البيانات إلى Word" : "✅ Data exported to Word");
   }, [filteredRows, stats, isRTL, formatFullDateTime]);
 

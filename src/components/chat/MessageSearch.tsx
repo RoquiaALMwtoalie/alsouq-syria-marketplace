@@ -101,7 +101,7 @@ export function MessageSearch({
                 ? "🔍 بحث في الرسائل..."
                 : "🔍 Search messages..."
             }
-            className="pl-9 pr-4 rounded-xl border-[#2a655f]/20 focus:border-[#3a8a82]/50 focus:ring-[#2a655f]/30"
+            className="pl-9 pr-4 text-base sm:text-sm rounded-xl border-[#2a655f]/20 focus:border-[#3a8a82]/50 focus:ring-[#2a655f]/30"
           />
         </div>
 

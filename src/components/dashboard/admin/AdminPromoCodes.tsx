@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useApp } from "@/lib/i18n";
 import {
   Tag, Plus, Edit, Trash2, Search, X, Eye, EyeOff,
-  Loader2, DollarSign, Percent, Truck, Gift,
+  Loader2, Coins, Percent, Truck, Gift,
   Filter, MoreVertical, Copy, RefreshCw, Sparkles,
   Zap, Shield, Layers, Clock, Calendar, Users,
   CheckCircle2, TrendingUp, TrendingDown, Store, Globe,
@@ -486,7 +486,7 @@ export function AdminPromoCodes() {
   const getTypeLabel = useCallback((type: string) => {
     const map: Record<string, { ar: string; en: string; icon: any }> = {
       percentage: { ar: "نسبة مئوية", en: "Percentage", icon: Percent },
-      fixed: { ar: "قيمة ثابتة", en: "Fixed", icon: DollarSign },
+      fixed: { ar: "قيمة ثابتة", en: "Fixed", icon: Coins },
       free_shipping: { ar: "توصيل مجاني", en: "Free Shipping", icon: Truck },
     };
     return map[type] || map.percentage;
@@ -809,15 +809,16 @@ export function AdminPromoCodes() {
       {/* ===== STATS CARDS - بوردر زهري مثل AdminOverview ===== */}
       <StatsCards stats={stats} />
 
-      {/* ===== SEARCH & FILTERS ===== */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* ===== SEARCH & FILTERS - مثل SellerApplicationsAdmin ===== */}
+      <div className="space-y-3">
+        {/* ✅ الصف الأول: البحث (كامل العرض) */}
         <div className="relative flex-1 group">
-          <Search className={`absolute inset-y-0 my-auto ${isArabic ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-focus-within:text-slate-600 transition-colors duration-300`} />
+          <Search className={`absolute inset-y-0 my-auto ${isArabic ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-focus-within:text-[#d81b60] transition-colors duration-300`} />
           <Input
             placeholder={isArabic ? "🔍 بحث عن كود..." : "🔍 Search code..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`${isArabic ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:border-slate-300 focus:ring-2 focus:ring-slate-300/30 transition-all duration-300 hover:border-slate-300 dark:hover:border-slate-600`}
+            className={`${isArabic ? 'pr-9 pl-3' : 'pl-9 pr-3'} h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 transition-all duration-300 hover:border-pink-500`}
           />
           {searchQuery && (
             <button
@@ -829,49 +830,75 @@ export function AdminPromoCodes() {
           )}
         </div>
 
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-[150px] h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-slate-300/30">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-500" />
-              <SelectValue placeholder={isArabic ? "النوع" : "Type"} />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-700">
-            <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">{isArabic ? "الكل" : "All"}</SelectItem>
-            <SelectItem value="percentage" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📊 {isArabic ? "نسبة مئوية" : "Percentage"}</SelectItem>
-            <SelectItem value="fixed" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">💰 {isArabic ? "قيمة ثابتة" : "Fixed"}</SelectItem>
-            <SelectItem value="free_shipping" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🚚 {isArabic ? "توصيل مجاني" : "Free Shipping"}</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* ✅ الصف الثاني: الفلاتر - شبكة 2×2 على الموبايل، 4×1 على الديسكتوب */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* فلتر النوع */}
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-[#d81b60]" />
+                <SelectValue placeholder={isArabic ? "النوع" : "Type"} />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+              <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">{isArabic ? "الكل" : "All"}</SelectItem>
+              <SelectItem value="percentage" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📊 {isArabic ? "نسبة مئوية" : "Percentage"}</SelectItem>
+              <SelectItem value="fixed" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">💰 {isArabic ? "قيمة ثابتة" : "Fixed"}</SelectItem>
+              <SelectItem value="free_shipping" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">🚚 {isArabic ? "توصيل مجاني" : "Free Shipping"}</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[150px] h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-slate-300/30">
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-slate-500" />
-              <SelectValue placeholder={isArabic ? "الحالة" : "Status"} />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-700">
-            <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">{isArabic ? "الكل" : "All"}</SelectItem>
-            <SelectItem value="active" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {isArabic ? "نشط" : "Active"}</SelectItem>
-            <SelectItem value="inactive" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">❌ {isArabic ? "غير نشط" : "Inactive"}</SelectItem>
-            <SelectItem value="expired" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⏰ {isArabic ? "منتهي" : "Expired"}</SelectItem>
-          </SelectContent>
-        </Select>
+          {/* فلتر الحالة */}
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-[#d81b60]" />
+                <SelectValue placeholder={isArabic ? "الحالة" : "Status"} />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+              <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">{isArabic ? "الكل" : "All"}</SelectItem>
+              <SelectItem value="active" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">✅ {isArabic ? "نشط" : "Active"}</SelectItem>
+              <SelectItem value="inactive" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">❌ {isArabic ? "غير نشط" : "Inactive"}</SelectItem>
+              <SelectItem value="expired" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">⏰ {isArabic ? "منتهي" : "Expired"}</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setSearchQuery("");
-            setFilterType("all");
-            setFilterStatus("all");
-          }}
-          className="h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
-        >
-          <X className="h-4 w-4 mr-1.5" />
-          {isArabic ? "مسح الكل" : "Clear All"}
-        </Button>
+          {/* عدد العرض */}
+          <Select 
+            value={String(10)} 
+            onValueChange={() => {}}
+          >
+            <SelectTrigger className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-[#d81b60]" />
+                <SelectValue placeholder="10" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+              <SelectItem value="6" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">6</SelectItem>
+              <SelectItem value="10" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">10</SelectItem>
+              <SelectItem value="20" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">20</SelectItem>
+              <SelectItem value="50" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">50</SelectItem>
+              <SelectItem value="100" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">100</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* زر مسح الكل */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSearchQuery("");
+              setFilterType("all");
+              setFilterStatus("all");
+            }}
+            className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-pink-500 hover:text-slate-800 transition-all duration-300"
+          >
+            <X className="h-4 w-4 mr-1.5" />
+            {isArabic ? "مسح الكل" : "Clear All"}
+          </Button>
+        </div>
       </div>
 
       {/* ===== TABLE ===== */}
@@ -939,7 +966,7 @@ export function AdminPromoCodes() {
                     </TableHead>
                     <TableHead className="text-xs font-bold text-[#2a655f] dark:text-slate-300 text-center min-w-[100px] border-r-2 border-slate-200/60 dark:border-slate-700/60">
                       <div className="flex items-center justify-center gap-2">
-                        <DollarSign className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
+                        <Coins className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
                         {isArabic ? "القيمة" : "Value"}
                       </div>
                     </TableHead>
@@ -1137,7 +1164,7 @@ export function AdminPromoCodes() {
                 {formData.type !== "free_shipping" && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-[#2a655f] dark:text-slate-300 flex items-center gap-1">
-                      <DollarSign className="h-4 w-4 text-[#2a655f] dark:text-slate-300" />
+                      <Coins className="h-4 w-4 text-[#2a655f] dark:text-slate-300" />
                       {isArabic ? "القيمة *" : "Value *"}
                     </Label>
                     <Input
@@ -1171,7 +1198,7 @@ export function AdminPromoCodes() {
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-[#2a655f] dark:text-slate-300 flex items-center gap-1">
-                    <DollarSign className="h-4 w-4 text-[#2a655f] dark:text-slate-300" />
+                    <Coins className="h-4 w-4 text-[#2a655f] dark:text-slate-300" />
                     {isArabic ? "الحد الأدنى للطلب" : "Min Order"}
                   </Label>
                   <Input
@@ -1647,7 +1674,7 @@ export function AdminPromoCodes() {
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-[#2a655f] dark:text-slate-300 flex items-center gap-1">
-                    <DollarSign className="h-4 w-4 text-[#2a655f] dark:text-slate-300" />
+                    <Coins className="h-4 w-4 text-[#2a655f] dark:text-slate-300" />
                     {isArabic ? "القيمة *" : "Value *"}
                   </Label>
                   <Input
@@ -1663,7 +1690,7 @@ export function AdminPromoCodes() {
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-[#2a655f] dark:text-slate-300 flex items-center gap-1">
-                    <DollarSign className="h-4 w-4 text-[#2a655f] dark:text-slate-300" />
+                    <Coins className="h-4 w-4 text-[#2a655f] dark:text-slate-300" />
                     {isArabic ? "الحد الأدنى للطلب" : "Min Order"}
                   </Label>
                   <Input

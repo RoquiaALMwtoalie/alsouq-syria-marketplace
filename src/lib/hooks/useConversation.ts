@@ -563,12 +563,31 @@ export function useUserStatus(userId: string | undefined) {
 // ============================================================
 // 1️⃣4️⃣ HOOK: إرسال مؤشر الكتابة
 // ============================================================
+// ============================================================
+// 1️⃣4️⃣ HOOK: إرسال مؤشر الكتابة
+// ============================================================
 export function useSendTypingIndicator(
   conversationId: string | undefined,
   userId: string | undefined
 ) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ دالة موحّدة للإرسال عبر httpSend (REST API)
+  const sendTypingEvent = useCallback((isTyping: boolean) => {
+    if (!conversationId || !userId) return;
+
+    // ✅ استخدام httpSend() بشكل صريح (REST API)
+    supabase.channel("typing-realtime").httpSend({
+      type: "broadcast",
+      event: "typing",
+      payload: {
+        userId,
+        conversationId,
+        isTyping,
+      },
+    });
+  }, [conversationId, userId]);
 
   const sendTyping = useCallback((isTyping: boolean) => {
     if (!conversationId || !userId) return;
@@ -583,33 +602,17 @@ export function useSendTypingIndicator(
       stopTimeoutRef.current = null;
     }
 
-    // ✅ استخدام send() بشكل صحيح (بدون shouldRetry)
-    supabase.channel("typing-realtime").send({
-      type: "broadcast",
-      event: "typing",
-      payload: {
-        userId,
-        conversationId,
-        isTyping,
-      },
-    });
+    // ✅ إرسال حالة الكتابة عبر httpSend
+    sendTypingEvent(isTyping);
 
     // إذا كان يكتب، أرسل إشارة توقف بعد 3 ثواني
     if (isTyping) {
       stopTimeoutRef.current = setTimeout(() => {
-        supabase.channel("typing-realtime").send({
-          type: "broadcast",
-          event: "typing",
-          payload: {
-            userId,
-            conversationId,
-            isTyping: false,
-          },
-        });
+        sendTypingEvent(false);
         stopTimeoutRef.current = null;
       }, 3000);
     }
-  }, [conversationId, userId]);
+  }, [conversationId, userId, sendTypingEvent]);
 
   // تنظيف عند إلغاء التثبيت
   useEffect(() => {
@@ -624,7 +627,8 @@ export function useSendTypingIndicator(
       }
       // إرسال إشارة توقف عند مغادرة الصفحة
       if (conversationId && userId) {
-        supabase.channel("typing-realtime").send({
+        // ✅ استخدام httpSend في cleanup أيضاً
+        supabase.channel("typing-realtime").httpSend({
           type: "broadcast",
           event: "typing",
           payload: {

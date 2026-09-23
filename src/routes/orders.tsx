@@ -37,6 +37,26 @@ export const Route = createFileRoute("/orders")({
   },
 });
 
+// ============================================================
+// ✅ دالة تنسيق التاريخ (ميلادي + سوري)
+// ============================================================
+function formatDate(date: string | Date, lang: string, withTime = false) {
+  if (!date) return "";
+  const locale = lang === "ar" ? "ar-SY" : "en-US";
+  const options: Intl.DateTimeFormatOptions = {
+    calendar: "gregory", // ✅ ميلادي
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    ...(withTime && { hour: "2-digit", minute: "2-digit" }),
+  };
+  try {
+    return new Date(date).toLocaleDateString(locale, options);
+  } catch {
+    return new Date(date).toLocaleDateString("en-GB", options);
+  }
+}
+
 // ✅ دالة الحصول على صورة المنتج الصحيحة (مع دعم الفيرنتات من metadata)
 function getProductImage(item: any) {
   const listing = item.listings || item;
@@ -118,57 +138,26 @@ function getProductImage(item: any) {
 
 // ✅ دالة استخراج بيانات العرض الترويجي من order_items
 function getPromoOfferData(item: any) {
-  // ✅ من metadata (هذا هو المكان الذي حفظناه فيه من cart.tsx)
   if (item.metadata?.promo_offer_data) {
     return item.metadata.promo_offer_data;
   }
-
-  // ✅ من variation_snapshot (للتوافق مع القديم)
   if (item.variation_snapshot?.offer_data) {
     return item.variation_snapshot.offer_data;
   }
-
-  // ✅ من offer_data مباشرة
   if (item.offer_data) {
     return item.offer_data;
   }
-
   return null;
 }
 
 // ✅ دالة التحقق من وجود عرض ترويجي (المعدلة النهائية)
 function isPromoOffer(item: any) {
-  // ✅ طريقة 1: التحقق المباشر من is_promo_offer
-  if (item.is_promo_offer === true) {
-    return true;
-  }
-
-  // ✅ طريقة 2: التحقق من offer_id
-  if (item.offer_id !== null && item.offer_id !== undefined) {
-    return true;
-  }
-
-  // ✅ طريقة 3: التحقق من variation_snapshot
-  if (item.variation_snapshot?.is_promo_offer === true) {
-    return true;
-  }
-
-  // ✅ طريقة 4: التحقق من وجود promo_offer_data الفعلي (وليس مجرد is_promo_offer)
-  if (item.metadata?.promo_offer_data) {
-    return true;
-  }
-
-  // ✅ طريقة 5: التحقق من offer_data
-  if (item.offer_data) {
-    return true;
-  }
-
-  // ✅ طريقة 6: أخيراً، تحقق من getPromoOfferData
-  if (!!getPromoOfferData(item)) {
-    return true;
-  }
-
-  // ❌ إذا لم يتحقق أي شرط، فهذا ليس عرضاً ترويجياً
+  if (item.is_promo_offer === true) return true;
+  if (item.offer_id !== null && item.offer_id !== undefined) return true;
+  if (item.variation_snapshot?.is_promo_offer === true) return true;
+  if (item.metadata?.promo_offer_data) return true;
+  if (item.offer_data) return true;
+  if (!!getPromoOfferData(item)) return true;
   return false;
 }
 
@@ -225,6 +214,7 @@ function OrdersPage() {
       buyerPhone: string;
       notes: string;
       rejectionReason: string | null;
+      orderReviews: any[]; // ✅ جديد
     }> = {};
 
     orders.forEach((order: any) => {
@@ -281,6 +271,7 @@ function OrdersPage() {
           buyerPhone: order.buyer_phone || '',
           notes: order.notes || '',
           rejectionReason: order.rejection_reason || null,
+          orderReviews: order.order_reviews || [], // ✅ جديد
         };
       }
 
@@ -363,11 +354,17 @@ function OrdersPage() {
       const orderId = search.review;
       const found = groupedOrders.find((g) => g.orderId === orderId);
       if (found) {
-        setOrderToReview(found);
-        setOrderReviewDialogOpen(true);
+        // ✅ فحص إضافي: إذا المستخدم قيّم الطلب، ما نفتح الفورم
+        const alreadyReviewed = found.orderReviews?.some(
+          (r: any) => r.user_id === app.user?.id
+        );
+        if (!alreadyReviewed) {
+          setOrderToReview(found);
+          setOrderReviewDialogOpen(true);
+        }
       }
     }
-  }, [search?.review, groupedOrders]);
+  }, [search?.review, groupedOrders, app.user?.id]);
 
   // ============================================================
   // ✅ دالة فتح ديالوغ تأكيد الإلغاء
@@ -655,10 +652,25 @@ function OrdersPage() {
   };
 
   // ============================================================
-  // ✅ التحقق من إمكانية التقييم
+  // ✅ التحقق من إمكانية التقييم (مع فحص التقييم السابق)
   // ============================================================
-  const canRate = (status: string) => {
-    return status === 'completed' || status === 'delivered';
+  const canRate = (
+    status: string,
+    orderReviews?: any[],
+    currentUserId?: string
+  ) => {
+    // 1. الحالة لازم تكون completed أو delivered
+    if (status !== 'completed' && status !== 'delivered') return false;
+
+    // 2. إذا المستخدم قيّم هذا الطلب مسبقاً → ما عاد يقدر يقيّم
+    if (orderReviews && orderReviews.length > 0 && currentUserId) {
+      const hasUserReview = orderReviews.some(
+        (r: any) => r.user_id === currentUserId
+      );
+      if (hasUserReview) return false;
+    }
+
+    return true;
   };
 
   // ============================================================
@@ -740,10 +752,26 @@ function OrdersPage() {
               const isActive = isActiveOrder(group.status);
 
               const canCancelOrder = canCancel(group.status);
-              const hasRateableItem = group.items.some((o: any) => canRate(o.status));
+
+              // ✅ التقييم على مستوى الطلب الكامل — مع فحص order_reviews
+              const canRateThisOrder = canRate(
+                group.status,
+                group.orderReviews,
+                app.user?.id
+              );
+
+              // ✅ التقييم على مستوى المنتجات
+              const hasRateableItem = group.items.some((o: any) =>
+                canRate(o.status || group.status, group.orderReviews, app.user?.id)
+              );
+
               const allRejected = group.items.every((o: any) => o.status === 'rejected');
               const allCancelled = group.items.every((o: any) => o.status === 'cancelled');
-              const canRateThisOrder = canRate(group.status);
+
+              // ✅ هل قيّم المستخدم هذا الطلب؟
+              const userReview = group.orderReviews?.find(
+                (r: any) => r.user_id === app.user?.id
+              );
 
               return (
                 <div
@@ -823,10 +851,7 @@ function OrdersPage() {
                             <span className="text-muted-foreground/30">•</span>
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              {new Date(group.createdAt).toLocaleDateString(
-                                app.lang === "ar" ? "ar-SA" : "en-US",
-                                { day: 'numeric', month: 'short', year: 'numeric' }
-                              )}
+                              {formatDate(group.createdAt, app.lang)}
                             </span>
                             <span className="text-muted-foreground/30">•</span>
                             <span className="flex items-center gap-1 font-bold text-[#2a655f] dark:text-[#3a8a82]">
@@ -1102,8 +1127,14 @@ function OrdersPage() {
                                     </Link>
                                   </div>
                                 )}
+
+                                {/* ✅ تقييم المنتج — مع فحص order_reviews */}
                                 <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#2a655f]/20 dark:border-[#2a655f]/30">
-                                  {canRate(item.status || group.status) && (
+                                  {canRate(
+                                    item.status || group.status,
+                                    group.orderReviews,
+                                    app.user?.id
+                                  ) && (
                                     <div className="flex items-center gap-2">
                                       <span className="text-[10px] text-muted-foreground">
                                         {app.lang === "ar" ? "قيم:" : "Rate:"}
@@ -1126,7 +1157,38 @@ function OrdersPage() {
                           })}
                         </div>
 
-                        {/* ✅ زر "قيّم الآن" للطلب الكامل */}
+                        {/* ✅ عرض التقييم إذا موجود */}
+                        {userReview && (
+                          <div className="p-4 bg-emerald-50/60 dark:bg-emerald-950/20 rounded-xl border-2 border-emerald-200/60 dark:border-emerald-800/40">
+                            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2 mb-2">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              {app.lang === "ar" ? "✅ قيّمت هذا الطلب" : "✅ You rated this order"}
+                            </p>
+                            <div className="flex items-center gap-1 mb-1">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  className={cn(
+                                    "h-4 w-4",
+                                    s <= userReview.rating
+                                      ? "fill-yellow-400 text-yellow-400"
+                                      : "text-slate-300 dark:text-slate-600"
+                                  )}
+                                />
+                              ))}
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 mr-2">
+                                {userReview.rating}/5
+                              </span>
+                            </div>
+                            {userReview.comment && (
+                              <p className="text-xs text-slate-600 dark:text-slate-400 italic mt-1">
+                                "{userReview.comment}"
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ✅ زر "قيّم الآن" للطلب الكامل — يظهر فقط إذا ما قيّم */}
                         {canRateThisOrder && (
                           <Button
                             variant="outline"
@@ -1239,10 +1301,7 @@ function OrdersPage() {
                               {group.totalItems} {app.lang === "ar" ? "منتج" : "items"}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {new Date(group.createdAt).toLocaleString(
-                                app.lang === "ar" ? "ar-SA" : "en-US",
-                                { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
-                              )}
+                              {formatDate(group.createdAt, app.lang, true)}
                             </span>
                           </div>
                         </div>
@@ -1428,24 +1487,24 @@ function OrdersPage() {
 
       {/* ===== ORDER REVIEW DIALOG (فورم التقييم الجديد) ===== */}
       <OrderReviewDialog
-  open={orderReviewDialogOpen}
-  onOpenChange={setOrderReviewDialogOpen}
-  orderId={orderToReview?.orderId || ""}
-  orderTitle={
-    orderToReview?.storeName ||
-    orderToReview?.items?.[0]?.listings?.profile?.store_name ||
-    orderToReview?.items?.[0]?.listings?.profile?.full_name ||
-    ""
-  }
-  orderImage={
-    orderToReview?.storeLogo ||
-    orderToReview?.items?.[0]?.listings?.profile?.store_logo_url ||
-    ""
-  }
-  onSubmitted={() => {
-    refetch();
-  }}
-/>
+        open={orderReviewDialogOpen}
+        onOpenChange={setOrderReviewDialogOpen}
+        orderId={orderToReview?.orderId || ""}
+        orderTitle={
+          orderToReview?.storeName ||
+          orderToReview?.items?.[0]?.listings?.profile?.store_name ||
+          orderToReview?.items?.[0]?.listings?.profile?.full_name ||
+          ""
+        }
+        orderImage={
+          orderToReview?.storeLogo ||
+          orderToReview?.items?.[0]?.listings?.profile?.store_logo_url ||
+          ""
+        }
+        onSubmitted={() => {
+          refetch();
+        }}
+      />
     </div>
   );
 }

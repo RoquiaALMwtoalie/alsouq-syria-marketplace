@@ -1,6 +1,7 @@
 // src/components/dashboard/SellerDashboard.tsx
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   LayoutDashboard, Package, Calendar as CalendarIcon, Users, Star, BarChart3, Settings,
   ShoppingCart, DollarSign, Store, Clock, CheckCircle2, XCircle, TrendingUp,
@@ -30,7 +31,6 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import * as XLSX from 'xlsx';
@@ -44,6 +44,26 @@ import { BookingsPage } from "./BookingsPage";
 import { CustomersPage } from "./CustomersPage";
 import { StatsPage } from "./StatsPage";
 import { SettingsPage } from "./SettingsPage";
+
+// ============================================================
+// 🎯 نوع التبويبات المسموح بها
+// ============================================================
+export type SellerTabType =
+  | "overview"
+  | "products"
+  | "orders"
+  | "customers"
+  | "stats"
+  | "settings";
+
+const VALID_SELLER_TABS: SellerTabType[] = [
+  "overview",
+  "products",
+  "orders",
+  "customers",
+  "stats",
+  "settings",
+];
 
 // ============================================================
 // 🎨 ZOOQ BRAND COLORS - ألوان الداشبورد الإداري (زيتي)
@@ -95,9 +115,12 @@ export function SellerDashboard({}: SellerDashboardProps) {
   const app = useApp();
   const t = useT();
   const navigate = useNavigate();
-  
+
+  // ✅ قراءة التاب من الـ URL مباشرة عبر TanStack Router
+  const search = useSearch({ from: "/dashboard" });
+  const tab = (search?.tab || "overview") as SellerTabType;
+
   // ===== State =====
-  const [tab, setTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResultsPage, setShowSearchResultsPage] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -128,18 +151,18 @@ export function SellerDashboard({}: SellerDashboardProps) {
   }, []);
 
   // ============================================================
-  // ✅ دالة تغيير التاب مع تحديث الـ URL
+  // ✅ دالة تغيير التاب - باستخدام TanStack Router
   // ============================================================
-  const handleTabChange = useCallback((newTab: string) => {
-    setTab(newTab);
-    const url = new URL(window.location.href);
-    if (newTab === 'overview') {
-      url.searchParams.delete('tab');
-    } else {
-      url.searchParams.set('tab', newTab);
-    }
-    window.history.pushState({}, '', url.toString());
-  }, []);
+  const handleTabChange = useCallback(
+    (newTab: SellerTabType) => {
+      navigate({
+        to: "/dashboard",
+        search: { tab: newTab },
+        replace: true,
+      });
+    },
+    [navigate]
+  );
 
   // ============================================================
   // ✅ الحفاظ على موضع التمرير عند تغيير التاب
@@ -153,46 +176,18 @@ export function SellerDashboard({}: SellerDashboardProps) {
     settings: 0,
   });
 
-  const handleTabChangeWithScroll = useCallback((newTab: string) => {
-    const currentScroll = window.scrollY;
-    scrollPositionRef.current[tab] = currentScroll;
-    handleTabChange(newTab);
-    requestAnimationFrame(() => {
-      const savedPosition = scrollPositionRef.current[newTab] || 0;
-      window.scrollTo({ top: savedPosition, behavior: 'instant' });
-    });
-  }, [tab, handleTabChange]);
-
-  // ============================================================
-  // ✅ قراءة التاب من الـ URL عند تحميل الصفحة
-  // ============================================================
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tabFromUrl = params.get('tab');
-    if (tabFromUrl) {
-      const validTabs = ["overview", "products", "orders", "customers", "stats", "settings"];
-      if (validTabs.includes(tabFromUrl)) {
-        setTab(tabFromUrl);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      const params = new URLSearchParams(window.location.search);
-      const tabFromUrl = params.get('tab');
-      if (tabFromUrl) {
-        const validTabs = ["overview", "products", "orders", "customers", "stats", "settings"];
-        if (validTabs.includes(tabFromUrl)) {
-          setTab(tabFromUrl);
-        }
-      } else {
-        setTab('overview');
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  const handleTabChangeWithScroll = useCallback(
+    (newTab: SellerTabType) => {
+      const currentScroll = window.scrollY;
+      scrollPositionRef.current[tab] = currentScroll;
+      handleTabChange(newTab);
+      requestAnimationFrame(() => {
+        const savedPosition = scrollPositionRef.current[newTab] || 0;
+        window.scrollTo({ top: savedPosition, behavior: 'instant' });
+      });
+    },
+    [tab, handleTabChange]
+  );
 
   // ============================================================
   // ✅ Auto-play للسلايدر
@@ -358,12 +353,11 @@ export function SellerDashboard({}: SellerDashboardProps) {
     }
   };
 
-  const getBestTab = () => {
-    const results = [
+  const getBestTab = (): { tab: SellerTabType; count: number; label: string } => {
+    const results: { tab: SellerTabType; count: number; label: string }[] = [
       { tab: 'products', count: filteredListings.length, label: app.lang === 'ar' ? 'المنتجات' : 'Products' },
       { tab: 'orders', count: filteredOrders.length, label: app.lang === 'ar' ? 'الطلبات' : 'Orders' },
       { tab: 'customers', count: filteredCustomers.length, label: app.lang === 'ar' ? 'العملاء' : 'Customers' },
-      { tab: 'reviews', count: filteredReviews.length, label: app.lang === 'ar' ? 'التقييمات' : 'Reviews' },
     ];
     results.sort((a, b) => b.count - a.count);
     return results[0];
@@ -621,7 +615,7 @@ export function SellerDashboard({}: SellerDashboardProps) {
   };
 
   // ===== قائمة التبويب =====
-  const nav = [
+  const nav: { id: SellerTabType; label: string; icon: any; desc: string }[] = [
     { id: "overview", label: app.lang === 'ar' ? "نظرة عامة" : "Overview", icon: LayoutDashboard, desc: app.lang === 'ar' ? 'لوحة التحكم الرئيسية' : 'Main Dashboard' },
     { id: "products", label: app.lang === 'ar' ? "المنتجات" : "Products", icon: Package, desc: app.lang === 'ar' ? 'إدارة المنتجات' : 'Manage Products' },
     { id: "orders", label: app.lang === 'ar' ? "الطلبات" : "Orders", icon: ShoppingCart, desc: app.lang === 'ar' ? 'متابعة الطلبات' : 'Track Orders' },
@@ -1367,9 +1361,9 @@ export function SellerDashboard({}: SellerDashboardProps) {
           <div className="space-y-4 mb-4 sm:mb-6 animate-in slide-in-from-top-5 duration-300">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
               {[
-                { key: 'products', label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package },
-                { key: 'orders', label: app.lang === 'ar' ? 'الطلبات' : 'Orders', count: searchResults.orders, icon: ShoppingCart },
-                { key: 'customers', label: app.lang === 'ar' ? 'العملاء' : 'Customers', count: searchResults.customers, icon: Users },
+                { key: 'products' as SellerTabType, label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package },
+                { key: 'orders' as SellerTabType, label: app.lang === 'ar' ? 'الطلبات' : 'Orders', count: searchResults.orders, icon: ShoppingCart },
+                { key: 'customers' as SellerTabType, label: app.lang === 'ar' ? 'العملاء' : 'Customers', count: searchResults.customers, icon: Users },
               ].map((item) => {
                 const isActive = tab === item.key;
                 return (

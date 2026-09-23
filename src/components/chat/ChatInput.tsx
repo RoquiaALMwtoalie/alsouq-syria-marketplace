@@ -107,7 +107,7 @@ function EmojiPicker({ onEmojiSelect, open, onOpenChange }: EmojiPickerProps) {
             placeholder="🔍 Search emojis..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 text-sm rounded-xl border-[#2a655f]/20 focus:border-[#3a8a82]/40"
+            className="h-9 text-base sm:text-sm rounded-xl border-[#2a655f]/20 focus:border-[#3a8a82]/40"
           />
           <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
             {filteredEmojis.map((emoji) => (
@@ -590,7 +590,7 @@ export function ChatInput({
             "flex-1 min-h-[32px] md:min-h-[40px] max-h-[80px] md:max-h-[120px] resize-none",
             "border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
             "bg-transparent p-0.5 md:p-1",
-            "text-xs md:text-sm",
+            "text-base md:text-sm",
             "placeholder:text-muted-foreground/60"
           )}
           rows={1}
@@ -738,7 +738,7 @@ export function SimpleChatInput({
         onKeyDown={handleKeyDown}
         placeholder={placeholder || (app.lang === "ar" ? "اكتب رسالتك..." : "Type a message...")}
         disabled={disabled || isLoading}
-        className="flex-1 rounded-full border-[#2a655f]/20 focus:border-[#3a8a82]/50 focus:ring-2 focus:ring-[#2a655f]/30"
+        className="flex-1 text-base sm:text-sm rounded-full border-[#2a655f]/20 focus:border-[#3a8a82]/50 focus:ring-2 focus:ring-[#2a655f]/30"
       />
       <Button
         onClick={handleSend}

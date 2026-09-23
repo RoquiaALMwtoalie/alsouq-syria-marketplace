@@ -791,7 +791,8 @@ export function useMyOrders(userId: string | undefined) {
           listings (
             *,
             profile:profiles!owner_id (*)
-          )
+          ),
+          order_reviews (*)
         `)
         .eq("buyer_id", userId)  // ✅ مشتري فقط
         .order("created_at", { ascending: false });

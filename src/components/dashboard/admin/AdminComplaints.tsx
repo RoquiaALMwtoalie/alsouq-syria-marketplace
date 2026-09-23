@@ -27,15 +27,77 @@ import {
   FileSpreadsheet,
   FileText,
   X,
-  Activity,  // ✅ ✅ ✅ أضف هذا السطر
+  Activity,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import * as XLSX from 'xlsx';
 import pkg from 'file-saver';
 const { saveAs } = pkg;
+
+// ============================================================
+// ✅ دوال تنسيق التاريخ (ميلادي + سوري)
+// ============================================================
+const formatDate = (date: string | Date, lang: string, withTime = false) => {
+  if (!date) return "—";
+  const locale = lang === "ar" ? "ar-SY" : "en-US";
+  const options: Intl.DateTimeFormatOptions = {
+    calendar: "gregory", // ✅ ميلادي
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    ...(withTime && { hour: "2-digit", minute: "2-digit" }),
+  };
+  try {
+    return new Date(date).toLocaleDateString(locale, options);
+  } catch {
+    return new Date(date).toLocaleDateString("en-GB", options);
+  }
+};
+
+const formatDateLong = (date: string | Date, lang: string, withTime = false) => {
+  if (!date) return "—";
+  const locale = lang === "ar" ? "ar-SY" : "en-US";
+  const options: Intl.DateTimeFormatOptions = {
+    calendar: "gregory",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    ...(withTime && { hour: "2-digit", minute: "2-digit" }),
+  };
+  try {
+    return new Date(date).toLocaleDateString(locale, options);
+  } catch {
+    return new Date(date).toLocaleDateString("en-GB", options);
+  }
+};
+
+// ✅ الوقت بصيغة 12 ساعة (ما بيتأثر بالتقويم)
+const formatTime = (date: string | Date) => {
+  if (!date) return "—";
+  try {
+    return new Date(date).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return "—";
+  }
+};
+
+// ✅ لاسم الملف (بدون مشاكل مع / )
+const formatDateForFilename = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 // ============================================================
 // 🎨 ZOOQ BRAND COLORS
@@ -52,6 +114,101 @@ const COLORS = {
   fuchsia: '#d81b60',
   fuchsiaDark: '#c2185b',
   fuchsiaGlow: 'rgba(216,27,96,0.2)',
+};
+
+// ============================================================
+// ✅ نوع فلتر التاريخ
+// ============================================================
+type DateFilterType = 
+  | 'all'           // الكل
+  | 'today'         // اليوم
+  | 'yesterday'     // أمس
+  | 'last7days'     // آخر 7 أيام
+  | 'last30days'    // آخر 30 يوم
+  | 'thisMonth'     // هذا الشهر
+  | 'lastMonth'     // الشهر الماضي
+  | 'thisYear'      // هذا العام
+  | 'custom';       // مخصص
+
+// ============================================================
+// ✅ دالة فلترة بالتاريخ
+// ============================================================
+const filterByDate = (
+  dateStr: string, 
+  filterType: DateFilterType,
+  customFrom?: Date,
+  customTo?: Date
+): boolean => {
+  if (filterType === 'all') return true;
+  
+  const date = new Date(dateStr);
+  const now = new Date();
+  
+  const startOfDay = (d: Date) => {
+    const copy = new Date(d);
+    copy.setHours(0, 0, 0, 0);
+    return copy;
+  };
+  
+  const endOfDay = (d: Date) => {
+    const copy = new Date(d);
+    copy.setHours(23, 59, 59, 999);
+    return copy;
+  };
+  
+  const todayStart = startOfDay(now);
+  const todayEnd = endOfDay(now);
+  
+  switch (filterType) {
+    case 'today':
+      return date >= todayStart && date <= todayEnd;
+    
+    case 'yesterday': {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return date >= startOfDay(yesterday) && date <= endOfDay(yesterday);
+    }
+    
+    case 'last7days': {
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      return date >= startOfDay(sevenDaysAgo) && date <= todayEnd;
+    }
+    
+    case 'last30days': {
+      const thirtyDaysAgo = new Date(now);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return date >= startOfDay(thirtyDaysAgo) && date <= todayEnd;
+    }
+    
+    case 'thisMonth': {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      return date >= monthStart && date <= monthEnd;
+    }
+    
+    case 'lastMonth': {
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return date >= lastMonthStart && date <= lastMonthEnd;
+    }
+    
+    case 'thisYear': {
+      const yearStart = new Date(now.getFullYear(), 0, 1);
+      const yearEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+      return date >= yearStart && date <= yearEnd;
+    }
+    
+    case 'custom': {
+      if (!customFrom && !customTo) return true;
+      const from = customFrom ? startOfDay(customFrom) : new Date(0);
+      const to = customTo ? endOfDay(customTo) : new Date(8640000000000000);
+      return date >= from && date <= to;
+    }
+    
+    default:
+      return true;
+  }
 };
 
 // ============================================================
@@ -186,14 +343,24 @@ const ComplaintRow = React.memo(({
             <User className="h-3 w-3 text-[#2a655f]" />
             {user?.full_name || (isArabic ? "مستخدم" : "User")}
           </span>
-          <span className="h-1 w-1 rounded-full bg-[#2a655f]/20" />
-          <span className="flex items-center gap-1">
-            <Calendar className="h-3 w-3 text-[#2a655f]" />
-            {new Date(complaint.created_at).toLocaleDateString(
-              isArabic ? "ar-SA" : "en-US",
-              { day: 'numeric', month: 'short', year: 'numeric' }
-            )}
-          </span>
+        </div>
+      </TableCell>
+      
+      {/* ✅ التاريخ والوقت الكامل */}
+      <TableCell className="text-center border-r-2 border-pink-400/30 dark:border-pink-400/20">
+        <div className="flex flex-col items-center gap-0.5">
+          {/* التاريخ */}
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-400" />
+            <span className="text-xs text-slate-700 dark:text-slate-300">
+              {formatDate(complaint.created_at, isArabic ? "ar" : "en")}
+            </span>
+          </div>
+          {/* ✅ الوقت: الساعة:الدقيقة */}
+          <div className="flex items-center gap-1 text-[10px] text-[#d81b60] dark:text-pink-400 font-mono">
+            <Clock className="h-3 w-3" />
+            {formatTime(complaint.created_at)}
+          </div>
         </div>
       </TableCell>
       
@@ -318,10 +485,7 @@ const ComplaintDetails = React.memo(({
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                   {isArabic ? "تم الحل في " : "Resolved on "}
-                  {new Date(complaint.resolved_at).toLocaleDateString(
-                    isArabic ? "ar-SA" : "en-US",
-                    { day: 'numeric', month: 'short', year: 'numeric' }
-                  )}
+                  {formatDate(complaint.resolved_at, isArabic ? "ar" : "en")}
                 </p>
               )}
             </div>
@@ -354,6 +518,10 @@ export function AdminComplaints() {
   // ✅ State
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterDate, setFilterDate] = useState<DateFilterType>("all");
+  const [customFromDate, setCustomFromDate] = useState<Date | undefined>(undefined);
+  const [customToDate, setCustomToDate] = useState<Date | undefined>(undefined);
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedComplaint, setSelectedComplaint] = useState<any>(null);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
@@ -362,8 +530,6 @@ export function AdminComplaints() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [sortBy, setSortBy] = useState<"created_at" | "status">("created_at");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // ============================================================
   // ✅ فلترة الشكاوى - محسّنة
@@ -373,6 +539,13 @@ export function AdminComplaints() {
     
     if (filterStatus !== "all") {
       result = result.filter((c: any) => c.status === filterStatus);
+    }
+
+    // ✅ فلتر التاريخ
+    if (filterDate !== "all") {
+      result = result.filter((c: any) => 
+        filterByDate(c.created_at, filterDate, customFromDate, customToDate)
+      );
     }
     
     if (searchQuery.trim()) {
@@ -385,23 +558,15 @@ export function AdminComplaints() {
       });
     }
 
+    // ✅ الترتيب الثابت: الأحدث أولاً
     result = [...result].sort((a: any, b: any) => {
-      let aVal = a[sortBy] || '';
-      let bVal = b[sortBy] || '';
-      if (sortBy === 'status') {
-        const statusOrder = { pending: 0, in_progress: 1, resolved: 2, closed: 3 };
-        aVal = statusOrder[a.status] || 0;
-        bVal = statusOrder[b.status] || 0;
-      }
-      if (sortOrder === 'asc') {
-        return aVal > bVal ? 1 : -1;
-      } else {
-        return aVal < bVal ? 1 : -1;
-      }
+      const aDate = new Date(a.created_at || 0).getTime();
+      const bDate = new Date(b.created_at || 0).getTime();
+      return bDate - aDate;
     });
     
     return result;
-  }, [complaints, searchQuery, filterStatus, sortBy, sortOrder]);
+  }, [complaints, searchQuery, filterStatus, filterDate, customFromDate, customToDate]);
 
   // ============================================================
   // ✅ Pagination
@@ -464,6 +629,24 @@ export function AdminComplaints() {
     };
     return map[status] || map.pending;
   }, [isArabic]);
+
+  // ============================================================
+  // ✅ اسم فلتر التاريخ للعرض
+  // ============================================================
+  const getDateFilterLabel = useCallback((filter: DateFilterType) => {
+    const labels: Record<DateFilterType, { ar: string; en: string; emoji: string }> = {
+      all: { ar: "كل الوقت", en: "All Time", emoji: "🗓️" },
+      today: { ar: "اليوم", en: "Today", emoji: "☀️" },
+      yesterday: { ar: "أمس", en: "Yesterday", emoji: "🌙" },
+      last7days: { ar: "آخر 7 أيام", en: "Last 7 Days", emoji: "📅" },
+      last30days: { ar: "آخر 30 يوم", en: "Last 30 Days", emoji: "📆" },
+      thisMonth: { ar: "هذا الشهر", en: "This Month", emoji: "🗓️" },
+      lastMonth: { ar: "الشهر الماضي", en: "Last Month", emoji: "📅" },
+      thisYear: { ar: "هذا العام", en: "This Year", emoji: "🎯" },
+      custom: { ar: "مخصص", en: "Custom", emoji: "🔧" },
+    };
+    return labels[filter];
+  }, []);
 
   // ============================================================
   // ✅ تحديث الشكوى
@@ -536,17 +719,18 @@ export function AdminComplaints() {
         : c.status === 'resolved' ? 'تم الحل'
         : 'مغلقة'
         : c.status,
-      'تاريخ الشكوى': new Date(c.created_at).toLocaleDateString('ar-SA'),
+      'تاريخ الشكوى': formatDate(c.created_at, isArabic ? "ar" : "en"),
+      'الوقت': formatTime(c.created_at),
       'رد الإدارة': c.admin_response || '—',
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'الشكاوى');
-    ws['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 30 }];
+    ws['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 30 }];
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
-    saveAs(blob, `الشكاوى_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.xlsx`);
+    saveAs(blob, `الشكاوى_${formatDateForFilename()}.xlsx`);
     toast.success(isArabic ? "✅ تم تصدير البيانات إلى Excel" : "✅ Data exported to Excel");
   };
 
@@ -565,9 +749,9 @@ export function AdminComplaints() {
       </style></head>
       <body>
         <h1>📊 تقرير الشكاوى</h1>
-        <p style="text-align: center; color: #64748b;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</p>
+        <p style="text-align: center; color: #64748b;">تاريخ التقرير: ${formatDate(new Date(), "ar")}</p>
         <table>
-          <thead><tr><th>#</th><th>الموضوع</th><th>العميل</th><th>رقم الطلب</th><th>الحالة</th><th>التاريخ</th></tr></thead>
+          <thead><tr><th>#</th><th>الموضوع</th><th>العميل</th><th>رقم الطلب</th><th>الحالة</th><th>التاريخ</th><th>الوقت</th></tr></thead>
           <tbody>
     `;
     filteredComplaints.forEach((c: any, i: number) => {
@@ -579,7 +763,8 @@ export function AdminComplaints() {
           <td>${c.profiles?.full_name || '—'}</td>
           <td>${c.order_id || '—'}</td>
           <td>${statusText}</td>
-          <td>${new Date(c.created_at).toLocaleDateString('ar-SA')}</td>
+          <td>${formatDate(c.created_at, "ar")}</td>
+          <td>${formatTime(c.created_at)}</td>
         </tr>
       `;
     });
@@ -589,7 +774,7 @@ export function AdminComplaints() {
         </body></html>
     `;
     const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
-    saveAs(blob, `الشكاوى_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.doc`);
+    saveAs(blob, `الشكاوى_${formatDateForFilename()}.doc`);
     toast.success(isArabic ? "✅ تم تصدير البيانات إلى Word" : "✅ Data exported to Word");
   };
 
@@ -700,8 +885,9 @@ export function AdminComplaints() {
       {/* ===== STATS CARDS - خلفية بيضاء وبوردر زهري ===== */}
       <StatsCards stats={stats} isArabic={isArabic} />
 
-      {/* ===== SEARCH & FILTERS - مثل Overview ===== */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* ===== SEARCH & FILTERS - مثل SellerApplicationsAdmin ===== */}
+      <div className="space-y-3">
+        {/* ✅ الصف الأول: البحث (كامل العرض) */}
         <div className="relative flex-1 group">
           <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-focus-within:text-[#d81b60] transition-colors duration-300" />
           <Input
@@ -715,100 +901,218 @@ export function AdminComplaints() {
           />
         </div>
 
-        <Select
-          value={filterStatus}
-          onValueChange={(value) => {
-            setFilterStatus(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-[#d81b60]" />
-              <SelectValue placeholder={isArabic ? "الحالة" : "Status"} />
+        {/* ✅ الصف الثاني: الفلاتر - شبكة ذكية */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* فلتر الحالة */}
+          <Select
+            value={filterStatus}
+            onValueChange={(value) => {
+              setFilterStatus(value);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-[#d81b60]" />
+                <SelectValue placeholder={isArabic ? "الحالة" : "Status"} />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+              <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">{isArabic ? "📋 الكل" : "📋 All"}</SelectItem>
+              <SelectItem value="pending" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">⏳ {isArabic ? "قيد المراجعة" : "Pending"}</SelectItem>
+              <SelectItem value="in_progress" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">🔄 {isArabic ? "قيد المعالجة" : "In Progress"}</SelectItem>
+              <SelectItem value="resolved" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">✅ {isArabic ? "تم الحل" : "Resolved"}</SelectItem>
+              <SelectItem value="closed" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📌 {isArabic ? "مغلقة" : "Closed"}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* ✅ فلتر التاريخ الجديد */}
+          <Select
+            value={filterDate}
+            onValueChange={(value: DateFilterType) => {
+              setFilterDate(value);
+              if (value === 'custom') {
+                setShowCustomDatePicker(true);
+              } else {
+                setShowCustomDatePicker(false);
+                setCustomFromDate(undefined);
+                setCustomToDate(undefined);
+              }
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-[#d81b60]" />
+                <SelectValue placeholder={isArabic ? "التاريخ" : "Date"} />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+              <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">
+                🗓️ {isArabic ? "كل الوقت" : "All Time"}
+              </SelectItem>
+              <SelectItem value="today" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">
+                ☀️ {isArabic ? "اليوم" : "Today"}
+              </SelectItem>
+              <SelectItem value="yesterday" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">
+                🌙 {isArabic ? "أمس" : "Yesterday"}
+              </SelectItem>
+              <SelectItem value="last7days" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">
+                📅 {isArabic ? "آخر 7 أيام" : "Last 7 Days"}
+              </SelectItem>
+              <SelectItem value="last30days" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">
+                📆 {isArabic ? "آخر 30 يوم" : "Last 30 Days"}
+              </SelectItem>
+              <SelectItem value="thisMonth" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">
+                🗓️ {isArabic ? "هذا الشهر" : "This Month"}
+              </SelectItem>
+              <SelectItem value="lastMonth" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">
+                📅 {isArabic ? "الشهر الماضي" : "Last Month"}
+              </SelectItem>
+              <SelectItem value="thisYear" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">
+                🎯 {isArabic ? "هذا العام" : "This Year"}
+              </SelectItem>
+              <SelectItem value="custom" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">
+                🔧 {isArabic ? "مخصص" : "Custom"}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* عدد العرض */}
+          <Select
+            value={String(limit)}
+            onValueChange={(value) => {
+              setLimit(Number(value));
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">{isArabic ? "عدد" : "Show"}</span>
+                <SelectValue placeholder="10" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+              <SelectItem value="6" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">6</SelectItem>
+              <SelectItem value="10" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">10</SelectItem>
+              <SelectItem value="20" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">20</SelectItem>
+              <SelectItem value="50" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">50</SelectItem>
+              <SelectItem value="100" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">100</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* زر مسح الكل */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSearchQuery("");
+              setFilterStatus("all");
+              setFilterDate("all");
+              setCustomFromDate(undefined);
+              setCustomToDate(undefined);
+              setShowCustomDatePicker(false);
+              setPage(1);
+            }}
+            className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-slate-100 hover:border-pink-500 hover:text-slate-800 transition-all duration-300"
+          >
+            <X className="h-4 w-4 mr-1.5" />
+            {isArabic ? "مسح الكل" : "Clear all"}
+          </Button>
+        </div>
+
+        {/* ✅ منتقي التاريخ المخصص - يظهر فقط عند اختيار "مخصص" */}
+        {filterDate === 'custom' && (
+          <div className="flex flex-col sm:flex-row items-center gap-3 p-4 bg-gradient-to-r from-[#f9a8d4]/10 to-[#fbcfe8]/10 dark:from-[#f9a8d4]/5 dark:to-[#fbcfe8]/5 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 animate-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-2 text-sm font-medium text-[#2a655f] dark:text-white">
+              <Calendar className="h-4 w-4 text-[#d81b60]" />
+              {isArabic ? "الفترة المخصصة:" : "Custom Range:"}
             </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
-            <SelectItem value="all" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">{isArabic ? "📋 الكل" : "📋 All"}</SelectItem>
-            <SelectItem value="pending" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">⏳ {isArabic ? "قيد المراجعة" : "Pending"}</SelectItem>
-            <SelectItem value="in_progress" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">🔄 {isArabic ? "قيد المعالجة" : "In Progress"}</SelectItem>
-            <SelectItem value="resolved" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">✅ {isArabic ? "تم الحل" : "Resolved"}</SelectItem>
-            <SelectItem value="closed" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📌 {isArabic ? "مغلقة" : "Closed"}</SelectItem>
-          </SelectContent>
-        </Select>
 
-        <Select
-          value={sortBy}
-          onValueChange={(value: any) => {
-            setSortBy(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[140px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-[#d81b60]" />
-              <SelectValue placeholder={isArabic ? "ترتيب حسب" : "Sort by"} />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
-            <SelectItem value="created_at" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📅 {isArabic ? "التاريخ" : "Date"}</SelectItem>
-            <SelectItem value="status" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">📊 {isArabic ? "الحالة" : "Status"}</SelectItem>
-          </SelectContent>
-        </Select>
+            {/* من تاريخ */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full sm:w-[200px] justify-start text-left font-normal rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 transition-all duration-300 h-10 text-sm",
+                    !customFromDate && "text-slate-400"
+                  )}
+                >
+                  <Calendar className="mr-2 h-4 w-4 text-[#d81b60]" />
+                  {customFromDate ? (
+                    formatDate(customFromDate, isArabic ? "ar" : "en")
+                  ) : (
+                    <span>{isArabic ? "من تاريخ" : "From date"}</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 shadow-xl" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={customFromDate}
+                  onSelect={(date) => {
+                    setCustomFromDate(date);
+                    setPage(1);
+                  }}
+                  disabled={(date) => date > new Date()}
+                  initialFocus
+                  className="rounded-2xl"
+                />
+              </PopoverContent>
+            </Popover>
 
-        <Select
-          value={sortOrder}
-          onValueChange={(value: any) => {
-            setSortOrder(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
-            <SelectValue placeholder={isArabic ? "ترتيب" : "Order"} />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
-            <SelectItem value="desc" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">⬇️ {isArabic ? "تنازلي" : "Descending"}</SelectItem>
-            <SelectItem value="asc" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">⬆️ {isArabic ? "تصاعدي" : "Ascending"}</SelectItem>
-          </SelectContent>
-        </Select>
+            {/* إلى تاريخ */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full sm:w-[200px] justify-start text-left font-normal rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500 transition-all duration-300 h-10 text-sm",
+                    !customToDate && "text-slate-400"
+                  )}
+                >
+                  <Calendar className="mr-2 h-4 w-4 text-[#d81b60]" />
+                  {customToDate ? (
+                    formatDate(customToDate, isArabic ? "ar" : "en")
+                  ) : (
+                    <span>{isArabic ? "إلى تاريخ" : "To date"}</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 rounded-2xl border-2 border-pink-400/60 dark:border-pink-400/40 shadow-xl" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={customToDate}
+                  onSelect={(date) => {
+                    setCustomToDate(date);
+                    setPage(1);
+                  }}
+                  disabled={(date) => date > new Date() || (customFromDate && date < customFromDate)}
+                  initialFocus
+                  className="rounded-2xl"
+                />
+              </PopoverContent>
+            </Popover>
 
-        <Select
-          value={String(limit)}
-          onValueChange={(value) => {
-            setLimit(Number(value));
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">{isArabic ? "عدد" : "Show"}</span>
-              <SelectValue placeholder="10" />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
-            <SelectItem value="6" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">6</SelectItem>
-            <SelectItem value="10" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">10</SelectItem>
-            <SelectItem value="20" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">20</SelectItem>
-            <SelectItem value="50" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">50</SelectItem>
-            <SelectItem value="100" className="hover:bg-[#f9a8d4]/20 hover:text-[#d81b60] transition-colors">100</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setSearchQuery("");
-            setFilterStatus("all");
-            setSortBy("created_at");
-            setSortOrder("desc");
-            setPage(1);
-          }}
-          className="h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-slate-100 hover:border-pink-500 hover:text-slate-800 transition-all duration-300"
-        >
-          <X className="h-4 w-4 mr-1.5" />
-          {isArabic ? "مسح الكل" : "Clear all"}
-        </Button>
+            {/* زر مسح التاريخ المخصص */}
+            {(customFromDate || customToDate) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setCustomFromDate(undefined);
+                  setCustomToDate(undefined);
+                  setPage(1);
+                }}
+                className="rounded-xl text-slate-600 hover:bg-red-50 hover:text-red-600 transition-all duration-300"
+              >
+                <X className="h-4 w-4 mr-1.5" />
+                {isArabic ? "مسح" : "Clear"}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ===== TABLE - مثل Overview ===== */}
@@ -827,14 +1131,20 @@ export function AdminComplaints() {
               ? isArabic ? `لا توجد شكاوى تطابق "${searchQuery}"` : `No complaints match "${searchQuery}"`
               : isArabic ? "لم يتم تقديم أي شكاوى حتى الآن" : "No complaints have been submitted yet"}
           </p>
-          {searchQuery && (
+          {(searchQuery || filterStatus !== "all" || filterDate !== "all") && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSearchQuery("")}
+              onClick={() => {
+                setSearchQuery("");
+                setFilterStatus("all");
+                setFilterDate("all");
+                setCustomFromDate(undefined);
+                setCustomToDate(undefined);
+              }}
               className="mt-4 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-slate-100 hover:border-pink-500 hover:text-slate-800 transition-all duration-300"
             >
-              {isArabic ? "مسح البحث" : "Clear search"}
+              {isArabic ? "مسح الفلاتر" : "Clear filters"}
             </Button>
           )}
         </div>
@@ -848,8 +1158,14 @@ export function AdminComplaints() {
                     <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[60px] border-r-2 border-pink-400/30 dark:border-pink-400/20">
                       {isArabic ? "الترتيب" : "Rank"}
                     </TableHead>
-                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-right min-w-[200px] border-r-2 border-pink-400/30 dark:border-pink-400/20">
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-right min-w-[180px] border-r-2 border-pink-400/30 dark:border-pink-400/20">
                       {isArabic ? "الموضوع" : "Subject"}
+                    </TableHead>
+                    <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[150px] border-r-2 border-pink-400/30 dark:border-pink-400/20">
+                      <div className="flex items-center justify-center gap-2">
+                        <Calendar className="h-3.5 w-3.5 text-[#2a655f] dark:text-[#f9a8d4]" />
+                        {isArabic ? "التاريخ والوقت" : "Date & Time"}
+                      </div>
                     </TableHead>
                     <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#f9a8d4] text-center min-w-[120px] border-r-2 border-pink-400/30 dark:border-pink-400/20">
                       {isArabic ? "رقم الطلب" : "Order ID"}
@@ -881,7 +1197,7 @@ export function AdminComplaints() {
                         />
                         {isExpanded && (
                           <TableRow className="border-none hover:bg-transparent">
-                            <TableCell colSpan={5} className="p-0 border-none">
+                            <TableCell colSpan={6} className="p-0 border-none">
                               <ComplaintDetails
                                 complaint={complaint}
                                 isArabic={isArabic}
@@ -998,7 +1314,7 @@ export function AdminComplaints() {
             )}
 
             {/* ===== Footer ===== */}
-            <div className="px-4 py-2 border-t-2 border-pink-400/30 dark:border-pink-400/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#f9a8d4]/10 to-[#fbcfe8]/10">
+            <div className="px-4 py-2 border-t-2 border-pink-400/30 dark:border-pink-400/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#f9a8d4]/10 to-[#fbcfe8]/10 flex-wrap gap-2">
               <span className="flex items-center gap-2">
                 <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
                   {isArabic
@@ -1009,12 +1325,7 @@ export function AdminComplaints() {
                   {isArabic ? `إجمالي ${complaints.length}` : `Total ${complaints.length}`}
                 </span>
               </span>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
-                  {sortBy === "created_at" ? (isArabic ? "📅 التاريخ" : "📅 Date") :
-                   (isArabic ? "📊 الحالة" : "📊 Status")}
-                  {sortOrder === "desc" ? " ↓" : " ↑"}
-                </Badge>
+              <div className="flex items-center gap-2 flex-wrap">
                 {searchQuery && (
                   <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
                     🔍 {searchQuery}
@@ -1023,6 +1334,18 @@ export function AdminComplaints() {
                 {filterStatus !== "all" && (
                   <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
                     {getStatusBadge(filterStatus).label}
+                  </Badge>
+                )}
+                {filterDate !== "all" && (
+                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
+                    {getDateFilterLabel(filterDate).emoji} {isArabic ? getDateFilterLabel(filterDate).ar : getDateFilterLabel(filterDate).en}
+                    {filterDate === "custom" && (customFromDate || customToDate) && (
+                      <span className="ml-1 text-[10px]">
+                        ({customFromDate ? formatDate(customFromDate, isArabic ? "ar" : "en") : '...'}
+                        {' - '}
+                        {customToDate ? formatDate(customToDate, isArabic ? "ar" : "en") : '...'})
+                      </span>
+                    )}
                   </Badge>
                 )}
               </div>

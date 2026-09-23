@@ -487,16 +487,16 @@ const stores = storesData?.data || [];
   };
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-700">
+    <div className="space-y-5 sm:space-y-6 animate-in slide-in-from-bottom-5 duration-700">
       
       {/* ===== العنوان مع أزرار التصدير ===== */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2 sm:gap-3 flex-wrap">
             {searchQuery.trim() ? (
-              <span className="flex items-center gap-3">
+              <span className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <span>{app.lang === "ar" ? 'نتائج البحث' : 'Search Results'}</span>
-                <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white text-sm px-3 py-1 shadow-lg shadow-[#2a655f]/30">
+                <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white text-xs sm:text-sm px-2 sm:px-3 py-0.5 sm:py-1 shadow-lg shadow-[#2a655f]/30">
                   {searchResults.total} {app.lang === 'ar' ? 'نتيجة' : 'results'}
                 </Badge>
               </span>
@@ -512,23 +512,21 @@ const stores = storesData?.data || [];
               </>
             )}
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap mt-1.5">
             {searchQuery.trim() ? (
               <span>{app.lang === 'ar' ? `نتائج البحث عن "${searchQuery}"` : `Results for "${searchQuery}"`}</span>
             ) : (
               <>
-               
-                <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-500/10 border border-slate-400/20 hover:bg-slate-500/20 transition-colors">
-                  <ShoppingCart className="h-3.5 w-3.5 text-slate-600" />
-                  <span className="text-slate-700 dark:text-slate-300 font-medium">{totalOrders}</span>
-                  <span className="text-xs text-muted-foreground">{app.lang === 'ar' ? 'طلبات' : 'orders'}</span>
+                <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-slate-500/10 border border-slate-400/20 hover:bg-slate-500/20 transition-colors">
+                  <ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-600" />
+                  <span className="text-slate-700 dark:text-slate-300 font-medium text-[10px] sm:text-xs">{totalOrders}</span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground">{app.lang === 'ar' ? 'طلبات' : 'orders'}</span>
                 </span>
                 <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30 transition-colors">
-                  <Users className="h-3.5 w-3.5 text-emerald-500" />
-                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">{stores.length + all.length}</span>
-                  <span className="text-xs text-muted-foreground">{app.lang === 'ar' ? 'مستخدم' : 'users'}</span>
+                <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30 transition-colors">
+                  <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-500" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium text-[10px] sm:text-xs">{stores.length + all.length}</span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground">{app.lang === 'ar' ? 'مستخدم' : 'users'}</span>
                 </span>
               </>
             )}
@@ -543,32 +541,32 @@ const stores = storesData?.data || [];
                 variant="ghost"
                 size="sm"
                 onClick={exportOverviewToExcel}
-                className="rounded-lg h-9 px-4 text-[#2a655f] hover:bg-[#2a655f]/10 hover:text-[#2a655f] gap-2 transition-all duration-300 hover:scale-105"
+                className="rounded-lg h-8 sm:h-9 px-2.5 sm:px-4 text-[#2a655f] hover:bg-[#2a655f]/10 hover:text-[#2a655f] gap-1.5 sm:gap-2 transition-all duration-300 hover:scale-105 text-[11px] sm:text-xs"
               >
-                <FileSpreadsheet className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs font-medium">Excel</span>
+                <FileSpreadsheet className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline font-medium">Excel</span>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={exportOverviewToWord}
-                className="rounded-lg h-9 px-4 text-[#1a4f4a] hover:bg-[#1a4f4a]/10 hover:text-[#1a4f4a] gap-2 transition-all duration-300 hover:scale-105"
+                className="rounded-lg h-8 sm:h-9 px-2.5 sm:px-4 text-[#1a4f4a] hover:bg-[#1a4f4a]/10 hover:text-[#1a4f4a] gap-1.5 sm:gap-2 transition-all duration-300 hover:scale-105 text-[11px] sm:text-xs"
               >
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs font-medium">Word</span>
+                <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline font-medium">Word</span>
               </Button>
-              <div className="w-px h-6 bg-[#2a655f]/30" />
+              <div className="w-px h-5 sm:h-6 bg-[#2a655f]/30" />
               <Button
                 variant="ghost"
                 size="sm"
-                className="rounded-lg h-9 px-3 text-slate-500 hover:bg-[#2a655f]/10 transition-all duration-300"
+                className="rounded-lg h-8 sm:h-9 px-2.5 sm:px-3 text-slate-500 hover:bg-[#2a655f]/10 transition-all duration-300"
                 onClick={() => window.print()}
               >
-                <Printer className="h-4 w-4" />
+                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
             </div>
-            <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#2a655f]/30 animate-pulse">
-              <Sparkles className="h-3 w-3 mr-1" />
+            <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white border-0 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium shadow-lg shadow-[#2a655f]/30 animate-pulse">
+              <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
               {app.lang === 'ar' ? 'تقرير لحظي' : 'Live Report'}
             </Badge>
           </div>
@@ -577,7 +575,7 @@ const stores = storesData?.data || [];
 
       {/* ===== عرض نتائج البحث ===== */}
       {searchQuery.trim() && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-in slide-in-from-top-5 duration-300">
+        <div className="grid grid-cols-1 xs:grid-cols-3 sm:grid-cols-3 gap-3 sm:gap-4 animate-in slide-in-from-top-5 duration-300">
           {[
             { key: 'products', label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package, gradient: 'from-[#2a655f] to-[#1a4f4a]' },
             { key: 'stores', label: app.lang === 'ar' ? 'المتاجر' : 'Stores', count: searchResults.stores, icon: Store, gradient: 'from-[#1a4f4a] to-[#3a8a82]' },
@@ -590,19 +588,19 @@ const stores = storesData?.data || [];
                 else if (item.key === 'stores') onGoto('stores');
                 else if (item.key === 'applications') onGoto('applications');
               }}
-              className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f] p-4 text-center hover:shadow-xl hover:shadow-[#2a655f]/20 transition-all hover:scale-[1.02]"
+              className="group bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f] p-3 sm:p-4 text-center hover:shadow-xl hover:shadow-[#2a655f]/20 transition-all hover:scale-[1.02]"
             >
-              <div className="flex items-center justify-center gap-3">
-                <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg shadow-[#2a655f]/20 group-hover:scale-110 transition-all duration-300`}>
-                  <item.icon className="h-5 w-5 text-white" />
+              <div className="flex items-center justify-center gap-2 sm:gap-3">
+                <div className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg shadow-[#2a655f]/20 group-hover:scale-110 transition-all duration-300 shrink-0`}>
+                  <item.icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{item.label}</p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">{item.count}</p>
+                <div className="text-start">
+                  <p className="text-[10px] sm:text-sm font-medium text-slate-500 dark:text-slate-400">{item.label}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white">{item.count}</p>
                 </div>
               </div>
               {item.count > 0 && (
-                <div className="mt-2 text-xs text-[#2a655f] font-medium group-hover:translate-x-1 transition-transform duration-300">
+                <div className="mt-2 text-[10px] sm:text-xs text-[#2a655f] font-medium group-hover:translate-x-1 transition-transform duration-300">
                   {app.lang === 'ar' ? 'عرض الكل' : 'View all'} →
                 </div>
               )}
@@ -613,14 +611,14 @@ const stores = storesData?.data || [];
 
       {/* ===== إذا لم يتم العثور على نتائج ===== */}
       {searchQuery.trim() && searchResults.total === 0 && (
-        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30 p-12 text-center">
-          <div className="h-20 w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
-            <Search className="h-10 w-10 text-[#2a655f]/40" />
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30 p-8 sm:p-12 text-center">
+          <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-[#2a655f]/10 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
+            <Search className="h-8 w-8 sm:h-10 sm:w-10 text-[#2a655f]/40" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
             {app.lang === 'ar' ? 'لا توجد نتائج' : 'No results found'}
           </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             {app.lang === 'ar' 
               ? `لم نعثر على أي نتائج تطابق "${searchQuery}"` 
               : `No results match "${searchQuery}"`}
@@ -631,37 +629,38 @@ const stores = storesData?.data || [];
       {/* ===== بطاقات الإحصائيات السريعة ===== */}
       {!searchQuery.trim() && (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* ✅ شبكة متناسقة على كل الشاشات: 1 → 2 → 4 */}
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {quickStats.map((stat, i) => (
               <div 
                 key={i} 
                 className={cn(
-                  "group bg-white dark:bg-[#1e293b] rounded-xl border-2 transition-all duration-300 hover:shadow-xl",
+                  "group bg-white dark:bg-[#1e293b] rounded-xl border-2 transition-all duration-300 hover:shadow-xl overflow-hidden",
                   stat.border,
                   "hover:shadow-[#2a655f]/20 hover:-translate-y-1 hover:scale-[1.02]"
                 )}
               >
-                <div className="flex items-start justify-between p-4">
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stat.value}</p>
+                <div className="flex items-start justify-between p-3 sm:p-4 gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider truncate">{stat.label}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 truncate">{stat.value}</p>
                     <div className="flex items-center gap-1 mt-1">
                       {stat.changeType === 'up' ? (
-                        <ArrowUpRight className="h-3 w-3 text-[#2a655f] animate-bounce-slow" />
+                        <ArrowUpRight className="h-3 w-3 text-[#2a655f] animate-bounce-slow shrink-0" />
                       ) : (
-                        <ArrowDownRight className="h-3 w-3 text-slate-500" />
+                        <ArrowDownRight className="h-3 w-3 text-slate-500 shrink-0" />
                       )}
-                      <span className={`text-xs font-medium ${stat.changeType === 'up' ? 'text-[#2a655f]' : 'text-slate-500'}`}>
+                      <span className={`text-[10px] sm:text-xs font-medium ${stat.changeType === 'up' ? 'text-[#2a655f]' : 'text-slate-500'}`}>
                         {stat.change}
                       </span>
                     </div>
                   </div>
                   <div className={cn(
-                    "h-12 w-12 rounded-xl flex items-center justify-center",
+                    "h-9 w-9 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0",
                     "bg-white dark:bg-[#1e293b] border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30",
                     "group-hover:scale-110 group-hover:rotate-6 transition-all duration-300"
                   )}>
-                    <stat.icon className={cn("h-5 w-5", stat.color)} />
+                    <stat.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", stat.color)} />
                   </div>
                 </div>
                 <div className="mt-0 h-1 w-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
@@ -679,32 +678,32 @@ const stores = storesData?.data || [];
           </div>
 
           {/* ===== بطاقات حالة المنصة ===== */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {platformStats.map((item) => (
               <button
                 key={item.label}
                 onClick={() => onGoto(item.to as any)}
                 className={cn(
-                  "group bg-white dark:bg-[#1e293b] rounded-xl p-4 border-2 transition-all hover:shadow-xl hover:shadow-[#2a655f]/20 hover:scale-[1.02] text-start relative overflow-hidden",
+                  "group bg-white dark:bg-[#1e293b] rounded-xl p-3 sm:p-4 border-2 transition-all hover:shadow-xl hover:shadow-[#2a655f]/20 hover:scale-[1.02] text-start relative overflow-hidden",
                   item.border
                 )}
               >
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
                   <div className="absolute -right-20 -bottom-20 h-48 w-48 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
                 </div>
-                <div className="flex items-center justify-between relative">
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{item.label}</p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{item.value}</p>
+                <div className="flex items-center justify-between relative gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 truncate">{item.label}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 truncate">{item.value}</p>
                   </div>
                   <div className={cn(
-                    "h-12 w-12 rounded-xl flex items-center justify-center",
+                    "h-9 w-9 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0",
                     "bg-white dark:bg-[#1e293b] border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30",
                     "group-hover:scale-110 transition-all duration-300",
                     "shadow-lg shadow-[#2a655f]/10"
                   )}>
-                    <div className={cn("h-6 w-6 rounded-lg bg-gradient-to-br", item.gradient, "flex items-center justify-center")}>
-                      <item.icon className="h-3.5 w-3.5 text-white" />
+                    <div className={cn("h-5 w-5 sm:h-6 sm:w-6 rounded-md sm:rounded-lg bg-gradient-to-br", item.gradient, "flex items-center justify-center")}>
+                      <item.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
                     </div>
                   </div>
                 </div>
@@ -718,7 +717,7 @@ const stores = storesData?.data || [];
                     style={{ width: `${Math.min(100, (item.value / (all.length || 1)) * 100)}%` }}
                   />
                 </div>
-                <div className="mt-1 text-[10px] text-[#2a655f] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="mt-1 text-[9px] sm:text-[10px] text-[#2a655f] opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:block">
                   {app.lang === 'ar' ? 'اضغط للعرض' : 'Click to view'} →
                 </div>
               </button>
@@ -726,7 +725,7 @@ const stores = storesData?.data || [];
           </div>
 
           {/* ===== الرسوم البيانية ===== */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             
            
 
@@ -736,32 +735,32 @@ const stores = storesData?.data || [];
        
 
           {/* ===== إحصائيات إضافية ===== */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {additionalStats.map((stat, i) => (
               <div 
                 key={i} 
                 className={cn(
-                  "group bg-white dark:bg-[#1e293b] rounded-xl p-4 border-2 transition-all hover:shadow-xl hover:shadow-[#2a655f]/20 hover:scale-[1.02] relative overflow-hidden",
+                  "group bg-white dark:bg-[#1e293b] rounded-xl p-3 sm:p-4 border-2 transition-all hover:shadow-xl hover:shadow-[#2a655f]/20 hover:scale-[1.02] relative overflow-hidden",
                   stat.border
                 )}
               >
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
                   <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#2a655f]/5 blur-3xl animate-pulse" />
                 </div>
-                <div className="flex items-center gap-3 relative">
+                <div className="flex items-center gap-2 sm:gap-3 relative">
                   <div className={cn(
-                    "h-10 w-10 rounded-xl flex items-center justify-center",
+                    "h-9 w-9 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0",
                     "bg-white dark:bg-[#1e293b] border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30",
                     "group-hover:scale-110 transition-all duration-300",
                     "shadow-lg shadow-[#2a655f]/10"
                   )}>
-                    <div className={cn("h-6 w-6 rounded-lg bg-gradient-to-br", stat.gradient, "flex items-center justify-center")}>
-                      <stat.icon className="h-3.5 w-3.5 text-white" />
+                    <div className={cn("h-5 w-5 sm:h-6 sm:w-6 rounded-md sm:rounded-lg bg-gradient-to-br", stat.gradient, "flex items-center justify-center")}>
+                      <stat.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
                     </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">{stat.label}</p>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white">{stat.value}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-400 truncate">{stat.label}</p>
+                    <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">{stat.value}</p>
                   </div>
                 </div>
                 <div className="mt-2 h-0.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
@@ -776,26 +775,6 @@ const stores = storesData?.data || [];
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* ===== شريط سفلي متحرك ===== */}
-          <div className="relative w-full overflow-hidden rounded-xl border-2 border-[#2a655f]/40 dark:border-[#3a8a82]/30 bg-white dark:bg-[#1e293b] p-3">
-            <div className="flex items-center justify-center gap-6 animate-marquee-slow">
-              <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                <Rocket className="h-4 w-4 text-[#2a655f] animate-float" />
-                {app.lang === 'ar' ? '🚀 ذوق - منصة متكاملة' : '🚀 Zooq - Integrated Platform'}
-              </span>
-              <span className="text-[#2a655f]/20">|</span>
-              <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                <Gem className="h-4 w-4 text-[#3a8a82] animate-spin-slow" />
-                {app.lang === 'ar' ? '💎 أداء عالي وسرعة فائقة' : '💎 High Performance & Speed'}
-              </span>
-              <span className="text-[#2a655f]/20">|</span>
-              <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                <ShieldCheck className="h-4 w-4 text-[#3a8a82] animate-pulse" />
-                {app.lang === 'ar' ? '🛡️ آمن وموثوق' : '🛡️ Secure & Reliable'}
-              </span>
-            </div>
           </div>
         </>
       )}
@@ -836,18 +815,6 @@ const stores = storesData?.data || [];
         }
         .animate-pulse-slow {
           animation: pulse-slow 2s ease-in-out infinite;
-        }
-        @keyframes marquee-slow {
-          0% { transform: translateX(0%); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-marquee-slow {
-          display: flex;
-          animation: marquee-slow 20s linear infinite;
-          width: 200%;
-        }
-        .animate-marquee-slow:hover {
-          animation-play-state: paused;
         }
       `}</style>
     </div>

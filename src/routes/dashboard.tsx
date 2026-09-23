@@ -41,10 +41,31 @@ import {
   getNotificationPermission
 } from "@/lib/pushNotifications";
 
+// ✅ قائمة التبويبات المسموح بها في الداشبورد
+const DASHBOARD_TABS = [
+  "overview",
+  "products",
+  "orders",
+  "customers",
+  "stats",
+  "settings",
+] as const;
+
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
   head: () => ({ meta: [{ title: "لوحة التحكم — ذوق" }] }),
+  // ✅ تعريف شكل الـ search params
+  validateSearch: (search: Record<string, unknown>): { tab: string } => {
+    const tab = search.tab;
+    return {
+      tab:
+        typeof tab === "string" && (DASHBOARD_TABS as readonly string[]).includes(tab)
+          ? tab
+          : "overview",
+    };
+  },
 });
+
 function Dashboard() {
   const app = useApp();
   const t = useT();
@@ -180,7 +201,7 @@ function Dashboard() {
           .from('notifications')
           .update({ is_read: true })
           .eq('id', notification.id)
-         .eq('user_id', app.user!.id)
+          .eq('user_id', app.user!.id);
         
         if (error) throw error;
         await refetchNotifications();
@@ -202,7 +223,7 @@ function Dashboard() {
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId)
-      .eq('user_id', app.user!.id)
+        .eq('user_id', app.user!.id);
       
       if (error) throw error;
       await refetchNotifications();
@@ -218,7 +239,7 @@ function Dashboard() {
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
-       .eq('user_id', app.user!.id)
+        .eq('user_id', app.user!.id)
         .eq('is_read', false);
       
       if (error) throw error;
@@ -568,7 +589,7 @@ function Dashboard() {
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <Button
             onClick={enableNotifications}
-            className="gap-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all hover:scale-105 px-6 py-3 h-auto text-sm"
+            className="gap-2 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all hover:scale-105 px-6 py-3 h-auto text-sm"
           >
             <BellRing className="h-4 w-4" />
             {app.lang === "ar" ? "🔔 تفعيل الإشعارات" : "🔔 Enable Notifications"}

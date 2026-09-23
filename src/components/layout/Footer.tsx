@@ -6,7 +6,7 @@ import {
   X, Send, CheckCircle, HelpCircle, FileText, LayoutDashboard, Package
 } from "lucide-react";
 import { useApp } from "@/lib/i18n";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,19 @@ export function Footer() {
   const [visitorPhone, setVisitorPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // ✅ ✅ ✅ جديد: الاستماع لحدث فتح الدعم من FAQ وأي مكان آخر
+  useEffect(() => {
+    const handleOpenSupport = () => {
+      setSupportOpen(true);
+    };
+    
+    document.addEventListener('openSupportChat', handleOpenSupport);
+    
+    return () => {
+      document.removeEventListener('openSupportChat', handleOpenSupport);
+    };
+  }, []);
 
   // ✅ إخفاء الفوتر في صفحات الشات
   const isChatPage =
@@ -281,10 +294,16 @@ export function Footer() {
             onClick={() => setSupportOpen(false)}
           />
           <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
-            <div className="bg-[#0d2e2a] rounded-3xl max-w-md w-full shadow-2xl border border-pink-400/30 animate-in zoom-in-95 duration-300 overflow-hidden">
+            <div
+              className="bg-[#0d2e2a] rounded-3xl w-full shadow-2xl border border-pink-400/30 animate-in zoom-in-95 duration-300 flex flex-col"
+              style={{
+                maxWidth: '28rem',
+                maxHeight: 'calc(100dvh - 2rem)',
+              }}
+            >
               
               {/* Header */}
-              <div className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] p-4 border-b border-pink-400/20 flex items-center justify-between">
+              <div className="bg-gradient-to-r from-[#0d2e2a] to-[#1a4f4a] p-4 border-b border-pink-400/20 flex items-center justify-between shrink-0 rounded-t-3xl">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-xl bg-pink-500/20 border border-pink-400/30 flex items-center justify-center">
                     <Headphones className="h-4 w-4 text-pink-300" />
@@ -306,8 +325,14 @@ export function Footer() {
                 </button>
               </div>
 
-              {/* Content */}
-              <div className="p-4 space-y-3 text-start">
+              {/* Content — قابل للتمرير */}
+              <div
+                className="p-4 space-y-3 text-start overflow-y-auto flex-1"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain',
+                }}
+              >
                 {isSuccess ? (
                   <div className="text-center py-4">
                     <div className="h-12 w-12 rounded-full bg-pink-500/20 border border-pink-400/30 flex items-center justify-center mx-auto mb-2">
@@ -331,7 +356,7 @@ export function Footer() {
                           type="tel"
                           value={app.user?.phone || "غير متاح"}
                           disabled
-                          className="mt-1 h-9 rounded-xl bg-white/10 border-pink-400/20 text-white text-[10px] cursor-not-allowed"
+                          className="mt-1 h-10 sm:h-9 rounded-xl bg-white/10 border-pink-400/20 text-white text-base sm:text-[11px] cursor-not-allowed"
                         />
                       </div>
                     ) : (
@@ -344,7 +369,7 @@ export function Footer() {
                           value={visitorPhone}
                           onChange={(e) => setVisitorPhone(e.target.value)}
                           placeholder="+963 9xx xxx xxx"
-                          className="mt-1 h-9 rounded-xl bg-white/5 border-pink-400/20 text-white text-[10px] placeholder:text-white/40 focus:border-pink-400/50"
+                          className="mt-1 h-10 sm:h-9 rounded-xl bg-white/5 border-pink-400/20 text-white text-base sm:text-[11px] placeholder:text-white/40 focus:border-pink-400/50"
                           required
                         />
                       </div>
@@ -358,7 +383,7 @@ export function Footer() {
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
                         placeholder={app.lang === "ar" ? "استفسار عام..." : "General inquiry..."}
-                        className="mt-1 h-9 rounded-xl bg-white/5 border-pink-400/20 text-white text-[10px] placeholder:text-white/40 focus:border-pink-400/50"
+                        className="mt-1 h-10 sm:h-9 rounded-xl bg-white/5 border-pink-400/20 text-white text-base sm:text-[11px] placeholder:text-white/40 focus:border-pink-400/50"
                       />
                     </div>
 
@@ -371,14 +396,14 @@ export function Footer() {
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder={app.lang === "ar" ? "اكتب رسالتك هنا..." : "Write your message here..."}
                         rows={3}
-                        className="mt-1 w-full px-3 py-2 rounded-xl bg-white/5 border border-pink-400/20 text-white text-[10px] placeholder:text-white/40 focus:border-pink-400/50 focus:outline-none resize-none"
+                        className="mt-1 w-full px-3 py-2 rounded-xl bg-white/5 border border-pink-400/20 text-white text-base sm:text-[11px] placeholder:text-white/40 focus:border-pink-400/50 focus:outline-none resize-none"
                       />
                     </div>
 
                     <Button
                       onClick={handleSubmitSupport}
                       disabled={isLoading || !message.trim() || (!app.user && !visitorPhone.trim())}
-                      className="w-full h-9 rounded-xl bg-gradient-to-r from-pink-500/20 to-pink-600/20 hover:from-pink-500/30 hover:to-pink-600/30 text-white text-[10px] font-semibold border border-pink-400/30 shadow-md cursor-pointer transition-all duration-300"
+                      className="w-full h-10 sm:h-9 rounded-xl bg-gradient-to-r from-pink-500/20 to-pink-600/20 hover:from-pink-500/30 hover:to-pink-600/30 text-white text-base sm:text-[10px] font-semibold border border-pink-400/30 shadow-md cursor-pointer transition-all duration-300"
                     >
                       {isLoading ? (
                         <span className="flex items-center gap-2">

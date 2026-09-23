@@ -1,5 +1,6 @@
 // src/components/VoiceSearch.tsx
-// 🎤 مكون البحث الصوتي - نسخة احترافية متجاوبة + إيقاف تلقائي عند السكوت
+// 🎤 مكون البحث الصوتي - v2.1
+// ✅ يمرر searchQuery النظيف للـ onResult مباشرة
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Mic, MicOff, X, Loader2, RefreshCw, Volume2 } from "lucide-react";
@@ -9,26 +10,22 @@ import { toast } from "sonner";
 import { processVoiceSearch, getVoiceResponse } from "@/lib/voiceSearchEngine";
 
 interface VoiceSearchProps {
-  onResult: (text: string, entities?: any) => void;
-  onSearchResponse?: (response: any) => void;
+  onResult: (searchQuery: string, entities?: any, parsed?: any) => void;
   onListeningChange?: (isListening: boolean) => void;
   lang?: string;
   className?: string;
   buttonSize?: "sm" | "md" | "lg";
   showStatus?: boolean;
-  autoSearch?: boolean;
   enableTTS?: boolean;
 }
 
 export function VoiceSearch({
   onResult,
-  onSearchResponse,
   onListeningChange,
   lang = "ar-SA",
   className,
   buttonSize = "md",
   showStatus = true,
-  autoSearch = true,
   enableTTS = true,
 }: VoiceSearchProps) {
   const [isListening, setIsListening] = useState(false);
@@ -38,7 +35,6 @@ export function VoiceSearch({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<"prompt" | "granted" | "denied">("prompt");
-  const [searchResponse, setSearchResponse] = useState<any>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   const recognitionRef = useRef<any>(null);
@@ -49,19 +45,31 @@ export function VoiceSearch({
   const isArabic = lang === 'ar-SA';
 
   // ============================================================
-  // ⏱️ إعدادات السكوت (Silence Detection)
+  // ⏱️ إعدادات
   // ============================================================
-  const SILENCE_TIMEOUT_MS = 1500; // 1.5 ثانية سكوت → إيقاف تلقائي
-  const MAX_LISTENING_MS = 15000;  // 15 ثانية كحد أقصى
+  const SILENCE_TIMEOUT_MS = 1500;
+  const MAX_LISTENING_MS = 15000;
 
-  // ✅ حجم الزر
   const sizeClasses = {
     sm: "h-8 w-8 rounded-lg",
     md: "h-10 w-10 rounded-xl",
     lg: "h-12 w-12 rounded-2xl",
   };
 
-  // ✅ التحقق من دعم المتصفح
+  // ============================================================
+  // 🧹 تنظيف النص من علامات الترقيم
+  // ============================================================
+  const cleanTranscript = useCallback((text: string): string => {
+    if (!text) return "";
+    return text
+      .replace(/[.،,؛;؟?!:()"""''«»\-–—ـ…]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }, []);
+
+  // ============================================================
+  // ✅ دعم المتصفح
+  // ============================================================
   useEffect(() => {
     const isSpeechSupported = 
       'webkitSpeechRecognition' in window || 
@@ -79,9 +87,8 @@ export function VoiceSearch({
   }, []);
 
   // ============================================================
-  // 🗣️ تحويل النص إلى كلام (TTS)
+  // 🗣️ TTS
   // ============================================================
-  
   const speakText = useCallback((text: string) => {
     if (!enableTTS || !synthRef.current) return;
     
@@ -109,7 +116,6 @@ export function VoiceSearch({
   // ============================================================
   // 🎤 طلب إذن الميكروفون
   // ============================================================
-  
   const requestMicrophonePermission = useCallback(async (): Promise<boolean> => {
     try {
       console.log("🎤 [Permission] Requesting microphone permission...");
@@ -156,7 +162,6 @@ export function VoiceSearch({
   // ============================================================
   // 🔇 مسح مؤقت السكوت
   // ============================================================
-  
   const clearSilenceTimeout = useCallback(() => {
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
@@ -165,16 +170,15 @@ export function VoiceSearch({
   }, []);
 
   // ============================================================
-  // 🔇 إعادة ضبط مؤقت السكوت (عند كل كلمة جديدة)
+  // 🔇 إعادة ضبط مؤقت السكوت
   // ============================================================
-  
   const resetSilenceTimeout = useCallback((recognition: any) => {
     clearSilenceTimeout();
     
     silenceTimeoutRef.current = setTimeout(() => {
       console.log('🤫 [VoiceSearch] Silence detected - stopping recognition');
       
-      const finalText = accumulatedTranscriptRef.current.trim();
+      const finalText = cleanTranscript(accumulatedTranscriptRef.current);
       
       if (finalText) {
         console.log('📝 [VoiceSearch] Final text from silence:', finalText);
@@ -186,78 +190,72 @@ export function VoiceSearch({
         console.warn('⚠️ Error stopping recognition:', e);
       }
     }, SILENCE_TIMEOUT_MS);
-  }, [clearSilenceTimeout, SILENCE_TIMEOUT_MS]);
+  }, [clearSilenceTimeout, SILENCE_TIMEOUT_MS, cleanTranscript]);
 
   // ============================================================
-  // 🔍 معالجة النتيجة الصوتية
+  // 🔍 معالجة النتيجة الصوتية → تمرير للـ onResult
   // ============================================================
-  
   const handleVoiceResult = useCallback(async (text: string) => {
-    if (!text.trim()) {
+    const cleanedText = cleanTranscript(text);
+    
+    if (!cleanedText) {
       console.log('⏭️ [VoiceSearch] Empty text, skipping');
+      setIsLoading(false);
       return;
     }
     
     setIsLoading(true);
     
     try {
-      const response = await processVoiceSearch(text, lang === 'ar-SA' ? 'ar' : 'en');
+      // ✅ معالجة الصوت
+      const parsed = await processVoiceSearch(cleanedText, lang === 'ar-SA' ? 'ar' : 'en');
       
-      console.log('🎯 [VoiceSearch] Response:', response);
+      console.log('🎯 [VoiceSearch] Parsed:', parsed);
       
-      setSearchResponse(response);
+      // ✅ استخدم searchQuery (نظيف) بدل expandedQuery
+      const queryToSearch = parsed.searchQuery || parsed.cleanedText || parsed.expandedQuery;
       
-      if (onSearchResponse) {
-        onSearchResponse(response);
+      if (!queryToSearch) {
+        toast.warning(`😕 لم أتمكن من معالجة "${cleanedText}"`);
+        setIsLoading(false);
+        return;
       }
       
-      if (response.results.length > 0) {
-        const firstResult = response.results[0];
-        onResult(firstResult.title, response.entities);
-        
-        toast.success(
-          `🔍 ${response.totalCount} نتيجة لـ "${text}"`,
-          { duration: 3000 }
-        );
-        
-      } else if (response.suggestions && response.suggestions.length > 0) {
-        toast.info(response.suggestions[0], { duration: 5000 });
-        onResult(text, response.entities);
-        
-      } else {
-        toast.warning(`😕 لم أجد نتائج لـ "${text}"`, { duration: 3000 });
-        onResult(text, response.entities);
-      }
+      // ✅ تمرير النص النظيف للـ onResult
+      onResult(queryToSearch, parsed.entities, parsed);
       
-      if (enableTTS && response.totalCount > 0) {
-        const voiceText = getVoiceResponse(response, lang === 'ar-SA' ? 'ar' : 'en');
+      // ✅ TTS
+      if (enableTTS) {
+        const voiceText = getVoiceResponse(parsed, lang === 'ar-SA' ? 'ar' : 'en');
         speakText(voiceText);
       }
+      
+      // ✅ تنظيف الحالة
+      setTranscript("");
+      setInterimTranscript("");
       
     } catch (error) {
       console.error('❌ [VoiceSearch] Error processing voice:', error);
       toast.error('❌ حدث خطأ في معالجة البحث الصوتي');
-      onResult(text);
     } finally {
       setIsLoading(false);
     }
-  }, [lang, onResult, onSearchResponse, enableTTS, speakText]);
+  }, [lang, onResult, enableTTS, speakText, cleanTranscript]);
 
   // ============================================================
   // 🎙️ إنشاء كائن التعرف الصوتي
   // ============================================================
-  
   const createRecognition = useCallback(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return null;
 
     const recognition = new SpeechRecognition();
     recognition.lang = lang;
-    recognition.continuous = true;        // ✅ استمر بالاستماع
-    recognition.interimResults = true;    // ✅ نتائج مؤقتة
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
-    // ✅ كلمات نهاية اختيارية (للسرعة)
+    // ✅ كلمات النهاية
     const END_PHRASES = [
       'خلصت', 'انتهيت', 'هذا كل شيء', 'هذا كلو', 'خلص',
       'thank you', 'that is all', 'done', 'finished',
@@ -279,7 +277,7 @@ export function VoiceSearch({
       accumulatedTranscriptRef.current = "";
     };
 
-    recognition.onresult = async (event: any) => {
+    recognition.onresult = (event: any) => {
       let finalTranscript = "";
       let interimTranscript = "";
 
@@ -305,26 +303,27 @@ export function VoiceSearch({
         }
       }
 
-      // ✅ تراكم النص النهائي
+      // ✅ تراكم النص مع تنظيف
       if (finalTranscript) {
-        accumulatedTranscriptRef.current += finalTranscript;
+        const cleaned = cleanTranscript(finalTranscript);
+        if (cleaned) {
+          accumulatedTranscriptRef.current += cleaned + ' ';
+        }
       }
 
-      // ✅ تحديث العرض
-      setTranscript(accumulatedTranscriptRef.current.trim());
+      // ✅ تحديث العرض مع تنظيف
+      setTranscript(cleanTranscript(accumulatedTranscriptRef.current));
       
       if (interimTranscript) {
-        setInterimTranscript(interimTranscript);
+        setInterimTranscript(cleanTranscript(interimTranscript));
       } else {
         setInterimTranscript("");
       }
 
-      // ✅ ✅ ✅ إعادة ضبط مؤقت السكوت
+      // ✅ إعادة ضبط مؤقت السكوت
       if (interimTranscript) {
-        // المستخدم لسا يتكلم → أعد ضبط المؤقت
         resetSilenceTimeout(recognition);
       } else if (finalTranscript && !interimTranscript) {
-        // انتهت كلمة كاملة → ابدأ مؤقت السكوت
         resetSilenceTimeout(recognition);
       }
     };
@@ -370,8 +369,8 @@ export function VoiceSearch({
         onListeningChange(false);
       }
 
-      // ✅ ✅ ✅ إرسال النص النهائي بعد الإيقاف
-      const finalText = accumulatedTranscriptRef.current.trim();
+      // ✅ إرسال النص النهائي
+      const finalText = cleanTranscript(accumulatedTranscriptRef.current);
       
       if (finalText) {
         console.log('✅ [VoiceSearch] Processing final text:', finalText);
@@ -383,12 +382,11 @@ export function VoiceSearch({
     };
 
     return recognition;
-  }, [lang, handleVoiceResult, onListeningChange, resetSilenceTimeout, clearSilenceTimeout]);
+  }, [lang, handleVoiceResult, onListeningChange, resetSilenceTimeout, clearSilenceTimeout, cleanTranscript]);
 
   // ============================================================
-  // ⏯️ التحكم في الاستماع
+  // ⏯️ بدء الاستماع
   // ============================================================
-  
   const startListening = useCallback(async () => {
     if (!isSupported) {
       toast.error("❌ المتصفح لا يدعم البحث الصوتي");
@@ -429,7 +427,6 @@ export function VoiceSearch({
       setError(null);
       setTranscript("");
       setInterimTranscript("");
-      setSearchResponse(null);
       setIsLoading(true);
       accumulatedTranscriptRef.current = "";
       
@@ -440,7 +437,7 @@ export function VoiceSearch({
         onListeningChange(true);
       }
 
-      // ✅ حد أقصى عام (احتياطي)
+      // ✅ حد أقصى عام
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
@@ -453,7 +450,7 @@ export function VoiceSearch({
         }
       }, MAX_LISTENING_MS);
 
-      // ✅ ✅ ✅ ابدأ مؤقت السكوت فوراً
+      // ✅ ابدأ مؤقت السكوت
       resetSilenceTimeout(recognitionRef.current);
 
     } catch (error) {
@@ -495,7 +492,7 @@ export function VoiceSearch({
     }
   }, [onListeningChange, clearSilenceTimeout]);
 
-  const closeDropdown = useCallback(() => {
+  const closeStatus = useCallback(() => {
     clearSilenceTimeout();
     
     if (recognitionRef.current) {
@@ -504,7 +501,6 @@ export function VoiceSearch({
       } catch (e) {}
     }
     
-    setSearchResponse(null);
     setTranscript("");
     setInterimTranscript("");
     setIsListening(false);
@@ -546,7 +542,6 @@ export function VoiceSearch({
   // ============================================================
   // 📱 عرض المكون
   // ============================================================
-  
   if (!isSupported) {
     return (
       <Button
@@ -565,7 +560,7 @@ export function VoiceSearch({
     );
   }
 
-  const isDropdownOpen = showStatus && (isListening || isLoading || interimTranscript || transcript || searchResponse || error);
+  const isStatusOpen = showStatus && (isListening || isLoading || interimTranscript || transcript || error);
 
   return (
     <div className="relative inline-block">
@@ -599,43 +594,35 @@ export function VoiceSearch({
         )}
       </Button>
 
-      {/* ✅ ✅ ✅ Dropdown متجاوب — عرض مختلف لكل شاشة */}
-      {isDropdownOpen && (
+      {/* ✅ شاشة حالة صغيرة */}
+      {isStatusOpen && (
         <>
-          {/* ✅ Overlay للموبايل (خلفية معتمة) */}
+          {/* Overlay للموبايل */}
           <div
             className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 sm:hidden"
-            onClick={closeDropdown}
+            onClick={closeStatus}
           />
 
-          {/* ✅ Dropdown */}
           <div
             className={cn(
               "bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-[#2a655f]/20 z-50 animate-in slide-in-from-top-2 duration-200",
               
-              // ✅ موبايل: fixed في وسط الشاشة
               "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
               "w-[calc(100vw-2rem)] max-w-[400px]",
-              "max-h-[80vh] overflow-y-auto",
               "p-4",
               
-              // ✅ تابلت (sm): تحت الزر مباشرة
               "sm:absolute sm:top-full sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-0",
-              "sm:mt-2 sm:w-[350px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[500px]",
-              
-              // ✅ ديسكوب (md+): عرض ثابت 380px
-              "md:w-[380px]"
+              "sm:mt-2 sm:w-[340px] sm:max-w-[calc(100vw-2rem)]"
             )}
           >
-            
-            {/* ✅ رأس Dropdown */}
+            {/* ✅ رأس */}
             <div className="flex items-center justify-between mb-3 pb-3 border-b border-[#2a655f]/10">
               <span className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82] flex items-center gap-2">
                 <Mic className="h-4 w-4" />
                 {isArabic ? "البحث الصوتي" : "Voice Search"}
               </span>
               <button
-                onClick={closeDropdown}
+                onClick={closeStatus}
                 className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 text-slate-500 hover:text-red-500"
                 aria-label="Close"
               >
@@ -692,49 +679,6 @@ export function VoiceSearch({
               )}
             </div>
 
-            {/* ✅ عدد النتائج */}
-            {searchResponse && searchResponse.totalCount > 0 && (
-              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                  🔍 {searchResponse.totalCount} {isArabic ? 'نتيجة' : 'results'}
-                </p>
-              </div>
-            )}
-
-            {/* ✅ عرض أول 3 نتائج */}
-            {searchResponse && searchResponse.results.length > 0 && (
-              <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                  {isArabic ? '📋 النتائج:' : '📋 Results:'}
-                </p>
-                {searchResponse.results.slice(0, 3).map((result: any, index: number) => (
-                  <div key={index} className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                    <span className="text-[#2a655f] font-bold flex-shrink-0">•</span>
-                    <span className="truncate flex-1">{result.title}</span>
-                    {result.price && (
-                      <span className="text-[10px] font-bold text-emerald-600 flex-shrink-0">
-                        {result.price} SYP
-                      </span>
-                    )}
-                  </div>
-                ))}
-                {searchResponse.totalCount > 3 && (
-                  <p className="text-[10px] text-muted-foreground text-center">
-                    +{searchResponse.totalCount - 3} {isArabic ? 'أخرى' : 'more'}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* ✅ اقتراحات */}
-            {searchResponse?.suggestions && searchResponse.suggestions.length > 0 && (
-              <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                  💡 {searchResponse.suggestions[0]}
-                </p>
-              </div>
-            )}
-
             {/* ✅ رسالة الخطأ */}
             {error && (
               <div className="mt-2 pt-2 border-t border-red-100 dark:border-red-900/20">
@@ -759,7 +703,7 @@ export function VoiceSearch({
               </div>
             )}
 
-            {/* ✅ نصائح للمستخدم */}
+            {/* ✅ نصائح */}
             {isListening && (
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
@@ -769,8 +713,8 @@ export function VoiceSearch({
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
                   {isArabic
-                    ? "📝 مثال: 'جوال سامسونج تحت 1000' أو 'متاجر في دمشق'"
-                    : "📝 Example: 'Samsung phone under 1000' or 'Stores in Damascus'"}
+                    ? "📝 مثال: 'بدي كنزة حمرا' أو 'جوال سامسونج تحت 1000'"
+                    : "📝 Example: 'red jacket' or 'Samsung phone under 1000'"}
                 </p>
               </div>
             )}

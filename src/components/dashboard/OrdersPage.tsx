@@ -10,8 +10,8 @@ import {
   TrendingUp, Star, Users, Clock as ClockIcon,
   MapPin, Store,
   Wallet, Trash2, Info, ChevronDown, ChevronUp, Zap, Gift,
-  Hash,    // ✅ من الخطأ السابق
-  Shield,  // ✅ أضف هذا الآن
+  Hash,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,67 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
 const { saveAs } = pkg;
 
+// ============================================================
+// ✅ دوال تنسيق التاريخ (ميلادي + سوري)
+// ============================================================
+const formatDate = (date: string | Date, lang: string, withTime = false) => {
+  if (!date) return "—";
+  const locale = lang === "ar" ? "ar-SY" : "en-US";
+  const options: Intl.DateTimeFormatOptions = {
+    calendar: "gregory", // ✅ ميلادي
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    ...(withTime && { hour: "2-digit", minute: "2-digit" }),
+  };
+  try {
+    return new Date(date).toLocaleDateString(locale, options);
+  } catch {
+    return new Date(date).toLocaleDateString("en-GB", options);
+  }
+};
+
+const formatDateLong = (date: string | Date, lang: string, withTime = false) => {
+  if (!date) return "—";
+  const locale = lang === "ar" ? "ar-SY" : "en-US";
+  const options: Intl.DateTimeFormatOptions = {
+    calendar: "gregory",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    ...(withTime && { hour: "2-digit", minute: "2-digit" }),
+  };
+  try {
+    return new Date(date).toLocaleDateString(locale, options);
+  } catch {
+    return new Date(date).toLocaleDateString("en-GB", options);
+  }
+};
+
+// ✅ الوقت بصيغة 12 ساعة (ما بيتأثر بالتقويم)
+const formatTime = (date: string | Date, withSeconds = false) => {
+  if (!date) return "—";
+  try {
+    return new Date(date).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      ...(withSeconds && { second: "2-digit" }),
+      hour12: true,
+    });
+  } catch {
+    return "—";
+  }
+};
+
+// ✅ لاسم الملف (بدون مشاكل مع / )
+const formatDateForFilename = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 // ✅ دالة توليد رقم تتبع فريد
 const generateTrackingNumber = () => {
   const prefix = 'SQT';
@@ -39,21 +100,15 @@ const generateTrackingNumber = () => {
 
 // ✅ ✅ ✅ دوال العروض الترويجية
 function getPromoOfferData(item: any) {
-  // ✅ من metadata
   if (item.metadata?.promo_offer_data) {
     return item.metadata.promo_offer_data;
   }
-  
-  // ✅ من variation_snapshot
   if (item.variation_snapshot?.offer_data) {
     return item.variation_snapshot.offer_data;
   }
-  
-  // ✅ من offer_data مباشرة
   if (item.offer_data) {
     return item.offer_data;
   }
-  
   return null;
 }
 
@@ -157,7 +212,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
   const app = useApp();
   
   // ===== STATES =====
-  // ===== STATES =====
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   
@@ -182,10 +236,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
   // ✅ منع التمرير التلقائي عند تحميل المكون
   // ============================================================
   useEffect(() => {
-    // ✅ حفظ موضع التمرير الحالي
     const currentScroll = window.scrollY;
     
-    // ✅ منع أي تمرير تلقائي لمدة 300ms
     let isBlocking = true;
     let timeoutId: NodeJS.Timeout | null = null;
     
@@ -195,20 +247,16 @@ export const OrdersPage = React.memo(function OrdersPage() {
       }
     };
     
-    // ✅ إضافة مستمعين للأحداث
     window.addEventListener('scroll', preventScroll, { passive: true });
     window.addEventListener('wheel', preventScroll, { passive: true });
     window.addEventListener('touchmove', preventScroll, { passive: true });
     
-    // ✅ تنفيذ فوري
     requestAnimationFrame(() => {
       window.scrollTo({ top: currentScroll, behavior: 'instant' });
     });
     
-    // ✅ إلغاء الحظر بعد 300ms
     timeoutId = setTimeout(() => {
       isBlocking = false;
-      // ✅ استعادة الموضع النهائي
       window.scrollTo({ top: currentScroll, behavior: 'instant' });
     }, 300);
     
@@ -286,7 +334,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
       });
     }
 
-    // ✅ ✅ ✅ البحث النصي (مع دعم الهاش والوقت)
+    // ✅ ✅ ✅ البحث النصي (مع دعم الهاش والوقت) - ✅ مصحح للميلادي
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const cleanQ = q.replace(/^#/, '');
@@ -300,13 +348,11 @@ export const OrdersPage = React.memo(function OrdersPage() {
         const customerPhone = order.buyer_phone?.toLowerCase() || "";
         const notes = order.notes?.toLowerCase() || "";
         
-        const createdAt = new Date(order.created_at);
-        const dateStr = createdAt.toLocaleDateString(app.lang === 'ar' ? 'ar-SA' : 'en-US');
-        const timeStr = createdAt.toLocaleTimeString(app.lang === 'ar' ? 'ar-SA' : 'en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        });
+        // ✅ استخدام الدوال الجديدة (ميلادي سوري)
+        const dateStr = formatDate(order.created_at, app.lang);
+        const timeStr = formatTime(order.created_at);
         
+        const createdAt = new Date(order.created_at);
         const dateFormats = [
           dateStr.toLowerCase(),
           timeStr.toLowerCase(),
@@ -314,9 +360,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
           createdAt.toISOString().slice(0, 10),
           createdAt.toISOString().slice(0, 16),
           createdAt.toLocaleDateString('en-US'),
-          createdAt.toLocaleDateString('ar-SA'),
-          createdAt.toLocaleDateString('ar-SA', { month: 'long' }),
-          createdAt.toLocaleDateString('ar-SA', { day: 'numeric', month: 'long' }),
+          createdAt.toLocaleDateString('en-US', { month: 'long' }),
+          createdAt.toLocaleDateString('en-US', { day: 'numeric', month: 'long' }),
           String(createdAt.getFullYear()),
           String(createdAt.getDate()).padStart(2, '0'),
           String(createdAt.getMonth() + 1).padStart(2, '0'),
@@ -817,8 +862,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
       'العميل': order.buyer_name || (app.lang === "ar" ? 'عميل' : 'Customer'),
       'رقم العميل': order.buyer_phone || '—',
       'الحالة': getStatusLabel(order.status),
-      'التاريخ': new Date(order.created_at).toLocaleDateString(app.lang === 'ar' ? 'ar-SA' : 'en-US'),
-      'الوقت': new Date(order.created_at).toLocaleTimeString(app.lang === 'ar' ? 'ar-SA' : 'en-US'),
+      'التاريخ': formatDate(order.created_at, app.lang),
+      'الوقت': formatTime(order.created_at),
       'المجموع الفرعي': formatPrice(Number(order.total) || 0, app.currency, app.lang),
       'التوصيل': order.delivery_fee ? formatPrice(Number(order.delivery_fee), app.currency, app.lang) : '0',
       'الخصم': order.promo_discount ? formatPrice(Number(order.promo_discount), app.currency, app.lang) : '0',
@@ -831,7 +876,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
     ws['!cols'] = [{ wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 18 }];
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
-    saveAs(blob, `طلبات_المتجر_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.xlsx`);
+    saveAs(blob, `طلبات_المتجر_${formatDateForFilename()}.xlsx`);
     toast.success(app.lang === "ar" ? "✅ تم تصدير الطلبات إلى Excel" : "✅ Orders exported to Excel");
   }, [filteredOrders, app.lang, app.currency]);
 
@@ -869,8 +914,8 @@ export const OrdersPage = React.memo(function OrdersPage() {
         <td>${order.buyer_name || (app.lang === "ar" ? 'عميل' : 'Customer')}</td>
         <td>${order.buyer_phone || '—'}</td>
         <td>${getStatusLabel(order.status)}</td>
-        <td>${new Date(order.created_at).toLocaleDateString('ar-SA')}</td>
-        <td>${new Date(order.created_at).toLocaleTimeString('ar-SA')}</td>
+        <td>${formatDate(order.created_at, app.lang)}</td>
+        <td>${formatTime(order.created_at)}</td>
         <td>${formatPrice(Number(order.total) || 0, app.currency, app.lang)}</td>
         <td>${order.delivery_fee ? formatPrice(Number(order.delivery_fee), app.currency, app.lang) : '0'}</td>
         <td>${order.promo_discount ? formatPrice(Number(order.promo_discount), app.currency, app.lang) : '0'}</td>
@@ -879,7 +924,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
     });
     html += `</tbody></table></body></html>`;
     const blob = new Blob([html], { type: 'application/msword;charset=utf-8' });
-    saveAs(blob, `طلبات_المتجر_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.doc`);
+    saveAs(blob, `طلبات_المتجر_${formatDateForFilename()}.doc`);
     toast.success(app.lang === "ar" ? "✅ تم تصدير الطلبات إلى Word" : "✅ Orders exported to Word");
   }, [filteredOrders, stats, totalRevenue, app.lang, app.currency]);
 
@@ -1239,10 +1284,10 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         <ClockIcon className="h-3.5 w-3.5 text-[#2a655f] shrink-0" />
                         <span className="text-xs text-[#2a655f] dark:text-[#3a8a82] truncate">
                           {tempDateFrom && tempDateTo 
-                            ? `${new Date(tempDateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')} → ${new Date(tempDateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                            ? `${formatDate(tempDateFrom, app.lang, true)} → ${formatDate(tempDateTo, app.lang, true)}`
                             : tempDateFrom 
-                              ? `${app.lang === 'ar' ? 'من' : 'From'} ${new Date(tempDateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
-                              : `${app.lang === 'ar' ? 'إلى' : 'To'} ${new Date(tempDateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                              ? `${app.lang === 'ar' ? 'من' : 'From'} ${formatDate(tempDateFrom, app.lang, true)}`
+                              : `${app.lang === 'ar' ? 'إلى' : 'To'} ${formatDate(tempDateTo, app.lang, true)}`
                           }
                         </span>
                       </div>
@@ -1305,10 +1350,10 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   <ClockIcon className="h-3.5 w-3.5 text-[#2a655f] shrink-0" />
                   <span className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82] truncate">
                     {dateFrom && dateTo 
-                      ? `${new Date(dateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')} → ${new Date(dateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                      ? `${formatDate(dateFrom, app.lang, true)} → ${formatDate(dateTo, app.lang, true)}`
                       : dateFrom 
-                        ? `${app.lang === 'ar' ? 'من' : 'From'} ${new Date(dateFrom).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
-                        : `${app.lang === 'ar' ? 'إلى' : 'To'} ${new Date(dateTo).toLocaleString(app.lang === 'ar' ? 'ar-SA' : 'en-US')}`
+                        ? `${app.lang === 'ar' ? 'من' : 'From'} ${formatDate(dateFrom, app.lang, true)}`
+                        : `${app.lang === 'ar' ? 'إلى' : 'To'} ${formatDate(dateTo, app.lang, true)}`
                     }
                   </span>
                   <button
@@ -1500,17 +1545,11 @@ export const OrdersPage = React.memo(function OrdersPage() {
                         <td className="px-4 py-3 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
                           <div className="flex flex-col items-center">
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-[#2a655f] transition-colors">
-                              {new Date(order.created_at).toLocaleDateString(
-                                app.lang === "ar" ? "ar-SA" : "en-US",
-                                { day: 'numeric', month: 'short' }
-                              )}
+                              {formatDate(order.created_at, app.lang)}
                             </span>
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <ClockIcon className="h-3 w-3" />
-                              {new Date(order.created_at).toLocaleTimeString(
-                                app.lang === "ar" ? "ar-SA" : "en-US",
-                                { hour: '2-digit', minute: '2-digit' }
-                              )}
+                              {formatTime(order.created_at)}
                             </span>
                           </div>
                         </td>
@@ -1925,7 +1964,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                           >
                             {isPromo ? (
                               <div className="space-y-3">
-                                {/* شارة العرض الترويجي */}
                                 <div className="flex items-center gap-2">
                                   <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 px-3 py-1 rounded-full text-xs font-bold">
                                     <Gift className="h-3.5 w-3.5 inline mr-1.5" />
@@ -1937,14 +1975,12 @@ export const OrdersPage = React.memo(function OrdersPage() {
                                   </Badge>
                                 </div>
                                 
-                                {/* نص العرض */}
                                 {offerData?.display_text_ar && (
                                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                     {app.lang === "ar" ? offerData.display_text_ar : offerData.display_text_en}
                                   </p>
                                 )}
                                 
-                                {/* المنتجات المطلوبة */}
                                 {hasRequired && (
                                   <div className="space-y-2">
                                     <p className="text-xs font-semibold text-slate-500 flex items-center gap-2">
@@ -1985,7 +2021,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                                   </div>
                                 )}
                                 
-                                {/* الهدية */}
                                 {hasGift && (
                                   <div className="space-y-2">
                                     <p className="text-xs font-semibold text-emerald-500 flex items-center gap-2">
@@ -2232,10 +2267,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                       {totalItems} {app.lang === "ar" ? "منتج" : "items"}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(selectedOrder.created_at).toLocaleString(
-                        app.lang === "ar" ? "ar-SA" : "en-US",
-                        { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
-                      )}
+                      {formatDateLong(selectedOrder.created_at, app.lang, true)}
                     </span>
                   </div>
                 </div>

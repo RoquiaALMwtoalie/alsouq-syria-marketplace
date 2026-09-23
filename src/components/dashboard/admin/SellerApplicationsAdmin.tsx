@@ -57,6 +57,52 @@ const COLORS = {
 };
 
 // ============================================================
+// ✅ دالة تنسيق التاريخ (ميلادي + سوري)
+// ============================================================
+const formatDate = (date: string | Date, lang: string, withTime = false) => {
+  if (!date) return "—";
+  const locale = lang === "ar" ? "ar-SY" : "en-US";
+  const options: Intl.DateTimeFormatOptions = {
+    calendar: "gregory", // ✅ ميلادي
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    ...(withTime && { hour: "2-digit", minute: "2-digit" }),
+  };
+  try {
+    return new Date(date).toLocaleDateString(locale, options);
+  } catch {
+    return new Date(date).toLocaleDateString("en-GB", options);
+  }
+};
+
+// ✅ للتاريخ فقط (طويل)
+const formatDateLong = (date: string | Date, lang: string) => {
+  if (!date) return "—";
+  const locale = lang === "ar" ? "ar-SY" : "en-US";
+  const options: Intl.DateTimeFormatOptions = {
+    calendar: "gregory",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  };
+  try {
+    return new Date(date).toLocaleDateString(locale, options);
+  } catch {
+    return new Date(date).toLocaleDateString("en-GB", options);
+  }
+};
+
+// ✅ لاسم الملف (بدون مشاكل مع / )
+const formatDateForFilename = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+// ============================================================
 // ✅ أيقونات متحركة للحالات
 // ============================================================
 const STATUS_CONFIG: Record<string, { 
@@ -309,7 +355,7 @@ export function SellerApplicationsAdmin() {
       'الهاتف': a.store_phone || a.profiles?.phone || '—',
       'الحالة': a.status === 'pending' ? 'قيد المراجعة' : a.status === 'approved' ? 'موافق عليه' : 'مرفوض',
       'المحافظة': a.governorate?.name_ar || '—',
-      'تاريخ الطلب': new Date(a.created_at).toLocaleDateString('ar-SA'),
+      'تاريخ الطلب': formatDate(a.created_at, 'ar'), // ✅ ميلادي
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -329,7 +375,7 @@ export function SellerApplicationsAdmin() {
 
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
-    saveAs(blob, `الطلبات_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.xlsx`);
+    saveAs(blob, `الطلبات_${formatDateForFilename()}.xlsx`); // ✅ ميلادي
     
     toast.success(isRTL ? "✅ تم تصدير البيانات إلى Excel" : "✅ Data exported to Excel");
   };
@@ -363,7 +409,7 @@ export function SellerApplicationsAdmin() {
       </head>
       <body>
         <h1>📋 تقرير الطلبات</h1>
-        <p style="text-align: center; color: #64748b;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</p>
+        <p style="text-align: center; color: #64748b;">تاريخ التقرير: ${formatDate(new Date(), 'ar')}</p>
         <div class="stats-grid">
           <div class="stat-card"><div class="value">${stats.total}</div><div class="label">إجمالي الطلبات</div></div>
           <div class="stat-card"><div class="value">${stats.pending}</div><div class="label">قيد المراجعة</div></div>
@@ -400,7 +446,7 @@ export function SellerApplicationsAdmin() {
           <td>${a.store_phone || a.profiles?.phone || '—'}</td>
           <td class="${statusClass}">${statusText}</td>
           <td>${a.governorate?.name_ar || '—'}</td>
-          <td>${new Date(a.created_at).toLocaleDateString('ar-SA')}</td>
+          <td>${formatDate(a.created_at, 'ar')}</td>
         </tr>
       `;
     });
@@ -411,7 +457,7 @@ export function SellerApplicationsAdmin() {
       </body></html>
     `;
     const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
-    saveAs(blob, `الطلبات_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.doc`);
+    saveAs(blob, `الطلبات_${formatDateForFilename()}.doc`); // ✅ ميلادي
     toast.success(isRTL ? "✅ تم تصدير البيانات إلى Word" : "✅ Data exported to Word");
   };
 
@@ -887,7 +933,8 @@ export function SellerApplicationsAdmin() {
       </div>
 
       {/* ===== SEARCH & FILTERS - مثل Overview ===== */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="space-y-3">
+        {/* ✅ الصف الأول: البحث (كامل العرض على الموبايل) */}
         <div className="relative flex-1 group">
           <Search className={`absolute inset-y-0 my-auto ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-slate-400 group-focus-within:text-[#d81b60] transition-colors duration-300`} />
           <Input
@@ -901,83 +948,90 @@ export function SellerApplicationsAdmin() {
           />
         </div>
 
-        <Select
-          value={filterStatus}
-          onValueChange={(value: any) => {
-            setFilterStatus(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[160px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-[#d81b60]" />
-              <SelectValue placeholder={isRTL ? "جميع الحالات" : "All status"} />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
-            <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📋 {isRTL ? "جميع الحالات" : "All"}</SelectItem>
-            <SelectItem value="pending" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⏳ {isRTL ? "قيد المراجعة" : "Pending"}</SelectItem>
-            <SelectItem value="approved" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {isRTL ? "موافق" : "Approved"}</SelectItem>
-            <SelectItem value="rejected" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">❌ {isRTL ? "مرفوض" : "Rejected"}</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* ✅ الصف الثاني: الفلاتر - على الموبايل: 2 في صف + 1 في صف | على الديسكتوب: 4 في صف */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* فلتر الحالة */}
+          <Select
+            value={filterStatus}
+            onValueChange={(value: any) => {
+              setFilterStatus(value);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-[#d81b60]" />
+                <SelectValue placeholder={isRTL ? "جميع الحالات" : "All status"} />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+              <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📋 {isRTL ? "جميع الحالات" : "All"}</SelectItem>
+              <SelectItem value="pending" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⏳ {isRTL ? "قيد المراجعة" : "Pending"}</SelectItem>
+              <SelectItem value="approved" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {isRTL ? "موافق" : "Approved"}</SelectItem>
+              <SelectItem value="rejected" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">❌ {isRTL ? "مرفوض" : "Rejected"}</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select
-          value={filterType}
-          onValueChange={(value: any) => {
-            setFilterType(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[160px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
-            <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-[#d81b60]" />
-              <SelectValue placeholder={isRTL ? "النوع" : "Type"} />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
-            <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📦 {isRTL ? "جميع الأنواع" : "All"}</SelectItem>
-            <SelectItem value="store" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🏪 {isRTL ? "فتح متجر" : "Open Store"}</SelectItem>
-            <SelectItem value="product" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🛍️ {isRTL ? "إضافة منتج" : "Add Product"}</SelectItem>
-          </SelectContent>
-        </Select>
+          {/* فلتر النوع - ✅ الآن جنب فلتر الحالة على الموبايل */}
+          <Select
+            value={filterType}
+            onValueChange={(value: any) => {
+              setFilterType(value);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-[#d81b60]" />
+                <SelectValue placeholder={isRTL ? "النوع" : "Type"} />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+              <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📦 {isRTL ? "جميع الأنواع" : "All"}</SelectItem>
+              <SelectItem value="store" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🏪 {isRTL ? "فتح متجر" : "Open Store"}</SelectItem>
+              <SelectItem value="product" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">🛍️ {isRTL ? "إضافة منتج" : "Add Product"}</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select 
-          value={String(limit)} 
-          onValueChange={(value) => {
-            setLimit(Number(value));
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[100px] h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
-            <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-[#d81b60]" />
-              <SelectValue placeholder="10" />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
-            <SelectItem value="6" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">6</SelectItem>
-            <SelectItem value="10" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">10</SelectItem>
-            <SelectItem value="20" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">20</SelectItem>
-            <SelectItem value="50" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">50</SelectItem>
-            <SelectItem value="100" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">100</SelectItem>
-          </SelectContent>
-        </Select>
+          {/* عدد العرض */}
+          <Select 
+            value={String(limit)} 
+            onValueChange={(value) => {
+              setLimit(Number(value));
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 bg-white dark:bg-[#1e293b] hover:border-pink-500 transition-all duration-300 focus:ring-2 focus:ring-pink-500/30">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-[#d81b60]" />
+                <SelectValue placeholder="10" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40">
+              <SelectItem value="6" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">6</SelectItem>
+              <SelectItem value="10" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">10</SelectItem>
+              <SelectItem value="20" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">20</SelectItem>
+              <SelectItem value="50" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">50</SelectItem>
+              <SelectItem value="100" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">100</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setSearchQuery("");
-            setFilterStatus("all");
-            setFilterType("all");
-            setPage(1);
-          }}
-          className="h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-pink-500 hover:text-slate-800 transition-all duration-300"
-        >
-          <X className="h-4 w-4 mr-1.5" />
-          {isRTL ? "مسح الكل" : "Clear all"}
-        </Button>
+          {/* زر مسح الكل */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSearchQuery("");
+              setFilterStatus("all");
+              setFilterType("all");
+              setPage(1);
+            }}
+            className="w-full h-10 rounded-xl border-2 border-pink-400/60 dark:border-pink-400/40 text-slate-600 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-pink-500 hover:text-slate-800 transition-all duration-300"
+          >
+            <X className="h-4 w-4 mr-1.5" />
+            {isRTL ? "مسح الكل" : "Clear all"}
+          </Button>
+        </div>
       </div>
 
       {/* ===== TABLE - نفس تصميم جدول المتاجر ===== */}
@@ -1106,9 +1160,7 @@ export function SellerApplicationsAdmin() {
                         <StatusBadge status={a.status} />
                         {a.reviewed_at && a.status !== "pending" && (
                           <div className="text-[10px] text-slate-400 mt-0.5">
-                            {new Date(a.reviewed_at).toLocaleDateString(
-                              isRTL ? "ar-SA" : "en-US"
-                            )}
+                            {formatDate(a.reviewed_at, app.lang)}
                           </div>
                         )}
                       </TableCell>
@@ -1119,10 +1171,7 @@ export function SellerApplicationsAdmin() {
     <div className="flex items-center gap-1">
       <Calendar className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-400" />
       <span className="text-xs">
-        {new Date(a.created_at).toLocaleDateString(
-          isRTL ? "ar-SA" : "en-US",
-          { year: "numeric", month: "short", day: "numeric" }
-        )}
+        {formatDate(a.created_at, app.lang)}
       </span>
     </div>
     {/* ✅ الوقت: الساعة:الدقيقة:الثانية */}
@@ -1608,10 +1657,7 @@ export function SellerApplicationsAdmin() {
                   <p className="text-xs text-slate-500 flex items-center gap-1">
                     <Calendar className="h-3.5 w-3.5 text-[#2a655f]" />
                     {isRTL ? "تاريخ الطلب" : "Request Date"}:{" "}
-                    {new Date(selectedApp.created_at).toLocaleDateString(
-                      isRTL ? "ar-SA" : "en-US",
-                      { year: "numeric", month: "long", day: "numeric" }
-                    )}
+                    {formatDateLong(selectedApp.created_at, app.lang)}
                   </p>
                   <Button 
                     variant="outline" 
@@ -1736,7 +1782,7 @@ export function SellerApplicationsAdmin() {
                 {isProcessing ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  <CheckCircle2 className="h-4 w-2 mr-2" />
                 )}
                 {isRTL ? "تأكيد الموافقة" : "Confirm Approve"}
               </Button>

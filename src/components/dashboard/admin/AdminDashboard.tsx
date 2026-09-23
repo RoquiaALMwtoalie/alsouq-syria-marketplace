@@ -1,7 +1,7 @@
 // src/components/dashboard/admin/AdminDashboard.tsx - الأزرار زيتي فقط
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   LayoutDashboard, Package, Store, ShieldCheck, Image as ImageIcon, Megaphone, Tags,
   Search, X, Bell, Truck, Sparkles, TrendingUp, Users, Settings,
@@ -49,6 +49,20 @@ const COLORS = {
   oliveGlow: 'rgba(42,101,95,0.2)',
   oliveGlowStrong: 'rgba(42,101,95,0.35)',
 };
+
+// ✅ نوع التبويبات المسموح بها
+type AdminTabType =
+  | "overview"
+  | "listings"
+  | "stores"
+  | "delivery"
+  | "promo"
+  | "complaints"
+  | "applications"
+  | "banners"
+  | "announcements"
+  | "categories"
+  | "notifications";
 
 // ✅ تعريف الأيقونات - زيتي فقط
 const NAV_ICONS: Record<string, { 
@@ -284,10 +298,11 @@ const SystemSlider = ({ isRTL }: { isRTL: boolean }) => {
 export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
   const app = useApp();
   const navigate = useNavigate();
-  
-  const [tab, setTab] = useState<
-    "overview" | "listings" | "stores" | "delivery" | "promo" | "complaints" | "applications" | "banners" | "announcements" | "categories" | "notifications"
-  >("overview");
+
+  // ✅ قراءة التاب من الـ URL مباشرة عبر TanStack Router
+  const search = useSearch({ from: "/admin" });
+  const tab = (search?.tab || "overview") as AdminTabType;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResultsPage, setShowSearchResultsPage] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -306,58 +321,17 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
     }
   }, [tab]);
 
-  // ✅ دالة تغيير التاب مع تحديث الـ URL - بدون تمرير
-  const handleTabChange = useCallback((newTab: any) => {
-    setTab(newTab);
-    const url = new URL(window.location.href);
-    if (newTab === 'overview') {
-      url.searchParams.delete('tab');
-    } else {
-      url.searchParams.set('tab', newTab);
-    }
-    window.history.pushState({}, '', url.toString());
-  }, []);
-
-  // ✅ قراءة التاب من الـ URL عند تحميل الصفحة
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tabFromUrl = params.get('tab');
-    
-    if (tabFromUrl) {
-      const validTabs = [
-        "overview", "listings", "stores", "delivery", 
-        "promo", "complaints", "applications", "banners", 
-        "announcements", "categories", "notifications"
-      ];
-      
-      if (validTabs.includes(tabFromUrl)) {
-        setTab(tabFromUrl as any);
-      }
-    }
-  }, []);
-
-  // ✅ الاستماع لتغيرات الـ URL - بدون تمرير
-  useEffect(() => {
-    const handlePopState = () => {
-      const params = new URLSearchParams(window.location.search);
-      const tabFromUrl = params.get('tab');
-      if (tabFromUrl) {
-        const validTabs = [
-          "overview", "listings", "stores", "delivery", 
-          "promo", "complaints", "applications", "banners", 
-          "announcements", "categories", "notifications"
-        ];
-        if (validTabs.includes(tabFromUrl)) {
-          setTab(tabFromUrl as any);
-        }
-      } else {
-        setTab('overview');
-      }
-    };
-    
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  // ✅ دالة تغيير التاب - باستخدام TanStack Router
+  const handleTabChange = useCallback(
+    (newTab: AdminTabType) => {
+      navigate({
+        to: "/admin",
+        search: { tab: newTab },
+        replace: true,
+      });
+    },
+    [navigate]
+  );
 
   // ✅ تحديث الوقت الحقيقي
   useEffect(() => {
@@ -413,9 +387,9 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
   // ===== تحديد التبويب الأنسب للبحث =====
   const getBestTab = () => {
     const results = [
-      { tab: 'listings', count: filteredListings.length, label: app.lang === 'ar' ? 'المنتجات' : 'Products' },
-      { tab: 'stores', count: filteredStores.length, label: app.lang === 'ar' ? 'المتاجر' : 'Stores' },
-      { tab: 'applications', count: filteredApplications.length, label: app.lang === 'ar' ? 'طلبات البائعين' : 'Applications' },
+      { tab: 'listings' as AdminTabType, count: filteredListings.length, label: app.lang === 'ar' ? 'المنتجات' : 'Products' },
+      { tab: 'stores' as AdminTabType, count: filteredStores.length, label: app.lang === 'ar' ? 'المتاجر' : 'Stores' },
+      { tab: 'applications' as AdminTabType, count: filteredApplications.length, label: app.lang === 'ar' ? 'طلبات البائعين' : 'Applications' },
     ];
     results.sort((a, b) => b.count - a.count);
     return results[0];
@@ -565,9 +539,9 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
           <div className="space-y-4 mb-4 sm:mb-6 animate-in slide-in-from-top-5 duration-300">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
               {[
-                { key: 'listings', label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package },
-                { key: 'stores', label: app.lang === 'ar' ? 'المتاجر' : 'Stores', count: searchResults.stores, icon: Store },
-                { key: 'applications', label: app.lang === 'ar' ? 'طلبات البائعين' : 'Applications', count: searchResults.applications, icon: ShieldCheck },
+                { key: 'listings' as AdminTabType, label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package },
+                { key: 'stores' as AdminTabType, label: app.lang === 'ar' ? 'المتاجر' : 'Stores', count: searchResults.stores, icon: Store },
+                { key: 'applications' as AdminTabType, label: app.lang === 'ar' ? 'طلبات البائعين' : 'Applications', count: searchResults.applications, icon: ShieldCheck },
               ].map((item) => {
                 const isActive = tab === item.key;
                 return (
@@ -577,7 +551,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                     tabIndex={-1}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
-                      handleTabChange(item.key as any);
+                      handleTabChange(item.key);
                       setShowSearchResultsPage(false);
                     }}
                     className={`bg-white dark:bg-[#1e293b] rounded-xl border-2 border-[#2a655f]/30 dark:border-[#2a655f]/30 p-2.5 sm:p-3 text-center hover:shadow-xl transition-all duration-300 hover:scale-[1.03] group ${isActive ? 'ring-2 ring-[#2a655f] border-[#2a655f] shadow-lg shadow-[#2a655f]/20' : ''}`}

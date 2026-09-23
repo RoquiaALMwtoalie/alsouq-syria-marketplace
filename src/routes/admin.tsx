@@ -4,9 +4,36 @@ import { useEffect } from "react";
 import { useApp } from "@/lib/i18n";
 import { AdminDashboard } from "@/components/dashboard/admin/AdminDashboard";
 
+// ✅ قائمة التبويبات الصحيحة
+const ADMIN_TABS = [
+  "overview",
+  "listings",
+  "stores",
+  "delivery",
+  "promo",
+  "complaints",
+  "applications",
+  "banners",
+  "announcements",
+  "categories",
+  "notifications",
+] as const;
+
+export type AdminTab = typeof ADMIN_TABS[number];
+
 export const Route = createFileRoute("/admin")({
   component: AdminRoute,
   head: () => ({ meta: [{ title: "لوحة الأدمن — ذوق" }] }),
+  // ✅ تعريف شكل الـ search params
+  validateSearch: (search: Record<string, unknown>): { tab: AdminTab } => {
+    const tab = search.tab;
+    return {
+      tab:
+        typeof tab === "string" && (ADMIN_TABS as readonly string[]).includes(tab)
+          ? (tab as AdminTab)
+          : "overview",
+    };
+  },
 });
 
 function AdminRoute() {

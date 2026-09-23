@@ -496,7 +496,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                   setNewAddress({ ...newAddress, label: e.target.value })
                 }
                 placeholder={lang === "ar" ? "مثال: المنزل، العمل" : "e.g. Home, Work"}
-                className="mt-1.5 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30"
+                className="mt-1.5 text-base sm:text-sm rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30"
               />
             </div>
 
@@ -531,7 +531,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                 }
                 rows={4}
                 required
-                className="mt-1.5 w-full px-4 py-3 rounded-xl border border-[#2a655f]/30 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/60 focus:ring-2 focus:ring-[#2a655f]/30 focus:outline-none transition-all resize-none text-sm"
+                className="mt-1.5 w-full px-4 py-3 rounded-xl border border-[#2a655f]/30 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/60 focus:ring-2 focus:ring-[#2a655f]/30 focus:outline-none transition-all resize-none text-base sm:text-sm"
               />
               <p className="text-xs text-muted-foreground mt-1.5">
                 {lang === "ar"
@@ -597,7 +597,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                     setEditingAddress({ ...editingAddress, label: e.target.value })
                   }
                   placeholder={lang === "ar" ? "مثال: المنزل، العمل" : "e.g. Home, Work"}
-                  className="mt-1.5 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30"
+                  className="mt-1.5 text-base sm:text-sm rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30"
                 />
               </div>
 
@@ -632,7 +632,7 @@ function AddressManager({ userId, lang }: { userId: string; lang: string }) {
                   }
                   rows={4}
                   required
-                  className="mt-1.5 w-full px-4 py-3 rounded-xl border border-[#2a655f]/30 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/60 focus:ring-2 focus:ring-[#2a655f]/30 focus:outline-none transition-all resize-none text-sm"
+                  className="mt-1.5 w-full px-4 py-3 rounded-xl border border-[#2a655f]/30 bg-white/50 dark:bg-slate-900/50 focus:border-[#2a655f]/60 focus:ring-2 focus:ring-[#2a655f]/30 focus:outline-none transition-all resize-none text-base sm:text-sm"
                 />
               </div>
 
@@ -802,7 +802,7 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder={app.lang === "ar" ? "أدخل اسمك الكامل" : "Enter your full name"}
-            className="mt-1.5 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30"
+            className="mt-1.5 text-base sm:text-sm rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30"
           />
         </div>
 
@@ -818,7 +818,7 @@ function ProfileTab({ profile, refetch }: { profile: any; refetch: () => void })
             value={phone}
             onChange={(e) => handlePhoneChange(e.target.value)}
             placeholder={app.lang === "ar" ? "أدخل رقم هاتفك" : "Enter your phone number"}
-            className={`mt-1.5 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 ${phoneError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+            className={`mt-1.5 text-base sm:text-sm rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 ${phoneError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
             dir="ltr"
           />
           {phoneError && (
@@ -1020,7 +1020,7 @@ function SecurityTab() {
                     ? "أدخل كلمة المرور الحالية" 
                     : "Enter current password"
                   }
-                  className="h-11 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 pr-10"
+                  className="h-11 text-base sm:text-sm rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 pr-10"
                 />
                 <button
                   type="button"
@@ -1052,7 +1052,7 @@ function SecurityTab() {
                     ? "أدخل كلمة المرور الجديدة (8 أحرف على الأقل)" 
                     : "Enter new password (at least 8 characters)"
                   }
-                  className="h-11 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 pr-10"
+                  className="h-11 text-base sm:text-sm rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 pr-10"
                 />
                 <button
                   type="button"
@@ -1084,7 +1084,7 @@ function SecurityTab() {
                     ? "أعد إدخال كلمة المرور الجديدة" 
                     : "Re-enter new password"
                   }
-                  className="h-11 rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 pr-10"
+                  className="h-11 text-base sm:text-sm rounded-xl border-[#2a655f]/30 focus:ring-[#2a655f]/30 pr-10"
                 />
                 <button
                   type="button"
@@ -1353,7 +1353,7 @@ export function UserSettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-lg rounded-xl bg-[#2a655f]/10 dark:bg-[#2a655f]/20 p-1">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-lg rounded-xl bg-[#2a655f]/10 dark:bg-[#2a655f]/20 p-1">
           <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-lg data-[state=active]:shadow-[#2a655f]/20 transition-all">
             <AnimatedIcon Icon={User} className="h-4 w-4 mr-2" color="text-[#2a655f]" size="h-4 w-4" delay={0} />
             {app.lang === "ar" ? "الملف" : "Profile"}
