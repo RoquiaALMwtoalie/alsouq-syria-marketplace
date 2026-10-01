@@ -615,12 +615,12 @@ export function SellerDashboard({}: SellerDashboardProps) {
   };
 
   // ===== قائمة التبويب =====
-  const nav: { id: SellerTabType; label: string; icon: any; desc: string }[] = [
-    { id: "overview", label: app.lang === 'ar' ? "نظرة عامة" : "Overview", icon: LayoutDashboard, desc: app.lang === 'ar' ? 'لوحة التحكم الرئيسية' : 'Main Dashboard' },
-    { id: "products", label: app.lang === 'ar' ? "المنتجات" : "Products", icon: Package, desc: app.lang === 'ar' ? 'إدارة المنتجات' : 'Manage Products' },
-    { id: "orders", label: app.lang === 'ar' ? "الطلبات" : "Orders", icon: ShoppingCart, desc: app.lang === 'ar' ? 'متابعة الطلبات' : 'Track Orders' },
-    { id: "customers", label: app.lang === 'ar' ? "العملاء" : "Customers", icon: Users, desc: app.lang === 'ar' ? 'قاعدة العملاء' : 'Customer Base' },
-    { id: "settings", label: app.lang === 'ar' ? "الإعدادات" : "Settings", icon: Settings, desc: app.lang === 'ar' ? 'تخصيص المتجر' : 'Store Settings' },
+  const nav: { id: SellerTabType; label: string; icon: any; desc: string; badge: number }[] = [
+    { id: "overview", label: app.lang === 'ar' ? "نظرة عامة" : "Overview", icon: LayoutDashboard, desc: app.lang === 'ar' ? 'لوحة التحكم الرئيسية' : 'Main Dashboard', badge: 0 },
+    { id: "products", label: app.lang === 'ar' ? "المنتجات" : "Products", icon: Package, desc: app.lang === 'ar' ? 'إدارة المنتجات' : 'Manage Products', badge: 0 },
+    { id: "orders", label: app.lang === 'ar' ? "الطلبات" : "Orders", icon: ShoppingCart, desc: app.lang === 'ar' ? 'متابعة الطلبات' : 'Track Orders', badge: pendingOrders },
+    { id: "customers", label: app.lang === 'ar' ? "العملاء" : "Customers", icon: Users, desc: app.lang === 'ar' ? 'قاعدة العملاء' : 'Customer Base', badge: 0 },
+    { id: "settings", label: app.lang === 'ar' ? "الإعدادات" : "Settings", icon: Settings, desc: app.lang === 'ar' ? 'تخصيص المتجر' : 'Store Settings', badge: 0 },
   ];
 
   const statusLabels: any = {
@@ -1449,6 +1449,16 @@ export function SellerDashboard({}: SellerDashboardProps) {
                         }
                       `}
                     >
+                      {/* ✅ Badge أحمر */}
+                      {n.badge > 0 && (
+                        <span className={cn(
+                          "absolute -top-1.5 end-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg z-10 bg-gradient-to-br from-red-500 to-red-600 border-2 animate-pulse",
+                          isActive ? "border-white" : "border-white dark:border-slate-900"
+                        )}>
+                          {n.badge > 99 ? '99+' : n.badge}
+                        </span>
+                      )}
+                      
                       <div className={`relative transition-all duration-500 ${isActive ? 'scale-110 animate-pulse' : 'group-hover:scale-110 group-hover:rotate-6'}`}>
                         <n.icon 
                           className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#2a655f] group-hover:text-[#2a655f]'}`}
@@ -1500,6 +1510,16 @@ export function SellerDashboard({}: SellerDashboardProps) {
                           }
                         `}
                       >
+                        {/* ✅ Badge أحمر */}
+                        {n.badge > 0 && (
+                          <span className={cn(
+                            "absolute -top-1 end-1 min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-lg z-10 bg-gradient-to-br from-red-500 to-red-600 border-2 animate-pulse",
+                            isActive ? "border-white" : "border-white dark:border-slate-900"
+                          )}>
+                            {n.badge > 99 ? '99+' : n.badge}
+                          </span>
+                        )}
+                        
                         <n.icon className={`h-4.5 w-4.5 ${isActive ? 'text-white' : 'text-[#2a655f]'}`} />
                         <span className="leading-tight text-center whitespace-nowrap">
                           {n.label}

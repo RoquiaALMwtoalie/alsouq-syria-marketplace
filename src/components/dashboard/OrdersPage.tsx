@@ -1,6 +1,7 @@
 // src/components/dashboard/OrdersPage.tsx
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { 
   ShoppingBag, Package, Truck, CheckCircle2, XCircle, Clock, 
   Search, Filter, RefreshCw, FileSpreadsheet, FileText,
@@ -12,6 +13,7 @@ import {
   Wallet, Trash2, Info, ChevronDown, ChevronUp, Zap, Gift,
   Hash,
   Shield,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -210,6 +212,7 @@ function getOrderStatus(status: string) {
 
 export const OrdersPage = React.memo(function OrdersPage() {
   const app = useApp();
+  const queryClient = useQueryClient();
   
   // ===== STATES =====
   const [searchQuery, setSearchQuery] = useState("");
@@ -334,7 +337,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
       });
     }
 
-    // ✅ ✅ ✅ البحث النصي (مع دعم الهاش والوقت) - ✅ مصحح للميلادي
+    // ✅ ✅ ✅ البحث النصي (مع دعم الهاش والوقت ورقم التتبع) - ✅ مصحح للميلادي
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const cleanQ = q.replace(/^#/, '');
@@ -343,6 +346,9 @@ export const OrdersPage = React.memo(function OrdersPage() {
         const orderId = order.id?.toLowerCase() || "";
         const orderIdShort = orderId.slice(0, 8);
         const orderIdWithHash = `#${orderIdShort}`;
+        
+        // ✅ رقم التتبع
+        const trackingNumber = order.tracking_number?.toLowerCase() || "";
         
         const customerName = order.buyer_name?.toLowerCase() || "";
         const customerPhone = order.buyer_phone?.toLowerCase() || "";
@@ -372,6 +378,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
           orderIdShort,
           orderIdWithHash,
           `#${orderIdShort}`,
+          trackingNumber, // ✅ رقم التتبع
           customerName,
           customerPhone,
           notes,
@@ -473,6 +480,23 @@ export const OrdersPage = React.memo(function OrdersPage() {
     };
     return icons[status] || Clock;
   };
+
+  // ✅ دالة نسخ رقم التتبع
+  const handleCopyTracking = useCallback((trackingNumber: string) => {
+    navigator.clipboard.writeText(trackingNumber).then(() => {
+      toast.success(
+        app.lang === "ar" 
+          ? "✅ تم نسخ رقم التتبع" 
+          : "✅ Tracking number copied",
+        {
+          description: trackingNumber,
+          duration: 3000,
+        }
+      );
+    }).catch(() => {
+      toast.error(app.lang === "ar" ? "❌ فشل النسخ" : "❌ Copy failed");
+    });
+  }, [app.lang]);
 
   // ===== ACCEPT ORDER =====
   const handleAcceptOrder = useCallback(async (orderId: string) => {
@@ -704,6 +728,11 @@ export const OrdersPage = React.memo(function OrdersPage() {
         : `✅ Order accepted (Tracking: ${trackingNumber})`);
 
       refetchOrders();
+
+      // ✅ الحل: invalidate الـ queries المشتركة لتحديث عدّاد الطلبات في SellerDashboard
+      queryClient.invalidateQueries({ queryKey: ['store-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
       setDetailDialogOpen(false);
       setSelectedOrder(null);
 
@@ -711,7 +740,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
       console.error("❌ Error accepting order:", error);
       toast.error(app.lang === "ar" ? "❌ حدث خطأ في قبول الطلب" : "❌ Error accepting order");
     }
-  }, [app.lang, refetchOrders]);
+  }, [app.lang, refetchOrders, queryClient]);
 
   // ===== REJECT ORDER =====
   const handleRejectOrder = useCallback(async (orderId: string, reason: string) => {
@@ -843,6 +872,11 @@ export const OrdersPage = React.memo(function OrdersPage() {
 
       toast.success(app.lang === "ar" ? "✅ تم رفض الطلب مع إرسال السبب" : "✅ Order rejected with reason");
       refetchOrders();
+
+      // ✅ الحل: invalidate الـ queries المشتركة لتحديث عدّاد الطلبات في SellerDashboard
+      queryClient.invalidateQueries({ queryKey: ['store-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
       setRejectDialogOpen(false);
       setRejectOrderId(null);
       setRejectReason("");
@@ -853,12 +887,13 @@ export const OrdersPage = React.memo(function OrdersPage() {
     } finally {
       setIsRejecting(false);
     }
-  }, [app.lang, app.user?.id, refetchOrders]);
+  }, [app.lang, app.user?.id, refetchOrders, queryClient]);
 
   // ===== EXPORTS =====
   const exportToExcel = useCallback(() => {
     const exportData = filteredOrders.map((order: any) => ({
       'رقم الطلب': String(order.id).slice(0, 8),
+      'رقم التتبع': order.tracking_number || '—',
       'العميل': order.buyer_name || (app.lang === "ar" ? 'عميل' : 'Customer'),
       'رقم العميل': order.buyer_phone || '—',
       'الحالة': getStatusLabel(order.status),
@@ -873,7 +908,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'الطلبات');
-    ws['!cols'] = [{ wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 18 }];
+    ws['!cols'] = [{ wch: 15 }, { wch: 22 }, { wch: 20 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 18 }];
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
     saveAs(blob, `طلبات_المتجر_${formatDateForFilename()}.xlsx`);
@@ -901,7 +936,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
         <div class="stat"><div class="value">${formatPrice(totalRevenue, app.currency, app.lang)}</div><div class="label">إجمالي الإيرادات</div></div>
       </div>
       <table><thead><tr>
-        <th>#</th><th>رقم الطلب</th><th>العميل</th><th>رقم العميل</th><th>الحالة</th><th>التاريخ</th><th>الوقت</th><th>المجموع الفرعي</th><th>التوصيل</th><th>الخصم</th><th>الإجمالي الكامل</th>
+        <th>#</th><th>رقم الطلب</th><th>رقم التتبع</th><th>العميل</th><th>رقم العميل</th><th>الحالة</th><th>التاريخ</th><th>الوقت</th><th>المجموع الفرعي</th><th>التوصيل</th><th>الخصم</th><th>الإجمالي الكامل</th>
       </tr></thead><tbody>
     `;
     filteredOrders.slice(0, 100).forEach((order: any, i: number) => {
@@ -911,6 +946,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
       html += `<tr>
         <td>${i+1}</td>
         <td>${String(order.id).slice(0, 8)}</td>
+        <td>${order.tracking_number || '—'}</td>
         <td>${order.buyer_name || (app.lang === "ar" ? 'عميل' : 'Customer')}</td>
         <td>${order.buyer_phone || '—'}</td>
         <td>${getStatusLabel(order.status)}</td>
@@ -1072,7 +1108,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
           <Input 
             value={searchQuery} 
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
-            placeholder={app.lang === "ar" ? "🔍 ابحث برقم الطلب #، اسم العميل، التاريخ..." : "🔍 Search by Order #, Customer, Date..."} 
+            placeholder={app.lang === "ar" ? "🔍 ابحث برقم الطلب #، رقم التتبع، اسم العميل، التاريخ..." : "🔍 Search by Order #, Tracking #, Customer, Date..."} 
             className="ps-9 pe-9 h-10 sm:h-11 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 text-sm" 
           />
           {searchQuery && (
@@ -1464,10 +1500,10 @@ export const OrdersPage = React.memo(function OrdersPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-slate-200 dark:border-slate-700 hover:bg-transparent bg-gradient-to-r from-slate-100/50 via-slate-50/30 to-slate-100/50 dark:from-slate-800/30 dark:via-slate-700/20 dark:to-slate-800/30 border-b-2 border-slate-200 dark:border-slate-700">
-                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-slate-300 text-xs uppercase tracking-wider border-r-2 border-slate-200/60 dark:border-slate-700/60">
+                    <th className="px-4 py-3 text-center font-bold text-[#2a655f] dark:text-slate-300 text-xs uppercase tracking-wider border-r-2 border-slate-200/60 dark:border-slate-700/60 min-w-[220px]">
                       <div className="flex items-center justify-center gap-2">
                         <Hash className="h-3.5 w-3.5 text-[#2a655f] dark:text-slate-300" />
-                        {app.lang === "ar" ? "رقم الطلب" : "Order #"}
+                        {app.lang === "ar" ? "رقم الطلب / رقم التتبع" : "Order # / Tracking #"}
                       </div>
                     </th>
                     <th className="px-4 py-3 text-right font-bold text-[#2a655f] dark:text-slate-300 text-xs uppercase tracking-wider border-r-2 border-slate-200/60 dark:border-slate-700/60">
@@ -1508,16 +1544,37 @@ export const OrdersPage = React.memo(function OrdersPage() {
                     const statusColor = getStatusColor(order.status);
                     const isPending = order.status === "pending";
                     
+                    // ✅ استخراج رقم الطلب ورقم التتبع
+                    const orderNumber = String(order.id).slice(0, 8);
+                    const trackingNumber = order.tracking_number || null;
+                    
                     return (
                       <tr 
                         key={order.id} 
                         className="group hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition-colors duration-300 cursor-pointer border-b-2 border-slate-200/60 dark:border-slate-700/60"
                         onClick={() => { setSelectedOrder(order); setDetailDialogOpen(true); }}
                       >
+                        {/* ✅ عمود موحد: رقم الطلب + رقم التتبع */}
                         <td className="px-4 py-3 text-center border-r-2 border-slate-200/60 dark:border-slate-700/60">
-                          <span className="font-mono font-bold text-sm text-[#2a655f] dark:text-slate-300 group-hover:text-[#2a655f] transition-colors">
-                            #{String(order.id).slice(0, 8)}
-                          </span>
+                          <div className="flex flex-col items-center gap-1">
+                            {/* رقم الطلب */}
+                            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/30 font-mono font-bold text-[10px] flex items-center gap-1">
+                              <Hash className="h-2.5 w-2.5" />
+                              {app.lang === "ar" ? `طلب: #${orderNumber}` : `Order: #${orderNumber}`}
+                            </Badge>
+                            {/* رقم التتبع */}
+                            {trackingNumber ? (
+                              <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-mono font-bold text-[10px] flex items-center gap-1">
+                                <Truck className="h-2.5 w-2.5" />
+                                {app.lang === "ar" ? `تتبع: ${trackingNumber}` : `Track: ${trackingNumber}`}
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-slate-500/10 text-slate-500 border border-slate-500/30 text-[9px] flex items-center gap-1">
+                                <Truck className="h-2.5 w-2.5" />
+                                {app.lang === "ar" ? "لا يوجد رقم تتبع" : "No tracking #"}
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         
                         <td className="px-4 py-3 text-right border-r-2 border-slate-200/60 dark:border-slate-700/60">
@@ -1766,6 +1823,10 @@ export const OrdersPage = React.memo(function OrdersPage() {
             const StatusIcon = status.icon;
             const isActive = selectedOrder.status === 'pending' || selectedOrder.status === 'accepted' || selectedOrder.status === 'shipped' || selectedOrder.status === 'assigned';
 
+            // ✅ استخراج رقم الطلب ورقم التتبع
+            const displayOrderNumber = String(selectedOrder.id).slice(0, 12);
+            const displayTrackingNumber = selectedOrder.tracking_number || null;
+
             return (
               <div>
                 <div className="flex items-center justify-between mb-6">
@@ -1776,10 +1837,37 @@ export const OrdersPage = React.memo(function OrdersPage() {
                       </div>
                       {app.lang === "ar" ? "تفاصيل الطلب" : "Order Details"}
                     </h2>
-                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
-                      #{String(selectedOrder.id).slice(0, 12)}
-                    </p>
+                    {/* ✅ رقم الطلب + رقم التتبع معاً */}
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
+                        <Hash className="h-3.5 w-3.5 text-[#2a655f]" />
+                        {app.lang === "ar" ? `طلب #${displayOrderNumber}` : `Order #${displayOrderNumber}`}
+                      </p>
+                      {displayTrackingNumber && (
+                        <>
+                          <span className="text-muted-foreground/30">|</span>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 rounded-full border border-blue-200/50 dark:border-blue-800/30 flex items-center gap-1">
+                              <Truck className="h-3 w-3" />
+                              {app.lang === "ar" ? `تتبع: ${displayTrackingNumber}` : `Track: ${displayTrackingNumber}`}
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 px-2 rounded-lg border border-blue-500/30 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-[10px] font-medium transition-all duration-300"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyTracking(displayTrackingNumber);
+                              }}
+                            >
+                              <Copy className="h-2.5 w-2.5 mr-1" />
+                              {app.lang === "ar" ? "نسخ" : "Copy"}
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <Badge className={cn(
                     "border-2 border-slate-200 dark:border-slate-700 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold shadow-sm hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors",

@@ -123,7 +123,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
   
   // State
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "pending" | "published">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "published" | "rejected">("all");
   const [filterType, setFilterType] = useState<"all" | "product" | "offer" | "promo">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -294,7 +294,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
       total: productsWithPromo.length,
       pending: productsWithPromo.filter((p: any) => p.status === "pending").length,
       published: productsWithPromo.filter((p: any) => p.status === "published").length,
-      archived: productsWithPromo.filter((p: any) => p.status === "archived").length,
+      rejected: productsWithPromo.filter((p: any) => p.status === "rejected").length,
       offers: productsWithPromo.filter((p: any) => p.is_offer === true).length,
       products: productsWithPromo.filter((p: any) => p.is_offer !== true && !p.has_promo).length,
       promo: promoCount,
@@ -313,7 +313,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
       return {
         'اسم المنتج': p.title_ar || '—',
         'السعر': formatPrice(Number(p.price), app.currency, app.lang),
-        'الحالة': p.status === 'pending' ? 'قيد المراجعة' : p.status === 'published' ? 'منشور' : 'مؤرشف',
+        'الحالة': p.status === 'pending' ? 'قيد المراجعة' : p.status === 'published' ? 'منشور' : p.status === 'rejected' ? 'مرفوض' : 'غير معروف',
         'النوع': p.is_promo_offer ? 'عرض ترويجي' : p.is_offer ? 'عرض تخفيض' : 'منتج',
         'التصنيف': catStr,
         'تاريخ الإضافة': new Date(p.created_at).toLocaleDateString(app.lang === 'ar' ? 'ar-SA' : 'en-US'),
@@ -348,7 +348,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
       
       html += `<tr><td>${i+1}</td><td>${p.title_ar||'—'}</td>
         <td>${formatPrice(Number(p.price), app.currency, app.lang)}</td>
-        <td>${p.status === 'pending' ? 'قيد المراجعة' : p.status === 'published' ? 'منشور' : 'مؤرشف'}</td>
+        <td>${p.status === 'pending' ? 'قيد المراجعة' : p.status === 'published' ? 'منشور' : p.status === 'rejected' ? 'مرفوض' : 'غير معروف'}</td>
         <td>${type}</td>
         <td>${catStr}</td></tr>`;
     });
@@ -623,35 +623,37 @@ export const ProductsPage = React.memo(function ProductsPage() {
   }, [myListings, update, refetchMyListings, notifyAdmin, app.user, app.lang]);
 
   // ===== إعادة نشر المنتج =====
-  const handleRepublish = useCallback(async (product: any) => {
-    try {
-      setIsSaving(true);
-      
-      await update.mutateAsync({
-        id: product.id,
-        patch: {
-          status: "pending",
-          updated_at: new Date().toISOString(),
-        }
-      });
-      
-      toast.success(app.lang === "ar" ? "📤 تم إرسال طلب إعادة النشر للمراجعة" : "📤 Republish request sent for review");
-      await notifyAdmin(product.title_ar, "إعادة نشر", app.user!.id, product.id);
-      
-      queryClient.invalidateQueries({ queryKey: ["listings", "my", app.user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["listings"] });
-      queryClient.invalidateQueries({ queryKey: ["listing", product.id] });
-      
-      await refetchMyListings();
-      
-    } catch (error) {
-      console.error("❌ Error republishing product:", error);
-      toast.error(app.lang === "ar" ? "❌ فشل إرسال طلب إعادة النشر" : "❌ Failed to send republish request");
-    } finally {
-      setIsSaving(false);
-    }
-  }, [update, app.user, app.lang, notifyAdmin, refetchMyListings, queryClient]);
-
+ const handleRepublish = useCallback(async (product: any) => {
+  try {
+    setIsSaving(true);
+    
+    await update.mutateAsync({
+      id: product.id,
+      patch: {
+        status: "pending",
+        rejection_reason: null,       // ← ✅ نظّف سبب الرفض
+        rejected_at: null,             // ← ✅ نظّف تاريخ الرفض
+        rejected_by: null,             // ← ✅ نظّف من رفض
+        updated_at: new Date().toISOString(),
+      }
+    });
+    
+    toast.success(app.lang === "ar" ? "📤 تم إرسال طلب إعادة النشر للمراجعة" : "📤 Republish request sent for review");
+    await notifyAdmin(product.title_ar, "إعادة نشر", app.user!.id, product.id);
+    
+    queryClient.invalidateQueries({ queryKey: ["listings", "my", app.user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["listings"] });
+    queryClient.invalidateQueries({ queryKey: ["listing", product.id] });
+    
+    await refetchMyListings();
+    
+  } catch (error) {
+    console.error("❌ Error republishing product:", error);
+    toast.error(app.lang === "ar" ? "❌ فشل إرسال طلب إعادة النشر" : "❌ Failed to send republish request");
+  } finally {
+    setIsSaving(false);
+  }
+}, [update, app.user, app.lang, notifyAdmin, refetchMyListings, queryClient]);
   // ===== دوال العروض الترويجية =====
   const openConvertDialog = useCallback((product: any) => {
     setProductToConvert(product);
@@ -1031,7 +1033,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
           { key: 'offers', label: app.lang === 'ar' ? 'تخفيضات' : 'Discounts', value: stats.offers, icon: Percent, gradient: 'from-[#1a4f4a] to-[#f9a8d4]' },
           { key: 'promo', label: app.lang === 'ar' ? 'ترويجية' : 'Promo', value: stats.promo, icon: Sparkles, gradient: 'from-[#d81b60] to-[#f9a8d4]' },
           { key: 'pending', label: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: stats.pending, icon: Clock, gradient: 'from-amber-500 to-orange-500' },
-          { key: 'published', label: app.lang === 'ar' ? 'منشورة' : 'Published', value: stats.published, icon: CheckCircle2, gradient: 'from-emerald-500 to-teal-500' },
+          { key: 'rejected', label: app.lang === 'ar' ? 'مرفوضة' : 'Rejected', value: stats.rejected, icon: AlertTriangle, gradient: 'from-red-500 to-rose-500' },
         ].map((stat, i) => (
           <div 
             key={i} 
@@ -1097,6 +1099,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
                 <SelectItem value="all">📋 {app.lang === "ar" ? "الكل" : "All"}</SelectItem>
                 <SelectItem value="pending">⏳ {app.lang === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
                 <SelectItem value="published">✅ {app.lang === "ar" ? "منشور" : "Published"}</SelectItem>
+                <SelectItem value="rejected">❌ {app.lang === "ar" ? "مرفوض" : "Rejected"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1310,10 +1313,12 @@ export const ProductsPage = React.memo(function ProductsPage() {
                           <Badge className={cn(
                             "text-[9px] border-0 px-2 py-0.5",
                             product.status === 'published' && "bg-emerald-500/10 text-emerald-600",
-                            product.status === 'pending' && "bg-amber-500/10 text-amber-600"
+                            product.status === 'pending' && "bg-amber-500/10 text-amber-600",
+                            product.status === 'rejected' && "bg-red-500/10 text-red-600"
                           )}>
                             {product.status === 'published' && '✅ ' + (app.lang === "ar" ? "منشور" : "Published")}
                             {product.status === 'pending' && '⏳ ' + (app.lang === "ar" ? "قيد المراجعة" : "Pending")}
+                            {product.status === 'rejected' && '❌ ' + (app.lang === "ar" ? "مرفوض" : "Rejected")}
                           </Badge>
                           
                           {product.avg_rating > 0 && (
@@ -1381,6 +1386,19 @@ export const ProductsPage = React.memo(function ProductsPage() {
                               title={app.lang === "ar" ? "إضافة عرض ترويجي" : "Add Promo"}
                             >
                               <Sparkles className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          
+                          {product.status === 'rejected' && !product.is_promo_offer && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 w-8 p-0 rounded-lg border-amber-200 dark:border-amber-700 text-amber-600 dark:text-amber-400 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-700 transition-all"
+                              onClick={() => handleRepublish(product)}
+                              disabled={isSaving}
+                              title={app.lang === "ar" ? "إعادة نشر" : "Republish"}
+                            >
+                              <RefreshCw className="h-3.5 w-3.5" />
                             </Button>
                           )}
                           

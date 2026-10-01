@@ -65,16 +65,72 @@ function SectionHeader({ title, action }: { title: string; action?: React.ReactN
   );
 }
 
-function Section({ children, alt = false, className }: { children: React.ReactNode; alt?: boolean; className?: string }) {
+// ✅✅✅ [تعديل #1] Section — أضفنا minHeight لمنع CLS
+function Section({ 
+  children, 
+  alt = false, 
+  className,
+  minHeight = "min-h-[300px]"
+}: { 
+  children: React.ReactNode; 
+  alt?: boolean; 
+  className?: string;
+  minHeight?: string;
+}) {
   return (
     <div className={cn(
       "w-full py-4 sm:py-6 md:py-8",
+      minHeight,
       alt ? "bg-slate-50/80 dark:bg-slate-900/50" : "bg-white dark:bg-slate-900",
       className
     )}>
       <div className="mx-auto max-w-7xl px-2 sm:px-4">{children}</div>
     </div>
   );
+}
+
+// ============================================================
+// ✅✅✅ [مكوّن جديد — إضافة احترافية] RenderIfReady
+// يعرض children فقط عندما:
+//   1. البيانات جاهزة (ليس في حالة تحميل)
+//   2. البيانات غير فارغة (length > 0)
+// 
+// الفوائد:
+//   - لا skeleton بلا داعي (إذا البيانات فارغة → لا شيء)
+//   - لا CLS (minHeight يحجز المساحة أثناء التحميل)
+//   - كود نظيف (مكوّن واحد لكل الأقسام)
+// 
+// ⚠️ لا يحذف أي شيء — فقط مكوّن جديد
+// ============================================================
+function RenderIfReady({
+  isLoading,
+  isEmpty,
+  minHeight = "min-h-[280px]",
+  children,
+}: {
+  isLoading: boolean;
+  isEmpty: boolean;
+  minHeight?: string;
+  children: React.ReactNode;
+}) {
+  // ✅ الحالة 1: في حالة تحميل → احجز المساحة (skeleton بسيط)
+  if (isLoading) {
+    return (
+      <div className={cn("w-full py-4 sm:py-6 md:py-8", minHeight)}>
+        <div className="mx-auto max-w-7xl px-2 sm:px-4">
+          <div className="h-full w-full animate-pulse bg-slate-100/50 dark:bg-slate-800/50 rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ الحالة 2: البيانات فارغة → لا تعرض شيئاً
+  if (isEmpty) {
+    return null;
+  }
+
+  // ✅ الحالة 3: البيانات جاهزة وغير فارغة → اعرض children
+  return <>{children}</>;
 }
 
 // ============================================================
@@ -431,21 +487,27 @@ function Home() {
 
   useEffect(() => { setTotalCount(productsData.count || 0); }, [productsData.count]);
 
+  // ✅✅✅ [تعديل احترافي — Infinite Scroll]
+  // المنطق الجديد:
+  //   - إذا آخر صفحة أعطت LIMIT كامل (8) → قد يكون هناك المزيد → hasMore = true
+  //   - إذا آخر صفحة أعطت أقل من LIMIT → لا مزيد → hasMore = false
+  // هذا يحل مشكلة count = data.length في useListings
   useEffect(() => {
-    const total = productsData.count || 0;
-    const loaded = page * LIMIT;
-    setHasMore(loaded < total);
-  }, [productsData.count, page, LIMIT]);
+    const lastPageLength = productsData.data?.length || 0;
+    const hasMoreItems = lastPageLength >= LIMIT;
+    setHasMore(hasMoreItems);
+  }, [productsData.data?.length, LIMIT]);
 
   // ============================================================
-  // ✅ تحديث allItems — مع منع التكرار
-  // 
-  // 🔴 المشكلة السابقة:
-  //   - `paginatedItems` مرجع جديد كل render → useEffect يستدعي setAllItems → loop
-  // 
+  // ✅✅✅ [تعديل احترافي — Infinite Scroll تراكمي]
+  // المشكلة السابقة:
+  //   - `setAllItems(paginatedItems)` → يستبدل القائمة → يفقد العناصر القديمة
+  //   - عند page=2 → allItems = 4 فقط (بدل 12)
+  //
   // ✅ الحل:
-  //   - استخدم key فريد (IDs) بدل المرجع
-  //   - إذا نفس الـ key → لا تعمل شي
+  //   - page=1 → استبدل (setAllItems)
+  //   - page>1 → أضف (setAllItems(prev => [...prev, ...new]))
+  //   - منع التكرار عبر Set of IDs
   // ============================================================
   useEffect(() => {
     // ✅ key فريد لكل مجموعة بيانات
@@ -456,10 +518,22 @@ function Home() {
     }
 
     lastLoadedKeyRef.current = currentKey;
-    setAllItems(paginatedItems);
+
+    if (page === 1) {
+      // ✅ الصفحة الأولى → استبدل
+      setAllItems(paginatedItems);
+    } else {
+      // ✅ الصفحات التالية → أضف (مع منع التكرار)
+      setAllItems((prev) => {
+        const existingIds = new Set(prev.map((item: any) => item.id));
+        const newItems = paginatedItems.filter((item: any) => !existingIds.has(item.id));
+        return [...prev, ...newItems];
+      });
+    }
+
     setIsInitialLoad(false);
     setIsLoadingMore(false);
-  }, [paginatedItems]);
+  }, [paginatedItems, page]);
 
   // ============================================================
   // ✅ Infinite Scroll — محسّن لمنع Infinite Loop
@@ -627,8 +701,13 @@ function Home() {
 
       {/* ============================================================
           🔥 2. عروض اليوم — نمط نون (Grid بدل Scroll)
+          ✅✅✅ [تعديل احترافي] RenderIfReady — إخفاء كامل عند عدم وجود عروض
           ============================================================ */}
-      {allOffers.length > 0 && (
+      <RenderIfReady
+        isLoading={pLoading || promoLoading}
+        isEmpty={!pLoading && !promoLoading && allOffers.length === 0}
+        minHeight="min-h-[280px]"
+      >
         <Section alt>
           <SectionHeader
             title={app.lang === "ar" ? "عروض اليوم" : "Today's Offers"}
@@ -644,7 +723,7 @@ function Home() {
             ))}
           </div>
         </Section>
-      )}
+      </RenderIfReady>
 
       {/* ============================================================
           📂 3. تسوق حسب القسم (بأسلوب نون - Expandable Cards)
@@ -673,35 +752,43 @@ function Home() {
 
       {/* ============================================================
           🏪 4. متاجر مميزة — عمودين على الموبايل
+          ✅✅✅ [تعديل احترافي] RenderIfReady
           ============================================================ */}
-      <Section alt>
-        <SectionHeader
-          title={app.lang === "ar" ? "متاجر مميزة" : "Featured Stores"}
-          action={<ViewMoreButton to="/stores" lang={app.lang} />}
-        />
-        <div className={GRID_STORES}>
-          {allStores.slice(0, 8).map((s, index) => (
-            <div key={s.id} className="animate-fade-up h-full" style={{ animationDelay: `${index * 100}ms` }}>
-              <StoreCard store={s} />
-            </div>
-          ))}
-        </div>
-      </Section>
+      <RenderIfReady
+        isLoading={sLoading && allStores.length === 0}
+        isEmpty={!sLoading && allStores.length === 0}
+        minHeight="min-h-[280px]"
+      >
+        <Section alt>
+          <SectionHeader
+            title={app.lang === "ar" ? "متاجر مميزة" : "Featured Stores"}
+            action={<ViewMoreButton to="/stores" lang={app.lang} />}
+          />
+          <div className={GRID_STORES}>
+            {allStores.slice(0, 8).map((s, index) => (
+              <div key={s.id} className="animate-fade-up h-full" style={{ animationDelay: `${index * 100}ms` }}>
+                <StoreCard store={s} />
+              </div>
+            ))}
+          </div>
+        </Section>
+      </RenderIfReady>
 
       {/* ============================================================
           🆕 5. أحدث المنتجات والعروض — نمط نون
+          ✅✅✅ [تعديل احترافي] RenderIfReady + Infinite Scroll محفوظ
           ============================================================ */}
-      <Section alt className="pb-2">
-        <SectionHeader
-          title={app.lang === "ar" ? "أحدث المنتجات والعروض" : "Latest Products & Offers"}
-          action={<ViewMoreButton to="/products" lang={app.lang} />}
-        />
+      <RenderIfReady
+        isLoading={pLoading && allItems.length === 0}
+        isEmpty={!pLoading && allItems.length === 0}
+        minHeight="min-h-[400px]"
+      >
+        <Section alt className="pb-2">
+          <SectionHeader
+            title={app.lang === "ar" ? "أحدث المنتجات والعروض" : "Latest Products & Offers"}
+            action={<ViewMoreButton to="/products" lang={app.lang} />}
+          />
 
-        {pLoading && allItems.length === 0 ? (
-          <div className={GRID_PRODUCTS}>
-            {Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)}
-          </div>
-        ) : (
           <div className={GRID_PRODUCTS}>
             {allItems.map((item, index) => (
               <div key={`${item.id}-${item.is_promo_offer ? 'promo' : 'listing'}-${index}`} className="animate-fade-up h-full" style={{ animationDelay: `${(index % 8) * 50}ms` }}>
@@ -711,25 +798,25 @@ function Home() {
               </div>
             ))}
           </div>
-        )}
 
-        {hasMore && (
-          <div ref={loadMoreRef} className="flex justify-center py-4 sm:py-6 mt-4">
-            {isFetching || isLoadingMore ? (
-              <div className="flex items-center gap-3" style={{ color: OLIVE }}>
-                <div className="h-5 w-5 border-2 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs sm:text-sm font-medium">
-                  {app.lang === "ar" ? "جاري التحميل..." : "Loading..."}
-                </span>
-              </div>
-            ) : (
-              <div className="text-xs text-muted-foreground animate-pulse">
-                {app.lang === "ar" ? "مرر للأسفل للمزيد" : "Scroll down for more"}
-              </div>
-            )}
-          </div>
-        )}
-      </Section>
+          {hasMore && (
+            <div ref={loadMoreRef} className="flex justify-center py-4 sm:py-6 mt-4">
+              {isFetching || isLoadingMore ? (
+                <div className="flex items-center gap-3" style={{ color: OLIVE }}>
+                  <div className="h-5 w-5 border-2 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs sm:text-sm font-medium">
+                    {app.lang === "ar" ? "جاري التحميل..." : "Loading..."}
+                  </span>
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground animate-pulse">
+                  {app.lang === "ar" ? "مرر للأسفل للمزيد" : "Scroll down for more"}
+                </div>
+              )}
+            </div>
+          )}
+        </Section>
+      </RenderIfReady>
 
       {/* ============================================================
           👀 7. شاهدتها مؤخراً
@@ -934,20 +1021,22 @@ export function StoreCard({ store, badge }: { store: any; badge?: React.ReactNod
 
 // ============================================================
 // RECENTLY VIEWED
+// ✅✅✅ [تعديل #3] قراءة localStorage متزامنة — بدون useEffect
 // ============================================================
 function RecentlyViewed() {
   const app = useApp();
-  const [recentItems, setRecentItems] = useState<any[]>([]);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('recently_viewed');
-    if (stored) {
-      try {
+  // ✅ قراءة متزامنة من localStorage — بدون useEffect
+  const [recentItems] = useState<any[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem('recently_viewed');
+      if (stored) {
         const parsed = JSON.parse(stored);
-        setRecentItems(parsed.slice(0, 4));
-      } catch (e) {}
-    }
-  }, []);
+        return Array.isArray(parsed) ? parsed.slice(0, 4) : [];
+      }
+    } catch (e) {}
+    return [];
+  });
 
   if (recentItems.length === 0) return null;
 

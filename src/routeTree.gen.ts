@@ -50,6 +50,7 @@ import { Route as MessagesUserIdRouteImport } from './routes/messages_.$userId'
 import { Route as OfferIdRouteImport } from './routes/offer/$id'
 import { Route as StoreIdRouteImport } from './routes/store.$id'
 import { Route as TrackingTrackingNumberRouteImport } from './routes/tracking/$trackingNumber'
+import { Route as AdminComplaintsIdRouteImport } from './routes/admin.complaints.$id'
 import { Route as DeliveryConversationUserIdRouteImport } from './routes/delivery/conversation.$userId'
 import { Route as DeliveryOrdersIdRouteImport } from './routes/delivery/orders/$id'
 import { Route as DeliveryOrdersNewRouteImport } from './routes/delivery/orders/new'
@@ -262,6 +263,11 @@ const TrackingTrackingNumberRoute = TrackingTrackingNumberRouteImport.update({
   path: '/tracking/$trackingNumber',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminComplaintsIdRoute = AdminComplaintsIdRouteImport.update({
+  id: '/complaints/$id',
+  path: '/complaints/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const DeliveryConversationUserIdRoute =
   DeliveryConversationUserIdRouteImport.update({
     id: '/delivery/conversation/$userId',
@@ -298,7 +304,7 @@ const ApiPublicUploadsSplatRoute = ApiPublicUploadsSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/ai': typeof AiRoute
   '/become-seller': typeof BecomeSellerRoute
   '/cart': typeof CartRoute
@@ -338,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/tracking/$trackingNumber': typeof TrackingTrackingNumberRoute
   '/delivery/': typeof DeliveryIndexRoute
   '/distributors/': typeof DistributorsIndexRoute
+  '/admin/complaints/$id': typeof AdminComplaintsIdRoute
   '/delivery/conversation/$userId': typeof DeliveryConversationUserIdRoute
   '/delivery/orders/$id': typeof DeliveryOrdersIdRoute
   '/delivery/orders/new': typeof DeliveryOrdersNewRoute
@@ -347,7 +354,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/ai': typeof AiRoute
   '/become-seller': typeof BecomeSellerRoute
   '/cart': typeof CartRoute
@@ -387,6 +394,7 @@ export interface FileRoutesByTo {
   '/tracking/$trackingNumber': typeof TrackingTrackingNumberRoute
   '/delivery': typeof DeliveryIndexRoute
   '/distributors': typeof DistributorsIndexRoute
+  '/admin/complaints/$id': typeof AdminComplaintsIdRoute
   '/delivery/conversation/$userId': typeof DeliveryConversationUserIdRoute
   '/delivery/orders/$id': typeof DeliveryOrdersIdRoute
   '/delivery/orders/new': typeof DeliveryOrdersNewRoute
@@ -397,7 +405,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/ai': typeof AiRoute
   '/become-seller': typeof BecomeSellerRoute
   '/cart': typeof CartRoute
@@ -437,6 +445,7 @@ export interface FileRoutesById {
   '/tracking/$trackingNumber': typeof TrackingTrackingNumberRoute
   '/delivery/': typeof DeliveryIndexRoute
   '/distributors/': typeof DistributorsIndexRoute
+  '/admin/complaints/$id': typeof AdminComplaintsIdRoute
   '/delivery/conversation/$userId': typeof DeliveryConversationUserIdRoute
   '/delivery/orders/$id': typeof DeliveryOrdersIdRoute
   '/delivery/orders/new': typeof DeliveryOrdersNewRoute
@@ -488,6 +497,7 @@ export interface FileRouteTypes {
     | '/tracking/$trackingNumber'
     | '/delivery/'
     | '/distributors/'
+    | '/admin/complaints/$id'
     | '/delivery/conversation/$userId'
     | '/delivery/orders/$id'
     | '/delivery/orders/new'
@@ -537,6 +547,7 @@ export interface FileRouteTypes {
     | '/tracking/$trackingNumber'
     | '/delivery'
     | '/distributors'
+    | '/admin/complaints/$id'
     | '/delivery/conversation/$userId'
     | '/delivery/orders/$id'
     | '/delivery/orders/new'
@@ -586,6 +597,7 @@ export interface FileRouteTypes {
     | '/tracking/$trackingNumber'
     | '/delivery/'
     | '/distributors/'
+    | '/admin/complaints/$id'
     | '/delivery/conversation/$userId'
     | '/delivery/orders/$id'
     | '/delivery/orders/new'
@@ -596,7 +608,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AiRoute: typeof AiRoute
   BecomeSellerRoute: typeof BecomeSellerRoute
   CartRoute: typeof CartRoute
@@ -933,6 +945,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrackingTrackingNumberRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/complaints/$id': {
+      id: '/admin/complaints/$id'
+      path: '/complaints/$id'
+      fullPath: '/admin/complaints/$id'
+      preLoaderRoute: typeof AdminComplaintsIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/delivery/conversation/$userId': {
       id: '/delivery/conversation/$userId'
       path: '/delivery/conversation/$userId'
@@ -978,9 +997,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminComplaintsIdRoute: typeof AdminComplaintsIdRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminComplaintsIdRoute: AdminComplaintsIdRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AiRoute: AiRoute,
   BecomeSellerRoute: BecomeSellerRoute,
   CartRoute: CartRoute,

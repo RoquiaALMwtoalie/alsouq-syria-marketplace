@@ -1,6 +1,7 @@
 // src/components/dashboard/admin/AdminListings.tsx
 
 import { useState, useMemo, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -94,7 +95,8 @@ const formatDateForFilename = () => {
 
 export function AdminListings() {
   const app = useApp();
-  const [statusFilter, setStatusFilter] = useState<"pending" | "published" | "archived" | "all">("pending");
+  const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState<"pending" | "published" | "rejected" | "all">("pending");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -148,9 +150,9 @@ export function AdminListings() {
     const total = rows.length;
     const pending = rows.filter((r: any) => r.status === "pending").length;
     const published = rows.filter((r: any) => r.status === "published").length;
-    const archived = rows.filter((r: any) => r.status === "archived").length;
+    const rejected = rows.filter((r: any) => r.status === "rejected").length;
     const featured = rows.filter((r: any) => r.is_featured === true).length;
-    return { total, pending, published, archived, featured };
+    return { total, pending, published, rejected, featured };
   }, [rows]);
 
   // ✅ ===== تغيير الصفحة والفلتر =====
@@ -180,6 +182,10 @@ export function AdminListings() {
       
       await setStatusMut.mutateAsync({ id, status: "published" });
       await refetch();
+
+      // ✅ الحل: invalidate الـ queries المشتركة لتحديث العدّاد في AdminDashboard
+      queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
       
       if (product?.owner_id) {
         await sendNotification.mutateAsync({
@@ -211,7 +217,7 @@ export function AdminListings() {
       });
       await refetch();
     }
-  }, [setStatusMut, refetch, sendNotification, rows, isRTL]);
+  }, [setStatusMut, refetch, sendNotification, rows, isRTL, queryClient]);
 
   // ✅ ===== فتح Dialog سبب الرفض =====
   const openRejectDialog = useCallback((product: any) => {
@@ -235,10 +241,14 @@ export function AdminListings() {
     try {
       await setStatusMut.mutateAsync({
         id: productToReject.id,
-        status: "draft",
+        status: "rejected",
         rejection_reason: rejectReason
       });
       await refetch();
+
+      // ✅ الحل: invalidate الـ queries المشتركة لتحديث العدّاد في AdminDashboard
+      queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
       
       if (productToReject?.owner_id) {
         await sendNotification.mutateAsync({
@@ -277,7 +287,7 @@ export function AdminListings() {
     } finally {
       setIsRejecting(false);
     }
-  }, [productToReject, rejectReason, setStatusMut, refetch, sendNotification, isRTL]);
+  }, [productToReject, rejectReason, setStatusMut, refetch, sendNotification, isRTL, queryClient]);
 
   // ✅ ===== فتح Dialog الحذف =====
   const openDeleteDialog = useCallback((product: any) => {
@@ -294,6 +304,11 @@ export function AdminListings() {
     try {
       await del.mutateAsync(productToDelete.id);
       await refetch();
+
+      // ✅ الحل: invalidate الـ queries المشتركة لتحديث العدّاد في AdminDashboard
+      queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      
       toast.success(isRTL ? "🗑️ تم حذف المنتج" : "🗑️ Product deleted", {
         id: toastId,
       });
@@ -306,7 +321,7 @@ export function AdminListings() {
       });
       await refetch();
     }
-  }, [productToDelete, del, refetch, isRTL]);
+  }, [productToDelete, del, refetch, isRTL, queryClient]);
 
   // ✅ ===== تفعيل/إلغاء الرائج =====
   const handleToggleFeatured = useCallback(async (id: string, currentFeatured: boolean) => {
@@ -315,6 +330,10 @@ export function AdminListings() {
     try {
       await setFeatured.mutateAsync({ id, is_featured: !currentFeatured });
       await refetch();
+
+      // ✅ الحل: invalidate الـ queries المشتركة لتحديث العدّاد في AdminDashboard
+      queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
       
       toast.success(
         !currentFeatured
@@ -330,7 +349,7 @@ export function AdminListings() {
       });
       await refetch();
     }
-  }, [setFeatured, refetch, isRTL]);
+  }, [setFeatured, refetch, isRTL, queryClient]);
 
   // ✅ ===== دالة مساعدة لتنسيق التاريخ الكامل (ميلادي) =====
   const formatFullDateTime = useCallback((dateString: string) => {
@@ -350,7 +369,7 @@ export function AdminListings() {
         'المتجر': r.profiles?.store_name || r.profiles?.full_name || '—',
         'السعر': `${r.price} ${r.currency}`,
         'التصنيف': r.categories?.[isRTL ? "name_ar" : "name_en"] || '—',
-        'الحالة': r.status === 'pending' ? 'قيد المراجعة' : r.status === 'published' ? 'منشور' : 'مؤرشف',
+        'الحالة': r.status === 'pending' ? 'قيد المراجعة' : r.status === 'published' ? 'منشور' : r.status === 'rejected' ? 'مرفوض' : 'غير معروف',
         'رائج': r.is_featured ? 'نعم' : 'لا',
         'سبب الرفض': r.rejection_reason || '—',
         'تاريخ الإضافة': date,
@@ -386,7 +405,7 @@ export function AdminListings() {
         tr:hover { background: #fdf2f8; }
         .status-pending { color: #f9a8d4; font-weight: bold; }
         .status-published { color: #2a655f; font-weight: bold; }
-        .status-archived { color: #3a8a82; font-weight: bold; }
+        .status-rejected { color: #d81b60; font-weight: bold; }
         .footer { margin-top: 20px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
         .badge-featured { background: #f9a8d4; color: #2a655f; padding: 2px 10px; border-radius: 20px; font-size: 11px; }
         .date-cell { font-size: 11px; }
@@ -399,14 +418,14 @@ export function AdminListings() {
           <div class="stat-card"><div class="value">${stats.total}</div><div class="label">إجمالي المنتجات</div></div>
           <div class="stat-card"><div class="value">${stats.pending}</div><div class="label">قيد المراجعة</div></div>
           <div class="stat-card"><div class="value">${stats.published}</div><div class="label">منشور</div></div>
-          <div class="stat-card"><div class="value">${stats.archived}</div><div class="label">مؤرشف</div></div>
+          <div class="stat-card"><div class="value">${stats.rejected}</div><div class="label">مرفوض</div></div>
           <div class="stat-card"><div class="value">${stats.featured}</div><div class="label">رائج</div></div>
         </div>
         <table><thead><tr><th>#</th><th>اسم المنتج</th><th>المتجر</th><th>السعر</th><th>الحالة</th><th>رائج</th><th>سبب الرفض</th><th>تاريخ الإضافة</th><th>وقت الإضافة</th></tr></thead><tbody>
     `;
     filteredRows.forEach((r: any, index: number) => {
-      const statusClass = r.status === 'pending' ? 'status-pending' : r.status === 'published' ? 'status-published' : 'status-archived';
-      const statusText = r.status === 'pending' ? 'قيد المراجعة' : r.status === 'published' ? 'منشور' : 'مؤرشف';
+      const statusClass = r.status === 'pending' ? 'status-pending' : r.status === 'published' ? 'status-published' : r.status === 'rejected' ? 'status-rejected' : 'status-rejected';
+      const statusText = r.status === 'pending' ? 'قيد المراجعة' : r.status === 'published' ? 'منشور' : r.status === 'rejected' ? 'مرفوض' : 'غير معروف';
       const { date, time } = formatFullDateTime(r.created_at);
       htmlContent += `
         <tr>
@@ -544,13 +563,13 @@ export function AdminListings() {
             gradient: "from-[#1a4f4a] to-[#f9a8d4]",
           },
           {
-            key: "featured",
-            label: isRTL ? "رائجة" : "Featured",
-            value: stats.featured,
-            icon: Flame,
-            color: "text-[#4a9f95]",
+            key: "rejected",
+            label: isRTL ? "مرفوضة" : "Rejected",
+            value: stats.rejected,
+            icon: XCircle,
+            color: "text-rose-500",
             border: "border-pink-400/60 dark:border-pink-400/40 hover:border-pink-500",
-            gradient: "from-[#4a9f95] to-[#f9a8d4]",
+            gradient: "from-rose-500 to-red-600",
           },
         ].map((stat, i) => (
           <div 
@@ -610,7 +629,7 @@ export function AdminListings() {
           <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-700">
             <SelectItem value="pending" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">⏳ {isRTL ? "قيد المراجعة" : "Pending"}</SelectItem>
             <SelectItem value="published" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">✅ {isRTL ? "منشور" : "Published"}</SelectItem>
-            <SelectItem value="archived" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📦 {isRTL ? "مؤرشف" : "Archived"}</SelectItem>
+            <SelectItem value="rejected" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">❌ {isRTL ? "مرفوض" : "Rejected"}</SelectItem>
             <SelectItem value="all" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📋 {isRTL ? "الكل" : "All"}</SelectItem>
           </SelectContent>
         </Select>
@@ -728,7 +747,7 @@ export function AdminListings() {
               {paginatedRows.map((r: any) => {
                 const isPending = r.status === "pending";
                 const isPublished = r.status === "published";
-                const isArchived = r.status === "archived";
+                const isRejected = r.status === "rejected";
                 const isFeatured = r.is_featured === true;
                 const isProcessing = setStatusMut.isPending;
                 const hasRejectionReason = r.rejection_reason && r.rejection_reason.trim() !== "";
@@ -740,7 +759,7 @@ export function AdminListings() {
                     className={cn(
                       "border-slate-200 dark:border-slate-700 hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition-colors duration-300 group border-b-2 border-slate-200/60 dark:border-slate-700/60",
                       isPending && "bg-amber-50/30 dark:bg-amber-950/10",
-                      isArchived && hasRejectionReason && "bg-rose-50/10 dark:bg-rose-950/5"
+                      isRejected && "bg-rose-50/10 dark:bg-rose-950/5"
                     )}
                   >
                     {/* ✅ عمود المنتج */}
@@ -774,7 +793,7 @@ export function AdminListings() {
                                 {isRTL ? "جديد" : "New"}
                               </Badge>
                             )}
-                            {isArchived && hasRejectionReason && (
+                            {isRejected && (
                               <Badge className="bg-rose-500/20 text-rose-600 border-2 border-rose-500/30 text-[8px] hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
                                 {isRTL ? "مرفوض" : "Rejected"}
                               </Badge>
@@ -810,16 +829,17 @@ export function AdminListings() {
                             ? "bg-[#f9a8d4]/20 text-[#d81b60] border-pink-400/40"
                             : isPublished
                             ? "bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/30"
-                            : "bg-[#3a8a82]/10 text-[#3a8a82] border-[#3a8a82]/30"
+                            : "bg-rose-500/10 text-rose-600 border-rose-500/30"
                         )}
                       >
                         <span className="flex items-center gap-1.5">
                           {isPending && <Clock className="h-3 w-3 animate-spin-slow" />}
                           {isPublished && <CheckCircle2 className="h-3 w-3" />}
-                          {isArchived && <XCircle className="h-3 w-3" />}
+                          {isRejected && <XCircle className="h-3 w-3" />}
                           {isPending ? (isRTL ? "قيد المراجعة" : "Pending") :
                            isPublished ? (isRTL ? "منشور" : "Published") :
-                           (isRTL ? "مؤرشف" : "Archived")}
+                           isRejected ? (isRTL ? "مرفوض" : "Rejected") :
+                           (isRTL ? "غير معروف" : "Unknown")}
                         </span>
                       </Badge>
                     </TableCell>
@@ -1049,7 +1069,7 @@ export function AdminListings() {
               <Shield className="h-3 w-3 mr-1 text-[#d81b60]" />
               {statusFilter === "pending" && (isRTL ? "قيد المراجعة" : "Pending")}
               {statusFilter === "published" && (isRTL ? "منشور" : "Published")}
-              {statusFilter === "archived" && (isRTL ? "مؤرشف" : "Archived")}
+              {statusFilter === "rejected" && (isRTL ? "مرفوض" : "Rejected")}
               {statusFilter === "all" && (isRTL ? "الكل" : "All")}
             </Badge>
             {searchQuery && (

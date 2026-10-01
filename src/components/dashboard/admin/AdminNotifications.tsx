@@ -1,6 +1,7 @@
 // src/components/dashboard/admin/AdminNotifications.tsx
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useApp } from "@/lib/i18n";
 import { 
   Bell, Send, Users, Store, Package, Calendar, CheckCircle, XCircle,
@@ -192,6 +193,7 @@ StatsCards.displayName = 'StatsCards';
 export function AdminNotifications() {
   const app = useApp();
   const isRTL = app.lang === 'ar';
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ===== State =====
@@ -461,6 +463,9 @@ const handleSendNotification = async () => {
         );
         refetchNotifications();
         refetchStats();
+
+        // ✅ الحل: invalidate الـ queries المشتركة لتحديث العدّاد في AdminDashboard
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
       }).catch((error) => {
         console.error('Error sending notification:', error);
         toast.error(isRTL ? '❌ فشل إرسال الإشعار' : '❌ Failed to send notification');
@@ -516,6 +521,9 @@ const handleSendNotification = async () => {
       toast.success(isRTL ? '✅ تم حذف الإشعار' : '✅ Notification deleted');
       refetchNotifications();
       refetchStats();
+
+      // ✅ الحل: invalidate الـ queries المشتركة لتحديث العدّاد في AdminDashboard
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     } catch (error) {
       toast.error(isRTL ? '❌ فشل حذف الإشعار' : '❌ Failed to delete notification');
     }
@@ -530,6 +538,9 @@ const handleSendNotification = async () => {
         });
         refetchNotifications();
         refetchStats();
+
+        // ✅ الحل: invalidate الـ queries المشتركة لتحديث العدّاد في AdminDashboard
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
       }
     } catch (error) {
       toast.error(isRTL ? '❌ فشل تحديث الحالة' : '❌ Failed to update status');

@@ -1,6 +1,7 @@
 // src/components/dashboard/admin/SellerApplicationsAdmin.tsx
 
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -269,6 +270,7 @@ const safeSendNotification = async (sendNotification: any, params: any): Promise
 export function SellerApplicationsAdmin() {
   const app = useApp();
   const t = useT();
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
@@ -705,7 +707,7 @@ export function SellerApplicationsAdmin() {
               supabase
                 .from("listings")
                 .update({ 
-                  status: 'draft',
+                        status: 'rejected',
                   rejection_reason: admin_note || null,
                   rejected_at: new Date().toISOString(),
                 })
@@ -737,6 +739,14 @@ export function SellerApplicationsAdmin() {
       }
 
       await refetch();
+
+      // ✅ الحل: invalidate الـ queries المشتركة (بالـ keys الصحيحة من queries.ts)
+      // هذا يحدّث العدّاد الأحمر فوق التاب في AdminDashboard فوراً
+      queryClient.invalidateQueries({ queryKey: ['seller_applications'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stores'] });
+      queryClient.invalidateQueries({ queryKey: ['stores'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
       setNoteFor(null);
       setNote("");
       setShowDeliveryCompanyDialog(false);
@@ -1512,17 +1522,18 @@ export function SellerApplicationsAdmin() {
               >
                 {isRTL ? "إلغاء" : "Cancel"}
               </Button>
-              <Button
-                onClick={() => {
-                  if (!note.trim()) {
-                    toast.error(isRTL ? "⚠️ يرجى كتابة سبب الرفض" : "⚠️ Please provide a reason");
-                    return;
-                  }
-                  noteFor && decide(noteFor, "rejected", note.trim());
-                }}
-                disabled={isProcessing}
-                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 hover:scale-105"
-              >
+             <Button
+  variant="outline"
+  onClick={() => {
+    if (!note.trim()) {
+      toast.error(isRTL ? "⚠️ يرجى كتابة سبب الرفض" : "⚠️ Please provide a reason");
+      return;
+    }
+    noteFor && decide(noteFor, "rejected", note.trim());
+  }}
+  disabled={isProcessing}
+  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 hover:scale-105"
+>
                 {isProcessing ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
                 ) : (

@@ -15,6 +15,9 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@fontsource-variable/cairo": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
+    "@fontsource/tajawal": "^5.3.0",
     "@hookform/resolvers": "^5.9.1",
     "@lovable.dev/cloud-auth-js": "^1.1.2",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -48,6 +51,7 @@
     "@tanstack/react-router": "^1.170.16",
     "@tanstack/router-plugin": "^1.168.18",
     "ajv": "^8.20.0",
+    "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

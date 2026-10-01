@@ -1,6 +1,8 @@
 // src/components/dashboard/admin/AdminComplaints.tsx
 
 import React, { useState, useMemo, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useApp } from "@/lib/i18n";
 import { useAllComplaints, useUpdateComplaint } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -318,7 +320,7 @@ const ComplaintRow = React.memo(({
   
   return (
     <TableRow 
-      className="border-slate-200 dark:border-slate-700 hover:bg-[#f9a8d4]/15 dark:hover:bg-[#f9a8d4]/10 transition-colors duration-300 group border-b-2 border-pink-400/30 dark:border-pink-400/20 cursor-pointer"
+      className="border-slate-200 dark:border-slate-700 hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition-colors duration-300 group border-b-2 border-pink-400/30 dark:border-pink-400/20 cursor-pointer"
       onClick={() => onToggle(complaint.id)}
     >
       {/* ✅ الترتيب */}
@@ -366,27 +368,27 @@ const ComplaintRow = React.memo(({
       
       {/* ✅ رقم الطلب */}
       <TableCell className="text-slate-600 dark:text-slate-300 text-center font-mono border-r-2 border-pink-400/30 dark:border-pink-400/20">
-        <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20">
+        <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
           #{complaint.order_id?.slice(0, 12) || '—'}
         </Badge>
       </TableCell>
       
-      {/* ✅ الحالة */}
+      {/* ✅ الحالة - تم إصلاح هوفر Badge */}
       <TableCell className="text-center border-r-2 border-pink-400/30 dark:border-pink-400/20">
-        <Badge className={cn("border-2 flex items-center gap-1.5 px-3 py-1 text-xs", status.bg, status.color)}>
+        <Badge className={cn("border-2 flex items-center gap-1.5 px-3 py-1 text-xs transition-all duration-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 cursor-default", status.bg, status.color)}>
           <StatusIcon className="h-3 w-3" />
           {status.label}
         </Badge>
       </TableCell>
       
-      {/* ✅ الإجراءات */}
+      {/* ✅ الإجراءات - هوفر رمادي فاتح مثل AdminListings */}
       <TableCell className="text-center">
         <div className="flex items-center justify-center gap-1.5">
           {complaint.status !== 'resolved' && complaint.status !== 'closed' && (
             <Button
               size="sm"
-              variant="ghost"
-              className="h-8 w-8 rounded-lg border-2 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800 transition-all duration-200 hover:scale-105"
+              variant="outline"
+              className="h-8 w-8 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 hover:scale-105"
               onClick={(e) => {
                 e.stopPropagation();
                 onReply(complaint);
@@ -396,18 +398,15 @@ const ComplaintRow = React.memo(({
               <Reply className="h-4 w-4" />
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 w-8 rounded-lg border-2 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800 transition-all duration-200 hover:scale-105"
-            onClick={(e) => {
-              e.stopPropagation();
-              window.open(`/admin/complaints/${complaint.id}`, '_blank');
-            }}
+          <Link
+            to="/admin/complaints/$id"
+            params={{ id: complaint.id }}
+            onClick={(e) => e.stopPropagation()}
+            className="h-8 w-8 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 hover:scale-105 flex items-center justify-center"
             title={isArabic ? "عرض التفاصيل" : "View Details"}
           >
             <Eye className="h-4 w-4" />
-          </Button>
+          </Link>
           {isExpanded ? (
             <ChevronUp className="h-5 w-5 text-slate-400 group-hover:text-[#2a655f] group-hover:scale-110 transition-transform" />
           ) : (
@@ -491,11 +490,12 @@ const ComplaintDetails = React.memo(({
             </div>
           )}
           
-          {/* ✅ زر الرد السريع */}
+          {/* ✅ زر الرد السريع - هوفر رمادي فاتح */}
           {complaint.status !== 'resolved' && complaint.status !== 'closed' && (
             <Button
               size="sm"
-              className="w-full border-2 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800 transition-all duration-300 hover:scale-105 rounded-xl"
+              variant="outline"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 hover:scale-[1.02]"
               onClick={() => onReply(complaint)}
             >
               <Reply className="h-4 w-4 mr-2" />
@@ -512,6 +512,7 @@ ComplaintDetails.displayName = 'ComplaintDetails';
 export function AdminComplaints() {
   const app = useApp();
   const isArabic = app.lang === "ar";
+  const queryClient = useQueryClient();
   const { data: complaints = [], isLoading, refetch } = useAllComplaints();
   const updateComplaint = useUpdateComplaint();
   
@@ -672,6 +673,10 @@ export function AdminComplaints() {
       setAdminResponse("");
       setNewStatus("");
       refetch();
+
+      // ✅ الحل: invalidate الـ queries المشتركة لتحديث العدّاد في AdminDashboard
+      queryClient.invalidateQueries({ queryKey: ['complaints'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       
       toast.success(
         isArabic 
@@ -816,7 +821,7 @@ export function AdminComplaints() {
             <span className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] bg-clip-text text-transparent">
               {isArabic ? "الشكاوى" : "Complaints"}
             </span>
-            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20 text-[10px]">
+            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20 text-[10px] hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
               <Activity className="h-2.5 w-2.5 mr-1 text-emerald-500 animate-pulse" />
               {isArabic ? 'مباشر' : 'Live'}
             </Badge>
@@ -875,7 +880,7 @@ export function AdminComplaints() {
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
-          <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#2a655f]/30 animate-pulse">
+          <Badge className="bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white border-0 px-3 py-1.5 text-xs font-medium shadow-lg shadow-[#2a655f]/30 animate-pulse hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
             <Sparkles className="h-3 w-3 mr-1" />
             {isArabic ? 'تقرير لحظي' : 'Live Report'}
           </Badge>
@@ -1316,7 +1321,7 @@ export function AdminComplaints() {
             {/* ===== Footer ===== */}
             <div className="px-4 py-2 border-t-2 border-pink-400/30 dark:border-pink-400/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#f9a8d4]/10 to-[#fbcfe8]/10 flex-wrap gap-2">
               <span className="flex items-center gap-2">
-                <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
+                <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
                   {isArabic
                     ? `عرض ${paginatedComplaints.length} من ${filteredComplaints.length}`
                     : `Showing ${paginatedComplaints.length} of ${filteredComplaints.length}`}
@@ -1327,17 +1332,17 @@ export function AdminComplaints() {
               </span>
               <div className="flex items-center gap-2 flex-wrap">
                 {searchQuery && (
-                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
+                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
                     🔍 {searchQuery}
                   </Badge>
                 )}
                 {filterStatus !== "all" && (
-                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
+                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
                     {getStatusBadge(filterStatus).label}
                   </Badge>
                 )}
                 {filterDate !== "all" && (
-                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40">
+                  <Badge className="bg-[#f9a8d4]/20 text-[#2a655f] border-2 border-pink-400/40 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
                     {getDateFilterLabel(filterDate).emoji} {isArabic ? getDateFilterLabel(filterDate).ar : getDateFilterLabel(filterDate).en}
                     {filterDate === "custom" && (customFromDate || customToDate) && (
                       <span className="ml-1 text-[10px]">

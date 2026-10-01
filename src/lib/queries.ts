@@ -24,13 +24,14 @@ import {
 export type ListingKind =
   | "product" | "property" | "vehicle" | "service" | "food"
   | "travel" | "health" | "beauty" | "farm" | "tourism";
-export type ListingStatus = "draft" | "pending" | "published" | "archived";
+export type ListingStatus = "draft" | "pending" | "published" | "rejected" | "archived";
 
 export type ListingRow = {
   id: string;
   owner_id: string;
   kind: ListingKind;
   category_id: string | null;
+  parent_category_id?: string | null;       // ✅ جديد
   governorate_id: string | null;
   title_ar: string;
   title_en: string | null;
@@ -50,6 +51,9 @@ export type ListingRow = {
   discount_percent?: number | null;
   payment_method?: string | null;
   delivery_note?: string | null;
+  rejection_reason?: string | null;         // ✅ جديد
+  rejected_at?: string | null;              // ✅ جديد
+  rejected_by?: string | null;              // ✅ جديد
 };
 
 export type ListingWithRelations = ListingRow & {
@@ -1945,7 +1949,7 @@ export function useStoreProfile(userId: string | undefined) {
 // ============================================================
 // ✅ Admin Listings
 // ============================================================
-export function useAllListingsAdmin(status?: "pending" | "published" | "archived" | "draft") {
+export function useAllListingsAdmin(status?: "pending" | "published" | "rejected" | "archived" | "draft") {
   return useQuery({
     queryKey: ["admin", "listings", status ?? "all"],
     staleTime: 30 * 1000,
@@ -1995,12 +1999,36 @@ export function useAllListingsAdmin(status?: "pending" | "published" | "archived
 export function useSetListingStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: "pending" | "published" | "archived" }) => {
-      console.log(`📝 [useSetListingStatus] Updating listing ${id} to ${status}`);
+    mutationFn: async ({ 
+      id, 
+      status,
+      rejection_reason,
+    }: { 
+      id: string; 
+      status: "pending" | "published" | "rejected" | "archived" | "draft";
+      rejection_reason?: string | null;
+    }) => {
+      console.log(`📝 [useSetListingStatus] Updating listing ${id} to ${status}`, {
+        rejection_reason: rejection_reason || null,
+      });
+      
+      // ✅ بناء الـ payload
+      const payload: any = { status };
+      
+      if (status === "rejected" && rejection_reason) {
+        payload.rejection_reason = rejection_reason;
+        payload.rejected_at = new Date().toISOString();
+      }
+      
+      // ✅ عند الموافقة أو إعادة النشر، نظّف سبب الرفض القديم
+      if (status === "published" || status === "pending") {
+        payload.rejection_reason = null;
+        payload.rejected_at = null;
+      }
       
       const { data, error } = await supabase
         .from("listings")
-        .update({ status } as any)
+        .update(payload)
         .eq("id", id)
         .select();
 

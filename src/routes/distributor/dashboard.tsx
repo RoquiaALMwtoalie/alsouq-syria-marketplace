@@ -32,7 +32,8 @@ import {
   Percent,
   Banknote,
   ChevronDown,
-  Check   
+  Check,
+  Hash   
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -905,6 +906,7 @@ function DistributorDashboardPage() {
       result = result.filter((o: any) => {
         const tracking = (o.tracking_number || '').toLowerCase();
         const id = (o.id || '').toLowerCase();
+        const orderId = (o.order_id || '').toLowerCase();
         const deliveryName = (o.delivery_name || '').toLowerCase();
         const pickupName = (o.pickup_name || '').toLowerCase();
         const deliveryAddress = (o.delivery_address || '').toLowerCase();
@@ -916,6 +918,8 @@ function DistributorDashboardPage() {
                tracking.includes(q) ||
                id.includes(cleanedQ) ||
                id.includes(q) ||
+               orderId.includes(cleanedQ) ||
+               orderId.includes(q) ||
                deliveryName.includes(q) ||
                pickupName.includes(q) ||
                deliveryAddress.includes(q) ||
@@ -946,6 +950,7 @@ function DistributorDashboardPage() {
       result = result.filter((o: any) => {
         const tracking = (o.tracking_number || '').toLowerCase();
         const id = (o.id || '').toLowerCase();
+        const orderId = (o.order_id || '').toLowerCase();
         const deliveryName = (o.delivery_name || '').toLowerCase();
         const pickupName = (o.pickup_name || '').toLowerCase();
         const deliveryAddress = (o.delivery_address || '').toLowerCase();
@@ -957,6 +962,8 @@ function DistributorDashboardPage() {
                tracking.includes(q) ||
                id.includes(cleanedQ) ||
                id.includes(q) ||
+               orderId.includes(cleanedQ) ||
+               orderId.includes(q) ||
                deliveryName.includes(q) ||
                pickupName.includes(q) ||
                deliveryAddress.includes(q) ||
@@ -1770,14 +1777,14 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
               </div>
             ) : (
               <>
-                {/* ✅ جدول الطلبات النشطة - موحد */}
+                {/* ✅ جدول الطلبات النشطة - موحد - ✅ محدث مع رقم التتبع */}
                 <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-gradient-to-r from-[#e8f0ee]/60 via-[#f8fafc]/40 to-[#e8f0ee]/60 dark:from-[#3a8a82]/20 dark:via-[#f8fafc]/10 dark:to-[#3a8a82]/20 border-b-3 border-[#3a8a82]/50 dark:border-[#3a8a82]/30">
-                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-right min-w-[120px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
-                            {isArabic ? "رقم الطلب" : "Order #"}
+                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-right min-w-[200px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                            {isArabic ? "رقم الطلب / رقم التتبع" : "Order # / Tracking #"}
                           </TableHead>
                           <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[120px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
                             {isArabic ? "العميل" : "Customer"}
@@ -1825,20 +1832,44 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                             delivered: isArabic ? "تم التوصيل" : "Delivered",
                             cancelled: isArabic ? "ملغي" : "Cancelled",
                           };
+
+                          // ✅ استخراج رقم الطلب ورقم التتبع
+                          const orderNumber = order.order_id?.substring(0, 8) 
+                                             || order.orders?.id?.substring(0, 8) 
+                                             || order.id?.substring(0, 8) 
+                                             || '—';
+                          const trackingNumber = order.tracking_number || order.orders?.tracking_number || null;
                           
                           return (
                             <TableRow 
                               key={order.id}
                               className="border-slate-100 dark:border-slate-800 hover:bg-[#3a8a82]/15 dark:hover:bg-[#3a8a82]/10 transition-colors duration-300 group border-b-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10"
                             >
+                              {/* ✅ عمود موحد: رقم الطلب + رقم التتبع */}
                               <TableCell className="font-semibold text-slate-900 dark:text-white text-right border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
-                                <div className="flex items-center gap-2 justify-end">
-                                  <span className="group-hover:text-[#2a655f] transition-colors">
-                                    #{order.tracking_number || order.id.substring(0, 8)}
-                                  </span>
-                                  {order.status === "pending" && (
-                                    <Badge className="bg-yellow-500/20 text-yellow-600 border-0 text-[9px] animate-pulse">
-                                      {isArabic ? "جديد" : "New"}
+                                <div className="flex flex-col gap-1 items-end">
+                                  {/* رقم الطلب */}
+                                  <div className="flex items-center gap-2 justify-end">
+                                    <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/30 font-mono font-bold text-[10px] flex items-center gap-1">
+                                      <Hash className="h-2.5 w-2.5" />
+                                      {isArabic ? `طلب: ${orderNumber}` : `Order: ${orderNumber}`}
+                                    </Badge>
+                                    {order.status === "pending" && (
+                                      <Badge className="bg-yellow-500/20 text-yellow-600 border-0 text-[9px] animate-pulse">
+                                        {isArabic ? "جديد" : "New"}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {/* رقم التتبع */}
+                                  {trackingNumber ? (
+                                    <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-mono font-bold text-[10px] flex items-center gap-1">
+                                      <Truck className="h-2.5 w-2.5" />
+                                      {isArabic ? `تتبع: ${trackingNumber}` : `Track: ${trackingNumber}`}
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-slate-500/10 text-slate-500 border border-slate-500/30 text-[9px] flex items-center gap-1">
+                                      <Truck className="h-2.5 w-2.5" />
+                                      {isArabic ? "لا يوجد رقم تتبع" : "No tracking #"}
                                     </Badge>
                                   )}
                                 </div>
@@ -2154,14 +2185,14 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
             </div>
           ) : (
             <>
-              {/* ✅ جدول الهيستوري - موحد */}
+              {/* ✅ جدول الهيستوري - موحد - ✅ محدث مع رقم التتبع */}
               <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-gradient-to-r from-[#e8f0ee]/60 via-[#f8fafc]/40 to-[#e8f0ee]/60 dark:from-[#3a8a82]/20 dark:via-[#f8fafc]/10 dark:to-[#3a8a82]/20 border-b-3 border-[#3a8a82]/50 dark:border-[#3a8a82]/30">
-                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-right min-w-[120px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
-                          {isArabic ? "رقم الطلب" : "Order #"}
+                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-right min-w-[200px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                          {isArabic ? "رقم الطلب / رقم التتبع" : "Order # / Tracking #"}
                         </TableHead>
                         <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[120px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
                           {isArabic ? "العميل" : "Customer"}
@@ -2201,17 +2232,37 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                         };
                         
                         const deliveredDate = order.delivered_at || order.updated_at || order.created_at;
+
+                        // ✅ استخراج رقم الطلب ورقم التتبع
+                        const orderNumber = order.order_id?.substring(0, 8) 
+                                           || order.orders?.id?.substring(0, 8) 
+                                           || order.id?.substring(0, 8) 
+                                           || '—';
+                        const trackingNumber = order.tracking_number || order.orders?.tracking_number || null;
                         
                         return (
                           <TableRow 
                             key={order.id}
                             className="border-slate-100 dark:border-slate-800 hover:bg-[#3a8a82]/15 dark:hover:bg-[#3a8a82]/10 transition-colors duration-300 group border-b-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10"
                           >
+                            {/* ✅ عمود موحد: رقم الطلب + رقم التتبع */}
                             <TableCell className="font-semibold text-slate-900 dark:text-white text-right border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
-                              <div className="flex items-center gap-2 justify-end">
-                                <span className="group-hover:text-[#2a655f] transition-colors">
-                                  #{order.tracking_number || order.id.substring(0, 8)}
-                                </span>
+                              <div className="flex flex-col gap-1 items-end">
+                                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/30 font-mono font-bold text-[10px] flex items-center gap-1">
+                                  <Hash className="h-2.5 w-2.5" />
+                                  {isArabic ? `طلب: ${orderNumber}` : `Order: ${orderNumber}`}
+                                </Badge>
+                                {trackingNumber ? (
+                                  <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-mono font-bold text-[10px] flex items-center gap-1">
+                                    <Truck className="h-2.5 w-2.5" />
+                                    {isArabic ? `تتبع: ${trackingNumber}` : `Track: ${trackingNumber}`}
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-slate-500/10 text-slate-500 border border-slate-500/30 text-[9px] flex items-center gap-1">
+                                    <Truck className="h-2.5 w-2.5" />
+                                    {isArabic ? "لا يوجد رقم تتبع" : "No tracking #"}
+                                  </Badge>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell className="text-slate-600 dark:text-slate-300 text-center border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
@@ -2321,7 +2372,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
           )}
         </div>
 
-        {/* STATUS UPDATE DIALOG - OLIVE THEME */}
+        {/* STATUS UPDATE DIALOG - OLIVE THEME - ✅ محدث مع رقم التتبع */}
         {isStatusDialogOpen && selectedOrder && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full mx-4 shadow-2xl border-4 border-[#3a8a82] max-h-[90vh] overflow-y-auto">
@@ -2330,9 +2381,22 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                   <RefreshCw className="h-5 w-5 animate-spin-slow text-[#1a4f4a]" />
                   {isArabic ? "تحديث حالة الطلب" : "Update Order Status"}
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  {isArabic ? `اختر الحالة الجديدة للطلب #${selectedOrder?.tracking_number || selectedOrder?.id?.substring(0, 8)}` : `Select new status for order #${selectedOrder?.tracking_number || selectedOrder?.id?.substring(0, 8)}`}
-                </p>
+                <div className="flex flex-col gap-1 mt-1">
+                  <p className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                    <Hash className="h-3.5 w-3.5 text-[#1a4f4a]" />
+                    {isArabic 
+                      ? `طلب #${selectedOrder?.order_id?.substring(0, 8) || selectedOrder?.orders?.id?.substring(0, 8) || selectedOrder?.id?.substring(0, 8)}` 
+                      : `Order #${selectedOrder?.order_id?.substring(0, 8) || selectedOrder?.orders?.id?.substring(0, 8) || selectedOrder?.id?.substring(0, 8)}`}
+                  </p>
+                  {(selectedOrder?.tracking_number || selectedOrder?.orders?.tracking_number) && (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 font-mono font-bold bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
+                      <Truck className="h-3 w-3" />
+                      {isArabic 
+                        ? `تتبع: ${selectedOrder?.tracking_number || selectedOrder?.orders?.tracking_number}` 
+                        : `Track: ${selectedOrder?.tracking_number || selectedOrder?.orders?.tracking_number}`}
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="mt-4">
                 <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -2394,7 +2458,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
           </div>
         )}
 
-        {/* ✅✅✅ ORDER DETAILS DIALOG - مع دعم العروض الترويجية OLIVE THEME */}
+        {/* ✅✅✅ ORDER DETAILS DIALOG - مع دعم العروض الترويجية OLIVE THEME - ✅ محدث مع رقم التتبع */}
         <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
           <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto border-[#3a8a82]/30 shadow-2xl">
             <DialogHeader>
@@ -2405,7 +2469,9 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                 {isArabic ? "تفاصيل الطلب" : "Order Details"}
               </DialogTitle>
               <DialogDescription>
-                {isArabic ? `الطلب #${selectedOrderForDetails?.tracking_number || selectedOrderForDetails?.id?.substring(0, 8)}` : `Order #${selectedOrderForDetails?.tracking_number || selectedOrderForDetails?.id?.substring(0, 8)}`}
+                {isArabic 
+                  ? `الطلب #${selectedOrderForDetails?.order_id?.substring(0, 8) || selectedOrderForDetails?.orders?.id?.substring(0, 8) || selectedOrderForDetails?.id?.substring(0, 8)}` 
+                  : `Order #${selectedOrderForDetails?.order_id?.substring(0, 8) || selectedOrderForDetails?.orders?.id?.substring(0, 8) || selectedOrderForDetails?.id?.substring(0, 8)}`}
               </DialogDescription>
             </DialogHeader>
             
@@ -2416,11 +2482,14 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
               </div>
             ) : selectedOrderForDetails ? (
               <div className="space-y-4">
-                {/* معلومات الطلب الأساسية */}
+                {/* معلومات الطلب الأساسية - ✅ محدث مع رقم التتبع */}
                 <div className="grid grid-cols-3 gap-3 p-4 bg-[#e8f0ee]/30 rounded-xl border border-[#3a8a82]/30">
                   <div>
-                    <p className="text-xs text-muted-foreground">{isArabic ? "رقم الطلب" : "Order ID"}</p>
-                    <p className="font-semibold text-sm">{selectedOrderForDetails.id.substring(0, 8)}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Hash className="h-3 w-3 text-[#1a4f4a]" />
+                      {isArabic ? "رقم الطلب" : "Order ID"}
+                    </p>
+                    <p className="font-semibold text-sm font-mono">{selectedOrderForDetails.id.substring(0, 8)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{isArabic ? "الحالة" : "Status"}</p>
@@ -2433,6 +2502,22 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     <p className="font-semibold text-sm text-[#1a4f4a]">
                       {formatPrice(Number(selectedOrderForDetails.delivery_fee || 0), app.currency, app.lang)}
                     </p>
+                  </div>
+                  {/* ✅ رقم التتبع - صف جديد مميز */}
+                  <div className="col-span-3">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Truck className="h-3 w-3 text-blue-500" />
+                      {isArabic ? "رقم التتبع" : "Tracking Number"}
+                    </p>
+                    {(selectedOrderForDetails.tracking_number || selectedOrderForDetails.orders?.tracking_number || orderData?.tracking_number) ? (
+                      <p className="font-mono font-bold text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-lg inline-block border border-blue-200/50 dark:border-blue-800/30">
+                        {selectedOrderForDetails.tracking_number || selectedOrderForDetails.orders?.tracking_number || orderData?.tracking_number}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-slate-500">
+                        {isArabic ? "لا يوجد رقم تتبع بعد" : "No tracking number yet"}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{isArabic ? "تاريخ الطلب" : "Date"}</p>

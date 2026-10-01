@@ -38,7 +38,8 @@ import {
   Layers,
   User,
   Coins,
-  Wallet 
+  Wallet,
+  Hash
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -908,6 +909,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
       result = result.filter((o: any) => {
         const tracking = (o.tracking_number || '').toLowerCase();
         const id = (o.id || '').toLowerCase();
+        const orderId = (o.order_id || '').toLowerCase();
         const deliveryName = (o.delivery_name || '').toLowerCase();
         const pickupName = (o.pickup_name || '').toLowerCase();
         const deliveryAddress = (o.delivery_address || '').toLowerCase();
@@ -917,7 +919,9 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                deliveryName.includes(q) ||
                pickupName.includes(q) ||
                deliveryAddress.includes(q) ||
-               id.includes(q);
+               id.includes(q) ||
+               orderId.includes(cleanedQ) ||
+               orderId.includes(q);
       });
     }
     
@@ -3515,6 +3519,15 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
         return parts.length > 0 ? parts.join(' • ') : null;
       };
 
+      // ✅ استخراج رقم الطلب ورقم التتبع
+      const displayOrderNumber = orderData?.order_id?.substring(0, 8) 
+                                || orderObj?.id?.substring(0, 8) 
+                                || orderData?.id?.substring(0, 8) 
+                                || 'غير معروف';
+      const displayTrackingNumber = orderData?.tracking_number 
+                                    || orderObj?.tracking_number 
+                                    || null;
+
       return (
         <div>
           {/* ===== HEADER ===== */}
@@ -3526,10 +3539,23 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                 </div>
                 {isArabic ? "تفاصيل الطلب" : "Order Details"}
               </h2>
-              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
-                {isArabic ? `طلب #${orderData.id?.substring(0, 8) || 'غير معروف'}` : `Order #${orderData.id?.substring(0, 8) || 'Unknown'}`}
-              </p>
+              {/* ✅ رقم الطلب + رقم التتبع معاً */}
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f]" />
+                  <Hash className="h-3.5 w-3.5 text-[#2a655f]" />
+                  {isArabic ? `طلب #${displayOrderNumber}` : `Order #${displayOrderNumber}`}
+                </p>
+                {displayTrackingNumber && (
+                  <>
+                    <span className="text-muted-foreground/30">|</span>
+                    <p className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 rounded-full border border-blue-200/50 dark:border-blue-800/30 flex items-center gap-1">
+                      <Truck className="h-3 w-3" />
+                      {isArabic ? `تتبع: ${displayTrackingNumber}` : `Track: ${displayTrackingNumber}`}
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
             <Badge className={cn(
               "border-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold shadow-sm",
@@ -4055,7 +4081,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                   className="rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white hover:from-[#1a4f4a] hover:to-[#2a655f] shadow-lg shadow-[#2a655f]/30 transition-all duration-300 hover:scale-105"
                   onClick={() => {
                     setShowOrderDetails(false);
-                    const orderId = orderData.order?.id || orderData.id;
+                    const orderId = orderData.order?.id || orderData.order_id;
                     setSelectedDeliveryOrderId(orderData.id);
                     setSelectedOrderId(orderId);
                     setSelectedDistributorId("");
@@ -4073,7 +4099,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
                   className="rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 hover:scale-105"
                   onClick={() => {
                     setShowOrderDetails(false);
-                    const orderId = orderData.order?.id || orderData.id;
+                    const orderId = orderData.order?.id || orderData.order_id;
                     setSelectedDeliveryOrderId(orderData.id);
                     setSelectedOrderId(orderId);
                     setRejectReason("");
@@ -4227,7 +4253,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
 }
 
 // ============================================================
-// 📦 OrderCard - زيتي
+// 📦 OrderCard - زيتي - ✅ مُحدَّث مع عرض رقم الطلب + رقم التتبع
 // ============================================================
 function OrderCard({ 
   order, 
@@ -4322,6 +4348,15 @@ function OrderCard({
   const isPending = order.status === "pending";
   const itemsCount = orderDetails?.order_items?.length || 0;
 
+  // ✅ استخراج رقم الطلب ورقم التتبع
+  const orderNumber = order.order_id?.substring(0, 8) 
+                      || order.orders?.id?.substring(0, 8) 
+                      || order.id?.substring(0, 8) 
+                      || '—';
+  const trackingNumber = order.tracking_number 
+                         || orderDetails?.tracking_number 
+                         || null;
+
   return (
     <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-[#2a655f]/60 transition-all duration-300 hover:scale-[1.01] group">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -4330,13 +4365,32 @@ function OrderCard({
             <Package className="h-5 w-5 text-[#2a655f] dark:text-[#3a8a82]" />
           </div>
           <div className="flex-1 min-w-0">
+            {/* ✅ رقم الطلب + رقم التتبع + الحالة + عدد المنتجات */}
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-bold text-slate-900 dark:text-white group-hover:text-[#2a655f] transition-colors duration-300">
-                #{order.tracking_number || order.id.substring(0, 8)}
-              </p>
+              {/* ✅ رقم الطلب - واضح بشارة زيتية */}
+              <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/30 font-mono font-bold text-xs flex items-center gap-1">
+                <Hash className="h-3 w-3" />
+                {isArabic ? `طلب: #${orderNumber}` : `Order: #${orderNumber}`}
+              </Badge>
+              
+              {/* ✅ رقم التتبع - بشارة زرقاء مميزة */}
+              {trackingNumber ? (
+                <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-mono font-bold text-xs flex items-center gap-1">
+                  <Truck className="h-3 w-3" />
+                  {isArabic ? `تتبع: ${trackingNumber}` : `Track: ${trackingNumber}`}
+                </Badge>
+              ) : (
+                <Badge className="bg-slate-500/10 text-slate-500 border border-slate-500/30 text-[10px] flex items-center gap-1">
+                  <Truck className="h-3 w-3" />
+                  {isArabic ? "لا يوجد رقم تتبع" : "No tracking #"}
+                </Badge>
+              )}
+              
+              {/* ✅ الحالة */}
               <Badge className={cn("border transition-all duration-300 hover:scale-105", statusColors[order.status] || "bg-slate-500/10 text-slate-500")}>
                 {statusLabels[order.status] || order.status}
               </Badge>
+              
               {itemsCount > 0 && (
                 <Badge className="bg-[#e8f0ee]/30 text-[#2a655f] border-0 text-[9px]">
                   {itemsCount} {isArabic ? "منتج" : "items"}

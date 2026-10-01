@@ -1,44 +1,18 @@
 // src/routes/admin.tsx
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useApp } from "@/lib/i18n";
 import { AdminDashboard } from "@/components/dashboard/admin/AdminDashboard";
 
-// ✅ قائمة التبويبات الصحيحة
-const ADMIN_TABS = [
-  "overview",
-  "listings",
-  "stores",
-  "delivery",
-  "promo",
-  "complaints",
-  "applications",
-  "banners",
-  "announcements",
-  "categories",
-  "notifications",
-] as const;
-
-export type AdminTab = typeof ADMIN_TABS[number];
-
 export const Route = createFileRoute("/admin")({
   component: AdminRoute,
   head: () => ({ meta: [{ title: "لوحة الأدمن — ذوق" }] }),
-  // ✅ تعريف شكل الـ search params
-  validateSearch: (search: Record<string, unknown>): { tab: AdminTab } => {
-    const tab = search.tab;
-    return {
-      tab:
-        typeof tab === "string" && (ADMIN_TABS as readonly string[]).includes(tab)
-          ? (tab as AdminTab)
-          : "overview",
-    };
-  },
 });
 
 function AdminRoute() {
   const app = useApp();
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   // ✅ التحقق من صلاحيات الأدمن
   useEffect(() => {
@@ -61,9 +35,16 @@ function AdminRoute() {
   }
 
   const isAdmin = app.roles?.includes("admin");
-  if (!isAdmin) {
-    return null;
+  if (!isAdmin) return null;
+
+  // ✅ إذا كنا على /admin بالضبط → AdminDashboard
+  // ✅ إذا كنا على /admin/xxx → Outlet (child route)
+  const isAdminRoot = pathname === "/admin" || pathname === "/admin/";
+
+  if (isAdminRoot) {
+    return <AdminDashboard notificationButton={null} />;
   }
 
-  return <AdminDashboard notificationButton={null} />;
+  // على child routes (مثل /admin/complaints/$id)
+  return <Outlet />;
 }

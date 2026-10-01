@@ -17,6 +17,8 @@ import {
   useAllListingsAdmin,
   useAdminAllStores,
   useAllSellerApplications,
+  useAllComplaints,
+  useNotifications,
 } from "@/lib/queries";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -354,10 +356,32 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
     });
   };
 
-  // ===== جلب البيانات =====
-  const { data: allListings = [] } = useAllListingsAdmin();
-  const { data: allStores = [] } = useAdminAllStores();
-  const { data: allApplications = [] } = useAllSellerApplications();
+// ===== جلب البيانات =====
+const { data: allListings = [] } = useAllListingsAdmin();
+const { data: allStores = [] } = useAdminAllStores();
+const { data: appsResponse } = useAllSellerApplications();
+const allApplications = appsResponse?.data || [];
+const { data: allComplaints = [] } = useAllComplaints();
+const { data: allNotifications = [] } = useNotifications(app.user?.id, 100);
+
+  // ===== ✅ عدّادات الـ Badge =====
+  const pendingListingsCount = useMemo(() => {
+    return allListings.filter((item: any) => item.status === 'pending').length;
+  }, [allListings]);
+
+  const pendingApplicationsCount = useMemo(() => {
+    return allApplications.filter((item: any) => item.status === 'pending').length;
+  }, [allApplications]);
+
+  const openComplaintsCount = useMemo(() => {
+    return allComplaints.filter((item: any) => 
+      item.status === 'open' || item.status === 'pending' || item.status === 'new'
+    ).length;
+  }, [allComplaints]);
+
+  const unreadNotificationsCount = useMemo(() => {
+    return allNotifications.filter((item: any) => !item.is_read).length;
+  }, [allNotifications]);
 
   // ===== فلترة المنتجات =====
   const filteredListings = useMemo(() => {
@@ -417,17 +441,17 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
 
   // ===== قائمة التبويب =====
   const nav = [
-    { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", iconKey: "overview" },
-    { id: "listings" as const, label: app.lang === 'ar' ? "المنتجات" : "Products", iconKey: "listings" },
-    { id: "stores" as const, label: app.lang === 'ar' ? "المتاجر" : "Stores", iconKey: "stores" },
-    { id: "delivery" as const, label: app.lang === 'ar' ? "شركات التوصيل" : "Delivery Companies", iconKey: "delivery" },
-    { id: "promo" as const, label: app.lang === 'ar' ? "أكواد الخصم" : "Promo Codes", iconKey: "promo" },
-    { id: "complaints" as const, label: app.lang === 'ar' ? "الشكاوى" : "Complaints", iconKey: "complaints" },
-    { id: "applications" as const, label: app.lang === 'ar' ? "طلبات البائعين" : "Seller applications", iconKey: "applications" },
-    { id: "banners" as const, label: app.lang === 'ar' ? "البنرات" : "Banners", iconKey: "banners" },
-    { id: "announcements" as const, label: app.lang === 'ar' ? "شريط الإعلانات" : "Announcements", iconKey: "announcements" },
-    { id: "categories" as const, label: app.lang === 'ar' ? "التصنيفات" : "Categories", iconKey: "categories" },
-    { id: "notifications" as const, label: app.lang === 'ar' ? "الإشعارات" : "Notifications", iconKey: "notifications" },
+    { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", iconKey: "overview", badge: 0 },
+    { id: "listings" as const, label: app.lang === 'ar' ? "المنتجات" : "Products", iconKey: "listings", badge: pendingListingsCount },
+    { id: "stores" as const, label: app.lang === 'ar' ? "المتاجر" : "Stores", iconKey: "stores", badge: 0 },
+    { id: "delivery" as const, label: app.lang === 'ar' ? "شركات التوصيل" : "Delivery Companies", iconKey: "delivery", badge: 0 },
+    { id: "promo" as const, label: app.lang === 'ar' ? "أكواد الخصم" : "Promo Codes", iconKey: "promo", badge: 0 },
+    { id: "complaints" as const, label: app.lang === 'ar' ? "الشكاوى" : "Complaints", iconKey: "complaints", badge: openComplaintsCount },
+    { id: "applications" as const, label: app.lang === 'ar' ? "طلبات البائعين" : "Seller applications", iconKey: "applications", badge: pendingApplicationsCount },
+    { id: "banners" as const, label: app.lang === 'ar' ? "البنرات" : "Banners", iconKey: "banners", badge: 0 },
+    { id: "announcements" as const, label: app.lang === 'ar' ? "شريط الإعلانات" : "Announcements", iconKey: "announcements", badge: 0 },
+    { id: "categories" as const, label: app.lang === 'ar' ? "التصنيفات" : "Categories", iconKey: "categories", badge: 0 },
+    { id: "notifications" as const, label: app.lang === 'ar' ? "الإشعارات" : "Notifications", iconKey: "notifications", badge: unreadNotificationsCount },
   ];
 
   // ✅ الحصول على أيقونة التبويب النشط
@@ -630,6 +654,16 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                         }
                       `}
                     >
+                      {/* ✅ Badge أحمر */}
+                      {n.badge > 0 && (
+                        <span className={cn(
+                          "absolute -top-1.5 end-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg z-10 bg-gradient-to-br from-red-500 to-red-600 border-2 animate-pulse",
+                          isActive ? "border-white" : "border-white dark:border-slate-900"
+                        )}>
+                          {n.badge > 99 ? '99+' : n.badge}
+                        </span>
+                      )}
+                      
                       <div className={`relative transition-all duration-500 ${isActive ? 'scale-110 animate-pulse' : 'group-hover:scale-110 group-hover:rotate-6'}`}>
                         <Icon 
                           className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#2a655f] group-hover:text-[#2a655f]'}`}
@@ -684,6 +718,16 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
                           }
                         `}
                       >
+                        {/* ✅ Badge أحمر */}
+                        {n.badge > 0 && (
+                          <span className={cn(
+                            "absolute -top-1 end-1 min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-lg z-10 bg-gradient-to-br from-red-500 to-red-600 border-2 animate-pulse",
+                            isActive ? "border-white" : "border-white dark:border-slate-900"
+                          )}>
+                            {n.badge > 99 ? '99+' : n.badge}
+                          </span>
+                        )}
+                        
                         <Icon className={`h-4.5 w-4.5 ${isActive ? 'text-white' : 'text-[#2a655f]'}`} />
                         <span className="leading-tight text-center whitespace-nowrap">
                           {n.label}
@@ -723,23 +767,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
           {tab === "notifications" && <AdminNotifications />}
         </div>
 
-        {/* ===== Footer ===== */}
-        <div className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t-2 border-[#2a655f]/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">
-          <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-center">
-            <span className="text-[#2a655f] dark:text-[#3a8a82] font-medium">{app.lang === 'ar' ? '© 2024 جميع الحقوق محفوظة' : '© 2024 All rights reserved'}</span>
-            <span className="h-1 w-1 rounded-full bg-[#2a655f]/50" />
-            <span className="flex items-center gap-1 text-[#2a655f] dark:text-[#3a8a82]">
-              <LiveIndicator />
-              {app.lang === 'ar' ? 'النظام يعمل بشكل طبيعي' : 'System operational'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
-            <span className="text-[#2a655f]">v2.0.0</span>
-            <span className="h-1 w-1 rounded-full bg-[#2a655f]/50" />
-            <span>{app.lang === 'ar' ? 'مدعوم من' : 'Powered by'} <span className="text-[#2a655f] dark:text-[#3a8a82] font-bold hover:text-[#3a8a82] transition-colors duration-300">Zooq</span></span>
-            <Zap className="h-3 w-3 text-[#2a655f] animate-pulse" />
-          </div>
-        </div>
+     
 
       </div>
 

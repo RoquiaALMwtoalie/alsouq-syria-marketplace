@@ -1,12 +1,24 @@
+// src/components/LeafletMap.tsx
+
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import { useEffect } from "react";
 
+// ✅✅✅ [إضافة] استيراد CSS الخاص بـ Leaflet
+// مهم: يجب أن يكون هنا وليس في styles.css العام
+import "leaflet/dist/leaflet.css";
+
+// ✅✅✅ [تحسين] استخدام الأيقونات المحلية بدل CDN خارجي
+// هذا يقلل الطلبات الخارجية ويسرّع التحميل
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
 // Fix marker icons (Vite bundling breaks default paths)
 const icon = new L.Icon({
-  iconUrl: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
@@ -23,7 +35,8 @@ function ClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }
 function Recenter({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, map.getZoom());
+    // ✅✅✅ [تحسين] استخدام flyTo بدل setView — انتقال سلس
+    map.flyTo(center, map.getZoom(), { duration: 1 });
   }, [center, map]);
   return null;
 }

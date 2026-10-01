@@ -13,7 +13,7 @@ import {
   Calendar, CreditCard, Send, ThumbsUp, ThumbsDown,
   User, Store, Sparkles, Zap, Rocket, Shield, Award, Timer,
   Layers, MessageCircle, Phone, Gift, Info, Trash2,
-  AlertCircle
+  AlertCircle, Copy, Hash
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -215,6 +215,7 @@ function OrdersPage() {
       notes: string;
       rejectionReason: string | null;
       orderReviews: any[]; // ✅ جديد
+      trackingNumber: string | null; // ✅ جديد - رقم التتبع
     }> = {};
 
     orders.forEach((order: any) => {
@@ -272,7 +273,13 @@ function OrdersPage() {
           notes: order.notes || '',
           rejectionReason: order.rejection_reason || null,
           orderReviews: order.order_reviews || [], // ✅ جديد
+          trackingNumber: order.tracking_number || null, // ✅ جديد - رقم التتبع
         };
+      }
+
+      // ✅ تحديث رقم التتبع إذا كان موجوداً في هذا الطلب ولم يكن موجوداً في المجموعة
+      if (!groups[orderId].trackingNumber && order.tracking_number) {
+        groups[orderId].trackingNumber = order.tracking_number;
       }
 
       let itemsToAdd = [];
@@ -365,6 +372,25 @@ function OrdersPage() {
       }
     }
   }, [search?.review, groupedOrders, app.user?.id]);
+
+  // ============================================================
+  // ✅ دالة نسخ رقم التتبع إلى الحافظة
+  // ============================================================
+  const handleCopyTracking = (trackingNumber: string) => {
+    navigator.clipboard.writeText(trackingNumber).then(() => {
+      toast.success(
+        app.lang === "ar" 
+          ? "✅ تم نسخ رقم التتبع" 
+          : "✅ Tracking number copied",
+        {
+          description: trackingNumber,
+          duration: 3000,
+        }
+      );
+    }).catch(() => {
+      toast.error(app.lang === "ar" ? "❌ فشل النسخ" : "❌ Copy failed");
+    });
+  };
 
   // ============================================================
   // ✅ دالة فتح ديالوغ تأكيد الإلغاء
@@ -773,6 +799,10 @@ function OrdersPage() {
                 (r: any) => r.user_id === app.user?.id
               );
 
+              // ✅ استخراج رقم الطلب المختصر ورقم التتبع
+              const orderNumberShort = group.orderId.slice(0, 8);
+              const trackingNumber = group.trackingNumber;
+
               return (
                 <div
                   key={group.orderId}
@@ -900,7 +930,54 @@ function OrdersPage() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-r from-[#2a655f]/5 to-[#1a4f4a]/5 dark:from-[#2a655f]/10 dark:to-[#1a4f4a]/10 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                        {/* ===== رقم الطلب + رقم التتبع ===== */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gradient-to-r from-[#2a655f]/5 to-[#1a4f4a]/5 dark:from-[#2a655f]/10 dark:to-[#1a4f4a]/10 rounded-xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                          {/* ✅ رقم الطلب */}
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1 mb-1">
+                              <Hash className="h-3 w-3 text-[#2a655f]" />
+                              {app.lang === "ar" ? "رقم الطلب" : "Order Number"}
+                            </p>
+                            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/30 font-mono font-bold text-xs flex items-center gap-1 w-fit">
+                              <Hash className="h-3 w-3" />
+                              #{orderNumberShort}
+                            </Badge>
+                          </div>
+
+                          {/* ✅ رقم التتبع */}
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1 mb-1">
+                              <Truck className="h-3 w-3 text-blue-500" />
+                              {app.lang === "ar" ? "رقم التتبع" : "Tracking Number"}
+                            </p>
+                            {trackingNumber ? (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-mono font-bold text-xs flex items-center gap-1">
+                                  <Truck className="h-3 w-3" />
+                                  {trackingNumber}
+                                </Badge>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 px-2 rounded-lg border border-blue-500/30 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-[10px] font-medium transition-all duration-300"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopyTracking(trackingNumber);
+                                  }}
+                                >
+                                  <Copy className="h-2.5 w-2.5 mr-1" />
+                                  {app.lang === "ar" ? "نسخ" : "Copy"}
+                                </Button>
+                              </div>
+                            ) : (
+                              <Badge className="bg-slate-500/10 text-slate-500 border border-slate-500/30 text-[10px] flex items-center gap-1 w-fit">
+                                <Truck className="h-3 w-3" />
+                                {app.lang === "ar" ? "لا يوجد رقم تتبع بعد" : "No tracking number yet"}
+                              </Badge>
+                            )}
+                          </div>
+
+                          {/* ✅ العميل */}
                           <div>
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
                               <User className="h-3 w-3 text-[#2a655f]" />
@@ -908,15 +985,10 @@ function OrdersPage() {
                             </p>
                             <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{group.buyerName}</p>
                           </div>
-                          <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-[#2a655f]" />
-                              {app.lang === "ar" ? "رقم الطلب" : "Order ID"}
-                            </p>
-                            <p className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">{group.orderId.slice(0, 12)}</p>
-                          </div>
+
+                          {/* ✅ رقم الهاتف */}
                           {group.buyerPhone && (
-                            <div className="col-span-2">
+                            <div>
                               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
                                 <Phone className="h-3 w-3 text-[#2a655f]" />
                                 {app.lang === "ar" ? "رقم الهاتف" : "Phone"}
