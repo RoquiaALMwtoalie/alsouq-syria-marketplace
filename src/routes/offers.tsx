@@ -1,13 +1,14 @@
 // src/routes/offers.tsx
+// صفحة جميع العروض - Infinite Scroll احترافي
 
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useEffect, useMemo, useState, useRef, Suspense } from "react";
 import {
   SlidersHorizontal, X, Store, Package, Star, Check,
   Sparkles, Filter, Search, MapPin, TrendingUp,
   Grid3X3, List, Tag, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight,
   Home, Shield, Percent, Gift, Flame, Clock, BadgePercent, Layers,
-  ChevronDown
+  ChevronDown, Loader2
 } from "lucide-react";
 import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { useGovernorates, useListings, useProductOffers, useCategories } from "@/lib/queries";
@@ -19,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import ListingCard from "@/components/ListingCard";
+import { useInView } from "react-intersection-observer";
 
 export const Route = createFileRoute("/offers")({
   component: OffersPage,
@@ -51,10 +53,25 @@ function OffersPage() {
   const [maxPrice, setMaxPrice] = useState<number>(10000000);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [page, setPage] = useState(1);
-  const [limit] = useState(12);
   const [offerSourceFilter, setOfferSourceFilter] = useState<"all" | "discount" | "promo">("all");
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+
+  // ===== Infinite Scroll State =====
+  const [page, setPage] = useState(1);
+  const [limit] = useState(8);
+  const [allAccumulatedItems, setAllAccumulatedItems] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // ✅ refs لمنع التكرار
+  const hasTriggeredLoadMoreRef = useRef(false);
+  const lastLoadedKeyRef = useRef<string>('');
+  const lastLoadedIdRef = useRef<string>('');
+  const prevFiltersRef = useRef<string>('');
+
+  // ✅ useInView للـ Infinite Scroll
+  const { ref: loadMoreRef, inView } = useInView({ threshold: 0.1, triggerOnce: false });
 
   // ===== Category =====
   const offersCategory = useMemo(() => {
@@ -65,11 +82,6 @@ function OffersPage() {
   const categoryName = offersCategory
     ? (app.lang === "ar" ? offersCategory.name_ar : offersCategory.name_en)
     : (app.lang === "ar" ? "🔥 جميع العروض" : "🔥 All Offers");
-
-  // ===== Reset page on filter change =====
-  useEffect(() => {
-    setPage(1);
-  }, [search, sort, gov, rating, minPrice, maxPrice, showAvailableOnly, offerSourceFilter]);
 
   // ===== Listings (Discount) =====
   const {
@@ -135,9 +147,97 @@ function OffersPage() {
     return sorted;
   }, [promoOffersRaw, sort]);
 
-  const rows = listingsData.data || [];
+  // ============================================================
+  // ✅✅✅ [Infinite Scroll — hasMore ديناميكي]
+  // ============================================================
+  useEffect(() => {
+    const lastPageLength = listingsData?.data?.length || 0;
+    const hasMoreItems = lastPageLength >= limit;
+    setHasMore(hasMoreItems);
+  }, [listingsData?.data?.length, limit]);
+
+  // ============================================================
+  // ✅✅✅ [Infinite Scroll — تراكمي]
+  // ============================================================
+  useEffect(() => {
+    const currentKey = (listingsData?.data || []).map((i: any) => i?.id).join(',');
+
+    if (currentKey === lastLoadedKeyRef.current) {
+      return;
+    }
+
+    lastLoadedKeyRef.current = currentKey;
+
+    if (page === 1) {
+      setAllAccumulatedItems(listingsData?.data || []);
+    } else {
+      setAllAccumulatedItems((prev) => {
+        const existingIds = new Set(prev.map((item: any) => item.id));
+        const newItems = (listingsData?.data || []).filter((item: any) => !existingIds.has(item.id));
+        return [...prev, ...newItems];
+      });
+    }
+
+    setIsInitialLoad(false);
+    setIsLoadingMore(false);
+  }, [listingsData?.data, page]);
+
+  // ============================================================
+  // ✅✅✅ [Reset — عند تغيير الفلاتر]
+  // ============================================================
+  useEffect(() => {
+    const currentFilterKey = `${search}|${sort}|${gov}|${rating}|${minPrice}|${maxPrice}|${showAvailableOnly}|${offerSourceFilter}`;
+
+    if (lastLoadedIdRef.current !== 'offers') {
+      lastLoadedIdRef.current = 'offers';
+      prevFiltersRef.current = currentFilterKey;
+      return;
+    }
+
+    if (prevFiltersRef.current === currentFilterKey) {
+      return;
+    }
+
+    prevFiltersRef.current = currentFilterKey;
+    setPage(1);
+    setAllAccumulatedItems([]);
+    lastLoadedKeyRef.current = '';
+    hasTriggeredLoadMoreRef.current = false;
+  }, [search, sort, gov, rating, minPrice, maxPrice, showAvailableOnly, offerSourceFilter]);
+
+  // ============================================================
+  // ✅✅✅ [Infinite Scroll — Trigger]
+  // ============================================================
+  useEffect(() => {
+    if (!inView) {
+      hasTriggeredLoadMoreRef.current = false;
+      return;
+    }
+
+    if (
+      !hasMore ||
+      isLoadingMore ||
+      isFetching ||
+      isInitialLoad ||
+      hasTriggeredLoadMoreRef.current
+    ) {
+      return;
+    }
+
+    hasTriggeredLoadMoreRef.current = true;
+    setIsLoadingMore(true);
+    setPage(prev => prev + 1);
+  }, [inView, hasMore, isLoadingMore, isFetching, isInitialLoad]);
+
+  // ✅ إعادة تعيين الـ ref لما ينتهي الـ fetch
+  useEffect(() => {
+    if (!isFetching && !isLoadingMore) {
+      hasTriggeredLoadMoreRef.current = false;
+    }
+  }, [isFetching, isLoadingMore]);
+
+  const rows = allAccumulatedItems;
   const totalCount = listingsData.count || 0;
-  const totalPages = listingsData.totalPages || 1;
 
   // ===== Merge Discount + Promo =====
   const allOffers = useMemo(() => {
@@ -233,6 +333,7 @@ function OffersPage() {
     const max = Number(maxPrice) || 10000000;
     filtered = filtered.filter((r: any) => {
       const price = Number(r.price);
+      if (!Number.isFinite(price)) return true;
       return price >= min && price <= max;
     });
 
@@ -251,14 +352,8 @@ function OffersPage() {
     setShowAvailableOnly(false);
     setOfferSourceFilter("all");
     setPage(1);
-  };
-
-  // ===== Pagination =====
-  const goToPage = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setPage(newPage);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    setAllAccumulatedItems([]);
+    lastLoadedKeyRef.current = '';
   };
 
   // ===== Stats =====
@@ -268,9 +363,6 @@ function OffersPage() {
     const promoCount = allOffers.filter((i: any) => i.offer_source === "promo").length;
     return { total: totalCount || total, discountCount, promoCount, filtered: items.length };
   }, [allOffers, items, totalCount]);
-
-  const startIndex = (page - 1) * limit + 1;
-  const endIndex = Math.min(page * limit, totalCount);
 
   const isLoading = listingsLoading || promoLoading;
 
@@ -287,7 +379,7 @@ function OffersPage() {
   }, [search, gov, rating, minPrice, maxPrice, showAvailableOnly]);
 
   // ============================================================
-  // Sidebar Filters Content (يُستخدم في الديسكتوب + الموبايل)
+  // Sidebar Filters Content
   // ============================================================
   const FiltersContent = (
     <div className="space-y-5">
@@ -519,7 +611,7 @@ function OffersPage() {
         </div>
       </div>
 
-      {/* 🎛️ Control Bar — متجاوب لكل الشاشات */}
+      {/* 🎛️ Control Bar */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 mt-4 sm:mt-6">
         <div className="bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-2xl mb-4 sm:mb-6 shadow-2xs overflow-hidden">
 
@@ -588,7 +680,7 @@ function OffersPage() {
             {/* Right: View Mode + Filter Button */}
             <div className="flex items-center gap-1.5 shrink-0">
 
-              {/* View Mode — يظهر فقط على md+ */}
+              {/* View Mode */}
               <div className="hidden md:flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
                 <button
                   onClick={() => setViewMode("grid")}
@@ -640,7 +732,6 @@ function OffersPage() {
                   side={isArabic ? "right" : "left"}
                   className="w-[90vw] max-w-[380px] overflow-y-auto p-0"
                 >
-                  {/* Header */}
                   <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white p-4 shadow-lg">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
@@ -657,8 +748,6 @@ function OffersPage() {
                           {isArabic ? "خصّص نتائج البحث" : "Customize your search"}
                         </p>
                       </div>
-
-                      {/* ✅ زر X للخروج */}
                       <button
                         onClick={() => setMobileSheetOpen(false)}
                         className="shrink-0 h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 transition-all flex items-center justify-center border border-white/20"
@@ -668,8 +757,6 @@ function OffersPage() {
                       </button>
                     </div>
                   </div>
-
-                  {/* Body */}
                   <div className="p-4">
                     {FiltersContent}
                   </div>
@@ -681,7 +768,6 @@ function OffersPage() {
 
         {/* ✅ Content Section with Filters Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-          {/* Left Sidebar Filters — Desktop only */}
           <aside className="hidden lg:block">
             <div className="sticky top-24 bg-white border border-slate-200/80 p-5 rounded-2xl shadow-2xs">
               <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
@@ -701,11 +787,10 @@ function OffersPage() {
             </div>
           </aside>
 
-          {/* Main Grid */}
           <div className="lg:col-span-3">
-            {isLoading ? (
+            {isLoading && allAccumulatedItems.length === 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {[...Array(6)].map((_, i) => (
+                {[...Array(8)].map((_, i) => (
                   <Skeleton key={i} className="h-64 rounded-2xl bg-slate-200" />
                 ))}
               </div>
@@ -736,7 +821,7 @@ function OffersPage() {
                       ? `عرض ${items.length} من ${totalCount} نتيجة`
                       : `Showing ${items.length} of ${totalCount} results`}
                   </span>
-                  {isFetching && (
+                  {isFetching && !isLoadingMore && (
                     <div className="flex items-center gap-1.5 text-[#2a655f]">
                       <div className="h-3 w-3 border-2 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
                       <span>{isArabic ? "جاري التحديث..." : "Updating..."}</span>
@@ -752,7 +837,7 @@ function OffersPage() {
                       : "grid-cols-1"
                   )}
                 >
-                  {items.map((i: any) => {
+                  {items.map((i: any, index: number) => {
                     let offerBadge = null;
                     if (i.offer_source === "promo") {
                       offerBadge = (
@@ -779,8 +864,9 @@ function OffersPage() {
 
                     return (
                       <div
-                        key={i.id}
-                        className="transition-transform duration-300 hover:-translate-y-1 relative"
+                        key={i.id || index}
+                        className="transition-transform duration-300 hover:-translate-y-1 relative animate-fade-up"
+                        style={{ animationDelay: `${(index % 8) * 50}ms` }}
                       >
                         {offerBadge}
                         <Suspense fallback={<ProductSkeleton />}>
@@ -791,51 +877,57 @@ function OffersPage() {
                   })}
                 </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-10">
-                    <Button
-                      variant="outline"
-                      onClick={() => goToPage(page - 1)}
-                      disabled={page === 1 || isFetching}
-                      className="rounded-xl bg-white border-slate-200 text-slate-700 h-9 w-9 p-0"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
+                {/* ============================================================ */}
+                {/* ✅✅✅ INFINITE SCROLL SENTINEL */}
+                {/* ============================================================ */}
+                {hasMore && (
+                  <div
+                    ref={loadMoreRef}
+                    className="flex flex-col items-center justify-center py-10 mt-6 min-h-[100px]"
+                  >
+                    {isFetching || isLoadingMore ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="relative">
+                          <div className="h-14 w-14 border-4 border-[#2a655f]/15 rounded-full" />
+                          <div className="absolute inset-0 h-14 w-14 border-4 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
+                          <div className="absolute inset-0 h-14 w-14 flex items-center justify-center">
+                            <Package className="h-5 w-5 text-[#2a655f] animate-pulse" />
+                          </div>
+                        </div>
+                        <span className="text-sm font-bold text-[#2a655f]">
+                          {isArabic ? "جاري تحميل المزيد..." : "Loading more..."}
+                        </span>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <span className="font-bold text-[#2a655f]">{items.length}</span>
+                          <span>/</span>
+                          <span>{totalCount}</span>
+                          <span className="ms-1">{isArabic ? "عرض" : "offers"}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground animate-pulse">
+                        {isArabic ? "مرر للأسفل للمزيد" : "Scroll down for more"}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let n: number;
-                      if (totalPages <= 5) n = i + 1;
-                      else if (page <= 3) n = i + 1;
-                      else if (page >= totalPages - 2) n = totalPages - 4 + i;
-                      else n = page - 2 + i;
-                      if (n > totalPages) return null;
-                      return (
-                        <Button
-                          key={n}
-                          variant={n === page ? "default" : "outline"}
-                          onClick={() => goToPage(n)}
-                          disabled={isFetching}
-                          className={cn(
-                            "h-9 min-w-[36px] rounded-xl text-xs font-bold p-0 px-3",
-                            n === page
-                              ? "bg-[#2a655f] text-white border-[#2a655f]"
-                              : "bg-white border-slate-200 text-slate-700"
-                          )}
-                        >
-                          {n}
-                        </Button>
-                      );
-                    })}
-
-                    <Button
-                      variant="outline"
-                      onClick={() => goToPage(page + 1)}
-                      disabled={page === totalPages || isFetching}
-                      className="rounded-xl bg-white border-slate-200 text-slate-700 h-9 w-9 p-0"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
+                {/* ============================================================ */}
+                {/* ✅✅✅ رسالة "تم تحميل جميع العروض" */}
+                {/* ============================================================ */}
+                {!hasMore && items.length > 0 && (
+                  <div className="flex flex-col items-center gap-3 py-10 mt-6 border-t border-slate-200">
+                    <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#2a655f]/10 to-[#3a8a82]/10 flex items-center justify-center border-2 border-[#2a655f]/20">
+                      <Check className="h-8 w-8 text-[#2a655f]" />
+                    </div>
+                    <p className="text-base font-black text-[#2a655f]">
+                      {isArabic ? "🎉 تم تحميل جميع العروض" : "🎉 All offers loaded"}
+                    </p>
+                    <p className="text-xs text-slate-500 font-medium">
+                      {isArabic
+                        ? `عرض ${items.length} عنصر في هذه القائمة`
+                        : `Showing ${items.length} items in this list`}
+                    </p>
                   </div>
                 )}
               </>
@@ -843,6 +935,14 @@ function OffersPage() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes fade-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up { animation: fade-up 0.5s ease-out forwards; }
+      `}</style>
     </div>
   );
 }

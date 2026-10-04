@@ -561,10 +561,7 @@ export function useUserStatus(userId: string | undefined) {
 }
 
 // ============================================================
-// 1️⃣4️⃣ HOOK: إرسال مؤشر الكتابة
-// ============================================================
-// ============================================================
-// 1️⃣4️⃣ HOOK: إرسال مؤشر الكتابة
+// 1️⃣4️⃣ HOOK: إرسال مؤشر الكتابة - احترافي
 // ============================================================
 export function useSendTypingIndicator(
   conversationId: string | undefined,
@@ -572,51 +569,99 @@ export function useSendTypingIndicator(
 ) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const isReadyRef = useRef(false);
 
-  // ✅ دالة موحّدة للإرسال عبر httpSend (REST API)
-  const sendTypingEvent = useCallback((isTyping: boolean) => {
+  // ✅ إنشاء قناة واحدة فقط لهذه المحادثة (مع subscribe مضمون)
+  useEffect(() => {
     if (!conversationId || !userId) return;
 
-    // ✅ استخدام httpSend() بشكل صريح (REST API)
-    supabase.channel("typing-realtime").httpSend({
-      type: "broadcast",
-      event: "typing",
-      payload: {
-        userId,
-        conversationId,
-        isTyping,
+    // منع إعادة الإنشاء لو نفس الـ conversationId
+    const channelName = `typing-${conversationId}`;
+
+    // حذف القناة القديمة أولاً (لو موجودة من render سابق)
+    if (channelRef.current) {
+      try {
+        supabase.removeChannel(channelRef.current);
+      } catch (e) {
+        // تجاهل
+      }
+      channelRef.current = null;
+      isReadyRef.current = false;
+    }
+
+    const channel = supabase.channel(channelName, {
+      config: {
+        broadcast: {
+          self: false,
+          ack: false,
+        },
       },
     });
+
+    // ✅ subscribe ضروري قبل أي send
+    channel.subscribe((status: string) => {
+      console.log(`📡 [Typing] Channel status: ${status} for ${channelName}`);
+      if (status === "SUBSCRIBED") {
+        isReadyRef.current = true;
+      } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+        isReadyRef.current = false;
+      }
+    });
+
+    channelRef.current = channel;
+
+    return () => {
+      isReadyRef.current = false;
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, [conversationId, userId]);
 
-  const sendTyping = useCallback((isTyping: boolean) => {
-    if (!conversationId || !userId) return;
+  // ✅ دالة إرسال typing - تنتظر الـ ready
+  const sendTypingEvent = useCallback(
+    (isTyping: boolean, retryCount = 0) => {
+      if (!conversationId || !userId) return;
 
-    // إلغاء المؤقتات السابقة
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    if (stopTimeoutRef.current) {
-      clearTimeout(stopTimeoutRef.current);
-      stopTimeoutRef.current = null;
-    }
+      const channel = channelRef.current;
+      if (!channel) return;
 
-    // ✅ إرسال حالة الكتابة عبر httpSend
-    sendTypingEvent(isTyping);
+      // لو مو ready بعد، حاول مرة ثانية بعد 100ms (حد أقصى 5 محاولات)
+      if (!isReadyRef.current) {
+        if (retryCount < 5) {
+          setTimeout(() => {
+            sendTypingEvent(isTyping, retryCount + 1);
+          }, 100);
+        }
+        return;
+      }
 
-    // إذا كان يكتب، أرسل إشارة توقف بعد 3 ثواني
-    if (isTyping) {
-      stopTimeoutRef.current = setTimeout(() => {
-        sendTypingEvent(false);
-        stopTimeoutRef.current = null;
-      }, 3000);
-    }
-  }, [conversationId, userId, sendTypingEvent]);
+      try {
+        channel.send({
+          type: "broadcast",
+          event: "typing",
+          payload: {
+            userId,
+            conversationId,
+            isTyping,
+            timestamp: Date.now(),
+          },
+        });
+      } catch (error) {
+        console.warn("⚠️ [Typing] Failed to send:", error);
+      }
+    },
+    [conversationId, userId]
+  );
 
-  // تنظيف عند إلغاء التثبيت
-  useEffect(() => {
-    return () => {
+  // ✅ الدالة الرئيسية: ذكية - ما ترسل نفس القيمة مرتين
+  const sendTyping = useCallback(
+    (isTyping: boolean) => {
+      if (!conversationId || !userId) return;
+
+      // إلغاء مؤقتات سابقة
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
@@ -625,18 +670,41 @@ export function useSendTypingIndicator(
         clearTimeout(stopTimeoutRef.current);
         stopTimeoutRef.current = null;
       }
-      // إرسال إشارة توقف عند مغادرة الصفحة
-      if (conversationId && userId) {
-        // ✅ استخدام httpSend في cleanup أيضاً
-        supabase.channel("typing-realtime").httpSend({
-          type: "broadcast",
-          event: "typing",
-          payload: {
-            userId,
-            conversationId,
-            isTyping: false,
-          },
-        });
+
+      sendTypingEvent(isTyping);
+
+      // إشارة توقف تلقائية بعد 3 ثواني
+      if (isTyping) {
+        stopTimeoutRef.current = setTimeout(() => {
+          sendTypingEvent(false);
+          stopTimeoutRef.current = null;
+        }, 3000);
+      }
+    },
+    [conversationId, userId, sendTypingEvent]
+  );
+
+  // ✅ cleanup عند مغادرة الصفحة - إرسال إشارة توقف أخيرة
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (stopTimeoutRef.current) clearTimeout(stopTimeoutRef.current);
+
+      if (conversationId && userId && channelRef.current && isReadyRef.current) {
+        try {
+          channelRef.current.send({
+            type: "broadcast",
+            event: "typing",
+            payload: {
+              userId,
+              conversationId,
+              isTyping: false,
+              timestamp: Date.now(),
+            },
+          });
+        } catch (e) {
+          // صامت - المستخدم خارج الصفحة
+        }
       }
     };
   }, [conversationId, userId]);

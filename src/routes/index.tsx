@@ -509,32 +509,41 @@ function Home() {
   //   - page>1 → أضف (setAllItems(prev => [...prev, ...new]))
   //   - منع التكرار عبر Set of IDs
   // ============================================================
-  useEffect(() => {
-    // ✅ key فريد لكل مجموعة بيانات
-    const currentKey = paginatedItems.map((i: any) => i?.id).join(',');
+ useEffect(() => {
+  // ✅ key فريد لكل مجموعة بيانات
+  const currentKey = paginatedItems.map((i: any) => i?.id).join(',');
 
-    if (currentKey === lastLoadedKeyRef.current) {
-      return; // ✅ نفس البيانات — لا تعمل شي
-    }
+  if (currentKey === lastLoadedKeyRef.current) {
+    return; // ✅ نفس البيانات — لا تعمل شي
+  }
 
-    lastLoadedKeyRef.current = currentKey;
+  lastLoadedKeyRef.current = currentKey;
 
-    if (page === 1) {
-      // ✅ الصفحة الأولى → استبدل
-      setAllItems(paginatedItems);
-    } else {
-      // ✅ الصفحات التالية → أضف (مع منع التكرار)
-      setAllItems((prev) => {
-        const existingIds = new Set(prev.map((item: any) => item.id));
-        const newItems = paginatedItems.filter((item: any) => !existingIds.has(item.id));
-        return [...prev, ...newItems];
-      });
-    }
+  // ✅✅✅ [تعديل] ادمج العروض الترويجية مع المنتجات في الصفحة الأولى
+  const promoItems = promoOffersForTodayAsListings || [];
 
-    setIsInitialLoad(false);
-    setIsLoadingMore(false);
-  }, [paginatedItems, page]);
+  if (page === 1) {
+    // ✅ الصفحة الأولى → منتجات + عروض ترويجية (مع منع التكرار)
+    const combined = [...paginatedItems, ...promoItems];
+    const seen = new Set();
+    const unique = combined.filter((item: any) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+    setAllItems(unique);
+  } else {
+    // ✅ الصفحات التالية → أضف المنتجات الجديدة فقط (بدون العروض مرة أخرى)
+    setAllItems((prev) => {
+      const existingIds = new Set(prev.map((item: any) => item.id));
+      const newItems = paginatedItems.filter((item: any) => !existingIds.has(item.id));
+      return [...prev, ...newItems];
+    });
+  }
 
+  setIsInitialLoad(false);
+  setIsLoadingMore(false);
+}, [paginatedItems, page, promoOffersForTodayAsListings]);   // ← أضف promoOffersForTodayAsListings
   // ============================================================
   // ✅ Infinite Scroll — محسّن لمنع Infinite Loop
   // ============================================================

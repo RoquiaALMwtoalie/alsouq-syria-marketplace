@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useApp } from "@/lib/i18n";
 import { ChatMessages } from "@/components/chat/ChatMessages";
 import { 
-  Loader2, MoreVertical, User, Building2, Truck, Crown, Store, ChevronRight
+  Loader2, MoreVertical, User, Building2, Truck, Crown, Store, ChevronRight, ChevronLeft
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useConversationStore } from "@/lib/stores/conversationStore";
@@ -130,7 +130,7 @@ function DistributorConversationPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-[#f0f2f5] dark:bg-[#1a1a2e]">
         <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#0d2e2a]" />
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#2a655f]" />
           <p className="mt-4 text-sm text-muted-foreground">
             {app.lang === "ar" ? "جاري تحميل المحادثة..." : "Loading conversation..."}
           </p>
@@ -152,7 +152,7 @@ function DistributorConversationPage() {
           {app.lang === "ar" ? "المستخدم غير موجود" : "User not found"}
         </h3>
         <Button
-          className="mt-4 rounded-full bg-[#0d2e2a] px-6 text-white hover:bg-[#2a655f]"
+          className="mt-4 rounded-full bg-[#2a655f] px-6 text-white hover:bg-[#1a4f4a]"
           onClick={handleBack}
         >
           {app.lang === "ar" ? "العودة للرسائل" : "Back to messages"}
@@ -171,7 +171,7 @@ function DistributorConversationPage() {
         <h3 className="text-xl font-semibold text-yellow-600">
           {app.lang === "ar" ? "جاري تهيئة المحادثة..." : "Initializing conversation..."}
         </h3>
-        <Loader2 className="mx-auto mt-4 h-6 w-6 animate-spin text-[#0d2e2a]" />
+        <Loader2 className="mx-auto mt-4 h-6 w-6 animate-spin text-[#2a655f]" />
       </div>
     );
   }
@@ -179,34 +179,39 @@ function DistributorConversationPage() {
   const roleInfo = getRoleInfo();
   const RoleIcon = roleInfo.icon;
 
-  // ====== واجهة المحادثة ======
+  // ====== واجهة المحادثة - متجاوبة من 240px ======
   return (
     <div className="flex h-[100dvh] flex-col bg-[#f0f2f5] dark:bg-[#1a1a2e]">
       
-      {/* هيدر المحادثة */}
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200/50 bg-white px-3 py-2 dark:border-slate-700/50 dark:bg-[#242538] sm:px-4 sm:py-3">
+      {/* هيدر المحادثة - متجاوب */}
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-200/50 bg-white px-2.5 py-2 dark:border-slate-700/50 dark:bg-[#242538] sm:px-4 sm:py-3">
         
         {/* الجهة اليسرى: زر الرجوع + معلومات المستخدم */}
-        <div className="flex items-center gap-2">
-          {/* ✅ زر الرجوع المحسن - سهم لليسار مع خلفية مميزة */}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+          {/* ✅ زر الرجوع المحسن - سهم حسب اللغة */}
           <Button
             variant="ghost"
             size="icon"
             onClick={handleBack}
-            className="h-9 w-9 shrink-0 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all duration-300 hover:scale-105 group"
+            className="h-9 w-9 shrink-0 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all duration-300 group"
+            aria-label={app.lang === "ar" ? "العودة" : "Back"}
           >
-            <ChevronRight className="h-5 w-5 text-slate-700 dark:text-slate-300 group-hover:scale-110 transition-transform duration-300" />
+            {app.lang === "ar" ? (
+              <ChevronRight className="h-5 w-5 text-slate-700 dark:text-slate-300 group-hover:translate-x-0.5 transition-transform duration-300" />
+            ) : (
+              <ChevronLeft className="h-5 w-5 text-slate-700 dark:text-slate-300 group-hover:-translate-x-0.5 transition-transform duration-300" />
+            )}
           </Button>
 
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="relative flex-shrink-0">
               <Avatar className="h-10 w-10 sm:h-12 sm:w-12 ring-2 ring-slate-200 dark:ring-slate-700">
                 <img 
-                  src={otherUser?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(otherUser?.full_name || 'User')}&background=0d2e2a&color=fff`} 
+                  src={otherUser?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(otherUser?.full_name || 'User')}&background=2a655f&color=fff`} 
                   alt={otherUser?.full_name || 'User'}
                   className="object-cover"
                 />
-                <AvatarFallback className="bg-[#0d2e2a] text-white">
+                <AvatarFallback className="bg-[#2a655f] text-white">
                   {(otherUser?.full_name || 'U').charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -218,27 +223,27 @@ function DistributorConversationPage() {
               )} />
             </div>
             
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold truncate text-slate-900 dark:text-white">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <span className="font-semibold truncate text-slate-900 dark:text-white text-sm sm:text-base">
                   {otherUser?.full_name || (app.lang === "ar" ? "مستخدم" : "User")}
                 </span>
                 <Badge 
                   variant="secondary"
-                  className="text-[9px] px-1.5 py-0 h-4 rounded-full flex items-center gap-0.5"
+                  className="text-[9px] px-1.5 py-0 h-4 rounded-full flex items-center gap-0.5 flex-shrink-0"
                 >
                   <RoleIcon className={`h-2.5 w-2.5 ${roleInfo.color}`} />
-                  {roleInfo.label}
+                  <span className="hidden sm:inline">{roleInfo.label}</span>
                 </Badge>
               </div>
               
               {/* ✅ عرض حالة المستخدم تحت الاسم */}
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className={cn(
-                  "h-1.5 w-1.5 rounded-full",
+                  "h-1.5 w-1.5 rounded-full flex-shrink-0",
                   isOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
                 )} />
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                   {isOnline 
                     ? (app.lang === "ar" ? "متصل الآن" : "Online")
                     : lastSeen 
@@ -253,9 +258,12 @@ function DistributorConversationPage() {
           </div>
         </div>
 
-        {/* ✅ الجهة اليمنى: زر القائمة فقط (بدون مكالمات) */}
+        {/* ✅ الجهة اليمنى: زر القائمة */}
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-          <button className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2">
+          <button 
+            className="rounded-full p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:p-2"
+            aria-label={app.lang === "ar" ? "خيارات" : "Options"}
+          >
             <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </div>

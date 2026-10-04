@@ -1,14 +1,14 @@
 // src/routes/products.tsx
-// صفحة جميع المنتجات والعروض - بتصميم Designer
+// صفحة جميع المنتجات والعروض - Infinite Scroll احترافي
 
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   SlidersHorizontal, X, Store, Package, Star, ChevronDown, Check,
   Sparkles, Filter, Search, MapPin, TrendingUp, Flame,
   Grid3X3, List, Tag, ArrowUpDown,
   RefreshCw, ChevronLeft, ChevronRight,
-  LayoutGrid, Home
+  LayoutGrid, Home, Loader2
 } from "lucide-react";
 import { useApp, useT } from "@/lib/i18n";
 import {
@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useInView } from "react-intersection-observer";
 
 // ============================================================
 // 🎨 Brand
@@ -60,8 +61,23 @@ function ProductsPage() {
   const [maxPrice, setMaxPrice] = useState<number>(10000000);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  // ===== Infinite Scroll State =====
   const [page, setPage] = useState(1);
-  const [limit] = useState(12);
+  const [limit] = useState(8);
+  const [allAccumulatedItems, setAllAccumulatedItems] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // ✅ refs لمنع التكرار
+  const hasTriggeredLoadMoreRef = useRef(false);
+  const lastLoadedKeyRef = useRef<string>('');
+  const lastLoadedIdRef = useRef<string>('');
+  const prevFiltersRef = useRef<string>('');
+
+  // ✅ useInView للـ Infinite Scroll
+  const { ref: loadMoreRef, inView } = useInView({ threshold: 0.1, triggerOnce: false });
 
   // ===== Governorate ID =====
   let governorateId: any = null;
@@ -150,9 +166,98 @@ function ProductsPage() {
     });
   }, [promoOffers, app.lang]);
 
+  // ============================================================
+  // ✅✅✅ [Infinite Scroll — hasMore ديناميكي]
+  // ============================================================
+  useEffect(() => {
+    const lastPageLength = listingsData?.data?.length || 0;
+    const hasMoreItems = lastPageLength >= limit;
+    setHasMore(hasMoreItems);
+  }, [listingsData?.data?.length, limit]);
+
+  // ============================================================
+  // ✅✅✅ [Infinite Scroll — تراكمي]
+  // ============================================================
+  useEffect(() => {
+    const currentKey = (listingsData?.data || []).map((i: any) => i?.id).join(',');
+
+    if (currentKey === lastLoadedKeyRef.current) {
+      return;
+    }
+
+    lastLoadedKeyRef.current = currentKey;
+
+    if (page === 1) {
+      setAllAccumulatedItems(listingsData?.data || []);
+    } else {
+      setAllAccumulatedItems((prev) => {
+        const existingIds = new Set(prev.map((item: any) => item.id));
+        const newItems = (listingsData?.data || []).filter((item: any) => !existingIds.has(item.id));
+        return [...prev, ...newItems];
+      });
+    }
+
+    setIsInitialLoad(false);
+    setIsLoadingMore(false);
+  }, [listingsData?.data, page]);
+
+  // ============================================================
+  // ✅✅✅ [Reset — عند تغيير الفلاتر]
+  // ============================================================
+  useEffect(() => {
+    const currentFilterKey = `${search}|${sort}|${gov}|${rating}|${minPrice}|${maxPrice}|${showAvailableOnly}|${productFilter}|${offerType}`;
+
+    if (lastLoadedIdRef.current !== 'products') {
+      lastLoadedIdRef.current = 'products';
+      prevFiltersRef.current = currentFilterKey;
+      return;
+    }
+
+    if (prevFiltersRef.current === currentFilterKey) {
+      return;
+    }
+
+    prevFiltersRef.current = currentFilterKey;
+    setPage(1);
+    setAllAccumulatedItems([]);
+    lastLoadedKeyRef.current = '';
+    hasTriggeredLoadMoreRef.current = false;
+  }, [search, sort, gov, rating, minPrice, maxPrice, showAvailableOnly, productFilter, offerType]);
+
+  // ============================================================
+  // ✅✅✅ [Infinite Scroll — Trigger]
+  // ============================================================
+  useEffect(() => {
+    if (!inView) {
+      hasTriggeredLoadMoreRef.current = false;
+      return;
+    }
+
+    if (
+      !hasMore ||
+      isLoadingMore ||
+      isFetching ||
+      isInitialLoad ||
+      hasTriggeredLoadMoreRef.current
+    ) {
+      return;
+    }
+
+    hasTriggeredLoadMoreRef.current = true;
+    setIsLoadingMore(true);
+    setPage(prev => prev + 1);
+  }, [inView, hasMore, isLoadingMore, isFetching, isInitialLoad]);
+
+  // ✅ إعادة تعيين الـ ref لما ينتهي الـ fetch
+  useEffect(() => {
+    if (!isFetching && !isLoadingMore) {
+      hasTriggeredLoadMoreRef.current = false;
+    }
+  }, [isFetching, isLoadingMore]);
+
   // ===== Merge & Sort =====
   const allItems = useMemo(() => {
-    const listingsItems = (listingsData.data || []).map((item: any) => ({
+    const listingsItems = allAccumulatedItems.map((item: any) => ({
       ...item,
       is_offer: item.is_offer || false,
       has_promotional_offer: item.product_offers && Array.isArray(item.product_offers) && item.product_offers.length > 0,
@@ -164,7 +269,7 @@ function ProductsPage() {
     else if (sort === "rating") all.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     else if (sort === "discount") all.sort((a, b) => (b.discount_percent || 0) - (a.discount_percent || 0));
     return all;
-  }, [listingsData.data, sort, promoOffersAsListings]);
+  }, [allAccumulatedItems, sort, promoOffersAsListings]);
 
   // ===== Filter by type =====
   const filteredByType = useMemo(() => {
@@ -209,6 +314,7 @@ function ProductsPage() {
     const max = Number(maxPrice) || 10000000;
     filtered = filtered.filter((r: any) => {
       const p = Number(r.price);
+      if (!Number.isFinite(p)) return true;
       return p >= min && p <= max;
     });
     if (showAvailableOnly) filtered = filtered.filter((r: any) => r.is_available !== false);
@@ -230,19 +336,7 @@ function ProductsPage() {
     return { total: all, products, offers, stores: stores.length, filtered: items.length };
   }, [allItems, stores.length, items.length]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, sort, gov, rating, minPrice, maxPrice, showAvailableOnly, productFilter, offerType]);
-
-  const totalPages = listingsData.totalPages || 1;
   const totalCount = listingsData.count || 0;
-
-  const goToPage = (n: number) => {
-    if (n >= 1 && n <= totalPages) {
-      setPage(n);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
 
   const resetAll = () => {
     setProductFilter("all");
@@ -254,6 +348,8 @@ function ProductsPage() {
     setMaxPrice(10000000);
     setShowAvailableOnly(false);
     setPage(1);
+    setAllAccumulatedItems([]);
+    lastLoadedKeyRef.current = '';
   };
 
   // ============================================================
@@ -583,9 +679,9 @@ function ProductsPage() {
           {/* Main Content */}
           <div className={cn(tab === "products" ? "lg:col-span-3" : "lg:col-span-4")}>
             {tab === "products" ? (
-              isLoading ? (
+              isLoading && allAccumulatedItems.length === 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {[...Array(6)].map((_, i) => (
+                  {[...Array(8)].map((_, i) => (
                     <Skeleton key={i} className="h-64 rounded-2xl bg-slate-200" />
                   ))}
                 </div>
@@ -615,7 +711,7 @@ function ProductsPage() {
                         ? `عرض ${items.length} من ${totalCount} نتيجة`
                         : `Showing ${items.length} of ${totalCount} results`}
                     </span>
-                    {isFetching && (
+                    {isFetching && !isLoadingMore && (
                       <div className="flex items-center gap-1.5 text-[#2a655f]">
                         <div className="h-3 w-3 border-2 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
                         <span>{isRtl ? "جاري التحديث..." : "Updating..."}</span>
@@ -634,58 +730,65 @@ function ProductsPage() {
                     {items.map((item: any, index: number) => (
                       <div
                         key={item.id || index}
-                        className="transition-transform duration-300 hover:-translate-y-1"
+                        className="transition-transform duration-300 hover:-translate-y-1 animate-fade-up"
+                        style={{ animationDelay: `${(index % 8) * 50}ms` }}
                       >
                         <ListingCard item={item} viewMode={viewMode} />
                       </div>
                     ))}
                   </div>
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 mt-10">
-                      <Button
-                        variant="outline"
-                        onClick={() => goToPage(page - 1)}
-                        disabled={page === 1 || isFetching}
-                        className="rounded-xl bg-white border-slate-200 text-slate-700 h-9 w-9 p-0"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </Button>
+                  {/* ============================================================ */}
+                  {/* ✅✅✅ INFINITE SCROLL SENTINEL */}
+                  {/* ============================================================ */}
+                  {hasMore && (
+                    <div
+                      ref={loadMoreRef}
+                      className="flex flex-col items-center justify-center py-10 mt-6 min-h-[100px]"
+                    >
+                      {isFetching || isLoadingMore ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="relative">
+                            <div className="h-14 w-14 border-4 border-[#2a655f]/15 rounded-full" />
+                            <div className="absolute inset-0 h-14 w-14 border-4 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
+                            <div className="absolute inset-0 h-14 w-14 flex items-center justify-center">
+                              <Package className="h-5 w-5 text-[#2a655f] animate-pulse" />
+                            </div>
+                          </div>
+                          <span className="text-sm font-bold text-[#2a655f]">
+                            {isRtl ? "جاري تحميل المزيد..." : "Loading more..."}
+                          </span>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <span className="font-bold text-[#2a655f]">{items.length}</span>
+                            <span>/</span>
+                            <span>{totalCount}</span>
+                            <span className="ms-1">{isRtl ? "منتج" : "products"}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground animate-pulse">
+                          {isRtl ? "مرر للأسفل للمزيد" : "Scroll down for more"}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let n: number;
-                        if (totalPages <= 5) n = i + 1;
-                        else if (page <= 3) n = i + 1;
-                        else if (page >= totalPages - 2) n = totalPages - 4 + i;
-                        else n = page - 2 + i;
-                        if (n > totalPages) return null;
-                        return (
-                          <Button
-                            key={n}
-                            variant={n === page ? "default" : "outline"}
-                            onClick={() => goToPage(n)}
-                            disabled={isFetching}
-                            className={cn(
-                              "h-9 min-w-[36px] rounded-xl text-xs font-bold p-0 px-3",
-                              n === page
-                                ? "bg-[#2a655f] text-white border-[#2a655f]"
-                                : "bg-white border-slate-200 text-slate-700"
-                            )}
-                          >
-                            {n}
-                          </Button>
-                        );
-                      })}
-
-                      <Button
-                        variant="outline"
-                        onClick={() => goToPage(page + 1)}
-                        disabled={page === totalPages || isFetching}
-                        className="rounded-xl bg-white border-slate-200 text-slate-700 h-9 w-9 p-0"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
+                  {/* ============================================================ */}
+                  {/* ✅✅✅ رسالة "تم تحميل جميع المنتجات" */}
+                  {/* ============================================================ */}
+                  {!hasMore && items.length > 0 && (
+                    <div className="flex flex-col items-center gap-3 py-10 mt-6 border-t border-slate-200">
+                      <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#2a655f]/10 to-[#3a8a82]/10 flex items-center justify-center border-2 border-[#2a655f]/20">
+                        <Check className="h-8 w-8 text-[#2a655f]" />
+                      </div>
+                      <p className="text-base font-black text-[#2a655f]">
+                        {isRtl ? "🎉 تم تحميل جميع المنتجات" : "🎉 All products loaded"}
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium">
+                        {isRtl
+                          ? `عرض ${items.length} منتج في هذه القائمة`
+                          : `Showing ${items.length} products in this list`}
+                      </p>
                     </div>
                   )}
                 </>
@@ -746,6 +849,14 @@ function ProductsPage() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes fade-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up { animation: fade-up 0.5s ease-out forwards; }
+      `}</style>
     </div>
   );
 }

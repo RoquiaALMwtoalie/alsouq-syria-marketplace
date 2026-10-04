@@ -64,6 +64,7 @@ export interface DeliveryAccountMenuProps {
   isArabic: boolean;
   companyId?: string;
   onCompanyUpdated?: () => void;
+  compact?: boolean;
 }
 
 // ✅ دالة استخراج المحافظة من العنوان
@@ -134,7 +135,8 @@ export function DeliveryAccountMenu({
   companyName, 
   isArabic,
   companyId,
-  onCompanyUpdated 
+  onCompanyUpdated,
+  compact = false,
 }: DeliveryAccountMenuProps) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -531,35 +533,54 @@ const handleUpdateCompany = async (e: React.FormEvent) => {
       {/* ===== DROPDOWN MENU - OLIVE & SLATE THEME ===== */}
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-[#2a655f]/20 to-[#1a4f4a]/20 hover:from-[#2a655f]/30 hover:to-[#1a4f4a]/30 border border-[#3a8a82]/30 backdrop-blur-md transition-all duration-300 group shadow-lg">
+          <button 
+            className={cn(
+              "flex items-center bg-white/10 hover:bg-white/20 border border-white/15 backdrop-blur-sm transition-all duration-200 group",
+              compact
+                ? "h-10 gap-1.5 px-1.5 rounded-xl"
+                : "gap-2.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-[#2a655f]/20 to-[#1a4f4a]/20 hover:from-[#2a655f]/30 hover:to-[#1a4f4a]/30 border-[#3a8a82]/30 backdrop-blur-md shadow-lg"
+            )}
+          >
             
-            <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-[#1a4f4a] to-[#2a655f] text-white shadow-md overflow-hidden">
-              <div className="animate-delivery-walk flex items-center justify-center">
-                <Bike className="h-4 w-4 text-emerald-300" />
+            {/* ✅ Bike icon - يظهر فقط في الحجم الكبير */}
+            {!compact && (
+              <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-[#1a4f4a] to-[#2a655f] text-white shadow-md overflow-hidden">
+                <div className="animate-delivery-walk flex items-center justify-center">
+                  <Bike className="h-4 w-4 text-emerald-300" />
+                </div>
+                <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
               </div>
-              <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-            </div>
+            )}
 
             <div className="relative">
-              <Avatar className="h-8 w-8 border-2 border-[#3a8a82]/50 group-hover:border-[#2a655f] transition-all duration-300 shadow-sm">
+              <Avatar className={cn(
+                "border-2 border-[#3a8a82]/50 group-hover:border-[#3a8a82] transition-all duration-300 shadow-sm",
+                compact ? "h-7 w-7" : "h-8 w-8"
+              )}>
                 <AvatarImage src={userData.avatar_url || undefined} />
                 <AvatarFallback className="bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white text-xs font-black">
                   {getInitials(userData.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[#2a655f]" />
+              <span className={cn(
+                "absolute -bottom-0.5 -right-0.5 rounded-full bg-emerald-500 ring-2 ring-[#1a4f4a]",
+                compact ? "h-2 w-2" : "h-2.5 w-2.5"
+              )} />
             </div>
 
-            <div className="hidden md:block text-right">
-              <p className="text-xs font-bold text-white truncate max-w-[110px]">
-                {userData.full_name || userData.phone || (isArabic ? "مسؤول التوصيل" : "Manager")}
-              </p>
-              {companyName && (
-                <p className="text-[10px] text-emerald-200/80 truncate max-w-[110px] font-medium">
-                  {companyName}
+            {/* ✅ النص - يظهر فقط في الحجم الكبير وعلى md+ */}
+            {!compact && (
+              <div className="hidden md:block text-right">
+                <p className="text-xs font-bold text-white truncate max-w-[110px]">
+                  {userData.full_name || userData.phone || (isArabic ? "مسؤول التوصيل" : "Manager")}
                 </p>
-              )}
-            </div>
+                {companyName && (
+                  <p className="text-[10px] text-emerald-200/80 truncate max-w-[110px] font-medium">
+                    {companyName}
+                  </p>
+                )}
+              </div>
+            )}
           </button>
         </DropdownMenuTrigger>
 

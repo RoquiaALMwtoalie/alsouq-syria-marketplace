@@ -1470,9 +1470,16 @@ function RootContent({
                 
                 console.log('📬 [Realtime] New notification received:', notification);
                 
-                queryClient.invalidateQueries({ 
-                  queryKey: ['notifications', userId] 
-                });
+               // ✅✅✅ [إصلاح احترافي] predicate — يطابق كل queryKeys
+// useUserNotifications يستخدم: ['notifications', 'v2', userId, options]
+// useNotifications يستخدم: ['notifications', userId]
+// predicate يطابق الاثنين
+queryClient.invalidateQueries({
+  predicate: (query) => {
+    const key = query.queryKey;
+    return Array.isArray(key) && key[0] === 'notifications';
+  }
+});
                 
                 toast.info(notification.body_ar || '📬 لديك إشعار جديد', {
                   duration: 5000,

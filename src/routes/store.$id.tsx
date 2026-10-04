@@ -1,4 +1,4 @@
-// src/routes/store.$id.tsx - الكود المُصحّح بالكامل (زيتي + رمادي + كروت موحّدة + Infinite Scroll)
+// src/routes/store.$id.tsx - الكود الكامل المصحح (أداء احترافي)
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useRef, Suspense, useMemo } from "react";
@@ -39,6 +39,9 @@ import {
 import { Slider } from "@/components/ui/slider";
 import ListingCard from "@/components/ListingCard";
 import { OptimizedImage } from "@/components/OptimizedImage";
+
+// ✅✅✅ [إضافة احترافية] useInView — نفس منطق index.tsx
+import { useInView } from "react-intersection-observer";
 
 // ============================================================
 // 🎨 Brand Colors (زيتي)
@@ -140,8 +143,6 @@ function StorePage() {
   const t = useT();
   const navigate = useNavigate();
   const [isOpeningConversation, setIsOpeningConversation] = useState(false);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
   
   // ====== State التوصيل ======
   const [deliveryPrice, setDeliveryPrice] = useState<{
@@ -170,6 +171,26 @@ function StorePage() {
   const [maxPrice, setMaxPrice] = useState<number>(10000000);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
 
+  // ====== Infinite Scroll State — نفس منطق index.tsx =====
+  const [allAccumulatedItems, setAllAccumulatedItems] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // ✅ refs لمنع التكرار
+  const hasTriggeredLoadMoreRef = useRef(false);
+  const lastLoadedKeyRef = useRef<string>('');
+
+  // ✅✅✅ [إصلاح الأداء #1] تتبع آخر id تم تحميله — بدل isFirstRender
+  // يحل مشكلة "المنتجات لا تظهر في المرة الثانية" مع StrictMode
+  const lastLoadedIdRef = useRef<string>('');
+  
+  // ✅✅✅ [إصلاح الأداء #2] تتبع ما إذا كان الفلتر قد تغيّر فعلاً
+  const prevFiltersRef = useRef<string>('');
+
+  // ✅ useInView من react-intersection-observer (بدل IntersectionObserver يدوي)
+  const { ref: loadMoreRef, inView } = useInView({ threshold: 0.1, triggerOnce: false });
+
   // ====== Hooks ======
   const { data: store, isLoading: storeLoading } = useStoreProfile(id) as { data: any; isLoading: boolean };
   const getOrCreateConversation = useGetOrCreateConversation();
@@ -196,6 +217,18 @@ function StorePage() {
     limit: 100,
     storeId: id,
   });
+
+  // ✅✅✅ [إصلاح الأداء #3] Reset عند تغيّر id — مع منع التكرار
+  useEffect(() => {
+    console.log('🔄 [StorePage] id changed, resetting all state...', id);
+    setPage(1);
+    setAllAccumulatedItems([]);
+    setHasMore(true);
+    setIsInitialLoad(true);
+    setIsLoadingMore(false);
+    hasTriggeredLoadMoreRef.current = false;
+    lastLoadedKeyRef.current = '';
+  }, [id]);
 
   // ✅ ترتيب العروض الترويجية حسب الـ sortBy
   const promoOffers = useMemo(() => {
@@ -233,7 +266,43 @@ function StorePage() {
     return sorted;
   }, [promoOffersRaw, sortBy]);
 
-  const rows = listingsData?.data || [];
+  // ============================================================
+  // ✅✅✅ [إصلاح احترافي — hasMore ديناميكي]
+  // ============================================================
+  useEffect(() => {
+    const lastPageLength = listingsData?.data?.length || 0;
+    const hasMoreItems = lastPageLength >= limit;
+    setHasMore(hasMoreItems);
+  }, [listingsData?.data?.length, limit]);
+
+  // ============================================================
+  // ✅✅✅ [إصلاح احترافي — Infinite Scroll تراكمي]
+  // ============================================================
+  useEffect(() => {
+    const currentKey = (listingsData?.data || []).map((i: any) => i?.id).join(',');
+    
+    if (currentKey === lastLoadedKeyRef.current) {
+      return; // ✅ نفس البيانات — لا تعمل شي
+    }
+    
+    lastLoadedKeyRef.current = currentKey;
+    
+    if (page === 1) {
+      setAllAccumulatedItems(listingsData?.data || []);
+    } else {
+      setAllAccumulatedItems((prev) => {
+        const existingIds = new Set(prev.map((item: any) => item.id));
+        const newItems = (listingsData?.data || []).filter((item: any) => !existingIds.has(item.id));
+        return [...prev, ...newItems];
+      });
+    }
+    
+    setIsInitialLoad(false);
+    setIsLoadingMore(false);
+  }, [listingsData?.data, page]);
+
+  // ✅✅✅ [إضافة احترافية] استخدام allAccumulatedItems بدل listingsData.data
+  const rows = allAccumulatedItems;
   const totalCount = listingsData?.count || 0;
   const totalPages = listingsData?.totalPages || 1;
 
@@ -351,8 +420,10 @@ function StorePage() {
     const min = Number(minPrice) || 0;
     const max = Number(maxPrice) || 10000000;
     
+    // ✅✅✅ [إصلاح الأداء #4] تجاهل NaN في فلتر السعر — لا تحذف المنتجات
     filtered = filtered.filter((r: any) => {
       const price = Number(r.price);
+      if (!Number.isFinite(price)) return true;
       return price >= min && price <= max;
     });
     
@@ -382,9 +453,38 @@ function StorePage() {
     return items;
   }, [items, page]);
 
+  // ============================================================
+  // ✅✅✅ [إصلاح الأداء #5 — الحل الجذري]
+  // تصفير عند تغيير الفلتر — مع تجاهل أول render لكل id (StrictMode-safe)
+  // 
+  // المنطق:
+  // - إذا هذا أول render لنفس id → سجّل الـ id واخرج (لا تصفّر)
+  // - إذا كان id نفسه لكن الفلتر تغيّر → صفّر
+  // - إذا كان id مختلف → لا تفعل شي (الـ useEffect [id] يتولى)
+  // ============================================================
   useEffect(() => {
+    const currentFilterKey = `${searchQuery}|${sortBy}|${viewFilter}|${minPrice}|${maxPrice}|${showAvailableOnly}`;
+    
+    // ✅ أول render لنفس id → سجّل واخرج
+    if (lastLoadedIdRef.current !== id) {
+      lastLoadedIdRef.current = id;
+      prevFiltersRef.current = currentFilterKey;
+      console.log('✅ [StorePage] First render for id:', id, '— skipping filter reset');
+      return;
+    }
+    
+    // ✅ نفس id، لكن الفلتر لم يتغيّر → لا تفعل شي
+    if (prevFiltersRef.current === currentFilterKey) {
+      return;
+    }
+    
+    // ✅ الفلتر تغيّر فعلاً → صفّر
+    console.log('🔄 [StorePage] Filter changed — resetting...');
+    prevFiltersRef.current = currentFilterKey;
     setPage(1);
-  }, [searchQuery, sortBy, viewFilter, minPrice, maxPrice, showAvailableOnly]);
+    setAllAccumulatedItems([]);
+    lastLoadedKeyRef.current = '';
+  }, [id, searchQuery, sortBy, viewFilter, minPrice, maxPrice, showAvailableOnly]);
 
   const resetFilters = useCallback(() => {
     setSearchQuery("");
@@ -394,7 +494,43 @@ function StorePage() {
     setMaxPrice(10000000);
     setShowAvailableOnly(false);
     setPage(1);
+    setAllAccumulatedItems([]);
+    lastLoadedKeyRef.current = '';
   }, []);
+
+  // ============================================================
+  // ✅✅✅ [إصلاح احترافي — Infinite Scroll]
+  // ============================================================
+  useEffect(() => {
+    // ✅ 1. إذا اختفى inView — أعد تعيين الـ ref
+    if (!inView) {
+      hasTriggeredLoadMoreRef.current = false;
+      return;
+    }
+
+    // ✅ 2. شروط صارمة
+    if (
+      !hasMore ||
+      isLoadingMore ||
+      isFetching ||
+      isInitialLoad ||
+      hasTriggeredLoadMoreRef.current
+    ) {
+      return;
+    }
+
+    // ✅ 3. علّم إنه اشتغل + حمّل
+    hasTriggeredLoadMoreRef.current = true;
+    setIsLoadingMore(true);
+    setPage(prev => prev + 1);
+  }, [inView, hasMore, isLoadingMore, isFetching, isInitialLoad]);
+
+  // ✅ إعادة تعيين الـ ref لما ينتهي الـ fetch
+  useEffect(() => {
+    if (!isFetching && !isLoadingMore) {
+      hasTriggeredLoadMoreRef.current = false;
+    }
+  }, [isFetching, isLoadingMore]);
 
   // ====== حساب المسافة (هافرسين) ======
   const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -584,52 +720,6 @@ function StorePage() {
     };
   }, [store, app.user, cartTotalForStore, calculateDistance, calculateDeliveryPrice]);
 
-  // ============================================================
-  // ✅✅✅ INFINITE SCROLL - IntersectionObserver
-  // ============================================================
-  useEffect(() => {
-    // ✅ تنظيف الـ observer القديم
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-      observerRef.current = null;
-    }
-
-    // ✅ إذا وصلنا للنهاية أو لا توجد منتجات → لا داعي للمراقبة
-    if (page >= totalPages || items.length === 0) {
-      return;
-    }
-
-    // ✅ إنشاء observer جديد
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        
-        // ✅ إذا ظهر sentinel في الشاشة + لا يوجد تحميل جارٍ → حمّل الصفحة التالية
-        if (entry.isIntersecting && !isFetching && page < totalPages) {
-          setPage(prev => prev + 1);
-        }
-      },
-      {
-        root: null,                    // ✅ viewport
-        rootMargin: '400px',           // ✅ ابدأ التحميل قبل 400 بكسل من الوصول
-        threshold: 0.01,               // ✅ يكفي ظهور 1%
-      }
-    );
-
-    // ✅ راقب الـ sentinel
-    if (loadMoreRef.current) {
-      observerRef.current.observe(loadMoreRef.current);
-    }
-
-    // ✅ تنظيف عند unmount أو تغيير dependencies
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
-      }
-    };
-  }, [page, totalPages, isFetching, items.length]);
-
   const handleMessage = async () => {
     if (!app.user) {
       navigate({ to: "/auth/$mode", params: { mode: "login" } });
@@ -694,7 +784,30 @@ function StorePage() {
   const name = store.store_name || store.full_name || (app.lang === "ar" ? "متجر" : "Store");
   const storeType = store.store_type || "online";
   const isArabic = app.lang === "ar";
-  const isLoading = listingsLoading || isFetching || promoLoading;
+
+  // ✅✅✅ [إصلاح الأداء #6] promoLoading لا يعطّل عرض المنتجات
+  const isLoading = listingsLoading || isFetching;
+
+  // ✅✅✅ [Debug] — احذفه بعد التأكد من أن كل شيء يعمل
+  console.log("🔍 STORE DEBUG:", {
+    id,
+    page,
+    allAccumulatedItems: allAccumulatedItems.length,
+    allItems: allItems.length,
+    filteredByType: filteredByType.length,
+    items: items.length,
+    listingsData: listingsData?.data?.length,
+    totalCount,
+    isLoading,
+    listingsLoading,
+    isFetching,
+    promoLoading,
+    viewFilter,
+    minPrice,
+    maxPrice,
+    showAvailableOnly,
+    searchQuery,
+  });
 
   return (
     <div className="bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 min-h-screen">
@@ -775,7 +888,7 @@ function StorePage() {
               </span>
               <span className="flex items-center gap-1">
                 <Package className="h-3.5 w-3.5" />
-                {allItems.length} {t("products_tab")}
+                {totalCount || allItems.length} {t("products_tab")}
               </span>
               
               <span className="flex items-center gap-1 bg-[#2a655f]/10 px-2.5 py-0.5 rounded-full text-[#2a655f] text-xs font-bold">
@@ -1322,128 +1435,123 @@ function StorePage() {
                     ))}
                   </div>
                 ) : (
-                  /* ===== ✅ List View - مثل كرت السلة ===== */
-             /* ===== ✅ List View - مبسّط وأنيق ===== */
-/* ===== ✨ List View - تصميم احترافي ===== */
-<div className="space-y-2.5">
-  {items.map((item: any, index: number) => {
-    const hasDiscount = item.is_offer === true || (item.discount_percent && item.discount_percent > 0);
-    const hasPromo = item.is_promo_offer === true || item.has_promotional_offer === true;
-    
-    // ✅ التوجيه الذكي
-    const linkTarget = hasPromo 
-      ? { to: "/offer/$id", params: { id: item.id } } 
-      : { to: "/listing/$id", params: { id: item.id } };
-    
-    return (
-      <Link
-        key={item.id}
-        {...linkTarget}
-        className="animate-fade-up group block relative bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-lg border border-slate-200 dark:border-slate-700 hover:border-[#2a655f]/40 transition-all duration-300 overflow-hidden"
-        style={{ animationDelay: `${(index % 10) * 40}ms` }}
-      >
-        {/* ✅ شريط زيتي على اليسار (يتحول للون الذهبي عند hover) */}
-        <div className={cn(
-          "absolute start-0 top-0 bottom-0 w-1 transition-all duration-300",
-          hasPromo 
-            ? "bg-gradient-to-b from-purple-500 to-indigo-500" 
-            : hasDiscount 
-              ? "bg-gradient-to-b from-[#2a655f] to-[#3a8a82]" 
-              : "bg-transparent group-hover:bg-[#2a655f]/40"
-        )} />
+                  /* ===== ✅ List View - تصميم احترافي ===== */
+                  <div className="space-y-2.5">
+                    {items.map((item: any, index: number) => {
+                      const hasDiscount = item.is_offer === true || (item.discount_percent && item.discount_percent > 0);
+                      const hasPromo = item.is_promo_offer === true || item.has_promotional_offer === true;
+                      
+                      // ✅ التوجيه الذكي
+                      const linkTarget = hasPromo 
+                        ? { to: "/offer/$id", params: { id: item.id } } 
+                        : { to: "/listing/$id", params: { id: item.id } };
+                      
+                      return (
+                        <Link
+                          key={item.id}
+                          {...linkTarget}
+                          className="animate-fade-up group block relative bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-lg border border-slate-200 dark:border-slate-700 hover:border-[#2a655f]/40 transition-all duration-300 overflow-hidden"
+                          style={{ animationDelay: `${(index % 10) * 40}ms` }}
+                        >
+                          {/* ✅ شريط زيتي على اليسار */}
+                          <div className={cn(
+                            "absolute start-0 top-0 bottom-0 w-1 transition-all duration-300",
+                            hasPromo 
+                              ? "bg-gradient-to-b from-purple-500 to-indigo-500" 
+                              : hasDiscount 
+                                ? "bg-gradient-to-b from-[#2a655f] to-[#3a8a82]" 
+                                : "bg-transparent group-hover:bg-[#2a655f]/40"
+                          )} />
 
-        <div className="flex gap-3.5 p-3 ps-4">
-          
-          {/* ===== الصورة (يمين) - 88×88 ===== */}
-          <div className="relative h-[88px] w-[88px] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/80 dark:border-slate-700/80 group-hover:scale-[1.02] transition-transform duration-500">
-            <OptimizedImage
-              src={item.cover_url || '/placeholder.png'}
-              alt={item.title_ar || ''}
-              width={88}
-              height={88}
-              quality={85}
-              objectFit="cover"
-              className="h-full w-full object-cover"
-            />
-            
-            {/* Overlay خفيف عند hover */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          </div>
+                          <div className="flex gap-3.5 p-3 ps-4">
+                            
+                            {/* ===== الصورة (يمين) - 88×88 ===== */}
+                            <div className="relative h-[88px] w-[88px] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/80 dark:border-slate-700/80 group-hover:scale-[1.02] transition-transform duration-500">
+                              <OptimizedImage
+                                src={item.cover_url || '/placeholder.png'}
+                                alt={item.title_ar || ''}
+                                width={88}
+                                height={88}
+                                quality={85}
+                                objectFit="cover"
+                                className="h-full w-full object-cover"
+                              />
+                              
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            </div>
 
-          {/* ===== التفاصيل (يسار) ===== */}
-          <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-            
-            {/* ===== الصف العلوي: Badges ===== */}
-            <div className="flex items-center gap-1.5 flex-wrap mb-1">
-              {hasPromo && (
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
-                  <Gift className="h-2.5 w-2.5" />
-                  {isArabic ? "عرض ترويجي" : "Promo"}
-                </span>
-              )}
-              {!hasPromo && hasDiscount && (
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
-                  🔥 {isArabic ? `خصم ${item.discount_percent || 20}%` : `${item.discount_percent || 20}% OFF`}
-                </span>
-              )}
-            </div>
+                            {/* ===== التفاصيل (يسار) ===== */}
+                            <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                              
+                              {/* ===== الصف العلوي: Badges ===== */}
+                              <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                {hasPromo && (
+                                  <span className="inline-flex items-center gap-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                    <Gift className="h-2.5 w-2.5" />
+                                    {isArabic ? "عرض ترويجي" : "Promo"}
+                                  </span>
+                                )}
+                                {!hasPromo && hasDiscount && (
+                                  <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                    🔥 {isArabic ? `خصم ${item.discount_percent || 20}%` : `${item.discount_percent || 20}% OFF`}
+                                  </span>
+                                )}
+                              </div>
 
-            {/* ===== العنوان ===== */}
-            <h3 className="font-bold text-[13px] text-slate-900 dark:text-white line-clamp-2 leading-snug group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82] transition-colors">
-              {isArabic ? item.title_ar : (item.title_en || item.title_ar)}
-            </h3>
+                              {/* ===== العنوان ===== */}
+                              <h3 className="font-bold text-[13px] text-slate-900 dark:text-white line-clamp-2 leading-snug group-hover:text-[#2a655f] dark:group-hover:text-[#3a8a82] transition-colors">
+                                {isArabic ? item.title_ar : (item.title_en || item.title_ar)}
+                              </h3>
 
-            {/* ===== الصف السفلي: السعر + التقييم + سهم ===== */}
-            <div className="flex items-end justify-between gap-2 mt-1.5">
-              
-              {/* السعر */}
-              <div className="flex items-baseline gap-1.5 min-w-0">
-                {hasDiscount && item.old_price && (
-                  <span className="text-[10px] text-slate-400 line-through font-medium shrink-0">
-                    {formatPrice(Number(item.old_price), app.currency, app.lang)}
-                  </span>
-                )}
-                <span className="text-[15px] font-black text-[#2a655f] dark:text-[#3a8a82] tracking-tight">
-                  {formatPrice(Number(item.price), app.currency, app.lang)}
-                </span>
-              </div>
+                              {/* ===== الصف السفلي: السعر + التقييم + سهم ===== */}
+                              <div className="flex items-end justify-between gap-2 mt-1.5">
+                                
+                                {/* السعر */}
+                                <div className="flex items-baseline gap-1.5 min-w-0">
+                                  {hasDiscount && item.old_price && (
+                                    <span className="text-[10px] text-slate-400 line-through font-medium shrink-0">
+                                      {formatPrice(Number(item.old_price), app.currency, app.lang)}
+                                    </span>
+                                  )}
+                                  <span className="text-[15px] font-black text-[#2a655f] dark:text-[#3a8a82] tracking-tight">
+                                    {formatPrice(Number(item.price), app.currency, app.lang)}
+                                  </span>
+                                </div>
 
-              {/* التقييم + سهم */}
-              <div className="flex items-center gap-2 shrink-0">
-                {Number(item.rating || 0) > 0 && (
-                  <div className="flex items-center gap-0.5 bg-amber-400/15 px-1.5 py-0.5 rounded-full">
-                    <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
-                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">
-                      {Number(item.rating).toFixed(1)}
-                    </span>
+                                {/* التقييم + سهم */}
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {Number(item.rating || 0) > 0 && (
+                                    <div className="flex items-center gap-0.5 bg-amber-400/15 px-1.5 py-0.5 rounded-full">
+                                      <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                                      <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                                        {Number(item.rating).toFixed(1)}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="h-7 w-7 rounded-full bg-[#2a655f]/10 group-hover:bg-[#2a655f] flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                                    <ChevronLeft className="h-3.5 w-3.5 text-[#2a655f] group-hover:text-white transition-colors rtl:rotate-180" />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
-                
-                {/* زر دائري صغير */}
-                <div className="h-7 w-7 rounded-full bg-[#2a655f]/10 group-hover:bg-[#2a655f] flex items-center justify-center transition-all duration-300 group-hover:scale-110">
-                  <ChevronLeft className="h-3.5 w-3.5 text-[#2a655f] group-hover:text-white transition-colors rtl:rotate-180" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Link>
-    );
-  })}
-</div>
-                )}
 
                 {/* ============================================================ */}
-                {/* ✅✅✅ INFINITE SCROLL SENTINEL */}
+                {/* ✅✅✅ INFINITE SCROLL SENTINEL — بـ useInView */}
                 {/* ============================================================ */}
-                {page < totalPages && (
+                {hasMore && (
                   <div 
                     ref={loadMoreRef} 
                     className="flex flex-col items-center justify-center py-10 mt-6 min-h-[100px]"
                   >
-                    {isFetching ? (
+                    {isFetching || isLoadingMore ? (
                       <div className="flex flex-col items-center gap-3">
-                        {/* ✅ Spinner احترافي */}
                         <div className="relative">
                           <div className="h-14 w-14 border-4 border-[#2a655f]/15 rounded-full" />
                           <div className="absolute inset-0 h-14 w-14 border-4 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
@@ -1452,12 +1560,10 @@ function StorePage() {
                           </div>
                         </div>
                         
-                        {/* ✅ نص التحميل */}
                         <span className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82]">
                           {isArabic ? "جاري تحميل المزيد..." : "Loading more..."}
                         </span>
                         
-                        {/* ✅ تقدم التحميل */}
                         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                           <span className="font-bold text-[#2a655f]">{items.length}</span>
                           <span>/</span>
@@ -1466,9 +1572,8 @@ function StorePage() {
                         </div>
                       </div>
                     ) : (
-                      // ✅ لم يبدأ التحميل بعد (placeholder صغير)
-                      <div className="flex flex-col items-center gap-2 opacity-0">
-                        <div className="h-8 w-8" />
+                      <div className="text-xs text-muted-foreground animate-pulse">
+                        {isArabic ? "مرر للأسفل للمزيد" : "Scroll down for more"}
                       </div>
                     )}
                   </div>
@@ -1477,7 +1582,7 @@ function StorePage() {
                 {/* ============================================================ */}
                 {/* ✅✅✅ رسالة "تم تحميل جميع المنتجات" */}
                 {/* ============================================================ */}
-                {page >= totalPages && items.length > 0 && (
+                {!hasMore && items.length > 0 && (
                   <div className="flex flex-col items-center gap-3 py-10 mt-6 border-t border-slate-200 dark:border-slate-700">
                     <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#2a655f]/10 to-[#3a8a82]/10 flex items-center justify-center border-2 border-[#2a655f]/20">
                       <Check className="h-8 w-8 text-[#2a655f] dark:text-[#3a8a82]" />

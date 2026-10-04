@@ -3,7 +3,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { 
-  MessageCircle, Search, Truck, Store, ChevronRight, 
+  MessageCircle, Search, Truck, Store, ChevronRight, ChevronLeft,
   MoreVertical, Trash2, Users, Package,
   Clock, Phone,
   User, Building2, RefreshCw,
@@ -99,12 +99,12 @@ function DistributorMessagesPage() {
 
   const getUserAvatar = useCallback((user: any) => {
     if (!user) {
-      return `https://ui-avatars.com/api/?name=${app.lang === "ar" ? "مستخدم" : "User"}&background=d81b60&color=fff&size=128`;
+      return `https://ui-avatars.com/api/?name=${app.lang === "ar" ? "مستخدم" : "User"}&background=2a655f&color=fff&size=128`;
     }
     return (
       user?.store_logo_url ||
       user?.avatar_url ||
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName(user))}&background=d81b60&color=fff&size=128`
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName(user))}&background=2a655f&color=fff&size=128`
     );
   }, [getUserName, app.lang]);
 
@@ -158,9 +158,9 @@ function DistributorMessagesPage() {
     switch (role) {
       case "store": return "bg-emerald-500/20 text-emerald-600 border-emerald-500/30";
       case "distributor": return "bg-blue-500/20 text-blue-600 border-blue-500/30";
-      case "delivery_company": return "bg-purple-500/20 text-purple-600 border-purple-500/30";
+      case "delivery_company": return "bg-[#2a655f]/20 text-[#2a655f] dark:text-[#3a8a82] border-[#2a655f]/30";
       case "admin": return "bg-yellow-500/20 text-yellow-600 border-yellow-500/30";
-      case "company_admin": return "bg-pink-500/20 text-pink-600 border-pink-500/30";
+      case "company_admin": return "bg-[#2a655f]/20 text-[#2a655f] dark:text-[#3a8a82] border-[#2a655f]/30";
       default: return "bg-slate-500/20 text-slate-600 border-slate-500/30";
     }
   }, []);
@@ -456,22 +456,22 @@ function DistributorMessagesPage() {
   
   if (app.authLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#d81b60]/5 via-white to-[#d81b60]/10">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#d81b60]/20 border-t-[#d81b60]" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e8f0ee]/40 via-white to-[#f1f5f9]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f]" />
       </div>
     );
   }
 
   if (!app.user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#d81b60]/5 via-white to-[#d81b60]/10">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e8f0ee]/40 via-white to-[#f1f5f9]">
         <div className="text-center">
           <p className="text-muted-foreground">
             {app.lang === "ar" ? "يرجى تسجيل الدخول" : "Please login"}
           </p>
           <Button 
             onClick={() => navigate({ to: "/auth/$mode", params: { mode: "login" } })}
-            className="mt-4 bg-gradient-to-r from-[#d81b60] to-[#f48fb1] hover:from-[#c2185b] hover:to-[#f9a8d4] text-white shadow-lg shadow-[#d81b60]/30"
+            className="mt-4 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#1a4f4a] hover:to-[#2a655f] text-white shadow-lg shadow-[#2a655f]/30"
           >
             {app.lang === "ar" ? "تسجيل الدخول" : "Login"}
           </Button>
@@ -481,112 +481,96 @@ function DistributorMessagesPage() {
   }
 
   // ============================================================
-  // التصميم مع الألوان الوردية
+  // التصميم - زيتي ورمادي - متجاوب من 240px
   // ============================================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#d81b60]/5 via-white to-[#d81b60]/10 dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#d81b60]/10">
+    <div className="min-h-screen bg-gradient-to-br from-[#e8f0ee]/40 via-white to-[#f1f5f9] dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#1a4f4a]/10">
       
-      {/* ===== الهيدر - تدرج وردي ===== */}
-      <div className="relative bg-gradient-to-r from-[#d81b60] via-[#f48fb1] to-[#d81b60] text-white overflow-hidden shadow-lg shadow-[#d81b60]/30">
-        
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 animate-pulse" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 animate-pulse" style={{ animationDelay: '2s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl animate-spin-slow" />
-        </div>
-        
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
-        
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-15">
-          <div className="absolute top-1/2 -translate-y-1/2 animate-drive-across">
-            <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm px-6 py-3 rounded-full border border-white/10">
-              <Truck className="h-10 w-10 text-white animate-bounce-truck" />
-              <div className="flex gap-1">
-                <div className="h-1.5 w-1.5 rounded-full bg-white/30 animate-spin-slow" />
-                <div className="h-1.5 w-1.5 rounded-full bg-white/30 animate-spin-slow" style={{ animationDelay: '0.3s' }} />
-                <div className="h-1.5 w-1.5 rounded-full bg-white/30 animate-spin-slow" style={{ animationDelay: '0.6s' }} />
-              </div>
-              <span className="text-[10px] font-bold text-white/30 tracking-widest animate-pulse">● ● ●</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="relative container mx-auto px-4 py-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* ===== HEADER - احترافي نظيف - متجاوب من 240px ===== */}
+      <div className="sticky top-0 z-20 bg-gradient-to-r from-[#0d2e2a] via-[#1a4f4a] to-[#2a655f] text-white shadow-lg border-b border-white/10">
+        <div className="mx-auto max-w-7xl px-2.5 sm:px-4 lg:px-6">
+          <div className="flex items-center justify-between h-14 sm:h-16 gap-1.5 sm:gap-2">
             
-            {/* ✅ القسم الأيسر - زر الرجوع المحسن */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
+            {/* ===== اللوغو + اسم الصفحة ===== */}
+            <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
+              
+              {/* زر الرجوع - حسب اللغة */}
+              <button
                 onClick={() => navigate({ to: "/distributor/dashboard" })}
-                className="h-9 w-9 shrink-0 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-300 hover:scale-105 group border border-white/30"
+                className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition-all duration-200 flex-shrink-0"
+                aria-label={isArabic ? "العودة" : "Back"}
               >
                 {isArabic ? (
-                  <ChevronRight className="h-5 w-5 text-white group-hover:scale-110 transition-transform duration-300" />
+                  <ChevronRight className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                 ) : (
-                  <ChevronLeft className="h-5 w-5 text-white group-hover:scale-110 transition-transform duration-300" />
+                  <ChevronLeft className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                 )}
-              </Button>
+              </button>
+
+              {/* اللوغو */}
+              <div className="relative h-9 w-9 sm:h-11 sm:w-11 flex items-center justify-center flex-shrink-0">
+                <div className="absolute inset-0 rounded-full bg-white/10 backdrop-blur-sm" />
+                <div className="absolute inset-0 rounded-full border border-[#3a8a82]/50" />
+                <MessageCircle className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-white relative z-10" />
+              </div>
               
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-                  <div className="p-2.5 rounded-2xl bg-white/20 backdrop-blur-sm text-white shadow-lg shadow-white/20 animate-float">
-                    <MessageCircle className="h-5 w-5" />
-                  </div>
+              {/* النص */}
+              <div className="min-w-0">
+                <h1 className="text-xs sm:text-base md:text-lg font-bold truncate flex items-center gap-1.5">
                   {app.lang === "ar" ? "المراسلات" : "Messages"}
-                  <Badge className="bg-white/20 text-white border-0 text-[10px] px-2 py-0.5 flex items-center gap-1 animate-pulse backdrop-blur-sm">
-                    <Truck className="h-3 w-3 animate-bounce-slow" />
+                  <Badge className="bg-white/20 text-white text-[9px] px-1.5 py-0.5 flex items-center gap-1 border border-white/30 hidden min-[420px]:flex">
+                    <Truck className="h-2.5 w-2.5" />
                     {app.lang === "ar" ? "موزع" : "Distributor"}
                   </Badge>
                 </h1>
-                <div className="flex items-center gap-3 mt-1">
-                  <p className="text-sm text-white/80">
-                    {app.lang === "ar"
-                      ? `${stats.total} محادثة`
-                      : `${stats.total} conversations`}
-                  </p>
-                  {stats.unread > 0 && (
-                    <Badge className="bg-red-500 text-white rounded-full px-3 py-1 animate-pulse shadow-lg shadow-red-500/50">
-                      {stats.unread} {app.lang === "ar" ? "غير مقروءة" : "unread"}
-                    </Badge>
-                  )}
-                  <span className="text-white/30">|</span>
-                  <span className="text-xs text-white/70">
-                    {stats.customers} {app.lang === "ar" ? "عملاء" : "customers"} · 
-                    {stats.distributors} {app.lang === "ar" ? "موزعين" : "distributors"} ·
-                    {stats.admins} {app.lang === "ar" ? "أدمن" : "admins"}
+                <p className="text-[9px] sm:text-xs text-white/60 flex items-center gap-1.5">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                   </span>
-                </div>
+                  <span className="hidden min-[400px]:inline">
+                    {app.lang === "ar" ? `${stats.total} محادثة` : `${stats.total} conversations`}
+                  </span>
+                  <span className="min-[400px]:hidden">
+                    {stats.total}
+                  </span>
+                  {stats.unread > 0 && (
+                    <>
+                      <span className="text-white/30">·</span>
+                      <span className="text-red-300 font-semibold">
+                        {stats.unread} {app.lang === "ar" ? "جديد" : "new"}
+                      </span>
+                    </>
+                  )}
+                </p>
               </div>
             </div>
 
-            {/* ✅ القسم الأيمن - الأزرار */} 
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* ===== الأزرار ===== */}
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
               
-              {/* ✅ زر أدمن الشركة - وردي */}
+              {/* زر أدمن الشركة */}
               <Dialog open={showAdminDialog} onOpenChange={setShowAdminDialog}>
                 <DialogTrigger asChild>
-                  <Button 
-                    variant="outline"
-                    className="h-10 px-5 rounded-xl bg-white/15 backdrop-blur-sm hover:bg-white/25 border-white/20 hover:border-white/40 text-white hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-white/10 group font-medium"
+                  <button
+                    className="h-9 w-9 sm:h-10 sm:w-auto sm:px-2.5 lg:px-3 rounded-xl flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 active:bg-white/25 text-white text-xs font-semibold transition-all duration-200 relative"
+                    aria-label={app.lang === "ar" ? "أدمن الشركة" : "Company Admin"}
                   >
-                    <ShieldCheck className="h-4 w-4 mr-2 text-white/80 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
-                    <span className="hidden sm:inline">{app.lang === "ar" ? "أدمن الشركة" : "Company Admin"}</span>
-                    <span className="inline sm:hidden">{app.lang === "ar" ? "أدمن" : "Admin"}</span>
+                    <ShieldCheck className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-emerald-300" />
+                    <span className="hidden lg:inline">
+                      {app.lang === "ar" ? "أدمن الشركة" : "Company Admin"}
+                    </span>
                     {companyAdmins.length > 0 && (
-                      <Badge className="bg-gradient-to-r from-white/30 to-white/20 text-white border-0 text-[10px] px-2 py-0.5 ml-1.5 backdrop-blur-sm">
+                      <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#3a8a82] text-white text-[9px] font-bold flex items-center justify-center border border-[#1a4f4a]">
                         {companyAdmins.length}
-                      </Badge>
+                      </span>
                     )}
-                  </Button>
+                  </button>
                 </DialogTrigger>
-                <DialogContent className="rounded-2xl max-w-md border-2 border-[#d81b60]/30 shadow-2xl shadow-[#d81b60]/20 bg-white dark:bg-slate-900">
+                <DialogContent className="max-w-[95vw] sm:max-w-md rounded-2xl border-[#2a655f]/30 shadow-2xl">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-[#d81b60] dark:text-white text-xl">
-                      <div className="p-1.5 rounded-xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1]">
-                        <ShieldCheck className="h-5 w-5 text-white" />
-                      </div>
+                    <DialogTitle className="flex items-center gap-2 text-[#2a655f] dark:text-[#3a8a82]">
+                      <ShieldCheck className="h-5 w-5 text-[#2a655f]" />
                       {app.lang === "ar" ? "أدمن الشركة" : "Company Admins"}
                     </DialogTitle>
                     <DialogDescription>
@@ -597,19 +581,19 @@ function DistributorMessagesPage() {
                   </DialogHeader>
                   
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d81b60]/50" />
+                    <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={app.lang === "ar" ? "بحث عن أدمن..." : "Search admin..."}
+                      placeholder={app.lang === "ar" ? "🔍 بحث عن أدمن (اسم أو رقم)..." : "🔍 Search admin (name or phone)..."}
                       value={adminSearch}
                       onChange={(e) => setAdminSearch(e.target.value)}
-                      className="pl-9 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="ps-9 rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                   
-                  <div className="max-h-60 overflow-y-auto space-y-1.5 border-2 rounded-xl p-1.5 border-[#d81b60]/20">
+                  <div className="max-h-60 overflow-y-auto space-y-1.5 border border-[#2a655f]/20 rounded-xl p-1.5">
                     {loadingAdmins ? (
                       <div className="flex items-center justify-center py-8">
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#d81b60]/20 border-t-[#d81b60]" />
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#2a655f]/20 border-t-[#2a655f]" />
                       </div>
                     ) : filteredAdmins.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground text-sm">
@@ -625,75 +609,68 @@ function DistributorMessagesPage() {
                       filteredAdmins.map((admin: any) => (
                         <div
                           key={admin.id}
-                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#d81b60]/10 dark:hover:bg-[#d81b60]/20 cursor-pointer transition-all hover:border-[#d81b60]/40 border-2 border-transparent group"
+                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#e8f0ee]/30 cursor-pointer transition-all border border-transparent hover:border-[#2a655f]/30 group"
                           onClick={() => startAdminChat(admin)}
                         >
-                          <Avatar className="h-10 w-10 ring-2 ring-[#d81b60]/20 group-hover:ring-[#d81b60]/40 transition-all">
+                          <Avatar className="h-10 w-10 ring-2 ring-[#2a655f]/20 group-hover:ring-[#2a655f]/40 transition-all">
                             <img 
-                              src={admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.full_name || 'A')}&background=d81b60&color=fff`} 
+                              src={admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.full_name || 'A')}&background=2a655f&color=fff`} 
                               alt={admin.full_name || 'Admin'}
                               className="object-cover"
                             />
-                            <AvatarFallback className="bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white">
+                            <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white">
                               {(admin.full_name || 'A').charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate group-hover:text-[#d81b60] transition-colors">
+                            <p className="font-medium text-sm truncate group-hover:text-[#2a655f] transition-colors">
                               {admin.full_name || (app.lang === "ar" ? "أدمن" : "Admin")}
                             </p>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                               <Phone className="h-3 w-3" />
-                              <span>{admin.phone || (app.lang === "ar" ? "رقم غير متاح" : "No phone")}</span>
-                              <Badge className="bg-[#d81b60]/20 text-[#d81b60] dark:text-[#f48fb1] text-[8px] px-2 py-0 flex items-center gap-0.5 border-0">
+                              <span className="truncate">{admin.phone || (app.lang === "ar" ? "رقم غير متاح" : "No phone")}</span>
+                              <Badge className="bg-[#2a655f]/20 text-[#2a655f] dark:text-[#3a8a82] text-[8px] px-1.5 py-0 flex items-center gap-0.5 border border-[#2a655f]/30">
                                 <ShieldCheck className="h-2.5 w-2.5" />
                                 {app.lang === "ar" ? "أدمن" : "Admin"}
                               </Badge>
                             </div>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="h-8 w-8 rounded-full hover:bg-[#d81b60]/20 opacity-0 group-hover:opacity-100 transition-all text-[#d81b60]"
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
+                          <ChevronRight className="h-4 w-4 text-[#2a655f]/50 rtl:rotate-180 flex-shrink-0" />
                         </div>
                       ))
                     )}
                   </div>
                   
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowAdminDialog(false)} className="border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60]">
+                    <Button variant="outline" onClick={() => setShowAdminDialog(false)} className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#e8f0ee]/30">
                       {app.lang === "ar" ? "إغلاق" : "Close"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
 
-              {/* ✅ زر الموزعين - وردي */}
+              {/* زر الموزعين */}
               <Dialog open={showDistributorDialog} onOpenChange={setShowDistributorDialog}>
                 <DialogTrigger asChild>
-                  <Button 
-                    variant="outline"
-                    className="h-10 px-5 rounded-xl bg-white/15 backdrop-blur-sm hover:bg-white/25 border-white/20 hover:border-white/40 text-white hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-white/10 group font-medium"
+                  <button
+                    className="h-9 w-9 sm:h-10 sm:w-auto sm:px-2.5 lg:px-3 rounded-xl flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 active:bg-white/25 text-white text-xs font-semibold transition-all duration-200 relative"
+                    aria-label={app.lang === "ar" ? "الموزعين" : "Distributors"}
                   >
-                    <UsersRound className="h-4 w-4 mr-2 text-white/80 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
-                    <span className="hidden sm:inline">{app.lang === "ar" ? "الموزعين" : "Distributors"}</span>
-                    <span className="inline sm:hidden">{app.lang === "ar" ? "موزعين" : "Dists"}</span>
+                    <UsersRound className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-blue-300" />
+                    <span className="hidden lg:inline">
+                      {app.lang === "ar" ? "الموزعين" : "Distributors"}
+                    </span>
                     {companyDistributors.length > 0 && (
-                      <Badge className="bg-gradient-to-r from-white/30 to-white/20 text-white border-0 text-[10px] px-2 py-0.5 ml-1.5 backdrop-blur-sm">
+                      <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#3a8a82] text-white text-[9px] font-bold flex items-center justify-center border border-[#1a4f4a]">
                         {companyDistributors.length}
-                      </Badge>
+                      </span>
                     )}
-                  </Button>
+                  </button>
                 </DialogTrigger>
-                <DialogContent className="rounded-2xl max-w-md border-2 border-[#d81b60]/30 shadow-2xl shadow-[#d81b60]/20 bg-white dark:bg-slate-900">
+                <DialogContent className="max-w-[95vw] sm:max-w-md rounded-2xl border-[#2a655f]/30 shadow-2xl">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-[#d81b60] dark:text-white text-xl">
-                      <div className="p-1.5 rounded-xl bg-gradient-to-br from-[#d81b60] to-[#f48fb1]">
-                        <UsersRound className="h-5 w-5 text-white" />
-                      </div>
+                    <DialogTitle className="flex items-center gap-2 text-[#2a655f] dark:text-[#3a8a82]">
+                      <UsersRound className="h-5 w-5 text-[#2a655f]" />
                       {app.lang === "ar" ? "الموزعين" : "Distributors"}
                     </DialogTitle>
                     <DialogDescription>
@@ -704,16 +681,16 @@ function DistributorMessagesPage() {
                   </DialogHeader>
                   
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d81b60]/50" />
+                    <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={app.lang === "ar" ? "بحث عن موزع..." : "Search distributor..."}
+                      placeholder={app.lang === "ar" ? "🔍 بحث عن موزع (اسم أو رقم)..." : "🔍 Search distributor (name or phone)..."}
                       value={distributorSearch}
                       onChange={(e) => setDistributorSearch(e.target.value)}
-                      className="pl-9 rounded-xl border-2 border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20"
+                      className="ps-9 rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
                     />
                   </div>
                   
-                  <div className="max-h-60 overflow-y-auto space-y-1.5 border-2 rounded-xl p-1.5 border-[#d81b60]/20">
+                  <div className="max-h-60 overflow-y-auto space-y-1.5 border border-[#2a655f]/20 rounded-xl p-1.5">
                     {filteredDistributors.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground text-sm">
                         {distributorSearch
@@ -728,140 +705,189 @@ function DistributorMessagesPage() {
                       filteredDistributors.map((dist: any) => (
                         <div
                           key={dist.id}
-                          className={`flex items-center gap-3 p-3 rounded-xl hover:bg-[#d81b60]/10 dark:hover:bg-[#d81b60]/20 cursor-pointer transition-all hover:border-[#d81b60]/40 border-2 border-transparent group ${
+                          className={`flex items-center gap-3 p-3 rounded-xl hover:bg-[#e8f0ee]/30 cursor-pointer transition-all border border-transparent hover:border-[#2a655f]/30 group ${
                             !dist.user_id ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                           onClick={() => dist.user_id && startDistributorChat(dist)}
                         >
-                          <Avatar className="h-10 w-10 ring-2 ring-[#d81b60]/20 group-hover:ring-[#d81b60]/40 transition-all">
+                          <Avatar className="h-10 w-10 ring-2 ring-[#2a655f]/20 group-hover:ring-[#2a655f]/40 transition-all">
                             <img 
-                              src={dist.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(dist.full_name_ar || dist.full_name_en || 'D')}&background=d81b60&color=fff`} 
+                              src={dist.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(dist.full_name_ar || dist.full_name_en || 'D')}&background=2a655f&color=fff`} 
                               alt={dist.full_name_ar || dist.full_name_en || 'Distributor'}
                               className="object-cover"
                             />
-                            <AvatarFallback className="bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white">
+                            <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white">
                               {(dist.full_name_ar || dist.full_name_en || 'D').charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate group-hover:text-[#d81b60] transition-colors">
+                            <p className="font-medium text-sm truncate group-hover:text-[#2a655f] transition-colors">
                               {app.lang === "ar" ? dist.full_name_ar : dist.full_name_en || dist.full_name_ar}
                             </p>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                              <Phone className="h-3 w-3" />
-                              <span>{dist.phone}</span>
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                <span className="truncate">{dist.phone}</span>
+                              </span>
                               {dist.is_available && (
-                                <Badge className="bg-emerald-500/20 text-emerald-600 text-[8px] px-2 py-0 flex items-center gap-1 border-0">
-                                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <Badge className="bg-emerald-500/20 text-emerald-600 text-[8px] px-1.5 py-0 flex items-center gap-1 border-0">
+                                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
                                   {app.lang === "ar" ? "متاح" : "Available"}
                                 </Badge>
                               )}
                               {!dist.user_id && (
-                                <Badge className="bg-red-500/20 text-red-600 text-[8px] px-2 py-0 border-0">
+                                <Badge className="bg-red-500/20 text-red-600 text-[8px] px-1.5 py-0 border-0">
                                   ⚠️ {app.lang === "ar" ? "بدون حساب" : "No account"}
                                 </Badge>
                               )}
                             </div>
                           </div>
                           
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className={`h-8 w-8 rounded-full ${dist.user_id ? 'hover:bg-[#d81b60]/20 opacity-0 group-hover:opacity-100 text-[#d81b60]' : 'opacity-50 cursor-not-allowed'} transition-all`}
-                            disabled={!dist.user_id}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
+                          <ChevronRight className={`h-4 w-4 rtl:rotate-180 flex-shrink-0 ${dist.user_id ? 'text-[#2a655f]/50' : 'opacity-50'}`} />
                         </div>
                       ))
                     )}
                   </div>
                   
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowDistributorDialog(false)} className="border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60]">
+                    <Button variant="outline" onClick={() => setShowDistributorDialog(false)} className="rounded-xl border-[#2a655f]/30 text-[#2a655f] hover:bg-[#e8f0ee]/30">
                       {app.lang === "ar" ? "إغلاق" : "Close"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
 
-              <div className="w-px h-8 bg-[#d81b60]/30 mx-1 hidden sm:block" />
-
-              {/* بحث في المحادثات */}
-              <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#d81b60]/50 group-focus-within:text-[#d81b60] transition-all duration-300 group-focus-within:scale-110" />
-                <Input
-                  placeholder={app.lang === "ar" ? "🔍 بحث في المحادثات..." : "🔍 Search conversations..."}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 w-full md:w-56 rounded-xl border-2 border-[#d81b60]/30 dark:border-[#d81b60]/30 focus:border-[#d81b60] focus:ring-[#d81b60]/20 transition-all duration-300 focus:scale-[1.02]"
-                />
-              </div>
-
-              {/* فلتر */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="h-10 px-3 rounded-xl border-2 border-[#d81b60]/30 hover:bg-[#d81b60]/10 text-[#d81b60]"
-                  >
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="rounded-xl p-1 border-2 border-[#d81b60]/20">
-                  <DropdownMenuItem 
-                    onClick={() => setFilterType("all")}
-                    className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#d81b60]/10"
-                  >
-                    <Users className="h-4 w-4" />
-                    {app.lang === "ar" ? "الكل" : "All"}
-                    {filterType === "all" && <Check className="h-4 w-4 text-[#d81b60] mr-auto" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setFilterType("distributors")}
-                    className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#d81b60]/10"
-                  >
-                    <Truck className="h-4 w-4" />
-                    {app.lang === "ar" ? "الموزعين" : "Distributors"}
-                    {filterType === "distributors" && <Check className="h-4 w-4 text-[#d81b60] mr-auto" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setFilterType("admins")}
-                    className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#d81b60]/10"
-                  >
-                    <ShieldCheck className="h-4 w-4" />
-                    {app.lang === "ar" ? "الأدمن" : "Admins"}
-                    {filterType === "admins" && <Check className="h-4 w-4 text-[#d81b60] mr-auto" />}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-xl hover:bg-[#d81b60]/10 transition-all duration-300 hover:rotate-180 group border-2 border-[#d81b60]/30 hover:border-[#d81b60]/60"
+              {/* زر تحديث - مخفي على أقل من 400px */}
+              <button
                 onClick={() => refetch()}
+                className="hidden min-[400px]:flex h-9 w-9 sm:h-10 sm:w-10 rounded-xl items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition-all duration-200"
+                aria-label={app.lang === "ar" ? "تحديث" : "Refresh"}
               >
-                <RefreshCw className="h-4 w-4 text-[#d81b60] group-hover:scale-110 transition-all duration-300" />
-              </Button>
+                <RefreshCw className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+              </button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* ===== Search + Filter Bar ===== */}
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 py-3 sm:py-4">
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-3 shadow-sm border-2 border-[#2a655f]/30">
+          <div className="flex items-center gap-2">
+            
+            {/* بحث */}
+            <div className="relative flex-1">
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={app.lang === "ar" ? "🔍 بحث في المحادثات..." : "🔍 Search conversations..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="ps-9 h-10 rounded-xl border-[#2a655f]/30 focus:border-[#2a655f] focus:ring-[#2a655f]/20"
+              />
+            </div>
+
+            {/* فلتر */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="h-10 px-3 rounded-xl border-2 border-[#2a655f]/30 hover:bg-[#e8f0ee]/30 text-[#2a655f] flex items-center gap-1.5 flex-shrink-0"
+                >
+                  <Filter className="h-4 w-4" />
+                  <span className="hidden sm:inline text-sm font-medium">
+                    {filterType === "all" 
+                      ? (app.lang === "ar" ? "الكل" : "All")
+                      : filterType === "orders"
+                      ? (app.lang === "ar" ? "العملاء" : "Customers")
+                      : filterType === "distributors"
+                      ? (app.lang === "ar" ? "الموزعين" : "Distributors")
+                      : (app.lang === "ar" ? "الأدمن" : "Admins")}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="rounded-xl p-1 border-2 border-[#2a655f]/30">
+                <DropdownMenuItem 
+                  onClick={() => setFilterType("all")}
+                  className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#e8f0ee]/30"
+                >
+                  <Users className="h-4 w-4 text-[#2a655f]" />
+                  {app.lang === "ar" ? "الكل" : "All"}
+                  {filterType === "all" && <Check className="h-4 w-4 text-[#2a655f] ms-auto" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setFilterType("distributors")}
+                  className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#e8f0ee]/30"
+                >
+                  <Truck className="h-4 w-4 text-[#2a655f]" />
+                  {app.lang === "ar" ? "الموزعين" : "Distributors"}
+                  {filterType === "distributors" && <Check className="h-4 w-4 text-[#2a655f] ms-auto" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setFilterType("admins")}
+                  className="rounded-lg flex items-center gap-2 cursor-pointer hover:bg-[#e8f0ee]/30"
+                >
+                  <ShieldCheck className="h-4 w-4 text-[#2a655f]" />
+                  {app.lang === "ar" ? "الأدمن" : "Admins"}
+                  {filterType === "admins" && <Check className="h-4 w-4 text-[#2a655f] ms-auto" />}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* ✅ إحصائيات صغيرة */}
+          {stats.total > 0 && (
+            <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+              <button
+                onClick={() => setFilterType("all")}
+                className={cn(
+                  "px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-medium border transition-all",
+                  filterType === "all"
+                    ? "bg-[#2a655f] text-white border-[#2a655f]"
+                    : "bg-[#e8f0ee]/40 text-[#2a655f] border-[#2a655f]/30 hover:bg-[#e8f0ee]/60"
+                )}
+              >
+                {app.lang === "ar" ? "الكل" : "All"} ({stats.total})
+              </button>
+              <button
+                onClick={() => setFilterType("distributors")}
+                className={cn(
+                  "px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-medium border transition-all",
+                  filterType === "distributors"
+                    ? "bg-[#2a655f] text-white border-[#2a655f]"
+                    : "bg-[#e8f0ee]/40 text-[#2a655f] border-[#2a655f]/30 hover:bg-[#e8f0ee]/60"
+                )}
+              >
+                {app.lang === "ar" ? "الموزعين" : "Distributors"} ({stats.distributors})
+              </button>
+              <button
+                onClick={() => setFilterType("admins")}
+                className={cn(
+                  "px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-medium border transition-all",
+                  filterType === "admins"
+                    ? "bg-[#2a655f] text-white border-[#2a655f]"
+                    : "bg-[#e8f0ee]/40 text-[#2a655f] border-[#2a655f]/30 hover:bg-[#e8f0ee]/60"
+                )}
+              >
+                {app.lang === "ar" ? "الأدمن" : "Admins"} ({stats.admins})
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* ===== قائمة المحادثات ===== */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 pb-6">
         {isCreating ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#d81b60]/20 border-t-[#d81b60]" />
+          <div className="flex items-center justify-center py-16 sm:py-20">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2a655f]/20 border-t-[#2a655f]" />
           </div>
         ) : filteredConversations.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900/50 rounded-3xl border-2 border-[#d81b60]/20 dark:border-[#d81b60]/30 p-12 text-center shadow-sm hover:shadow-md hover:border-[#d81b60]/40 transition-all duration-300">
-            <div className="h-20 w-20 rounded-full bg-[#d81b60]/10 dark:bg-[#d81b60]/20 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
-              <MessageCircle className="h-10 w-10 text-[#d81b60]/40" />
+          <div className="bg-white dark:bg-slate-900/50 rounded-2xl sm:rounded-3xl border-2 border-dashed border-[#2a655f]/30 p-8 sm:p-12 text-center">
+            <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-[#e8f0ee]/40 flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="h-8 w-8 sm:h-10 sm:w-10 text-[#2a655f]/40" />
             </div>
-            <h3 className="text-xl font-semibold text-[#d81b60] dark:text-white">
+            <h3 className="text-base sm:text-xl font-semibold text-[#2a655f] dark:text-white">
               {searchQuery
                 ? app.lang === "ar"
                   ? "لا توجد نتائج"
@@ -870,7 +896,7 @@ function DistributorMessagesPage() {
                 ? "لا توجد محادثات"
                 : "No conversations"}
             </h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm mx-auto px-2">
               {searchQuery
                 ? app.lang === "ar"
                   ? `لا توجد محادثات تطابق "${searchQuery}"`
@@ -885,7 +911,6 @@ function DistributorMessagesPage() {
             {filteredConversations.map((conv: any) => {
               const otherUser = getOtherUser(conv);
               
-              // ✅ إذا لم يكن هناك مستخدم آخر، تخطى هذه المحادثة
               if (!otherUser) {
                 console.warn("⚠️ Skipping conversation with no other user:", conv);
                 return null;
@@ -907,103 +932,107 @@ function DistributorMessagesPage() {
                   onClick={() => openConversation(otherUser.id)}
                 >
                   <div
-                    className={`
-                      bg-white dark:bg-slate-900 rounded-2xl border-2 p-4 hover:shadow-xl transition-all duration-300 
-                      hover:border-[#d81b60]/50 hover:scale-[1.01]
-                      ${
-                        unread
-                          ? "border-[#d81b60]/40 dark:border-[#d81b60]/50 bg-gradient-to-r from-[#d81b60]/5 to-transparent dark:from-[#d81b60]/10 dark:to-transparent"
-                          : "border-[#d81b60]/20 dark:border-[#d81b60]/30"
-                      }
-                    `}
+                    className={cn(
+                      "bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl border-2 p-3 sm:p-4 hover:shadow-xl transition-all hover:border-[#2a655f]/50",
+                      unread
+                        ? "border-[#2a655f]/40 dark:border-[#2a655f]/50 bg-[#e8f0ee]/30 dark:bg-[#2a655f]/10"
+                        : "border-[#2a655f]/20 dark:border-[#2a655f]/30"
+                    )}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <Avatar className="h-14 w-14 ring-2 ring-[#d81b60]/30 dark:ring-[#d81b60]/40 group-hover:ring-[#d81b60] transition-all duration-300 group-hover:scale-105">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      
+                      {/* الأفاتار */}
+                      <div className="relative flex-shrink-0">
+                        <Avatar className="h-12 w-12 sm:h-14 sm:w-14 ring-2 ring-[#2a655f]/30 dark:ring-[#2a655f]/40 group-hover:ring-[#2a655f]/60 transition">
                           <img src={avatar} alt={name} className="object-cover" />
-                          <AvatarFallback className="bg-gradient-to-br from-[#d81b60] to-[#f48fb1] text-white text-sm font-bold">
+                          <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-sm font-bold">
                             {name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         {role === "store" && (
-                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-emerald-500/20 border-2 border-white dark:border-slate-900 flex items-center justify-center">
-                            <Store className="h-2.5 w-2.5 text-emerald-500" />
+                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-emerald-500/90 border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                            <Store className="h-2.5 w-2.5 text-white" />
                           </div>
                         )}
                         {role === "distributor" && (
-                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-blue-500/20 border-2 border-white dark:border-slate-900 flex items-center justify-center">
-                            <Truck className="h-2.5 w-2.5 text-blue-500 animate-bounce-slow" />
+                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-blue-500/90 border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                            <Truck className="h-2.5 w-2.5 text-white" />
                           </div>
                         )}
                         {role === "admin" && (
-                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-yellow-500/20 border-2 border-white dark:border-slate-900 flex items-center justify-center">
-                            <Crown className="h-2.5 w-2.5 text-yellow-500 animate-spin-slow" />
+                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-yellow-500/90 border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                            <Crown className="h-2.5 w-2.5 text-white" />
                           </div>
                         )}
                         {role === "company_admin" && (
-                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-pink-500/20 border-2 border-white dark:border-slate-900 flex items-center justify-center">
-                            <ShieldCheck className="h-2.5 w-2.5 text-pink-500" />
+                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-[#2a655f]/90 border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                            <ShieldCheck className="h-2.5 w-2.5 text-white" />
                           </div>
                         )}
                         {role === "delivery_company" && (
-                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-purple-500/20 border-2 border-white dark:border-slate-900 flex items-center justify-center">
-                            <Building2 className="h-2.5 w-2.5 text-purple-500" />
+                          <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-purple-500/90 border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                            <Building2 className="h-2.5 w-2.5 text-white" />
                           </div>
                         )}
                       </div>
 
+                      {/* المحتوى */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold truncate text-slate-900 dark:text-white group-hover:text-[#d81b60] transition-colors duration-300">
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+                            <span className="font-semibold truncate text-slate-900 dark:text-white text-sm sm:text-base">
                               {name}
                             </span>
                             <Badge 
                               className={cn(
-                                "text-[9px] px-1.5 py-0 h-4 rounded-full flex items-center gap-1 border",
+                                "text-[9px] px-1.5 py-0 h-4 rounded-full flex items-center gap-1 border flex-shrink-0",
                                 roleColor
                               )}
                             >
                               {roleIcon}
-                              {roleLabel}
+                              <span className="hidden sm:inline">{roleLabel}</span>
                             </Badge>
                           </div>
                           {conv.last_message_at && (
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                               {formatTime(conv.last_message_at)}
                             </span>
                           )}
                         </div>
 
                         {conv.last_message && (
-                          <p className="text-sm text-muted-foreground truncate mt-0.5 group-hover:text-[#d81b60]/70 transition-colors duration-300">
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
                             {conv.last_message}
                           </p>
                         )}
                       </div>
 
-                      {unread && (
-                        <Badge className="bg-[#d81b60] text-white rounded-full px-2.5 py-0.5 text-xs font-bold animate-pulse shadow-lg shadow-[#d81b60]/30 border-0">
-                          {conv.unread_count_participant1 || conv.unread_count_participant2}
-                        </Badge>
-                      )}
-
-                      <ChevronRight className="h-4 w-4 text-[#d81b60]/50 group-hover:translate-x-1 group-hover:text-[#d81b60] transition-all duration-300" />
+                      {/* Badge غير مقروء + سهم */}
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {unread && (
+                          <Badge className="bg-[#2a655f] text-white rounded-full min-w-[20px] h-5 px-1.5 text-[10px] sm:text-xs font-bold border-0">
+                            {conv.unread_count_participant1 || conv.unread_count_participant2}
+                          </Badge>
+                        )}
+                        <ChevronRight className="h-4 w-4 text-[#2a655f]/50 rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform" />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  {/* زر الحذف - يظهر عند hover على الديسكتوب فقط */}
+                  <div className="hidden md:block absolute top-3 end-3 opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-full hover:bg-[#d81b60]/10 border-2 border-[#d81b60]/20 hover:border-[#d81b60]/50 text-[#d81b60]"
+                          className="h-8 w-8 rounded-full hover:bg-red-500/10 text-red-500 border border-red-500/20 hover:border-red-500/50"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-xl border-2 border-[#d81b60]/20">
+                      <DropdownMenuContent align="end" className="rounded-xl border-[#2a655f]/30">
                         <DropdownMenuItem
                           className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
                           onClick={(e) => handleDeleteConversation(conv.id, e)}
@@ -1014,51 +1043,26 @@ function DistributorMessagesPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
+
+                  {/* زر الحذف على الجوال - دائم الظهور */}
+                  <div className="md:hidden absolute bottom-2 end-2 opacity-70">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteConversation(conv.id, e);
+                      }}
+                      className="h-7 w-7 rounded-lg flex items-center justify-center text-red-500/70 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                      aria-label="Delete conversation"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </div>
-
-      <style>{`
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 4s linear infinite;
-        }
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
-        }
-        .animate-bounce-slow {
-          animation: bounce-slow 2s ease-in-out infinite;
-        }
-        @keyframes drive-across {
-          0% { transform: translateX(-20%); }
-          100% { transform: translateX(120%); }
-        }
-        .animate-drive-across {
-          animation: drive-across 14s linear infinite;
-        }
-        @keyframes bounce-truck {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          25% { transform: translateY(-4px) rotate(-1deg); }
-          75% { transform: translateY(-4px) rotate(1deg); }
-        }
-        .animate-bounce-truck {
-          animation: bounce-truck 2.5s ease-in-out infinite;
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }

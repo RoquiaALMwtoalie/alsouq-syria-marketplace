@@ -1326,148 +1326,114 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-to-br from-[#e8f0ee]/40 via-white to-[#f8fafc] dark:from-[#0f172a] dark:via-[#0f172a] dark:to-[#1a4f4a]/10">
         
-      {/* HEADER - OLIVE GREEN (زيتي) */}
-<div className="relative bg-gradient-to-r from-[#0d2e2a]/95 via-[#1a4f4a]/90 to-[#2a655f]/85 backdrop-blur-md text-white overflow-hidden shadow-2xl shadow-[#0d2e2a]/20 border-b border-white/10 sticky top-0 z-50">
-  <div className="absolute inset-0 opacity-10">
-    <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-    <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-  </div>
-  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
-  <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-8">
-    <div className="absolute top-1/2 -translate-y-1/2 animate-drive-across">
-      <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm px-8 py-4 rounded-full border border-white/10 shadow-lg">
-        <Truck className="h-12 w-12 text-white animate-bounce-truck" />
-        <div className="flex gap-1.5">
-          <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s' }} />
-          <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s', animationDelay: '0.3s' }} />
-          <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s', animationDelay: '0.6s' }} />
-          <div className="h-2 w-2 rounded-full bg-white/30 animate-spin-slow" style={{ animationDuration: '1s', animationDelay: '0.9s' }} />
-        </div>
-        <span className="text-xs font-bold text-white/40 tracking-widest">● ● ●</span>
-        <div className="flex gap-1">
-          <div className="h-1.5 w-1.5 rounded-full bg-white/15 animate-pulse" />
-          <div className="h-1.5 w-1.5 rounded-full bg-white/15 animate-pulse" style={{ animationDelay: '0.5s' }} />
-          <div className="h-1.5 w-1.5 rounded-full bg-white/15 animate-pulse" style={{ animationDelay: '1s' }} />
-        </div>
-      </div>
-    </div>
-  </div>
-  <div className="relative mx-auto max-w-7xl px-4 py-3 md:py-4">
-    <div className="flex items-center justify-between flex-wrap gap-2">
-      <div className="flex items-center gap-3 group flex-1 min-w-0">
-        <div className="relative h-16 w-16 md:h-20 md:w-20 flex items-center justify-center group-hover:scale-110 transition-all duration-500 flex-shrink-0 animate-float-logo">
-          {/* 🎀 OLIVE GLOW RINGS - زيتية حول اللوجو */}
-          <div className="absolute inset-0 rounded-full bg-[#3a8a82]/20 blur-2xl group-hover:bg-[#3a8a82]/40 transition-all duration-700 animate-pulse-slow" />
-          <div className="absolute -inset-2 rounded-full border-2 border-[#3a8a82]/40 animate-spin-slow" />
-          <div className="absolute -inset-4 rounded-full border border-[#3a8a82]/20 animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '8s' }} />
-          <div className="absolute -inset-6 rounded-full border border-[#3a8a82]/10 animate-spin-slow" style={{ animationDuration: '10s' }} />
-          <div className="absolute -inset-8 rounded-full border border-[#3a8a82]/5 animate-spin-slow" style={{ animationDuration: '12s', animationDirection: 'reverse' }} />
-          <img 
-            src="/images/Logo.png" 
-            alt="ذوق"
-            className="h-14 w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl relative z-10 animate-pulse-glow"
-            loading="eager"
-          />
-          {/* 🎀 OLIVE DOTS - نقط زيتية حول اللوجو */}
-          <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#3a8a82] animate-ping" />
-          <div className="absolute -bottom-1 -left-1 h-2.5 w-2.5 rounded-full bg-[#3a8a82] animate-ping" style={{ animationDelay: '0.5s' }} />
-          <div className="absolute top-1/2 -right-3 h-2 w-2 rounded-full bg-[#3a8a82] animate-pulse" style={{ animationDelay: '1s' }} />
-          <div className="absolute top-1/2 -left-3 h-2 w-2 rounded-full bg-[#3a8a82] animate-pulse" style={{ animationDelay: '1.5s' }} />
-          <div className="absolute -top-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#3a8a82] animate-bounce" />
-          <div className="absolute -bottom-3 left-1/2 h-1.5 w-1.5 rounded-full bg-[#3a8a82] animate-bounce" style={{ animationDelay: '0.7s' }} />
-        </div>
-        <div className="flex flex-col min-w-0">
-         
-          {/* 🗑️ تم إزالة عبارة "موزع • متاح | توصيل سريع" من هنا */}
-        </div>
-      </div>
-      <div className="flex items-center gap-1 flex-wrap flex-shrink-0">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative"
-              onClick={() => setNotificationsOpen(true)}
-            >
-              <Bell className="h-4 w-4 md:h-5 md:w-5" />
-              {unreadNotificationsCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
-                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
-                </span>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-            <p>{isArabic ? "الإشعارات" : "Notifications"}</p>
-          </TooltipContent>
-        </Tooltip>
+      {/* ============================================================
+          HEADER - احترافي نظيف - متجاوب من 240px (نسخة جديدة)
+          ============================================================ */}
+      <div className="relative bg-gradient-to-r from-[#0d2e2a] via-[#1a4f4a] to-[#2a655f] text-white shadow-lg border-b border-white/10 sticky top-0 z-50">
+        <div className="mx-auto max-w-7xl px-2.5 sm:px-4 lg:px-6">
+          <div className="flex items-center justify-between h-14 sm:h-16 gap-1.5 sm:gap-2">
+            
+            {/* ===== اللوغو + اسم الصفحة ===== */}
+            <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-shrink-0">
+              
+              <div className="relative h-9 w-9 sm:h-11 sm:w-11 flex items-center justify-center flex-shrink-0">
+                <div className="absolute inset-0 rounded-full bg-white/10 backdrop-blur-sm" />
+                <div className="absolute inset-0 rounded-full border border-[#3a8a82]/50" />
+                <Truck className="h-4.5 w-4.5 sm:h-5.5 sm:w-5.5 text-white relative z-10" />
+              </div>
+              
+              <div className="min-w-0">
+                <h1 className="text-xs sm:text-base md:text-lg font-bold truncate">
+                  {isArabic ? "لوحة الموزع" : "Distributor Dashboard"}
+                </h1>
+                <p className="text-[9px] sm:text-xs text-white/60 flex items-center gap-1">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                  </span>
+                  <span className="hidden min-[400px]:inline">
+                    {isArabic ? `${stats.activeOrders} طلب نشط` : `${stats.activeOrders} active orders`}
+                  </span>
+                  <span className="min-[400px]:hidden">
+                    {stats.activeOrders}
+                  </span>
+                </p>
+              </div>
+            </div>
 
-        <Link to="/distributor/messages" className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 relative flex items-center justify-center">
-          <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
-          {unreadCount > 0 && (
-            <Badge className="absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse border-2 border-[#1a4f4a]">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
-          )}
-        </Link>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-9 w-9 md:h-10 md:w-10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300" onClick={() => {
-              const newLang = isArabic ? "en" : "ar";
-              app.setLang(newLang);
-              toast.success(isArabic ? "تم التبديل إلى الإنجليزية" : "Switched to Arabic");
-            }}>
-              <Languages className="h-4 w-4 md:h-5 md:w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-[#0d2e2a] text-white border-[#0d2e2a]/30">
-            <p>{isArabic ? "تبديل اللغة" : "Switch Language"}</p>
-          </TooltipContent>
-        </Tooltip>
-        <div className="w-px h-6 bg-white/10 mx-0.5" />
-        
-        {/* ✅ DistributorAccountMenu مع إضافة العبارة تحته */}
-        <div className="flex flex-col items-center">
-          <DistributorAccountMenu 
-            userData={{
-              id: app.user?.id || '',
-              full_name: currentDistributor?.full_name_ar || app.user?.name || (isArabic ? 'موزع' : 'Distributor'),
-              phone: currentDistributor?.phone || app.user?.phone || '',
-              avatar_url: currentDistributor?.avatar_url || app.user?.avatar_url || '',
-              role: 'distributor'
-            }}
-            companyName={currentDistributor?.delivery_companies?.name_ar}
-            isArabic={isArabic}
-            showEarnings={false}
-            earnings={0}
-            ordersCount={stats.delivered}
-            rating={currentDistributor?.rating || 0}
-          />
-          {/* ✅ العبارة تحت صورة الموزع */}
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[8px] md:text-[10px] text-white/70 flex items-center gap-1">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-              </span>
-              {isArabic ? "موزع • متاح" : "Distributor • Available"}
-            </span>
-            <span className="text-[8px] md:text-[10px] text-white/30">|</span>
-            <span className="text-[8px] md:text-[10px] text-white/50 flex items-center gap-0.5">
-              <Sparkles className="h-2 w-2 md:h-2.5 md:w-2.5 animate-spin-slow text-[#3a8a82]" />
-              {isArabic ? "توصيل سريع" : "Fast Delivery"}
-            </span>
+            {/* ===== الأزرار ===== */}
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+              
+              {/* الإشعارات */}
+              <button
+                onClick={() => setNotificationsOpen(true)}
+                className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition-all duration-200"
+                aria-label={isArabic ? "الإشعارات" : "Notifications"}
+              >
+                <Bell className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-[#1a4f4a]">
+                    {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+
+              {/* الرسائل */}
+              <Link
+                to="/distributor/messages"
+                className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition-all duration-200"
+                aria-label={isArabic ? "الرسائل" : "Messages"}
+              >
+                <MessageCircle className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-[#1a4f4a]">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+
+              {/* اللغة - مخفي على أقل من 400px */}
+              <button
+                onClick={() => {
+                  const newLang = isArabic ? "en" : "ar";
+                  app.setLang(newLang);
+                  toast.success(isArabic ? "تم التبديل إلى الإنجليزية" : "Switched to Arabic");
+                }}
+                className="hidden min-[400px]:flex h-9 w-9 sm:h-10 sm:w-10 rounded-xl items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition-all duration-200"
+                aria-label={isArabic ? "تبديل اللغة" : "Switch Language"}
+              >
+                <Languages className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+              </button>
+
+              {/* فاصل */}
+              <div className="hidden min-[360px]:block w-px h-6 bg-white/15 mx-0.5" />
+
+              {/* حساب الموزع */}
+              <div className="flex items-center">
+                <DistributorAccountMenu 
+                  userData={{
+                    id: app.user?.id || '',
+                    full_name: currentDistributor?.full_name_ar || app.user?.name || (isArabic ? 'موزع' : 'Distributor'),
+                    phone: currentDistributor?.phone || app.user?.phone || '',
+                    avatar_url: currentDistributor?.avatar_url || app.user?.avatar_url || '',
+                    role: 'distributor'
+                  }}
+                  companyName={currentDistributor?.delivery_companies?.name_ar}
+                  isArabic={isArabic}
+                  showEarnings={false}
+                  earnings={0}
+                  ordersCount={stats.delivered}
+                  rating={currentDistributor?.rating || 0}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</div>
 
         {/* DIALOG: الإشعارات */}
         <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-          <DialogContent className="max-w-md rounded-2xl border-[#3a8a82]/30 shadow-2xl">
+          <DialogContent className="max-w-[95vw] sm:max-w-md rounded-2xl border-[#3a8a82]/30 shadow-2xl">
             <DialogHeader>
               <div className="flex items-center justify-between">
                 <DialogTitle className="flex items-center gap-2 text-[#1a4f4a] dark:text-[#3a8a82]">
@@ -1558,9 +1524,9 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
           </DialogContent>
         </Dialog>
 
-        {/* STATS CARDS - OLIVE BACKGROUND */}
-        <div className="mx-auto max-w-7xl px-4 py-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        {/* ===== STATS CARDS - زيتية - متجاوبة ===== */}
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 py-4 sm:py-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             <StatCard icon={ClipboardList} label={isArabic ? "الطلبات" : "Orders"} value={stats.total} color="olive" />
             <StatCard icon={Clock} label={isArabic ? "نشطة" : "Active"} value={stats.activeOrders} color="olive" />
             <StatCard icon={CheckCircle} label={isArabic ? "تم التوصيل" : "Delivered"} value={stats.delivered} color="olive" />
@@ -1568,23 +1534,24 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
           </div>
         </div>
 
-        {/* ORDERS TAB */}
-        <div className="mx-auto max-w-7xl px-4 pb-6">
-          <div className="flex items-center justify-between gap-2 border-b border-[#3a8a82]/30 mb-6 flex-wrap">
-            <button className="flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 border-[#1a4f4a] text-[#1a4f4a] dark:text-[#3a8a82] hover:scale-105">
-              <Package className="h-4 w-4 animate-bounce-slow text-[#1a4f4a]" />
+        {/* ===== ORDERS TAB ===== */}
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 pb-6">
+          <div className="flex items-center justify-between gap-2 border-b border-[#3a8a82]/30 mb-4 sm:mb-6 flex-wrap">
+            <button className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-3 -mb-px border-b-2 font-bold text-xs sm:text-sm transition-all duration-300 border-[#1a4f4a] text-[#1a4f4a] dark:text-[#3a8a82]">
+              <Package className="h-4 w-4 text-[#1a4f4a]" />
               {isArabic ? "الطلبات النشطة" : "Active Orders"}
               {stats.activeOrders > 0 && (
-                <Badge className="bg-[#1a4f4a] text-white border-0 text-[10px] px-1.5 py-0.5 animate-pulse">
+                <Badge className="bg-[#1a4f4a] text-white border-0 text-[10px] px-1.5 py-0.5">
                   {stats.activeOrders}
                 </Badge>
               )}
             </button>
 
-            <div className="flex items-center gap-2 pb-2">
-              <select                value={activeLimit}
+            <div className="flex items-center gap-1.5 sm:gap-2 pb-2 flex-wrap">
+              <select
+                value={activeLimit}
                 onChange={(e) => { setActiveLimit(Number(e.target.value)); setActivePage(1); }}
-                className="h-9 px-3 rounded-xl border border-[#3a8a82]/30 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#3a8a82]/50 transition-all duration-300"
+                className="h-9 px-2 sm:px-3 rounded-xl border border-[#3a8a82]/30 bg-background text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#3a8a82]/50 transition-all duration-300"
               >
                 <option value="5">5</option>
                 <option value="10">10</option>
@@ -1598,7 +1565,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     variant="outline"
                     size="sm"
                     onClick={() => exportToCSV(filteredOrders, 'الطلبات_النشطة')}
-                    className="h-9 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50 transition-all duration-300 group"
+                    className="h-9 w-9 sm:w-auto sm:px-3 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50 transition-all duration-300 group"
                   >
                     <FileSpreadsheet className="h-4 w-4 text-[#1a4f4a] group-hover:scale-110 transition-transform" />
                     <span className="hidden sm:inline text-xs mr-1 text-[#1a4f4a]">{isArabic ? "Excel" : "Excel"}</span>
@@ -1613,7 +1580,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     variant="outline"
                     size="sm"
                     onClick={() => exportToWord(filteredOrders, 'تقرير_الطلبات_النشطة')}
-                    className="h-9 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50 transition-all duration-300 group"
+                    className="h-9 w-9 sm:w-auto sm:px-3 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50 transition-all duration-300 group"
                   >
                     <FileText className="h-4 w-4 text-[#1a4f4a] group-hover:scale-110 transition-transform" />
                     <span className="hidden sm:inline text-xs mr-1 text-[#1a4f4a]">{isArabic ? "Word" : "Word"}</span>
@@ -1628,7 +1595,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     variant="outline"
                     size="sm"
                     onClick={handlePrint}
-                    className="h-9 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50 transition-all duration-300 group"
+                    className="h-9 w-9 sm:w-auto sm:px-3 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50 transition-all duration-300 group"
                   >
                     <Printer className="h-4 w-4 text-[#1a4f4a] group-hover:scale-110 transition-transform" />
                     <span className="hidden sm:inline text-xs mr-1 text-[#1a4f4a]">{isArabic ? "طباعة" : "Print"}</span>
@@ -1639,26 +1606,26 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
             </div>
           </div>
 
-          <div className="animate-in slide-in-from-top-5 duration-300">
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              <div className="relative flex-1 min-w-[200px] max-w-sm group">
-                <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#1a4f4a] transition-all duration-300 group-focus-within:scale-110" />
+          <div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="relative flex-1 min-w-[180px] sm:min-w-[200px] max-w-full sm:max-w-sm group">
+                <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#1a4f4a] transition-all duration-300" />
                 <Input
-                  placeholder={isArabic ? "🔍 بحث عن طلب (رقم، اسم، هاتف، عنوان)..." : "🔍 Search orders (ID, name, phone, address)..."}
+                  placeholder={isArabic ? "🔍 بحث عن طلب..." : "🔍 Search orders..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="ps-9 h-10 rounded-xl border-[#3a8a82]/30 focus:border-[#1a4f4a] focus:ring-[#3a8a82]/40 transition-all duration-300 focus:scale-[1.02]"
+                  className="ps-9 h-10 rounded-xl border-[#3a8a82]/30 focus:border-[#1a4f4a] focus:ring-[#3a8a82]/40 transition-all duration-300 text-sm"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-[#1a4f4a] animate-pulse" />
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Filter className="h-4 w-4 text-[#1a4f4a]" />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="outline" 
-                      className="h-10 px-4 rounded-xl border-2 border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 transition-all duration-300 flex items-center gap-2 min-w-[160px] justify-between"
+                      className="h-10 px-3 sm:px-4 rounded-xl border-2 border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 transition-all duration-300 flex items-center gap-2 min-w-[140px] sm:min-w-[160px] justify-between text-xs sm:text-sm"
                     >
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
                         {statusFilter === "all" ? (isArabic ? "📋 جميع الحالات" : "📋 All status") :
                          statusFilter === "pending" ? (isArabic ? "⏳ قيد المراجعة" : "⏳ Pending") :
                          statusFilter === "assigned" ? (isArabic ? "📌 تم التعيين" : "📌 Assigned") :
@@ -1667,14 +1634,14 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                          statusFilter === "delivered" ? (isArabic ? "✅ تم التوصيل" : "✅ Delivered") :
                          (isArabic ? "جميع الحالات" : "All status")}
                       </span>
-                      <ChevronDown className="h-4 w-4 text-[#1a4f4a]" />
+                      <ChevronDown className="h-4 w-4 text-[#1a4f4a] flex-shrink-0" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-[220px] rounded-xl border-2 border-[#3a8a82]/30 shadow-xl p-1">
+                  <DropdownMenuContent align="start" className="w-[200px] sm:w-[220px] rounded-xl border-2 border-[#3a8a82]/30 shadow-xl p-1">
                     <DropdownMenuItem 
                       onClick={() => setStatusFilter("all")}
                       className={cn(
-                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200 text-sm",
                         statusFilter === "all" ? "bg-[#e8f0ee]/70 text-[#1a4f4a] font-semibold" : "hover:bg-[#e8f0ee]/50 hover:text-[#1a4f4a]"
                       )}
                     >
@@ -1688,7 +1655,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     <DropdownMenuItem 
                       onClick={() => setStatusFilter("pending")}
                       className={cn(
-                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200 text-sm",
                         statusFilter === "pending" ? "bg-[#e8f0ee]/70 text-[#1a4f4a] font-semibold" : "hover:bg-[#e8f0ee]/50 hover:text-[#1a4f4a]"
                       )}
                     >
@@ -1702,7 +1669,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     <DropdownMenuItem 
                       onClick={() => setStatusFilter("assigned")}
                       className={cn(
-                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200 text-sm",
                         statusFilter === "assigned" ? "bg-[#e8f0ee]/70 text-[#1a4f4a] font-semibold" : "hover:bg-[#e8f0ee]/50 hover:text-[#1a4f4a]"
                       )}
                     >
@@ -1716,7 +1683,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     <DropdownMenuItem 
                       onClick={() => setStatusFilter("picked_up")}
                       className={cn(
-                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200 text-sm",
                         statusFilter === "picked_up" ? "bg-[#e8f0ee]/70 text-[#1a4f4a] font-semibold" : "hover:bg-[#e8f0ee]/50 hover:text-[#1a4f4a]"
                       )}
                     >
@@ -1730,7 +1697,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     <DropdownMenuItem 
                       onClick={() => setStatusFilter("in_transit")}
                       className={cn(
-                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200 text-sm",
                         statusFilter === "in_transit" ? "bg-[#e8f0ee]/70 text-[#1a4f4a] font-semibold" : "hover:bg-[#e8f0ee]/50 hover:text-[#1a4f4a]"
                       )}
                     >
@@ -1744,7 +1711,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     <DropdownMenuItem 
                       onClick={() => setStatusFilter("delivered")}
                       className={cn(
-                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200",
+                        "rounded-lg py-2.5 px-3 cursor-pointer transition-all duration-200 text-sm",
                         statusFilter === "delivered" ? "bg-[#e8f0ee]/70 text-[#1a4f4a] font-semibold" : "hover:bg-[#e8f0ee]/50 hover:text-[#1a4f4a]"
                       )}
                     >
@@ -1760,45 +1727,45 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
             </div>
 
             {ordersLoading ? (
-              <div className="space-y-4">
-                {[...Array(4)].map((_, i) => (<Skeleton key={i} className="h-24 rounded-2xl animate-pulse" />))}
+              <div className="space-y-3 sm:space-y-4">
+                {[...Array(4)].map((_, i) => (<Skeleton key={i} className="h-20 sm:h-24 rounded-2xl" />))}
               </div>
             ) : filteredOrders.length === 0 ? (
-              <div className="text-center py-16 bg-white dark:bg-[#1e293b] rounded-3xl border-2 border-dashed border-[#3a8a82]/40 hover:border-[#3a8a82]/60 transition-all duration-300 hover:scale-[1.01]">
-                <div className="h-20 w-20 rounded-full bg-[#e8f0ee]/50 flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
-                  <Package className="h-10 w-10 text-[#1a4f4a]/40" />
+              <div className="text-center py-12 sm:py-16 bg-white dark:bg-[#1e293b] rounded-2xl sm:rounded-3xl border-2 border-dashed border-[#3a8a82]/40">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-[#e8f0ee]/50 flex items-center justify-center mx-auto mb-4">
+                  <Package className="h-8 w-8 sm:h-10 sm:w-10 text-[#1a4f4a]/40" />
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
+                <h3 className="text-base sm:text-xl font-semibold text-slate-900 dark:text-white">
                   {isArabic ? "لا توجد طلبات نشطة" : "No active orders"}
                 </h3>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {isArabic ? "جميع الطلبات مكتملة أو ملغية" : "All orders are completed or cancelled"}
                 </p>
               </div>
             ) : (
               <>
-                {/* ✅ جدول الطلبات النشطة - موحد - ✅ محدث مع رقم التتبع */}
-                <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
+                {/* ✅ Desktop: Table */}
+                <div className="hidden md:block bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg">
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-gradient-to-r from-[#e8f0ee]/60 via-[#f8fafc]/40 to-[#e8f0ee]/60 dark:from-[#3a8a82]/20 dark:via-[#f8fafc]/10 dark:to-[#3a8a82]/20 border-b-3 border-[#3a8a82]/50 dark:border-[#3a8a82]/30">
-                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-right min-w-[200px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                        <TableRow className="bg-gradient-to-r from-[#e8f0ee]/60 via-[#f8fafc]/40 to-[#e8f0ee]/60 dark:from-[#3a8a82]/20 dark:via-[#f8fafc]/10 dark:to-[#3a8a82]/20 border-b-2 border-[#3a8a82]/50">
+                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-right min-w-[200px] border-r border-[#3a8a82]/30">
                             {isArabic ? "رقم الطلب / رقم التتبع" : "Order # / Tracking #"}
                           </TableHead>
-                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[120px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[120px] border-r border-[#3a8a82]/30">
                             {isArabic ? "العميل" : "Customer"}
                           </TableHead>
-                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r border-[#3a8a82]/30">
                             {isArabic ? "الحالة" : "Status"}
                           </TableHead>
-                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r border-[#3a8a82]/30">
                             {isArabic ? "التوصيل" : "Delivery"}
                           </TableHead>
-                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[120px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[120px] border-r border-[#3a8a82]/30">
                             {isArabic ? "الإجمالي" : "Total"}
                           </TableHead>
-                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                          <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r border-[#3a8a82]/30">
                             {isArabic ? "التاريخ" : "Date"}
                           </TableHead>
                           <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[200px]">
@@ -1833,7 +1800,6 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                             cancelled: isArabic ? "ملغي" : "Cancelled",
                           };
 
-                          // ✅ استخراج رقم الطلب ورقم التتبع
                           const orderNumber = order.order_id?.substring(0, 8) 
                                              || order.orders?.id?.substring(0, 8) 
                                              || order.id?.substring(0, 8) 
@@ -1843,12 +1809,10 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                           return (
                             <TableRow 
                               key={order.id}
-                              className="border-slate-100 dark:border-slate-800 hover:bg-[#3a8a82]/15 dark:hover:bg-[#3a8a82]/10 transition-colors duration-300 group border-b-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10"
+                              className="border-b border-[#3a8a82]/20 dark:border-[#3a8a82]/10 hover:bg-[#3a8a82]/15 dark:hover:bg-[#3a8a82]/10 transition-colors duration-300 group"
                             >
-                              {/* ✅ عمود موحد: رقم الطلب + رقم التتبع */}
-                              <TableCell className="font-semibold text-slate-900 dark:text-white text-right border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                              <TableCell className="font-semibold text-slate-900 dark:text-white text-right border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
                                 <div className="flex flex-col gap-1 items-end">
-                                  {/* رقم الطلب */}
                                   <div className="flex items-center gap-2 justify-end">
                                     <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/30 font-mono font-bold text-[10px] flex items-center gap-1">
                                       <Hash className="h-2.5 w-2.5" />
@@ -1860,7 +1824,6 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                                       </Badge>
                                     )}
                                   </div>
-                                  {/* رقم التتبع */}
                                   {trackingNumber ? (
                                     <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-mono font-bold text-[10px] flex items-center gap-1">
                                       <Truck className="h-2.5 w-2.5" />
@@ -1874,27 +1837,27 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell className="text-slate-600 dark:text-slate-300 text-center border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                              <TableCell className="text-slate-600 dark:text-slate-300 text-center border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
                                 <div className="flex items-center gap-2 justify-center">
                                   <User className="h-3 w-3 text-[#1a4f4a]" />
                                   <span className="font-medium">{customerName}</span>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-center border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
-                                <Badge className={cn("border transition-all duration-300 hover:scale-105", statusColors[order.status] || "bg-slate-500/10 text-slate-500")}>
+                              <TableCell className="text-center border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                                <Badge className={cn("border", statusColors[order.status] || "bg-slate-500/10 text-slate-500")}>
                                   {statusLabels[order.status] || order.status}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-center group-hover:scale-110 transition-transform duration-300 border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                              <TableCell className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-center border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
                                 {deliveryFee === 0 
                                   ? (isArabic ? "🆓 مجاني" : "🆓 Free")
                                   : formatPrice(Number(deliveryFee), app.currency, app.lang)
                                 }
                               </TableCell>
-                              <TableCell className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-center group-hover:scale-110 transition-transform duration-300 border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                              <TableCell className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-center border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
                                 {formatPrice(Number(total), app.currency, app.lang)}
                               </TableCell>
-                              <TableCell className="text-xs text-slate-500 text-center border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                              <TableCell className="text-xs text-slate-500 text-center border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
                                 {new Date(order.created_at).toLocaleDateString(isArabic ? "ar-SA" : "en-US", {
                                   day: '2-digit',
                                   month: 'short',
@@ -1906,14 +1869,14 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                                   {canUpdate && (
                                     <Button 
                                       size="sm" 
-                                      className="h-8 px-3 rounded-xl bg-gradient-to-r from-[#1a4f4a] to-[#3a8a82] hover:from-[#0d2e2a] hover:to-[#2a655f] text-white transition-all duration-300 hover:scale-105 text-xs shadow-lg shadow-[#1a4f4a]/30"
+                                      className="h-8 px-2.5 rounded-xl bg-gradient-to-r from-[#1a4f4a] to-[#3a8a82] hover:from-[#0d2e2a] hover:to-[#2a655f] text-white transition-all duration-300 text-xs"
                                       onClick={() => {
                                         setSelectedOrder(order);
                                         setStatusNotes("");
                                         setIsStatusDialogOpen(true);
                                       }}
                                     >
-                                      <RefreshCw className="h-3.5 w-3.5 mr-1 group-hover:rotate-180 transition-all duration-500" />
+                                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
                                       {isArabic ? "تحديث" : "Update"}
                                     </Button>
                                   )}
@@ -1921,7 +1884,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                                   <Button 
                                     variant="outline" 
                                     size="sm" 
-                                    className="h-8 px-3 rounded-xl transition-all duration-300 hover:scale-105 text-xs border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50 hover:border-[#1a4f4a]/50"
+                                    className="h-8 px-2.5 rounded-xl text-xs border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50"
                                     onClick={() => {
                                       setSelectedOrderForDetails(order);
                                       setShowOrderDetails(true);
@@ -1935,27 +1898,25 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                                     <Button 
                                       variant="outline" 
                                       size="sm" 
-                                      className="h-8 px-3 rounded-xl transition-all duration-300 hover:scale-105 text-xs hover:bg-[#e8f0ee]/50 border-[#3a8a82]/30"
+                                      className="h-8 px-2.5 rounded-xl text-xs hover:bg-[#e8f0ee]/50 border-[#3a8a82]/30"
                                       onClick={() => {
                                         setShowMapOrderId(showMapOrderId === order.id ? null : order.id);
                                       }}
                                     >
-                                      <MapPin className="h-3.5 w-3.5 mr-1 text-[#1a4f4a]" />
-                                      {isArabic ? "خريطة" : "Map"}
+                                      <MapPin className="h-3.5 w-3.5 text-[#1a4f4a]" />
                                     </Button>
                                   )}
                                   
                                   {buyerPhone && (
                                     <Button
                                       size="sm"
-                                      className="h-8 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold shadow-lg shadow-emerald-500/40 transition-all duration-300 hover:scale-105 border-0 flex items-center gap-1 text-xs"
+                                      className="h-8 px-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs border-0"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         window.location.href = `tel:${buyerPhone}`;
                                       }}
                                     >
                                       <Phone className="h-3 w-3" />
-                                      <span className="hidden sm:inline">{isArabic ? "اتصل" : "Call"}</span>
                                     </Button>
                                   )}
                                 </div>
@@ -1967,39 +1928,189 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     </Table>
                   </div>
                   
-                  <div className="px-4 py-2 border-t-3 border-[#3a8a82]/20 dark:border-[#3a8a82]/10 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#e8f0ee]/30 via-[#f8fafc]/20 to-[#e8f0ee]/30 dark:from-[#3a8a82]/10 dark:via-[#f8fafc]/5 dark:to-[#3a8a82]/10">
+                  <div className="px-4 py-2 border-t border-[#3a8a82]/20 flex items-center justify-between text-xs text-slate-500 bg-[#e8f0ee]/20 dark:bg-[#3a8a82]/10">
                     <span>
                       {isArabic
                         ? `عرض ${paginatedActiveOrders.length} من ${filteredOrders.length} طلب`
                         : `Showing ${paginatedActiveOrders.length} of ${filteredOrders.length} orders`}
                     </span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20">
-                        {isArabic ? "📋 طلبات نشطة" : "📋 Active Orders"}
-                      </Badge>
-                      {statusFilter !== "all" && (
-                        <Badge variant="secondary" className="bg-[#e8f0ee]/30 text-[#2a655f] border-2 border-[#3a8a82]/20">
-                          🔍 {statusFilter}
-                        </Badge>
-                      )}
-                      {searchQuery && (
-                        <Badge variant="secondary" className="bg-[#e8f0ee]/30 text-[#2a655f] border-2 border-[#3a8a82]/20">
-                          🔍 {searchQuery}
-                        </Badge>
-                      )}
-                    </div>
+                    <Badge variant="secondary" className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20">
+                      {isArabic ? "📋 طلبات نشطة" : "📋 Active Orders"}
+                    </Badge>
                   </div>
+                </div>
+
+                {/* ✅ Mobile: Cards */}
+                <div className="md:hidden space-y-3">
+                  {paginatedActiveOrders.map((order: any) => {
+                    const address = order.delivery_address || order.pickup_address;
+                    const customerName = order.orders?.buyer_name || order.buyer_name || (isArabic ? "عميل" : "Customer");
+                    const buyerPhone = order.orders?.buyer_phone || order.buyer_phone || null;
+                    const total = order.orders?.total_with_delivery || order.orders?.total || order.cod_amount || 0;
+                    const deliveryFee = order.delivery_fee || 0;
+                    const canUpdate = ["pending", "assigned", "picked_up", "in_transit"].includes(order.status);
+                    
+                    const statusColors: Record<string, string> = {
+                      pending: "bg-[#e8f0ee]/60 text-[#1a4f4a] border-[#3a8a82]/30",
+                      assigned: "bg-[#e8f0ee]/60 text-[#1a4f4a] border-[#3a8a82]/30",
+                      picked_up: "bg-[#e8f0ee]/60 text-[#1a4f4a] border-[#3a8a82]/30",
+                      in_transit: "bg-[#e8f0ee]/60 text-[#1a4f4a] border-[#3a8a82]/30",
+                      delivered: "bg-emerald-500/20 text-emerald-600 border-emerald-500/20",
+                      cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
+                    };
+                    
+                    const statusLabels: Record<string, string> = {
+                      pending: isArabic ? "قيد المراجعة" : "Pending",
+                      assigned: isArabic ? "تم التعيين" : "Assigned",
+                      picked_up: isArabic ? "تم الاستلام" : "Picked up",
+                      in_transit: isArabic ? "قيد التوصيل" : "In Transit",
+                      delivered: isArabic ? "تم التوصيل" : "Delivered",
+                      cancelled: isArabic ? "ملغي" : "Cancelled",
+                    };
+
+                    const orderNumber = order.order_id?.substring(0, 8) 
+                                       || order.orders?.id?.substring(0, 8) 
+                                       || order.id?.substring(0, 8) 
+                                       || '—';
+                    const trackingNumber = order.tracking_number || order.orders?.tracking_number || null;
+
+                    return (
+                      <div key={order.id} className="bg-white dark:bg-[#1e293b] rounded-2xl p-3 shadow-sm border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 hover:border-[#3a8a82]/50 transition-all duration-300 group">
+                        {/* رقم الطلب + رقم التتبع */}
+                        <div className="flex flex-col gap-1.5 mb-3">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/30 font-mono font-bold text-[10px] flex items-center gap-1">
+                              <Hash className="h-3 w-3" />
+                              {isArabic ? `طلب: ${orderNumber}` : `Order: ${orderNumber}`}
+                            </Badge>
+                            {order.status === "pending" && (
+                              <Badge className="bg-yellow-500/20 text-yellow-600 border-0 text-[9px] animate-pulse">
+                                {isArabic ? "جديد" : "New"}
+                              </Badge>
+                            )}
+                          </div>
+                          {trackingNumber ? (
+                            <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-mono font-bold text-[10px] flex items-center gap-1 w-fit">
+                              <Truck className="h-3 w-3" />
+                              {isArabic ? `تتبع: ${trackingNumber}` : `Track: ${trackingNumber}`}
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-slate-500/10 text-slate-500 border border-slate-500/30 text-[9px] flex items-center gap-1 w-fit">
+                              <Truck className="h-3 w-3" />
+                              {isArabic ? "لا يوجد رقم تتبع" : "No tracking #"}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* معلومات العميل */}
+                        <div className="space-y-1.5 pb-3 mb-3 border-b border-[#3a8a82]/20">
+                          <p className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-white">
+                            <User className="h-3.5 w-3.5 text-[#1a4f4a]" />
+                            {customerName}
+                          </p>
+                          {buyerPhone && (
+                            <p className="flex items-center gap-2 text-xs text-muted-foreground font-mono" dir="ltr">
+                              <Phone className="h-3 w-3 text-[#1a4f4a]" />
+                              {buyerPhone}
+                            </p>
+                          )}
+                          {address && (
+                            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <MapPin className="h-3 w-3 text-[#1a4f4a] flex-shrink-0" />
+                              <span className="truncate">{address}</span>
+                            </p>
+                          )}
+                        </div>
+
+                        {/* الحالة + الإجمالي + التاريخ */}
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                          <div className="p-2 rounded-lg bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/10 border border-[#3a8a82]/20">
+                            <p className="text-[10px] text-muted-foreground mb-1">{isArabic ? "الحالة" : "Status"}</p>
+                            <Badge className={cn("border text-[10px]", statusColors[order.status])}>
+                              {statusLabels[order.status] || order.status}
+                            </Badge>
+                          </div>
+                          <div className="p-2 rounded-lg bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/10 border border-[#3a8a82]/20">
+                            <p className="text-[10px] text-muted-foreground mb-1">{isArabic ? "الإجمالي" : "Total"}</p>
+                            <p className="text-xs font-bold text-[#1a4f4a] truncate">
+                              {formatPrice(Number(total), app.currency, app.lang)}
+                            </p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/10 border border-[#3a8a82]/20">
+                            <p className="text-[10px] text-muted-foreground mb-1">{isArabic ? "التوصيل" : "Delivery"}</p>
+                            <p className="text-xs font-bold text-[#1a4f4a] truncate">
+                              {deliveryFee === 0 
+                                ? (isArabic ? "🆓 مجاني" : "🆓 Free")
+                                : formatPrice(Number(deliveryFee), app.currency, app.lang)}
+                            </p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/10 border border-[#3a8a82]/20">
+                            <p className="text-[10px] text-muted-foreground mb-1">{isArabic ? "التاريخ" : "Date"}</p>
+                            <p className="text-xs font-bold text-[#1a4f4a]">
+                              {new Date(order.created_at).toLocaleDateString(isArabic ? "ar-SA" : "en-US", {
+                                day: '2-digit',
+                                month: 'short'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* الأزرار */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {canUpdate && (
+                            <Button 
+                              size="sm" 
+                              className="h-9 rounded-xl bg-gradient-to-r from-[#1a4f4a] to-[#3a8a82] hover:from-[#0d2e2a] hover:to-[#2a655f] text-white text-xs font-semibold"
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setStatusNotes("");
+                                setIsStatusDialogOpen(true);
+                              }}
+                            >
+                              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                              {isArabic ? "تحديث" : "Update"}
+                            </Button>
+                          )}
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className={cn(
+                              "h-9 rounded-xl text-xs font-semibold border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50",
+                              !canUpdate && "col-span-2"
+                            )}
+                            onClick={() => {
+                              setSelectedOrderForDetails(order);
+                              setShowOrderDetails(true);
+                            }}
+                          >
+                            <ShoppingBag className="h-3.5 w-3.5 mr-1.5" />
+                            {isArabic ? "التفاصيل" : "Details"}
+                          </Button>
+
+                          {buyerPhone && (
+                            <Button
+                              size="sm"
+                              className="col-span-2 h-9 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold border-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.location.href = `tel:${buyerPhone}`;
+                              }}
+                            >
+                              <Phone className="h-3.5 w-3.5 mr-1.5" />
+                              {isArabic ? "اتصل بالعميل" : "Call Customer"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {totalActivePages > 1 && (
                   <div className="flex items-center justify-between pt-4 mt-4 border-t border-[#3a8a82]/30 flex-wrap gap-3">
-                    <span className="text-xs text-muted-foreground flex items-center gap-2">
-                      <TrendingUp className="h-3.5 w-3.5 text-[#1a4f4a] animate-pulse" />
+                    <span className="text-xs text-muted-foreground">
                       {isArabic ? `صفحة ${activePage} من ${totalActivePages}` : `Page ${activePage} of ${totalActivePages}`}
-                      <span className="text-muted-foreground/50">|</span>
-                      <span className="text-muted-foreground">
-                        {filteredOrders.length} {isArabic ? "طلب" : "orders"}
-                      </span>
                     </span>
                     
                     <div className="flex items-center gap-1">
@@ -2008,7 +2119,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                         size="sm" 
                         onClick={() => setActivePage(1)} 
                         disabled={activePage === 1} 
-                        className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50 transition-all duration-300"
+                        className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50"
                       >
                         <span className="text-xs font-bold text-[#1a4f4a]">«</span>
                       </Button>
@@ -2017,7 +2128,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                         size="sm" 
                         onClick={() => setActivePage(activePage - 1)} 
                         disabled={activePage === 1} 
-                        className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50 transition-all duration-300"
+                        className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50"
                       >
                         <ChevronLeft className="h-4 w-4 text-[#1a4f4a]" />
                       </Button>
@@ -2040,9 +2151,9 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                             size="sm" 
                             onClick={() => setActivePage(p)} 
                             className={cn(
-                              "h-8 w-8 p-0 rounded-xl text-xs font-medium transition-all duration-300",
+                              "h-8 w-8 p-0 rounded-xl text-xs font-medium",
                               p === activePage 
-                                ? "bg-gradient-to-r from-[#1a4f4a] to-[#3a8a82] text-white shadow-md shadow-[#1a4f4a]/30" 
+                                ? "bg-gradient-to-r from-[#1a4f4a] to-[#3a8a82] text-white" 
                                 : "hover:bg-[#e8f0ee]/50 hover:text-[#1a4f4a]"
                             )}
                           >
@@ -2056,7 +2167,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                         size="sm" 
                         onClick={() => setActivePage(activePage + 1)} 
                         disabled={activePage === totalActivePages} 
-                        className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50 transition-all duration-300"
+                        className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50"
                       >
                         <ChevronRight className="h-4 w-4 text-[#1a4f4a]" />
                       </Button>
@@ -2065,7 +2176,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                         size="sm" 
                         onClick={() => setActivePage(totalActivePages)} 
                         disabled={activePage === totalActivePages} 
-                        className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50 transition-all duration-300"
+                        className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50"
                       >
                         <span className="text-xs font-bold text-[#1a4f4a]">»</span>
                       </Button>
@@ -2077,27 +2188,27 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
           </div>
         </div>
 
-        {/* HISTORY - ✅ جدول الهيستوري */}
-        <div className="mx-auto max-w-7xl px-4 pb-12">
-          <div className="flex items-center justify-between gap-2 border-b border-[#3a8a82]/30 mb-6 flex-wrap">
-            <button className="flex items-center gap-2 px-5 py-3 -mb-px border-b-2 font-bold text-sm transition-all duration-300 border-[#1a4f4a] text-[#1a4f4a] dark:text-[#3a8a82] hover:scale-105">
-              <Clock className="h-4 w-4 animate-spin-slow text-[#1a4f4a]" />
+        {/* ===== HISTORY ===== */}
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 pb-12">
+          <div className="flex items-center justify-between gap-2 border-b border-[#3a8a82]/30 mb-4 sm:mb-6 flex-wrap">
+            <button className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-3 -mb-px border-b-2 font-bold text-xs sm:text-sm border-[#1a4f4a] text-[#1a4f4a] dark:text-[#3a8a82]">
+              <Clock className="h-4 w-4 text-[#1a4f4a]" />
               {isArabic ? "تاريخ الطلبات" : "Order History"}
               <Badge className="bg-[#e8f0ee]/50 text-[#1a4f4a] border-0 text-[10px]">
                 {historyOrders.length}
               </Badge>
             </button>
 
-            <div className="flex items-center gap-2 pb-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 pb-2 flex-wrap">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => exportToCSV(historyOrders, 'تاريخ_الطلبات')}
-                    className="h-9 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50 transition-all duration-300 group"
+                    className="h-9 w-9 sm:w-auto sm:px-3 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50"
                   >
-                    <FileSpreadsheet className="h-4 w-4 text-[#1a4f4a] group-hover:scale-110 transition-transform" />
+                    <FileSpreadsheet className="h-4 w-4 text-[#1a4f4a]" />
                     <span className="hidden sm:inline text-xs mr-1 text-[#1a4f4a]">{isArabic ? "Excel" : "Excel"}</span>
                   </Button>
                 </TooltipTrigger>
@@ -2110,9 +2221,9 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     variant="outline"
                     size="sm"
                     onClick={() => exportToWord(historyOrders, 'تقرير_تاريخ_الطلبات')}
-                    className="h-9 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50 transition-all duration-300 group"
+                    className="h-9 w-9 sm:w-auto sm:px-3 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50"
                   >
-                    <FileText className="h-4 w-4 text-[#1a4f4a] group-hover:scale-110 transition-transform" />
+                    <FileText className="h-4 w-4 text-[#1a4f4a]" />
                     <span className="hidden sm:inline text-xs mr-1 text-[#1a4f4a]">{isArabic ? "Word" : "Word"}</span>
                   </Button>
                 </TooltipTrigger>
@@ -2125,9 +2236,9 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     variant="outline"
                     size="sm"
                     onClick={handlePrint}
-                    className="h-9 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50 transition-all duration-300 group"
+                    className="h-9 w-9 sm:w-auto sm:px-3 rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50"
                   >
-                    <Printer className="h-4 w-4 text-[#1a4f4a] group-hover:scale-110 transition-transform" />
+                    <Printer className="h-4 w-4 text-[#1a4f4a]" />
                     <span className="hidden sm:inline text-xs mr-1 text-[#1a4f4a]">{isArabic ? "طباعة" : "Print"}</span>
                   </Button>
                 </TooltipTrigger>
@@ -2136,20 +2247,20 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 mb-6">
-            <div className="relative flex-1 min-w-[200px] max-w-sm group">
-              <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground group-focus-within:text-[#1a4f4a] transition-all duration-300 group-focus-within:scale-110" />
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="relative flex-1 min-w-[180px] sm:min-w-[200px] max-w-full sm:max-w-sm">
+              <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={isArabic ? "🔍 بحث في التاريخ (رقم، اسم، هاتف، عنوان)..." : "🔍 Search history (ID, name, phone, address)..."}
+                placeholder={isArabic ? "🔍 بحث في التاريخ..." : "🔍 Search history..."}
                 value={historySearch}
                 onChange={(e) => setHistorySearch(e.target.value)}
-                className="ps-9 h-10 rounded-xl border-[#3a8a82]/30 focus:border-[#1a4f4a] focus:ring-[#3a8a82]/40 transition-all duration-300"
+                className="ps-9 h-10 rounded-xl border-[#3a8a82]/30 focus:border-[#1a4f4a] focus:ring-[#3a8a82]/40 text-sm"
               />
             </div>
             <select
               value={historyFilter}
               onChange={(e) => { setHistoryFilter(e.target.value); setHistoryPage(1); }}
-              className="h-10 px-3 rounded-xl border border-[#3a8a82]/30 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#3a8a82]/40 transition-all duration-300"
+              className="h-10 px-3 rounded-xl border border-[#3a8a82]/30 bg-background text-xs sm:text-sm"
             >
               <option value="all">{isArabic ? "جميع الحالات" : "All status"}</option>
               <option value="delivered">{isArabic ? "تم التوصيل" : "Delivered"}</option>
@@ -2158,7 +2269,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
             <select
               value={historyLimit}
               onChange={(e) => { setHistoryLimit(Number(e.target.value)); setHistoryPage(1); }}
-              className="h-10 px-3 rounded-xl border border-[#3a8a82]/30 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#3a8a82]/40 transition-all duration-300"
+              className="h-10 px-3 rounded-xl border border-[#3a8a82]/30 bg-background text-xs sm:text-sm"
             >
               <option value="5">5</option>
               <option value="10">10</option>
@@ -2168,45 +2279,45 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
           </div>
 
           {ordersLoading ? (
-            <div className="space-y-4">
-              {[...Array(4)].map((_, i) => (<Skeleton key={i} className="h-20 rounded-2xl animate-pulse" />))}
+            <div className="space-y-3 sm:space-y-4">
+              {[...Array(4)].map((_, i) => (<Skeleton key={i} className="h-20 rounded-2xl" />))}
             </div>
           ) : historyOrders.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-[#1e293b] rounded-3xl border-2 border-dashed border-[#3a8a82]/40">
+            <div className="text-center py-12 bg-white dark:bg-[#1e293b] rounded-2xl sm:rounded-3xl border-2 border-dashed border-[#3a8a82]/40">
               <div className="h-16 w-16 rounded-full bg-[#e8f0ee]/50 flex items-center justify-center mx-auto mb-4">
                 <Clock className="h-8 w-8 text-[#1a4f4a]/40" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+              <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
                 {isArabic ? "لا توجد طلبات في السجل" : "No orders in history"}
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {isArabic ? "ستظهر الطلبات المكتملة والملغية هنا" : "Completed and cancelled orders will appear here"}
               </p>
             </div>
           ) : (
             <>
-              {/* ✅ جدول الهيستوري - موحد - ✅ محدث مع رقم التتبع */}
-              <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-3 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
+              {/* ✅ Desktop: Table */}
+              <div className="hidden md:block bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30 overflow-hidden shadow-lg">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-slate-100 dark:border-slate-800 hover:bg-transparent bg-gradient-to-r from-[#e8f0ee]/60 via-[#f8fafc]/40 to-[#e8f0ee]/60 dark:from-[#3a8a82]/20 dark:via-[#f8fafc]/10 dark:to-[#3a8a82]/20 border-b-3 border-[#3a8a82]/50 dark:border-[#3a8a82]/30">
-                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-right min-w-[200px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                      <TableRow className="bg-gradient-to-r from-[#e8f0ee]/60 via-[#f8fafc]/40 to-[#e8f0ee]/60 dark:from-[#3a8a82]/20 dark:via-[#f8fafc]/10 dark:to-[#3a8a82]/20 border-b-2 border-[#3a8a82]/50">
+                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-right min-w-[200px] border-r border-[#3a8a82]/30">
                           {isArabic ? "رقم الطلب / رقم التتبع" : "Order # / Tracking #"}
                         </TableHead>
-                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[120px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[120px] border-r border-[#3a8a82]/30">
                           {isArabic ? "العميل" : "Customer"}
                         </TableHead>
-                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r border-[#3a8a82]/30">
                           {isArabic ? "الحالة" : "Status"}
                         </TableHead>
-                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r border-[#3a8a82]/30">
                           {isArabic ? "التوصيل" : "Delivery"}
                         </TableHead>
-                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[120px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[120px] border-r border-[#3a8a82]/30">
                           {isArabic ? "الإجمالي" : "Total"}
                         </TableHead>
-                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r-2 border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
+                        <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px] border-r border-[#3a8a82]/30">
                           {isArabic ? "تاريخ التسليم" : "Delivered Date"}
                         </TableHead>
                         <TableHead className="text-xs font-bold text-[#2a655f] dark:text-[#3a8a82] text-center min-w-[100px]">
@@ -2216,7 +2327,6 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     </TableHeader>
                     <TableBody>
                       {paginatedHistoryOrders.map((order: any) => {
-                        const address = order.delivery_address || order.pickup_address;
                         const customerName = order.orders?.buyer_name || order.buyer_name || (isArabic ? "عميل" : "Customer");
                         const total = order.orders?.total_with_delivery || order.orders?.total || order.cod_amount || 0;
                         const deliveryFee = order.delivery_fee || 0;
@@ -2233,7 +2343,6 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                         
                         const deliveredDate = order.delivered_at || order.updated_at || order.created_at;
 
-                        // ✅ استخراج رقم الطلب ورقم التتبع
                         const orderNumber = order.order_id?.substring(0, 8) 
                                            || order.orders?.id?.substring(0, 8) 
                                            || order.id?.substring(0, 8) 
@@ -2243,10 +2352,9 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                         return (
                           <TableRow 
                             key={order.id}
-                            className="border-slate-100 dark:border-slate-800 hover:bg-[#3a8a82]/15 dark:hover:bg-[#3a8a82]/10 transition-colors duration-300 group border-b-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10"
+                            className="border-b border-[#3a8a82]/20 dark:border-[#3a8a82]/10 hover:bg-[#3a8a82]/15 dark:hover:bg-[#3a8a82]/10 transition-colors"
                           >
-                            {/* ✅ عمود موحد: رقم الطلب + رقم التتبع */}
-                            <TableCell className="font-semibold text-slate-900 dark:text-white text-right border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                            <TableCell className="font-semibold text-slate-900 dark:text-white text-right border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
                               <div className="flex flex-col gap-1 items-end">
                                 <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/30 font-mono font-bold text-[10px] flex items-center gap-1">
                                   <Hash className="h-2.5 w-2.5" />
@@ -2265,27 +2373,27 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="text-slate-600 dark:text-slate-300 text-center border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                            <TableCell className="text-slate-600 dark:text-slate-300 text-center border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
                               <div className="flex items-center gap-2 justify-center">
                                 <User className="h-3 w-3 text-[#1a4f4a]" />
                                 <span className="font-medium">{customerName}</span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-center border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
-                              <Badge className={cn("border transition-all duration-300 hover:scale-105", statusColors[order.status] || "bg-slate-500/10 text-slate-500")}>
+                            <TableCell className="text-center border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                              <Badge className={cn("border", statusColors[order.status] || "bg-slate-500/10 text-slate-500")}>
                                 {statusLabels[order.status] || order.status}
                               </Badge>
                             </TableCell>
-                            <TableCell className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-center group-hover:scale-110 transition-transform duration-300 border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                            <TableCell className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-center border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
                               {deliveryFee === 0 
                                 ? (isArabic ? "🆓 مجاني" : "🆓 Free")
                                 : formatPrice(Number(deliveryFee), app.currency, app.lang)
                               }
                             </TableCell>
-                            <TableCell className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-center group-hover:scale-110 transition-transform duration-300 border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                            <TableCell className="font-bold text-[#2a655f] dark:text-[#3a8a82] text-center border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
                               {formatPrice(Number(total), app.currency, app.lang)}
                             </TableCell>
-                            <TableCell className="text-xs text-slate-500 text-center border-r-2 border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
+                            <TableCell className="text-xs text-slate-500 text-center border-r border-[#3a8a82]/20 dark:border-[#3a8a82]/10">
                               {new Date(deliveredDate).toLocaleDateString(isArabic ? "ar-SA" : "en-US", {
                                 day: '2-digit',
                                 month: 'short',
@@ -2293,20 +2401,18 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                               })}
                             </TableCell>
                             <TableCell className="text-center">
-                              <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-8 px-3 rounded-xl transition-all duration-300 hover:scale-105 text-xs border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50 hover:border-[#1a4f4a]/50"
-                                  onClick={() => {
-                                    setSelectedOrderForDetails(order);
-                                    setShowOrderDetails(true);
-                                  }}
-                                >
-                                  <Eye className="h-3.5 w-3.5 mr-1" />
-                                  {isArabic ? "عرض" : "View"}
-                                </Button>
-                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-8 px-3 rounded-xl text-xs border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50"
+                                onClick={() => {
+                                  setSelectedOrderForDetails(order);
+                                  setShowOrderDetails(true);
+                                }}
+                              >
+                                <Eye className="h-3.5 w-3.5 mr-1" />
+                                {isArabic ? "عرض" : "View"}
+                              </Button>
                             </TableCell>
                           </TableRow>
                         );
@@ -2315,28 +2421,117 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                   </Table>
                 </div>
                 
-                <div className="px-4 py-2 border-t-3 border-[#3a8a82]/20 dark:border-[#3a8a82]/10 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-gradient-to-r from-[#e8f0ee]/30 via-[#f8fafc]/20 to-[#e8f0ee]/30 dark:from-[#3a8a82]/10 dark:via-[#f8fafc]/5 dark:to-[#3a8a82]/10">
+                <div className="px-4 py-2 border-t border-[#3a8a82]/20 flex items-center justify-between text-xs text-slate-500 bg-[#e8f0ee]/20 dark:bg-[#3a8a82]/10">
                   <span>
                     {isArabic
                       ? `عرض ${paginatedHistoryOrders.length} من ${historyOrders.length} طلب`
                       : `Showing ${paginatedHistoryOrders.length} of ${historyOrders.length} orders`}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20">
-                      {isArabic ? "📋 السجل" : "📋 History"}
-                    </Badge>
-                    {historyFilter !== "all" && (
-                      <Badge variant="secondary" className="bg-[#e8f0ee]/30 text-[#2a655f] border-2 border-[#3a8a82]/20">
-                        🔍 {historyFilter}
-                      </Badge>
-                    )}
-                    {historySearch && (
-                      <Badge variant="secondary" className="bg-[#e8f0ee]/30 text-[#2a655f] border-2 border-[#3a8a82]/20">
-                        🔍 {historySearch}
-                      </Badge>
-                    )}
-                  </div>
+                  <Badge variant="secondary" className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/20">
+                    {isArabic ? "📋 السجل" : "📋 History"}
+                  </Badge>
                 </div>
+              </div>
+
+              {/* ✅ Mobile: Cards */}
+              <div className="md:hidden space-y-3">
+                {paginatedHistoryOrders.map((order: any) => {
+                  const customerName = order.orders?.buyer_name || order.buyer_name || (isArabic ? "عميل" : "Customer");
+                  const total = order.orders?.total_with_delivery || order.orders?.total || order.cod_amount || 0;
+                  const deliveryFee = order.delivery_fee || 0;
+                  
+                  const statusColors: Record<string, string> = {
+                    delivered: "bg-emerald-500/20 text-emerald-600 border-emerald-500/20",
+                    cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
+                  };
+                  
+                  const statusLabels: Record<string, string> = {
+                    delivered: isArabic ? "تم التوصيل" : "Delivered",
+                    cancelled: isArabic ? "ملغي" : "Cancelled",
+                  };
+                  
+                  const deliveredDate = order.delivered_at || order.updated_at || order.created_at;
+
+                  const orderNumber = order.order_id?.substring(0, 8) 
+                                     || order.orders?.id?.substring(0, 8) 
+                                     || order.id?.substring(0, 8) 
+                                     || '—';
+                  const trackingNumber = order.tracking_number || order.orders?.tracking_number || null;
+
+                  return (
+                    <div key={order.id} className="bg-white dark:bg-[#1e293b] rounded-2xl p-3 shadow-sm border-2 border-[#2a655f]/20 dark:border-[#2a655f]/30">
+                      <div className="flex flex-col gap-1.5 mb-3">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge className="bg-[#2a655f]/10 text-[#2a655f] border border-[#2a655f]/30 font-mono font-bold text-[10px] flex items-center gap-1">
+                            <Hash className="h-3 w-3" />
+                            {isArabic ? `طلب: ${orderNumber}` : `Order: ${orderNumber}`}
+                          </Badge>
+                        </div>
+                        {trackingNumber ? (
+                          <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-mono font-bold text-[10px] flex items-center gap-1 w-fit">
+                            <Truck className="h-3 w-3" />
+                            {isArabic ? `تتبع: ${trackingNumber}` : `Track: ${trackingNumber}`}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-slate-500/10 text-slate-500 border border-slate-500/30 text-[9px] flex items-center gap-1 w-fit">
+                            <Truck className="h-3 w-3" />
+                            {isArabic ? "لا يوجد رقم تتبع" : "No tracking #"}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <p className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-white pb-3 mb-3 border-b border-[#3a8a82]/20">
+                        <User className="h-3.5 w-3.5 text-[#1a4f4a]" />
+                        {customerName}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="p-2 rounded-lg bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/10 border border-[#3a8a82]/20">
+                          <p className="text-[10px] text-muted-foreground mb-1">{isArabic ? "الحالة" : "Status"}</p>
+                          <Badge className={cn("border text-[10px]", statusColors[order.status])}>
+                            {statusLabels[order.status] || order.status}
+                          </Badge>
+                        </div>
+                        <div className="p-2 rounded-lg bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/10 border border-[#3a8a82]/20">
+                          <p className="text-[10px] text-muted-foreground mb-1">{isArabic ? "الإجمالي" : "Total"}</p>
+                          <p className="text-xs font-bold text-[#1a4f4a] truncate">
+                            {formatPrice(Number(total), app.currency, app.lang)}
+                          </p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/10 border border-[#3a8a82]/20">
+                          <p className="text-[10px] text-muted-foreground mb-1">{isArabic ? "التوصيل" : "Delivery"}</p>
+                          <p className="text-xs font-bold text-[#1a4f4a] truncate">
+                            {deliveryFee === 0 
+                              ? (isArabic ? "🆓 مجاني" : "🆓 Free")
+                              : formatPrice(Number(deliveryFee), app.currency, app.lang)}
+                          </p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/10 border border-[#3a8a82]/20">
+                          <p className="text-[10px] text-muted-foreground mb-1">{isArabic ? "التسليم" : "Delivered"}</p>
+                          <p className="text-xs font-bold text-[#1a4f4a]">
+                            {new Date(deliveredDate).toLocaleDateString(isArabic ? "ar-SA" : "en-US", {
+                              day: '2-digit',
+                              month: 'short'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full h-9 rounded-xl text-xs font-semibold border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50"
+                        onClick={() => {
+                          setSelectedOrderForDetails(order);
+                          setShowOrderDetails(true);
+                        }}
+                      >
+                        <Eye className="h-3.5 w-3.5 mr-1.5" />
+                        {isArabic ? "عرض التفاصيل" : "View Details"}
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
 
               {totalHistoryPages > 1 && (
@@ -2345,24 +2540,24 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     {isArabic ? `صفحة ${historyPage} من ${totalHistoryPages}` : `Page ${historyPage} of ${totalHistoryPages}`}
                   </span>
                   <div className="flex items-center gap-1">
-                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(1)} disabled={historyPage === 1} className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50 transition-all duration-300">
+                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(1)} disabled={historyPage === 1} className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50 disabled:opacity-50">
                       <span className="text-xs font-bold text-[#1a4f4a]">«</span>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(historyPage - 1)} disabled={historyPage === 1} className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50 transition-all duration-300">
+                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(historyPage - 1)} disabled={historyPage === 1} className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50 disabled:opacity-50">
                       <ChevronLeft className="h-4 w-4 text-[#1a4f4a]" />
                     </Button>
                     {Array.from({ length: Math.min(5, totalHistoryPages) }, (_, i) => {
                       const p = i + 1;
                       return (
-                        <Button key={p} variant={p === historyPage ? "default" : "ghost"} size="sm" onClick={() => setHistoryPage(p)} className={cn("h-8 w-8 p-0 rounded-xl text-xs font-medium transition-all duration-300", p === historyPage ? "bg-gradient-to-r from-[#1a4f4a] to-[#3a8a82] text-white shadow-md shadow-[#1a4f4a]/30" : "hover:bg-[#e8f0ee]/50 hover:text-[#1a4f4a]")}>
+                        <Button key={p} variant={p === historyPage ? "default" : "ghost"} size="sm" onClick={() => setHistoryPage(p)} className={cn("h-8 w-8 p-0 rounded-xl text-xs font-medium", p === historyPage ? "bg-gradient-to-r from-[#1a4f4a] to-[#3a8a82] text-white" : "hover:bg-[#e8f0ee]/50 hover:text-[#1a4f4a]")}>
                           {p}
                         </Button>
                       );
                     })}
-                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(historyPage + 1)} disabled={historyPage === totalHistoryPages} className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50 transition-all duration-300">
+                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(historyPage + 1)} disabled={historyPage === totalHistoryPages} className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50 disabled:opacity-50">
                       <ChevronRight className="h-4 w-4 text-[#1a4f4a]" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(totalHistoryPages)} disabled={historyPage === totalHistoryPages} className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:border-[#1a4f4a]/50 hover:bg-[#e8f0ee]/50 disabled:opacity-50 transition-all duration-300">
+                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(totalHistoryPages)} disabled={historyPage === totalHistoryPages} className="h-8 w-8 p-0 rounded-xl border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50 disabled:opacity-50">
                       <span className="text-xs font-bold text-[#1a4f4a]">»</span>
                     </Button>
                   </div>
@@ -2374,11 +2569,11 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
 
         {/* STATUS UPDATE DIALOG - OLIVE THEME - ✅ محدث مع رقم التتبع */}
         {isStatusDialogOpen && selectedOrder && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full mx-4 shadow-2xl border-4 border-[#3a8a82] max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-3">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-md w-full shadow-2xl border-4 border-[#3a8a82] max-h-[90vh] overflow-y-auto">
               <div className="mb-4">
-                <h3 className="text-xl font-bold text-[#1a4f4a] dark:text-[#3a8a82] flex items-center gap-2">
-                  <RefreshCw className="h-5 w-5 animate-spin-slow text-[#1a4f4a]" />
+                <h3 className="text-lg sm:text-xl font-bold text-[#1a4f4a] dark:text-[#3a8a82] flex items-center gap-2">
+                  <RefreshCw className="h-5 w-5 text-[#1a4f4a]" />
                   {isArabic ? "تحديث حالة الطلب" : "Update Order Status"}
                 </h3>
                 <div className="flex flex-col gap-1 mt-1">
@@ -2427,7 +2622,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                       key={status}
                       variant="outline" 
                       className={cn(
-                        "h-16 flex flex-col gap-1 transition-all duration-300 hover:scale-105 hover:bg-[#e8f0ee]/50",
+                        "h-16 flex flex-col gap-1 transition-all duration-300 hover:bg-[#e8f0ee]/50",
                         config.color,
                         "border-[#3a8a82]/40"
                       )}
@@ -2460,15 +2655,15 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
 
         {/* ✅✅✅ ORDER DETAILS DIALOG - مع دعم العروض الترويجية OLIVE THEME - ✅ محدث مع رقم التتبع */}
         <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-          <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto border-[#3a8a82]/30 shadow-2xl">
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto border-[#3a8a82]/30 shadow-2xl p-4 sm:p-6">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-[#1a4f4a] dark:text-[#3a8a82] flex items-center gap-3">
-                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#1a4f4a] to-[#3a8a82] flex items-center justify-center">
+              <DialogTitle className="text-lg sm:text-2xl font-bold text-[#1a4f4a] dark:text-[#3a8a82] flex items-center gap-3">
+                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#1a4f4a] to-[#3a8a82] flex items-center justify-center flex-shrink-0">
                   <ShoppingBag className="h-4 w-4 text-white" />
                 </div>
                 {isArabic ? "تفاصيل الطلب" : "Order Details"}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs sm:text-sm">
                 {isArabic 
                   ? `الطلب #${selectedOrderForDetails?.order_id?.substring(0, 8) || selectedOrderForDetails?.orders?.id?.substring(0, 8) || selectedOrderForDetails?.id?.substring(0, 8)}` 
                   : `Order #${selectedOrderForDetails?.order_id?.substring(0, 8) || selectedOrderForDetails?.orders?.id?.substring(0, 8) || selectedOrderForDetails?.id?.substring(0, 8)}`}
@@ -2482,8 +2677,8 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
               </div>
             ) : selectedOrderForDetails ? (
               <div className="space-y-4">
-                {/* معلومات الطلب الأساسية - ✅ محدث مع رقم التتبع */}
-                <div className="grid grid-cols-3 gap-3 p-4 bg-[#e8f0ee]/30 rounded-xl border border-[#3a8a82]/30">
+                {/* معلومات الطلب الأساسية */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-[#e8f0ee]/30 rounded-xl border border-[#3a8a82]/30">
                   <div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Hash className="h-3 w-3 text-[#1a4f4a]" />
@@ -2503,8 +2698,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                       {formatPrice(Number(selectedOrderForDetails.delivery_fee || 0), app.currency, app.lang)}
                     </p>
                   </div>
-                  {/* ✅ رقم التتبع - صف جديد مميز */}
-                  <div className="col-span-3">
+                  <div className="sm:col-span-3">
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Truck className="h-3 w-3 text-blue-500" />
                       {isArabic ? "رقم التتبع" : "Tracking Number"}
@@ -2523,7 +2717,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     <p className="text-xs text-muted-foreground">{isArabic ? "تاريخ الطلب" : "Date"}</p>
                     <p className="font-semibold text-sm">{new Date(selectedOrderForDetails.created_at).toLocaleDateString(isArabic ? "ar-SA" : "en-US")}</p>
                   </div>
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <p className="text-xs text-muted-foreground">{isArabic ? "المجموع الكلي" : "Total Amount"}</p>
                     <p className="text-lg font-bold text-[#1a4f4a]">
                       {formatPrice(
@@ -2557,13 +2751,13 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                       {orderData?.buyer_name || (isArabic ? "غير معروف" : "Unknown")}
                     </p>
                     {orderData?.buyer_phone && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Phone className="h-3.5 w-3.5 text-[#1a4f4a]" />
                         <span className="text-sm font-mono" dir="ltr">{orderData.buyer_phone}</span>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-7 px-2 rounded-lg bg-[#e8f0ee]/50 hover:bg-[#e8f0ee]/70 text-[#1a4f4a] transition-all duration-300" 
+                          className="h-7 px-2 rounded-lg bg-[#e8f0ee]/50 hover:bg-[#e8f0ee]/70 text-[#1a4f4a]" 
                           onClick={() => window.location.href = `tel:${orderData.buyer_phone}`}
                         >
                           <Phone className="h-3.5 w-3.5" />
@@ -2590,7 +2784,6 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                         const listing = item.listings || item;
                         const imageUrl = getProductImage(item);
                         
-                        // ✅ التحقق من العرض الترويجي
                         const isPromo = isPromoOffer(item);
                         const offerData = getPromoOfferData(item);
                         const requiredVariations = offerData?.required_products?.variations || {};
@@ -2612,65 +2805,53 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                             className={cn(
                               "p-3 rounded-xl border-2 transition-all duration-300",
                               isPromo 
-                                ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50 hover:border-purple-400/70" 
-                                : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50 hover:border-[#3a8a82]/50"
+                                ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/50 dark:border-purple-700/50" 
+                                : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50"
                             )}
                           >
                             {isPromo ? (
                               <div className="space-y-3">
-                                {/* شارة العرض الترويجي */}
-                                <div className="flex items-center gap-2">
-                                  <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 px-3 py-1 rounded-full text-xs font-bold">
-                                    <Gift className="h-3.5 w-3.5 inline mr-1.5" />
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold">
+                                    <Gift className="h-3 w-3 inline mr-1" />
                                     {isArabic ? "عرض ترويجي" : "Promo Offer"}
                                   </Badge>
-                                  <Badge variant="outline" className="border-purple-300 text-purple-600 text-[10px]">
+                                  <Badge variant="outline" className="border-purple-300 text-purple-600 text-[9px] sm:text-[10px]">
                                     {offerData?.offer_type === 'bogo' ? '🎁 نفس المنتج' : 
                                      offerData?.offer_type === 'cross_sell' ? '🔄 منتج مختلف' : '📦 باقة'}
                                   </Badge>
                                 </div>
                                 
-                                {/* نص العرض */}
                                 {offerData?.display_text_ar && (
-                                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                  <p className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
                                     {isArabic ? offerData.display_text_ar : offerData.display_text_en}
                                   </p>
                                 )}
                                 
-                                {/* المنتجات المطلوبة */}
                                 {hasRequired && (
                                   <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-slate-500 flex items-center gap-2">
-                                      <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
+                                    <p className="text-[10px] sm:text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                      <span className="w-0.5 h-3 bg-purple-500 rounded-full"></span>
                                       🛒 {isArabic ? "المنتجات المطلوبة" : "Required Products"} ({Object.keys(requiredVariations).length})
                                     </p>
                                     {Object.entries(requiredVariations).map(([id, data]: any) => {
                                       const comboText = Object.values(data.combination || {}).join(' • ');
-                                      const variationImage = data.image_url || 
-                                                            offerData?.required_products?.main_product?.cover_url || 
-                                                            null;
+                                      const variationImage = data.image_url || offerData?.required_products?.main_product?.cover_url || null;
                                       return (
-                                        <div key={id} className="flex items-center gap-3 p-2 bg-white/70 rounded-xl border border-purple-100/50">
+                                        <div key={id} className="flex items-center gap-2 p-2 bg-white/70 dark:bg-slate-800/40 rounded-xl border border-purple-100/50">
                                           {variationImage ? (
-                                            <img 
-                                              src={variationImage} 
-                                              alt={comboText} 
-                                              className="w-10 h-10 rounded-lg object-cover border border-purple-100"
-                                              onError={(e) => {
-                                                (e.target as HTMLImageElement).src = '/placeholder.png';
-                                              }}
-                                            />
+                                            <img src={variationImage} alt={comboText} className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png'; }} />
                                           ) : (
-                                            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center text-purple-400">
-                                              <Package className="h-5 w-5" />
+                                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-purple-100 flex items-center justify-center text-purple-400">
+                                              <Package className="h-4 w-4" />
                                             </div>
                                           )}
                                           <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
-                                            <p className="text-xs text-muted-foreground">{isArabic ? "الكمية" : "Qty"}: {data.quantity}</p>
+                                            <p className="text-xs sm:text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                                            <p className="text-[10px] sm:text-xs text-muted-foreground">{isArabic ? "الكمية" : "Qty"}: {data.quantity}</p>
                                           </div>
-                                          <p className="text-sm font-bold text-purple-600 whitespace-nowrap">
-                                            {(data.price * data.quantity).toLocaleString()} SYP
+                                          <p className="text-xs font-bold text-purple-600 whitespace-nowrap">
+                                            {(data.price * data.quantity).toLocaleString()}
                                           </p>
                                         </div>
                                       );
@@ -2678,39 +2859,29 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                                   </div>
                                 )}
                                 
-                                {/* الهدية */}
                                 {hasGift && (
                                   <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-emerald-500 flex items-center gap-2">
-                                      <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
+                                    <p className="text-[10px] sm:text-xs font-semibold text-emerald-500 flex items-center gap-2">
+                                      <span className="w-0.5 h-3 bg-emerald-500 rounded-full"></span>
                                       🎁 {isArabic ? "الهدية" : "Gift"} ({Object.keys(giftVariations).length})
                                     </p>
                                     {Object.entries(giftVariations).map(([id, data]: any) => {
                                       const comboText = Object.values(data.combination || {}).join(' • ');
-                                      const giftImage = data.image_url || 
-                                                       offerData?.free_product?.cover_url || 
-                                                       null;
+                                      const giftImage = data.image_url || offerData?.free_product?.cover_url || null;
                                       return (
-                                        <div key={id} className="flex items-center gap-3 p-2 bg-emerald-50/70 rounded-xl border border-emerald-100/50">
+                                        <div key={id} className="flex items-center gap-2 p-2 bg-emerald-50/70 dark:bg-emerald-950/20 rounded-xl border border-emerald-100/50">
                                           {giftImage ? (
-                                            <img 
-                                              src={giftImage} 
-                                              alt={comboText} 
-                                              className="w-10 h-10 rounded-lg object-cover border border-emerald-100"
-                                              onError={(e) => {
-                                                (e.target as HTMLImageElement).src = '/placeholder.png';
-                                              }}
-                                            />
+                                            <img src={giftImage} alt={comboText} className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png'; }} />
                                           ) : (
-                                            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400">
-                                              <Gift className="h-5 w-5" />
+                                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-400">
+                                              <Gift className="h-4 w-4" />
                                             </div>
                                           )}
                                           <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
-                                            <p className="text-xs text-muted-foreground">{isArabic ? "الكمية" : "Qty"}: {data.quantity}</p>
+                                            <p className="text-xs sm:text-sm font-medium text-slate-700 truncate">{comboText || 'فيرنت'}</p>
+                                            <p className="text-[10px] sm:text-xs text-muted-foreground">{isArabic ? "الكمية" : "Qty"}: {data.quantity}</p>
                                           </div>
-                                          <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-xs font-bold px-3 py-1 rounded-full">
+                                          <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[10px] font-bold px-2 py-0.5 rounded-full">
                                             🎁 {isArabic ? "مجاناً" : "Free"}
                                           </Badge>
                                         </div>
@@ -2720,82 +2891,53 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                                 )}
                               </div>
                             ) : (
-                              // ✅ العرض العادي
-                              <div className="flex items-center gap-4">
-                                <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                              <div className="flex items-center gap-3">
+                                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
                                   {imageUrl ? (
                                     <img src={imageUrl} alt="" className="h-full w-full object-cover" />
                                   ) : (
                                     <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                                      <Package className="h-6 w-6 text-slate-400" />
+                                      <Package className="h-5 w-5 sm:h-6 sm:w-6 text-slate-400" />
                                     </div>
                                   )}
                                 </div>
                                 
                                 <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-sm text-slate-800 dark:text-white">
-                                    {isArabic 
-                                      ? listing?.title_ar || 'منتج'
-                                      : listing?.title_en || listing?.title_ar || 'Product'}
+                                  <p className="font-semibold text-xs sm:text-sm text-slate-800 dark:text-white">
+                                    {isArabic ? listing?.title_ar || 'منتج' : listing?.title_en || listing?.title_ar || 'Product'}
                                   </p>
                                   
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
-                                    <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
-                                      <span className="font-medium text-slate-600 dark:text-slate-400">{isArabic ? "الكمية:" : "Qty:"}</span>
+                                  <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap mt-0.5">
+                                    <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-1.5 py-0.5 rounded-full">
+                                      <span className="font-medium">{isArabic ? "الكمية:" : "Qty:"}</span>
                                       <span className="font-bold text-slate-800 dark:text-white">{itemQuantity}</span>
                                     </span>
-                                    <span className="text-muted-foreground/30">•</span>
-                                    <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
-                                      <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "سعر الوحدة:" : "Unit:"}</span>
+                                    <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
+                                      <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "سعر:" : "Unit:"}</span>
                                       <span className="font-bold text-emerald-700 dark:text-emerald-300">
                                         {formatPrice(itemPrice, app.currency, app.lang)}
                                       </span>
                                     </span>
                                     {itemQuantity > 1 && (
-                                      <>
-                                        <span className="text-muted-foreground/30">|</span>
-                                        <span className="flex items-center gap-1 bg-[#e8f0ee]/50 px-2 py-0.5 rounded-full border border-[#3a8a82]/30">
-                                          <span className="font-medium text-[#1a4f4a]">{isArabic ? "الإجمالي:" : "Total:"}</span>
-                                          <span className="font-bold text-[#1a4f4a]">
-                                            {formatPrice(totalPrice, app.currency, app.lang)}
-                                          </span>
+                                      <span className="flex items-center gap-1 bg-[#e8f0ee]/50 px-1.5 py-0.5 rounded-full border border-[#3a8a82]/30">
+                                        <span className="font-medium text-[#1a4f4a]">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                                        <span className="font-bold text-[#1a4f4a]">
+                                          {formatPrice(totalPrice, app.currency, app.lang)}
                                         </span>
-                                      </>
+                                      </span>
                                     )}
                                     {hasVariation && variationDisplay && (
-                                      <>
-                                        <span className="text-muted-foreground/30">•</span>
-                                        <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#e8f0ee]/40 px-2 py-0.5 rounded-full border border-[#3a8a82]/20">
-                                          <Layers className="h-3 w-3 text-[#1a4f4a]" />
-                                          {variationDisplay}
-                                          {imageUrl && (
-                                            <img 
-                                              src={imageUrl} 
-                                              alt="" 
-                                              className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5"
-                                            />
-                                          )}
-                                        </span>
-                                      </>
-                                    )}
-                                    {item.metadata?.variation_combination && Object.keys(item.metadata.variation_combination).length > 0 && !variationDisplay && (
-                                      <>
-                                        <span className="text-muted-foreground/30">•</span>
-                                        <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1">
-                                          <Layers className="h-2.5 w-2.5" />
-                                          {Object.values(item.metadata.variation_combination).join(' • ')}
-                                        </span>
-                                      </>
+                                      <span className="text-[9px] text-muted-foreground/80 flex items-center gap-1 bg-[#e8f0ee]/40 px-1.5 py-0.5 rounded-full border border-[#3a8a82]/20">
+                                        <Layers className="h-3 w-3 text-[#1a4f4a]" />
+                                        {variationDisplay}
+                                      </span>
                                     )}
                                     {item.selected_options?.selected_color && (
-                                      <>
-                                        <span className="text-muted-foreground/30">•</span>
-                                        <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#e8f0ee]/40 px-2 py-0.5 rounded-full">
-                                          <span className="font-medium text-[#1a4f4a]">🎨</span>
-                                          {item.selected_options.selected_color}
-                                          {item.selected_options.selected_size && ` (${item.selected_options.selected_size})`}
-                                        </span>
-                                      </>
+                                      <span className="text-[9px] text-muted-foreground/70 flex items-center gap-1 bg-[#e8f0ee]/40 px-1.5 py-0.5 rounded-full">
+                                        <span className="font-medium text-[#1a4f4a]">🎨</span>
+                                        {item.selected_options.selected_color}
+                                        {item.selected_options.selected_size && ` (${item.selected_options.selected_size})`}
+                                      </span>
                                     )}
                                   </div>
                                 </div>
@@ -2826,46 +2968,37 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                         const oldVariationDisplay = getVariationDisplay(oldVariationCombination);
                         
                         return (
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-4 p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#3a8a82]/50 transition-all duration-300">
-                              <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-                                {oldImageUrl ? (
-                                  <img src={oldImageUrl} alt="" className="h-full w-full object-cover" />
-                                ) : (
-                                  <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                                    <Package className="h-6 w-6 text-slate-400" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm text-slate-800 dark:text-white">
-                                  {isArabic ? oldListing?.title_ar || 'منتج' : oldListing?.title_en || oldListing?.title_ar || 'Product'}
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                  <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full">
-                                    <span className="font-medium">{isArabic ? "الكمية:" : "Qty:"}</span>
-                                    <span className="font-bold text-slate-800 dark:text-white">{oldQuantity}</span>
-                                  </span>
-                                  <span className="text-muted-foreground/30">•</span>
-                                  <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
-                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">{isArabic ? "الإجمالي:" : "Total:"}</span>
-                                    <span className="font-bold text-emerald-700 dark:text-emerald-300">
-                                      {formatPrice(oldTotal, app.currency, app.lang)}
-                                    </span>
-                                  </span>
-                                  {oldHasVariation && oldVariationDisplay && (
-                                    <>
-                                      <span className="text-muted-foreground/30">•</span>
-                                      <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 bg-[#e8f0ee]/40 px-2 py-0.5 rounded-full border border-[#3a8a82]/20">
-                                        <Layers className="h-3 w-3 text-[#1a4f4a]" />
-                                        {oldVariationDisplay}
-                                        {oldImageUrl && (
-                                          <img src={oldImageUrl} alt="" className="h-4 w-4 rounded-md object-cover border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0 ml-0.5" />
-                                        )}
-                                      </span>
-                                    </>
-                                  )}
+                          <div className="flex items-center gap-3 p-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                              {oldImageUrl ? (
+                                <img src={oldImageUrl} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                                  <Package className="h-5 w-5 sm:h-6 sm:w-6 text-slate-400" />
                                 </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-xs sm:text-sm text-slate-800 dark:text-white">
+                                {isArabic ? oldListing?.title_ar || 'منتج' : oldListing?.title_en || oldListing?.title_ar || 'Product'}
+                              </p>
+                              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground mt-0.5 flex-wrap">
+                                <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-1.5 py-0.5 rounded-full">
+                                  <span className="font-medium">{isArabic ? "الكمية:" : "Qty:"}</span>
+                                  <span className="font-bold text-slate-800 dark:text-white">{oldQuantity}</span>
+                                </span>
+                                <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-full border border-emerald-200/50">
+                                  <span className="font-medium text-emerald-600">{isArabic ? "الإجمالي:" : "Total:"}</span>
+                                  <span className="font-bold text-emerald-700">
+                                    {formatPrice(oldTotal, app.currency, app.lang)}
+                                  </span>
+                                </span>
+                                {oldHasVariation && oldVariationDisplay && (
+                                  <span className="text-[9px] text-muted-foreground/80 flex items-center gap-1 bg-[#e8f0ee]/40 px-1.5 py-0.5 rounded-full border border-[#3a8a82]/20">
+                                    <Layers className="h-3 w-3 text-[#1a4f4a]" />
+                                    {oldVariationDisplay}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -2916,12 +3049,10 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                   const hasDiscount = promoDiscount > 0;
                   const isFreeDelivery = deliveryFee === 0;
                   
-                  // ✅ التحقق من وجود عرض ترويجي في أي من المنتجات
                   const hasPromoOffer = orderItems.some((item: any) => isPromoOffer(item));
                   
                   return (
                     <div className="p-4 bg-[#e8f0ee]/30 dark:bg-[#e8f0ee]/10 rounded-xl border border-[#3a8a82]/30 dark:border-[#3a8a82]/20">
-                      {/* المجموع الفرعي */}
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-muted-foreground">
                           {isArabic ? "المجموع الفرعي" : "Subtotal"}
@@ -2931,7 +3062,6 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                         </span>
                       </div>
                       
-                      {/* سعر التوصيل */}
                       <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#3a8a82]/20">
                         <span className="text-sm text-muted-foreground flex items-center gap-1.5">
                           {isFreeDelivery ? (
@@ -2943,30 +3073,24 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                             isArabic ? "سعر التوصيل" : "Delivery Fee"
                           )}
                           {isFreeDelivery && (
-                            <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px] animate-pulse">
+                            <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px]">
                               🎁 {isArabic ? "مجاني" : "Free"}
                             </Badge>
                           )}
                         </span>
                         <span className={cn(
                           "text-sm font-medium",
-                          isFreeDelivery 
-                            ? "text-emerald-500 font-bold" 
-                            : "text-[#1a4f4a]"
+                          isFreeDelivery ? "text-emerald-500 font-bold" : "text-[#1a4f4a]"
                         )}>
-                          {isFreeDelivery 
-                            ? "🆓 مجاني"
-                            : formatPrice(deliveryFee, currency, app.lang)
-                          }
+                          {isFreeDelivery ? "🆓 مجاني" : formatPrice(deliveryFee, currency, app.lang)}
                         </span>
                       </div>
                       
-                      {/* الخصم */}
                       {hasDiscount && (
                         <div className="flex items-center justify-between mt-1 pt-1 border-t border-[#3a8a82]/20 text-emerald-500">
                           <span className="text-sm flex items-center gap-1.5">
-                            <Percent className="h-4 w-4 text-emerald-500" />
-                            {isArabic ? "💚 الخصم (كود خصم)" : "💚 Discount (Promo Code)"}
+                            <Percent className="h-4 w-4" />
+                            {isArabic ? "💚 الخصم" : "💚 Discount"}
                             <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[9px]">
                               -{Math.round((promoDiscount / (subtotal + deliveryFee)) * 100)}%
                             </Badge>
@@ -2977,64 +3101,50 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                         </div>
                       )}
                       
-                      {/* توصيل مجاني + خصم */}
                       {hasDiscount && isFreeDelivery && (
-                        <div className="flex items-center gap-2 mt-2 p-2.5 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30 animate-in fade-in slide-in-from-top-3 duration-300">
-                          <Sparkles className="h-4 w-4 text-emerald-500 animate-pulse" />
+                        <div className="flex items-center gap-2 mt-2 p-2.5 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30">
+                          <Sparkles className="h-4 w-4 text-emerald-500" />
                           <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                            {isArabic 
-                              ? "🎉 تم تطبيق كود الخصم + التوصيل المجاني!"
-                              : "🎉 Promo code applied + Free delivery!"}
+                            {isArabic ? "🎉 تم تطبيق كود الخصم + التوصيل المجاني!" : "🎉 Promo code + Free delivery!"}
                           </span>
                         </div>
                       )}
                       
-                      {/* فقط توصيل مجاني */}
                       {isFreeDelivery && !hasDiscount && (
-                        <div className="flex items-center gap-2 mt-2 p-2.5 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-200/50 dark:border-blue-800/30 animate-in fade-in slide-in-from-top-3 duration-300">
-                          <Gift className="h-4 w-4 text-blue-500 animate-pulse" />
+                        <div className="flex items-center gap-2 mt-2 p-2.5 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-200/50 dark:border-blue-800/30">
+                          <Gift className="h-4 w-4 text-blue-500" />
                           <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
-                            {isArabic 
-                              ? "🎁 التوصيل مجاني لهذا الطلب!"
-                              : "🎁 Free delivery for this order!"}
+                            {isArabic ? "🎁 التوصيل مجاني لهذا الطلب!" : "🎁 Free delivery!"}
                           </span>
                         </div>
                       )}
                       
-                      {/* فقط خصم */}
                       {hasDiscount && !isFreeDelivery && (
-                        <div className="flex items-center gap-2 mt-2 p-2.5 bg-purple-50/50 dark:bg-purple-950/20 rounded-lg border border-purple-200/50 dark:border-purple-800/30 animate-in fade-in slide-in-from-top-3 duration-300">
-                          <Percent className="h-4 w-4 text-purple-500 animate-pulse" />
+                        <div className="flex items-center gap-2 mt-2 p-2.5 bg-purple-50/50 dark:bg-purple-950/20 rounded-lg border border-purple-200/50 dark:border-purple-800/30">
+                          <Percent className="h-4 w-4 text-purple-500" />
                           <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
                             {isArabic 
-                              ? `💚 تم تطبيق خصم ${Math.round((promoDiscount / (subtotal + deliveryFee)) * 100)}% على الطلب!`
+                              ? `💚 خصم ${Math.round((promoDiscount / (subtotal + deliveryFee)) * 100)}% مطبق!`
                               : `💚 ${Math.round((promoDiscount / (subtotal + deliveryFee)) * 100)}% discount applied!`}
                           </span>
                         </div>
                       )}
                       
-                      {/* الإجمالي الكامل */}
                       <div className="flex items-center justify-between mt-2 pt-2 border-t-2 border-[#3a8a82]/30">
                         <span className="text-sm font-semibold text-[#1a4f4a] dark:text-white flex items-center gap-1.5">
                           {isFreeDelivery && <Gift className="h-4 w-4 text-emerald-500" />}
                           {isArabic ? "الإجمالي الكامل" : "Total"}
                         </span>
-                        <span className="text-2xl font-bold text-[#1a4f4a] dark:text-[#3a8a82]">
+                        <span className="text-xl sm:text-2xl font-bold text-[#1a4f4a] dark:text-[#3a8a82]">
                           {formatPrice(totalWithDelivery, currency, app.lang)}
                         </span>
                       </div>
                       
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground">
                           {totalItems} {isArabic ? "منتج" : "items"}
-                          {hasDiscount && (
-                            <span className="ml-2 text-emerald-500">💚 {isArabic ? "خصم" : "discount"}</span>
-                          )}
-                          {isFreeDelivery && (
-                            <span className="ml-2 text-emerald-500">🎁 {isArabic ? "توصيل مجاني" : "free delivery"}</span>
-                          )}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground">
                           {new Date(selectedOrderForDetails.created_at || Date.now()).toLocaleString(
                             isArabic ? "ar-SA" : "en-US",
                             { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
@@ -3056,7 +3166,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
               <Button 
                 variant="outline" 
                 onClick={() => setShowOrderDetails(false)} 
-                className="rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50 text-[#1a4f4a]"
+                className="rounded-xl border-[#3a8a82]/30 hover:bg-[#e8f0ee]/50 text-[#1a4f4a] w-full sm:w-auto"
               >
                 <X className="h-4 w-4 mr-1" />
                 {isArabic ? "إغلاق" : "Close"}
@@ -3075,7 +3185,6 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     <div className="h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg">
                       <Camera className="h-6 w-6 md:h-7 md:w-7 text-white" />
                     </div>
-                    <div className="absolute -inset-1 rounded-2xl bg-[#3a8a82]/30 blur-lg animate-pulse" />
                   </div>
                   <div>
                     <DialogTitle className="text-lg md:text-2xl font-bold">
@@ -3093,16 +3202,12 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
               <div className="p-4 md:p-6 space-y-3 md:space-y-4">
                 <div className="flex flex-col items-center gap-3 md:gap-4">
                   <div className="relative">
-                    <div className="h-28 w-28 md:h-32 md:w-32 rounded-full border-4 border-dashed border-[#3a8a82]/40 bg-[#e8f0ee]/10 flex items-center justify-center overflow-hidden transition-all duration-300 hover:border-[#1a4f4a]/50 group">
+                    <div className="h-28 w-28 md:h-32 md:w-32 rounded-full border-4 border-dashed border-[#3a8a82]/40 bg-[#e8f0ee]/10 flex items-center justify-center overflow-hidden">
                       {avatarPreview ? (
-                        <img 
-                          src={avatarPreview} 
-                          alt="Preview" 
-                          className="h-full w-full object-cover"
-                        />
+                        <img src={avatarPreview} alt="Preview" className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                          <Camera className="h-8 w-8 md:h-10 md:w-10 text-[#1a4f4a]/30 group-hover:text-[#1a4f4a]/50 transition-colors" />
+                          <Camera className="h-8 w-8 md:h-10 md:w-10 text-[#1a4f4a]/30" />
                           <span className="text-[10px] md:text-xs">{isArabic ? "اختر صورة" : "Choose image"}</span>
                         </div>
                       )}
@@ -3113,7 +3218,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                           setAvatarFile(null);
                           setAvatarPreview(null);
                         }}
-                        className="absolute -top-1 -right-1 h-5 w-5 md:h-6 md:w-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-all duration-300 hover:scale-110 shadow-lg"
+                        className="absolute -top-1 -right-1 h-5 w-5 md:h-6 md:w-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 shadow-lg"
                       >
                         <X className="h-3 w-3 md:h-4 md:w-4" />
                       </button>
@@ -3122,7 +3227,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
 
                   <Button
                     variant="outline"
-                    className="w-full rounded-xl border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50 transition-all duration-300 h-9 md:h-10 text-sm"
+                    className="w-full rounded-xl border-[#3a8a82]/40 hover:bg-[#e8f0ee]/50 h-9 md:h-10 text-sm"
                     onClick={() => document.getElementById('avatar-input')?.click()}
                   >
                     <Camera className="h-3 w-3 md:h-4 md:w-4 mr-2 text-[#1a4f4a]" />
@@ -3163,43 +3268,9 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                     </p>
                     <p className="text-[10px] md:text-xs text-amber-600/80 dark:text-amber-400/70">
                       {isArabic
-                        ? "ستظهر هذه الصورة للعملاء عند اختيار الموزع المناسب لتوصيل طلباتهم"
-                        : "This photo will appear to customers when choosing the right distributor for their orders"}
+                        ? "ستظهر هذه الصورة للعملاء عند اختيار الموزع المناسب"
+                        : "This photo will appear to customers when choosing the right distributor"}
                     </p>
-                  </div>
-                </div>
-
-                <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <p className="text-[10px] md:text-xs font-medium text-muted-foreground mb-2 md:mb-3">
-                    {isArabic ? "📌 كيف ستبدو صورته للعملاء:" : "📌 How it will look to customers:"}
-                  </p>
-                  <div className="flex items-center gap-3 md:gap-4 p-2 md:p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
-                    <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-[#e8f0ee]/50 flex items-center justify-center flex-shrink-0">
-                      {avatarPreview ? (
-                        <img 
-                          src={avatarPreview} 
-                          alt="Preview" 
-                          className="h-full w-full object-cover rounded-full"
-                        />
-                      ) : (
-                        <Users className="h-5 w-5 md:h-6 md:w-6 text-[#1a4f4a]/40" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-xs md:text-sm">
-                        {currentDistributor?.full_name_ar || currentDistributor?.full_name_en || isArabic ? "الموزع" : "Distributor"}
-                      </p>
-                      <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
-                        <Star className="h-2.5 w-2.5 md:h-3 md:w-3 fill-yellow-400 text-yellow-400" />
-                        <span>{currentDistributor?.rating || 0}</span>
-                        <span className="text-muted-foreground/30">|</span>
-                        <Package className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                        <span>{currentDistributor?.completed_orders || 0} {isArabic ? "طلب" : "orders"}</span>
-                      </div>
-                    </div>
-                    <Badge className="bg-emerald-500/20 text-emerald-600 border-0 text-[8px] md:text-[9px]">
-                      ● {isArabic ? "متاح" : "Available"}
-                    </Badge>
                   </div>
                 </div>
               </div>
@@ -3221,7 +3292,7 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
                 <Button
                   onClick={handleUploadAvatar}
                   disabled={!avatarFile || isUploadingAvatar}
-                  className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-[#1a4f4a] to-[#3a8a82] hover:from-[#0d2e2a] hover:to-[#2a655f] text-white shadow-lg shadow-[#1a4f4a]/30 transition-all duration-300 h-9 md:h-10 text-sm"
+                  className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-[#1a4f4a] to-[#3a8a82] hover:from-[#0d2e2a] hover:to-[#2a655f] text-white shadow-lg shadow-[#1a4f4a]/30 h-9 md:h-10 text-sm"
                 >
                   {isUploadingAvatar ? (
                     <>
@@ -3245,24 +3316,8 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
           .animate-spin-slow { animation: spin-slow 4s linear infinite; }
           @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
           .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
-          @keyframes drive-across { 0% { transform: translateX(-20%); } 100% { transform: translateX(120%); } }
-          .animate-drive-across { animation: drive-across 14s linear infinite; }
-          @keyframes bounce-truck { 0%, 100% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-4px) rotate(-1deg); } 75% { transform: translateY(-4px) rotate(1deg); } }
-          .animate-bounce-truck { animation: bounce-truck 2.5s ease-in-out infinite; }
-          @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-          .animate-float { animation: float 3s ease-in-out infinite; }
-          @keyframes gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-          .animate-gradient { background-size: 200% 200%; animation: gradient 3s ease-in-out infinite; }
           @keyframes ping { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
           .animate-ping { animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite; }
-          @keyframes float-logo { 0%, 100% { transform: translateY(0px) rotate(0deg); } 25% { transform: translateY(-6px) rotate(-2deg); } 75% { transform: translateY(4px) rotate(2deg); } }
-          .animate-float-logo { animation: float-logo 4s ease-in-out infinite; }
-          @keyframes pulse-glow { 0%, 100% { filter: drop-shadow(0 0 15px rgba(58,138,130,0.3)); } 50% { filter: drop-shadow(0 0 30px rgba(58,138,130,0.6)); } }
-          .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
-          @keyframes pulse-slow { 0%, 100% { opacity: 0.3; transform: scale(0.95); } 50% { opacity: 0.6; transform: scale(1.05); } }
-          .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
-          @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-          .animate-shimmer { animation: shimmer 3s infinite; }
         `}</style>
       </div>
     </TooltipProvider>
@@ -3270,18 +3325,18 @@ if (newStatus === 'delivered' && mainOrder?.buyer_id) {
 }
 
 // ============================================================
-// 📦 StatCard Component - OLIVE BACKGROUND FULL
+// 📦 StatCard Component - زيتية - متجاوب
 // ============================================================
 function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: string; }) {
   return (
-    <div className="bg-[#e8f0ee] dark:bg-[#e8f0ee]/30 rounded-xl p-4 shadow-sm border-2 border-[#3a8a82]/60 dark:border-[#3a8a82]/30 hover:shadow-lg hover:border-[#1a4f4a]/60 transition-all duration-300 hover:scale-[1.03] group cursor-pointer">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-[#2a655f] dark:text-[#3a8a82] group-hover:text-[#1a4f4a] transition-colors duration-300">{label}</p>
-          <p className="text-xl font-bold mt-1 text-slate-900 dark:text-white group-hover:scale-105 transition-transform duration-300">{value}</p>
+    <div className="bg-[#e8f0ee] dark:bg-[#e8f0ee]/30 rounded-xl p-2.5 sm:p-4 shadow-sm border-2 border-[#3a8a82]/60 dark:border-[#3a8a82]/30 hover:shadow-lg hover:border-[#1a4f4a]/60 transition-all duration-300 hover:scale-[1.03] group cursor-pointer">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] sm:text-xs font-medium text-[#2a655f] dark:text-[#3a8a82] line-clamp-1">{label}</p>
+          <p className="text-sm sm:text-xl font-bold mt-1 text-slate-900 dark:text-white truncate">{value}</p>
         </div>
-        <div className="h-8 w-8 rounded-lg bg-[#3a8a82]/50 dark:bg-[#3a8a82]/30 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 group-hover:bg-[#3a8a82]/70">
-          <Icon className="h-4 w-4 text-[#1a4f4a]" />
+        <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-[#3a8a82]/50 dark:bg-[#3a8a82]/30 flex items-center justify-center flex-shrink-0">
+          <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#1a4f4a]" />
         </div>
       </div>
     </div>

@@ -408,6 +408,9 @@ export function useListings(filter: ListingsFilter = {}) {
         governorateId = gov?.id || null;
       }
       
+      // ✅✅✅ [إصلاح احترافي] إضافة p_owner_id للـ RPC
+      // - يجلب منتجات المتجر مباشرة من SQL (بدل الفلترة في JavaScript)
+      // - إذا ownerId غير مُمرَّر → p_owner_id = null → لا فلترة (نفس السلوك السابق)
       const { data, error } = await supabase
         .rpc('get_public_products_with_variations', {
           p_limit: filter.limit || 12,
@@ -416,14 +419,33 @@ export function useListings(filter: ListingsFilter = {}) {
           p_is_offer: filter.isOffer || null,
           p_category_id: categoryId,
           p_is_featured: filter.isFeatured || null,
-          p_governorate_id: governorateId
+          p_governorate_id: governorateId,
+          p_owner_id: filter.ownerId || null,   // ✅✅✅ معامل جديد
         });
       
       if (error) throw error;
       
+      // ✅✅✅ [إصلاح احترافي] الفلترة تحدث في RPC الآن
+      // - لا حاجة لفلترة JavaScript (كانت تسبب فقدان منتجات)
+      // - البيانات تُرجع من SQL مفلترة مسبقاً
+      // ⚠️ تم الاحتفاظ بالفلترة القديمة كـ fallback للأمان
       let listings = Array.isArray(data) ? data : [];
-      if (filter.ownerId) {
-        listings = listings.filter((item: any) => item.owner_id === filter.ownerId);
+      
+      // ✅ Fallback: إذا لم يعمل الـ RPC الجديد (نسخة قديمة على السيرفر)
+      // أو إذا كان هناك احتياط إضافي
+      if (filter.ownerId && listings.length > 0) {
+        // ✅ تحقق: هل البيانات مفلترة مسبقاً من RPC؟
+        const allBelongToOwner = listings.every(
+          (item: any) => item.owner_id === filter.ownerId
+        );
+        
+        if (!allBelongToOwner) {
+          // ⚠️ RPC لم يفلتر → نفلتر يدوياً (fallback)
+          console.log('⚠️ [useListings] RPC did not filter by ownerId, filtering manually');
+          listings = listings.filter((item: any) => item.owner_id === filter.ownerId);
+        } else {
+          console.log('✅ [useListings] RPC already filtered by ownerId');
+        }
       }
       
       // ✅ ✅ ✅ تحويل البيانات: إضافة product_colors من colors
@@ -439,14 +461,94 @@ export function useListings(filter: ListingsFilter = {}) {
         };
       });
       
+      // ✅✅✅ [إصلاح احترافي جذري] حساب totalPages دقيق
+      // المشكلة السابقة:
+      //   - totalPages = Math.ceil(data.length / limit)
+      //   - إذا الصفحة 1 = 8 منتجات (limit=8) → totalPages = 1
+      //   - لكن هناك منتجات أكثر → Infinite Scroll لا يعمل
+      //
+      // ✅ الحل:
+      //   - إذا الصفحة أعطت limit كامل → قد يكون هناك المزيد → أضف صفحة إضافية
+      //   - إذا الصفحة أعطت أقل من limit → هذه هي الأخيرة → totalPages = currentPage
+      const pageLimit = filter.limit || 12;
+      const currentPage = filter.page || 1;
+      const isLastPage = transformedListings.length < pageLimit;
+      
+      // ✅✅✅ [إصلاح احترافي جذري — count الحقيقي بأقل طلبات]
+      // الفكرة:
+      //   - الصفحة 1 → اطلب count الحقيقي من DB (طلب head: true صغير جداً)
+      //   - الصفحات التالية → استخدم count المخزّن (لا طلب إضافي)
+      // النتيجة: count صحيح دائماً + Infinite Scroll يعمل + أداء ممتاز
+      let realCount = transformedListings.length;
+
+      if (currentPage === 1) {
+        // ✅ مفتاح cache موحّد (بدون page/limit) — يُشارك بين كل الصفحات
+        const countCacheKey = `count_${JSON.stringify({ ...filter, page: undefined, limit: undefined })}`;
+        const cachedCount = cacheManager.get<number>(countCacheKey);
+
+        if (cachedCount !== undefined && cachedCount !== null) {
+          realCount = cachedCount;
+          console.log(`📊 [useListings] Using cached count: ${realCount}`);
+        } else {
+          try {
+            // ✅ استعلام count — `head: true` = لا يجلب بيانات، فقط العدد (سريع جداً)
+            let countQuery = supabase
+              .from("listings")
+              .select("*", { count: "exact", head: true })
+              .eq("status", "published")
+              .eq("is_available", true);
+
+            // ✅ نفس فلاتر RPC
+            if (filter.ownerId) {
+              countQuery = countQuery.eq("owner_id", filter.ownerId);
+            }
+            if (categoryId) {
+              countQuery = countQuery.eq("category_id", categoryId);
+            }
+            if (governorateId) {
+              countQuery = countQuery.eq("governorate_id", governorateId);
+            }
+            if (filter.isOffer !== undefined && filter.isOffer !== null) {
+              countQuery = countQuery.eq("is_offer", filter.isOffer);
+            }
+            if (filter.isFeatured !== undefined && filter.isFeatured !== null) {
+              countQuery = countQuery.eq("is_featured", filter.isFeatured);
+            }
+
+            const { count: dbCount, error: countError } = await countQuery;
+
+            if (!countError && dbCount !== null && dbCount !== undefined) {
+              realCount = dbCount;
+              // ✅ خزّن count في cache — لا يُطلب مرة أخرى
+              cacheManager.set(countCacheKey, realCount, LISTINGS_CACHE_TTL);
+              console.log(`📊 [useListings] Real count from DB: ${dbCount}`);
+            } else if (countError) {
+              console.warn("⚠️ [useListings] Count error:", countError);
+            }
+          } catch (err) {
+            console.warn("⚠️ [useListings] Failed to get count:", err);
+          }
+        }
+      } else {
+        // ✅ للصفحات التالية → اقرأ count من cache
+        const countCacheKey = `count_${JSON.stringify({ ...filter, page: undefined, limit: undefined })}`;
+        const cachedCount = cacheManager.get<number>(countCacheKey);
+        if (cachedCount !== undefined && cachedCount !== null) {
+          realCount = cachedCount;
+        }
+      }
+      
       const result = {
         data: transformedListings,
-        count: transformedListings.length,
-        totalPages: filter.limit ? Math.ceil(transformedListings.length / filter.limit) : 1,
+        count: realCount,   // ✅ العدد الحقيقي الكلي
+        // ✅ totalPages: يضمن عمل Infinite Scroll
+        totalPages: isLastPage ? currentPage : currentPage + 1,
       };
       
       cacheManager.set(cacheKey, result, LISTINGS_CACHE_TTL);
-      console.log(`📊 [useListings] Total listings: ${transformedListings.length}`);
+      console.log(`📊 [useListings] Total listings (page data): ${transformedListings.length}`);
+      console.log(`📊 [useListings] count (real total): ${result.count}`);
+      console.log(`📊 [useListings] page: ${currentPage}, totalPages: ${result.totalPages}, isLastPage: ${isLastPage}`);
       console.log(`📊 [useListings] First item colors:`, transformedListings[0]?.colors);
       console.log(`📊 [useListings] First item product_colors:`, transformedListings[0]?.product_colors);
       return result;
@@ -1721,7 +1823,9 @@ export type StoreRow = {
   store_phone: string | null;
   store_logo_url: string | null;
   store_cover_url: string | null;
-  listing_count: number;
+  listing_count: number;          // ← الآن: الإجمالي (منتجات + عروض)
+  products_count?: number;        // ✅ جديد — المنتجات فقط
+  offers_count?: number;          // ✅ جديد — العروض الترويجية
   avg_rating: number;
   allows_messaging?: boolean;
   allows_bookings?: boolean;
@@ -1730,6 +1834,9 @@ export type StoreRow = {
   weekly_off_days?: string[];
   is_featured?: boolean;
   featured_sort?: number;
+  lat?: number | null;            // ✅ جديد — تحتاجها stores.tsx
+  lng?: number | null;            // ✅ جديد
+  governorate_id?: string | null; // ✅ جديد
 };
 
 export function useAllStores(limit = 24) {
@@ -1745,34 +1852,64 @@ export function useAllStores(limit = 24) {
         return cached;
       }
       
+      // ✅ 1. جلب listings (المنتجات + العروض التخفيضية)
+      //    أضفنا is_available = true ليتطابق العدد مع صفحة المتجر
       const { data: rows, error } = await supabase
         .from("listings")
         .select("owner_id, rating")
-        .eq("status", "published");
+        .eq("status", "published")
+        .eq("is_available", true);
       
       if (error) throw error;
       
-      const map = new Map<string, { count: number; sum: number }>();
+      // ✅ 2. بناء خريطة العدّ — نضيف حقل offersCount للعروض الترويجية
+      const map = new Map<string, { count: number; sum: number; offersCount: number }>();
       for (const r of rows ?? []) {
         const key = (r as any).owner_id as string;
-        const cur = map.get(key) ?? { count: 0, sum: 0 };
+        const cur = map.get(key) ?? { count: 0, sum: 0, offersCount: 0 };
         cur.count += 1;
         cur.sum += Number((r as any).rating) || 0;
+        map.set(key, cur);
+      }
+      
+      // ✅ 3. جلب العروض الترويجية النشطة من product_offers
+      const now = new Date().toISOString();
+      const { data: offers, error: offersError } = await supabase
+        .from("product_offers")
+        .select("store_id")
+        .eq("is_active", true)
+        .or(`expires_at.is.null,expires_at.gt.${now}`);
+      
+      if (offersError) {
+        console.warn("⚠️ [useAllStores] product_offers error:", offersError);
+        // لا نرمي الخطأ — نكمل بالمنتجات فقط
+      }
+      
+      // ✅ 4. أضف عدد العروض الترويجية لكل متجر
+      for (const o of offers ?? []) {
+        const key = (o as any).store_id as string;
+        if (!key) continue;
+        const cur = map.get(key) ?? { count: 0, sum: 0, offersCount: 0 };
+        cur.offersCount += 1;
         map.set(key, cur);
       }
       
       const ids = Array.from(map.keys());
       if (!ids.length) return [] as StoreRow[];
       
+      // ✅ 5. جلب بيانات المتاجر (profiles)
       const { data: profs, error: profError } = await supabase
         .from("profiles")
-        .select("id, full_name, avatar_url, store_name, store_description, store_phone, store_logo_url, store_cover_url, allows_messaging, allows_bookings, store_type, store_address, weekly_off_days, is_featured, featured_sort")
+        .select("id, full_name, avatar_url, store_name, store_description, store_phone, store_logo_url, store_cover_url, allows_messaging, allows_bookings, store_type, store_address, weekly_off_days, is_featured, featured_sort, lat, lng, governorate_id")
         .in("id", ids);
       
       if (profError) throw profError;
       
+      // ✅ 6. بناء النتيجة النهائية — listing_count = إجمالي (منتجات + عروض)
       const list = (profs ?? []).map((p: any) => {
-        const s = map.get(p.id)!;
+        const s = map.get(p.id) ?? { count: 0, sum: 0, offersCount: 0 };
+        const totalCount = s.count + s.offersCount;   // ← العدد الإجمالي
+        
         return {
           id: p.id,
           full_name: p.full_name,
@@ -1782,7 +1919,9 @@ export function useAllStores(limit = 24) {
           store_phone: p.store_phone,
           store_logo_url: p.store_logo_url,
           store_cover_url: p.store_cover_url,
-          listing_count: s.count,
+          listing_count: totalCount,          // ← الإجمالي (منتجات + عروض)
+          products_count: s.count,            // ← المنتجات فقط
+          offers_count: s.offersCount,        // ← العروض الترويجية فقط
           avg_rating: s.count ? s.sum / s.count : 0,
           allows_messaging: p.allows_messaging,
           allows_bookings: p.allows_bookings,
@@ -1791,6 +1930,9 @@ export function useAllStores(limit = 24) {
           weekly_off_days: p.weekly_off_days,
           is_featured: p.is_featured || false,
           featured_sort: p.featured_sort || 0,
+          lat: p.lat,
+          lng: p.lng,
+          governorate_id: p.governorate_id,
         } as StoreRow;
       });
       
