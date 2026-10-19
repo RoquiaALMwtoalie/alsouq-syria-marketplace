@@ -1,4 +1,5 @@
 // src/routes/listing/$id.tsx - مع "قد تعجبك أيضاً" + "الأكثر مبيعاً"
+// ✅ نسخة مصححة: خيارات ديناميكية تحت بعض + إصلاح سلايدر الصور
 
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -40,6 +41,7 @@ export const Route = createFileRoute("/listing/$id")({
   component: ListingDetailPage,
   head: () => ({ meta: [{ title: "تفاصيل المنتج — ذوق" }] }),
 });
+
 const LoadingSkeleton = () => (
   <div className="mx-auto max-w-4xl px-4 py-8">
     <Skeleton className="aspect-square rounded-2xl w-full" />
@@ -52,44 +54,60 @@ const LoadingSkeleton = () => (
   </div>
 );
 
+type OptionGroup = {
+  key: string;
+  label: string;
+  values: string[];
+  isColor: boolean;
+  isSize: boolean;
+  _order: number;
+};
+
 function ListingDetailPage() {
   const { id } = Route.useParams();
   const app = useApp();
   const t = useT();
   const navigate = useNavigate();
   const router = useRouter();
-  
+
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedExtra, setSelectedExtra] = useState<Record<string, string>>({});
   const [selectedVariation, setSelectedVariation] = useState<any | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
-  const [mainImage, setMainImage] = useState<string>("");
   const [showStoreConflict, setShowStoreConflict] = useState(false);
   const [currentStoreName, setCurrentStoreName] = useState("");
   const [newStoreName, setNewStoreName] = useState("");
   const [pendingAddData, setPendingAddData] = useState<any>(null);
-  
+
   const { data: listing, isLoading, isError } = useListing(id);
   const { data: promoOffer } = useProductOffer(id);
   const { data: reviews = [] } = useListingReviews(id);
   const { data: similarListings = [] } = useSimilarListings(listing?.category_id, listing?.id, 4);
-  
+
   // ✅ الأكثر مبيعاً - 8 منتجات
   const { data: trendingListings = [], isLoading: trendingLoading } = useTrendingListings(8);
-  
+
   const { data: cart } = useCart(app.user?.id);
   const addToCartMutation = useAddToCart();
   const clearCartMutation = useClearCart();
-  
+
   const toggleFavoriteMutation = useToggleFavorite();
   const isFavorite = listing ? app.favorites.includes(listing.id) : false;
-  
-  const images = useMemo(() => {
-    const imgList = listing?.listing_images?.map((img: any) => img.url) || [];
-    if (listing?.cover_url) imgList.unshift(listing.cover_url);
-    return imgList;
+
+  // ✅ gallery موحّدة: غلاف + صور المنتج + صور الألوان الفريدة
+  const gallery = useMemo(() => {
+    const list: string[] = [];
+    const seen = new Set<string>();
+    const push = (u?: string | null) => {
+      if (u && !seen.has(u)) { seen.add(u); list.push(u); }
+    };
+    push(listing?.cover_url);
+    (listing?.listing_images || []).forEach((img: any) => push(img?.url));
+    ((listing as any)?.colors || []).forEach((c: any) => push(c?.image_url));
+    return list;
   }, [listing]);
 
   const colors = useMemo(() => (listing as any)?.colors || [], [listing]);
@@ -97,29 +115,29 @@ function ListingDetailPage() {
     const options = (listing as any)?.options || [];
     return options.filter((opt: any) => opt.option_type === 'size').map((opt: any) => opt.option_value);
   }, [listing]);
-  
+
   const variations = useMemo(() => (listing as any)?.variations || [], [listing]);
 
   const avgRating = useMemo(() => (listing as any)?.avg_rating || listing?.rating || 0, [listing]);
   const reviewsCount = useMemo(() => (listing as any)?.reviews_count || reviews.length || 0, [listing, reviews]);
 
-  const storeName = useMemo(() => 
-    (listing as any)?.profile?.store_name ||    
-    (listing as any)?.profiles?.store_name ||   
-    (listing as any)?.owner?.store_name || 
-    (listing as any)?.profile?.full_name || 
-    (listing as any)?.profiles?.full_name || 
-    (listing as any)?.owner?.full_name || 
+  const storeName = useMemo(() =>
+    (listing as any)?.profile?.store_name ||
+    (listing as any)?.profiles?.store_name ||
+    (listing as any)?.owner?.store_name ||
+    (listing as any)?.profile?.full_name ||
+    (listing as any)?.profiles?.full_name ||
+    (listing as any)?.owner?.full_name ||
     "متجر",
   [listing]);
 
-  const storeLogo = useMemo(() => 
-    (listing as any)?.profile?.store_logo_url || 
-    (listing as any)?.profiles?.store_logo_url || 
-    (listing as any)?.owner?.store_logo_url || 
-    (listing as any)?.profile?.avatar_url || 
-    (listing as any)?.profiles?.avatar_url || 
-    (listing as any)?.owner?.avatar_url || 
+  const storeLogo = useMemo(() =>
+    (listing as any)?.profile?.store_logo_url ||
+    (listing as any)?.profiles?.store_logo_url ||
+    (listing as any)?.owner?.store_logo_url ||
+    (listing as any)?.profile?.avatar_url ||
+    (listing as any)?.profiles?.avatar_url ||
+    (listing as any)?.owner?.avatar_url ||
     null,
   [listing]);
 
@@ -128,7 +146,7 @@ function ListingDetailPage() {
   // ============================================================
   const sortedSimilarListings = useMemo(() => {
     if (!similarListings || similarListings.length === 0) return [];
-    
+
     return [...similarListings]
       .sort((a: any, b: any) => {
         const getPriority = (item: any) => {
@@ -149,16 +167,134 @@ function ListingDetailPage() {
   // ============================================================
   const bestSellingListings = useMemo(() => {
     if (!trendingListings || trendingListings.length === 0) return [];
-    
+
     return trendingListings
       .filter((item: any) => item.id !== listing?.id)
       .slice(0, 8);
-  }, [trendingListings.length, listing?.id]);
+  }, [trendingListings, listing?.id]);
+
+  // ============================================================
+  // ✅ مفاتيح اللون والمقاس
+  // ============================================================
+  const colorKeys = useMemo(() => new Set(['color', 'colors', 'اللون', 'لون', 'colour', 'colours']), []);
+  const sizeKeys = useMemo(() => new Set(['size', 'sizes', 'المقاس', 'مقاس']), []);
+
+  // ============================================================
+  // ✅ خيارات ديناميكية من مفاتيح combination + colors/sizes
+  // ============================================================
+  const optionGroups = useMemo<OptionGroup[]>(() => {
+    const groups = new Map<string, Set<string>>();
+
+    // 1) من الـ variations
+    (variations || []).forEach((v: any) => {
+      const combo = v?.combination || {};
+      Object.keys(combo).forEach((k) => {
+        const val = combo[k];
+        if (val == null || String(val).trim() === '') return;
+        if (!groups.has(k)) groups.set(k, new Set());
+        groups.get(k)!.add(String(val));
+      });
+    });
+
+    // 2) دمج الألوان من product_colors (لو مش موجودة بالـ combination)
+    if (colors.length > 0) {
+      const colorKey = groups.has('colors') ? 'colors'
+        : groups.has('color') ? 'color'
+        : groups.has('اللون') ? 'اللون'
+        : 'colors';
+      if (!groups.has(colorKey)) groups.set(colorKey, new Set());
+      colors.forEach((c: any) => groups.get(colorKey)!.add(c.color_name_ar));
+    }
+
+    // 3) دمج المقاسات من product_options
+    if (sizes.length > 0) {
+      const sizeKey = groups.has('sizes') ? 'sizes'
+        : groups.has('size') ? 'size'
+        : groups.has('المقاس') ? 'المقاس'
+        : 'sizes';
+      if (!groups.has(sizeKey)) groups.set(sizeKey, new Set());
+      sizes.forEach((s: string) => groups.get(sizeKey)!.add(s));
+    }
+
+    return Array.from(groups.entries()).map(([key, set]) => {
+      const isColor = colorKeys.has(key);
+      const isSize = sizeKeys.has(key);
+      return {
+        key,
+        label: translateOptionType(key, app.lang),
+        values: Array.from(set),
+        isColor,
+        isSize,
+        _order: isColor ? 0 : isSize ? 1 : 2,
+      };
+    }).sort((a, b) => a._order - b._order);
+  }, [variations, colors, sizes, app.lang, colorKeys, sizeKeys]);
+
+  // ============================================================
+  // ✅ خريطة الاختيار الحالية
+  // ============================================================
+  const selectionMap = useMemo<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    optionGroups.forEach(g => {
+      if (g.isColor && selectedColor) map[g.key] = selectedColor;
+      else if (g.isSize && selectedSize) map[g.key] = selectedSize;
+      else if (selectedExtra[g.key]) map[g.key] = selectedExtra[g.key];
+    });
+    return map;
+  }, [optionGroups, selectedColor, selectedSize, selectedExtra]);
+
+  const isAllOptionsSelected = useMemo(() => {
+    if (optionGroups.length === 0) return true;
+    return optionGroups.every(g => !!selectionMap[g.key]);
+  }, [optionGroups, selectionMap]);
+
+  // ============================================================
+  // ✅ ترتيب التركيبات
+  // ============================================================
+  const sortedVariations = useMemo(() => {
+    return [...variations].sort((a, b) => {
+      const keysA = Object.keys(a.combination || {});
+      const keysB = Object.keys(b.combination || {});
+      for (const key of keysA) {
+        if (keysB.includes(key)) {
+          const valA = String(a.combination[key] || '');
+          const valB = String(b.combination[key] || '');
+          if (valA !== valB) return valA.localeCompare(valB);
+        }
+      }
+      return (a.id || '').localeCompare(b.id || '');
+    });
+  }, [variations]);
+
+  // ============================================================
+  // ✅ التركيبة المطابقة
+  // ============================================================
+  const matchedVariation = useMemo(() => {
+    if (!isAllOptionsSelected || variations.length === 0) return null;
+    return sortedVariations.find((v: any) => {
+      if (v.is_active === false) return false;
+      const combo = v.combination || {};
+      return Object.keys(combo).every(k => String(combo[k]) === String(selectionMap[k] ?? ''));
+    }) || null;
+  }, [isAllOptionsSelected, variations, sortedVariations, selectionMap]);
+
+  const isVariationSelected = isAllOptionsSelected && (variations.length === 0 || !!matchedVariation);
+
+  // ✅ السعر الفعلي (سعر التركيبة المطابقة أو السعر الأساسي)
+  const effectivePrice = useMemo(() => {
+    if (matchedVariation?.price) return Number(matchedVariation.price);
+    return Number(listing?.price || 0);
+  }, [matchedVariation, listing]);
+
+  // ✅ مزامنة selectedVariation مع matchedVariation
+  useEffect(() => {
+    setSelectedVariation(matchedVariation);
+  }, [matchedVariation]);
 
   // التحقق من وجود المنتج في السلة مع نفس التركيبة
   const isInCart = useMemo(() => {
     if (!cart?.items || !listing) return false;
-    
+
     return cart.items.some((item: any) => {
       if (item.listing_id !== listing.id) return false;
       if (selectedColor && item.selected_color !== selectedColor) return false;
@@ -170,7 +306,7 @@ function ListingDetailPage() {
 
   const cartItemCount = useMemo(() => {
     if (!cart?.items || !listing) return 0;
-    
+
     const item = cart.items.find((item: any) => {
       if (item.listing_id !== listing.id) return false;
       if (selectedColor && item.selected_color !== selectedColor) return false;
@@ -178,7 +314,7 @@ function ListingDetailPage() {
       if (selectedVariation?.id && item.selected_variation_id !== selectedVariation.id) return false;
       return true;
     });
-    
+
     return item?.quantity || 0;
   }, [cart, listing, selectedColor, selectedSize, selectedVariation]);
 
@@ -198,18 +334,18 @@ function ListingDetailPage() {
 
   const getPromoTypeLabel = useCallback((type: string) => {
     const types: Record<string, { label: string; icon: any; color: string }> = {
-      bogo: { 
-        label: app.lang === "ar" ? "اشتر 1 واحصل على 1" : "Buy 1 Get 1", 
+      bogo: {
+        label: app.lang === "ar" ? "اشتر 1 واحصل على 1" : "Buy 1 Get 1",
         icon: Gift,
         color: "text-purple-500"
       },
-      cross_sell: { 
-        label: app.lang === "ar" ? "شراء منتج والحصول على آخر" : "Buy product get another", 
+      cross_sell: {
+        label: app.lang === "ar" ? "شراء منتج والحصول على آخر" : "Buy product get another",
         icon: Tag,
         color: "text-blue-500"
       },
-      bundle: { 
-        label: app.lang === "ar" ? "باقة منتجات" : "Bundle", 
+      bundle: {
+        label: app.lang === "ar" ? "باقة منتجات" : "Bundle",
         icon: Package,
         color: "text-orange-500"
       },
@@ -219,199 +355,91 @@ function ListingDetailPage() {
 
   const promoType = promoOffer?.offer_type ? getPromoTypeLabel(promoOffer.offer_type) : null;
 
-  const sortedVariations = useMemo(() => {
-    return [...variations].sort((a, b) => {
-      const keysA = Object.keys(a.combination || {});
-      const keysB = Object.keys(b.combination || {});
-      for (const key of keysA) {
-        if (keysB.includes(key)) {
-          const valA = String(a.combination[key] || '');
-          const valB = String(b.combination[key] || '');
-          if (valA !== valB) return valA.localeCompare(valB);
-        }
-      }
-      return (a.id || '').localeCompare(b.id || '');
-    });
-  }, [variations]);
-
-  const filteredVariations = useMemo(() => {
-    const isVariationAvailable = (variation: any) => variation.is_active !== false;
-    
-    if (!selectedColor && !selectedSize) {
-      return sortedVariations.filter((v: any) => isVariationAvailable(v));
-    }
-    
-    return sortedVariations.filter((v: any) => {
-      if (!isVariationAvailable(v)) return false;
-      
-      if (selectedColor) {
-        const hasColor = Object.values(v.combination || {}).some(
-          (val: any) => String(val) === selectedColor
-        );
-        if (!hasColor) return false;
-      }
-      
-      if (selectedSize) {
-        const hasSize = Object.values(v.combination || {}).some(
-          (val: any) => String(val) === selectedSize
-        );
-        if (!hasSize) return false;
-      }
-      
-      return true;
-    });
-  }, [sortedVariations, selectedColor, selectedSize]);
-
-  const isVariationSelected = useMemo(() => {
-    if (colors.length === 0 && sizes.length === 0 && variations.length === 0) return true;
-    if (colors.length > 0 && !selectedColor) return false;
-    if (sizes.length > 0 && !selectedSize) return false;
-    if (variations.length > 0 && !selectedVariation) {
-      if (selectedColor && selectedSize) {
-        const matching = variations.find((v: any) => 
-          v.combination?.color === selectedColor && 
-          v.combination?.size === selectedSize &&
-          v.is_active !== false
-        );
-        return !!matching;
-      }
-      return false;
-    }
-    return true;
-  }, [colors, sizes, variations, selectedColor, selectedSize, selectedVariation]);
-
+  // ============================================================
+  // ✅ رسالة الخطأ
+  // ============================================================
   const getVariationErrorMessage = useMemo(() => {
-    if (variations.length > 0) {
-      if (!selectedVariation) {
-        if (selectedColor && selectedSize) {
-          const matching = variations.find((v: any) => 
-            v.combination?.color === selectedColor && 
-            v.combination?.size === selectedSize &&
-            v.is_active !== false
-          );
-          if (!matching) {
-            return app.lang === "ar" 
-              ? "⚠️ لا توجد تركيبة متوفرة لهذا اللون والمقاس" 
-              : "⚠️ No available variation for this color and size";
-          }
-        }
-        return app.lang === "ar" 
-          ? "⚠️ اختر التركيبة المناسبة" 
-          : "⚠️ Select the appropriate variation";
-      }
-      return "";
+    if (optionGroups.length === 0) return "";
+    const missing = optionGroups.filter(g => !selectionMap[g.key]);
+    if (missing.length > 0) {
+      return app.lang === "ar"
+        ? `⚠️ اختر: ${missing.map(g => g.label).join(' • ')}`
+        : `⚠️ Select: ${missing.map(g => g.label).join(' • ')}`;
     }
-    if (colors.length > 0 && !selectedColor && sizes.length === 0) {
-      return app.lang === "ar" ? "⚠️ اختر اللون أولاً" : "⚠️ Select color first";
-    }
-    if (sizes.length > 0 && !selectedSize && colors.length === 0) {
-      return app.lang === "ar" ? "⚠️ اختر المقاس أولاً" : "⚠️ Select size first";
-    }
-    if (colors.length > 0 && sizes.length > 0) {
-      if (!selectedColor && !selectedSize) {
-        return app.lang === "ar" 
-          ? "⚠️ اختر اللون والمقاس أولاً" 
-          : "⚠️ Select color and size first";
-      }
-      if (!selectedColor) {
-        return app.lang === "ar" ? "⚠️ اختر اللون أولاً" : "⚠️ Select color first";
-      }
-      if (!selectedSize) {
-        return app.lang === "ar" ? "⚠️ اختر المقاس أولاً" : "⚠️ Select size first";
-      }
+    if (variations.length > 0 && !matchedVariation) {
+      return app.lang === "ar"
+        ? "⚠️ لا توجد تركيبة متوفرة لهذا الاختيار"
+        : "⚠️ No variation available for this selection";
     }
     return "";
-  }, [colors, sizes, variations, selectedColor, selectedSize, selectedVariation, app.lang]);
+  }, [optionGroups, selectionMap, variations.length, matchedVariation, app.lang]);
 
+  // ============================================================
+  // ✅ تأثيرات الاختيار التلقائي
+  // ============================================================
   useEffect(() => {
     if (colors.length === 1 && !selectedColor) {
-      setSelectedColor(colors[0].color_name_ar);
-      if (colors[0].image_url) setMainImage(colors[0].image_url);
+      const c = colors[0];
+      setSelectedColor(c.color_name_ar);
+      const idx = gallery.indexOf(c.image_url);
+      if (idx >= 0) setActiveImage(idx);
     }
-  }, [colors, selectedColor]);
+  }, [colors, selectedColor, gallery]);
 
   useEffect(() => {
     if (sizes.length === 1 && !selectedSize) setSelectedSize(sizes[0]);
   }, [sizes, selectedSize]);
 
+  // ✅ ضبط الصورة الأولى عند تغيير المنتج
   useEffect(() => {
-    if (selectedColor && selectedSize && !selectedVariation) {
-      const matching = variations.find((v: any) => 
-        v.combination?.color === selectedColor && 
-        v.combination?.size === selectedSize &&
-        v.is_active !== false
-      );
-      if (matching) setSelectedVariation(matching);
-    }
-  }, [selectedColor, selectedSize, variations, selectedVariation]);
+    setActiveImage(0);
+  }, [id]);
 
-  useEffect(() => {
-    if (listing?.cover_url) setMainImage(listing.cover_url);
-    else if (images.length > 0) setMainImage(images[0]);
-  }, [listing, images]);
-
+  // ============================================================
+  // ✅ دوال الاختيار
+  // ============================================================
   const handleColorSelect = useCallback((colorName: string, colorImage?: string) => {
     if (selectedColor === colorName) {
       setSelectedColor(null);
-      setMainImage(listing?.cover_url || images[0] || "");
-      setSelectedVariation(null);
+      setActiveImage(0);
       return;
     }
     setSelectedColor(colorName);
-    setSelectedVariation(null);
-    if (colorImage) setMainImage(colorImage);
-    else {
-      const color = colors.find((c: any) => c.color_name_ar === colorName);
-      if (color?.image_url) setMainImage(color.image_url);
-      else setMainImage(listing?.cover_url || images[0] || "");
+
+    const color = colors.find((c: any) => c.color_name_ar === colorName);
+    const img = colorImage || color?.image_url;
+    if (img) {
+      const idx = gallery.indexOf(img);
+      if (idx >= 0) setActiveImage(idx);
     }
-  }, [selectedColor, listing, images, colors]);
+  }, [selectedColor, colors, gallery]);
 
   const handleSizeSelect = useCallback((size: string) => {
     setSelectedSize(selectedSize === size ? null : size);
-    setSelectedVariation(null);
   }, [selectedSize]);
 
-  const handleVariationSelect = useCallback((variation: any) => {
-    setSelectedVariation(selectedVariation?.id === variation.id ? null : variation);
-    
-    if (variation.combination) {
-      const colorKeys = ['colors', 'color', 'اللون', 'لون', 'colour'];
-      let colorValue = null;
-      
-      for (const key of colorKeys) {
-        if (variation.combination[key]) {
-          colorValue = variation.combination[key];
-          break;
-        }
-      }
-      
-      if (colorValue) {
-        setSelectedColor(colorValue);
-        const color = colors.find((c: any) => c.color_name_ar === colorValue);
-        if (color?.image_url) {
-          setMainImage(color.image_url);
-        }
-      }
+  const handleOptionSelect = useCallback((group: OptionGroup, value: string) => {
+    if (group.isColor) {
+      handleColorSelect(value, undefined);
+      return;
     }
-    
-    if (variation.combination) {
-      const sizeKeys = ['size', 'sizes', 'المقاس', 'مقاس'];
-      let sizeValue = null;
-      
-      for (const key of sizeKeys) {
-        if (variation.combination[key]) {
-          sizeValue = variation.combination[key];
-          break;
-        }
-      }
-      
-      if (sizeValue) {
-        setSelectedSize(sizeValue);
-      }
+    if (group.isSize) {
+      handleSizeSelect(value);
+      return;
     }
-  }, [selectedVariation, colors]);
+    setSelectedExtra((prev) => {
+      if (prev[group.key] === value) {
+        const next = { ...prev };
+        delete next[group.key];
+        return next;
+      }
+      return { ...prev, [group.key]: value };
+    });
+  }, [handleColorSelect, handleSizeSelect]);
 
+  // ============================================================
+  // ✅ إضافة للسلة
+  // ============================================================
   const handleAddToCart = useCallback(async () => {
     if (!app.user) {
       sessionStorage.setItem('redirect_after_login', window.location.pathname);
@@ -424,23 +452,23 @@ function ListingDetailPage() {
         variationPrice: selectedVariation?.price,
         variationCombination: selectedVariation?.combination,
       }));
-      
+
       toast.info(
-        app.lang === "ar" 
-          ? "🔐 سيتم إضافة المنتج للسلة بعد تسجيل الدخول" 
+        app.lang === "ar"
+          ? "🔐 سيتم إضافة المنتج للسلة بعد تسجيل الدخول"
           : "🔐 Product will be added to cart after login",
         { duration: 2000 }
       );
-      
+
       navigate({ to: "/auth/$mode", params: { mode: "login" } });
       return;
     }
-    
+
     if (!listing) {
       toast.error(app.lang === "ar" ? "المنتج غير موجود" : "Product not found");
       return;
     }
-    
+
     if (!listing.is_available) {
       toast.error(app.lang === "ar" ? "❌ هذا المنتج غير متوفر حالياً" : "❌ This product is currently unavailable");
       return;
@@ -448,8 +476,8 @@ function ListingDetailPage() {
 
     if (listing.owner_id === app.user.id) {
       toast.error(
-        app.lang === "ar" 
-          ? "❌ لا يمكنك شراء منتجات من متجرك الخاص" 
+        app.lang === "ar"
+          ? "❌ لا يمكنك شراء منتجات من متجرك الخاص"
           : "❌ You cannot purchase products from your own store"
       );
       return;
@@ -464,10 +492,10 @@ function ListingDetailPage() {
           variationsSection.classList.remove('ring-2', 'ring-[#1a4f4a]', 'ring-offset-2', 'rounded-xl');
         }, 3000);
       }
-      
+
       toast.warning(
-        app.lang === "ar" 
-          ? `👆 ${getVariationErrorMessage}` 
+        app.lang === "ar"
+          ? `👆 ${getVariationErrorMessage}`
           : `👆 ${getVariationErrorMessage}`
       );
       return;
@@ -494,20 +522,20 @@ function ListingDetailPage() {
             .select("store_name")
             .eq("id", data.currentStoreId)
             .maybeSingle();
-          
+
           const { data: newStore } = await supabase
             .from("profiles")
             .select("store_name")
             .eq("id", data.newStoreId)
             .maybeSingle();
-          
+
           setCurrentStoreName(currentStore?.store_name || "متجر");
           setNewStoreName(newStore?.store_name || "متجر");
-          setPendingAddData({ 
-            listingId: listing.id, 
-            quantity, 
-            selectedColor, 
-            selectedSize, 
+          setPendingAddData({
+            listingId: listing.id,
+            quantity,
+            selectedColor,
+            selectedSize,
             selectedVariationId: selectedVariation?.id,
             variationPrice: selectedVariation?.price,
             variationCombination: selectedVariation?.combination,
@@ -515,9 +543,9 @@ function ListingDetailPage() {
           setShowStoreConflict(true);
         },
       });
-      
+
       if (result?.action === 'conflict') return;
-      
+
       let details = [];
       if (selectedColor) details.push(`🎨 ${selectedColor}`);
       if (selectedSize) details.push(`📏 ${selectedSize}`);
@@ -525,44 +553,44 @@ function ListingDetailPage() {
         const combo = Object.values(selectedVariation.combination).join(' • ');
         details.push(`🔧 ${combo}`);
       }
-      
+
       const detailsText = details.length > 0 ? ` (${details.join(', ')})` : '';
-      
-    toast.success(
-  app.lang === "ar" 
-    ? `تمت إضافة "${listing.title_ar}" للسلة`
-    : `"${listing.title_en || listing.title_ar}" added to cart`,
-  { 
-    duration: 3000,
-    action: {
-      label: app.lang === "ar" ? "عرض السلة" : "View Cart",
-      onClick: () => navigate({ to: "/cart" })
-    },
-    style: {
-      background: '#f5f5f5',
-      border: '1px solid #e5e5e5',
-      borderRadius: '14px',
-      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-      color: '#1a1a1a',
-    },
-    actionButtonStyle: {
-      background: '#2a655f',
-      color: 'white',
-      fontWeight: '600',
-      borderRadius: '10px',
-      padding: '6px 18px',
-      boxShadow: 'none',
-      border: 'none',
-      fontSize: '13px',
-    }
-  }
-);
+
+      toast.success(
+        app.lang === "ar"
+          ? `تمت إضافة "${listing.title_ar}" للسلة`
+          : `"${listing.title_en || listing.title_ar}" added to cart`,
+        {
+          duration: 3000,
+          action: {
+            label: app.lang === "ar" ? "عرض السلة" : "View Cart",
+            onClick: () => navigate({ to: "/cart" })
+          },
+          style: {
+            background: '#f5f5f5',
+            border: '1px solid #e5e5e5',
+            borderRadius: '14px',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+            color: '#1a1a1a',
+          },
+          actionButtonStyle: {
+            background: '#2a655f',
+            color: 'white',
+            fontWeight: '600',
+            borderRadius: '10px',
+            padding: '6px 18px',
+            boxShadow: 'none',
+            border: 'none',
+            fontSize: '13px',
+          }
+        }
+      );
       setQuantity(1);
-      
+
     } catch (error: any) {
       console.error("❌ Error adding to cart:", error);
       toast.error(
-        app.lang === "ar" 
+        app.lang === "ar"
           ? `❌ فشل إضافة المنتج للسلة: ${error.message || 'خطأ غير معروف'}`
           : `❌ Failed to add to cart: ${error.message || 'Unknown error'}`
       );
@@ -571,10 +599,10 @@ function ListingDetailPage() {
 
   const handleConfirmClearCart = useCallback(async () => {
     if (!app.user || !pendingAddData) return;
-    
+
     try {
       await clearCartMutation.mutateAsync({ userId: app.user.id });
-      
+
       await addToCartMutation.mutateAsync({
         userId: app.user.id,
         listingId: pendingAddData.listingId,
@@ -585,44 +613,35 @@ function ListingDetailPage() {
         variationPrice: pendingAddData.variationPrice,
         variationCombination: pendingAddData.variationCombination,
       });
-      
+
       toast.success(
-        app.lang === "ar" 
+        app.lang === "ar"
           ? `✅ تم تبديل المتجر وإضافة المنتج للسلة`
           : `✅ Store switched and product added to cart`
       );
-      
+
       setShowStoreConflict(false);
       setPendingAddData(null);
       setQuantity(1);
-      
+
     } catch (error) {
       console.error("❌ Error clearing cart:", error);
       toast.error(app.lang === "ar" ? "❌ حدث خطأ" : "❌ An error occurred");
     }
   }, [app.user, pendingAddData, clearCartMutation, addToCartMutation, app.lang]);
 
+  // ============================================================
+  // ✅ تنقل الصور (إصلاح السلايدر)
+  // ============================================================
   const nextImage = useCallback(() => {
-    if (selectedColor) {
-      const color = colors.find((c: any) => c.color_name_ar === selectedColor);
-      if (color?.image_url) {
-        setMainImage(color.image_url);
-        return;
-      }
-    }
-    setActiveImage((prev) => (prev + 1) % images.length);
-  }, [selectedColor, colors, images.length]);
+    if (gallery.length <= 1) return;
+    setActiveImage((prev) => (prev + 1) % gallery.length);
+  }, [gallery.length]);
 
   const prevImage = useCallback(() => {
-    if (selectedColor) {
-      const color = colors.find((c: any) => c.color_name_ar === selectedColor);
-      if (color?.image_url) {
-        setMainImage(color.image_url);
-        return;
-      }
-    }
-    setActiveImage((prev) => (prev - 1 + images.length) % images.length);
-  }, [selectedColor, colors, images.length]);
+    if (gallery.length <= 1) return;
+    setActiveImage((prev) => (prev - 1 + gallery.length) % gallery.length);
+  }, [gallery.length]);
 
   const handleShare = useCallback(async () => {
     try {
@@ -642,20 +661,20 @@ function ListingDetailPage() {
       toast.error(app.lang === "ar" ? "يرجى تسجيل الدخول أولاً" : "Please login first");
       return;
     }
-    
+
     if (!listing) return;
-    
+
     try {
       await toggleFavoriteMutation.mutateAsync({
         userId: app.user.id,
         listingId: listing.id,
         isFav: isFavorite,
       });
-      
+
       app.toggleFavorite(listing.id);
-      
+
       toast.info(
-        isFavorite 
+        isFavorite
           ? (app.lang === "ar" ? "تم إزالة من المفضلة 💔" : "Removed from favorites 💔")
           : (app.lang === "ar" ? "تم إضافة للمفضلة ❤️" : "Added to favorites ❤️")
       );
@@ -701,11 +720,11 @@ function ListingDetailPage() {
   return (
     <ClientOnly fallback={<LoadingSkeleton />}>
       <div className="min-h-screen bg-[#f8f9fa] pb-24" dir="rtl">
-        
+
         {/* ===== شريط علوي ===== */}
         <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-[#eee] px-4 py-3 flex items-center justify-between">
-          <button 
-            onClick={handleGoBack} 
+          <button
+            onClick={handleGoBack}
             className="p-2 rounded-full hover:bg-gray-100 transition"
             aria-label={app.lang === "ar" ? "رجوع" : "Back"}
           >
@@ -719,8 +738,8 @@ function ListingDetailPage() {
             >
               <Heart className={cn(
                 "h-5 w-5 transition-colors",
-                isFavorite 
-                  ? "fill-pink-500 text-pink-500" 
+                isFavorite
+                  ? "fill-pink-500 text-pink-500"
                   : "text-pink-500"
               )} />
             </button>
@@ -735,7 +754,7 @@ function ListingDetailPage() {
           <div className="relative w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="relative w-full aspect-[4/3] overflow-hidden" onClick={() => setIsZoomed(!isZoomed)}>
               <OptimizedImage
-                src={mainImage || images[activeImage]}
+                src={gallery[activeImage] || listing.cover_url}
                 alt={listing.title_ar}
                 width={800}
                 height={600}
@@ -745,16 +764,16 @@ function ListingDetailPage() {
                   isZoomed && "scale-150"
                 )}
               />
-              {images.length > 1 && (
+              {gallery.length > 1 && (
                 <>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); prevImage(); }} 
+                  <button
+                    onClick={(e) => { e.stopPropagation(); prevImage(); }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); nextImage(); }} 
+                  <button
+                    onClick={(e) => { e.stopPropagation(); nextImage(); }}
                     className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow"
                   >
                     <ChevronLeft className="h-5 w-5" />
@@ -791,7 +810,7 @@ function ListingDetailPage() {
         </div>
 
         <div className="max-w-xl mx-auto px-4 mt-4 space-y-4">
-          
+
           {/* العنوان والتقييم */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <h1 className="text-lg font-bold text-gray-900">{listing.title_ar}</h1>
@@ -841,7 +860,7 @@ function ListingDetailPage() {
                       🎁 {app.lang === "ar" ? "هذا المنتج مشمول بعرض ترويجي!" : "This product is included in a promo offer!"}
                     </p>
                     <p className="text-xs text-purple-600/80 mt-0.5">
-                      {app.lang === "ar" 
+                      {app.lang === "ar"
                         ? `💰 اشتري ${promoOffer.buy_quantity || 1} واحصل على ${promoOffer.get_quantity || 1} مجاناً`
                         : `💰 Buy ${promoOffer.buy_quantity || 1} get ${promoOffer.get_quantity || 1} free`
                       }
@@ -849,7 +868,7 @@ function ListingDetailPage() {
                   </div>
                 </div>
                 <Link to="/offer/$id" params={{ id: promoOffer.id }}>
-                  <Button 
+                  <Button
                     size="sm"
                     className="rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:scale-105 whitespace-nowrap"
                   >
@@ -895,15 +914,20 @@ function ListingDetailPage() {
               )}
               <div className="flex items-end gap-3">
                 <span className="text-2xl font-black text-[#1a4f4a]">
-                  {formatPrice(Number(listing.price), app.currency, app.lang)}
+                  {formatPrice(effectivePrice, app.currency, app.lang)}
                 </span>
                 <span className="text-xs text-gray-400">🇸🇾 {app.lang === "ar" ? "سوري" : "SYP"}</span>
               </div>
+              {matchedVariation && Number(matchedVariation.price) !== Number(listing.price) && (
+                <span className="text-[10px] text-emerald-600 font-medium">
+                  ✅ {app.lang === "ar" ? "سعر التركيبة المختارة" : "Selected variation price"}
+                </span>
+              )}
             </div>
           </div>
 
           {/* ✅ تنبيه اختيار الفيرنتات */}
-          {(colors.length > 0 || sizes.length > 0 || variations.length > 0) && !isVariationSelected && (
+          {optionGroups.length > 0 && !isVariationSelected && (
             <div className="p-3 bg-[#1a4f4a]/10 rounded-xl border-2 border-[#1a4f4a]/30 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
               <AlertTriangle className="h-5 w-5 text-[#1a4f4a] flex-shrink-0 mt-0.5" />
               <div>
@@ -911,16 +935,14 @@ function ListingDetailPage() {
                   {app.lang === "ar" ? "⚠️ مطلوب اختيار الخيارات" : "⚠️ Options required"}
                 </p>
                 <p className="text-xs text-[#1a4f4a]/80 mt-0.5">
-                  {app.lang === "ar" 
-                    ? "يرجى اختيار اللون والمقاس المناسبين قبل إضافة المنتج للسلة"
-                    : "Please select the appropriate color and size before adding to cart"}
+                  {getVariationErrorMessage}
                 </p>
               </div>
             </div>
           )}
 
           {/* ✅ تم اختيار كل الفيرنتات */}
-          {(colors.length > 0 || sizes.length > 0 || variations.length > 0) && isVariationSelected && (
+          {optionGroups.length > 0 && isVariationSelected && (
             <div className="p-3 bg-emerald-50 rounded-xl border-2 border-emerald-300/50 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
               <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
               <div>
@@ -928,196 +950,108 @@ function ListingDetailPage() {
                   ✅ {app.lang === "ar" ? "تم اختيار الخيارات" : "Options selected"}
                 </p>
                 <p className="text-xs text-emerald-600/80 mt-0.5">
-                  {selectedColor && `🎨 ${selectedColor}`}
-                  {selectedColor && selectedSize && " • "}
-                  {selectedSize && `📏 ${selectedSize}`}
-                  {selectedVariation && (
-                    <>
-                      {(selectedColor || selectedSize) && " • "}
-                      🔧 {Object.values(selectedVariation.combination).join(' • ')}
-                    </>
+                  {Object.entries(selectionMap).map(([k, v], i) => (
+                    <span key={k}>
+                      {i > 0 && " • "}
+                      {v}
+                    </span>
+                  ))}
+                  {matchedVariation && (
+                    <> • 💰 {formatPrice(Number(matchedVariation.price || effectivePrice), app.currency, app.lang)}</>
                   )}
                 </p>
               </div>
             </div>
           )}
 
-          {/* الخيارات والكمية */}
+          {/* ✅ الخيارات الديناميكية + الكمية */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-4" id="variations-section">
-            
-            {/* الألوان */}
-            {colors.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-gray-600">🎨 {app.lang === "ar" ? "اللون" : "Color"} <span className="text-red-500">*</span></span>
-                  <span className={cn(
-                    "text-xs font-medium transition-all duration-300",
-                    selectedColor ? "text-emerald-600" : "text-[#1a4f4a]"
-                  )}>
-                    {selectedColor 
-                      ? `✅ ${selectedColor}` 
-                      : (app.lang === "ar" ? "⚠️ مطلوب" : "⚠️ Required")}
-                  </span>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {colors.map((c: any) => (
-                    <button
-                      key={c.id}
-                      onClick={() => handleColorSelect(c.color_name_ar, c.image_url)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-xl border text-xs font-medium transition flex items-center gap-1.5",
-                        selectedColor === c.color_name_ar ? "border-[#1a4f4a] bg-[#1a4f4a]/10 text-[#1a4f4a]" : "border-gray-200 text-gray-700"
-                      )}
-                    >
-                      <span 
-                        className="w-3 h-3 rounded-full border border-gray-300 flex-shrink-0"
-                        style={{ backgroundColor: c.color_hex || '#ccc' }}
-                      />
-                      {c.color_name_ar}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* المقاسات */}
-            {sizes.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-gray-600">📏 {app.lang === "ar" ? "المقاس" : "Size"} <span className="text-red-500">*</span></span>
-                  <span className={cn(
-                    "text-xs font-medium transition-all duration-300",
-                    selectedSize ? "text-emerald-600" : "text-[#1a4f4a]"
-                  )}>
-                    {selectedSize 
-                      ? `✅ ${selectedSize}` 
-                      : (app.lang === "ar" ? "⚠️ مطلوب" : "⚠️ Required")}
-                  </span>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {sizes.map((s: string) => (
-                    <button
-                      key={s}
-                      onClick={() => handleSizeSelect(s)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-xl border text-xs font-medium transition",
-                        selectedSize === s ? "border-[#1a4f4a] bg-[#1a4f4a]/10 text-[#1a4f4a]" : "border-gray-200 text-gray-700"
-                      )}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {optionGroups.length > 0 && (
+              <div className="space-y-4">
+                {optionGroups.map((group) => {
+                  const selectedVal = selectionMap[group.key];
+                  return (
+                    <div key={group.key}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-600">
+                          {group.isColor ? '🎨' : group.isSize ? '📏' : '🔧'} {group.label}{' '}
+                          <span className="text-red-500">*</span>
+                        </span>
+                        <span className={cn(
+                          "text-xs font-medium transition-all duration-300",
+                          selectedVal ? "text-emerald-600" : "text-[#1a4f4a]"
+                        )}>
+                          {selectedVal
+                            ? `✅ ${selectedVal}`
+                            : (app.lang === "ar" ? "⚠️ مطلوب" : "⚠️ Required")}
+                        </span>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        {group.values.map((val) => {
+                          const isSel = selectedVal === val;
+                          const colorObj = group.isColor
+                            ? colors.find((c: any) => c.color_name_ar === val)
+                            : null;
+                          return (
+                            <button
+                              key={val}
+                              onClick={() => handleOptionSelect(group, val)}
+                              className={cn(
+                                "px-3 py-1.5 rounded-xl border text-xs font-medium transition flex items-center gap-1.5",
+                                isSel
+                                  ? "border-[#1a4f4a] bg-[#1a4f4a]/10 text-[#1a4f4a]"
+                                  : "border-gray-200 text-gray-700 hover:border-[#1a4f4a]/40"
+                              )}
+                            >
+                              {group.isColor && (
+                                <span
+                                  className="w-3 h-3 rounded-full border border-gray-300 flex-shrink-0"
+                                  style={{ backgroundColor: colorObj?.color_hex || '#ccc' }}
+                                />
+                              )}
+                              {val}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
 
-            {/* جدول التركيبات */}
-            {variations.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-gray-600 flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5 text-[#1a4f4a]" />
-                    {app.lang === "ar" ? "التركيبات" : "Variations"} <span className="text-red-500">*</span>
-                  </span>
-                  <span className={cn(
-                    "text-xs font-medium transition-all duration-300",
-                    selectedVariation ? "text-emerald-600" : "text-[#1a4f4a]"
+                {/* ✅ حالة التركيبة */}
+                {variations.length > 0 && (
+                  <div className={cn(
+                    "p-3 rounded-xl border-2 flex items-start gap-3",
+                    matchedVariation
+                      ? "bg-emerald-50 border-emerald-300/50"
+                      : isAllOptionsSelected
+                        ? "bg-red-50 border-red-300/50"
+                        : "bg-[#1a4f4a]/10 border-[#1a4f4a]/30"
                   )}>
-                    {selectedVariation 
-                      ? `✅ ${app.lang === "ar" ? "مختار" : "Selected"}` 
-                      : (app.lang === "ar" ? "⚠️ مطلوب" : "⚠️ Required")}
-                  </span>
-                </div>
-                <div className="border rounded-xl overflow-hidden border-gray-200">
-                  <table className="w-full text-xs">
-                    <thead className="bg-gray-50">
-                      <tr>
-                       {(() => {
-  const keys = new Set<string>();
-  sortedVariations.forEach((v: any) => {
-    if (v.combination) {
-      Object.keys(v.combination).forEach(key => keys.add(key));
-    }
-  });
-  return Array.from(keys).map((key) => (
-    <th key={key} className="px-2 py-1.5 text-right font-medium text-[#1a4f4a]">
-      {translateOptionType(key, app.lang)}
-    </th>
-  ));
-})()}
-                        <th className="px-2 py-1.5 text-right font-medium text-[#1a4f4a]">{app.lang === "ar" ? "السعر" : "Price"}</th>
-                        <th className="px-2 py-1.5 text-center font-medium text-[#1a4f4a]">{app.lang === "ar" ? "اختيار" : "Select"}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedVariations.map((v: any) => {
-                        const isAvailable = v.is_active !== false;
-                        const isSelected = selectedVariation?.id === v.id;
-                        const keys = Object.keys(v.combination || {});
-                        
-                        return (
-                          <tr 
-                            key={v.id}
-                            className={cn(
-                              "border-t border-gray-100 transition-colors",
-                              isSelected ? "bg-[#1a4f4a]/5" : "hover:bg-gray-50",
-                              !isAvailable && "opacity-50"
-                            )}
-                          >
-                            {keys.map((key) => (
-                              <td key={key} className="px-2 py-2 text-xs">
-                                {key === 'color' || key === 'colors' ? (
-                                  <div className="flex items-center gap-1.5">
-                                    {(() => {
-                                      const colorName = v.combination[key];
-                                      const colorObj = colors.find((c: any) => 
-                                        c.color_name_ar === colorName || c.color_name_en === colorName
-                                      );
-                                      return (
-                                        <>
-                                          <span 
-                                            className="w-3 h-3 rounded-full border border-gray-300 flex-shrink-0"
-                                            style={{ backgroundColor: colorObj?.color_hex || '#ccc' }}
-                                          />
-                                          <span>{colorName || '-'}</span>
-                                        </>
-                                      );
-                                    })()}
-                                  </div>
-                                ) : (
-                                  <span>{v.combination[key] || '-'}</span>
-                                )}
-                              </td>
-                            ))}
-                            <td className="px-2 py-2 text-xs font-semibold text-[#1a4f4a]">
-                              {v.price ? formatPrice(v.price, app.currency, app.lang) : formatPrice(Number(listing.price), app.currency, app.lang)}
-                              {listing.is_offer && v.old_price && v.old_price > 0 && (
-                                <span className="mr-1 text-xs text-red-400 line-through">
-                                  {formatPrice(v.old_price, app.currency, app.lang)}
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-2 py-2 text-center">
-                              {isAvailable && (
-                                <button
-                                  onClick={() => handleVariationSelect(v)}
-                                  className={cn(
-                                    "px-2 py-0.5 rounded-lg text-[10px] font-medium transition border",
-                                    isSelected 
-                                      ? "bg-[#1a4f4a] text-white border-[#1a4f4a]" 
-                                      : "border-gray-300 text-gray-600 hover:border-[#1a4f4a] hover:text-[#1a4f4a]"
-                                  )}
-                                >
-                                  {isSelected ? "✅" : (app.lang === "ar" ? "اختر" : "Select")}
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                    {matchedVariation ? (
+                      <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 text-[#1a4f4a] flex-shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      {matchedVariation ? (
+                        <>
+                          <p className="text-sm font-medium text-emerald-700">
+                            ✅ {app.lang === "ar" ? "التركيبة المختارة متوفرة" : "Selected variation available"}
+                          </p>
+                          <p className="text-xs text-emerald-600/80 mt-0.5">
+                            💰 {formatPrice(Number(matchedVariation.price || effectivePrice), app.currency, app.lang)}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-sm font-medium text-[#1a4f4a]">
+                          {getVariationErrorMessage}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1125,15 +1059,15 @@ function ListingDetailPage() {
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
               <span className="text-sm font-medium text-gray-700">{app.lang === "ar" ? "الكمية:" : "Quantity:"}</span>
               <div className="flex items-center bg-[#f4f4f4] rounded-xl px-2 py-1 gap-2 border border-gray-200">
-                <button 
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))} 
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-gray-700 hover:bg-gray-50 transition"
                 >
                   <Minus className="h-3.5 w-3.5" />
                 </button>
                 <span className="font-bold text-sm w-6 text-center text-gray-900">{quantity}</span>
-                <button 
-                  onClick={() => setQuantity(quantity + 1)} 
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
                   className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-gray-700 hover:bg-gray-50 transition"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -1148,7 +1082,7 @@ function ListingDetailPage() {
                 {app.lang === "ar" ? "السعر الكلي" : "Total Price"}
               </span>
               <span className="text-xl font-black text-gray-900">
-                {formatPrice(Number(listing.price) * quantity, app.currency, app.lang)}
+                {formatPrice(effectivePrice * quantity, app.currency, app.lang)}
               </span>
             </div>
 
@@ -1182,8 +1116,8 @@ function ListingDetailPage() {
                     {sortedSimilarListings.length}
                   </Badge>
                 </div>
-                <Link 
-                  to="/category/$slug" 
+                <Link
+                  to="/category/$slug"
                   params={{ slug: listing.categories?.slug || "all" }}
                   className="bg-[#f5f5f5] hover:bg-[#e8e8e8] transition-colors px-4 py-1.5 rounded-full text-xs font-medium text-gray-600 hover:text-gray-800"
                 >
@@ -1194,12 +1128,12 @@ function ListingDetailPage() {
                 {sortedSimilarListings.map((item: any) => {
                   const hasPromo = item.has_promo_offer === true || item.has_promo_offer === "true";
                   const hasDiscount = item.is_offer === true || (item.discount_percent && item.discount_percent > 0);
-                  
+
                   return (
-                    <Link 
-                      key={item.id} 
-                      to="/listing/$id" 
-                      params={{ id: item.id }} 
+                    <Link
+                      key={item.id}
+                      to="/listing/$id"
+                      params={{ id: item.id }}
                       className="group relative bg-white rounded-2xl p-2 border border-gray-100 shadow-sm hover:shadow-md hover:border-[#2a655f]/30 transition-all duration-300 block"
                     >
                       {/* ✅ Badge العرض الترويجي */}
@@ -1214,7 +1148,7 @@ function ListingDetailPage() {
                           </Badge>
                         </div>
                       )}
-                      
+
                       {/* ✅ Badge التخفيض */}
                       {!hasPromo && hasDiscount && (
                         <div className="absolute top-3 right-3 z-10">
@@ -1225,19 +1159,19 @@ function ListingDetailPage() {
                       )}
 
                       <div className="relative w-full aspect-square overflow-hidden rounded-xl">
-                        <OptimizedImage 
-                          src={item.cover_url} 
-                          alt={item.title_ar} 
-                          width={200} 
-                          height={200} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        <OptimizedImage
+                          src={item.cover_url}
+                          alt={item.title_ar}
+                          width={200}
+                          height={200}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       </div>
-                      
+
                       <h4 className="text-xs font-medium text-gray-800 mt-2 line-clamp-2 min-h-[2rem] leading-snug">
                         {app.lang === "ar" ? item.title_ar : (item.title_en || item.title_ar)}
                       </h4>
-                      
+
                       <div className="flex items-center justify-between mt-1.5">
                         <div className="flex flex-col">
                           {hasDiscount && item.old_price && (
@@ -1277,7 +1211,7 @@ function ListingDetailPage() {
                     {bestSellingListings.length}
                   </Badge>
                 </div>
-                <Link 
+                <Link
                   to="/products"
                   className="bg-[#f5f5f5] hover:bg-[#e8e8e8] transition-colors px-4 py-1.5 rounded-full text-xs font-medium text-gray-600 hover:text-gray-800"
                 >
@@ -1309,10 +1243,10 @@ function ListingDetailPage() {
               ) : (
                 <div className="space-y-3">
                   {bestSellingListings.map((item: any, index: number) => (
-                    <Link 
-                      key={item.id} 
-                      to="/listing/$id" 
-                      params={{ id: item.id }} 
+                    <Link
+                      key={item.id}
+                      to="/listing/$id"
+                      params={{ id: item.id }}
                       className="group relative bg-white rounded-2xl p-3 border border-gray-100 shadow-sm hover:shadow-md hover:border-[#2a655f]/30 transition-all duration-300 flex gap-3 items-center"
                     >
                       {/* ✅ رقم الترتيب - زيتي */}
@@ -1324,12 +1258,12 @@ function ListingDetailPage() {
 
                       {/* ✅ صورة المنتج */}
                       <div className="relative w-24 h-24 shrink-0 overflow-hidden rounded-xl">
-                        <OptimizedImage 
-                          src={item.cover_url} 
-                          alt={item.title_ar} 
-                          width={200} 
-                          height={200} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        <OptimizedImage
+                          src={item.cover_url}
+                          alt={item.title_ar}
+                          width={200}
+                          height={200}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       </div>
 
@@ -1338,7 +1272,7 @@ function ListingDetailPage() {
                         <h4 className="text-sm font-medium text-gray-800 line-clamp-2 leading-snug pe-8">
                           {app.lang === "ar" ? item.title_ar : (item.title_en || item.title_ar)}
                         </h4>
-                        
+
                         <div className="flex items-center gap-2 mt-1.5">
                           <div className="flex items-center gap-0.5">
                             <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
@@ -1369,60 +1303,60 @@ function ListingDetailPage() {
 
         </div>
 
-     {/* ===== شريط الأزرار السفلي ===== */}
-<div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-2 sm:px-3 py-2 sm:py-3 shadow-lg">
-  <div className="max-w-xl mx-auto flex gap-1.5 sm:gap-2 md:gap-3">
-    {/* زر اشتري الآن */}
-    <Button
-      onClick={async () => {
-        await handleAddToCart();
-        navigate({ to: "/cart" });
-      }}
-      className="flex-1 bg-[#fef9ec] hover:bg-[#fde6b5] text-gray-900 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition border-2 border-[#fde6b5] px-2 sm:px-3 md:px-4"
-      disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
-    >
-      {app.lang === "ar" ? "اشتري الآن" : "Buy Now"}
-    </Button>
+        {/* ===== شريط الأزرار السفلي ===== */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-2 sm:px-3 py-2 sm:py-3 shadow-lg">
+          <div className="max-w-xl mx-auto flex gap-1.5 sm:gap-2 md:gap-3">
+            {/* زر اشتري الآن */}
+            <Button
+              onClick={async () => {
+                await handleAddToCart();
+                navigate({ to: "/cart" });
+              }}
+              className="flex-1 bg-[#fef9ec] hover:bg-[#fde6b5] text-gray-900 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition border-2 border-[#fde6b5] px-2 sm:px-3 md:px-4"
+              disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
+            >
+              {app.lang === "ar" ? "اشتري الآن" : "Buy Now"}
+            </Button>
 
-    {/* زر أضف إلى السلة */}
-    <Button
-      onClick={handleAddToCart}
-      className={cn(
-        "flex-1 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition px-2 sm:px-3 md:px-4",
-        "bg-[#1a4f4a] hover:bg-[#2a655f] text-white"
-      )}
-      disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
-    >
-      {addToCartMutation.isPending ? (
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-          <span className="whitespace-nowrap">
-            {app.lang === "ar" ? "جاري..." : "Loading..."}
-          </span>
+            {/* زر أضف إلى السلة */}
+            <Button
+              onClick={handleAddToCart}
+              className={cn(
+                "flex-1 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition px-2 sm:px-3 md:px-4",
+                "bg-[#1a4f4a] hover:bg-[#2a655f] text-white"
+              )}
+              disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
+            >
+              {addToCartMutation.isPending ? (
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  <span className="whitespace-nowrap">
+                    {app.lang === "ar" ? "جاري..." : "Loading..."}
+                  </span>
+                </div>
+              ) : isInCart ? (
+                <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                  <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="whitespace-nowrap truncate">
+                    {app.lang === "ar" ? "في السلة" : "In Cart"}
+                  </span>
+                  {cartItemCount > 0 && (
+                    <Badge className="bg-white/20 text-white border-0 text-[9px] sm:text-[10px] shrink-0 px-1.5 py-0">
+                      {cartItemCount}
+                    </Badge>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                  <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="whitespace-nowrap truncate">
+                    {app.lang === "ar" ? "أضف للسلة" : "Add to Cart"}
+                  </span>
+                </div>
+              )}
+            </Button>
+          </div>
         </div>
-      ) : isInCart ? (
-        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-          <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-          <span className="whitespace-nowrap truncate">
-            {app.lang === "ar" ? "في السلة" : "In Cart"}
-          </span>
-          {cartItemCount > 0 && (
-            <Badge className="bg-white/20 text-white border-0 text-[9px] sm:text-[10px] shrink-0 px-1.5 py-0">
-              {cartItemCount}
-            </Badge>
-          )}
-        </div>
-      ) : (
-        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-          <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-          <span className="whitespace-nowrap truncate">
-            {app.lang === "ar" ? "أضف للسلة" : "Add to Cart"}
-          </span>
-        </div>
-      )}
-    </Button>
-  </div>
-</div>
 
         {/* مودال تعارض المتاجر */}
         <Dialog open={showStoreConflict} onOpenChange={setShowStoreConflict}>
@@ -1433,7 +1367,7 @@ function ListingDetailPage() {
                 {app.lang === "ar" ? "سلة من متجر آخر" : "Cart from another store"}
               </DialogTitle>
               <DialogDescription className="text-sm text-gray-600 mt-1">
-                {app.lang === "ar" 
+                {app.lang === "ar"
                   ? `لديك منتجات في السلة من متجر "${currentStoreName}". هل تريد تفريغ السلة وإضافة المنتج من "${newStoreName}"؟`
                   : `You have items in your cart from "${currentStoreName}". Do you want to clear the cart and add the product from "${newStoreName}"?`}
               </DialogDescription>
@@ -1442,8 +1376,8 @@ function ListingDetailPage() {
               <Button variant="outline" onClick={() => setShowStoreConflict(false)} className="rounded-xl">
                 {app.lang === "ar" ? "إلغاء" : "Cancel"}
               </Button>
-              <Button 
-                onClick={handleConfirmClearCart} 
+              <Button
+                onClick={handleConfirmClearCart}
                 className="bg-[#1a4f4a] hover:bg-[#2a655f] text-white rounded-xl"
               >
                 {app.lang === "ar" ? "تفريغ السلة وإضافة الجديد" : "Clear cart and add new"}

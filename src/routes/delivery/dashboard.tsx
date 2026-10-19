@@ -537,7 +537,7 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
             }
           }
 
-          setUnreadNotificationsCount(prev => prev + 1);
+      
         }
       )
      .subscribe((status) => {
