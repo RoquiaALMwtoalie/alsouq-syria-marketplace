@@ -111,9 +111,12 @@ function ListingDetailPage() {
   }, [listing]);
 
   const colors = useMemo(() => (listing as any)?.colors || [], [listing]);
+  // ✅ التعديل: يقبل 'sizes' (جمع) و 'size' (مفرد)
   const sizes = useMemo(() => {
     const options = (listing as any)?.options || [];
-    return options.filter((opt: any) => opt.option_type === 'size').map((opt: any) => opt.option_value);
+    return options
+      .filter((opt: any) => opt.option_type === 'sizes' || opt.option_type === 'size')
+      .map((opt: any) => opt.option_value);
   }, [listing]);
 
   const variations = useMemo(() => (listing as any)?.variations || [], [listing]);
