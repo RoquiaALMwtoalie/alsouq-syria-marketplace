@@ -289,7 +289,18 @@ function RootShell({ children }: { children: ReactNode }) {
         scrollBehavior: 'smooth'
       }}
     >
-      <head><HeadContent /></head>
+           <head>
+        <HeadContent />
+        {/* ✅ PWA Meta Tags */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#2a655f" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="ذوق" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="apple-touch-icon" href="/images/Logo.png" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+      </head>
       <body style={{ 
         overflowX: 'hidden',
         width: '100%'
