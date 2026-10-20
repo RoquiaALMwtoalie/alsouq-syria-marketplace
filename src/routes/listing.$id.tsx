@@ -1,5 +1,5 @@
 // src/routes/listing/$id.tsx - مع "قد تعجبك أيضاً" + "الأكثر مبيعاً"
-// ✅ نسخة مصححة: خيارات ديناميكية تحت بعض + إصلاح سلايدر الصور
+// ✅ نسخة مصححة: خيارات ديناميكية تحت بعض + إصلاح سلايدر الصور + Fullscreen
 
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -9,7 +9,8 @@ import {
   Minus, Plus, Tag, ShoppingBag, Store,
   Star, MapPin, Shield, Truck, Award, Clock,
   Sparkles, Layers, Check, AlertTriangle, CheckCircle,
-  Gift, Percent, ArrowRight, Package, TrendingUp, Flame
+  Gift, Percent, ArrowRight, Package, TrendingUp, Flame,
+  X
 } from "lucide-react";
 import { useToggleFavorite } from "@/lib/queries";
 import { useProductOffer } from "@/lib/hooks/useProductOffers";
@@ -77,6 +78,7 @@ function ListingDetailPage() {
   const [selectedExtra, setSelectedExtra] = useState<Record<string, string>>({});
   const [selectedVariation, setSelectedVariation] = useState<any | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showStoreConflict, setShowStoreConflict] = useState(false);
   const [currentStoreName, setCurrentStoreName] = useState("");
   const [newStoreName, setNewStoreName] = useState("");
@@ -397,6 +399,27 @@ function ListingDetailPage() {
   useEffect(() => {
     setActiveImage(0);
   }, [id]);
+
+  // ✅ ESC لإغلاق Fullscreen
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false);
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
+
+  // ✅ منع scroll عند فتح Fullscreen
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullscreen]);
 
   // ============================================================
   // ✅ دوال الاختيار
@@ -755,7 +778,10 @@ function ListingDetailPage() {
         {/* عرض الصور */}
         <div className="max-w-xl mx-auto px-4">
           <div className="relative w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="relative w-full aspect-[4/3] overflow-hidden" onClick={() => setIsZoomed(!isZoomed)}>
+            <div
+              className="relative w-full aspect-[4/3] overflow-hidden cursor-zoom-in"
+              onClick={() => setIsFullscreen(true)}
+            >
               <OptimizedImage
                 src={gallery[activeImage] || listing.cover_url}
                 alt={listing.title_ar}
@@ -1360,6 +1386,101 @@ function ListingDetailPage() {
             </Button>
           </div>
         </div>
+
+        {/* ✅ Fullscreen Image Viewer */}
+        {isFullscreen && (
+          <div
+            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-sm flex flex-col"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsFullscreen(false);
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent z-10">
+              <div className="flex items-center gap-2 text-white/80 text-sm">
+                <span className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                  {activeImage + 1} / {gallery.length}
+                </span>
+              </div>
+              <button
+                onClick={() => setIsFullscreen(false)}
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Image */}
+            <div
+              className="flex-1 flex items-center justify-center relative overflow-hidden p-4"
+              style={{ minHeight: 0, minWidth: 0 }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setIsFullscreen(false);
+              }}
+            >
+              <img
+                src={gallery[activeImage] || listing.cover_url}
+                alt={listing.title_ar}
+                className="max-w-full max-h-full object-contain select-none"
+                style={{
+                  touchAction: 'pinch-zoom',
+                  maxWidth: 'calc(100vw - 2rem)',
+                  maxHeight: 'calc(100vh - 8rem)',
+                  width: 'auto',
+                  height: 'auto',
+                }}
+                draggable={false}
+              />
+
+              {/* Navigation Arrows */}
+              {gallery.length > 1 && (
+                <>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 backdrop-blur-md p-3 rounded-full text-white transition z-20"
+                    aria-label="Previous"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 backdrop-blur-md p-3 rounded-full text-white transition z-20"
+                    aria-label="Next"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Thumbnails */}
+            {gallery.length > 1 && (
+              <div className="p-4 bg-gradient-to-t from-black/80 to-transparent">
+                <div className="flex items-center justify-center gap-2 overflow-x-auto">
+                  {gallery.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => { e.stopPropagation(); setActiveImage(idx); }}
+                      className={cn(
+                        "w-14 h-14 rounded-lg overflow-hidden border-2 transition-all shrink-0",
+                        idx === activeImage
+                          ? "border-white scale-110"
+                          : "border-white/30 opacity-60 hover:opacity-100"
+                      )}
+                    >
+                      <img
+                        src={img}
+                        alt={`${listing.title_ar} ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* مودال تعارض المتاجر */}
         <Dialog open={showStoreConflict} onOpenChange={setShowStoreConflict}>

@@ -1,4 +1,4 @@
-// src/routes/auth.$mode.tsx - نسخة محسّنة مع إصلاح مشكلة التجميد والرفريش
+// src/routes/auth.$mode.tsx - نسخة محسّنة مع إصلاح مشكلة التجميد والرفريش + سياسة الخصوصية
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
@@ -32,6 +32,7 @@ import {
   UserPlus,
   Heart,
   Star,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -309,6 +310,32 @@ async function saveAddressWithGovernorate(
 }
 
 // ============================================================
+// ✅ حفظ الموافقة على سياسة الخصوصية في profiles
+// ============================================================
+async function recordPrivacyConsent(userId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        privacy_consented_at: new Date().toISOString(),
+        privacy_version: "1.0",
+      })
+      .eq("id", userId);
+
+    if (error) {
+      console.warn("⚠️ Failed to record privacy consent:", error);
+      return false;
+    }
+
+    console.log("✅ Privacy consent recorded for user:", userId);
+    return true;
+  } catch (err) {
+    console.warn("⚠️ recordPrivacyConsent error:", err);
+    return false;
+  }
+}
+
+// ============================================================
 // GlassField
 // ============================================================
 function GlassField({
@@ -387,7 +414,6 @@ const ZOOQ_SLIDES = [
     accent: "pink",
   },
 ];
-
 // ============================================================
 // AuthPage
 // ============================================================
@@ -417,6 +443,12 @@ function AuthPage() {
     useState<string>("");
   const [isExtractingGovernorate, setIsExtractingGovernorate] =
     useState(false);
+
+  // ============================================================
+  // ✅ State: سياسة الخصوصية
+  // ============================================================
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   // ============================================================
   // ✅ SLIDER AUTO-PLAY
@@ -860,6 +892,20 @@ function AuthPage() {
         return;
       }
 
+      // ============================================================
+      // ✅ التحقق من الموافقة على سياسة الخصوصية
+      // ============================================================
+      if (!agreedToPrivacy) {
+        toast.error(
+          app.lang === "ar"
+            ? "❌ يجب الموافقة على سياسة الخصوصية للمتابعة"
+            : "❌ You must agree to the Privacy Policy to continue"
+        );
+
+        setLoading(false);
+        return;
+      }
+
       if (!location) {
         toast.error(
           app.lang === "ar"
@@ -994,6 +1040,11 @@ function AuthPage() {
         );
       }
 
+      // ============================================================
+      // ✅ حفظ الموافقة على سياسة الخصوصية
+      // ============================================================
+      await recordPrivacyConsent(uid);
+
       if (detectedGovernorate) {
         toast.success(
           app.lang === "ar"
@@ -1075,7 +1126,6 @@ function AuthPage() {
 
   const currentSlide =
     ZOOQ_SLIDES[slide];
-
   return (
     <div
       dir={app.lang === "ar" ? "rtl" : "ltr"}
@@ -1571,6 +1621,34 @@ function AuthPage() {
                 </div>
               )}
 
+              {/* ============================================================ */}
+              {/* ✅ سياسة الخصوصية — Checkbox (في التسجيل فقط) */}
+              {/* ============================================================ */}
+              {isRegister && (
+                <div className="rounded-2xl border border-[#f9a8d4]/20 bg-[#071f1c]/60 p-3">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agreedToPrivacy}
+                      onChange={(e) => setAgreedToPrivacy(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#f9a8d4]"
+                      required
+                    />
+                    <span className="text-[11px] leading-relaxed text-white/85">
+                      {app.lang === "ar" ? "أوافق على" : "I agree to the"}{" "}
+                      <button
+                        type="button"
+                        onClick={() => setShowPrivacyPolicy(true)}
+                        className="font-bold text-[#f9a8d4] underline underline-offset-2 hover:text-[#fbcfe8]"
+                      >
+                        {app.lang === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}
+                      </button>{" "}
+                      {app.lang === "ar" ? "وألتزم بشروط الاستخدام" : "and accept the terms of use"}
+                    </span>
+                  </label>
+                </div>
+              )}
+
               {/* SUBMIT */}
               <Button
                 type="submit"
@@ -1768,6 +1846,229 @@ function AuthPage() {
           </div>
         </div>
       </div>
+
+      {/* ====================================================== */}
+      {/* ✅ Privacy Policy Modal                                */}
+      {/* ====================================================== */}
+      {showPrivacyPolicy && (
+        <div
+          className="fixed inset-0 z-[200] overflow-y-auto bg-black/70 backdrop-blur-md"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPrivacyPolicy(false);
+          }}
+        >
+          <div className="flex min-h-full items-start justify-center p-4">
+            <div className="my-8 w-full max-w-2xl overflow-hidden rounded-[2rem] border border-[#f9a8d4]/25 bg-[#071f1c] shadow-[0_35px_100px_rgba(0,0,0,.6)]">
+              {/* Header */}
+              <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-[#f9a8d4]/15 bg-[#071f1c]/95 p-4 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4]/40">
+                    <Shield className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-white">
+                      {app.lang === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}
+                    </h3>
+                    <p className="text-[10px] text-[#fbcfe8]/70">
+                      {app.lang === "ar" ? "تطبيق ذوق (Zooq)" : "Zooq App"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPrivacyPolicy(false)}
+                  className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="max-h-[65vh] space-y-4 overflow-y-auto p-5 text-[12px] leading-relaxed text-white/75">
+                {/* 1. تعريف التطبيق */}
+                <section>
+                  <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
+                    <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
+                    1. {app.lang === "ar" ? "تعريف التطبيق وطبيعة عمله" : "About the App"}
+                  </h4>
+                  <p className="text-white/65">
+                    {app.lang === "ar"
+                      ? "تطبيق «ذوق» (Zooq) هو منصة إلكترونية تابعة لمؤسسة عمر فلوح التجارية، تربط المتاجر والبائعين بالعملاء عبر شركات توصيل وموزعين معتمدين، لتسهيل عرض المنتجات وإنشاء الطلبات وتوصيلها وتتبّع حالتها بشكل مباشر."
+                      : "Zooq is an electronic platform owned by Omar Falloh Trading Est., connecting stores and sellers with customers through approved delivery companies and distributors."}
+                  </p>
+                </section>
+
+                {/* 2. الجهة المسؤولة */}
+                <section>
+                  <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
+                    <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
+                    2. {app.lang === "ar" ? "الجهة المسؤولة عن التطبيق" : "Responsible Entity"}
+                  </h4>
+                  <p className="text-white/65">
+                    {app.lang === "ar"
+                      ? "الجهة المالكة والمسؤولة عن التطبيق هي: مؤسسة عمر فلوح التجارية."
+                      : "The entity owning and responsible for the app is Omar Falloh Trading Est."}
+                  </p>
+                  <p className="mt-1 text-white/65">
+                    {app.lang === "ar" ? "البريد الإلكتروني" : "Email"}:{" "}
+                    <span className="font-mono text-[#f9a8d4]" dir="ltr">
+                      M.halabi@ici-sy.com
+                    </span>
+                  </p>
+                  <p className="text-white/65">
+                    {app.lang === "ar" ? "رقم التواصل" : "Phone"}:{" "}
+                    <span className="font-mono text-[#f9a8d4]" dir="ltr">
+                      +963 944 323 352
+                    </span>
+                  </p>
+                </section>
+
+                {/* 3. الفئات المستهدفة */}
+                <section>
+                  <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
+                    <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
+                    3. {app.lang === "ar" ? "الفئات المستهدفة" : "Target Audience"}
+                  </h4>
+                  <ul className="list-disc space-y-1 pe-5 text-white/65">
+                    <li>{app.lang === "ar" ? "العملاء" : "Customers"}</li>
+                    <li>{app.lang === "ar" ? "البائعون (المتاجر)" : "Sellers (Stores)"}</li>
+                    <li>{app.lang === "ar" ? "شركات التوصيل" : "Delivery Companies"}</li>
+                    <li>{app.lang === "ar" ? "الموزعون" : "Distributors"}</li>
+                    <li>{app.lang === "ar" ? "الإدارة (الأدمن)" : "Administration (Admin)"}</li>
+                  </ul>
+                </section>
+
+                {/* 4. وصف عمل التطبيق */}
+                <section>
+                  <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
+                    <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
+                    4. {app.lang === "ar" ? "وصف عمل التطبيق" : "App Operations"}
+                  </h4>
+                  <p className="text-white/65">
+                    {app.lang === "ar"
+                      ? "يقوم التطبيق بتنظيم عمليات عرض المنتجات والطلب والتوصيل بين المتاجر والعملاء، مع إتاحة المحادثة بين العميل والبائع، وإشعارات فورية بحالة الطلبات، وذلك لتحسين جودة الخدمة وضمان وصول الطلبات بشكل دقيق وآمن."
+                      : "The app organizes product display, ordering, and delivery between stores and customers, with in-app chat and instant order notifications."}
+                  </p>
+                </section>
+
+                {/* 5. حقوق المستخدم */}
+                <section>
+                  <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
+                    <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
+                    5. {app.lang === "ar" ? "حقوق المستخدم ومسؤولياته" : "User Rights & Responsibilities"}
+                  </h4>
+                  <p className="text-white/65">
+                    {app.lang === "ar"
+                      ? "يلتزم المستخدم بتقديم معلومات صحيحة ودقيقة أثناء التسجيل، واستخدام التطبيق بشكل قانوني، وعدم إساءة استخدام الخدمات أو محاولة الإضرار بالنظام أو بالمستخدمين الآخرين. ويتحمل المستخدم مسؤولية الحفاظ على بيانات حسابه وكلمة المرور وعدم مشاركتها مع أي طرف آخر."
+                      : "Users must provide accurate information, use the app legally, and not misuse services. Users are responsible for keeping their account credentials secure."}
+                  </p>
+                </section>
+
+                {/* 6. آليات الحماية */}
+                <section>
+                  <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
+                    <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
+                    6. {app.lang === "ar" ? "آليات الحماية والخصوصية" : "Protection & Privacy"}
+                  </h4>
+                  <p className="mb-1.5 text-white/65">
+                    {app.lang === "ar"
+                      ? "يقوم التطبيق بجمع البيانات الضرورية لتقديم الخدمة فقط، وتشمل:"
+                      : "The app collects only data necessary to provide the service, including:"}
+                  </p>
+                  <ul className="list-disc space-y-1 pe-5 text-white/65">
+                    <li>{app.lang === "ar" ? "الاسم ورقم الهاتف" : "Name and phone number"}</li>
+                    <li>{app.lang === "ar" ? "بيانات المتجر (للبائعين) وعناوين التوصيل والمحافظة" : "Store data (for sellers), delivery addresses, and governorate"}</li>
+                    <li>{app.lang === "ar" ? "الموقع الجغرافي الذي يحدده المستخدم على الخريطة" : "User-selected geographic location on the map"}</li>
+                    <li>{app.lang === "ar" ? "بيانات الطلبات والتقييمات والشكاوى ومحتوى المحادثات" : "Orders, reviews, complaints, and chat content"}</li>
+                    <li>{app.lang === "ar" ? "الصور المتعلقة بالمنتجات والمتاجر" : "Product and store images"}</li>
+                    <li>{app.lang === "ar" ? "بيانات اشتراك إشعارات المتصفح" : "Browser notification subscription data"}</li>
+                  </ul>
+                  <p className="mt-1.5 text-white/65">
+                    {app.lang === "ar"
+                      ? "وتُستخدم هذه البيانات حصراً لتقديم الخدمة وإدارة الطلبات والتوصيل وتحسين تجربة المستخدم، ولا تُباع لأي طرف ثالث."
+                      : "This data is used exclusively to provide the service, manage orders and delivery, and improve UX, and is never sold to third parties."}
+                  </p>
+                </section>
+
+                {/* 7. القاصرين */}
+                <section>
+                  <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
+                    <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
+                    7. {app.lang === "ar" ? "سياسة القاصرين" : "Minors Policy"}
+                  </h4>
+                  <p className="text-white/65">
+                    {app.lang === "ar"
+                      ? "يُمنع استخدام التطبيق لمن هم دون سن 18 عاماً، ويُعتبر إنشاء الحساب أو استخدام التطبيق إقراراً من المستخدم بأنه تجاوز السن القانونية المطلوبة."
+                      : "Use of the app is prohibited for anyone under 18. Creating an account confirms the user has passed the legal age."}
+                  </p>
+                </section>
+
+                {/* 8. الإجراءات */}
+                <section>
+                  <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
+                    <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
+                    8. {app.lang === "ar" ? "الإجراءات عند مخالفة السياسة" : "Actions for Policy Violation"}
+                  </h4>
+                  <ul className="list-disc space-y-1 pe-5 text-white/65">
+                    <li>{app.lang === "ar" ? "تعليق الحساب مؤقتاً" : "Temporary account suspension"}</li>
+                    <li>{app.lang === "ar" ? "إيقاف الحساب بشكل دائم" : "Permanent account termination"}</li>
+                    <li>{app.lang === "ar" ? "حظر الوصول إلى التطبيق" : "Banning access to the app"}</li>
+                    <li>{app.lang === "ar" ? "اتخاذ الإجراءات القانونية عند الضرورة" : "Legal action when necessary"}</li>
+                  </ul>
+                </section>
+
+                {/* 9. نطاق الخدمة */}
+                <section>
+                  <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
+                    <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
+                    9. {app.lang === "ar" ? "نطاق الخدمة" : "Service Scope"}
+                  </h4>
+                  <p className="text-white/65">
+                    {app.lang === "ar"
+                      ? "يتم تقديم خدمات التطبيق ضمن أراضي الجمهورية العربية السورية فقط."
+                      : "App services are provided within the Syrian Arab Republic only."}
+                  </p>
+                </section>
+
+                {/* 10. الموافقة */}
+                <section>
+                  <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
+                    <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
+                    10. {app.lang === "ar" ? "الموافقة على السياسة" : "Consent"}
+                  </h4>
+                  <p className="text-white/65">
+                    {app.lang === "ar"
+                      ? "يُعتبر استخدام التطبيق موافقة صريحة من المستخدم على جميع البنود الواردة ضمن هذه السياسة."
+                      : "Use of the app constitutes explicit consent to all terms within this policy."}
+                  </p>
+                </section>
+              </div>
+
+              {/* Footer */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#f9a8d4]/15 bg-[#071f1c]/95 p-4">
+                <span className="font-mono text-[10px] text-white/40">
+                  {app.lang === "ar" ? "آخر تحديث: 2026" : "Last updated: 2026"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAgreedToPrivacy(true);
+                    setShowPrivacyPolicy(false);
+                    toast.success(
+                      app.lang === "ar"
+                        ? "✅ تم قبول سياسة الخصوصية"
+                        : "✅ Privacy Policy accepted"
+                    );
+                  }}
+                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#f9a8d4] to-[#fbcfe8] px-4 py-2 text-xs font-black text-[#071f1c] shadow-lg shadow-[#f9a8d4]/25 transition hover:-translate-y-0.5"
+                >
+                  <Check className="h-4 w-4" />
+                  {app.lang === "ar" ? "أوافق على السياسة" : "I Accept the Policy"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <SupportButton />
     </div>
