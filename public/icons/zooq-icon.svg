@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <!-- خلفية داكنة (نفس لون LoginSplash) -->
+  <rect width="512" height="512" rx="112" fill="#091a18"/>
+  
+  <!-- الرسم مكبر وموسط -->
+  <g transform="translate(106, 128) scale(2)">
+    <!-- الرجل اليسرى -->
+    <line x1="52" y1="145" x2="36" y2="170" stroke="#0d5b51" strokeWidth="7.5" strokeLinecap="round"/>
+    <ellipse cx="30" cy="172" rx="9.5" ry="6" fill="#ff7396" stroke="#ffffff" strokeWidth="1.2"/>
+
+    <!-- الرجل اليمنى -->
+    <line x1="95" y1="145" x2="112" y2="170" stroke="#0d5b51" strokeWidth="7.5" strokeLinecap="round"/>
+    <ellipse cx="118" cy="172" rx="9.5" ry="6" fill="#ff7396" stroke="#ffffff" strokeWidth="1.2"/>
+
+    <!-- يد حقيبة التسوق -->
+    <path d="M57 32 C57 14, 93 14, 93 32" stroke="#0d5b51" strokeWidth="6.5" strokeLinecap="round" fill="none"/>
+
+    <!-- مظلة الشعار -->
+    <path d="M38 32 H52 V44 C52 49, 38 49, 38 44 Z" fill="#0d5b51"/>
+    <path d="M52 32 H67 V44 C67 49, 52 49, 52 44 Z" fill="#ff7396"/>
+    <path d="M67 32 H82 V44 C82 49, 67 49, 67 44 Z" fill="#ffbccc"/>
+    <path d="M82 32 H96 V44 C96 49, 82 49, 82 44 Z" fill="#0d5b51"/>
+
+    <!-- جسم الـ Z -->
+    <path d="M 52 51 H 94 C 96 51, 98 52, 96 55 L 69 94 H 104 C 111 94, 116 99, 116 106 C 116 113, 111 118, 104 118 H 49 C 42 118, 38 114, 38 107 V 80 C 38 73, 42 69, 49 69 L 70 51 Z" fill="#0d5b51"/>
+
+    <!-- العين اليسرى -->
+    <ellipse cx="68" cy="62" rx="4.5" ry="6" fill="#ffffff"/>
+    <circle cx="69" cy="62" r="3" fill="#081715"/>
+    <circle cx="67.5" cy="60" r="1.3" fill="#ffffff"/>
+    <circle cx="70" cy="63.5" r="0.7" fill="#ffffff"/>
+
+    <!-- العين اليمنى -->
+    <ellipse cx="85" cy="62" rx="4.5" ry="6" fill="#ffffff"/>
+    <circle cx="86" cy="62" r="3" fill="#081715"/>
+    <circle cx="84.5" cy="60" r="1.3" fill="#ffffff"/>
+    <circle cx="87" cy="63.5" r="0.7" fill="#ffffff"/>
+
+    <!-- الخدود -->
+    <ellipse cx="61" cy="67" rx="3.5" ry="2" fill="#ff7396" opacity="0.8"/>
+    <ellipse cx="91" cy="67" rx="3.5" ry="2" fill="#ff7396" opacity="0.8"/>
+
+    <!-- الابتسامة -->
+    <path d="M74 66 Q77 70 80 66" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" fill="none"/>
+
+    <!-- اليد الأمامية -->
+    <path d="M42 88 Q24 78 20 64" stroke="#0d5b51" strokeWidth="6" strokeLinecap="round" fill="none"/>
+    <circle cx="19" cy="62" r="4.5" fill="#ffffff"/>
+
+    <!-- الباب الوردي -->
+    <path d="M45 118 V93 C45 87, 59 87, 59 93 V118 Z" fill="#ffbccc"/>
+    <circle cx="54.5" cy="106" r="1.8" fill="#ff7396"/>
+  </g>
+</svg>
