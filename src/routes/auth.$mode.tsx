@@ -33,6 +33,8 @@ import {
   Heart,
   Star,
   Check,
+  Download,
+  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -414,6 +416,142 @@ const ZOOQ_SLIDES = [
     accent: "pink",
   },
 ];
+
+// ============================================================
+// 📱 AppDownloadSection — قسم تحميل التطبيق
+// ============================================================
+function AppDownloadSection() {
+  const app = useApp();
+  const [showComingSoon, setShowComingSoon] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    setIsAndroid(/android/i.test(navigator.userAgent));
+    setIsIOS(/iphone|ipad|ipod/i.test(navigator.userAgent));
+  }, []);
+
+  // ⚠️⚠️⚠️ استبدل هذا الرابط برابط APK الحقيقي من GitHub Releases ⚠️⚠️⚠️
+  const APK_URL = "https://github.com/RoquiaALMwtoalie/syria-connect-apk/releases/download/v1.0.0/syria-connect-v1.0.1.apk";
+  return (
+    <>
+      <style>{`
+        @keyframes download-glow {
+          0%, 100% { box-shadow: 0 0 20px rgba(249,168,212,.3), 0 0 40px rgba(42,101,95,.2); }
+          50% { box-shadow: 0 0 30px rgba(249,168,212,.5), 0 0 60px rgba(42,101,95,.35); }
+        }
+        @keyframes download-float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-4px); }
+        }
+        @keyframes download-shine {
+          0% { transform: translateX(-140%) skewX(-18deg); }
+          100% { transform: translateX(280%) skewX(-18deg); }
+        }
+        .download-btn-glow { animation: download-glow 3s ease-in-out infinite; }
+        .download-icon-float { animation: download-float 2s ease-in-out infinite; }
+        .download-shine-effect {
+          position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none;
+        }
+        .download-shine-effect::after {
+          content: ""; position: absolute; top: 0; bottom: 0; inset-inline-start: 50%; width: 50%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+          animation: download-shine 3s ease-in-out infinite;
+        }
+      `}</style>
+
+      <div className="relative mt-6 overflow-hidden rounded-[2rem] border-2 border-[#f9a8d4]/30 bg-gradient-to-br from-[#071f1c] via-[#0d2e2a] to-[#1a4f4a] p-5 shadow-[0_20px_60px_rgba(249,168,212,.15)]">
+        <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[#f9a8d4]/10 blur-3xl pointer-events-none" />
+        <div className="absolute -left-16 -bottom-16 h-40 w-40 rounded-full bg-[#2a655f]/20 blur-3xl pointer-events-none" />
+
+        <div className="relative flex items-center gap-3 mb-4">
+          <div className="relative">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f9a8d4] to-[#fbcfe8] shadow-lg shadow-[#f9a8d4]/40 download-icon-float">
+              <Smartphone className="h-6 w-6 text-[#071f1c]" />
+            </div>
+            <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-[#071f1c] animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-base font-black text-white">
+              {app.lang === "ar" ? "حمّل تطبيق ذوق 📱" : "Download Zooq App 📱"}
+            </h3>
+            <p className="text-[11px] text-[#fbcfe8]/70 font-semibold mt-0.5">
+              {app.lang === "ar"
+                ? "تجربة أسرع وأسهل — بدون متصفح"
+                : "Faster, smoother — no browser"}
+            </p>
+          </div>
+        </div>
+
+        <div className="relative space-y-2">
+          <a
+            href={isAndroid ? APK_URL : "#"}
+            onClick={(e) => {
+              if (!isAndroid) {
+                e.preventDefault();
+                setShowComingSoon(true);
+              }
+            }}
+            download={isAndroid}
+            className="download-btn-glow relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-[#f9a8d4] via-[#fbcfe8] to-[#f9a8d4] px-5 py-3.5 font-black text-[#071f1c] shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_10px_40px_rgba(249,168,212,.5)] active:scale-95"
+          >
+            <span className="download-shine-effect" />
+            <Download className="relative z-10 h-5 w-5" />
+            <span className="relative z-10 text-sm">
+              {app.lang === "ar" ? "تحميل للأندرويد (APK)" : "Download for Android (APK)"}
+            </span>
+          </a>
+
+          {isIOS && (
+            <button
+              onClick={() => setShowComingSoon(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-white/15 bg-white/5 px-5 py-3 text-sm font-bold text-white/70 transition hover:border-white/30 hover:bg-white/10"
+            >
+              {app.lang === "ar" ? "قريباً على App Store" : "Coming soon on App Store"}
+            </button>
+          )}
+
+          <p className="text-center text-[10px] text-white/35 font-medium pt-1">
+            {app.lang === "ar"
+              ? "🔒 آمن • بدون إعلانات • يعمل بدون متجر"
+              : "🔒 Safe • Ad-free • No store required"}
+          </p>
+        </div>
+      </div>
+
+      {showComingSoon && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
+          onClick={() => setShowComingSoon(false)}
+        >
+          <div
+            className="w-full max-w-sm overflow-hidden rounded-[2rem] border-2 border-[#f9a8d4]/30 bg-[#071f1c] p-6 text-center shadow-[0_35px_100px_rgba(0,0,0,.6)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#f9a8d4]/15 border-2 border-[#f9a8d4]/30">
+              <Smartphone className="h-8 w-8 text-[#f9a8d4]" />
+            </div>
+            <h3 className="text-lg font-black text-white mb-2">
+              {app.lang === "ar" ? "تطبيق الآيفون قريباً 🍏" : "iOS App Coming Soon 🍏"}
+            </h3>
+            <p className="text-sm text-white/60 mb-5 leading-relaxed">
+              {app.lang === "ar"
+                ? "نعمل حالياً على إطلاق تطبيق ذوق على App Store. حتى ذلك الحين، يمكنك استخدام الموقع من متصفح Safari وإضافته إلى الشاشة الرئيسية."
+                : "We're working on launching Zooq on App Store. Until then, use the website from Safari and add it to your home screen."}
+            </p>
+            <button
+              onClick={() => setShowComingSoon(false)}
+              className="w-full rounded-xl bg-gradient-to-r from-[#f9a8d4] to-[#fbcfe8] px-6 py-3 text-sm font-black text-[#071f1c] transition hover:scale-105"
+            >
+              {app.lang === "ar" ? "حسناً" : "Got it"}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ============================================================
 // AuthPage
 // ============================================================
@@ -444,15 +582,9 @@ function AuthPage() {
   const [isExtractingGovernorate, setIsExtractingGovernorate] =
     useState(false);
 
-  // ============================================================
-  // ✅ State: سياسة الخصوصية
-  // ============================================================
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
-  // ============================================================
-  // ✅ SLIDER AUTO-PLAY
-  // ============================================================
   useEffect(() => {
     const id = setInterval(() => {
       setSlide((s) => (s + 1) % 5);
@@ -461,9 +593,6 @@ function AuthPage() {
     return () => clearInterval(id);
   }, []);
 
-  // ============================================================
-  // ✅✅✅ CHECK SESSION - مُحسّن بدون تجميد أو رفريش مزدوج ✅✅✅
-  // ============================================================
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout | null = null;
@@ -475,7 +604,6 @@ function AuthPage() {
         if (!isMounted) return;
         
         if (session?.user) {
-          // ✅ تحقق من الأدوار لتحديد وجهة التوجيه الصحيحة
           const { data: roles } = await supabase
             .from("user_roles")
             .select("role")
@@ -489,7 +617,6 @@ function AuthPage() {
           else if (userRoles.includes("distributor")) redirectPath = "/distributor/dashboard";
           else if (userRoles.includes("seller")) redirectPath = "/dashboard";
           
-          // ✅ استخدام replace بدلاً من href لتجنب الرفريش المزدوج
           window.location.replace(redirectPath);
         }
       } catch (error) {
@@ -497,7 +624,6 @@ function AuthPage() {
       }
     };
 
-    // ✅ تأخير بسيط لتجنب تعارض التحميل
     timeoutId = setTimeout(checkSession, 150);
 
     return () => {
@@ -509,9 +635,6 @@ function AuthPage() {
   const isLogin = mode === "login";
   const isRegister = mode === "register";
 
-  // ============================================================
-  // ✅ CHECK PHONE AVAILABILITY
-  // ============================================================
   useEffect(() => {
     if (!isRegister) return;
 
@@ -549,9 +672,6 @@ function AuthPage() {
     return () => clearTimeout(timer);
   }, [phone, isRegister]);
 
-  // ============================================================
-  // ✅ EXTRACT GOVERNORATE
-  // ============================================================
   useEffect(() => {
     const extractGovernorate = async () => {
       if (!location) {
@@ -796,7 +916,6 @@ function AuthPage() {
           : "✨ Welcome back to Zooq"
       );
 
-      // استخدام التوجيه المباشر لتجنب تعليق الفورم
       setTimeout(() => {
         window.location.replace(redirect.url);
       }, 300);
@@ -892,9 +1011,6 @@ function AuthPage() {
         return;
       }
 
-      // ============================================================
-      // ✅ التحقق من الموافقة على سياسة الخصوصية
-      // ============================================================
       if (!agreedToPrivacy) {
         toast.error(
           app.lang === "ar"
@@ -1040,9 +1156,6 @@ function AuthPage() {
         );
       }
 
-      // ============================================================
-      // ✅ حفظ الموافقة على سياسة الخصوصية
-      // ============================================================
       await recordPrivacyConsent(uid);
 
       if (detectedGovernorate) {
@@ -1131,9 +1244,6 @@ function AuthPage() {
       dir={app.lang === "ar" ? "rtl" : "ltr"}
       className="relative min-h-[calc(100vh-140px)] overflow-hidden bg-[#071f1c] text-white selection:bg-[#f9a8d4]/30"
     >
-      {/* ======================================================
-          PREMIUM BACKGROUND
-      ====================================================== */}
       <div className="absolute inset-0 -z-10 overflow-hidden bg-[#071f1c]">
         <div className="absolute inset-0 flex items-center justify-center">
           <img
@@ -1197,9 +1307,6 @@ function AuthPage() {
         />
       </div>
 
-      {/* ======================================================
-          PREMIUM ANIMATIONS
-      ====================================================== */}
       <style>{`
         @keyframes logo-float-bg {
           0%, 100% {
@@ -1444,9 +1551,6 @@ function AuthPage() {
         }
       `}</style>
 
-      {/* ======================================================
-          DECORATIVE LIGHTS
-      ====================================================== */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -start-32 -top-32 h-96 w-96 rounded-full bg-[#f9a8d4]/8 blur-3xl" />
 
@@ -1455,22 +1559,12 @@ function AuthPage() {
         <div className="absolute start-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fbcfe8]/4 blur-3xl" />
       </div>
 
-      {/* ======================================================
-          MAIN CONTENT
-      ====================================================== */}
       <div className="relative mx-auto flex min-h-[calc(100vh-140px)] w-full max-w-6xl items-center justify-center px-4 py-7">
         <div className="w-full max-w-lg mx-auto">
-          {/* ==================================================
-              FORM CARD
-          ================================================== */}
           <div className="zooq-glass relative w-full overflow-hidden rounded-[2.5rem] p-6 shadow-[0_40px_120px_rgba(0,0,0,.55)] sm:p-8">
 
-            {/* TOP DECORATIVE LINE */}
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#f9a8d4] to-[#2a655f] opacity-90" />
 
-            {/* ==================================================
-                BRAND NAME ONLY
-            ================================================== */}
             <div className="relative mb-6 flex flex-col items-center text-center">
 
               <div className="flex items-center gap-2">
@@ -1484,7 +1578,6 @@ function AuthPage() {
                 </h1>
               </div>
 
-              {/* ZOOQ */}
               <div className="mt-2 flex items-center gap-2">
                 <span className="h-px w-6 bg-gradient-to-r from-transparent to-[#2a655f]/50" />
                 <span className="text-base font-black tracking-[.2em] sm:text-lg">
@@ -1496,7 +1589,6 @@ function AuthPage() {
                 <span className="h-px w-6 bg-gradient-to-l from-transparent to-[#f9a8d4]/50" />
               </div>
 
-              {/* TAGLINE */}
               <div className="mt-2 flex items-center gap-2 rounded-full border border-[#f9a8d4]/15 bg-gradient-to-r from-[#2a655f]/10 via-[#f9a8d4]/[.045] to-[#fbcfe8]/[.05] px-3 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#2a655f] shadow-[0_0_12px_rgba(42,101,95,.8)]" />
                 <span className="text-[9px] font-black tracking-[.08em] text-white/60 sm:text-[10px]">
@@ -1506,7 +1598,6 @@ function AuthPage() {
               </div>
             </div>
 
-            {/* DIVIDER */}
             <div className="relative my-4 flex items-center gap-3">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#2a655f]/30" />
               <span className="text-[8px] font-black tracking-[.25em] text-white/20">
@@ -1515,10 +1606,8 @@ function AuthPage() {
               <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#f9a8d4]/30" />
             </div>
 
-            {/* FORM */}
             <form className="relative space-y-4" onSubmit={handleSubmit} autoComplete="off">
 
-              {/* FULL NAME */}
               {isRegister && (
                 <GlassField label={t("full_name") + " *"} icon={<UserIcon className="h-4 w-4 text-[#f9a8d4]" />}>
                   <Input
@@ -1532,7 +1621,6 @@ function AuthPage() {
                 </GlassField>
               )}
 
-              {/* PHONE */}
               <GlassField label={t("phone") + " *"} icon={<Phone className="h-4 w-4 text-[#f9a8d4]" />}>
                 <div className="zooq-input relative rounded-2xl">
                   <Input
@@ -1560,7 +1648,6 @@ function AuthPage() {
                 </div>
               </GlassField>
 
-              {/* PHONE ERROR */}
               {isRegister && phone.trim().length >= 5 && phoneError && (
                 <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-3.5">
                   <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
@@ -1568,7 +1655,6 @@ function AuthPage() {
                 </div>
               )}
 
-              {/* PASSWORD */}
               <GlassField label={t("password") + " *"} icon={<Lock className="h-4 w-4 text-[#f9a8d4]" />}>
                 <div className="zooq-input relative rounded-2xl">
                   <Input
@@ -1592,7 +1678,6 @@ function AuthPage() {
                 </div>
               </GlassField>
 
-              {/* ADDRESS */}
               {isRegister && (
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-xs font-bold text-white/85">
@@ -1621,9 +1706,6 @@ function AuthPage() {
                 </div>
               )}
 
-              {/* ============================================================ */}
-              {/* ✅ سياسة الخصوصية — Checkbox (في التسجيل فقط) */}
-              {/* ============================================================ */}
               {isRegister && (
                 <div className="rounded-2xl border border-[#f9a8d4]/20 bg-[#071f1c]/60 p-3">
                   <label className="flex items-start gap-2.5 cursor-pointer">
@@ -1649,7 +1731,6 @@ function AuthPage() {
                 </div>
               )}
 
-              {/* SUBMIT */}
               <Button
                 type="submit"
                 size="lg"
@@ -1672,7 +1753,9 @@ function AuthPage() {
                 )}
               </Button>
 
-              {/* LINKS */}
+              {/* 📱 App Download Section */}
+              <AppDownloadSection />
+
               <div className="space-y-3 pt-2 text-center text-sm text-white/65">
                 {isLogin ? (
                   <>
@@ -1751,7 +1834,6 @@ function AuthPage() {
 
             </form>
 
-            {/* BRAND FOOTER */}
             <div className="relative mt-6 flex flex-col items-center justify-center gap-2 border-t border-white/7 pt-4 text-center">
               <div className="flex items-center gap-2">
                 <span className="h-1 w-1 rounded-full bg-[#2a655f] shadow-[0_0_8px_rgba(42,101,95,.8)]" />
@@ -1767,9 +1849,6 @@ function AuthPage() {
         </div>
       </div>
 
-      {/* ======================================================
-          FOOTER
-      ====================================================== */}
       <div className="relative mx-auto w-full max-w-6xl px-4 pb-5">
         <div className="border-t border-white/7 pt-4">
           <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
@@ -1847,9 +1926,6 @@ function AuthPage() {
         </div>
       </div>
 
-      {/* ====================================================== */}
-      {/* ✅ Privacy Policy Modal                                */}
-      {/* ====================================================== */}
       {showPrivacyPolicy && (
         <div
           className="fixed inset-0 z-[200] overflow-y-auto bg-black/70 backdrop-blur-md"
@@ -1859,7 +1935,6 @@ function AuthPage() {
         >
           <div className="flex min-h-full items-start justify-center p-4">
             <div className="my-8 w-full max-w-2xl overflow-hidden rounded-[2rem] border border-[#f9a8d4]/25 bg-[#071f1c] shadow-[0_35px_100px_rgba(0,0,0,.6)]">
-              {/* Header */}
               <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-[#f9a8d4]/15 bg-[#071f1c]/95 p-4 backdrop-blur-md">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2a655f] to-[#f9a8d4]/40">
@@ -1882,9 +1957,7 @@ function AuthPage() {
                 </button>
               </div>
 
-              {/* Body */}
               <div className="max-h-[65vh] space-y-4 overflow-y-auto p-5 text-[12px] leading-relaxed text-white/75">
-                {/* 1. تعريف التطبيق */}
                 <section>
                   <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
                     <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
@@ -1897,7 +1970,6 @@ function AuthPage() {
                   </p>
                 </section>
 
-                {/* 2. الجهة المسؤولة */}
                 <section>
                   <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
                     <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
@@ -1922,7 +1994,6 @@ function AuthPage() {
                   </p>
                 </section>
 
-                {/* 3. الفئات المستهدفة */}
                 <section>
                   <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
                     <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
@@ -1937,7 +2008,6 @@ function AuthPage() {
                   </ul>
                 </section>
 
-                {/* 4. وصف عمل التطبيق */}
                 <section>
                   <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
                     <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
@@ -1950,7 +2020,6 @@ function AuthPage() {
                   </p>
                 </section>
 
-                {/* 5. حقوق المستخدم */}
                 <section>
                   <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
                     <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
@@ -1963,7 +2032,6 @@ function AuthPage() {
                   </p>
                 </section>
 
-                {/* 6. آليات الحماية */}
                 <section>
                   <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
                     <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
@@ -1989,7 +2057,6 @@ function AuthPage() {
                   </p>
                 </section>
 
-                {/* 7. القاصرين */}
                 <section>
                   <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
                     <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
@@ -2002,7 +2069,6 @@ function AuthPage() {
                   </p>
                 </section>
 
-                {/* 8. الإجراءات */}
                 <section>
                   <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
                     <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
@@ -2016,7 +2082,6 @@ function AuthPage() {
                   </ul>
                 </section>
 
-                {/* 9. نطاق الخدمة */}
                 <section>
                   <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
                     <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
@@ -2029,7 +2094,6 @@ function AuthPage() {
                   </p>
                 </section>
 
-                {/* 10. الموافقة */}
                 <section>
                   <h4 className="mb-1.5 flex items-center gap-2 text-sm font-black text-white">
                     <span className="h-4 w-1 rounded-full bg-[#f9a8d4]" />
@@ -2043,7 +2107,6 @@ function AuthPage() {
                 </section>
               </div>
 
-              {/* Footer */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#f9a8d4]/15 bg-[#071f1c]/95 p-4">
                 <span className="font-mono text-[10px] text-white/40">
                   {app.lang === "ar" ? "آخر تحديث: 2026" : "Last updated: 2026"}
