@@ -420,7 +420,6 @@ const ZOOQ_SLIDES = [
 // ============================================================
 // 📱 AppDownloadSection — قسم تحميل التطبيق
 // ============================================================
-// 📱 AppDownloadSection — قسم تحميل التطبيق (نسخة معدلة للتحميل المباشر)
 function AppDownloadSection() {
   const app = useApp();
   const [showComingSoon, setShowComingSoon] = useState(false);
@@ -432,26 +431,8 @@ function AppDownloadSection() {
     setIsIOS(/iphone|ipad|ipod/i.test(navigator.userAgent));
   }, []);
 
-  const APK_URL = "https://github.com/RoquiaALMwtoalie/ZooqAPK/releases/download/v1.0.0/Zooq.apk";
-
-  // دالة إجبار التحميل المباشر على الهواتف والأجهزة
-  const handleDirectDownload = (e: React.MouseEvent) => {
-    if (!isAndroid) {
-      e.preventDefault();
-      setShowComingSoon(true);
-      return;
-    }
-
-    // للموبايل: إنشاء رابط مؤقت وإجبار المتصفح على تنزيله مباشرة
-    e.preventDefault();
-    const link = document.createElement('a');
-    link.href = APK_URL;
-    link.setAttribute('download', 'Zooq.apk');
-    link.setAttribute('target', '_blank');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  // ✅ رابط AppsEnjoy (يفتح صفحة التحميل)
+  const APK_URL = "https://appsenjoy.com/f/hXcKZBUE7m/dhwq-1-0-0";
 
   return (
     <>
@@ -505,8 +486,15 @@ function AppDownloadSection() {
 
         <div className="relative space-y-2">
           <a
-            href={APK_URL}
-            onClick={handleDirectDownload}
+            href={isAndroid ? APK_URL : "#"}
+            onClick={(e) => {
+              if (!isAndroid) {
+                e.preventDefault();
+                setShowComingSoon(true);
+              }
+            }}
+            target={isAndroid ? "_blank" : undefined}
+            rel={isAndroid ? "noopener noreferrer" : undefined}
             className="download-btn-glow relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-[#f9a8d4] via-[#fbcfe8] to-[#f9a8d4] px-5 py-3.5 font-black text-[#071f1c] shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_10px_40px_rgba(249,168,212,.5)] active:scale-95"
           >
             <span className="download-shine-effect" />

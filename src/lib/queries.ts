@@ -1648,17 +1648,41 @@ export function useSaveCategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
-      id?: string; slug: string; name_ar: string; name_en: string;
-      icon?: string | null; sort_order?: number; active?: boolean;
-      image_url?: string | null; accent_from?: string | null; accent_to?: string | null;
+      id?: string; 
+      slug: string; 
+      name_ar: string; 
+      name_en: string;
+      icon?: string | null; 
+      sort_order?: number; 
+      active?: boolean;
+      image_url?: string | null; 
+      accent_from?: string | null; 
+      accent_to?: string | null;
+      parent_id?: string | null; // ✅ أضيفي هذا
+      is_featured?: boolean; // ✅ أضيفي هذا (للتأكد فقط)
+      featured_sort?: number; // ✅ أضيفي هذا (للتأكد فقط)
     }) => {
       const payload: any = {
-        slug: input.slug, name_ar: input.name_ar, name_en: input.name_en,
-        icon: input.icon ?? null, sort_order: input.sort_order ?? 0, active: input.active ?? true,
+        slug: input.slug, 
+        name_ar: input.name_ar, 
+        name_en: input.name_en,
+        icon: input.icon ?? null, 
+        sort_order: input.sort_order ?? 0, 
+        active: input.active ?? true,
         image_url: input.image_url ?? null,
         accent_from: input.accent_from || "from-primary",
         accent_to: input.accent_to || "to-sky-400",
+        parent_id: input.parent_id ?? null, // ✅ أضيفي هذا
       };
+
+      // ✅ إضافة is_featured فقط إذا كانت موجودة في input
+      if (input.is_featured !== undefined) {
+        payload.is_featured = input.is_featured;
+      }
+      if (input.featured_sort !== undefined) {
+        payload.featured_sort = input.featured_sort;
+      }
+
       if (input.id) {
         const { error } = await supabase.from("categories").update(payload).eq("id", input.id);
         if (error) throw error;
