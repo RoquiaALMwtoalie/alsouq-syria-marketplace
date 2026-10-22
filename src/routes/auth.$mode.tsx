@@ -432,7 +432,7 @@ function AppDownloadSection() {
   }, []);
 
   // ⚠️⚠️⚠️ استبدل هذا الرابط برابط APK الحقيقي من GitHub Releases ⚠️⚠️⚠️
-  const APK_URL = "https://github.com/RoquiaALMwtoalie/syria-connect-apk/releases/download/v1.0.0/syria-connect-v1.0.1.apk";
+  const APK_URL = "https://github.com/RoquiaALMwtoalie/ZooqAPK/releases/download/v1.0.0/Zooq.apk";
   return (
     <>
       <style>{`
