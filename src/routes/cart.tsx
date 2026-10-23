@@ -93,6 +93,9 @@ function CartPage() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt' | null>(null);
 
+  // ✅ State جديدة لتأكيد العنوان قبل إتمام الطلب
+  const [showConfirmAddressDialog, setShowConfirmAddressDialog] = useState(false);
+
   const isFirstRender = useRef(true);
   const deliveryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previousCartState = useRef<string>("");
@@ -748,6 +751,7 @@ function CartPage() {
     }
   }, [app.user, clearCart, promoApplied, removePromoCode, app.lang]);
 
+  // ✅ دالة checkout — الآن تعرض ديالوغ تأكيد العنوان أولاً
   const checkout = useCallback(async () => {
     if (!app.user) {
       navigate({ to: "/auth/$mode", params: { mode: "login" } });
@@ -757,6 +761,16 @@ function CartPage() {
       toast.error(app.lang === "ar" ? "البيانات غير مكتملة" : "Incomplete data");
       return;
     }
+
+    // ✅ عرض ديالوغ تأكيد العنوان بدلاً من بدء الطلب مباشرة
+    setShowConfirmAddressDialog(true);
+  }, [app.user, items, selectedAddress, navigate, app.lang]);
+
+  // ✅ دالة تأكيد العنوان وإتمام الطلب — تحتوي على كل منطق checkout السابق
+  const confirmAndPlaceOrder = useCallback(async () => {
+    setShowConfirmAddressDialog(false);
+
+    if (!app.user || !selectedAddress) return;
 
     try {
       const groupedBySeller = items.reduce((acc: any, item: any) => {
@@ -878,7 +892,7 @@ for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
     } catch (error: any) {
       toast.error(error.message || "Checkout error");
     }
-  }, [app.user, items, selectedAddress, deliveryFee, promoApplied, promoDiscount, totals.total, clearCart, navigate, app.lang]);
+  }, [app.user, items, selectedAddress, deliveryFee, promoApplied, promoDiscount, totals.total, clearCart, navigate, app.lang, app.currency]);
 
   if (isLoading || isLoadingAddresses) {
     return (
@@ -1228,14 +1242,14 @@ for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
                 )}
               >
                 <div>
-                  <p className="font-bold text-xs text-gray-900 flex items-center gap-2">
-                    {addr.label}
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-xs text-gray-900">{addr.label}</span>
                     {addr.is_default && (
                       <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-2 border-[#2a655f]/20 text-[9px] px-2 py-0.5">
                         {app.lang === "ar" ? "افتراضي" : "Default"}
                       </Badge>
                     )}
-                  </p>
+                  </div>
                   <p className="text-[11px] text-gray-500 line-clamp-1">{addr.address_text}</p>
                 </div>
                 {selectedAddressId === addr.id && (
@@ -1463,21 +1477,21 @@ for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ===== نافذة تحذير المسافة (جديدة) ===== */}
+      {/* ===== نافذة تحذير المسافة (جديدة) — بألوان النظام (زيتي) ===== */}
       <Dialog open={showDistanceWarningDialog} onOpenChange={setShowDistanceWarningDialog}>
-        <DialogContent className="rounded-3xl max-w-md bg-white border-2 border-amber-400/40 shadow-2xl shadow-amber-500/20 p-0 overflow-hidden">
+        <DialogContent className="rounded-3xl max-w-md bg-white border-2 border-[#2a655f]/30 shadow-2xl shadow-[#2a655f]/20 p-0 overflow-hidden">
           
           {/* Header */}
-          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-6 pt-6 pb-4 border-b border-amber-200/50">
+          <div className="bg-gradient-to-r from-[#e8f0ee] to-[#d4e5e0] px-6 pt-6 pb-4 border-b border-[#2a655f]/20">
             <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25 animate-pulse">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30 animate-pulse">
                 <AlertCircle className="h-7 w-7 text-white" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold text-gray-900">
+                <DialogTitle className="text-lg font-bold text-[#2a655f]">
                   {app.lang === "ar" ? "⚠️ تنبيه الموقع" : "⚠️ Location Warning"}
                 </DialogTitle>
-                <DialogDescription className="text-xs text-gray-500 mt-0.5">
+                <DialogDescription className="text-xs text-[#2a655f]/70 mt-0.5">
                   {app.lang === "ar" 
                     ? "أنت بعيد عن العنوان المختار" 
                     : "You are far from the selected address"}
@@ -1490,24 +1504,24 @@ for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
           <div className="p-6 space-y-4">
             
             {/* بطاقة المسافة */}
-            <div className="bg-amber-50 dark:bg-amber-950/20 rounded-2xl p-4 border-2 border-amber-200/50 dark:border-amber-800/30">
+            <div className="bg-[#e8f0ee] rounded-2xl p-4 border-2 border-[#2a655f]/20">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-amber-700 dark:text-amber-300 font-medium flex items-center gap-2">
+                <span className="text-sm text-[#2a655f] font-medium flex items-center gap-2">
                   <Navigation className="h-4 w-4" />
                   {app.lang === "ar" ? "المسافة بينك وبين العنوان" : "Distance from your location"}
                 </span>
-                <Badge className="bg-amber-500 text-white border-0 text-xs px-3 py-1 font-bold">
+                <Badge className="bg-[#2a655f] text-white border-0 text-xs px-3 py-1 font-bold">
                   {distanceFromSelectedAddress?.toFixed(1)} {app.lang === "ar" ? "كم" : "km"}
                 </Badge>
               </div>
               
-              <div className="mt-3 pt-3 border-t border-amber-200/50 dark:border-amber-800/30">
-                <p className="text-xs text-amber-600 dark:text-amber-400">
+              <div className="mt-3 pt-3 border-t border-[#2a655f]/20">
+                <p className="text-xs text-[#2a655f]/80">
                   {app.lang === "ar" 
                     ? "📍 الموقع الحالي: تم اكتشافه بنجاح"
                     : "📍 Current location: detected successfully"}
                 </p>
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                <p className="text-xs text-[#2a655f]/80 mt-1">
                   {app.lang === "ar" 
                     ? `🏠 العنوان المختار: ${selectedAddress?.label || selectedAddress?.address_text}`
                     : `🏠 Selected address: ${selectedAddress?.label || selectedAddress?.address_text}`}
@@ -1515,17 +1529,17 @@ for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
               </div>
             </div>
 
-            {/* التحذير */}
-            <div className="bg-red-50 dark:bg-red-950/20 rounded-xl p-4 border-2 border-red-200/50 dark:border-red-800/30">
+            {/* التحذير — بألوان النظام */}
+            <div className="bg-[#2a655f]/10 rounded-xl p-4 border-2 border-[#2a655f]/30">
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0 animate-pulse" />
+                <AlertCircle className="h-5 w-5 text-[#2a655f] mt-0.5 flex-shrink-0 animate-pulse" />
                 <div>
-                  <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                  <p className="text-sm font-bold text-[#2a655f]">
                     {app.lang === "ar"
                       ? "⚠️ هل أنت متأكد من اختيار هذا العنوان؟"
                       : "⚠️ Are you sure about this address?"}
                   </p>
-                  <p className="text-xs text-red-600/70 dark:text-red-400/70 mt-1">
+                  <p className="text-xs text-[#2a655f]/80 mt-1">
                     {app.lang === "ar"
                       ? "أنت حالياً بعيد عن هذا العنوان. قد يؤثر ذلك على وقت التوصيل."
                       : "You are currently far from this address. This may affect delivery time."}
@@ -1534,9 +1548,9 @@ for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
               </div>
             </div>
 
-            {/* نصائح */}
-            <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl p-3 border border-blue-200/50 dark:border-blue-800/30">
-              <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
+            {/* نصائح — بألوان النظام */}
+            <div className="bg-[#e8f0ee] rounded-xl p-3 border border-[#2a655f]/20">
+              <p className="text-xs text-[#2a655f] flex items-start gap-2">
                 <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
                 {app.lang === "ar"
                   ? "💡 إذا كنت تطلب لمنزل آخر أو لشخص آخر، يمكنك المتابعة بأمان."
@@ -1559,7 +1573,7 @@ for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
                   setDistanceFromSelectedAddress(null);
                 }
               }}
-              className="flex-1 rounded-xl border-2 border-gray-300 font-bold hover:bg-gray-50 h-11"
+              className="flex-1 rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] font-bold hover:bg-[#e8f0ee] hover:border-[#2a655f]/50 h-11 transition-all duration-300"
             >
               {app.lang === "ar" ? "تغيير العنوان" : "Change Address"}
             </Button>
@@ -1568,9 +1582,115 @@ for (const [sellerId, sellerItems] of Object.entries(groupedBySeller)) {
                 setShowDistanceWarningDialog(false);
                 if (promoApplied) removePromoCode();
               }}
-              className="flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/30 font-bold h-11"
+              className="flex-1 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/30 font-bold h-11 transition-all duration-300 hover:scale-[1.02] border-2 border-white/20"
             >
               {app.lang === "ar" ? "متابعة على أي حال" : "Continue Anyway"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== نافذة تأكيد العنوان قبل إتمام الطلب — بألوان النظام (زيتي) ===== */}
+      <Dialog open={showConfirmAddressDialog} onOpenChange={setShowConfirmAddressDialog}>
+        <DialogContent className="rounded-3xl max-w-md bg-white border-2 border-[#2a655f]/30 shadow-2xl shadow-[#2a655f]/20 p-0 overflow-hidden">
+          
+          {/* Header */}
+          <div className="bg-gradient-to-r from-[#e8f0ee] to-[#d4e5e0] px-6 pt-6 pb-4 border-b border-[#2a655f]/20">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center shadow-lg shadow-[#2a655f]/30">
+                <MapPin className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-[#2a655f]">
+                  {app.lang === "ar" ? "📍 تأكيد عنوان التوصيل" : "📍 Confirm Delivery Address"}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-[#2a655f]/70 mt-0.5">
+                  {app.lang === "ar" 
+                    ? "يرجى التأكد من عنوان التوصيل قبل إتمام الطلب" 
+                    : "Please verify your delivery address before placing the order"}
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
+
+          {/* المحتوى */}
+          <div className="p-6 space-y-4">
+            
+            {/* بطاقة العنوان */}
+            <div className="bg-[#e8f0ee] rounded-2xl p-4 border-2 border-[#2a655f]/20">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-[#2a655f] flex items-center justify-center flex-shrink-0 shadow-md">
+                  <Home className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-[#2a655f]/70 font-medium mb-1">
+                    {app.lang === "ar" ? "العنوان المختار" : "Selected Address"}
+                  </p>
+                  <p className="font-bold text-sm text-[#2a655f] mb-1">
+                    {selectedAddress?.label || (app.lang === "ar" ? "عنوان" : "Address")}
+                  </p>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {selectedAddress?.address_text}
+                  </p>
+                  {selectedAddress?.details && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {selectedAddress.details}
+                    </p>
+                  )}
+                  {distanceFromSelectedAddress !== null && (
+                    <Badge className="mt-2 bg-[#2a655f] text-white border-0 text-[10px] px-2 py-0.5">
+                      <Navigation className="h-2.5 w-2.5 mr-1" />
+                      {distanceFromSelectedAddress.toFixed(1)} {app.lang === "ar" ? "كم" : "km"}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* السؤال */}
+            <div className="text-center py-2">
+              <p className="text-sm font-bold text-gray-900">
+                {app.lang === "ar" 
+                  ? "هل أنت متأكد من عنوانك؟" 
+                  : "Are you sure about your address?"}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {app.lang === "ar" 
+                  ? "سيتم توصيل طلبك إلى هذا العنوان" 
+                  : "Your order will be delivered to this address"}
+              </p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <DialogFooter className="p-6 pt-0 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowConfirmAddressDialog(false);
+                setShowAddressDialog(true);
+              }}
+              className="flex-1 rounded-xl border-2 border-[#2a655f]/30 text-[#2a655f] font-bold hover:bg-[#e8f0ee] hover:border-[#2a655f]/50 h-11 transition-all duration-300"
+            >
+              <Edit2 className="h-4 w-4 mr-2" />
+              {app.lang === "ar" ? "تغيير العنوان" : "Change Address"}
+            </Button>
+            <Button
+              onClick={confirmAndPlaceOrder}
+              disabled={createOrder.isPending}
+              className="flex-1 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] hover:from-[#3a8a82] hover:to-[#4a9f95] text-white shadow-lg shadow-[#2a655f]/30 font-bold h-11 transition-all duration-300 hover:scale-[1.02] border-2 border-white/20 disabled:opacity-70"
+            >
+              {createOrder.isPending ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {app.lang === "ar" ? "جاري..." : "Loading..."}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {app.lang === "ar" ? "تأكيد الطلب" : "Confirm Order"}
+                </div>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

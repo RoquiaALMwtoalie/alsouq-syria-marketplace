@@ -96,7 +96,8 @@ const formatDateForFilename = () => {
 export function AdminListings() {
   const app = useApp();
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<"pending" | "published" | "rejected" | "all">("pending");
+  // ✅ التغيير 1: الفلتر الافتراضي "all" بدل "pending"
+  const [statusFilter, setStatusFilter] = useState<"pending" | "published" | "rejected" | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -180,15 +181,23 @@ export function AdminListings() {
     try {
       const product = rows.find((r: any) => r.id === id);
       
+      // ✅ 1. التحديث فقط (سريع)
       await setStatusMut.mutateAsync({ id, status: "published" });
-      await refetch();
 
-      // ✅ الحل: invalidate الـ queries المشتركة لتحديث العدّاد في AdminDashboard
+      // ✅ 2. نجاح فوري
+      toast.success(isRTL ? "✅ تمت الموافقة على المنتج" : "✅ Product approved", {
+        id: toastId,
+      });
+
+      // ✅ 3. في الخلفية (بدون await)
+      refetch();
       queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
-      
+      queryClient.invalidateQueries({ queryKey: ['seller_applications'] });
+
+      // ✅ 4. إشعار في الخلفية (بدون await)
       if (product?.owner_id) {
-        await sendNotification.mutateAsync({
+        sendNotification.mutateAsync({
           userId: product.owner_id,
           type: "product_approved",
           titleAr: "✅ تمت الموافقة على منتجك",
@@ -203,19 +212,17 @@ export function AdminListings() {
             listing_title: product.title_ar,
             status: "approved",
           },
+        }).catch((err) => {
+          console.warn("⚠️ Notification failed (non-critical):", err);
         });
       }
-      
-      toast.success(isRTL ? "✅ تمت الموافقة على المنتج" : "✅ Product approved", {
-        id: toastId,
-      });
       
     } catch (error) {
       console.error("Error approving product:", error);
       toast.error(isRTL ? "❌ فشل في الموافقة" : "❌ Failed to approve", {
         id: toastId,
       });
-      await refetch();
+      refetch();
     }
   }, [setStatusMut, refetch, sendNotification, rows, isRTL, queryClient]);
 
@@ -239,19 +246,32 @@ export function AdminListings() {
     const toastId = toast.loading(isRTL ? "⏳ جاري الرفض..." : "⏳ Rejecting...");
     
     try {
+      // ✅ 1. التحديث فقط (سريع)
       await setStatusMut.mutateAsync({
         id: productToReject.id,
         status: "rejected",
         rejection_reason: rejectReason
       });
-      await refetch();
 
-      // ✅ الحل: invalidate الـ queries المشتركة لتحديث العدّاد في AdminDashboard
+      // ✅ 2. نجاح فوري
+      toast.success(isRTL ? "❌ تم رفض المنتج" : "❌ Product rejected", {
+        id: toastId,
+      });
+
+      // ✅ 3. إغلاق الديالوج فوراً
+      setRejectDialogOpen(false);
+      setProductToReject(null);
+      setRejectReason("");
+
+      // ✅ 4. في الخلفية (بدون await)
+      refetch();
       queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
-      
+      queryClient.invalidateQueries({ queryKey: ['seller_applications'] });
+
+      // ✅ 5. إشعار في الخلفية (بدون await)
       if (productToReject?.owner_id) {
-        await sendNotification.mutateAsync({
+        sendNotification.mutateAsync({
           userId: productToReject.owner_id,
           type: "product_rejected",
           titleAr: "❌ تم رفض منتجك",
@@ -267,23 +287,17 @@ export function AdminListings() {
             status: "rejected",
             reason: rejectReason,
           },
+        }).catch((err) => {
+          console.warn("⚠️ Notification failed (non-critical):", err);
         });
       }
-      
-      toast.success(isRTL ? "❌ تم رفض المنتج" : "❌ Product rejected", {
-        id: toastId,
-      });
-      
-      setRejectDialogOpen(false);
-      setProductToReject(null);
-      setRejectReason("");
       
     } catch (error) {
       console.error("Error rejecting product:", error);
       toast.error(isRTL ? "❌ فشل في الرفض" : "❌ Failed to reject", {
         id: toastId,
       });
-      await refetch();
+      refetch();
     } finally {
       setIsRejecting(false);
     }
@@ -302,24 +316,30 @@ export function AdminListings() {
     const toastId = toast.loading(isRTL ? "⏳ جاري الحذف..." : "⏳ Deleting...");
     
     try {
+      // ✅ 1. الحذف فقط (سريع)
       await del.mutateAsync(productToDelete.id);
-      await refetch();
 
-      // ✅ الحل: invalidate الـ queries المشتركة لتحديث العدّاد في AdminDashboard
-      queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
-      
+      // ✅ 2. نجاح فوري
       toast.success(isRTL ? "🗑️ تم حذف المنتج" : "🗑️ Product deleted", {
         id: toastId,
       });
+
+      // ✅ 3. إغلاق الديالوج فوراً
       setDeleteDialogOpen(false);
       setProductToDelete(null);
+
+      // ✅ 4. في الخلفية (بدون await)
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: ['seller_applications'] });
+      
     } catch (error) {
       console.error("Error deleting product:", error);
       toast.error(isRTL ? "❌ فشل في الحذف" : "❌ Failed to delete", {
         id: toastId,
       });
-      await refetch();
+      refetch();
     }
   }, [productToDelete, del, refetch, isRTL, queryClient]);
 
@@ -661,7 +681,7 @@ export function AdminListings() {
           size="sm"
           onClick={() => {
             setSearchQuery("");
-            setStatusFilter("pending");
+            setStatusFilter("all");
             setPage(1);
           }}
           className="h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"

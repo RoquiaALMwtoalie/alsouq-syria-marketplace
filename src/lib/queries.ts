@@ -837,14 +837,33 @@ export function useToggleFavorite() {
   return useMutation({
     mutationFn: async ({ userId, listingId, isFav }: { userId: string; listingId: string; isFav: boolean }) => {
       if (isFav) {
-        const { error } = await supabase.from("favorites").delete().eq("user_id", userId).eq("listing_id", listingId);
-        if (error) throw error;
+        // ✅ حذف (إزالة من المفضلة)
+        const { error } = await supabase
+          .from("favorites")
+          .delete()
+          .eq("user_id", userId)
+          .eq("listing_id", listingId);
+        
+        // ✅ لا نعتبر "غير موجود" خطأ
+        if (error && error.code !== 'PGRST116') throw error;
       } else {
-        const { error } = await supabase.from("favorites").insert({ user_id: userId, listing_id: listingId });
+        // ✅ upsert بدل insert — يمنع خطأ 23505
+        const { error } = await supabase
+          .from("favorites")
+          .upsert(
+            { user_id: userId, listing_id: listingId },
+            { 
+              onConflict: "user_id,listing_id", 
+              ignoreDuplicates: true 
+            }
+          );
+        
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["favorites"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["favorites"] });
+    },
   });
 }
 
@@ -1507,13 +1526,16 @@ export function useAllSellerApplications(
   return useQuery({
     queryKey: ["seller_applications", "all", page, limit, filterStatus, applicationType, searchQuery],
     queryFn: async () => {
+      console.log("📡 [useAllSellerApplications] START", { 
+        page, limit, filterStatus, applicationType, searchQuery 
+      });
+
+      // ============================================================
+      // ✅ 1. جلب الطلبات من الـ View (بدون relations)
+      // ============================================================
       let q = supabase
-        .from("seller_applications" as any)
-        .select(`
-          *,
-          profiles:user_id(full_name, avatar_url, phone),
-          governorate:governorate_id(id, name_ar, name_en)
-        `, { count: 'exact' })
+        .from("all_seller_applications" as any)
+        .select("*", { count: "exact" })
         .order("created_at", { ascending: false });
 
       if (filterStatus && filterStatus !== "all") {
@@ -1533,32 +1555,144 @@ export function useAllSellerApplications(
       const to = from + limit - 1;
       q = q.range(from, to);
 
-      const { data, error, count } = await q;
-      if (error) throw error;
-      
+      const { data: rawData, error, count } = await q;
+
+      console.log("📡 [useAllSellerApplications] Raw query result:", {
+        count,
+        rowsReturned: rawData?.length,
+        error: error?.message,
+      });
+
+      if (error) {
+        console.error("❌ [useAllSellerApplications] Query error:", error);
+        throw error;
+      }
+
+      if (!rawData || rawData.length === 0) {
+        console.log("ℹ️ [useAllSellerApplications] No rows found");
+        return {
+          data: [],
+          count: count || 0,
+          page,
+          limit,
+          totalPages: 1,
+        };
+      }
+
+      // ============================================================
+      // ✅ 2. جلب profiles يدوياً
+      // ============================================================
+      const userIds = Array.from(
+        new Set(rawData.map((r: any) => r.user_id).filter(Boolean))
+      ) as string[];
+
+      let profilesMap = new Map<string, any>();
+      if (userIds.length > 0) {
+        const { data: profiles, error: profilesErr } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url, phone")
+          .in("id", userIds);
+
+        if (profilesErr) {
+          console.warn("⚠️ [useAllSellerApplications] Profiles fetch error:", profilesErr);
+        } else {
+          profilesMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+        }
+      }
+
+      // ============================================================
+      // ✅ 3. جلب governorates يدوياً
+      // ============================================================
+      const govIds = Array.from(
+        new Set(rawData.map((r: any) => r.governorate_id).filter(Boolean))
+      ) as string[];
+
+      let governoratesMap = new Map<string, any>();
+      if (govIds.length > 0) {
+        const { data: governorates, error: govErr } = await supabase
+          .from("governorates")
+          .select("id, name_ar, name_en")
+          .in("id", govIds);
+
+        if (govErr) {
+          console.warn("⚠️ [useAllSellerApplications] Governorates fetch error:", govErr);
+        } else {
+          governoratesMap = new Map((governorates ?? []).map((g: any) => [g.id, g]));
+        }
+      }
+
+      // ============================================================
+      // ✅ 4. دمج البيانات
+      // ============================================================
+      const enriched = rawData.map((row: any) => ({
+        ...row,
+        profiles: profilesMap.get(row.user_id) ?? null,
+        governorate: governoratesMap.get(row.governorate_id) ?? null,
+      }));
+
+      console.log(`✅ [useAllSellerApplications] Returning ${enriched.length} enriched rows`);
+
       return {
-        data: (data as any[]) ?? [],
+        data: enriched,
         count: count || 0,
         page,
         limit,
         totalPages: Math.ceil((count || 0) / limit),
       };
     },
+    staleTime: 30 * 1000,
   });
 }
-
 export function useReviewSellerApplication() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { id: string; status: "approved" | "rejected"; admin_note?: string }) => {
+      // ============================================================
+      // ✅ 1. جلب الطلب من الـ VIEW لمعرفة نوعه
+      // ============================================================
       const { data: appData, error: fetchError } = await supabase
-        .from("seller_applications")
+        .from("all_seller_applications" as any)
         .select("*")
         .eq("id", input.id)
         .single();
 
       if (fetchError || !appData) throw new Error("لا يمكن العثور على الطلب");
 
+      const typedApp = appData as any;
+
+      // ============================================================
+      // ✅ 2. تفريع: طلب منتج → حدّث listings مباشرة
+      // ============================================================
+      if (typedApp.application_type === 'product') {
+        const listingId = typedApp.listing_id;
+        
+        if (!listingId) {
+          throw new Error("لا يمكن العثور على المنتج المرتبط بهذا الطلب");
+        }
+
+        const listingPayload: any = {
+          status: input.status === "approved" ? "published" : "rejected",
+          rejection_reason: input.status === "rejected" ? (input.admin_note || null) : null,
+          rejected_at: input.status === "rejected" ? new Date().toISOString() : null,
+          rejected_by: input.status === "rejected" 
+            ? (await supabase.auth.getUser()).data.user?.id ?? null 
+            : null,
+        };
+
+        const { error: listingError } = await supabase
+          .from("listings")
+          .update(listingPayload)
+          .eq("id", listingId);
+
+        if (listingError) throw listingError;
+
+        console.log(`✅ [useReviewSellerApplication] Product listing ${listingId} → ${listingPayload.status}`);
+        return; // ⛔ لا تلمس seller_applications (ما في سجل!)
+      }
+
+      // ============================================================
+      // ✅ 3. طلب متجر → السلوك الأصلي
+      // ============================================================
       const { error: updateError } = await supabase
         .from("seller_applications")
         .update({
@@ -1571,69 +1705,40 @@ export function useReviewSellerApplication() {
       
       if (updateError) throw updateError;
 
+      // ============================================================
+      // ✅ 4. معالجة الموافقة على متجر
+      // ============================================================
       if (input.status === "approved") {
-        if (appData.application_type === 'store') {
+        if (typedApp.application_type === 'store') {
           const { error: profileError } = await supabase
             .from("profiles")
             .update({
-              store_name: appData.store_name,
-              store_description: appData.store_description,
-              store_logo_url: appData.store_logo_url,
-              store_cover_url: appData.store_cover_url,
-              store_phone: appData.store_phone,
-              allows_messaging: appData.allows_messaging,
-              allows_bookings: appData.allows_bookings,
-              store_type: appData.store_type || 'online',
-              governorate_id: appData.governorate_id,
-              store_address: appData.address,
-              store_opens_at: appData.opening_time,
-              store_closes_at: appData.closing_time,
-              weekly_off_days: appData.weekly_off_days || [],
+              store_name: typedApp.store_name,
+              store_description: typedApp.store_description,
+              store_logo_url: typedApp.store_logo_url,
+              store_cover_url: typedApp.store_cover_url,
+              store_phone: typedApp.store_phone,
+              allows_messaging: typedApp.allows_messaging,
+              allows_bookings: typedApp.allows_bookings,
+              store_type: typedApp.store_type || 'online',
+              governorate_id: typedApp.governorate_id,
+              store_address: typedApp.address,
+              store_opens_at: typedApp.opening_time,
+              store_closes_at: typedApp.closing_time,
+              weekly_off_days: typedApp.weekly_off_days || [],
               store_active: true,
               store_online: true,
             })
-            .eq("id", appData.user_id);
+            .eq("id", typedApp.user_id);
 
           if (profileError) throw profileError;
         }
 
-        if (appData.application_type === 'product') {
-          console.log("📝 Product application approved - skipping profile update");
-          const productNameMatch = appData.store_description?.match(/طلب إضافة منتج: (.+)/);
-          const productName = productNameMatch ? productNameMatch[1] : null;
-
-          if (productName) {
-            const { data: listing, error: listingError } = await supabase
-              .from("listings")
-              .select("id, title_ar")
-              .eq("owner_id", appData.user_id)
-              .eq("title_ar", productName)
-              .eq("status", "pending")
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            if (listingError) {
-              console.error("❌ Error finding listing:", listingError);
-            } else if (listing) {
-              const { error: updateError } = await supabase
-                .from("listings")
-                .update({ status: 'published' })
-                .eq("id", listing.id);
-
-              if (updateError) {
-                console.error("❌ Error updating listing status:", updateError);
-              } else {
-                console.log("✅ Listing published successfully!");
-              }
-            }
-          }
-        }
-
+        // ✅ إضافة دور seller (لكل من المتجر والمنتج)
         const { data: existingRole, error: roleFetchError } = await supabase
           .from("user_roles")
           .select("id, role")
-          .eq("user_id", appData.user_id)
+          .eq("user_id", typedApp.user_id)
           .maybeSingle();
 
         if (roleFetchError) {
@@ -1645,31 +1750,38 @@ export function useReviewSellerApplication() {
           const { error: insertError } = await supabase
             .from("user_roles")
             .insert({
-              user_id: appData.user_id,
+              user_id: typedApp.user_id,
               role: "seller"
             });
           if (insertError) throw insertError;
-          console.log("✅ New seller role inserted for user:", appData.user_id);
+          console.log("✅ New seller role inserted for user:", typedApp.user_id);
         } else if (existingRole.role === "customer") {
           const { error: updateRoleError } = await supabase
             .from("user_roles")
             .update({ role: "seller" })
             .eq("id", existingRole.id);
           if (updateRoleError) throw updateRoleError;
-          console.log("✅ User role updated from customer to seller:", appData.user_id);
+          console.log("✅ User role updated from customer to seller:", typedApp.user_id);
         } else if (existingRole.role === "seller") {
-          console.log("ℹ️ User already has seller role:", appData.user_id);
+          console.log("ℹ️ User already has seller role:", typedApp.user_id);
         } else {
           console.log("ℹ️ User has role:", existingRole.role, "- keeping it");
         }
       }
     },
     onSuccess: () => {
+      // ✅ invalidate شاملة — تُحدّث كلا التابين فوراً
       qc.invalidateQueries({ queryKey: ["seller_applications"] });
+      qc.invalidateQueries({ queryKey: ["admin", "listings"] });
+      qc.invalidateQueries({ queryKey: ["listings"] });
+      qc.invalidateQueries({ queryKey: ["my-listings"] });
       qc.invalidateQueries({ queryKey: ["roles"] });
       qc.invalidateQueries({ queryKey: ["admin", "stores"] });
       qc.invalidateQueries({ queryKey: ["stores"] });
       qc.invalidateQueries({ queryKey: ["profile"] });
+      invalidateListingsCache();
+      invalidateStoresCache();
+      console.log("🔄 [useReviewSellerApplication] All related queries invalidated");
     },
   });
 }
@@ -2269,27 +2381,50 @@ export function useSetListingStatus() {
     },
     onSuccess: (result) => {
       console.log("🔄 [useSetListingStatus] Invalidating queries...");
+      
+      // ✅ 1. تحديث تاب "المنتجات"
       qc.invalidateQueries({ 
         queryKey: ["admin", "listings"],
         exact: false 
       });
       qc.invalidateQueries({ queryKey: ["listings"] });
       qc.invalidateQueries({ queryKey: ["my-listings"] });
+      
+      // ✅ 2. 🔴 تحديث تاب "طلبات البائعين" (العدّاد ينقص فوراً)
+      qc.invalidateQueries({ queryKey: ["seller_applications"] });
+      
+      // ✅ 3. إبطال الكاش المحلي
       invalidateListingsCache();
+      
+      console.log("✅ [useSetListingStatus] All queries invalidated (listings + seller_applications)");
     },
   });
 }
-
 export function useAdminDeleteListing() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("listings").delete().eq("id", id);
       if (error) throw error;
+      
+      console.log("✅ [useAdminDeleteListing] Listing deleted:", id);
     },
     onSuccess: () => {
+      console.log("🔄 [useAdminDeleteListing] Invalidating queries...");
+      
+      // ✅ 1. تحديث تاب "المنتجات"
       qc.invalidateQueries({ queryKey: ["admin", "listings"] });
+      qc.invalidateQueries({ queryKey: ["listings"] });
+      qc.invalidateQueries({ queryKey: ["my-listings"] });
+      
+      // ✅ 2. 🔴 تحديث تاب "طلبات البائعين"
+      // (السجل يختفي من الـ view تلقائياً لأن المنتج انحذف)
+      qc.invalidateQueries({ queryKey: ["seller_applications"] });
+      
+      // ✅ 3. إبطال الكاش المحلي
       invalidateListingsCache();
+      
+      console.log("✅ [useAdminDeleteListing] All queries invalidated");
     },
   });
 }
@@ -2920,7 +3055,83 @@ export function useConversations(userId: string | undefined) {
     },
   });
 }
+// ============================================================
+// ✅ ADMIN ORDERS - مع بيانات البائع والمشتري
+// ============================================================
+export function useAllOrdersAdminDetailed() {
+  return useQuery({
+    queryKey: ["admin", "orders", "detailed"],
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      console.log("📡 [useAllOrdersAdminDetailed] Fetching all orders...");
 
+      // ✅ 1. جلب كل الطلبات
+      const { data: orders, error } = await supabase
+        .from("orders")
+        .select(`
+          *,
+          order_items (
+            *,
+            listings (
+              id,
+              title_ar,
+              title_en,
+              cover_url,
+              owner_id
+            )
+          )
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("❌ [useAllOrdersAdminDetailed] Error:", error);
+        throw error;
+      }
+
+      if (!orders || orders.length === 0) return [];
+
+      // ✅ 2. جلب profiles (البائع + المشتري)
+      const userIds = new Set<string>();
+      orders.forEach((order: any) => {
+        if (order.buyer_id) userIds.add(order.buyer_id);
+        if (order.seller_id) userIds.add(order.seller_id);
+      });
+
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          full_name,
+          phone,
+          avatar_url,
+          store_name,
+          store_phone,
+          store_logo_url,
+          governorate_id
+        `)
+        .in("id", Array.from(userIds));
+
+      if (profilesError) {
+        console.error("❌ [useAllOrdersAdminDetailed] Profiles error:", profilesError);
+      }
+
+      const profilesMap = new Map(
+        (profiles ?? []).map((p: any) => [p.id, p])
+      );
+
+      // ✅ 3. دمج البيانات
+      const enriched = orders.map((order: any) => ({
+        ...order,
+        buyer: profilesMap.get(order.buyer_id) ?? null,
+        seller: profilesMap.get(order.seller_id) ?? null,
+      }));
+
+      console.log(`✅ [useAllOrdersAdminDetailed] Found ${enriched.length} orders`);
+      return enriched;
+    },
+  });
+}
 export function useConversationMessages(conversationId: string | undefined, userId: string | undefined) {
   return useQuery({
     queryKey: ["messages", conversationId],

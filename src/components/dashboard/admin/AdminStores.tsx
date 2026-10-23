@@ -16,7 +16,7 @@ import {
   Zap, Sparkles, Shield, Crown, Star, Gem, Layers,
   DollarSign, Clock, Award, Rocket, Trash2, Loader2,
   AlertTriangle, X, CheckCircle2 as CheckCircle2Icon,
-  Truck, Edit2, Info
+  Truck, Edit2, Info, Phone
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -864,6 +864,13 @@ export function AdminStores() {
                               <Flame className="h-3.5 w-3.5 text-[#d81b60] fill-[#d81b60] animate-pulse shrink-0" />
                             )}
                           </div>
+                          {/* ✅ رقم هاتف المتجر تحت الاسم مباشرة */}
+                          {s.phone && (
+                            <div className="text-[11px] text-slate-600 dark:text-slate-300 font-mono flex items-center gap-1 mt-0.5" dir="ltr">
+                              <Phone className="h-2.5 w-2.5 text-[#2a655f]" />
+                              {s.phone}
+                            </div>
+                          )}
                           <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
                             {s.store_description || s.full_name || ""}
                           </div>

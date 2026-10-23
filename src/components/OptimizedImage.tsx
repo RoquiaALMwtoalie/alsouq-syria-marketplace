@@ -40,7 +40,9 @@ export function OptimizedImage({
       params.append('format', 'webp');
       params.append('quality', quality.toString());
 
-      if (width && height) {
+      // ✅ عند contain → لا نفرض width/height/fit
+      // Supabase يعيد الصورة الأصلية كاملة بدون قطع
+      if (objectFit !== 'contain' && width && height) {
         params.append('width', width.toString());
         params.append('height', height.toString());
         params.append('fit', 'cover');
@@ -94,8 +96,9 @@ export function OptimizedImage({
         className
       )}
       // ✅ aspectRatio فقط إذا لم يُمرَّر className فيه h-*
+      // ✅ ولا نفرض aspectRatio عند contain (لأن الصورة يجب أن تأخذ نسبتها الأصلية)
       style={
-        className.includes('h-') || className.includes('absolute')
+        className.includes('h-') || className.includes('absolute') || objectFit === 'contain'
           ? undefined
           : { aspectRatio: `${width}/${height}` }
       }

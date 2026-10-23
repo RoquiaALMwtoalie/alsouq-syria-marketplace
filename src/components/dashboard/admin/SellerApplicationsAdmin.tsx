@@ -464,7 +464,7 @@ export function SellerApplicationsAdmin() {
   };
 
   // ============================================================
-  // ✅ الدالة الرئيسية - مُعاد كتابتها بالكامل
+  // ✅ الدالة الرئيسية - مُعاد كتابتها بالكامل (تستخدم الـ hook الموحد)
   // ============================================================
   async function decide(id: string, status: "approved" | "rejected", admin_note?: string) {
     if (isProcessing) {
@@ -478,258 +478,103 @@ export function SellerApplicationsAdmin() {
     }
 
     setIsProcessing(true);
-    let applicationData: any = null;
     let isCompleted = false;
 
     try {
       console.log(`🔍 [decide] Starting for application: ${id}, status: ${status}`);
 
-      // جلب بيانات الطلب
-      const { data: appData, error: fetchError } = await withTimeout(
-        supabase
-          .from("seller_applications")
-          .select("*")
-          .eq("id", id)
-          .single(),
-        10000
-      );
+      const currentApp = apps.find((a: any) => a.id === id);
 
-      if (fetchError || !appData) {
-        toast.error(isRTL ? "❌ فشل جلب بيانات الطلب" : "❌ Failed to fetch application");
-        setIsProcessing(false);
-        return;
-      }
+      // ============================================================
+      // ✅ 1. استدعاء الـ hook الموحد (يتكفل بـ:
+      //    - تحديث seller_applications للمتاجر
+      //    - تحديث listings للمنتجات
+      //    - invalidate شاملة)
+      // ============================================================
+      await review.mutateAsync({
+        id,
+        status,
+        admin_note: admin_note || undefined,
+      });
 
-      applicationData = appData;
-      console.log(`✅ [decide] Application fetched: ${appData.store_name}`);
-
-      // تحديث حالة الطلب
-      const updatePayload = {
-        status: status,
-        admin_note: admin_note || null,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: app.user?.id || null,
-      };
-
-      const { error: updateError } = await withTimeout(
-        supabase
-          .from("seller_applications")
-          .update(updatePayload)
-          .eq("id", id),
-        10000
-      );
-
-      if (updateError) {
-        toast.error(
-          isRTL 
-            ? `❌ فشل تحديث الطلب: ${updateError.message}` 
-            : `❌ Failed to update: ${updateError.message}`
-        );
-        setIsProcessing(false);
-        return;
-      }
-
-      console.log(`✅ [decide] Application status updated to: ${status}`);
       isCompleted = true;
+      console.log(`✅ [decide] Application ${id} → ${status} (via hook)`);
 
-      // إشعار فوري
-      toast.success(
-        status === "approved"
-          ? isRTL ? "✅ تمت الموافقة على الطلب" : "✅ Application approved"
-          : isRTL ? "❌ تم رفض الطلب" : "❌ Application rejected"
-      );
-
-      // معالجة الموافقة أو الرفض
-      if (status === "approved") {
-        
-        // الموافقة على متجر
-        if (appData.application_type === 'store') {
-          const storeDescription = appData.store_description?.trim() || null;
-          
-          const updateData: any = {
-            store_name: appData.store_name,
-            store_description: storeDescription,
-            store_logo_url: appData.store_logo_url,
-            store_cover_url: appData.store_cover_url,
-            store_phone: appData.store_phone,
-            allows_messaging: appData.allows_messaging ?? true,
-            allows_bookings: appData.allows_bookings ?? false,
-            store_type: appData.store_type || 'online',
-            governorate_id: appData.governorate_id,
-            store_address: appData.address,
-            store_opens_at: appData.opening_time,
-            store_closes_at: appData.closing_time,
-            weekly_off_days: appData.weekly_off_days || [],
-            store_active: true,
-            store_online: true,
-          };
-
-          if (selectedDeliveryCompanyId) {
-            updateData.delivery_company_id = selectedDeliveryCompanyId;
+      // ============================================================
+      // ✅ 2. معالجة إضافية للموافقة على متجر (شركة التوصيل + الإشعار)
+      // ============================================================
+      if (status === "approved" && currentApp?.application_type === "store") {
+        // إضافة شركة التوصيل (إذا اختارها الأدمن)
+        if (selectedDeliveryCompanyId && currentApp.user_id) {
+          try {
+            await supabase
+              .from("profiles")
+              .update({ delivery_company_id: selectedDeliveryCompanyId })
+              .eq("id", currentApp.user_id);
+            console.log(`✅ [decide] Delivery company ${selectedDeliveryCompanyId} assigned`);
+          } catch (deliveryErr) {
+            console.error("⚠️ [decide] Delivery company update failed:", deliveryErr);
           }
-
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .update(updateData)
-            .eq("id", appData.user_id);
-
-          if (profileError) {
-            console.error("❌ Error updating profile:", profileError);
-            toast.warning(
-              isRTL 
-                ? "⚠️ تمت الموافقة لكن فشل تحديث بيانات المتجر" 
-                : "⚠️ Approved but failed to update store data"
-            );
-          } else {
-            console.log(`✅ [decide] Profile updated for user: ${appData.user_id}`);
-            
-            // إضافة رول seller
-            const { error: roleError } = await supabase
-              .from("user_roles")
-              .insert({
-                user_id: appData.user_id,
-                role: 'seller'
-              });
-
-            if (roleError) {
-              console.error("❌ Error adding seller role:", roleError);
-            } else {
-              console.log(`✅ Seller role added for user: ${appData.user_id}`);
-            }
-          }
-
-          // إشعار موافقة متجر
-          safeSendNotification(sendNotification, {
-            userId: appData.user_id,
-            type: 'store_approved',
-            titleAr: "✅ تمت الموافقة على طلبك",
-            bodyAr: `تمت الموافقة على طلب فتح متجر "${appData.store_name}" 🎉`,
-            linkUrl: '/dashboard?tab=settings',
-            imageUrl: appData.store_logo_url,
-            metadata: {
-              application_id: appData.id,
-              store_name: appData.store_name,
-              application_type: 'store',
-              admin_note: admin_note || null,
-              delivery_company_id: selectedDeliveryCompanyId || null,
-            },
-            actions: [
-              { label_ar: 'عرض متجري', url: '/dashboard?tab=settings' },
-            ]
-          });
         }
 
-        // الموافقة على منتج
-        if (appData.application_type === 'product') {
-          const { data: listing, error: listingError } = await withTimeout(
-            supabase
-              .from("listings")
-              .select("id, title_ar, cover_url")
-              .eq("owner_id", appData.user_id)
-              .eq("status", "pending")
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle(),
-            10000
-          );
+        // إشعار موافقة متجر
+        safeSendNotification(sendNotification, {
+          userId: currentApp.user_id,
+          type: 'store_approved',
+          titleAr: "✅ تمت الموافقة على طلبك",
+          bodyAr: `تمت الموافقة على طلب فتح متجر "${currentApp.store_name}" 🎉`,
+          linkUrl: '/dashboard?tab=settings',
+          imageUrl: currentApp.store_logo_url,
+          metadata: {
+            application_id: currentApp.id,
+            store_name: currentApp.store_name,
+            application_type: 'store',
+            admin_note: admin_note || null,
+            delivery_company_id: selectedDeliveryCompanyId || null,
+          },
+          actions: [
+            { label_ar: 'عرض متجري', url: '/dashboard?tab=settings' },
+          ]
+        });
+      }
 
-          if (!listingError && listing) {
-            await withTimeout(
-              supabase
-                .from("listings")
-                .update({ status: 'published' })
-                .eq("id", listing.id),
-              10000
-            );
-            console.log(`✅ [decide] Product published: ${listing.id}`);
-          }
-
-          // إشعار موافقة منتج
+      // ============================================================
+      // ✅ 3. معالجة إضافية للمنتجات (إشعار فقط — الـ hook تحدّث listings)
+      // ============================================================
+      if (currentApp?.application_type === "product") {
+        if (status === "approved") {
           safeSendNotification(sendNotification, {
-            userId: appData.user_id,
+            userId: currentApp.user_id,
             type: 'product_approved',
             titleAr: "✅ تمت الموافقة على طلبك",
             bodyAr: `تمت الموافقة على إضافة المنتج، وهو الآن متاح للبيع 🛍️`,
             linkUrl: '/dashboard?tab=products',
-            imageUrl: listing?.cover_url || null,
+            imageUrl: currentApp.store_logo_url || null,
             metadata: {
-              application_id: appData.id,
-              store_name: appData.store_name,
+              application_id: currentApp.id,
+              store_name: currentApp.store_name,
               application_type: 'product',
               admin_note: admin_note || null,
-              listing_id: listing?.id || null,
+              listing_id: currentApp.listing_id || null,
             },
             actions: [
               { label_ar: 'عرض المنتج', url: '/dashboard?tab=products' },
             ]
           });
-        }
-
-      } else {
-        
-        // رفض متجر
-        if (appData.application_type === 'store') {
+        } else {
           safeSendNotification(sendNotification, {
-            userId: appData.user_id,
-            type: 'store_rejected',
-            titleAr: "❌ تم رفض طلبك",
-            bodyAr: `تم رفض طلب فتح متجر "${appData.store_name}"${admin_note ? `\nالسبب: ${admin_note}` : ''}`,
-            linkUrl: '/dashboard?tab=overview',
-            imageUrl: appData.store_logo_url,
-            metadata: {
-              application_id: appData.id,
-              store_name: appData.store_name,
-              reason: admin_note || null,
-              application_type: 'store',
-            },
-            actions: [
-              { label_ar: 'مراجعة الطلب', url: '/dashboard?tab=overview' },
-            ]
-          });
-        }
-
-        // رفض منتج
-        if (appData.application_type === 'product') {
-          const { data: listing, error: listingError } = await withTimeout(
-            supabase
-              .from("listings")
-              .select("id, title_ar, cover_url")
-              .eq("owner_id", appData.user_id)
-              .eq("status", "pending")
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle(),
-            10000
-          );
-
-          if (!listingError && listing) {
-            await withTimeout(
-              supabase
-                .from("listings")
-                .update({ 
-                        status: 'rejected',
-                  rejection_reason: admin_note || null,
-                  rejected_at: new Date().toISOString(),
-                })
-                .eq("id", listing.id),
-              10000
-            );
-            console.log(`✅ [decide] Product rejected: ${listing.id}`);
-          }
-
-          safeSendNotification(sendNotification, {
-            userId: appData.user_id,
+            userId: currentApp.user_id,
             type: 'product_rejected',
             titleAr: "❌ تم رفض طلبك",
             bodyAr: `تم رفض طلب إضافة المنتج${admin_note ? `\nالسبب: ${admin_note}` : ''}`,
             linkUrl: '/dashboard?tab=products',
-            imageUrl: listing?.cover_url || null,
+            imageUrl: currentApp.store_logo_url || null,
             metadata: {
-              application_id: appData.id,
-              store_name: appData.store_name,
+              application_id: currentApp.id,
+              store_name: currentApp.store_name,
               reason: admin_note || null,
               application_type: 'product',
-              listing_id: listing?.id || null,
+              listing_id: currentApp.listing_id || null,
             },
             actions: [
               { label_ar: 'مراجعة المنتج', url: '/dashboard?tab=products' },
@@ -738,14 +583,46 @@ export function SellerApplicationsAdmin() {
         }
       }
 
+      // ============================================================
+      // ✅ 4. معالجة إضافية لرفض المتجر (إشعار)
+      // ============================================================
+      if (status === "rejected" && currentApp?.application_type === "store") {
+        safeSendNotification(sendNotification, {
+          userId: currentApp.user_id,
+          type: 'store_rejected',
+          titleAr: "❌ تم رفض طلبك",
+          bodyAr: `تم رفض طلب فتح متجر "${currentApp.store_name}"${admin_note ? `\nالسبب: ${admin_note}` : ''}`,
+          linkUrl: '/dashboard?tab=overview',
+          imageUrl: currentApp.store_logo_url,
+          metadata: {
+            application_id: currentApp.id,
+            store_name: currentApp.store_name,
+            reason: admin_note || null,
+            application_type: 'store',
+          },
+          actions: [
+            { label_ar: 'مراجعة الطلب', url: '/dashboard?tab=overview' },
+          ]
+        });
+      }
+
+      // ✅ refetch المكون
       await refetch();
 
-      // ✅ الحل: invalidate الـ queries المشتركة (بالـ keys الصحيحة من queries.ts)
-      // هذا يحدّث العدّاد الأحمر فوق التاب في AdminDashboard فوراً
+      // ✅ invalidate إضافي (الـ hook عملها لكن للتأكيد)
       queryClient.invalidateQueries({ queryKey: ['seller_applications'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stores'] });
       queryClient.invalidateQueries({ queryKey: ['stores'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
+      // ✅ إشعار فوري
+      toast.success(
+        status === "approved"
+          ? isRTL ? "✅ تمت الموافقة على الطلب" : "✅ Application approved"
+          : isRTL ? "❌ تم رفض الطلب" : "❌ Application rejected"
+      );
 
       setNoteFor(null);
       setNote("");

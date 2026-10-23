@@ -1,8 +1,12 @@
 // src/routes/listing/$id.tsx - مع "قد تعجبك أيضاً" + "الأكثر مبيعاً"
 // ✅ نسخة مصححة: خيارات ديناميكية تحت بعض + إصلاح سلايدر الصور + Fullscreen
+// ✅ إضافة: Portal لشريط الأزرار السفلي (Sticky Bottom Bar) — ثابت دائماً حتى مع PullToRefresh
+// ✅ إضافة: Portal لـ Fullscreen Image Viewer — يغطي الشاشة بالكامل على كل الأجهزة
+// ✅ إصلاح: عرض الصور كاملة (objectFit="contain") — بدون قطع — الصورة بنفس شكلها الأصلي
 
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Heart, Share2,
   ChevronRight, ChevronLeft,
@@ -699,13 +703,49 @@ function ListingDetailPage() {
 
       app.toggleFavorite(listing.id);
 
-      toast.info(
+      // ✅ التعديل: toast.success + لون زهري (يطابق هوية ZOOQ)
+      toast.success(
         isFavorite
           ? (app.lang === "ar" ? "تم إزالة من المفضلة 💔" : "Removed from favorites 💔")
-          : (app.lang === "ar" ? "تم إضافة للمفضلة ❤️" : "Added to favorites ❤️")
+          : (app.lang === "ar" ? "تم إضافة للمفضلة ❤️" : "Added to favorites ❤️"),
+        {
+          style: {
+            background: '#fdf2f8',
+            border: '1.5px solid #f9a8d4',
+            color: '#d81b60',
+            borderRadius: '14px',
+            boxShadow: '0 8px 24px rgba(216, 27, 96, 0.15)',
+            fontWeight: '600',
+            fontSize: '13px',
+          },
+          icon: isFavorite ? '💔' : '❤️',
+          duration: 2500,
+        }
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Favorite error:", error);
+
+      // ✅ معالجة خطأ 23505 (مفتاح مكرر) — اعتبرها نجاحاً
+      if (error?.code === '23505') {
+        toast.success(
+          app.lang === "ar" ? "المنتج موجود بالفعل في المفضلة ❤️" : "Product is already in favorites ❤️",
+          {
+            style: {
+              background: '#fdf2f8',
+              border: '1.5px solid #f9a8d4',
+              color: '#d81b60',
+              borderRadius: '14px',
+              fontWeight: '600',
+              fontSize: '13px',
+            },
+            icon: '❤️',
+            duration: 2500,
+          }
+        );
+        app.toggleFavorite(listing.id);
+        return;
+      }
+
       toast.error(app.lang === "ar" ? "حدث خطأ" : "An error occurred");
     }
   }, [app.user, listing, isFavorite, toggleFavoriteMutation, app.lang]);
@@ -779,17 +819,18 @@ function ListingDetailPage() {
         <div className="max-w-xl mx-auto px-4">
           <div className="relative w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div
-              className="relative w-full aspect-[4/3] overflow-hidden cursor-zoom-in"
+              className="relative w-full overflow-hidden cursor-zoom-in bg-white"
               onClick={() => setIsFullscreen(true)}
             >
               <OptimizedImage
                 src={gallery[activeImage] || listing.cover_url}
                 alt={listing.title_ar}
                 width={800}
-                height={600}
+                height={800}
                 quality={90}
+                objectFit="contain"
                 className={cn(
-                  "w-full h-full object-cover transition-transform duration-300",
+                  "w-full max-h-[80vh] transition-transform duration-300",
                   isZoomed && "scale-150"
                 )}
               />
@@ -1187,13 +1228,14 @@ function ListingDetailPage() {
                         </div>
                       )}
 
-                      <div className="relative w-full aspect-square overflow-hidden rounded-xl">
+                      <div className="relative w-full aspect-square overflow-hidden rounded-xl bg-white">
                         <OptimizedImage
                           src={item.cover_url}
                           alt={item.title_ar}
                           width={200}
                           height={200}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          objectFit="contain"
+                          className="w-full h-full group-hover:scale-105 transition-transform duration-500"
                         />
                       </div>
 
@@ -1286,13 +1328,14 @@ function ListingDetailPage() {
                       </div>
 
                       {/* ✅ صورة المنتج */}
-                      <div className="relative w-24 h-24 shrink-0 overflow-hidden rounded-xl">
+                      <div className="relative w-24 h-24 shrink-0 overflow-hidden rounded-xl bg-white">
                         <OptimizedImage
                           src={item.cover_url}
                           alt={item.title_ar}
                           width={200}
                           height={200}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          objectFit="contain"
+                          className="w-full h-full group-hover:scale-105 transition-transform duration-500"
                         />
                       </div>
 
@@ -1332,63 +1375,69 @@ function ListingDetailPage() {
 
         </div>
 
-        {/* ===== شريط الأزرار السفلي ===== */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-2 sm:px-3 py-2 sm:py-3 shadow-lg">
-          <div className="max-w-xl mx-auto flex gap-1.5 sm:gap-2 md:gap-3">
-            {/* زر اشتري الآن */}
-            <Button
-              onClick={async () => {
-                await handleAddToCart();
-                navigate({ to: "/cart" });
-              }}
-              className="flex-1 bg-[#fef9ec] hover:bg-[#fde6b5] text-gray-900 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition border-2 border-[#fde6b5] px-2 sm:px-3 md:px-4"
-              disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
-            >
-              {app.lang === "ar" ? "اشتري الآن" : "Buy Now"}
-            </Button>
+        {/* ===== ✅ شريط الأزرار السفلي — Portal إلى body (ثابت دائماً حتى مع PullToRefresh) ===== */}
+        {typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-2 sm:px-3 py-2 sm:py-3 shadow-lg"
+            style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+          >
+            <div className="max-w-xl mx-auto flex gap-1.5 sm:gap-2 md:gap-3">
+              {/* زر اشتري الآن */}
+              <Button
+                onClick={async () => {
+                  await handleAddToCart();
+                  navigate({ to: "/cart" });
+                }}
+                className="flex-1 bg-[#fef9ec] hover:bg-[#fde6b5] text-gray-900 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition border-2 border-[#fde6b5] px-2 sm:px-3 md:px-4"
+                disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
+              >
+                {app.lang === "ar" ? "اشتري الآن" : "Buy Now"}
+              </Button>
 
-            {/* زر أضف إلى السلة */}
-            <Button
-              onClick={handleAddToCart}
-              className={cn(
-                "flex-1 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition px-2 sm:px-3 md:px-4",
-                "bg-[#1a4f4a] hover:bg-[#2a655f] text-white"
-              )}
-              disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
-            >
-              {addToCartMutation.isPending ? (
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  <span className="whitespace-nowrap">
-                    {app.lang === "ar" ? "جاري..." : "Loading..."}
-                  </span>
-                </div>
-              ) : isInCart ? (
-                <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-                  <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                  <span className="whitespace-nowrap truncate">
-                    {app.lang === "ar" ? "في السلة" : "In Cart"}
-                  </span>
-                  {cartItemCount > 0 && (
-                    <Badge className="bg-white/20 text-white border-0 text-[9px] sm:text-[10px] shrink-0 px-1.5 py-0">
-                      {cartItemCount}
-                    </Badge>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-                  <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                  <span className="whitespace-nowrap truncate">
-                    {app.lang === "ar" ? "أضف للسلة" : "Add to Cart"}
-                  </span>
-                </div>
-              )}
-            </Button>
-          </div>
-        </div>
+              {/* زر أضف إلى السلة */}
+              <Button
+                onClick={handleAddToCart}
+                className={cn(
+                  "flex-1 font-bold h-10 sm:h-11 md:h-12 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm shadow-md transition px-2 sm:px-3 md:px-4",
+                  "bg-[#1a4f4a] hover:bg-[#2a655f] text-white"
+                )}
+                disabled={!listing.is_available || addToCartMutation.isPending || !isVariationSelected}
+              >
+                {addToCartMutation.isPending ? (
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span className="whitespace-nowrap">
+                      {app.lang === "ar" ? "جاري..." : "Loading..."}
+                    </span>
+                  </div>
+                ) : isInCart ? (
+                  <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                    <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                    <span className="whitespace-nowrap truncate">
+                      {app.lang === "ar" ? "في السلة" : "In Cart"}
+                    </span>
+                    {cartItemCount > 0 && (
+                      <Badge className="bg-white/20 text-white border-0 text-[9px] sm:text-[10px] shrink-0 px-1.5 py-0">
+                        {cartItemCount}
+                      </Badge>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                    <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                    <span className="whitespace-nowrap truncate">
+                      {app.lang === "ar" ? "أضف للسلة" : "Add to Cart"}
+                    </span>
+                  </div>
+                )}
+              </Button>
+            </div>
+          </div>,
+          document.body
+        )}
 
-        {/* ✅ Fullscreen Image Viewer */}
-        {isFullscreen && (
+        {/* ✅ Fullscreen Image Viewer — Portal إلى body (يغطي الشاشة بالكامل على كل الأجهزة) */}
+        {isFullscreen && typeof document !== 'undefined' && createPortal(
           <div
             className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-sm flex flex-col"
             onClick={(e) => {
@@ -1425,8 +1474,8 @@ function ListingDetailPage() {
                 className="max-w-full max-h-full object-contain select-none"
                 style={{
                   touchAction: 'pinch-zoom',
-                  maxWidth: 'calc(100vw - 2rem)',
-                  maxHeight: 'calc(100vh - 8rem)',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
                   width: 'auto',
                   height: 'auto',
                 }}
@@ -1479,7 +1528,8 @@ function ListingDetailPage() {
                 </div>
               </div>
             )}
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* مودال تعارض المتاجر */}

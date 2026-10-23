@@ -8,6 +8,7 @@ import {
   Activity, ArrowUp, ArrowDown, CircleDot, Zap, Clock,
   Rocket, Gem, Crown, Star, Flame, Award, Target, Compass,
   Tag, AlertTriangle, ChevronRight, ChevronLeft,
+  ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import {
   useAllSellerApplications,
   useAllComplaints,
   useNotifications,
+  useAllOrdersAdmin,
 } from "@/lib/queries";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -35,6 +37,7 @@ import { AdminNotifications } from "./AdminNotifications";
 import { AdminDeliveryCompanies } from "./AdminDeliveryCompanies";
 import { AdminPromoCodes } from "./AdminPromoCodes";
 import { AdminComplaints } from "./AdminComplaints";
+import { AdminOrders } from "./AdminOrders";
 
 interface AdminDashboardProps {
   notificationButton: React.ReactNode;
@@ -57,6 +60,7 @@ type AdminTabType =
   | "overview"
   | "listings"
   | "stores"
+  | "orders"
   | "delivery"
   | "promo"
   | "complaints"
@@ -85,6 +89,11 @@ const NAV_ICONS: Record<string, {
   stores: {
     icon: Store,
     animation: "animate-spin-slow",
+    color: "text-[#2a655f]"
+  },
+  orders: {
+    icon: ShoppingBag,
+    animation: "animate-bounce-slow",
     color: "text-[#2a655f]"
   },
   delivery: {
@@ -303,7 +312,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
 
   // ✅ قراءة التاب من الـ URL مباشرة عبر TanStack Router
   const search = useSearch({ from: "/admin" });
-  const tab = (search?.tab || "overview") as AdminTabType;
+  const tab = (search?.tab || "listings") as AdminTabType;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResultsPage, setShowSearchResultsPage] = useState(false);
@@ -363,6 +372,7 @@ const { data: appsResponse } = useAllSellerApplications();
 const allApplications = appsResponse?.data || [];
 const { data: allComplaints = [] } = useAllComplaints();
 const { data: allNotifications = [] } = useNotifications(app.user?.id, 100);
+const { data: allOrders = [] } = useAllOrdersAdmin();
 
   // ===== ✅ عدّادات الـ Badge =====
   const pendingListingsCount = useMemo(() => {
@@ -382,6 +392,11 @@ const { data: allNotifications = [] } = useNotifications(app.user?.id, 100);
   const unreadNotificationsCount = useMemo(() => {
     return allNotifications.filter((item: any) => !item.is_read).length;
   }, [allNotifications]);
+
+  // ✅ MODIFIED - عدد الطلبات بحالة pending فقط (قيد المراجعة — تنتظر موافقة)
+  const pendingOrdersCount = useMemo(() => {
+    return allOrders.filter((item: any) => item.status === 'pending').length;
+  }, [allOrders]);
 
   // ===== فلترة المنتجات =====
   const filteredListings = useMemo(() => {
@@ -439,15 +454,17 @@ const { data: allNotifications = [] } = useNotifications(app.user?.id, 100);
   // ===== عرض نتائج البحث =====
   const showSearchResults = searchQuery.trim().length > 0 && showSearchResultsPage;
 
-  // ===== قائمة التبويب =====
+  // ===== قائمة التبويب - ✅ ترتيب مخصص =====
   const nav = [
-    { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", iconKey: "overview", badge: 0 },
     { id: "listings" as const, label: app.lang === 'ar' ? "المنتجات" : "Products", iconKey: "listings", badge: pendingListingsCount },
+    { id: "applications" as const, label: app.lang === 'ar' ? "طلبات البائعين" : "Seller applications", iconKey: "applications", badge: pendingApplicationsCount },
     { id: "stores" as const, label: app.lang === 'ar' ? "المتاجر" : "Stores", iconKey: "stores", badge: 0 },
+    // ✅ MODIFIED - استخدام pendingOrdersCount بدلاً من totalOrdersCount
+    { id: "orders" as const, label: app.lang === 'ar' ? "الطلبات" : "Orders", iconKey: "orders", badge: pendingOrdersCount },
+    { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", iconKey: "overview", badge: 0 },
     { id: "delivery" as const, label: app.lang === 'ar' ? "شركات التوصيل" : "Delivery Companies", iconKey: "delivery", badge: 0 },
     { id: "promo" as const, label: app.lang === 'ar' ? "أكواد الخصم" : "Promo Codes", iconKey: "promo", badge: 0 },
     { id: "complaints" as const, label: app.lang === 'ar' ? "الشكاوى" : "Complaints", iconKey: "complaints", badge: openComplaintsCount },
-    { id: "applications" as const, label: app.lang === 'ar' ? "طلبات البائعين" : "Seller applications", iconKey: "applications", badge: pendingApplicationsCount },
     { id: "banners" as const, label: app.lang === 'ar' ? "البنرات" : "Banners", iconKey: "banners", badge: 0 },
     { id: "announcements" as const, label: app.lang === 'ar' ? "شريط الإعلانات" : "Announcements", iconKey: "announcements", badge: 0 },
     { id: "categories" as const, label: app.lang === 'ar' ? "التصنيفات" : "Categories", iconKey: "categories", badge: 0 },
@@ -564,8 +581,8 @@ const { data: allNotifications = [] } = useNotifications(app.user?.id, 100);
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
               {[
                 { key: 'listings' as AdminTabType, label: app.lang === 'ar' ? 'المنتجات' : 'Products', count: searchResults.products, icon: Package },
-                { key: 'stores' as AdminTabType, label: app.lang === 'ar' ? 'المتاجر' : 'Stores', count: searchResults.stores, icon: Store },
                 { key: 'applications' as AdminTabType, label: app.lang === 'ar' ? 'طلبات البائعين' : 'Applications', count: searchResults.applications, icon: ShieldCheck },
+                { key: 'stores' as AdminTabType, label: app.lang === 'ar' ? 'المتاجر' : 'Stores', count: searchResults.stores, icon: Store },
               ].map((item) => {
                 const isActive = tab === item.key;
                 return (
@@ -757,6 +774,7 @@ const { data: allNotifications = [] } = useNotifications(app.user?.id, 100);
           {tab === "overview" && <AdminOverview onGoto={handleTabChange} searchQuery={showSearchResults ? searchQuery : ""} />}
           {tab === "listings" && <AdminListings />}
           {tab === "stores" && <AdminStores />}
+          {tab === "orders" && <AdminOrders />}
           {tab === "delivery" && <AdminDeliveryCompanies />}
           {tab === "promo" && <AdminPromoCodes />}
           {tab === "complaints" && <AdminComplaints />}
@@ -766,8 +784,6 @@ const { data: allNotifications = [] } = useNotifications(app.user?.id, 100);
           {tab === "categories" && <CategoriesAdmin />}
           {tab === "notifications" && <AdminNotifications />}
         </div>
-
-     
 
       </div>
 

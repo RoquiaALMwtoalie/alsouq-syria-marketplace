@@ -1387,8 +1387,10 @@ const handleVoiceSearch = useCallback((
 
           {/* Actions */}
           <div className="flex items-center gap-1 min-[360px]:gap-1.5 sm:gap-2 sm:ms-auto flex-nowrap min-w-0">
-            {/* ✅ زر تحميل التطبيق — صغير جداً - يظهر على كل الشاشات */}
-            <ApkDownloadButton lang={app.lang} />
+            {/* ✅ زر تحميل التطبيق — يظهر على الموبايلات 390px+ فقط، مخفي على الأصغر */}
+            <div className="hidden min-[390px]:block">
+              <ApkDownloadButton lang={app.lang} />
+            </div>
 
             <Tooltip>
               <TooltipTrigger asChild>
