@@ -38,12 +38,15 @@ function PrivacyPage() {
         ? "تطبيق «ذوق» (Zooq) هو منصة إلكترونية تابعة لمؤسسة عمر فلوح التجارية، تربط المتاجر والبائعين بالعملاء عبر شركات توصيل وموزعين معتمدين، لتسهيل عرض المنتجات وإنشاء الطلبات وتوصيلها وتتبّع حالتها بشكل مباشر."
         : "Zooq is an electronic platform owned by Omar Falloh Trading Est., connecting stores and sellers with customers through approved delivery companies and distributors, to facilitate product display, order creation, delivery, and real-time tracking.",
     },
+    // ============================================================
+    // ✅ 2. الجهة المسؤولة — مع LTR Mark لمنع انقلاب البريد والرقم
+    // ============================================================
     {
       id: "responsible",
       icon: Shield,
       title: isRTL ? "2. الجهة المسؤولة عن التطبيق" : "2. Responsible Entity",
       content: isRTL
-        ? "الجهة المالكة والمسؤولة عن التطبيق هي: مؤسسة عمر فلوح التجارية.\n\nالبريد الإلكتروني: M.halabi@ici-sy.com\nرقم التواصل: +963 944 323 352"
+        ? "الجهة المالكة والمسؤولة عن التطبيق هي: مؤسسة عمر فلوح التجارية.\n\nالبريد الإلكتروني: \u200EM.halabi@ici-sy.com\nرقم التواصل: \u200E+963 944 323 352"
         : "The entity owning and responsible for the app is Omar Falloh Trading Est.\n\nEmail: M.halabi@ici-sy.com\nPhone: +963 944 323 352",
     },
     {

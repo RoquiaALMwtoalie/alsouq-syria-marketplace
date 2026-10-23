@@ -49,6 +49,10 @@ import { LoginSplash } from "@/components/LoginSplash";
 
 // بعد الـ imports الموجودة
 import { ClientOnly } from "@/components/ClientOnly";
+
+// ✅ IMPORT: PullToRefresh للـ Global Refresh
+import { PullToRefresh } from "@/components/PullToRefresh";
+
 // ===== ✅ إضافة استيراد جميع Hooks Realtime =====
 import {
   useProfileWithUpdate,
@@ -1347,6 +1351,11 @@ function RootContent({
   const notificationChannelName = useRef<string | null>(null);
   const cacheChannelName = useRef<string | null>(null);
 
+  // ✅ 🆕 دالة التحديث للـ PullToRefresh (Global)
+  const handleGlobalRefresh = useCallback(async () => {
+    await queryClient.invalidateQueries();
+  }, [queryClient]);
+
   // ============================================================
   // 🔊 Audio element مشترك + Unlock على أول تفاعل
   // ============================================================
@@ -1775,7 +1784,11 @@ queryClient.invalidateQueries({
       <ClientOnly>
         <div className="min-h-screen flex flex-col">
           {!hideChrome && <Header />}
-          <main className="flex-1"><Outlet /></main>
+          <main className="flex-1">
+            <PullToRefresh onRefresh={handleGlobalRefresh} lang={app.lang}>
+              <Outlet />
+            </PullToRefresh>
+          </main>
           {!hideChrome && !hideFooter && <Footer />}
         </div>
       </ClientOnly>

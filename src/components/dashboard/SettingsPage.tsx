@@ -80,35 +80,33 @@ export function SettingsPage() {
   // ============================================================
   // ✅ منع التمرير التلقائي عند تحميل المكون
   // ============================================================
+  // ============================================================
+  // ✅ منع التمرير التلقائي عند تحميل المكون (مع السماح بـ PullToRefresh)
+  // ملاحظة: أزلنا touchmove — لأنه يمنع PullToRefresh من العمل
+  // نُبقي scroll و wheel فقط لمنع auto-scroll أثناء تحميل المكون
+  // ============================================================
   useEffect(() => {
-    // ✅ حفظ موضع التمرير الحالي
     const currentScroll = window.scrollY;
-    
-    // ✅ منع أي تمرير تلقائي لمدة 300ms
     let isBlocking = true;
     let timeoutId: NodeJS.Timeout | null = null;
     
     const preventScroll = () => {
-      if (isBlocking) {
-        window.scrollTo({ top: currentScroll, behavior: 'instant' });
-      }
+      if (!isBlocking) return;
+      // ✅ لا نمنع التمرير إذا كان المستخدم في أعلى الصفحة (للسحب)
+      if (window.scrollY <= 0) return;
+      window.scrollTo({ top: currentScroll, behavior: 'instant' });
     };
     
-    // ✅ إضافة مستمعين للأحداث
     window.addEventListener('scroll', preventScroll, { passive: true });
     window.addEventListener('wheel', preventScroll, { passive: true });
-    window.addEventListener('touchmove', preventScroll, { passive: true });
+    // ❌ تم حذف touchmove — يمنع PullToRefresh
     
-    // ✅ تنفيذ فوري
     requestAnimationFrame(() => {
       window.scrollTo({ top: currentScroll, behavior: 'instant' });
     });
     
-    // ✅ إلغاء الحظر بعد 300ms
     timeoutId = setTimeout(() => {
       isBlocking = false;
-      // ✅ استعادة الموضع النهائي
-      window.scrollTo({ top: currentScroll, behavior: 'instant' });
     }, 300);
     
     return () => {
@@ -116,7 +114,7 @@ export function SettingsPage() {
       if (timeoutId) clearTimeout(timeoutId);
       window.removeEventListener('scroll', preventScroll);
       window.removeEventListener('wheel', preventScroll);
-      window.removeEventListener('touchmove', preventScroll);
+      // ❌ تم حذف touchmove
     };
   }, []);
 

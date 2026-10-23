@@ -11,7 +11,7 @@ import {
   Twitter, Instagram, Facebook, Youtube, Send, Check, Bell, BellOff, MoreVertical, Trash2,
   Settings, Volume2, VolumeX, LayoutDashboard, LogOut, LogIn, UserPlus, House, Camera,
   CheckCircle, XCircle, Megaphone, Sparkles, Calendar, ChevronLeft, ChevronRight, ShoppingCart,
-  Compass, Mic, MicOff, 
+  Compass, Mic, MicOff, Download,
   type LucideIcon,
 } from "lucide-react";
 import { NotificationStatus } from "@/components/NotificationStatus";
@@ -52,6 +52,9 @@ import { getCategoryIcon } from "@/lib/categoryIcons";
 import { useCart } from "@/lib/hooks/useCart";
 import { VoiceSearch } from "@/components/VoiceSearch";
 import { OptimizedImage } from "@/components/OptimizedImage";
+
+// ✅ رابط تحميل APK — نفس الرابط الموجود في صفحة auth
+const APK_DOWNLOAD_URL = "https://appsenjoy.com/f/hXcKZBUE7m/dhwq-1-0-0";
 
 const ICON_MAP: Record<string, any> = {
   'clock': Clock,
@@ -104,6 +107,31 @@ const AnimatedIcon = ({
     </div>
   );
 };
+
+// ============================================================
+// ✅ زر تحميل التطبيق — صغير جداً
+// ============================================================
+function ApkDownloadButton({ lang }: { lang: "ar" | "en" }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <a
+          href={APK_DOWNLOAD_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={lang === "ar" ? "تحميل تطبيق ذوق" : "Download Zooq App"}
+          className="group relative flex h-7 w-7 min-[360px]:h-8 min-[360px]:w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg min-[360px]:rounded-xl border-2 border-[#f9a8d4]/60 dark:border-[#f9a8d4]/40 bg-gradient-to-br from-[#f9a8d4]/10 to-[#2a655f]/10 hover:from-[#f9a8d4]/25 hover:to-[#2a655f]/25 hover:border-[#f9a8d4] transition-all duration-300 shadow-sm hover:shadow-md hover:shadow-[#f9a8d4]/25 active:scale-95"
+        >
+          <Download className="h-3 w-3 min-[360px]:h-3.5 min-[360px]:w-3.5 sm:h-4 sm:w-4 text-[#2a655f] dark:text-[#f9a8d4] group-hover:scale-110 group-hover:-translate-y-0.5 transition-transform" />
+          <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400 ring-1 ring-background animate-pulse" />
+        </a>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="bg-[#2a655f] text-white border-[#3a8a82]">
+        <p>{lang === "ar" ? "📱 حمّل تطبيق ذوق (APK)" : "📱 Download Zooq App (APK)"}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 function MegaMenu({ categories }: { categories: any[] }) {
   const app = useApp();
@@ -1044,6 +1072,33 @@ const handleVoiceSearch = useCallback((
                 </button>
               )}
 
+              {/* ✅ زر تحميل التطبيق — داخل القائمة الجانبية للموبايل */}
+              <a
+                href={APK_DOWNLOAD_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-[#f9a8d4]/15 to-[#2a655f]/15 hover:from-[#f9a8d4]/25 hover:to-[#2a655f]/25 border border-[#f9a8d4]/30 transition-all duration-300 group"
+              >
+                <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#f9a8d4] to-[#fbcfe8] flex items-center justify-center group-hover:scale-110 transition-transform shrink-0 shadow-md">
+                  <Download className="h-5 w-5 text-[#071f1c]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                    {app.lang === "ar" ? "حمّل تطبيق ذوق" : "Download Zooq App"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium truncate">
+                    {app.lang === "ar" ? "📱 أندرويد (APK)" : "📱 Android (APK)"}
+                  </p>
+                </div>
+                <span className="flex items-center gap-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[9px] font-bold text-emerald-500">
+                    {app.lang === "ar" ? "جديد" : "NEW"}
+                  </span>
+                </span>
+              </a>
+
               <div className="h-px bg-slate-200 dark:bg-slate-700 my-2" />
 
               {app.user ? (
@@ -1332,6 +1387,9 @@ const handleVoiceSearch = useCallback((
 
           {/* Actions */}
           <div className="flex items-center gap-1 min-[360px]:gap-1.5 sm:gap-2 sm:ms-auto flex-nowrap min-w-0">
+            {/* ✅ زر تحميل التطبيق — صغير جداً - يظهر على كل الشاشات */}
+            <ApkDownloadButton lang={app.lang} />
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenu>

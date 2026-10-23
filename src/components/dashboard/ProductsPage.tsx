@@ -12,7 +12,8 @@ import {
   MessageCircle, ThumbsUp, ThumbsDown, ChevronDown,
   Sparkles, Zap, TrendingUp, Award, Target, Rocket,
   Play, Pause, ShoppingCart, Percent, Tags,
-  ChevronsLeft, ChevronsRight, Folder, FolderTree, CornerDownRight
+  ChevronsLeft, ChevronsRight, Folder, FolderTree, CornerDownRight,
+  Loader2, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,9 @@ import { cn } from "@/lib/utils";
 import { ProductService } from "@/lib/services/ProductService";
 import { getUserDisplayName } from "@/lib/utils/helpers";
 import { OptimizedImage } from "@/components/OptimizedImage";
+
+// ✅ IMPORT: useInView للـ Infinite Scroll
+import { useInView } from "react-intersection-observer";
 
 // ✅ IMPORT: نافذة تحويل إلى عرض
 import { ConvertToOfferDialog } from "./ConvertToOfferDialog";
@@ -63,6 +67,9 @@ const COLORS = {
   fuchsiaDark: '#c2185b',
 };
 
+// ✅ عدد العناصر لكل دفعة في Infinite Scroll
+const ITEMS_PER_BATCH = 10;
+
 export const ProductsPage = React.memo(function ProductsPage() {
   const app = useApp();
   const t = useT();
@@ -71,18 +78,24 @@ export const ProductsPage = React.memo(function ProductsPage() {
   const { data: govs = [] } = useGovernorates();
 
   // ✅ منع التمرير التلقائي
+  // ✅ منع التمرير التلقائي (مع السماح بـ PullToRefresh)
+  // ملاحظة: أزلنا touchmove — لأنه يمنع PullToRefresh من العمل
+  // نُبقي scroll و wheel فقط لمنع auto-scroll أثناء تحميل المكون
   useEffect(() => {
     const currentScroll = window.scrollY;
     let isBlocking = true;
     let timeoutId: NodeJS.Timeout | null = null;
     
     const preventScroll = () => {
-      if (isBlocking) window.scrollTo({ top: currentScroll, behavior: 'instant' });
+      if (!isBlocking) return;
+      // ✅ لا نمنع التمرير إذا كان المستخدم في أعلى الصفحة (للسحب)
+      if (window.scrollY <= 0) return;
+      window.scrollTo({ top: currentScroll, behavior: 'instant' });
     };
     
     window.addEventListener('scroll', preventScroll, { passive: true });
     window.addEventListener('wheel', preventScroll, { passive: true });
-    window.addEventListener('touchmove', preventScroll, { passive: true });
+    // ❌ تم حذف touchmove — يمنع PullToRefresh
     
     requestAnimationFrame(() => {
       window.scrollTo({ top: currentScroll, behavior: 'instant' });
@@ -90,7 +103,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
     
     timeoutId = setTimeout(() => {
       isBlocking = false;
-      window.scrollTo({ top: currentScroll, behavior: 'instant' });
     }, 300);
     
     return () => {
@@ -98,7 +110,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
       if (timeoutId) clearTimeout(timeoutId);
       window.removeEventListener('scroll', preventScroll);
       window.removeEventListener('wheel', preventScroll);
-      window.removeEventListener('touchmove', preventScroll);
+      // ❌ تم حذف touchmove
     };
   }, []);
 
@@ -125,9 +137,19 @@ export const ProductsPage = React.memo(function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "published" | "rejected">("all");
   const [filterType, setFilterType] = useState<"all" | "product" | "offer" | "promo">("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+
+  // ✅ Infinite Scroll State
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_BATCH);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const hasTriggeredLoadMoreRef = useRef(false);
+  
+  // ✅ useInView مع rootMargin لتحميل أسرع
+  const { ref: loadMoreRef, inView } = useInView({ 
+    threshold: 0.1, 
+    triggerOnce: false,
+    rootMargin: '200px',
+  });
   
   // Detail states
   const [detailCurrentImage, setDetailCurrentImage] = useState<string>("");
@@ -262,29 +284,52 @@ export const ProductsPage = React.memo(function ProductsPage() {
     return result;
   }, [productsWithPromo, searchQuery, filterStatus, filterType]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
+  // ✅ Infinite Scroll — عرض المنتجات تدريجياً
+  const displayedProducts = useMemo(() => {
+    return filteredProducts.slice(0, visibleCount);
+  }, [filteredProducts, visibleCount]);
 
-  const paginatedProducts = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredProducts.slice(start, start + itemsPerPage);
-  }, [filteredProducts, currentPage, itemsPerPage]);
+  const hasMore = visibleCount < filteredProducts.length;
 
+  // ✅ إعادة تعيين عند تغير الفلاتر
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, filterStatus, filterType, itemsPerPage]);
+    setVisibleCount(ITEMS_PER_BATCH);
+    hasTriggeredLoadMoreRef.current = false;
+  }, [searchQuery, filterStatus, filterType]);
 
-  const goToPage = useCallback((page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [totalPages]);
+  // ✅ دالة تحميل المزيد
+  const loadMore = useCallback(() => {
+    if (isLoadingMore || !hasMore) return;
+    hasTriggeredLoadMoreRef.current = true;
+    setIsLoadingMore(true);
+    
+    setTimeout(() => {
+      setVisibleCount(prev => prev + ITEMS_PER_BATCH);
+      setIsLoadingMore(false);
+    }, 300);
+  }, [hasMore, isLoadingMore]);
 
-  const nextPage = useCallback(() => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-  }, [currentPage, totalPages]);
+  // ✅ Infinite Scroll effect — بدون isInitialLoad
+  useEffect(() => {
+    if (!inView) {
+      hasTriggeredLoadMoreRef.current = false;
+      return;
+    }
+    if (
+      !hasMore ||
+      isLoadingMore ||
+      hasTriggeredLoadMoreRef.current
+    ) {
+      return;
+    }
+    hasTriggeredLoadMoreRef.current = true;
+    loadMore();
+  }, [inView, hasMore, isLoadingMore, loadMore]);
 
-  const prevPage = useCallback(() => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
-  }, [currentPage]);
+  // ✅ log للتشخيص
+  useEffect(() => {
+    console.log("🔍 [Infinite Scroll]", { inView, hasMore, visibleCount, filtered: filteredProducts.length });
+  }, [inView, hasMore, visibleCount, filteredProducts.length]);
 
   // ✅ الإحصائيات
   const stats = useMemo(() => {
@@ -1068,7 +1113,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
           <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-focus-within:text-[#2a655f] transition-colors pointer-events-none" />
           <Input 
             value={searchQuery} 
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
+            onChange={(e) => { setSearchQuery(e.target.value); }} 
             placeholder={app.lang === "ar" ? "🔍 ابحث في منتجاتك..." : "🔍 Search your products..."} 
             className="ps-9 pe-9 h-10 sm:h-11 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all text-sm" 
           />
@@ -1088,7 +1133,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
           
           {/* Status Filter */}
           <div className="col-span-1 md:col-span-3">
-            <Select value={filterStatus} onValueChange={(v: any) => { setFilterStatus(v); setCurrentPage(1); }}>
+            <Select value={filterStatus} onValueChange={(v: any) => { setFilterStatus(v); }}>
               <SelectTrigger className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#2a655f]/50 transition-all text-sm">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
@@ -1106,7 +1151,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
           
           {/* Type Filter */}
           <div className="col-span-1 md:col-span-3">
-            <Select value={filterType} onValueChange={(v: any) => { setFilterType(v); setCurrentPage(1); }}>
+            <Select value={filterType} onValueChange={(v: any) => { setFilterType(v); }}>
               <SelectTrigger className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#2a655f]/50 transition-all text-sm">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Tags className="h-3.5 w-3.5 text-slate-400 shrink-0" />
@@ -1159,7 +1204,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setCurrentPage(1); }} 
+              onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); }} 
               className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:hover:bg-red-950/20 transition-all text-xs"
             >
               <X className="h-4 w-4 mr-1.5" />
@@ -1177,7 +1222,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
                 : `📊 ${filteredProducts.length} of ${productsWithPromo.length} results`}
             </span>
             <button
-              onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); setCurrentPage(1); }}
+              onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterType("all"); }}
               className="text-[11px] sm:text-xs text-[#2a655f] hover:text-[#d81b60] font-medium transition-colors"
             >
               {app.lang === "ar" ? "إعادة تعيين" : "Reset"}
@@ -1234,7 +1279,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
             "space-y-3",
             viewMode === "grid" && "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 space-y-0"
           )}>
-            {paginatedProducts.map((product: any) => {
+            {displayedProducts.map((product: any) => {
               const isChild = product.parent_category_id && product.parent_category_id !== product.category_id;
               const parentCat = product.parent_category_id ? cats.find((c: any) => c.id === product.parent_category_id) : null;
               const childCat = product.category_id && product.category_id !== product.parent_category_id
@@ -1434,122 +1479,57 @@ export const ProductsPage = React.memo(function ProductsPage() {
             })}
           </div>
 
-          {/* ===== PAGINATION ===== */}
-          <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-3 sm:gap-4 pt-4 sm:pt-5 mt-4 sm:mt-5 border-t border-slate-200 dark:border-slate-700">
-            
-            {/* Info + Items per page */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-start w-full sm:w-auto">
-              <span className="text-xs sm:text-sm text-muted-foreground">
+          {/* ===== INFINITE SCROLL SENTINEL ===== */}
+          {hasMore && (
+            <div 
+              ref={loadMoreRef}
+              className="flex flex-col items-center justify-center py-10 mt-6 min-h-[100px]"
+            >
+              {isLoadingMore ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="relative">
+                    <div className="h-14 w-14 border-4 border-[#2a655f]/15 rounded-full" />
+                    <div className="absolute inset-0 h-14 w-14 border-4 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
+                    <div className="absolute inset-0 h-14 w-14 flex items-center justify-center">
+                      <Package className="h-5 w-5 text-[#2a655f] animate-pulse" />
+                    </div>
+                  </div>
+                  
+                  <span className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                    {app.lang === "ar" ? "جاري تحميل المزيد..." : "Loading more..."}
+                  </span>
+                  
+                  <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span className="font-bold text-[#2a655f]">{displayedProducts.length}</span>
+                    <span>/</span>
+                    <span>{filteredProducts.length}</span>
+                    <span className="ms-1">{app.lang === "ar" ? "منتج" : "products"}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground animate-pulse">
+                  {app.lang === "ar" ? "مرر للأسفل للمزيد" : "Scroll down for more"}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== رسالة "تم تحميل جميع المنتجات" ===== */}
+          {!hasMore && filteredProducts.length > 0 && (
+            <div className="flex flex-col items-center gap-3 py-10 mt-6 border-t border-slate-200 dark:border-slate-700">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#2a655f]/10 to-[#3a8a82]/10 flex items-center justify-center border-2 border-[#2a655f]/20">
+                <Check className="h-8 w-8 text-[#2a655f] dark:text-[#3a8a82]" />
+              </div>
+              <p className="text-base font-black text-[#2a655f] dark:text-[#3a8a82]">
+                {app.lang === "ar" ? "🎉 تم تحميل جميع المنتجات" : "🎉 All products loaded"}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 {app.lang === "ar" 
-                  ? `صفحة ${currentPage} من ${totalPages}` 
-                  : `Page ${currentPage} of ${totalPages}`}
-              </span>
-              <Badge variant="outline" className="border-slate-200 text-slate-600 text-[10px]">
-                {filteredProducts.length} {app.lang === "ar" ? "منتج" : "products"}
-              </Badge>
-              
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] sm:text-xs text-muted-foreground">
-                  {app.lang === "ar" ? "عرض:" : "Show:"}
-                </span>
-                <Select 
-                  value={String(itemsPerPage)} 
-                  onValueChange={(v) => { 
-                    setItemsPerPage(Number(v)); 
-                    setCurrentPage(1); 
-                  }}
-                >
-                  <SelectTrigger className="w-[60px] sm:w-[70px] h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
-                    <SelectValue placeholder="10" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-lg">
-                    <SelectItem value="6">6</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="30">30</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  ? `عرض ${filteredProducts.length} منتج في هذه القائمة` 
+                  : `Showing ${filteredProducts.length} products in this list`}
+              </p>
             </div>
-
-            {/* Pagination Buttons */}
-            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center w-full sm:w-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(1)}
-                disabled={currentPage === 1}
-                className="h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
-              >
-                <ChevronsLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#2a655f]" />
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={prevPage}
-                disabled={currentPage === 1}
-                className="h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
-              >
-                <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#2a655f]" />
-              </Button>
-
-              <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-2">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) pageNum = i + 1;
-                  else if (currentPage <= 3) pageNum = i + 1;
-                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
-                  else pageNum = currentPage - 2 + i;
-                  
-                  if (i === 0 && pageNum > 1 && currentPage > 3) {
-                    return <span key="dots-start" className="px-1 text-muted-foreground text-xs">…</span>;
-                  }
-                  if (i === 4 && pageNum < totalPages && currentPage < totalPages - 2) {
-                    return <span key="dots-end" className="px-1 text-muted-foreground text-xs">…</span>;
-                  }
-                  
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={pageNum === currentPage ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => goToPage(pageNum)}
-                      className={cn(
-                        "h-8 min-w-[30px] sm:h-9 sm:min-w-[36px] px-1.5 sm:px-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all",
-                        pageNum === currentPage 
-                          ? "bg-[#2a655f] hover:bg-[#1a4f4a] text-white shadow-md" 
-                          : "hover:bg-[#2a655f]/10 hover:text-[#2a655f]"
-                      )}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={nextPage}
-                disabled={currentPage === totalPages}
-                className="h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
-              >
-                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#2a655f]" />
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40"
-              >
-                <ChevronsRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#2a655f]" />
-              </Button>
-            </div>
-          </div>
+          )}
         </>
       )}
 

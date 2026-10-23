@@ -553,6 +553,12 @@ export function useListings(filter: ListingsFilter = {}) {
       console.log(`📊 [useListings] First item product_colors:`, transformedListings[0]?.product_colors);
       return result;
     },
+    // ✅✅✅ [إضافة احترافية — السطر الوحيد المضاف]
+    // placeholderData: احتفظ بالبيانات السابقة أثناء جلب الصفحة التالية
+    // - يمنع listingsData من أن تصبح undefined أثناء isFetching عند التمرير
+    // - النتيجة: لا وميض، لا انهيار للأرقام، لا re-renders غير ضرورية
+    // - لا يؤثر على الأداء: لا طلبات إضافية، لا حسابات إضافية
+    placeholderData: (previousData) => previousData,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -567,9 +573,21 @@ const fetchMyListings = async (ownerId: string) => {
     return [];
   }
   
+  // ✅ استخدام RPC الحديثة التي تقرأ من product_variations
+  // - تدعم p_status = 'all' (بعد التعديل)
+  // - تجلب variations + colors + options + images مباشرة
   const { data, error } = await supabase
-    .rpc('get_listings_with_variations', {
-      p_owner_id: ownerId
+    .rpc('get_listings_with_all_relations', {
+      p_limit: 1000,
+      p_offset: 0,
+      p_sort: 'recent',
+      p_is_offer: null,
+      p_is_featured: null,
+      p_category_id: null,
+      p_governorate_id: null,
+      p_owner_id: ownerId,
+      p_search: null,
+      p_status: 'all',
     });
   
   if (error) {
@@ -581,28 +599,43 @@ const fetchMyListings = async (ownerId: string) => {
   console.log(`✅ [fetchMyListings] Found ${listings.length} listings`);
   
   if (listings.length > 0) {
-    const processedListings = listings.map((listing: any) => {
-      const variationsWithAvailability = listing.variations?.map((v: any) => ({
-        ...v,
-        is_available: v.is_available !== undefined ? v.is_available : v.is_active !== false,
-        price: v.price || 0,
-      })) || [];
-      
-      const sizesFromOptions = listing.options
-        ?.filter((opt: any) => opt.option_type === 'size')
-        .map((opt: any) => opt.option_value) || [];
-      
-      return {
-        ...listing,
-        variations: variationsWithAvailability,
-        sizes: sizesFromOptions,
-        image_urls: listing.images?.map((img: any) => img.url) || [],
-        listing_images: listing.images || [],
-      };
+    console.log(`🔍 [fetchMyListings] First listing:`, {
+      id: listings[0].id,
+      title: listings[0].title_ar,
+      status: listings[0].status,
+      variationsCount: listings[0].variations?.length,
+      colorsCount: listings[0].colors?.length,
+      optionsCount: listings[0].options?.length,
     });
-    return processedListings;
   }
-  return [];
+  
+  return listings.map((listing: any) => {
+    // ✅ تحويل variations (is_active → is_available)
+    const variationsWithAvailability = (listing.variations || []).map((v: any) => ({
+      ...v,
+      is_available: v.is_active !== false,
+      price: v.price || 0,
+      old_price: v.old_price || null,
+    }));
+    
+    // ✅ استخراج sizes من options
+    const optionsArray = Array.isArray(listing.options) ? listing.options : [];
+    const sizesFromOptions = optionsArray
+      .filter((opt: any) => 
+        opt.option_type === 'sizes' || 
+        opt.option_type === 'size'
+      )
+      .map((opt: any) => opt.option_value) || [];
+    
+    return {
+      ...listing,
+      variations: variationsWithAvailability,
+      sizes: sizesFromOptions,
+      image_urls: (listing.listing_images || []).map((img: any) => img.url) || [],
+      product_colors: listing.colors || [],
+      colors: listing.colors || [],
+    };
+  });
 };
 
 export const myListingsQueryOptions = (ownerId: string | undefined) => 
@@ -2065,14 +2098,33 @@ export function useStoresByCategory(categorySlug: string | undefined) {
     queryKey: ["stores", categorySlug],
     enabled: !!categorySlug,
     queryFn: async () => {
-      const { data: cat } = await supabase.from("categories").select("id").eq("slug", categorySlug!).maybeSingle();
+      const { data: cat } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("slug", categorySlug!)
+        .maybeSingle();
       if (!cat) return [] as StoreRow[];
+
+      // ✅✅✅ [إصلاح] إذا القسم رئيسي → اجلب الأقسام الفرعية أيضاً
+      // - للقسم الفرعي: subCats = [] → categoryIds = [cat.id] → نفس السلوك السابق
+      // - للقسم الرئيسي: subCats = [...5] → categoryIds = [cat.id, ...subCats] → متاجر أكثر
+      const { data: subCats } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("parent_id", (cat as any).id);
+
+      const categoryIds = subCats && subCats.length > 0
+        ? [(cat as any).id, ...subCats.map((c: any) => c.id)]
+        : [(cat as any).id];
+
       const { data: rows, error } = await supabase
         .from("listings")
         .select("owner_id, rating")
-        .eq("category_id", (cat as any).id)
+        .in("category_id", categoryIds)   // ← ✅ in بدل eq
         .eq("status", "published");
+
       if (error) throw error;
+
       const map = new Map<string, { count: number; sum: number }>();
       for (const r of rows ?? []) {
         const key = (r as any).owner_id as string;
@@ -2081,19 +2133,28 @@ export function useStoresByCategory(categorySlug: string | undefined) {
         cur.sum += Number((r as any).rating) || 0;
         map.set(key, cur);
       }
+
       const ids = Array.from(map.keys());
       if (!ids.length) return [] as StoreRow[];
+
       const { data: profs } = await supabase
         .from("profiles")
         .select("id, full_name, avatar_url, store_name, store_description, store_phone, store_logo_url, store_cover_url" as any)
         .in("id", ids);
+
       return (profs ?? []).map((p: any) => {
         const s = map.get(p.id)!;
         return {
-          id: p.id, full_name: p.full_name, avatar_url: p.avatar_url,
-          store_name: p.store_name, store_description: p.store_description,
-          store_phone: p.store_phone, store_logo_url: p.store_logo_url, store_cover_url: p.store_cover_url,
-          listing_count: s.count, avg_rating: s.count ? s.sum / s.count : 0,
+          id: p.id,
+          full_name: p.full_name,
+          avatar_url: p.avatar_url,
+          store_name: p.store_name,
+          store_description: p.store_description,
+          store_phone: p.store_phone,
+          store_logo_url: p.store_logo_url,
+          store_cover_url: p.store_cover_url,
+          listing_count: s.count,
+          avg_rating: s.count ? s.sum / s.count : 0,
         } as StoreRow;
       });
     },

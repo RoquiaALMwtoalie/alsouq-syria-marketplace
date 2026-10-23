@@ -1,12 +1,13 @@
 // src/routes/category/$slug.tsx
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   SlidersHorizontal, X, Store, Package, Star, ChevronDown, Check,
   Sparkles, Filter, Search, MapPin, TrendingUp,
   Grid3X3, List, Tag, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight,
-  FolderTree, Home, Shield, Percent, Layers, ArrowLeft
+  FolderTree, Home, Shield, Percent, Layers, ArrowLeft, Loader2
 } from "lucide-react";
 import { useApp, useT, formatPrice } from "@/lib/i18n";
 import {
@@ -21,6 +22,10 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/s
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+
+// ✅ useInView — نفس منطق store.$id.tsx
+import { useInView } from "react-intersection-observer";
 
 export const Route = createFileRoute("/category/$slug")({
   component: CategoryPage,
@@ -32,7 +37,121 @@ export const Route = createFileRoute("/category/$slug")({
 const OLIVE = "#2a655f";
 
 // ============================================================
-// ✅ FilterContent — نسخة موحدة تعمل على الموبايل والديسكتوب
+// ✅✅✅ [استعلام مستقل] Hook لجلب إحصائيات القسم
+// ============================================================
+function useCategoryStats(params: {
+  categoryId: string | undefined;
+  subCategoryIds: string[];
+  isMainCategory: boolean;
+  governorateId: string | undefined;
+  enabled: boolean;
+}) {
+  const { categoryId, subCategoryIds, isMainCategory, governorateId, enabled } = params;
+
+  // ✅ مفتاح ثابت — لا يتضمن page
+  const subKey = subCategoryIds.length > 0 ? [...subCategoryIds].sort().join(',') : 'none';
+
+  // ✅ console.log للتشخيص
+  console.log('📊 [useCategoryStats] params:', {
+    categoryId,
+    subCategoryIds,
+    subKey,
+    isMainCategory,
+    governorateId,
+    enabled,
+  });
+
+  return useQuery({
+    queryKey: ["category-stats", categoryId, isMainCategory ? 'main' : 'sub', subKey, governorateId || 'all'],
+    enabled: enabled && !!categoryId,
+    queryFn: async () => {
+      if (!categoryId) {
+        return { products: 0, offers: 0, total: 0, stores: 0 };
+      }
+
+      // ✅ الأقسام الفعلية: إذا رئيسي → الفرعية، وإلا → نفسه
+      const categoryIds = (isMainCategory && subCategoryIds.length > 0)
+        ? subCategoryIds
+        : [categoryId];
+
+      console.log('📊 [useCategoryStats] fetching for categoryIds:', categoryIds);
+
+      // ✅ 1. عدد المنتجات — بدون is_available (مطابق لـ useListings)
+      let productsQuery = supabase
+        .from("listings")
+        .select("*", { count: "exact", head: true })
+        .in("category_id", categoryIds)
+        .eq("status", "published");
+      // ⚠️ لا is_available — لأن useListings (RPC) لا يفلتر بها
+
+      if (governorateId) {
+        productsQuery = productsQuery.eq("governorate_id", governorateId);
+      }
+
+      // ✅ 2. عدد العروض الترويجية
+      let offersQuery = supabase
+        .from("product_offers")
+        .select("*", { count: "exact", head: true })
+        .in("category_id", categoryIds)
+        .eq("is_active", true);
+
+      const now = new Date().toISOString();
+      offersQuery = offersQuery.or(`expires_at.is.null,expires_at.gt.${now}`);
+
+      // ✅ 3. عدد المتاجر (distinct owner_id) — بدون is_available
+      let storesQuery = supabase
+        .from("listings")
+        .select("owner_id")
+        .in("category_id", categoryIds)
+        .eq("status", "published");
+      // ⚠️ لا is_available
+
+      if (governorateId) {
+        storesQuery = storesQuery.eq("governorate_id", governorateId);
+      }
+
+      const [productsRes, offersRes, storesRes] = await Promise.all([
+        productsQuery,
+        offersQuery,
+        storesQuery,
+      ]);
+
+      if (productsRes.error) console.error("❌ [useCategoryStats] products:", productsRes.error);
+      if (offersRes.error) console.error("❌ [useCategoryStats] offers:", offersRes.error);
+      if (storesRes.error) console.error("❌ [useCategoryStats] stores:", storesRes.error);
+
+      const products = productsRes.count || 0;
+      const offers = offersRes.count || 0;
+
+      const uniqueStores = new Set(
+        (storesRes.data || []).map((r: any) => r.owner_id).filter(Boolean)
+      );
+
+      console.log('📊 [useCategoryStats] results:', {
+        products,
+        offers,
+        total: products + offers,
+        stores: uniqueStores.size,
+      });
+
+      return {
+        products,
+        offers,
+        total: products + offers,
+        stores: uniqueStores.size,
+      };
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 1,
+  });
+}
+
+// ============================================================
+// ✅ FilterContent
 // ============================================================
 interface FilterContentProps {
   isRtl: boolean;
@@ -82,7 +201,6 @@ function FilterContent({
       "space-y-5",
       !isMobile && "bg-white border border-slate-200/80 p-5 rounded-2xl shadow-2xs"
     )}>
-      {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-slate-100">
         <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
           <Filter className="w-4 h-4 text-[#2a655f]" />
@@ -97,7 +215,6 @@ function FilterContent({
         </button>
       </div>
 
-      {/* ===== Search ===== */}
       <div>
         <label className="block text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5">
           <Search className="w-3.5 h-3.5 text-[#2a655f]" />
@@ -122,7 +239,6 @@ function FilterContent({
         </div>
       </div>
 
-      {/* ===== Governorate ===== */}
       <div>
         <label className="block text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5">
           <MapPin className="w-3.5 h-3.5 text-[#2a655f]" />
@@ -142,7 +258,6 @@ function FilterContent({
         </select>
       </div>
 
-      {/* ===== Price Range ===== */}
       <div>
         <label className="block text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5">
           <Tag className="w-3.5 h-3.5 text-[#2a655f]" />
@@ -176,7 +291,6 @@ function FilterContent({
         </div>
       </div>
 
-      {/* ===== Rating ===== */}
       <div>
         <label className="block text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5">
           <Star className="w-3.5 h-3.5 text-amber-500" />
@@ -229,7 +343,6 @@ function FilterContent({
         </div>
       </div>
 
-      {/* ===== Available Only ===== */}
       <div>
         <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border-2 border-transparent hover:border-[#2a655f]/20 hover:bg-[#2a655f]/5 transition-all">
           <Checkbox
@@ -249,12 +362,9 @@ function FilterContent({
         </label>
       </div>
 
-      {/* ===== Apply Button (Mobile Only) ===== */}
       {isMobile && (
         <Button
-          onClick={() => {
-            onClose?.();
-          }}
+          onClick={() => onClose?.()}
           className="w-full bg-[#2a655f] hover:bg-[#1a4f4a] text-white font-bold h-11 rounded-xl shadow-lg shadow-[#2a655f]/20 mt-2"
         >
           <Check className="w-4 h-4 me-2" />
@@ -301,6 +411,21 @@ function CategoryPage() {
   const [subCounts, setSubCounts] = useState<Record<string, number>>({});
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
+  // ===== Infinite Scroll State =====
+  const [allAccumulatedItems, setAllAccumulatedItems] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // ✅ refs لمنع التكرار
+  const hasTriggeredLoadMoreRef = useRef(false);
+  const lastLoadedKeyRef = useRef<string>('');
+  const lastLoadedIdRef = useRef<string>('');
+  const prevFiltersRef = useRef<string>('');
+
+  // ✅ useInView
+  const { ref: loadMoreRef, inView } = useInView({ threshold: 0.1, triggerOnce: false });
+
   // ===== Category derivation =====
   const category = useMemo(
     () => categories.find((c: any) => c.slug === slug),
@@ -332,7 +457,6 @@ function CategoryPage() {
     let cancelled = false;
     (async () => {
       try {
-        const { supabase } = await import("@/integrations/supabase/client");
         const subIds = subCategories.map((s: any) => s.id);
         const { data, error } = await supabase
           .from("listings")
@@ -355,8 +479,8 @@ function CategoryPage() {
     return () => { cancelled = true; };
   }, [isMainCategory, subCategories]);
 
-  // ===== Offers =====
-  let governorateId: any = null;
+  // ===== Governorate ID =====
+  let governorateId: string | undefined = undefined;
   if (gov !== "all" && gov) {
     const g = govs.find((g: any) => g.slug === gov);
     if (g) governorateId = g.id;
@@ -374,6 +498,31 @@ function CategoryPage() {
     return category?.id;
   }, [activeSubCategory, category?.id]);
 
+  // ===== قائمة الأقسام الفعلية للإحصائيات =====
+  const statsCategoryIds = useMemo(() => {
+    if (isMainCategory && !activeSubCategory && subCategories.length > 0) {
+      return subCategories.map((s: any) => s.id);
+    }
+    return effectiveCategoryId ? [effectiveCategoryId] : [];
+  }, [isMainCategory, activeSubCategory, subCategories, effectiveCategoryId]);
+
+  // ============================================================
+  // ✅✅✅ [مصدر واحد موثوق] إحصائيات القسم
+  // ============================================================
+  const { data: categoryStats } = useCategoryStats({
+    categoryId: effectiveCategoryId,
+    subCategoryIds: statsCategoryIds,
+    isMainCategory: isMainCategory && !activeSubCategory,
+    governorateId,
+    enabled: !!category && !categoriesLoading,
+  });
+
+  const totalCount = categoryStats?.total ?? 0;
+  const productsCount = categoryStats?.products ?? 0;
+  const offersCount = categoryStats?.offers ?? 0;
+  const storesCount = categoryStats?.stores ?? 0;
+
+  // ===== Offers =====
   const offerOptions = useMemo(() => ({
     isActive: true,
     limit: 50,
@@ -438,8 +587,8 @@ function CategoryPage() {
 
   // ===== Listings =====
   const {
-    data: listingsData = { data: [], count: 0, totalPages: 0 },
-    isLoading,
+    data: listingsData,
+    isLoading: listingsLoading,
     isFetching,
   } = useListings({
     categorySlug: effectiveSlug,
@@ -455,9 +604,125 @@ function CategoryPage() {
     offerType: productFilter === "offers" ? (offerType === "all" ? null : offerType) : null,
   });
 
-  const rows = listingsData.data || [];
-  const totalCount = listingsData.count || 0;
-  const totalPages = listingsData.totalPages || 1;
+  const rows = allAccumulatedItems;
+
+  // ============================================================
+  // ✅ hasMore ديناميكي — مع console.log للتشخيص
+  // ============================================================
+  useEffect(() => {
+    const lastPageLength = listingsData?.data?.length || 0;
+    const hasMoreItems = lastPageLength >= limit;
+    console.log('📊 [hasMore]', { lastPageLength, limit, hasMoreItems, page });
+    setHasMore(hasMoreItems);
+  }, [listingsData?.data?.length, limit, page]);
+
+  // ============================================================
+  // ✅ Infinite Scroll تراكمي
+  // ============================================================
+  useEffect(() => {
+    const currentKey = (listingsData?.data || []).map((i: any) => i?.id).join(',');
+
+    if (currentKey === lastLoadedKeyRef.current) {
+      return;
+    }
+
+    lastLoadedKeyRef.current = currentKey;
+
+    if (page === 1) {
+      setAllAccumulatedItems(listingsData?.data || []);
+    } else {
+      setAllAccumulatedItems((prev) => {
+        const existingIds = new Set(prev.map((item: any) => item.id));
+        const newItems = (listingsData?.data || []).filter((item: any) => !existingIds.has(item.id));
+        return [...prev, ...newItems];
+      });
+    }
+
+    setIsInitialLoad(false);
+    setIsLoadingMore(false);
+  }, [listingsData?.data, page]);
+
+  // ============================================================
+  // ✅ تصفير فقط عند تغيير فلاتر الشبكة
+  // (search, sort, gov, minPrice, maxPrice, showAvailableOnly)
+  // ============================================================
+  useEffect(() => {
+    const currentFilterKey = `${search}|${sort}|${gov}|${minPrice}|${maxPrice}|${showAvailableOnly}`;
+
+    if (lastLoadedIdRef.current !== slug) {
+      lastLoadedIdRef.current = slug;
+      prevFiltersRef.current = currentFilterKey;
+      return;
+    }
+
+    if (prevFiltersRef.current === currentFilterKey) {
+      return;
+    }
+
+    prevFiltersRef.current = currentFilterKey;
+    setPage(1);
+    setAllAccumulatedItems([]);
+    lastLoadedKeyRef.current = '';
+    hasTriggeredLoadMoreRef.current = false;
+  }, [slug, search, sort, gov, minPrice, maxPrice, showAvailableOnly]);
+
+  // ============================================================
+  // ✅✅✅ [effect منفصل] عند تبديل activeSubSlug:
+  // - أعد page إلى 1
+  // - لا تصفّر allAccumulatedItems (placeholderData يحتفظ بها)
+  // - أعد تعيين كل المؤشرات لضمان عمل Infinite Scroll
+  // ============================================================
+  useEffect(() => {
+    console.log('🔄 [activeSubSlug] changed →', activeSubSlug);
+    setPage(1);
+    lastLoadedKeyRef.current = '';
+    hasTriggeredLoadMoreRef.current = false;
+    setIsInitialLoad(true);
+    setIsLoadingMore(false);
+    setHasMore(true);   // ← ✅ حاسم: يضمن أن Infinite Scroll يعمل
+  }, [activeSubSlug]);
+
+  // ============================================================
+  // ✅ Infinite Scroll Trigger — مع console.log للتشخيص
+  // ============================================================
+  useEffect(() => {
+    console.log('🔍 [Infinite Scroll]', {
+      inView,
+      hasMore,
+      isLoadingMore,
+      isFetching,
+      isInitialLoad,
+      hasTriggered: hasTriggeredLoadMoreRef.current,
+      page,
+    });
+
+    if (!inView) {
+      hasTriggeredLoadMoreRef.current = false;
+      return;
+    }
+
+    if (
+      !hasMore ||
+      isLoadingMore ||
+      isFetching ||
+      isInitialLoad ||
+      hasTriggeredLoadMoreRef.current
+    ) {
+      return;
+    }
+
+    console.log('✅ [Infinite Scroll] Loading page', page + 1);
+    hasTriggeredLoadMoreRef.current = true;
+    setIsLoadingMore(true);
+    setPage(prev => prev + 1);
+  }, [inView, hasMore, isLoadingMore, isFetching, isInitialLoad]);
+
+  // ✅ إعادة تعيين الـ ref لما ينتهي الـ fetch
+  useEffect(() => {
+    if (!isFetching && !isLoadingMore) {
+      hasTriggeredLoadMoreRef.current = false;
+    }
+  }, [isFetching, isLoadingMore]);
 
   const { data: stores = [], isLoading: storesLoading } = useStoresByCategory(effectiveSlug);
 
@@ -524,30 +789,23 @@ function CategoryPage() {
     const max = Number(maxPrice) || 10000000;
     filtered = filtered.filter((r: any) => {
       const price = Number(r.price);
+      if (!Number.isFinite(price)) return true;
       return price >= min && price <= max;
     });
     if (showAvailableOnly) filtered = filtered.filter((r: any) => r.is_available !== false);
     return filtered;
   }, [filteredByOfferType, search, rating, minPrice, maxPrice, showAvailableOnly]);
 
-  const stats = useMemo(() => {
-    const promoCount = promoOffersAsListings.length;
-    const discountCount = rows.filter((r: any) => r.is_offer === true).length;
-    const offers = promoCount + discountCount;
-    const total = totalCount + promoCount;
-    const products = Math.max(0, totalCount - discountCount);
-    return {
-      total,
-      products,
-      offers,
-      stores: stores.length,
-      filtered: items.length,
-    };
-  }, [totalCount, promoOffersAsListings.length, rows, stores.length, items.length]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [search, sort, gov, rating, minPrice, maxPrice, showAvailableOnly, productFilter, offerType, activeSubSlug]);
+  // ============================================================
+  // ✅✅✅ [الأرقام الثابتة — من useCategoryStats]
+  // ============================================================
+  const stats = useMemo(() => ({
+    total: totalCount,
+    products: productsCount,
+    offers: offersCount,
+    stores: storesCount,
+    filtered: items.length,
+  }), [totalCount, productsCount, offersCount, storesCount, items.length]);
 
   // ✅ عدّاد الفلاتر النشطة
   const activeFiltersCount = useMemo(() => {
@@ -561,14 +819,7 @@ function CategoryPage() {
     return count;
   }, [search, gov, rating, minPrice, maxPrice, showAvailableOnly]);
 
-  const goToPage = (n: number) => {
-    if (n >= 1 && n <= totalPages) {
-      setPage(n);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
-
-  const resetAll = () => {
+  const resetAll = useCallback(() => {
     setProductFilter("all");
     setOfferType("all");
     setGov("all");
@@ -579,7 +830,13 @@ function CategoryPage() {
     setShowAvailableOnly(false);
     setPage(1);
     setActiveSubSlug(null);
-  };
+    setAllAccumulatedItems([]);
+    lastLoadedKeyRef.current = '';
+    hasTriggeredLoadMoreRef.current = false;
+    setHasMore(true);
+    setIsLoadingMore(false);
+    setIsInitialLoad(true);
+  }, []);
 
   // ============================================================
   // Loading / Not Found
@@ -721,7 +978,7 @@ function CategoryPage() {
               </div>
             </div>
 
-            {/* Quick Stats Pills */}
+            {/* Quick Stats Pills — ✅ من useCategoryStats (ثابت) */}
             <div className="flex items-center gap-2 bg-white/80 border border-[#2a655f]/15 backdrop-blur-md px-3 py-2 rounded-2xl shadow-2xs self-start sm:self-auto">
               <div className="px-2 text-center border-e border-slate-200">
                 <span className="block text-sm font-black text-slate-900">{stats.total}</span>
@@ -788,7 +1045,7 @@ function CategoryPage() {
       {/* 🎛️ Control Bar — متجاوب لكل الشاشات */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 mt-4 sm:mt-6">
         <div className="bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-2xl mb-4 sm:mb-6 shadow-2xs overflow-hidden">
-          
+
           {/* ===== الصف الأول: Tabs (Products / Stores) ===== */}
           <div className="border-b border-slate-100 px-2 sm:px-3 pt-2 sm:pt-3 pb-2">
             <div className="bg-slate-100 p-1 rounded-xl border border-slate-200 flex items-center gap-1 w-full">
@@ -827,7 +1084,7 @@ function CategoryPage() {
             </div>
           </div>
 
-          {/* ===== الصف الثاني: Product Filter Pills (scrollable) ===== */}
+          {/* ===== الصف الثاني: Product Filter Pills ===== */}
           {tab === "products" && (
             <div className="border-b border-slate-100 px-2 sm:px-3 py-2">
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
@@ -855,7 +1112,6 @@ function CategoryPage() {
                   );
                 })}
 
-                {/* Offer Type Sub-filter — يظهر فقط لما "عروض" مفعّل */}
                 {productFilter === "offers" && (
                   <>
                     <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
@@ -885,8 +1141,7 @@ function CategoryPage() {
 
           {/* ===== الصف الثالث: Sort + View Mode + Filter Button ===== */}
           <div className="px-2 sm:px-3 py-2 flex items-center justify-between gap-2">
-            
-            {/* Left: Sort Dropdown */}
+
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 min-w-0 flex-1 max-w-[220px]">
                 <ArrowUpDown className="w-3.5 h-3.5 text-[#2a655f] shrink-0" />
@@ -906,10 +1161,8 @@ function CategoryPage() {
               </div>
             </div>
 
-            {/* Right: View Mode + Filter Button */}
             <div className="flex items-center gap-1.5 shrink-0">
-              
-              {/* View Mode — يظهر فقط على md+ */}
+
               <div className="hidden md:flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
                 <button
                   onClick={() => setViewMode("grid")}
@@ -937,7 +1190,6 @@ function CategoryPage() {
                 </button>
               </div>
 
-              {/* Mobile + Desktop Filter Button */}
               <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
                 <SheetTrigger asChild>
                   <button
@@ -961,7 +1213,6 @@ function CategoryPage() {
                   side={isRtl ? "right" : "left"}
                   className="w-[90vw] max-w-[380px] overflow-y-auto p-0"
                 >
-                  {/* Header */}
                   <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white p-4 shadow-lg">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
@@ -979,7 +1230,6 @@ function CategoryPage() {
                         </p>
                       </div>
 
-                      {/* ✅ زر X للخروج */}
                       <button
                         onClick={() => setMobileSheetOpen(false)}
                         className="shrink-0 h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 transition-all flex items-center justify-center border border-white/20"
@@ -990,7 +1240,6 @@ function CategoryPage() {
                     </div>
                   </div>
 
-                  {/* Body */}
                   <div className="p-4">
                     {isMainCategory && subCategories.length > 0 && (
                       <div className="mb-5 pb-5 border-b border-slate-200">
@@ -1028,9 +1277,9 @@ function CategoryPage() {
                       </div>
                     )}
 
-                    <FilterContent 
-                      {...filterProps} 
-                      isMobile={true} 
+                    <FilterContent
+                      {...filterProps}
+                      isMobile={true}
                       onClose={() => setMobileSheetOpen(false)}
                     />
                   </div>
@@ -1042,7 +1291,6 @@ function CategoryPage() {
 
         {/* Content Section with Filters Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-          {/* ✅ Desktop Sidebar Filters */}
           {tab === "products" && (
             <aside className="hidden lg:block">
               <div className="sticky top-24">
@@ -1051,10 +1299,10 @@ function CategoryPage() {
             </aside>
           )}
 
-          {/* Main Listings Grid */}
           <div className={cn(tab === "products" ? "lg:col-span-3" : "lg:col-span-4")}>
             {tab === "products" ? (
-              isLoading ? (
+              // ✅ Skeleton فقط عند أول تحميل (لا بيانات سابقة)
+              listingsLoading && allAccumulatedItems.length === 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {[...Array(6)].map((_, i) => (
                     <Skeleton key={i} className="h-64 rounded-2xl bg-slate-200" />
@@ -1087,7 +1335,7 @@ function CategoryPage() {
                         ? `عرض ${items.length} من ${stats.total} نتيجة`
                         : `Showing ${items.length} of ${stats.total} results`}
                     </span>
-                    {isFetching && (
+                    {isFetching && !isLoadingMore && (
                       <div className="flex items-center gap-1.5 text-[#2a655f]">
                         <div className="h-3 w-3 border-2 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
                         <span>{isRtl ? "جاري التحديث..." : "Updating..."}</span>
@@ -1113,51 +1361,59 @@ function CategoryPage() {
                     ))}
                   </div>
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 mt-10">
-                      <Button
-                        variant="outline"
-                        onClick={() => goToPage(page - 1)}
-                        disabled={page === 1 || isFetching}
-                        className="rounded-xl bg-white border-slate-200 text-slate-700 h-9 w-9 p-0"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </Button>
+                  {/* ============================================================ */}
+                  {/* ✅ INFINITE SCROLL SENTINEL */}
+                  {/* ============================================================ */}
+                  {hasMore && (
+                    <div
+                      ref={loadMoreRef}
+                      className="flex flex-col items-center justify-center py-10 mt-6 min-h-[100px]"
+                    >
+                      {isFetching || isLoadingMore ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="relative">
+                            <div className="h-14 w-14 border-4 border-[#2a655f]/15 rounded-full" />
+                            <div className="absolute inset-0 h-14 w-14 border-4 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
+                            <div className="absolute inset-0 h-14 w-14 flex items-center justify-center">
+                              <Package className="h-5 w-5 text-[#2a655f] animate-pulse" />
+                            </div>
+                          </div>
 
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let n: number;
-                        if (totalPages <= 5) n = i + 1;
-                        else if (page <= 3) n = i + 1;
-                        else if (page >= totalPages - 2) n = totalPages - 4 + i;
-                        else n = page - 2 + i;
-                        if (n > totalPages) return null;
-                        return (
-                          <Button
-                            key={n}
-                            variant={n === page ? "default" : "outline"}
-                            onClick={() => goToPage(n)}
-                            disabled={isFetching}
-                            className={cn(
-                              "h-9 min-w-[36px] rounded-xl text-xs font-bold p-0 px-3",
-                              n === page
-                                ? "bg-[#2a655f] text-white border-[#2a655f]"
-                                : "bg-white border-slate-200 text-slate-700"
-                            )}
-                          >
-                            {n}
-                          </Button>
-                        );
-                      })}
+                          <span className="text-sm font-bold text-[#2a655f]">
+                            {isRtl ? "جاري تحميل المزيد..." : "Loading more..."}
+                          </span>
 
-                      <Button
-                        variant="outline"
-                        onClick={() => goToPage(page + 1)}
-                        disabled={page === totalPages || isFetching}
-                        className="rounded-xl bg-white border-slate-200 text-slate-700 h-9 w-9 p-0"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <span className="font-bold text-[#2a655f]">{items.length}</span>
+                            <span>/</span>
+                            <span>{stats.total}</span>
+                            <span className="ms-1">{isRtl ? "منتج" : "products"}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground animate-pulse">
+                          {isRtl ? "مرر للأسفل للمزيد" : "Scroll down for more"}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ============================================================ */}
+                  {/* ✅ رسالة "تم تحميل جميع المنتجات" */}
+                  {/* ============================================================ */}
+                  {!hasMore && items.length > 0 && (
+                    <div className="flex flex-col items-center gap-3 py-10 mt-6 border-t border-slate-200">
+                      <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#2a655f]/10 to-[#3a8a82]/10 flex items-center justify-center border-2 border-[#2a655f]/20">
+                        <Check className="h-8 w-8 text-[#2a655f]" />
+                      </div>
+                      <p className="text-base font-black text-[#2a655f]">
+                        {isRtl ? "🎉 تم تحميل جميع المنتجات" : "🎉 All products loaded"}
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium">
+                        {isRtl
+                          ? `عرض ${items.length} منتج في هذه القائمة`
+                          : `Showing ${items.length} products in this list`}
+                      </p>
                     </div>
                   )}
                 </>

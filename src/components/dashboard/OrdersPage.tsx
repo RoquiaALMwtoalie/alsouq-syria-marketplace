@@ -1,6 +1,6 @@
 // src/components/dashboard/OrdersPage.tsx
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { 
   ShoppingBag, Package, Truck, CheckCircle2, XCircle, Clock, 
@@ -14,6 +14,8 @@ import {
   Hash,
   Shield,
   Copy,
+  Check,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +31,14 @@ import * as XLSX from 'xlsx';
 import pkg from 'file-saver';
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
+
+// ✅ IMPORT: useInView للـ Infinite Scroll
+import { useInView } from "react-intersection-observer";
+
 const { saveAs } = pkg;
+
+// ✅ عدد الطلبات لكل دفعة في Infinite Scroll
+const ORDERS_PER_BATCH = 10;
 
 // ============================================================
 // ✅ دوال تنسيق التاريخ (ميلادي + سوري)
@@ -226,51 +235,24 @@ export const OrdersPage = React.memo(function OrdersPage() {
   const [tempDateFrom, setTempDateFrom] = useState<string>("");
   const [tempDateTo, setTempDateTo] = useState<string>("");
   
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  // ✅ Infinite Scroll State
+  const [visibleCount, setVisibleCount] = useState(ORDERS_PER_BATCH);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const hasTriggeredLoadMoreRef = useRef(false);
+  
+  // ✅ useInView مع rootMargin
+  const { ref: loadMoreRef, inView } = useInView({ 
+    threshold: 0.1, 
+    triggerOnce: false,
+    rootMargin: '200px',
+  });
+  
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectOrderId, setRejectOrderId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
-
-  // ============================================================
-  // ✅ منع التمرير التلقائي عند تحميل المكون
-  // ============================================================
-  useEffect(() => {
-    const currentScroll = window.scrollY;
-    
-    let isBlocking = true;
-    let timeoutId: NodeJS.Timeout | null = null;
-    
-    const preventScroll = () => {
-      if (isBlocking) {
-        window.scrollTo({ top: currentScroll, behavior: 'instant' });
-      }
-    };
-    
-    window.addEventListener('scroll', preventScroll, { passive: true });
-    window.addEventListener('wheel', preventScroll, { passive: true });
-    window.addEventListener('touchmove', preventScroll, { passive: true });
-    
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: currentScroll, behavior: 'instant' });
-    });
-    
-    timeoutId = setTimeout(() => {
-      isBlocking = false;
-      window.scrollTo({ top: currentScroll, behavior: 'instant' });
-    }, 300);
-    
-    return () => {
-      isBlocking = false;
-      if (timeoutId) clearTimeout(timeoutId);
-      window.removeEventListener('scroll', preventScroll);
-      window.removeEventListener('wheel', preventScroll);
-      window.removeEventListener('touchmove', preventScroll);
-    };
-  }, []);
 
   // ===== API - useStoreOrders =====
   const { 
@@ -410,15 +392,52 @@ export const OrdersPage = React.memo(function OrdersPage() {
     });
   }, [storeOrders, searchQuery, filterStatus, filterDateRange, dateFrom, dateTo, app.lang]);
 
-  // ===== PAGINATION =====
-  const totalItems = filteredOrders.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  
-  const paginatedOrders = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return filteredOrders.slice(start, end);
-  }, [filteredOrders, currentPage, itemsPerPage]);
+  // ✅ Infinite Scroll — عرض الطلبات تدريجياً
+  const displayedOrders = useMemo(() => {
+    return filteredOrders.slice(0, visibleCount);
+  }, [filteredOrders, visibleCount]);
+
+  const hasMore = visibleCount < filteredOrders.length;
+
+  // ✅ إعادة تعيين عند تغير الفلاتر
+  useEffect(() => {
+    setVisibleCount(ORDERS_PER_BATCH);
+    hasTriggeredLoadMoreRef.current = false;
+  }, [searchQuery, filterStatus, filterDateRange, dateFrom, dateTo]);
+
+  // ✅ دالة تحميل المزيد
+  const loadMore = useCallback(() => {
+    if (isLoadingMore || !hasMore) return;
+    hasTriggeredLoadMoreRef.current = true;
+    setIsLoadingMore(true);
+    
+    setTimeout(() => {
+      setVisibleCount(prev => prev + ORDERS_PER_BATCH);
+      setIsLoadingMore(false);
+    }, 300);
+  }, [hasMore, isLoadingMore]);
+
+  // ✅ Infinite Scroll effect — بدون isInitialLoad
+  useEffect(() => {
+    if (!inView) {
+      hasTriggeredLoadMoreRef.current = false;
+      return;
+    }
+    if (
+      !hasMore ||
+      isLoadingMore ||
+      hasTriggeredLoadMoreRef.current
+    ) {
+      return;
+    }
+    hasTriggeredLoadMoreRef.current = true;
+    loadMore();
+  }, [inView, hasMore, isLoadingMore, loadMore]);
+
+  // ✅ log للتشخيص
+  useEffect(() => {
+    console.log("🔍 [Orders Infinite Scroll]", { inView, hasMore, visibleCount, filtered: filteredOrders.length });
+  }, [inView, hasMore, visibleCount, filteredOrders.length]);
 
   // ===== STATS =====
   const stats = useMemo(() => ({
@@ -1107,13 +1126,13 @@ export const OrdersPage = React.memo(function OrdersPage() {
           <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-hover:text-[#2a655f] transition-colors pointer-events-none" />
           <Input 
             value={searchQuery} 
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
+            onChange={(e) => { setSearchQuery(e.target.value); }} 
             placeholder={app.lang === "ar" ? "🔍 ابحث برقم الطلب #، رقم التتبع، اسم العميل، التاريخ..." : "🔍 Search by Order #, Tracking #, Customer, Date..."} 
             className="ps-9 pe-9 h-10 sm:h-11 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] focus:border-[#2a655f] focus:ring-2 focus:ring-[#2a655f]/20 transition-all duration-300 text-sm" 
           />
           {searchQuery && (
             <button
-              onClick={() => { setSearchQuery(""); setCurrentPage(1); }}
+              onClick={() => { setSearchQuery(""); }}
               className="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-[#2a655f] transition-colors"
               aria-label={app.lang === "ar" ? "مسح البحث" : "Clear search"}
             >
@@ -1127,7 +1146,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
           
           {/* Status Filter */}
           <div className="col-span-1 md:col-span-3">
-            <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setCurrentPage(1); }}>
+            <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); }}>
               <SelectTrigger className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20 text-sm">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Filter className="h-3.5 w-3.5 text-slate-500 shrink-0" />
@@ -1151,7 +1170,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
           <div className="col-span-1 md:col-span-3">
             <Select value={filterDateRange} onValueChange={(v: any) => { 
               setFilterDateRange(v); 
-              setCurrentPage(1); 
               if (v !== "custom") {
                 setDateFrom("");
                 setDateTo("");
@@ -1171,24 +1189,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                 <SelectItem value="week" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "آخر 7 أيام" : "Last 7 days"}</SelectItem>
                 <SelectItem value="month" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "آخر شهر" : "Last month"}</SelectItem>
                 <SelectItem value="custom" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">📅 {app.lang === "ar" ? "مخصص" : "Custom"}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Items Per Page */}
-          <div className="col-span-1 md:col-span-2">
-            <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
-              <SelectTrigger className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 focus:ring-2 focus:ring-[#2a655f]/20 text-sm">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <Layers className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                  <SelectValue placeholder="10" />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-2 border-slate-200 dark:border-slate-700">
-                <SelectItem value="5" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">5</SelectItem>
-                <SelectItem value="10" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">10</SelectItem>
-                <SelectItem value="20" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">20</SelectItem>
-                <SelectItem value="50" className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">50</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1354,7 +1354,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                             setDateFrom("");
                             setDateTo("");
                             setShowDatePicker(false);
-                            setCurrentPage(1);
                           }}
                           className="h-8 px-3 rounded-xl text-xs border-2 border-red-200/50 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-300"
                         >
@@ -1368,7 +1367,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                             if (tempDateFrom) setDateFrom(tempDateFrom);
                             if (tempDateTo) setDateTo(tempDateTo);
                             setShowDatePicker(false);
-                            setCurrentPage(1);
                           }}
                           className="h-8 px-4 rounded-xl bg-gradient-to-r from-[#2a655f] to-[#3a8a82] text-white shadow-lg shadow-[#2a655f]/25 transition-all duration-300 hover:scale-105 border-2 border-[#2a655f]/30"
                         >
@@ -1398,7 +1396,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                       setDateTo("");
                       setTempDateFrom("");
                       setTempDateTo("");
-                      setCurrentPage(1);
                     }}
                     className="ml-1 text-[#2a655f]/60 hover:text-red-500 transition-colors shrink-0"
                   >
@@ -1412,7 +1409,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
           {/* Clear All Button */}
           <div className={cn(
             "col-span-1",
-            filterDateRange === "custom" ? "md:col-span-2" : "md:col-span-4"
+            filterDateRange === "custom" ? "md:col-span-4" : "md:col-span-6"
           )}>
             <Button 
               variant="outline" 
@@ -1425,8 +1422,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                 setDateTo("");
                 setTempDateFrom("");
                 setTempDateTo("");
-                setItemsPerPage(10); 
-                setCurrentPage(1); 
               }} 
               className="w-full h-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 group text-xs"
             >
@@ -1451,7 +1446,6 @@ export const OrdersPage = React.memo(function OrdersPage() {
                 setFilterDateRange("all");
                 setDateFrom("");
                 setDateTo("");
-                setCurrentPage(1); 
               }}
               className="text-[11px] sm:text-xs text-[#2a655f] hover:text-[#d81b60] font-medium transition-colors"
             >
@@ -1487,7 +1481,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
           <Button 
             variant="outline" 
             className="mt-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
-            onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterDateRange("all"); setDateFrom(""); setDateTo(""); setCurrentPage(1); }}
+            onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterDateRange("all"); setDateFrom(""); setDateTo(""); }}
           >
             <X className="h-4 w-4 mr-2" />
             {app.lang === "ar" ? "مسح الفلاتر" : "Clear filters"}
@@ -1539,7 +1533,7 @@ export const OrdersPage = React.memo(function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y-2 divide-slate-200/60 dark:divide-slate-700/60">
-                  {paginatedOrders.map((order: any) => {
+                  {displayedOrders.map((order: any) => {
                     const StatusIcon = getStatusIcon(order.status);
                     const statusColor = getStatusColor(order.status);
                     const isPending = order.status === "pending";
@@ -1682,91 +1676,55 @@ export const OrdersPage = React.memo(function OrdersPage() {
             </div>
           </div>
 
-          {/* ===== PAGINATION ===== */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-3 sm:gap-4 pt-4 border-t-2 border-slate-200 dark:border-slate-700">
-              <span className="text-xs text-slate-500 flex items-center gap-2 justify-center sm:justify-start w-full sm:w-auto">
-                <TrendingUp className="h-3.5 w-3.5 text-[#2a655f]" />
-                {app.lang === "ar" ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
-                <span className="text-muted-foreground/50">|</span>
-                <span className="text-muted-foreground">
-                  {totalItems} {app.lang === "ar" ? "طلب" : "orders"}
-                </span>
-              </span>
-              
-              <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center w-full sm:w-auto">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(1)} 
-                  disabled={currentPage === 1} 
-                  className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
-                >
-                  <span className="text-xs font-bold">«</span>
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(currentPage - 1)} 
-                  disabled={currentPage === 1} 
-                  className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                
-                <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-2">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
-                    
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={pageNum === currentPage ? "default" : "ghost"}
-                        size="sm"
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={cn(
-                          "h-8 w-8 p-0 rounded-lg sm:rounded-xl text-xs font-medium transition-all duration-300",
-                          pageNum === currentPage 
-                            ? "bg-gradient-to-r from-[#2a655f] to-[#1a4f4a] text-white shadow-lg shadow-[#2a655f]/30 border-0 scale-105" 
-                            : "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200"
-                        )}
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
+          {/* ===== INFINITE SCROLL SENTINEL ===== */}
+          {hasMore && (
+            <div 
+              ref={loadMoreRef}
+              className="flex flex-col items-center justify-center py-10 mt-6 min-h-[100px]"
+            >
+              {isLoadingMore ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="relative">
+                    <div className="h-14 w-14 border-4 border-[#2a655f]/15 rounded-full" />
+                    <div className="absolute inset-0 h-14 w-14 border-4 border-[#2a655f] border-t-transparent rounded-full animate-spin" />
+                    <div className="absolute inset-0 h-14 w-14 flex items-center justify-center">
+                      <ShoppingBag className="h-5 w-5 text-[#2a655f] animate-pulse" />
+                    </div>
+                  </div>
+                  
+                  <span className="text-sm font-bold text-[#2a655f] dark:text-[#3a8a82]">
+                    {app.lang === "ar" ? "جاري تحميل المزيد..." : "Loading more..."}
+                  </span>
+                  
+                  <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span className="font-bold text-[#2a655f]">{displayedOrders.length}</span>
+                    <span>/</span>
+                    <span>{filteredOrders.length}</span>
+                    <span className="ms-1">{app.lang === "ar" ? "طلب" : "orders"}</span>
+                  </div>
                 </div>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(currentPage + 1)} 
-                  disabled={currentPage === totalPages} 
-                  className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(totalPages)} 
-                  disabled={currentPage === totalPages} 
-                  className="h-8 w-8 p-0 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 disabled:opacity-40"
-                >
-                  <span className="text-xs font-bold">»</span>
-                </Button>
+              ) : (
+                <div className="text-xs text-muted-foreground animate-pulse">
+                  {app.lang === "ar" ? "مرر للأسفل للمزيد" : "Scroll down for more"}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== رسالة "تم تحميل جميع الطلبات" ===== */}
+          {!hasMore && filteredOrders.length > 0 && (
+            <div className="flex flex-col items-center gap-3 py-10 mt-6 border-t border-slate-200 dark:border-slate-700">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#2a655f]/10 to-[#3a8a82]/10 flex items-center justify-center border-2 border-[#2a655f]/20">
+                <Check className="h-8 w-8 text-[#2a655f] dark:text-[#3a8a82]" />
               </div>
+              <p className="text-base font-black text-[#2a655f] dark:text-[#3a8a82]">
+                {app.lang === "ar" ? "🎉 تم تحميل جميع الطلبات" : "🎉 All orders loaded"}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                {app.lang === "ar" 
+                  ? `عرض ${filteredOrders.length} طلب في هذه القائمة` 
+                  : `Showing ${filteredOrders.length} orders in this list`}
+              </p>
             </div>
           )}
         </>

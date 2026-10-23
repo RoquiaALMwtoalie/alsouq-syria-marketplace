@@ -68,6 +68,10 @@ interface ProductOptionsManagerProps {
   isOffer?: boolean;
   // ✅ ✅ ✅ الخيارات المتاحة من التصنيف
   availableOptions?: AvailableOption[];
+  // ✅ 🆕 السعر الأساسي للمنتج (يُستخدم كـ default للتركيبات الجديدة)
+  basePrice?: number;
+  // ✅ 🆕 السعر القديم الأساسي للمنتج (للعروض)
+  baseOldPrice?: number;
 }
 
 export function ProductOptionsManager({ 
@@ -84,6 +88,8 @@ export function ProductOptionsManager({
   onSizesChange,
   isOffer = false,
   availableOptions = [],
+  basePrice = 0,          // ✅ 🆕
+  baseOldPrice = 0,       // ✅ 🆕
 }: ProductOptionsManagerProps) {
   const app = useApp();
   
@@ -318,8 +324,9 @@ export function ProductOptionsManager({
       
       return {
         ...v,
-        price: existingVariation?.price ?? 0,
-        old_price: existingVariation?.old_price ?? 0,
+        // ✅ 🆕 إذا كانت التركيبة جديدة، استخدم السعر الأساسي بدلاً من 0
+        price: existingVariation?.price ?? basePrice,
+        old_price: existingVariation?.old_price ?? baseOldPrice,
         stock_quantity: existingVariation?.stock_quantity ?? 0,
         is_available: existingVariation?.is_available ?? true,
         is_new: isNew,
@@ -402,8 +409,8 @@ export function ProductOptionsManager({
             id: `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
             combination: { ...current },
             is_available: true,
-            price: 0,
-            old_price: 0,
+            price: basePrice,        // ✅ 🆕
+            old_price: baseOldPrice, // ✅ 🆕
             stock_quantity: 0,
           });
         }
@@ -465,8 +472,8 @@ export function ProductOptionsManager({
           id: `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           combination: { ...current },
           is_available: true,
-          price: 0,
-          old_price: 0,
+          price: basePrice,        // ✅ 🆕
+          old_price: baseOldPrice, // ✅ 🆕
           stock_quantity: 0,
         });
         return;
@@ -488,8 +495,8 @@ export function ProductOptionsManager({
     if (allVariations.length > 0) {
       const variationsWithDefaults = allVariations.map(v => ({
         ...v,
-        price: 0,
-        old_price: 0,
+        price: basePrice,        // ✅ 🆕
+        old_price: baseOldPrice, // ✅ 🆕
         stock_quantity: 0,
         is_new: true,
       }));
@@ -510,7 +517,7 @@ export function ProductOptionsManager({
     } else {
       toast.info(lang === "ar" ? "💡 لا توجد تركيبات جديدة" : "💡 No new variations");
     }
-  }, [value, colorImages, lang, onVariationsChange, recordManualAction]);
+  }, [value, colorImages, lang, onVariationsChange, recordManualAction, basePrice, baseOldPrice]);
 
   const removeAllVariations = useCallback(() => {
     if (localVariations.length > 0) {

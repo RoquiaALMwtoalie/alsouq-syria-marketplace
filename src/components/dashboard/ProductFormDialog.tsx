@@ -1581,20 +1581,22 @@ export function ProductFormDialog({
               ) : (
                 <>
                   {/* ✅ ProductOptionsManager */}
-                  <ProductOptionsManager
-                    value={options}
-                    onChange={setOptions}
-                    lang={app.lang}
-                    variations={variations}
-                    onVariationsChange={setVariations}
-                    userId={app.user?.id || ''}
-                    onColorsWithImagesChange={handleColorsWithImagesChange}
-                    externalColorImages={externalColorImages}
-                    sizes={sizes}
-                    onSizesChange={handleSizesUpdate}
-                    isOffer={productType === "offer"}
-                    availableOptions={availableOptions}
-                  />
+                 <ProductOptionsManager
+  value={options}
+  onChange={setOptions}
+  lang={app.lang}
+  variations={variations}
+  onVariationsChange={setVariations}
+  userId={app.user?.id || ''}
+  onColorsWithImagesChange={handleColorsWithImagesChange}
+  externalColorImages={externalColorImages}
+  sizes={sizes}
+  onSizesChange={handleSizesUpdate}
+  isOffer={productType === "offer"}
+  availableOptions={availableOptions}
+  basePrice={form.price}          // ← 🆕 أضف هذا
+  baseOldPrice={form.old_price}   // ← 🆕 أضف هذا
+/>
                 </>
               )}
             </div>
