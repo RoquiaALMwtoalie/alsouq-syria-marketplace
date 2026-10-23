@@ -1,207 +1,125 @@
 // supabase/functions/send-push/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-// ============================================================
-// 1. استيراد web-push
-// ============================================================
 // @deno-types="npm:@types/web-push@3.6.3"
 import webpush from "npm:web-push@3.6.7";
 
-// ============================================================
-// 2. إعدادات VAPID
-// ============================================================
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") || "";
-const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") || Deno.env.get("VITE_VAPID_PUBLIC_KEY") || "";
-const WEB_PUSH_CONTACT = "mailto:hello@zooq.sy";
+const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") || "";
+const WEB_PUSH_CONTACT = Deno.env.get("VAPID_SUBJECT") || "mailto:hello@zooq.sy";
 
-console.log("🔑 VAPID_PUBLIC_KEY:", VAPID_PUBLIC_KEY ? "✅ موجود" : "❌ غير موجود");
-console.log("🔑 VAPID_PRIVATE_KEY:", VAPID_PRIVATE_KEY ? "✅ موجود" : "❌ غير موجود");
+console.log("🔑 VAPID:", VAPID_PUBLIC_KEY ? "✅" : "❌", VAPID_PRIVATE_KEY ? "✅" : "❌");
 
-// ============================================================
-// 3. تهيئة web-push
-// ============================================================
-webpush.setVapidDetails(
-  WEB_PUSH_CONTACT,
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
+if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+  console.error("❌ VAPID keys missing");
+} else {
+  webpush.setVapidDetails(WEB_PUSH_CONTACT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  console.log("✅ web-push initialized");
+}
 
-// ============================================================
-// 4. CORS Headers
-// ============================================================
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// ============================================================
-// 5. الدالة الرئيسية
-// ============================================================
 serve(async (req) => {
-  // 5.1 التعامل مع CORS
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    // 5.2 قراءة البيانات
-    const { userId, title, body, url, icon, imageUrl } = await req.json();
+    const body = await req.json();
+    
+    // ✅ يدعم الشكلين: { userId, title, body } و { record: { user_id, title_ar, ... } }
+    const record = body.record || body;
+    
+    const userId = body.userId || record.user_id;
+    const title = body.title || record.title_ar;
+    const notificationBody = body.body || record.body_ar;
+    const url = body.url || record.link_url;
+    const tag = body.tag || `notif-${record.id || Date.now()}`;
+    const icon = body.icon || record.image_url;
 
-    console.log(`📬 إرسال إشعار للمستخدم: ${userId}`);
-    console.log(`📝 العنوان: ${title}`);
-    console.log(`📄 النص: ${body}`);
+    console.log("📬 Webhook received:", JSON.stringify({ userId, title, url, bodyPreview: notificationBody?.substring(0, 50) }));
 
     if (!userId) {
+      console.error("❌ userId is missing. Full body:", JSON.stringify(body));
       return new Response(
-        JSON.stringify({ error: "userId is required" }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
+        JSON.stringify({ success: false, error: "userId is required", received: body }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 5.3 إنشاء عميل Supabase
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+      return new Response(
+        JSON.stringify({ success: false, error: "VAPID keys not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // 5.4 جلب اشتراكات المستخدم
-    const { data: subscriptions, error } = await supabase
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: subs, error } = await supabase
       .from("push_subscriptions")
-      .select("subscription")
+      .select("id, subscription")
       .eq("user_id", userId);
 
-    if (error) {
-      console.error("❌ خطأ في جلب الاشتراكات:", error);
-      throw error;
-    }
+    if (error) throw error;
 
-    if (!subscriptions || subscriptions.length === 0) {
-      console.log(`⚠️ لا توجد اشتراكات للمستخدم: ${userId}`);
+    if (!subs || subs.length === 0) {
+      console.log(`⚠️ No subscriptions for ${userId}`);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: "No subscriptions found for this user" 
-        }),
-        { 
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
+        JSON.stringify({ success: false, sent: 0, message: "No subscriptions" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`✅ تم العثور على ${subscriptions.length} اشتراك`);
-
-    // 5.5 بناء بيانات الإشعار
     const payload = JSON.stringify({
       title: title || "📬 ذوق",
-      body: body || "لديك إشعار جديد",
-      icon: icon || imageUrl || "/logo-192.png",
+      body: notificationBody || "لديك إشعار جديد",
+      icon: icon || "/logo-192.png",
       badge: "/badge.png",
-      url: url || "/dashboard",
-      tag: `notification-${Date.now()}`,
-      data: {
-        url: url || "/dashboard",
-        notificationId: Date.now().toString(),
-      },
+      url: url || "/",
+      tag: tag,
+      data: { url: url || "/" },
     });
 
-    console.log("📦 Payload:", payload);
+    let sent = 0, failed = 0;
+    const results: any[] = [];
 
-    // 5.6 إرسال الإشعار لكل اشتراك
-    const results = await Promise.allSettled(
-      subscriptions.map(async (sub) => {
-        try {
-          // تحويل الاشتراك من JSON string إلى object
-          const subscription = typeof sub.subscription === 'string' 
-            ? JSON.parse(sub.subscription) 
-            : sub.subscription;
-
-          console.log(`📤 إرسال إلى: ${subscription.endpoint?.substring(0, 50)}...`);
-
-          // إرسال الإشعار باستخدام web-push
-          const response = await webpush.sendNotification(
-            subscription,
-            payload,
-            {
-              TTL: 86400, // 24 ساعة
-              urgency: "high",
-            }
-          );
-
-          console.log(`✅ تم الإرسال بنجاح: ${response.statusCode}`);
-
-          return { 
-            endpoint: subscription.endpoint, 
-            status: response.statusCode,
-            success: response.statusCode === 201 || response.statusCode === 200,
-            body: response.body,
-          };
-
-        } catch (err: any) {
-          console.error("❌ خطأ في إرسال الإشعار:", err);
-          
-          // إذا كان الاشتراك غير صالح (410 أو 404)، نحذفه من قاعدة البيانات
-          if (err.statusCode === 410 || err.statusCode === 404) {
-            console.log(`🗑️ حذف اشتراك غير صالح (${err.statusCode})`);
-            try {
-              await supabase
-                .from("push_subscriptions")
-                .delete()
-                .eq("user_id", userId)
-                .eq("subscription", JSON.stringify(sub.subscription));
-            } catch (deleteError) {
-              console.error("❌ خطأ في حذف الاشتراك:", deleteError);
-            }
-          }
-
-          return { 
-            endpoint: subscription?.endpoint || "unknown", 
-            status: err.statusCode || 500,
-            success: false,
-            error: err.message || "Unknown error",
-          };
+    for (const sub of subs) {
+      try {
+        const subscription = typeof sub.subscription === "string"
+          ? JSON.parse(sub.subscription)
+          : sub.subscription;
+        await webpush.sendNotification(subscription, payload, { TTL: 86400 });
+        sent++;
+        results.push({ id: sub.id, success: true });
+        console.log(`✅ Sent to subscription ${sub.id}`);
+      } catch (err: any) {
+        failed++;
+        console.error(`❌ Failed ${sub.id}: ${err?.statusCode} ${err?.message}`);
+        if (err?.statusCode === 410 || err?.statusCode === 404) {
+          await supabase.from("push_subscriptions").delete().eq("id", sub.id);
+          console.log(`🗑️ Deleted expired subscription ${sub.id}`);
         }
-      })
-    );
+        results.push({ id: sub.id, success: false, error: err?.message });
+      }
+    }
 
-    // 5.7 حساب النتائج
-    const sent = results.filter(r => r.status === "fulfilled" && r.value?.success).length;
-    const failed = results.filter(r => r.status === "rejected" || !r.value?.success).length;
-
-    console.log(`📊 النتائج: ${sent} تم الإرسال، ${failed} فشل`);
+    console.log(`📊 Results: ${sent} sent, ${failed} failed`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true,
-        sent,
-        failed,
-        total: subscriptions.length,
-        results: results.map(r => 
-          r.status === "fulfilled" ? r.value : { success: false, error: r.reason }
-        )
-      }),
-      { 
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
+      JSON.stringify({ success: true, sent, failed, total: subs.length, results }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
-  } catch (error: any) {
-    console.error("❌ خطأ عام:", error);
+  } catch (err: any) {
+    console.error("❌ Unexpected error:", err);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message,
-        stack: error.stack 
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
+      JSON.stringify({ success: false, error: err.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
