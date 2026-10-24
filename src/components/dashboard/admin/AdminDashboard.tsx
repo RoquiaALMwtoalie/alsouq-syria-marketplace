@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { AdminOverview } from "./AdminOverview";
 import { AdminListings } from "./AdminListings";
 import { AdminStores } from "./AdminStores";
+import { AdminCustomers } from "./AdminCustomers";
 import { SellerApplicationsAdmin } from "./SellerApplicationsAdmin";
 import { BannersAdminPage } from "./BannersAdminPage";
 import { AnnouncementsAdmin } from "./AnnouncementsAdmin";
@@ -60,6 +61,7 @@ type AdminTabType =
   | "overview"
   | "listings"
   | "stores"
+  | "customers"
   | "orders"
   | "delivery"
   | "promo"
@@ -89,6 +91,11 @@ const NAV_ICONS: Record<string, {
   stores: {
     icon: Store,
     animation: "animate-spin-slow",
+    color: "text-[#2a655f]"
+  },
+  customers: {
+    icon: Users,
+    animation: "animate-float",
     color: "text-[#2a655f]"
   },
   orders: {
@@ -312,7 +319,7 @@ export function AdminDashboard({ notificationButton }: AdminDashboardProps) {
 
   // ✅ قراءة التاب من الـ URL مباشرة عبر TanStack Router
   const search = useSearch({ from: "/admin" });
-  const tab = (search?.tab || "listings") as AdminTabType;
+  const tab = (search?.tab || "overview") as AdminTabType;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResultsPage, setShowSearchResultsPage] = useState(false);
@@ -454,14 +461,14 @@ const { data: allOrders = [] } = useAllOrdersAdmin();
   // ===== عرض نتائج البحث =====
   const showSearchResults = searchQuery.trim().length > 0 && showSearchResultsPage;
 
-  // ===== قائمة التبويب - ✅ ترتيب مخصص =====
+  // ===== قائمة التبويب - ✅ النظرة العامة أولاً =====
   const nav = [
+    { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", iconKey: "overview", badge: 0 },
     { id: "listings" as const, label: app.lang === 'ar' ? "المنتجات" : "Products", iconKey: "listings", badge: pendingListingsCount },
     { id: "applications" as const, label: app.lang === 'ar' ? "طلبات البائعين" : "Seller applications", iconKey: "applications", badge: pendingApplicationsCount },
     { id: "stores" as const, label: app.lang === 'ar' ? "المتاجر" : "Stores", iconKey: "stores", badge: 0 },
-    // ✅ MODIFIED - استخدام pendingOrdersCount بدلاً من totalOrdersCount
+    { id: "customers" as const, label: app.lang === 'ar' ? "العملاء" : "Customers", iconKey: "customers", badge: 0 },
     { id: "orders" as const, label: app.lang === 'ar' ? "الطلبات" : "Orders", iconKey: "orders", badge: pendingOrdersCount },
-    { id: "overview" as const, label: app.lang === 'ar' ? "نظرة عامة" : "Overview", iconKey: "overview", badge: 0 },
     { id: "delivery" as const, label: app.lang === 'ar' ? "شركات التوصيل" : "Delivery Companies", iconKey: "delivery", badge: 0 },
     { id: "promo" as const, label: app.lang === 'ar' ? "أكواد الخصم" : "Promo Codes", iconKey: "promo", badge: 0 },
     { id: "complaints" as const, label: app.lang === 'ar' ? "الشكاوى" : "Complaints", iconKey: "complaints", badge: openComplaintsCount },
@@ -774,6 +781,7 @@ const { data: allOrders = [] } = useAllOrdersAdmin();
           {tab === "overview" && <AdminOverview onGoto={handleTabChange} searchQuery={showSearchResults ? searchQuery : ""} />}
           {tab === "listings" && <AdminListings />}
           {tab === "stores" && <AdminStores />}
+          {tab === "customers" && <AdminCustomers />}
           {tab === "orders" && <AdminOrders />}
           {tab === "delivery" && <AdminDeliveryCompanies />}
           {tab === "promo" && <AdminPromoCodes />}

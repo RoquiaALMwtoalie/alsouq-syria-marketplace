@@ -331,6 +331,13 @@ function NotificationPermissionHandler() {
   const BANNER_SESSION_KEY = 'notification_banner_session_shown';
 
   useEffect(() => {
+    // ✅ [إصلاح] إذا كنا داخل تطبيق APK (WebView)، لا تطلب إذن المتصفح
+    // لأن الإذن الأصلي (Native) تم طلبه بالفعل في app/_layout.tsx
+    if (typeof window !== "undefined" && (window as any).__PLATFORM__) {
+      console.log('📱 [Notif] Running inside APK WebView — skipping browser permission request');
+      return;
+    }
+
     const checkAndRequestPermission = async () => {
       if (!app.user) {
         console.log('⏳ No user, skipping notification request');
@@ -1455,6 +1462,52 @@ function RootContent({
       return () => clearTimeout(timer);
     }
   }, [app.user]);
+
+  // ============================================================
+  // 📱 استقبال Expo Push Token من WebView (تطبيق الموبايل)
+  // ============================================================
+  useEffect(() => {
+    if (!app.user?.id) return;
+
+    const handleExpoPushToken = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { token, platform } = customEvent.detail || {};
+      
+      if (!token || !app.user?.id) return;
+
+      console.log("📱 Expo Push Token received:", token, platform);
+
+      try {
+        const { error } = await supabase.from("expo_push_tokens").upsert({
+          token,
+          user_id: app.user.id,
+          platform: platform || "android",
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "token" });
+
+        if (error) throw error;
+        console.log("✅ Expo Push Token saved to Supabase");
+      } catch (error) {
+        console.error("❌ Failed to save Expo Push Token:", error);
+      }
+    };
+
+    // الاستماع للحدث
+    window.addEventListener("expoPushTokenReady", handleExpoPushToken);
+
+    // فحص إذا كان Token موجوداً بالفعل (عند إعادة التحميل)
+    const existingToken = (window as any).__EXPO_PUSH_TOKEN__;
+    const existingPlatform = (window as any).__PLATFORM__;
+    if (existingToken) {
+      handleExpoPushToken({
+        detail: { token: existingToken, platform: existingPlatform || "android" },
+      } as unknown as Event);
+    }
+
+    return () => {
+      window.removeEventListener("expoPushTokenReady", handleExpoPushToken);
+    };
+  }, [app.user?.id]);
 
   // ============================================================
   // 📡✅✅✅ [تعديل احترافي جذري] Realtime: تأجيل الإعداد إلى idle time

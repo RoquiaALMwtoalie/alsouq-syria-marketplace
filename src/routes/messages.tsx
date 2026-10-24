@@ -120,7 +120,12 @@ function MessagesPage() {
   if (!app.user) return null;
 
   // ====== دوال مساعدة ======
-  const filteredConversations = conversations.filter((conv: any) => {
+const filteredConversations = conversations
+  .filter((conv: any) => {
+    // ✅ تصفية المحادثات الفارغة (بدون last_message)
+    return conv.last_message && conv.last_message.trim() !== "";
+  })
+  .filter((conv: any) => {
     const otherUser =
       conv.participant1_id === app.user.id ? conv.participant2 : conv.participant1;
     const name = otherUser?.store_name || otherUser?.full_name || "";

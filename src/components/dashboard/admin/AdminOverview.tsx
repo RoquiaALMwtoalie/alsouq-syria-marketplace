@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   LayoutDashboard, Package, Store, ShieldCheck, Search,
   ArrowUpRight, ArrowDownRight, DollarSign, Users, ShoppingCart, 
@@ -22,6 +23,10 @@ import {
   useAllBanners,
   useAllAnnouncements,
   useCategories,
+  useUsersStats,
+  useLatestCustomers,
+  useLatestStores,
+  useOrdersStats,
 } from "@/lib/queries";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -89,8 +94,8 @@ export function AdminOverview({ onGoto, searchQuery = "" }: AdminOverviewProps) 
   const app = useApp();
   const { data: pending = [] } = useAllListingsAdmin("pending");
   const { data: all = [] } = useAllListingsAdmin();
-const { data: storesData } = useAdminAllStores();
-const stores = storesData?.data || [];
+  const { data: storesData } = useAdminAllStores();
+  const stores = storesData?.data || [];
   const { data: appsData } = useAllSellerApplications();
   const apps = appsData?.data || [];
   const { data: sellerOrdersRaw = [] } = useMyOrders();
@@ -98,7 +103,18 @@ const stores = storesData?.data || [];
   const { data: banners = [] } = useAllBanners();
   const { data: announcements = [] } = useAllAnnouncements();
   const { data: categories = [] } = useCategories();
-  
+
+  // ✅ جلب الإحصائيات الحقيقية للمستخدمين (بدون pagination)
+  const { data: usersStats } = useUsersStats();
+  const { data: latestCustomers = [] } = useLatestCustomers(5);
+  const { data: latestStores = [] } = useLatestStores(5);
+  const { data: ordersStats } = useOrdersStats();
+
+  // ✅ القيم الحقيقية
+  const totalUsers = usersStats?.totalUsers ?? 0;
+  const totalStores = usersStats?.totalStores ?? 0;
+  const totalCustomers = usersStats?.totalCustomers ?? 0;
+
   const pendingApps = (apps as any[]).filter((a) => a.status === "pending");
   const activeBanners = banners.filter((b: any) => b.active !== false);
   const activeAnnouncements = announcements.filter((a: any) => a.active !== false);
@@ -132,7 +148,7 @@ const stores = storesData?.data || [];
 
   // ===== بيانات حقيقية للرسوم البيانية =====
   const totalRevenue = sellerOrdersRaw.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0);
-  const totalOrders = sellerOrdersRaw.length;
+  const totalOrders = ordersStats?.total ?? sellerOrdersRaw.length;
 
   // ===== حساب نسبة التغير الحقيقية =====
   const growthData = useMemo(() => {
@@ -259,10 +275,10 @@ const stores = storesData?.data || [];
     },
     { 
       label: app.lang === 'ar' ? 'إجمالي المستخدمين' : 'Total Users', 
-      value: stores.length + all.length,
+      value: totalUsers,
       icon: Users,
-      change: `${stores.length > 0 ? '+' : ''}${stores.length > 0 ? Math.round((stores.length / (all.length || 1)) * 100) : 0}%`,
-      changeType: stores.length > 0 ? 'up' : 'down',
+      change: `${totalStores > 0 ? '+' : ''}${totalUsers > 0 ? Math.round((totalStores / totalUsers) * 100) : 0}%`,
+      changeType: totalStores > 0 ? 'up' : 'down',
       color: 'text-[#3a8a82]',
       border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
       gradient: 'from-[#3a8a82] to-[#4a9f95]',
@@ -333,7 +349,7 @@ const stores = storesData?.data || [];
     },
     { 
       label: app.lang === 'ar' ? 'إجمالي المتاجر' : 'Total Stores', 
-      value: stores.length, 
+      value: totalStores,
       icon: Store,
       gradient: 'from-[#3a8a82] to-[#4a9f95]',
       border: 'border-[#2a655f]/40 dark:border-[#3a8a82]/30 hover:border-[#2a655f]',
@@ -366,8 +382,18 @@ const stores = storesData?.data || [];
       },
       {
         'المؤشر': app.lang === 'ar' ? 'إجمالي المستخدمين' : 'Total Users',
-        'القيمة': stores.length + all.length,
-        'التغير': `${stores.length > 0 ? '+' : ''}${stores.length > 0 ? Math.round((stores.length / (all.length || 1)) * 100) : 0}%`
+        'القيمة': totalUsers,
+        'التغير': ''
+      },
+      {
+        'المؤشر': app.lang === 'ar' ? 'إجمالي المتاجر' : 'Total Stores',
+        'القيمة': totalStores,
+        'التغير': ''
+      },
+      {
+        'المؤشر': app.lang === 'ar' ? 'إجمالي العملاء' : 'Total Customers',
+        'القيمة': totalCustomers,
+        'التغير': ''
       },
       {
         'المؤشر': app.lang === 'ar' ? 'متوسط الطلب' : 'Avg Order',
@@ -382,11 +408,6 @@ const stores = storesData?.data || [];
       {
         'المؤشر': app.lang === 'ar' ? 'المنتجات بانتظار الموافقة' : 'Pending Products',
         'القيمة': pending.length,
-        'التغير': ''
-      },
-      {
-        'المؤشر': app.lang === 'ar' ? 'إجمالي المتاجر' : 'Total Stores',
-        'القيمة': stores.length,
         'التغير': ''
       },
       {
@@ -451,7 +472,9 @@ const stores = storesData?.data || [];
     const statsItems = [
       { label: app.lang === 'ar' ? 'إجمالي الإيرادات' : 'Total Revenue', value: formatPrice(totalRevenue, app.currency, app.lang), change: `${growthData.isPositive ? '+' : ''}${growthData.growth}%`, changeType: growthData.isPositive ? 'up' : 'down' },
       { label: app.lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', value: totalOrders, change: `${totalOrders > 0 ? '+' : ''}${totalOrders > 0 ? Math.round((totalOrders / (sellerOrdersRaw.length || 1)) * 100) : 0}%`, changeType: totalOrders > 0 ? 'up' : 'down' },
-      { label: app.lang === 'ar' ? 'إجمالي المستخدمين' : 'Total Users', value: stores.length + all.length, change: `${stores.length > 0 ? '+' : ''}${stores.length > 0 ? Math.round((stores.length / (all.length || 1)) * 100) : 0}%`, changeType: stores.length > 0 ? 'up' : 'down' },
+      { label: app.lang === 'ar' ? 'إجمالي المستخدمين' : 'Total Users', value: totalUsers, change: '', changeType: 'up' },
+      { label: app.lang === 'ar' ? 'إجمالي المتاجر' : 'Total Stores', value: totalStores, change: '', changeType: 'up' },
+      { label: app.lang === 'ar' ? 'إجمالي العملاء' : 'Total Customers', value: totalCustomers, change: '', changeType: 'up' },
       { label: app.lang === 'ar' ? 'متوسط الطلب' : 'Avg Order', value: formatPrice(totalOrders > 0 ? totalRevenue / totalOrders : 0, app.currency, app.lang), change: `${totalOrders > 0 ? '+' : ''}${totalOrders > 0 ? Math.round(((totalRevenue / totalOrders) / (totalRevenue / (totalOrders || 1))) * 100) : 0}%`, changeType: totalOrders > 0 ? 'up' : 'down' },
     ];
     statsItems.forEach((stat) => {
@@ -466,7 +489,7 @@ const stores = storesData?.data || [];
     const tableData = [
       { label: app.lang === 'ar' ? 'إجمالي المنتجات' : 'Total Products', value: all.length, badge: 'badge-green', status: app.lang === 'ar' ? 'نشط' : 'Active' },
       { label: app.lang === 'ar' ? 'منتجات بانتظار الموافقة' : 'Pending Products', value: pending.length, badge: 'badge-yellow', status: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending' },
-      { label: app.lang === 'ar' ? 'إجمالي المتاجر' : 'Total Stores', value: stores.length, badge: 'badge-green', status: app.lang === 'ar' ? 'نشط' : 'Active' },
+      { label: app.lang === 'ar' ? 'إجمالي المتاجر' : 'Total Stores', value: totalStores, badge: 'badge-green', status: app.lang === 'ar' ? 'نشط' : 'Active' },
       { label: app.lang === 'ar' ? 'طلبات بائعين جديدة' : 'Seller Applications', value: pendingApps.length, badge: 'badge-yellow', status: app.lang === 'ar' ? 'قيد المراجعة' : 'Pending' },
       { label: app.lang === 'ar' ? 'البنرات النشطة' : 'Active Banners', value: activeBanners.length, badge: 'badge-green', status: app.lang === 'ar' ? 'نشط' : 'Active' },
       { label: app.lang === 'ar' ? 'الإعلانات النشطة' : 'Active Announcements', value: activeAnnouncements.length, badge: 'badge-green', status: app.lang === 'ar' ? 'نشط' : 'Active' },
@@ -525,7 +548,7 @@ const stores = storesData?.data || [];
                 <span className="w-1 h-1 rounded-full bg-[#2a655f]/30" />
                 <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/30 transition-colors">
                   <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-500" />
-                  <span className="text-emerald-600 dark:text-emerald-400 font-medium text-[10px] sm:text-xs">{stores.length + all.length}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium text-[10px] sm:text-xs">{totalUsers}</span>
                   <span className="text-[10px] sm:text-xs text-muted-foreground">{app.lang === 'ar' ? 'مستخدم' : 'users'}</span>
                 </span>
               </>
@@ -677,6 +700,54 @@ const stores = storesData?.data || [];
             ))}
           </div>
 
+          {/* ===== ✅ كروت تفصيلية للمستخدمين (جديدة) ===== */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            {/* إجمالي المستخدمين */}
+            <div className="bg-gradient-to-br from-[#2a655f] to-[#1a4f4a] rounded-xl p-4 text-white shadow-lg shadow-[#2a655f]/30 relative overflow-hidden group">
+              <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl group-hover:scale-150 transition-transform duration-700" />
+              <div className="relative flex items-center justify-between">
+                <div>
+                  <p className="text-xs opacity-80">{app.lang === 'ar' ? 'إجمالي المستخدمين' : 'Total Users'}</p>
+                  <p className="text-3xl font-bold mt-1">{totalUsers}</p>
+                  <p className="text-[10px] opacity-70 mt-1">
+                    {app.lang === 'ar' ? 'كل الحسابات' : 'All accounts'}
+                  </p>
+                </div>
+                <Users className="h-10 w-10 opacity-30" />
+              </div>
+            </div>
+
+            {/* إجمالي المتاجر */}
+            <div className="bg-gradient-to-br from-[#1a4f4a] to-[#3a8a82] rounded-xl p-4 text-white shadow-lg shadow-[#3a8a82]/30 relative overflow-hidden group">
+              <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl group-hover:scale-150 transition-transform duration-700" />
+              <div className="relative flex items-center justify-between">
+                <div>
+                  <p className="text-xs opacity-80">{app.lang === 'ar' ? 'إجمالي المتاجر' : 'Total Stores'}</p>
+                  <p className="text-3xl font-bold mt-1">{totalStores}</p>
+                  <p className="text-[10px] opacity-70 mt-1">
+                    {app.lang === 'ar' ? 'متاجر نشطة' : 'Active stores'}
+                  </p>
+                </div>
+                <Store className="h-10 w-10 opacity-30" />
+              </div>
+            </div>
+
+            {/* إجمالي العملاء */}
+            <div className="bg-gradient-to-br from-[#3a8a82] to-[#4a9f95] rounded-xl p-4 text-white shadow-lg shadow-[#4a9f95]/30 relative overflow-hidden group">
+              <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl group-hover:scale-150 transition-transform duration-700" />
+              <div className="relative flex items-center justify-between">
+                <div>
+                  <p className="text-xs opacity-80">{app.lang === 'ar' ? 'إجمالي العملاء' : 'Total Customers'}</p>
+                  <p className="text-3xl font-bold mt-1">{totalCustomers}</p>
+                  <p className="text-[10px] opacity-70 mt-1">
+                    {app.lang === 'ar' ? 'بدون متجر' : 'No store'}
+                  </p>
+                </div>
+                <ShoppingBag className="h-10 w-10 opacity-30" />
+              </div>
+            </div>
+          </div>
+
           {/* ===== بطاقات حالة المنصة ===== */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {platformStats.map((item) => (
@@ -732,7 +803,114 @@ const stores = storesData?.data || [];
         
           </div>
 
-       
+          {/* ===== ✅ آخر العملاء والمتاجر (جديدة) ===== */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            
+            {/* ✅ آخر 5 عملاء جدد */}
+            <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#3a8a82]/20 shadow-lg overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-[#2a655f]/10 dark:border-[#3a8a82]/10 bg-gradient-to-r from-[#2a655f]/5 to-transparent">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#2a655f] to-[#3a8a82] flex items-center justify-center">
+                    <Users className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {app.lang === 'ar' ? 'آخر العملاء الجدد' : 'Latest Customers'}
+                    </h3>
+                    <p className="text-[10px] text-slate-500">
+                      {app.lang === 'ar' ? 'أحدث 5 عملاء' : 'Latest 5 customers'}
+                    </p>
+                  </div>
+                </div>
+                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20 text-[10px]">
+                  {latestCustomers.length}
+                </Badge>
+              </div>
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {latestCustomers.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 text-sm">
+                    {app.lang === 'ar' ? 'لا يوجد عملاء' : 'No customers'}
+                  </div>
+                ) : (
+                  latestCustomers.map((c: any) => (
+                    <div key={c.id} className="flex items-center gap-3 p-3 hover:bg-[#2a655f]/5 transition-colors">
+                      <Avatar className="h-9 w-9 ring-2 ring-[#2a655f]/20">
+                        <AvatarImage src={c.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-[#2a655f] to-[#3a8a82] text-white text-xs font-bold">
+                          {(c.full_name || 'C').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                          {c.full_name || 'عميل'}
+                        </p>
+                        <p className="text-[10px] text-slate-500 truncate">
+                          👤 {app.lang === 'ar' ? 'عميل' : 'Customer'} • {new Date(c.created_at).toLocaleDateString('ar-SA')}
+                        </p>
+                      </div>
+                      <Badge className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-600 border-slate-200">
+                        {app.lang === 'ar' ? 'عميل' : 'Customer'}
+                      </Badge>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* ✅ آخر 5 متاجر جديدة */}
+            <div className="bg-white dark:bg-[#1e293b] rounded-2xl border-2 border-[#2a655f]/30 dark:border-[#3a8a82]/20 shadow-lg overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-[#2a655f]/10 dark:border-[#3a8a82]/10 bg-gradient-to-r from-[#2a655f]/5 to-transparent">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1a4f4a] to-[#3a8a82] flex items-center justify-center">
+                    <Store className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {app.lang === 'ar' ? 'آخر المتاجر الجديدة' : 'Latest Stores'}
+                    </h3>
+                    <p className="text-[10px] text-slate-500">
+                      {app.lang === 'ar' ? 'أحدث 5 متاجر' : 'Latest 5 stores'}
+                    </p>
+                  </div>
+                </div>
+                <Badge className="bg-[#2a655f]/10 text-[#2a655f] border-[#2a655f]/20 text-[10px]">
+                  {latestStores.length}
+                </Badge>
+              </div>
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {latestStores.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 text-sm">
+                    {app.lang === 'ar' ? 'لا توجد متاجر' : 'No stores'}
+                  </div>
+                ) : (
+                  latestStores.map((s: any) => (
+                    <div key={s.id} className="flex items-center gap-3 p-3 hover:bg-[#2a655f]/5 transition-colors">
+                      <Avatar className="h-9 w-9 ring-2 ring-[#2a655f]/20">
+                        <AvatarImage src={s.store_logo_url || s.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-[#1a4f4a] to-[#3a8a82] text-white text-xs font-bold">
+                          {(s.store_name || 'S').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                          {s.store_name || 'متجر'}
+                        </p>
+                        <p className="text-[10px] text-slate-500 truncate">
+                          {s.full_name || '—'} • {new Date(s.created_at).toLocaleDateString('ar-SA')}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => onGoto('stores')}
+                        className="text-[10px] text-[#2a655f] font-semibold hover:underline shrink-0"
+                      >
+                        {app.lang === 'ar' ? 'عرض' : 'View'} →
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* ===== إحصائيات إضافية ===== */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">

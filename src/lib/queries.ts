@@ -3132,6 +3132,357 @@ export function useAllOrdersAdminDetailed() {
     },
   });
 }
+// ============================================================
+// ✅ إحصائيات المستخدمين الشاملة (للأدمن) — النسخة الاحترافية
+// ============================================================
+
+// ============================================================
+// ✅ إحصائيات المستخدمين الشاملة (للأدمن) — النسخة الآمنة
+// ============================================================
+export function useUsersStats() {
+  return useQuery({
+    queryKey: ["admin", "users-stats"],
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      // ✅ 1. جلب كل IDs (بدون count — يتجنب مشكلة Supabase مع RLS)
+      const { data: allProfiles, error: usersError } = await supabase
+        .from("profiles")
+        .select("id");
+
+      if (usersError) {
+        console.error("❌ [useUsersStats] users error:", usersError);
+        throw usersError;
+      }
+
+      const totalUsers = allProfiles?.length ?? 0;
+
+      // ✅ 2. جلب كل الأدوار
+      const { data: allRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      if (rolesError) {
+        console.error("❌ [useUsersStats] roles error:", rolesError);
+        throw rolesError;
+      }
+
+      // ✅ 3. sellers (unique)
+      const sellerIds = new Set(
+        (allRoles ?? [])
+          .filter((r: any) => r.role === "seller")
+          .map((r: any) => r.user_id)
+      );
+      const totalStores = sellerIds.size;
+
+      // ✅ 4. أدوار أخرى (unique)
+      const otherRoleIds = new Set(
+        (allRoles ?? [])
+          .filter((r: any) => 
+            ["admin", "delivery_company", "distributor"].includes(r.role)
+          )
+          .map((r: any) => r.user_id)
+      );
+
+      // ✅ 5. عملاء
+      const usersWithRoles = new Set([...sellerIds, ...otherRoleIds]);
+      const customers = Math.max(0, totalUsers - usersWithRoles.size);
+
+      console.log("📊 [useUsersStats] ===== Stats =====");
+      console.log(`   👥 إجمالي المستخدمين: ${totalUsers}`);
+      console.log(`   🏪 متاجر: ${totalStores}`);
+      console.log(`   👔 أدوار أخرى: ${otherRoleIds.size}`);
+      console.log(`   🛒 عملاء: ${customers}`);
+      console.log(`   📋 profiles fetched: ${allProfiles?.length}`);
+      console.log(`   📋 roles fetched: ${allRoles?.length}`);
+
+      return {
+        totalUsers,
+        totalStores,
+        totalCustomers: customers,
+      };
+    },
+  });
+}
+// ============================================================
+// ✅ جميع العملاء (للأدمن) — مع pagination وإحصائيات الطلبات
+// ============================================================
+export function useAllCustomers(page: number = 1, limit: number = 20) {
+  return useQuery({
+    queryKey: ["admin", "all-customers", page, limit],
+    staleTime: 30 * 1000,
+    queryFn: async () => {
+      console.log(`📡 [useAllCustomers] Fetching page ${page}, limit ${limit}`);
+
+      // ✅ 1. جلب الأدوار غير العميلية
+      const { data: allRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      if (rolesError) {
+        console.error("❌ [useAllCustomers] roles error:", rolesError);
+        throw rolesError;
+      }
+
+      // ✅ 2. بناء مجموعة IDs المستبعدة
+      const excludedIds = new Set<string>();
+      (allRoles ?? []).forEach((r: any) => {
+        if (["seller", "admin", "delivery_company", "distributor"].includes(r.role)) {
+          excludedIds.add(r.user_id);
+        }
+      });
+
+      // ✅ 3. جلب جميع العملاء (store_active != true)
+      const { data: allProfiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          full_name,
+          phone,
+          avatar_url,
+          address_text,
+          city,
+          governorate_id,
+          store_active,
+          created_at,
+          governorate:governorate_id (
+            id,
+            name_ar,
+            name_en
+          )
+        `)
+        .or("store_active.is.null,store_active.eq.false")
+        .order("created_at", { ascending: false });
+
+      if (profilesError) {
+        console.error("❌ [useAllCustomers] profiles error:", profilesError);
+        throw profilesError;
+      }
+
+      // ✅ 4. استبعاد من لديه أدوار أخرى
+      const customersOnly = (allProfiles ?? [])
+        .filter((p: any) => !excludedIds.has(p.id));
+
+      const totalCount = customersOnly.length;
+
+      // ✅ 5. Pagination
+      const from = (page - 1) * limit;
+      const paginatedCustomers = customersOnly.slice(from, from + limit);
+
+      if (paginatedCustomers.length === 0) {
+        return {
+          data: [],
+          count: totalCount,
+          page,
+          limit,
+          totalPages: Math.ceil(totalCount / limit) || 1,
+        };
+      }
+
+      // ✅ 6. جلب إحصائيات الطلبات لكل عميل
+      const customerIds = paginatedCustomers.map((c: any) => c.id);
+
+      const { data: ordersData, error: ordersError } = await supabase
+        .from("orders")
+        .select("buyer_id, status")
+        .in("buyer_id", customerIds);
+
+      if (ordersError) {
+        console.warn("⚠️ [useAllCustomers] orders error:", ordersError);
+      }
+
+      // ✅ 7. حساب الإحصائيات لكل عميل
+      const statsMap = new Map<string, {
+        total: number;
+        completed: number;
+        cancelled: number;
+        pending: number;
+      }>();
+
+      (ordersData ?? []).forEach((order: any) => {
+        const buyerId = order.buyer_id;
+        if (!statsMap.has(buyerId)) {
+          statsMap.set(buyerId, { total: 0, completed: 0, cancelled: 0, pending: 0 });
+        }
+        const stats = statsMap.get(buyerId)!;
+        stats.total += 1;
+        
+        if (order.status === "delivered" || order.status === "completed") {
+          stats.completed += 1;
+        } else if (order.status === "cancelled" || order.status === "rejected") {
+          stats.cancelled += 1;
+        } else if (order.status === "pending") {
+          stats.pending += 1;
+        }
+      });
+
+      // ✅ 8. دمج البيانات
+      const enriched = paginatedCustomers.map((c: any) => {
+        const stats = statsMap.get(c.id) || { total: 0, completed: 0, cancelled: 0, pending: 0 };
+        return {
+          ...c,
+          orders_total: stats.total,
+          orders_completed: stats.completed,
+          orders_cancelled: stats.cancelled,
+          orders_pending: stats.pending,
+        };
+      });
+
+      console.log(`✅ [useAllCustomers] Returning ${enriched.length} customers (total: ${totalCount})`);
+
+      return {
+        data: enriched,
+        count: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit) || 1,
+      };
+    },
+  });
+}
+/**
+ * ✅ آخر N عملاء جدد (عملاء حقيقيون فقط)
+ */
+export function useLatestCustomers(limit = 5) {
+  return useQuery({
+    queryKey: ["admin", "latest-customers", limit],
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      // ✅ 1. استبعاد من لديهم أدوار غير customer
+      const { data: excludedRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["seller", "admin", "delivery_company", "distributor"]);
+
+      if (rolesError) throw rolesError;
+
+      const excludedIds = new Set(
+        (excludedRoles ?? []).map((r: any) => r.user_id)
+      );
+
+      // ✅ 2. جلب مستخدمين ليس لديهم متجر نشط
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, phone, store_name, store_active, created_at")
+        .or("store_active.is.null,store_active.eq.false")
+        .order("created_at", { ascending: false })
+        .limit(limit + excludedIds.size + 10);
+
+      if (error) throw error;
+
+      // ✅ 3. استبعاد من لديهم أدوار أخرى
+      const customers = (profiles ?? [])
+        .filter((p: any) => !excludedIds.has(p.id))
+        .slice(0, limit);
+
+      console.log(`✅ [useLatestCustomers] Found ${customers.length} customers`);
+      return customers;
+    },
+  });
+}
+
+/**
+ * ✅ آخر N متاجر جدد (sellers فقط)
+ */
+export function useLatestStores(limit = 5) {
+  return useQuery({
+    queryKey: ["admin", "latest-stores", limit],
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      // ✅ 1. جلب sellers مرتّبين
+      const { data: sellerRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, created_at")
+        .eq("role", "seller")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+
+      if (rolesError) throw rolesError;
+
+      const userIds = (sellerRoles ?? []).map((r: any) => r.user_id);
+      if (userIds.length === 0) return [];
+
+      // ✅ 2. جلب بياناتهم
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, store_name, store_logo_url, store_active, created_at")
+        .in("id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      // ✅ 3. ترتيب حسب role created_at
+      const rolesMap = new Map(
+        (sellerRoles ?? []).map((r: any) => [r.user_id, r.created_at])
+      );
+
+      const result = (profiles ?? [])
+        .map((p: any) => ({
+          ...p,
+          role_created_at: rolesMap.get(p.id) || p.created_at,
+        }))
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.role_created_at).getTime() -
+            new Date(a.role_created_at).getTime()
+        )
+        .slice(0, limit);
+
+      console.log(`✅ [useLatestStores] Found ${result.length} stores`);
+      return result;
+    },
+  });
+}
+// ============================================================
+// ✅ إحصائيات الطلبات (counts by status)
+// ============================================================
+export function useOrdersStats() {
+  return useQuery({
+    queryKey: ["admin", "orders-stats"],
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      // ✅ 1. العدد الإجمالي
+      const { count: total, error } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true });
+
+      if (error) {
+        console.error("❌ [useOrdersStats] total error:", error);
+        throw error;
+      }
+
+      // ✅ 2. العدد لكل حالة
+      const statuses = [
+        "pending",
+        "confirmed",
+        "shipped",
+        "delivered",
+        "rejected",
+        "cancelled",
+      ] as const;
+
+      const counts = await Promise.all(
+        statuses.map(async (s) => {
+          const { count } = await supabase
+            .from("orders")
+            .select("*", { count: "exact", head: true })
+            .eq("status", s);
+          return { status: s, count: count || 0 };
+        })
+      );
+
+      const byStatus = counts.reduce((acc, c) => {
+        acc[c.status] = c.count;
+        return acc;
+      }, {} as Record<string, number>);
+
+      console.log("📊 [useOrdersStats]", { total: total || 0, byStatus });
+
+      return {
+        total: total || 0,
+        byStatus,
+      };
+    },
+  });
+}
 export function useConversationMessages(conversationId: string | undefined, userId: string | undefined) {
   return useQuery({
     queryKey: ["messages", conversationId],

@@ -1,6 +1,6 @@
 // src/routes/store.$id.tsx - الحل الاحترافي الكامل (Single Source of Truth)
 
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useRef, Suspense, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -9,7 +9,7 @@ import {
   Sparkles, Package, Share2, Flame, BadgeCheck,
   Search, X, ArrowUpDown, Grid3X3, List, ChevronDown,
   RefreshCw, Eye, Heart, TrendingUp, Zap, Gift, Target, Award,
-  LayoutGrid, Check, Tag, Filter, ChevronLeft
+  LayoutGrid, Check, Tag, Filter, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { useApp, useT, formatPrice } from "@/lib/i18n";
 import { useListings, useStoreProfile, useDeliveryCompanies, useProductOffers } from "@/lib/queries";
@@ -140,10 +140,6 @@ function SortDropdown({ value, onChange, lang }: { value: string; onChange: (val
 
 // ============================================================
 // ✅✅✅ [استعلام مستقل] Hook لجلب إحصائيات المتجر
-// - لا يتغيّر مع page (queryKey لا يتضمن page)
-// - يُستخدم في أي مكان (ليس فقط store.$id)
-// - head: true → COUNT سريع جداً
-// - staleTime: 5 دقائق → لا طلبات زائدة
 // ============================================================
 function useStoreStats(storeId: string | undefined) {
   return useQuery({
@@ -184,7 +180,7 @@ function useStoreStats(storeId: string | undefined) {
         total: products + offers,
       };
     },
-    staleTime: 5 * 60 * 1000,      // ✅ 5 دقائق — لا يتغيّر مع التمرير
+    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -198,6 +194,7 @@ function StorePage() {
   const app = useApp();
   const t = useT();
   const navigate = useNavigate();
+  const router = useRouter();
   const [isOpeningConversation, setIsOpeningConversation] = useState(false);
   
   // ====== State التوصيل ======
@@ -236,14 +233,10 @@ function StorePage() {
   // ✅ refs لمنع التكرار
   const hasTriggeredLoadMoreRef = useRef(false);
   const lastLoadedKeyRef = useRef<string>('');
-
-  // ✅ تتبع آخر id تم تحميله (StrictMode-safe)
   const lastLoadedIdRef = useRef<string>('');
-  
-  // ✅ تتبع ما إذا كان فلتر الشبكة قد تغيّر فعلاً
   const prevFiltersRef = useRef<string>('');
 
-  // ✅ useInView من react-intersection-observer
+  // ✅ useInView
   const { ref: loadMoreRef, inView } = useInView({ threshold: 0.1, triggerOnce: false });
 
   // ====== Hooks ======
@@ -254,7 +247,7 @@ function StorePage() {
   const cartTotalForStore = useCartTotal(app.user?.id, id);
 
   // ============================================================
-  // ✅✅✅ [مصدر واحد موثوق] إحصائيات المتجر — لا تتغيّر مع التمرير
+  // ✅ [مصدر واحد موثوق] إحصائيات المتجر — لا تتغيّر مع التمرير
   // ============================================================
   const { data: storeStats } = useStoreStats(id);
   
@@ -282,7 +275,7 @@ function StorePage() {
     storeId: id,
   });
 
-  // ✅ Reset عند تغيّر id — مع منع التكرار
+  // ✅ Reset عند تغيّر id
   useEffect(() => {
     console.log('🔄 [StorePage] id changed, resetting all state...', id);
     setPage(1);
@@ -346,7 +339,7 @@ function StorePage() {
     const currentKey = (listingsData?.data || []).map((i: any) => i?.id).join(',');
     
     if (currentKey === lastLoadedKeyRef.current) {
-      return; // ✅ نفس البيانات — لا تعمل شي
+      return;
     }
     
     lastLoadedKeyRef.current = currentKey;
@@ -365,7 +358,6 @@ function StorePage() {
     setIsLoadingMore(false);
   }, [listingsData?.data, page]);
 
-  // ✅ استخدام allAccumulatedItems
   const rows = allAccumulatedItems;
 
   // ✅ دمج كل العناصر مع الترتيب الاحترافي
@@ -441,7 +433,7 @@ function StorePage() {
     return all;
   }, [rows, promoOffers, app.lang, sortBy]);
 
-  // ✅ فلترة العناصر حسب النوع (محلي — لا يعيد الجلب)
+  // ✅ فلترة العناصر حسب النوع (محلي)
   const filteredByType = useMemo(() => {
     if (viewFilter === 'all') return allItems;
     
@@ -460,7 +452,7 @@ function StorePage() {
     return allItems;
   }, [allItems, viewFilter]);
 
-  // ✅ فلترة متقدمة (السعر، التقييم، التوفر، البحث)
+  // ✅ فلترة متقدمة
   const items = useMemo(() => {
     let filtered = filteredByType;
     
@@ -497,14 +489,10 @@ function StorePage() {
 
   // ============================================================
   // ✅ تصفير فقط عند تغيير فلاتر الشبكة
-  // (searchQuery, sortBy, minPrice, maxPrice, showAvailableOnly)
-  //
-  // ⚠️ viewFilter مستبعد عمداً — لأنه فلتر محلي بحت
   // ============================================================
   useEffect(() => {
     const currentFilterKey = `${searchQuery}|${sortBy}|${minPrice}|${maxPrice}|${showAvailableOnly}`;
     
-    // ✅ أول render لنفس id → سجّل واخرج
     if (lastLoadedIdRef.current !== id) {
       lastLoadedIdRef.current = id;
       prevFiltersRef.current = currentFilterKey;
@@ -512,12 +500,10 @@ function StorePage() {
       return;
     }
     
-    // ✅ نفس id، لكن فلتر الشبكة لم يتغيّر → لا تفعل شي
     if (prevFiltersRef.current === currentFilterKey) {
       return;
     }
     
-    // ✅ فلتر الشبكة تغيّر فعلاً → صفّر
     console.log('🔄 [StorePage] Network filter changed — resetting...');
     prevFiltersRef.current = currentFilterKey;
     setPage(1);
@@ -525,11 +511,7 @@ function StorePage() {
     lastLoadedKeyRef.current = '';
   }, [id, searchQuery, sortBy, minPrice, maxPrice, showAvailableOnly]);
 
-  // ============================================================
-  // ✅ عند تغيير viewFilter فقط:
-  // أعد تعيين lastLoadedKeyRef ليسمح للـ effect التراكمي بإعادة
-  // حساب allAccumulatedItems إذا احتاج — دون تصفير البيانات
-  // ============================================================
+  // ✅ عند تغيير viewFilter فقط
   useEffect(() => {
     lastLoadedKeyRef.current = '';
   }, [viewFilter]);
@@ -550,13 +532,11 @@ function StorePage() {
   // ✅ Infinite Scroll
   // ============================================================
   useEffect(() => {
-    // ✅ 1. إذا اختفى inView — أعد تعيين الـ ref
     if (!inView) {
       hasTriggeredLoadMoreRef.current = false;
       return;
     }
 
-    // ✅ 2. شروط صارمة
     if (
       !hasMore ||
       isLoadingMore ||
@@ -567,13 +547,12 @@ function StorePage() {
       return;
     }
 
-    // ✅ 3. علّم إنه اشتغل + حمّل
     hasTriggeredLoadMoreRef.current = true;
     setIsLoadingMore(true);
     setPage(prev => prev + 1);
   }, [inView, hasMore, isLoadingMore, isFetching, isInitialLoad]);
 
-  // ✅ إعادة تعيين الـ ref لما ينتهي الـ fetch
+  // ✅ إعادة تعيين الـ ref
   useEffect(() => {
     if (!isFetching && !isLoadingMore) {
       hasTriggeredLoadMoreRef.current = false;
@@ -768,6 +747,72 @@ function StorePage() {
     };
   }, [store, app.user, cartTotalForStore, calculateDistance, calculateDeliveryPrice]);
 
+  // ====== دالة الرجوع ======
+  const handleGoBack = useCallback(() => {
+    if (window.history.length > 1) {
+      router.history.back();
+    } else {
+      navigate({ to: "/" });
+    }
+  }, [router, navigate]);
+
+  // ====== دالة المشاركة ======
+  const handleShare = useCallback(async () => {
+    if (!store) return;
+    
+    const storeName = store.store_name || store.full_name || (app.lang === "ar" ? "متجر" : "Store");
+    const storeDescription = store.store_description || (app.lang === "ar" ? "تصفح منتجات المتجر على ذوق" : "Browse the store products on Zooq");
+    const url = window.location.href;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: storeName,
+          text: storeDescription,
+          url: url,
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success(
+          app.lang === "ar" 
+            ? "✅ تم نسخ رابط المتجر" 
+            : "✅ Store link copied",
+          {
+            duration: 3000,
+            style: {
+              background: '#f5f5f5',
+              border: '1px solid #e5e5e5',
+              borderRadius: '14px',
+            },
+            actionButtonStyle: {
+              background: '#2a655f',
+              color: 'white',
+              fontWeight: '600',
+              borderRadius: '10px',
+            },
+          }
+        );
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        try {
+          await navigator.clipboard.writeText(url);
+          toast.success(
+            app.lang === "ar" 
+              ? "✅ تم نسخ رابط المتجر" 
+              : "✅ Store link copied"
+          );
+        } catch {
+          toast.error(
+            app.lang === "ar" 
+              ? "❌ فشل نسخ الرابط" 
+              : "❌ Failed to copy link"
+          );
+        }
+      }
+    }
+  }, [store, app.lang]);
+
   const handleMessage = async () => {
     if (!app.user) {
       navigate({ to: "/auth/$mode", params: { mode: "login" } });
@@ -833,7 +878,6 @@ function StorePage() {
   const storeType = store.store_type || "online";
   const isArabic = app.lang === "ar";
 
-  // ✅ promoLoading لا يعطّل عرض المنتجات
   const isLoading = listingsLoading || isFetching;
 
   return (
@@ -853,7 +897,30 @@ function StorePage() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e2a]/90 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0d2e2a]/60 to-transparent" />
         
-        <div className="absolute top-4 right-4 flex gap-2">
+        {/* ===== ✅ أزرار الرجوع والمشاركة (فوق الغلاف) ===== */}
+        <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
+          {/* زر الرجوع */}
+          <button
+            onClick={handleGoBack}
+            className="h-10 w-10 rounded-full bg-white/90 hover:bg-white text-[#1a4f4a] shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 backdrop-blur-md border-2 border-white/50 group"
+            aria-label={app.lang === "ar" ? "رجوع" : "Back"}
+            title={app.lang === "ar" ? "رجوع" : "Back"}
+          >
+            <ChevronRight className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform rtl:rotate-0 ltr:rotate-180" />
+          </button>
+
+          {/* زر المشاركة */}
+          <button
+            onClick={handleShare}
+            className="h-10 w-10 rounded-full bg-white/90 hover:bg-white text-[#1a4f4a] shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 backdrop-blur-md border-2 border-white/50 group"
+            aria-label={app.lang === "ar" ? "مشاركة المتجر" : "Share store"}
+            title={app.lang === "ar" ? "مشاركة المتجر" : "Share store"}
+          >
+            <Share2 className="h-5 w-5 group-hover:rotate-12 transition-transform" />
+          </button>
+        </div>
+
+        <div className="absolute top-16 right-4 flex gap-2">
           <Badge className="bg-white/15 backdrop-blur-md text-white border-white/30 shadow-lg">
             <Sparkles className="h-3 w-3 mr-1" />
             {isArabic ? "متجر مميز" : "Featured Store"}
@@ -915,7 +982,6 @@ function StorePage() {
               </span>
               <span className="flex items-center gap-1">
                 <Package className="h-3.5 w-3.5" />
-                {/* ✅ الرقم من مصدر واحد موثوق — لا يتغيّر مع التمرير */}
                 {grandTotal} {t("products_tab")}
               </span>
               
@@ -968,10 +1034,10 @@ function StorePage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.open(`/store/${id}`, '_blank')}
-              className="border-slate-300 text-slate-600 hover:bg-slate-50 hover:border-[#2a655f]/50 hover:text-[#2a655f]"
+              onClick={handleShare}
+              className="border-slate-300 text-slate-600 hover:bg-slate-50 hover:border-[#2a655f]/50 hover:text-[#2a655f] group"
             >
-              <Share2 className="h-3.5 w-3.5 mr-1" />
+              <Share2 className="h-3.5 w-3.5 mr-1 group-hover:rotate-12 transition-transform" />
               {isArabic ? "مشاركة" : "Share"}
             </Button>
           </div>
@@ -1206,7 +1272,6 @@ function StorePage() {
                     ? "bg-white/20 text-white" 
                     : "bg-[#2a655f]/10 text-[#2a655f]"
                 )}>
-                  {/* ✅ الرقم من مصدر واحد موثوق — لا يتغيّر مع التمرير */}
                   {grandTotal}
                 </Badge>
               </button>
@@ -1231,7 +1296,6 @@ function StorePage() {
                     ? "bg-white/20 text-white" 
                     : "bg-blue-500/10 text-blue-600"
                 )}>
-                  {/* ✅ الرقم من مصدر واحد موثوق — لا يتغيّر مع التمرير */}
                   {productsCount}
                 </Badge>
               </button>
@@ -1256,7 +1320,6 @@ function StorePage() {
                     ? "bg-white/20 text-white" 
                     : "bg-amber-500/10 text-amber-600"
                 )}>
-                  {/* ✅ الرقم من مصدر واحد موثوق — لا يتغيّر مع التمرير */}
                   {offersCount}
                 </Badge>
               </button>
@@ -1449,7 +1512,6 @@ function StorePage() {
             ) : (
               <>
                 {viewMode === "grid" ? (
-                  /* ===== ✅ Grid View ===== */
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 items-stretch auto-rows-fr">
                     {items.map((item: any, index: number) => (
                       <div 
@@ -1466,7 +1528,6 @@ function StorePage() {
                     ))}
                   </div>
                 ) : (
-                  /* ===== ✅ List View - تصميم احترافي ===== */
                   <div className="space-y-2.5">
                     {items.map((item: any, index: number) => {
                       const hasDiscount = item.is_offer === true || (item.discount_percent && item.discount_percent > 0);
@@ -1589,7 +1650,6 @@ function StorePage() {
                         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                           <span className="font-bold text-[#2a655f]">{items.length}</span>
                           <span>/</span>
-                          {/* ✅ الرقم من مصدر واحد موثوق — لا يتغيّر مع التمرير */}
                           <span>{grandTotal}</span>
                           <span className="ms-1">{isArabic ? "منتج" : "products"}</span>
                         </div>

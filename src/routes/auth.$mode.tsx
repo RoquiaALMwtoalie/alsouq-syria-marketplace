@@ -432,7 +432,7 @@ function AppDownloadSection() {
   }, []);
 
   // ✅ رابط AppsEnjoy (يفتح صفحة التحميل)
-  const APK_URL = "https://appsenjoy.com/f/smhmtytFqj/dhwq-1-0-0";
+  const APK_URL = "https://appsenjoy.com/f/FxZV6dAXn8/dhwq-1-0-0";
 
   return (
     <>
@@ -1116,11 +1116,13 @@ function AuthPage() {
         return;
       }
 
-      const profileData = {
-        id: uid,
-        full_name: fullName.trim(),
-        phone: phone.trim(),
-      };
+     const profileData = {
+  id: uid,
+  full_name: fullName.trim(),
+  phone: phone.trim(),
+  store_active: false,
+  store_online: false,
+};
 
       const { error: profileError } =
         await supabase

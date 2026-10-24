@@ -62,6 +62,56 @@ const COLORS = {
 };
 
 // ============================================================
+// ✅ دالة تنسيق التاريخ — ميلادي مضمون على كل الأجهزة
+// ============================================================
+const formatDate = (date: string | Date, lang: string = 'ar', withTime = true) => {
+  if (!date) return '-';
+  
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
+
+    // ✅ Intl.DateTimeFormat مع تحديد صريح للتقويم والأرقام
+    const formatter = new Intl.DateTimeFormat(
+      lang === "ar" ? "ar-SY" : "en-US",
+      {
+        calendar: "gregory",        // ✅ ميلادي صريح
+        numberingSystem: "latn",    // ✅ أرقام لاتينية (0-9)
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        ...(withTime && {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+      }
+    );
+
+    return formatter.format(d);
+  } catch {
+    // ✅ fallback آمن — en-GB ميلادي دائماً
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return '-';
+      
+      return d.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        ...(withTime && {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+      });
+    } catch {
+      return '-';
+    }
+  }
+};
+
+// ============================================================
 // الأنواع
 // ============================================================
 
@@ -547,14 +597,6 @@ const handleSendNotification = async () => {
     }
   };
 
-  const formatDate = (date: string) => {
-    if (!date) return '-';
-    return new Date(date).toLocaleDateString(
-      app.lang === 'ar' ? 'ar-SA' : 'en-US',
-      { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
-    );
-  };
-
   // ============================================================
   // دوال التنسيق
   // ============================================================
@@ -859,10 +901,10 @@ const handleSendNotification = async () => {
                       <TableCell className="text-center py-3 border-r-2 border-slate-200/60 dark:border-slate-700/60">
                         <span className="text-sm text-slate-500 whitespace-nowrap">
                           {notification.sent_at 
-                            ? formatDate(notification.sent_at)
+                            ? formatDate(notification.sent_at, app.lang)
                             : notification.scheduled_for
-                              ? formatDate(notification.scheduled_for)
-                              : formatDate(notification.created_at)}
+                              ? formatDate(notification.scheduled_for, app.lang)
+                              : formatDate(notification.created_at, app.lang)}
                         </span>
                       </TableCell>
                       
@@ -1506,7 +1548,7 @@ const handleSendNotification = async () => {
                   </div>
                   <div className="space-y-1">
                     <Label className="text-sm text-slate-500">{isRTL ? 'تاريخ الإنشاء' : 'Created'}</Label>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">{formatDate(selectedNotification.created_at)}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">{formatDate(selectedNotification.created_at, app.lang)}</p>
                   </div>
                 </div>
                 
