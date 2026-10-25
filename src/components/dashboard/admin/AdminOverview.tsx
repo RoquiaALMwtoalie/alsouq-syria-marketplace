@@ -85,6 +85,44 @@ const GRADIENT_COLORS = {
   gray: 'from-[#4b5563] to-[#6b7280]',
 };
 
+// ============================================================
+// ✅ دالة تنسيق التاريخ — ميلادي مضمون على كل الأجهزة
+// ============================================================
+const formatDate = (date: string | Date, lang: string = 'ar') => {
+  if (!date) return "—";
+  
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "—";
+
+    const formatter = new Intl.DateTimeFormat(
+      lang === "ar" ? "ar-SY" : "en-US",
+      {
+        calendar: "gregory",
+        numberingSystem: "latn",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }
+    );
+
+    return formatter.format(d);
+  } catch {
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return "—";
+      
+      return d.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return "—";
+    }
+  }
+};
+
 interface AdminOverviewProps {
   onGoto: (tab: any) => void;
   searchQuery?: string;
@@ -845,7 +883,7 @@ export function AdminOverview({ onGoto, searchQuery = "" }: AdminOverviewProps) 
                           {c.full_name || 'عميل'}
                         </p>
                         <p className="text-[10px] text-slate-500 truncate">
-                          👤 {app.lang === 'ar' ? 'عميل' : 'Customer'} • {new Date(c.created_at).toLocaleDateString('ar-SA')}
+                          👤 {app.lang === 'ar' ? 'عميل' : 'Customer'} • {formatDate(c.created_at, app.lang)}
                         </p>
                       </div>
                       <Badge className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-600 border-slate-200">
@@ -896,7 +934,7 @@ export function AdminOverview({ onGoto, searchQuery = "" }: AdminOverviewProps) 
                           {s.store_name || 'متجر'}
                         </p>
                         <p className="text-[10px] text-slate-500 truncate">
-                          {s.full_name || '—'} • {new Date(s.created_at).toLocaleDateString('ar-SA')}
+                          {s.full_name || '—'} • {formatDate(s.created_at, app.lang)}
                         </p>
                       </div>
                       <button

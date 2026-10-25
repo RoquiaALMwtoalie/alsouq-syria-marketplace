@@ -72,6 +72,8 @@ interface ProductOptionsManagerProps {
   basePrice?: number;
   // ✅ 🆕 السعر القديم الأساسي للمنتج (للعروض)
   baseOldPrice?: number;
+  // ✅ 🆕 هل نحن في وضع التعديل؟ (منتج موجود مسبقاً)
+  isEditing?: boolean;
 }
 
 export function ProductOptionsManager({ 
@@ -90,8 +92,22 @@ export function ProductOptionsManager({
   availableOptions = [],
   basePrice = 0,          // ✅ 🆕
   baseOldPrice = 0,       // ✅ 🆕
+  isEditing = false,      // ✅ 🆕
 }: ProductOptionsManagerProps) {
   const app = useApp();
+  
+  // ✅ ✅ ✅ دالة تطبيع الـ combination (ترتيب أبجدي للمفاتيح)
+  // هذا يحل مشكلة أن JSON.stringify لا يرتب المفاتيح
+  const normalizeCombination = useCallback((combo: Record<string, string> | null | undefined): string => {
+    if (!combo || typeof combo !== 'object') return '';
+    const sorted = Object.keys(combo)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = String(combo[key] ?? '').trim();
+        return acc;
+      }, {} as Record<string, string>);
+    return JSON.stringify(sorted);
+  }, []);
   
   // ✅ ✅ ✅ قاموس شامل لكل الخيارات الممكنة (للأيقونات والألوان)
   const ALL_OPTION_TYPES: Record<string, { icon: any; emoji: string; color: string; description_ar: string; description_en: string }> = {
@@ -189,6 +205,16 @@ export function ProductOptionsManager({
   const [showRestoreButton, setShowRestoreButton] = useState(false);
   const isInitialLoadRef = useRef(true);
 
+  // ✅ ✅ ✅ ref لأحدث قيمة من localVariations (لتجنب إضافتها في deps)
+  const localVariationsRef = useRef<Variation[]>(localVariations);
+  useEffect(() => {
+    localVariationsRef.current = localVariations;
+  }, [localVariations]);
+
+  // ✅ ✅ ✅ ref للتركيبات الأصلية من الـ DB (لتحديد "الجديد" الحقيقي)
+  const originalCombinationsRef = useRef<Set<string>>(new Set());
+  const hasSavedOriginalRef = useRef(false);
+
   // ✅ ✅ ✅ تعيين activeType تلقائياً لأول خيار متاح
   useEffect(() => {
     if (OPTION_TYPES.length > 0 && !activeType) {
@@ -205,10 +231,19 @@ export function ProductOptionsManager({
     if (variations.length > 0) {
       setLocalVariations(variations);
       isInitialLoadRef.current = false;
+
+      // ✅ ✅ ✅ حفظ التركيبات الأصلية من الـ DB مرة واحدة فقط
+      if (!hasSavedOriginalRef.current) {
+        originalCombinationsRef.current = new Set(
+          variations.map(v => normalizeCombination(v.combination))
+        );
+        hasSavedOriginalRef.current = true;
+        console.log('📌 [Original] Saved original combinations from DB:', originalCombinationsRef.current.size);
+      }
     } else {
       setLocalVariations(variations);
     }
-  }, [variations]);
+  }, [variations, normalizeCombination]);
 
   useEffect(() => {
     setColorImages(externalColorImages);
@@ -271,7 +306,7 @@ export function ProductOptionsManager({
     if (activeOptionsCount >= 2) {
       console.log('🔄 [Auto-Generate] 2+ options active, allowing regeneration...');
     } else {
-      if (localVariations.length > 0) {
+      if (localVariationsRef.current.length > 0) {
         console.log('🗑️ [Auto-Generate] Less than 2 options, clearing variations');
         isGeneratingRef.current = true;
         setLocalVariations([]);
@@ -285,7 +320,7 @@ export function ProductOptionsManager({
       const colorsWithoutImage = value.colors.filter(c => !colorImages[c]);
       if (colorsWithoutImage.length > 0) {
         console.log(`⚠️ [Auto-Generate] ${colorsWithoutImage.length} colors without image, clearing variations`);
-        if (localVariations.length > 0) {
+        if (localVariationsRef.current.length > 0) {
           isGeneratingRef.current = true;
           setLocalVariations([]);
           if (onVariationsChange) onVariationsChange([]);
@@ -298,7 +333,7 @@ export function ProductOptionsManager({
     const generatedVariations = generateVariationsAuto(value, colorImages);
     
     if (generatedVariations.length === 0) {
-      if (localVariations.length > 0) {
+      if (localVariationsRef.current.length > 0) {
         console.log('🗑️ [Auto-Generate] No variations generated, clearing');
         isGeneratingRef.current = true;
         setLocalVariations([]);
@@ -308,22 +343,29 @@ export function ProductOptionsManager({
       return;
     }
 
+    const currentLocal = localVariationsRef.current;
+
     const variationsWithDefaults = generatedVariations.map(v => {
-      const existingVariation = localVariations.find(existing => {
-        const existingKeys = Object.keys(existing.combination);
-        const newKeys = Object.keys(v.combination);
-        
-        if (existingKeys.length !== newKeys.length) return false;
-        
-        return existingKeys.every(key => 
-          existing.combination[key] === v.combination[key]
-        );
-      });
+      const vKey = normalizeCombination(v.combination);
       
-      const isNew = !existingVariation;
+      const existingVariation = currentLocal.find(existing => 
+        normalizeCombination(existing.combination) === vKey
+      );
+      
+      // ✅ ✅ ✅ منطق is_new الصحيح:
+      // - في وضع الإضافة (isEditing = false): كل تركيبة جديدة = true
+      // - في وضع التعديل (isEditing = true): جديدة فقط إذا لم تكن موجودة في الـ DB الأصلي
+      let isNew: boolean;
+      if (!isEditing) {
+        isNew = true;
+      } else {
+        isNew = !originalCombinationsRef.current.has(vKey);
+      }
       
       return {
         ...v,
+        // ✅ احتفظ بـ id الأصلي إن وُجد (مهم للـ upsert)
+        id: existingVariation?.id ?? v.id,
         // ✅ 🆕 إذا كانت التركيبة جديدة، استخدم السعر الأساسي بدلاً من 0
         price: existingVariation?.price ?? basePrice,
         old_price: existingVariation?.old_price ?? baseOldPrice,
@@ -334,14 +376,14 @@ export function ProductOptionsManager({
     });
 
     const currentKeys = new Set(
-      localVariations.map(v => JSON.stringify(v.combination))
+      currentLocal.map(v => normalizeCombination(v.combination))
     );
     const newKeys = new Set(
-      variationsWithDefaults.map(v => JSON.stringify(v.combination))
+      variationsWithDefaults.map(v => normalizeCombination(v.combination))
     );
     
     const isDifferent = 
-      localVariations.length !== variationsWithDefaults.length ||
+      currentLocal.length !== variationsWithDefaults.length ||
       [...newKeys].some(key => !currentKeys.has(key));
 
     if (!isDifferent) {
@@ -360,7 +402,7 @@ export function ProductOptionsManager({
       );
     }
 
-    console.log(`🔄 [Auto-Generate] Regenerating ${variationsWithDefaults.length} variations (was ${localVariations.length})`);
+    console.log(`🔄 [Auto-Generate] Regenerating ${variationsWithDefaults.length} variations (was ${currentLocal.length})`);
     console.log('📊 [Auto-Generate] Active options:', activeTypes);
     console.log('📊 [Auto-Generate] New variations:', variationsWithDefaults.filter(v => v.is_new).length);
     
@@ -375,7 +417,7 @@ export function ProductOptionsManager({
       console.log('✅ [Auto-Generate] Generation completed');
     }, 100);
     
-  }, [value, colorImages, localVariations, onVariationsChange]);
+  }, [value, colorImages, onVariationsChange, isEditing, basePrice, baseOldPrice, lang, normalizeCombination]);
 
   const generateVariationsAuto = (
     currentValue: Record<string, string[]>, 

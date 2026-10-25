@@ -432,7 +432,7 @@ function AppDownloadSection() {
   }, []);
 
   // ✅ رابط AppsEnjoy (يفتح صفحة التحميل)
-  const APK_URL = "https://appsenjoy.com/f/FxZV6dAXn8/dhwq-1-0-0";
+  const APK_URL = "https://appsenjoy.com/f/WRsJeamjE5/dhwq-1-0-0";
 
   return (
     <>

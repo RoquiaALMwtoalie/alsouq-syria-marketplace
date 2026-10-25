@@ -1581,7 +1581,7 @@ export function ProductFormDialog({
               ) : (
                 <>
                   {/* ✅ ProductOptionsManager */}
-                 <ProductOptionsManager
+         <ProductOptionsManager
   value={options}
   onChange={setOptions}
   lang={app.lang}
@@ -1594,8 +1594,9 @@ export function ProductFormDialog({
   onSizesChange={handleSizesUpdate}
   isOffer={productType === "offer"}
   availableOptions={availableOptions}
-  basePrice={form.price}          // ← 🆕 أضف هذا
-  baseOldPrice={form.old_price}   // ← 🆕 أضف هذا
+  basePrice={form.price}
+  baseOldPrice={form.old_price}
+  isEditing={!!product}   // ✅ 🆕 أضف هذا السطر
 />
                 </>
               )}
