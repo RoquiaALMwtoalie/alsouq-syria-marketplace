@@ -448,6 +448,10 @@ export const ProductsPage = React.memo(function ProductsPage() {
     setDialogOpen(false);
     
     const isEditing = !!dialogProduct;
+    const currentDialogProduct = dialogProduct;
+
+    setDialogProduct(null);
+
     toast.success(
       isEditing
         ? app.lang === "ar" ? "✅ تم تعديل المنتج بنجاح" : "✅ Product updated successfully"
@@ -455,8 +459,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
           ? app.lang === "ar" ? "✅ تم إرسال العرض للمراجعة" : "✅ Offer sent for review"
           : app.lang === "ar" ? "✅ تم إرسال المنتج للمراجعة" : "✅ Product sent for review"
     );
-
-    setTimeout(() => setDialogProduct(null), 100);
 
     try {
       setIsSaving(true);
@@ -466,7 +468,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
 
       let listingId: string;
       const productTitle = data.title_ar;
-      const currentDialogProduct = dialogProduct;
 
       if (isEditing && currentDialogProduct) {
         await update.mutateAsync({
@@ -491,6 +492,27 @@ export const ProductsPage = React.memo(function ProductsPage() {
           }
         });
         listingId = currentDialogProduct.id;
+        // 🛡️ حماية: لا تحذف إلا إذا كانت البيانات القادمة غير فارغة
+        const hasIncomingData = 
+          (data.variations?.length || 0) > 0 ||
+          (data.colors?.length || 0) > 0 ||
+          (data.options && Object.values(data.options).some((v: any) => v && v.length > 0));
+        
+        if (!hasIncomingData) {
+          const { count: varsInDB } = await supabase
+            .from("product_variations")
+            .select("*", { count: 'exact', head: true })
+            .eq("listing_id", listingId);
+          
+          if ((varsInDB || 0) > 0) {
+            throw new Error(
+              app.lang === "ar"
+                ? `🛡️ منع الحذف: DB بها ${varsInDB} تركيبة لكن البيانات القادمة فارغة`
+                : `🛡️ Deletion blocked: DB has ${varsInDB} variations but incoming data is empty`
+            );
+          }
+        }
+        // 🛡️ نهاية الحماية
         await ProductService.deleteProductData(listingId);
       } else {
         const result = await create.mutateAsync({
@@ -526,11 +548,18 @@ export const ProductsPage = React.memo(function ProductsPage() {
       const actionType = isEditing ? "تعديل" : "إضافة";
       notifyAdmin(productTitle, actionType, app.user!.id, listingId).catch(console.error);
       
-      queryClient.invalidateQueries({ queryKey: ["listings", "my", app.user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      // ✅ 🆕 زيد الانتظار لضمان اكتمال عمليات DB (كان 300ms — غير كافٍ)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // ✅ 🆕 إبطال cache المنتج + التركيبات قبل الـ refetch
       queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
-      
-      await refetchMyListings();
+      queryClient.invalidateQueries({ queryKey: ["listing-details", listingId] });
+      queryClient.removeQueries({ queryKey: ["product-variations", listingId] });
+
+      await queryClient.refetchQueries({ 
+        queryKey: ["listings", "my", app.user?.id],
+        exact: true,
+      });
 
       if (!isEditing) {
   getUserDisplayName(app.user!.id).then(async (userName) => {
@@ -564,7 +593,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [dialogProduct, update, create, app.user, notifyAdmin, refetchMyListings, app.lang, queryClient]);
+  }, [dialogProduct, update, create, app.user, notifyAdmin, app.lang, queryClient]);
 
   // ===== حذف المنتج =====
   const handleDeleteProduct = useCallback(async () => {
@@ -929,8 +958,8 @@ export const ProductsPage = React.memo(function ProductsPage() {
     />
   ), [promoDetailDialogOpen, selectedPromoOffer, selectedPromoProduct, app.lang, app.currency, formatPrice, handleEditPromoOffer, handleRemovePromoOffer]);
 
-  // ✅ حالة التحميل
-  if (isLoading || isFetching) {
+  // ✅ حالة التحميل — فقط عند التحميل الأولي (لا عند refetch)
+  if (isLoading && myListings.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-6">
         <div className="relative">

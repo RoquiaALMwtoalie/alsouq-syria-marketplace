@@ -26,6 +26,7 @@ import { ImageInput } from "@/components/ImageInput";
 import { ProductOptionsManager, type Variation, type ColorWithImage } from "./ProductOptionsManager";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProductFormDialogProps {
   open: boolean;
@@ -151,8 +152,28 @@ export function ProductFormDialog({
   const [isGovernorateOpen, setIsGovernorateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
 
+  // ✅ 🆕 عند فتح النموذج، أعد التاب إلى "أساسيات" (مهما كان آخر تاب)
+  useEffect(() => {
+    if (open) {
+      setActiveTab("basic");
+    }
+  }, [open]);
+
   const isFirstLoadRef = useRef(true);
   const isPriceEditingRef = useRef(false);
+
+  // ✅ 🆕 تتبع التركيبات التي عدّلها المستخدم يدوياً
+  const manuallyEditedIdsRef = useRef<Set<string>>(new Set());
+
+  // ✅ 🆕 لتتبع آخر منتج تم تحميله (لمنع إعادة التحميل بعد الحفظ)
+  const lastLoadedProductIdRef = useRef<string | null>(null);
+
+  // ✅ 🆕 لمعرفة إن كان المنتج قد حُفظ للتو (لمنع إعادة التحميل بعد الحفظ)
+  const wasSavedRef = useRef(false);
+
+  // ✅ 🆕 حماية onVariationsChange من مسح التركيبات أثناء/بعد الحفظ
+  const isSavingRef = useRef(false);
+  const saveCompletedAtRef = useRef<number>(0);
 
   // ============================================================
   // ✅ ✅ ✅ جلب خيارات التصنيف الرئيسي ديناميكياً
@@ -357,185 +378,263 @@ export function ProductFormDialog({
   // ✅ useEffect لتحميل البيانات
   // ============================================================
   useEffect(() => {
-    if (isLoadingRef.current) {
-      return;
-    }
-    
-    if (isPriceEditingRef.current) {
-      return;
-    }
-    
-    if (!open) {
-      isLoadingRef.current = false;
-      return;
-    }
-    
-    isLoadingRef.current = true;
-    
-    if (product) {
-      const availableValue = product.is_available !== undefined ? product.is_available : true;
+    (async () => {
+      if (isLoadingRef.current) {
+        return;
+      }
       
-      // ✅ تحميل البيانات الأساسية
-      setForm({
-        title_ar: product.title_ar || "",
-        description_ar: product.description_ar || "",
-        price: product.price || 0,
-        old_price: product.old_price || 0,
-        is_offer: product.is_offer || false,
-        is_available: availableValue,
-        payment_method: product.payment_method || "cash",
-        kind: product.kind || "product",
-        category_id: product.category_id || "",
-        parent_category_id: product.parent_category_id || "",
-        governorate_id: product.governorate_id || "",
-        cover_url: product.cover_url || "",
-        image_urls: product.image_urls || [""],
-      });
+      if (isPriceEditingRef.current) {
+        return;
+      }
       
-      // ✅ ✅ ✅ تحميل التصنيف الرئيسي والفرعي
-      if (cats.length > 0) {
-        // حالة 1: parent_category_id موجود
-        if (product.parent_category_id) {
-          setParentCategoryId(product.parent_category_id);
-          setParentCategorySearch(getCategoryName(product.parent_category_id));
-          
-          if (product.category_id && product.category_id !== product.parent_category_id) {
-            setSubCategoryId(product.category_id);
-            setSubCategorySearch(getCategoryName(product.category_id));
-          } else {
-            setSubCategoryId("");
-            setSubCategorySearch("");
-          }
-        }
-        // حالة 2: فقط category_id (منتج قديم)
-        else if (product.category_id) {
-          const cat = cats.find((c: any) => c.id === product.category_id);
-          
-          if (cat) {
-            // إذا كان التصنيف فرعي
-            if (cat.parent_id) {
-              setParentCategoryId(cat.parent_id);
-              setParentCategorySearch(getCategoryName(cat.parent_id));
+      if (!open) {
+        isLoadingRef.current = false;
+        isPriceEditingRef.current = false;
+        // ✅ 🆕 صفّر lastLoadedProductIdRef دائماً عند الإغلاق
+        // هذا يضمن أن الفتح التالي يحمّل من DB
+        lastLoadedProductIdRef.current = null;
+        wasSavedRef.current = false;
+        return;
+      }
+      
+      // ✅ 🆕 إذا كان نفس المنتج محمّلاً، ولم يُحفظ للتو، لا تُعد التحميل
+      if (product?.id && lastLoadedProductIdRef.current === product.id && !wasSavedRef.current) {
+        return;
+      }
+      
+      // ✅ 🆕 إذا حُفظ للتو — لا تُعد التحميل (تجنب مشاكل الريفريش)
+      if (wasSavedRef.current) {
+        console.log('🛡️ [ZOOQ][Form] Skipping reload after save — using current state');
+        return;
+      }
+      
+      isLoadingRef.current = true;
+      lastLoadedProductIdRef.current = product?.id || null;
+      
+      if (product) {
+        const availableValue = product.is_available !== undefined ? product.is_available : true;
+        
+        // ✅ تحميل البيانات الأساسية
+        setForm({
+          title_ar: product.title_ar || "",
+          description_ar: product.description_ar || "",
+          price: product.price || 0,
+          old_price: product.old_price || 0,
+          is_offer: product.is_offer || false,
+          is_available: availableValue,
+          payment_method: product.payment_method || "cash",
+          kind: product.kind || "product",
+          category_id: product.category_id || "",
+          parent_category_id: product.parent_category_id || "",
+          governorate_id: product.governorate_id || "",
+          cover_url: product.cover_url || "",
+          image_urls: product.image_urls || [""],
+        });
+        
+        // ✅ 🆕 مسح تتبع التعديلات اليدوية عند تحميل منتج جديد
+        manuallyEditedIdsRef.current.clear();
+        
+        // ✅ ✅ ✅ تحميل التصنيف الرئيسي والفرعي
+        if (cats.length > 0) {
+          // حالة 1: parent_category_id موجود
+          if (product.parent_category_id) {
+            setParentCategoryId(product.parent_category_id);
+            setParentCategorySearch(getCategoryName(product.parent_category_id));
+            
+            if (product.category_id && product.category_id !== product.parent_category_id) {
               setSubCategoryId(product.category_id);
               setSubCategorySearch(getCategoryName(product.category_id));
-            }
-            // إذا كان التصنيف رئيسي
-            else {
-              setParentCategoryId(product.category_id);
-              setParentCategorySearch(getCategoryName(product.category_id));
+            } else {
               setSubCategoryId("");
               setSubCategorySearch("");
             }
           }
+          // حالة 2: فقط category_id (منتج قديم)
+          else if (product.category_id) {
+            const cat = cats.find((c: any) => c.id === product.category_id);
+            
+            if (cat) {
+              // إذا كان التصنيف فرعي
+              if (cat.parent_id) {
+                setParentCategoryId(cat.parent_id);
+                setParentCategorySearch(getCategoryName(cat.parent_id));
+                setSubCategoryId(product.category_id);
+                setSubCategorySearch(getCategoryName(product.category_id));
+              }
+              // إذا كان التصنيف رئيسي
+              else {
+                setParentCategoryId(product.category_id);
+                setParentCategorySearch(getCategoryName(product.category_id));
+                setSubCategoryId("");
+                setSubCategorySearch("");
+              }
+            }
+          }
         }
-      }
-      
-      if (product.governorate_id && govs.length > 0) {
-        setGovernorateSearch(getGovernorateName(product.governorate_id));
-      }
-      
-      // ✅ تحميل الخيارات من metadata
-      const productMetadata = product.metadata || {};
-      const productOptions = productMetadata.options || product.options || [];
-      const productColors = productMetadata.colors || product.colors || [];
-      
-      const typeMap: Record<string, string> = {
-        'color': 'colors',
-        'size': 'sizes',
-        'model': 'models',
-        'material': 'materials',
-        'style': 'style',
-        'brand': 'brand',
-      };
-      
-      const optionsGrouped: Record<string, string[]> = {};
-      
-      productOptions.forEach((opt: any) => {
-        const originalType = opt.option_type || opt.key;
-        const mappedType = typeMap[originalType] || originalType;
         
-        if (mappedType) {
-          if (!optionsGrouped[mappedType]) optionsGrouped[mappedType] = [];
-          optionsGrouped[mappedType].push(opt.option_value || opt.value);
+        if (product.governorate_id && govs.length > 0) {
+          setGovernorateSearch(getGovernorateName(product.governorate_id));
         }
-      });
-      
-      setOptions(optionsGrouped);
-      
-      // ✅ تعيين الألوان
-      if (productColors.length > 0) {
-        const mappedColors = productColors.map((c: any) => ({
-          id: c.id,
-          color_name_ar: c.color_name_ar || c.color_name_en || 'لون',
-          color_name_en: c.color_name_en || c.color_name_ar || 'Color',
-          color_hex: c.color_hex || null,
-          image_url: c.image_url || '',
-          sort_order: c.sort_order || 0,
-        }));
         
-        setTempColors(mappedColors);
-        setColorWithImages(mappedColors.map((c: any) => ({
-          name: c.color_name_ar,
-          image: c.image_url,
-          hex: c.color_hex,
-        })));
-      } else {
-        setTempColors([]);
-        setColorWithImages([]);
-      }
-      
-      // ✅ تعيين المقاسات
-      if (optionsGrouped.sizes && optionsGrouped.sizes.length > 0) {
-        setSizes(optionsGrouped.sizes);
-      } else {
-        setSizes([]);
-      }
-      
-      // ✅ تعيين التركيبات
-      const productVariations = productMetadata.variations || product.variations || [];
-      if (productVariations && productVariations.length > 0) {
-        const mappedVariations = productVariations.map((v: any) => ({
-          id: v.id,
-          combination: v.combination || {},
-          is_available: v.is_available !== undefined ? v.is_available : v.is_active !== false,
-          price: v.price || 0,
-          old_price: v.old_price || null,
-          sku: v.sku || '',
-          stock_quantity: v.stock_quantity || 0,
-          color_id: v.color_id || null,
-          image_url: v.image_url || null,
-        }));
+        // ✅ تحميل الخيارات من metadata
+        const productMetadata = product.metadata || {};
+        const productOptions = productMetadata.options || product.options || [];
+        const productColors = productMetadata.colors || product.colors || [];
         
-        setVariations(mappedVariations);
+        // ✅ ✅ ✅ اجلب variations أولاً (لأنها تُستخدم في auto-recover)
+        console.log(`🟦 [ZOOQ][Form] Fetching variations from DB (source of truth)...`);
+        let productVariations: any[] = [];
+        const { data: varsFromDB, error: varsError } = await supabase
+          .from("product_variations")
+          .select("*")
+          .eq("listing_id", product.id)
+          .order("created_at", { ascending: true });
+
+        if (varsError) {
+          console.error(`🟦 [ZOOQ][Form] Failed to fetch variations from DB:`, varsError);
+          // fallback فقط عند فشل الاتصال
+          productVariations = productMetadata.variations || product.variations || [];
+        } else {
+          productVariations = varsFromDB || [];
+          console.log(`🟦 [ZOOQ][Form] Fetched ${productVariations.length} variations from DB with prices:`, productVariations.map((v: any) => ({ id: v.id, price: v.price })));
+          // 🟢 [DEBUG-1] اطبع الأسعار الفعلية من DB
+          console.log(`🟢 [DEBUG-1] Prices from DB at load:`, productVariations.map((v: any) => v.price));
+        }
+        
+        // ✅ ✅ ✅ دائماً اجلب options من DB مباشرة (مثل variations)
+        // لأن product من RPC قد لا يحملها
+        console.log(`🟦 [ZOOQ][Form] Fetching options from DB (source of truth)...`);
+        let optionsFromDB: any[] = [];
+        const { data: optsFromDB, error: optsError } = await supabase
+          .from("product_options")
+          .select("option_type, option_value, sort_order")
+          .eq("listing_id", product.id)
+          .order("sort_order", { ascending: true });
+        
+        if (optsError) {
+          console.error(`🟦 [ZOOQ][Form] Failed to fetch options from DB:`, optsError);
+          optionsFromDB = productOptions; // fallback
+        } else {
+          optionsFromDB = optsFromDB || [];
+          console.log(`🟦 [ZOOQ][Form] Fetched ${optionsFromDB.length} options from DB`);
+        }
+        
+        const typeMap: Record<string, string> = {
+          'color': 'colors',
+          'size': 'sizes',
+          'model': 'models',
+          'material': 'materials',
+          'style': 'style',
+          'brand': 'brand',
+        };
+        
+        const optionsGrouped: Record<string, string[]> = {};
+        
+        optionsFromDB.forEach((opt: any) => {
+          const originalType = opt.option_type || opt.key;
+          const mappedType = typeMap[originalType] || originalType;
+          
+          if (mappedType) {
+            if (!optionsGrouped[mappedType]) optionsGrouped[mappedType] = [];
+            optionsGrouped[mappedType].push(opt.option_value || opt.value);
+          }
+        });
+        
+        // ✅ ✅ ✅ Auto-recover: إذا product_options فارغة، استخرج الخيارات من variations
+        if (Object.keys(optionsGrouped).length === 0 && productVariations && productVariations.length > 0) {
+          console.log(`🔧 [ZOOQ][Form] product_options empty — recovering from variations`);
+          const recovered: Record<string, string[]> = {};
+          productVariations.forEach((v: any) => {
+            Object.entries(v.combination || {}).forEach(([key, value]) => {
+              if (value && String(value).trim()) {
+                if (!recovered[key]) recovered[key] = [];
+                const sv = String(value).trim();
+                if (!recovered[key].includes(sv)) recovered[key].push(sv);
+              }
+            });
+          });
+          console.log(`🔧 [ZOOQ][Form] Recovered options from variations:`, recovered);
+          setOptions(recovered);
+        } else {
+          console.log(`🟦 [ZOOQ][Form] Grouped options:`, optionsGrouped);
+          setOptions(optionsGrouped);
+        }
+        
+        // ✅ تعيين الألوان
+        if (productColors.length > 0) {
+          const mappedColors = productColors.map((c: any) => ({
+            id: c.id,
+            color_name_ar: c.color_name_ar || c.color_name_en || 'لون',
+            color_name_en: c.color_name_en || c.color_name_ar || 'Color',
+            color_hex: c.color_hex || null,
+            image_url: c.image_url || '',
+            sort_order: c.sort_order || 0,
+          }));
+          
+          setTempColors(mappedColors);
+          setColorWithImages(mappedColors.map((c: any) => ({
+            name: c.color_name_ar,
+            image: c.image_url,
+            hex: c.color_hex,
+          })));
+        } else {
+          setTempColors([]);
+          setColorWithImages([]);
+        }
+        
+        // ✅ تعيين المقاسات
+        if (optionsGrouped.sizes && optionsGrouped.sizes.length > 0) {
+          setSizes(optionsGrouped.sizes);
+        } else {
+          setSizes([]);
+        }
+        
+        // ✅ ضبط variations
+        if (productVariations && productVariations.length > 0) {
+          const mappedVariations = productVariations.map((v: any) => ({
+            id: v.id,
+            combination: v.combination || {},
+            is_available: v.is_available !== undefined ? v.is_available : v.is_active !== false,
+            price: v.price || 0,
+            old_price: v.old_price || null,
+            sku: v.sku || '',
+            stock_quantity: v.stock_quantity || 0,
+            color_id: v.color_id || null,
+            image_url: v.image_url || null,
+          }));
+          
+          console.log(`🟦 [ZOOQ][Form] Setting ${mappedVariations.length} variations into state`);
+          setVariations(mappedVariations);
+        } else {
+          console.log(`🟦 [ZOOQ][Form] No variations found (DB empty for this listing)`);
+          setVariations([]);
+        }
+        
       } else {
+        // ✅ حالة الإضافة الجديدة
+        setForm({
+          ...emptyForm,
+          is_offer: productType === "offer",
+        });
+        setOptions({});
         setVariations([]);
+        setTempColors([]);
+        setSizes([]);
+        setColorWithImages([]);
+        setParentCategoryId("");
+        setSubCategoryId("");
+        setParentCategorySearch("");
+        setSubCategorySearch("");
+        setGovernorateSearch("");
+        manuallyEditedIdsRef.current.clear();
       }
       
-    } else {
-      // ✅ حالة الإضافة الجديدة
-      setForm({
-        ...emptyForm,
-        is_offer: productType === "offer",
-      });
-      setOptions({});
-      setVariations([]);
-      setTempColors([]);
-      setSizes([]);
-      setColorWithImages([]);
-      setParentCategoryId("");
-      setSubCategoryId("");
-      setParentCategorySearch("");
-      setSubCategorySearch("");
-      setGovernorateSearch("");
-    }
-    setActiveTab("basic");
-    
-    isFirstLoadRef.current = true;
-    
-    setTimeout(() => {
-      isLoadingRef.current = false;
-    }, 500);
-    
+      isFirstLoadRef.current = true;
+      
+      setTimeout(() => {
+        isLoadingRef.current = false;
+      }, 500);
+    })();
   }, [product, productType, open, cats, govs, getCategoryName]);
 
   // ✅ externalColorImages
@@ -559,6 +658,19 @@ export function ProductFormDialog({
     
     isPriceEditingRef.current = true;
     setForm({ ...form, [field]: num });
+    
+    // ✅ 🆕 عند تغيير السعر الأساسي، طبّقه فوراً على التركيبات غير المعدّلة
+    if (field === 'price' && num > 0 && variations.length > 0) {
+      const updated = variations.map(v => {
+        if (manuallyEditedIdsRef.current.has(v.id)) return v;
+        return { ...v, price: num };
+      });
+      const changed = updated.some((v, i) => v.price !== variations[i]?.price);
+      if (changed) {
+        console.log('🟦 [ZOOQ][Form] Applying new basePrice via handlePriceChange:', num);
+        setVariations(updated);
+      }
+    }
     
     setTimeout(() => {
       isPriceEditingRef.current = false;
@@ -716,6 +828,33 @@ export function ProductFormDialog({
       // إذا لم يختار فرعي → استخدم الرئيسي
       const finalCategoryId = subCategoryId || parentCategoryId;
       
+      // ✅ ✅ ✅ الحل الجذري: استخدم variations من الـ state مباشرة
+      // (تعكس حذف/إضافة/تعديل المستخدم — وليس نسخة قديمة من DB)
+      // السبب: جلب DB هنا يتجاهل تعديلات المستخدم (حذف تركيبة، تغيير سعر)
+      console.log('🟢 [DEBUG-STATE] Variations from state before save:', {
+        count: variations.length,
+        prices: variations.map((v: any) => v.price),
+        ids: variations.map((v: any) => v.id),
+      });
+      
+      const baseVariations = variations.map((v: any) => ({
+        id: v.id,
+        combination: v.combination || {},
+        is_available: v.is_available !== false,
+        stock_quantity: v.stock_quantity || 0,
+        color_id: v.color_id || null,
+        image_url: v.image_url || null,
+        sku: v.sku || '',
+        price: v.price,
+        old_price: v.old_price,
+      }));
+      
+      // ✅ 🆕 هل المستخدم حذف كل الخيارات يدوياً؟ (اسمح بحذف التركيبات)
+      const activeOptionsCountForSave = Object.values(options).filter(
+        (arr: any) => arr && arr.length > 0
+      ).length;
+      const allowVariationsClear = activeOptionsCountForSave === 0;
+      
       const allData = { 
         ...form, 
         // ✅ التصنيفات
@@ -727,19 +866,47 @@ export function ProductFormDialog({
           colors: tempColors.map((c: any) => c.color_name_ar),
           sizes: finalSizes,
         },
-        variations: variations.map(v => ({
+        // ✅ ✅ ✅ لكل variation: استخدم form.price (السعر الجديد) — أو v.price إذا عُدّل يدوياً
+        variations: baseVariations.map((v: any) => ({
           ...v,
-          price: v.price || form.price,
-          old_price: v.old_price || form.old_price || null,
+          price: manuallyEditedIdsRef.current.has(v.id)
+            ? (v.price || form.price)
+            : form.price,
+          old_price: manuallyEditedIdsRef.current.has(v.id)
+            ? (v.old_price || form.old_price || null)
+            : (form.old_price || null),
         })),
         colors: tempColors,
         image_urls: form.image_urls,
+        // ✅ 🆕 flag للحماية: اسمح بحذف التركيبات إذا حذف المستخدم كل الخيارات
+        allowVariationsClear,
       };
       
+      // 🟢 [DEBUG-2] اطبع الأسعار التي ستُحفظ
+      console.log('🟢 [DEBUG-2] Prices to save:', {
+        form_price: form.price,
+        variations_prices: allData.variations.map((v: any) => v.price),
+        manually_edited_ids: Array.from(manuallyEditedIdsRef.current),
+        source: 'state',
+      });
+      
+      console.log('🟢 [ZOOQ][Form] allowVariationsClear:', allowVariationsClear);
+      
+      wasSavedRef.current = true;
+      // ✅ 🆕 فعّل حماية onVariationsChange أثناء الحفظ
+      isSavingRef.current = true;
       await onSave(allData);
+      // ✅ 🆕 سجّل وقت انتهاء الحفظ — للحماية 3 ثوان بعده
+      saveCompletedAtRef.current = Date.now();
+      
+      // 🛡️ 🆕 لا تُعد تعيين lastLoadedProductIdRef هنا
+      // (اتركه كما هو — لمنع إعادة التحميل في نفس الجلسة)
+      // سيُعاد تعيينه عند إغلاق النموذج (في useEffect التحميل — !open)
+      // lastLoadedProductIdRef.current = null;
     } catch (error) {
       console.error("❌ Error saving:", error);
     } finally {
+      isSavingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -788,6 +955,7 @@ export function ProductFormDialog({
     setSizes([]);
     setColorWithImages([]);
     setVariations([]);
+    manuallyEditedIdsRef.current.clear();
     
     // ✅ تحديث form
     setForm(prev => ({ 
@@ -820,6 +988,7 @@ export function ProductFormDialog({
     setSizes([]);
     setColorWithImages([]);
     setVariations([]);
+    manuallyEditedIdsRef.current.clear();
     setForm(prev => ({ 
       ...prev, 
       parent_category_id: "",
@@ -1586,7 +1755,20 @@ export function ProductFormDialog({
   onChange={setOptions}
   lang={app.lang}
   variations={variations}
-  onVariationsChange={setVariations}
+  onVariationsChange={(newVars) => {
+    // ✅ 🆕 امنع المسح أثناء الحفظ أو خلال 3 ثوان بعده
+    const timeSinceSave = Date.now() - saveCompletedAtRef.current;
+    const justSaved = saveCompletedAtRef.current > 0 && timeSinceSave < 3000;
+
+    if ((isSavingRef.current || justSaved) && newVars.length === 0) {
+      console.log('🛡️ [ZOOQ][Form] Blocked clearing variations during/after save', {
+        isSaving: isSavingRef.current,
+        timeSinceSave,
+      });
+      return;
+    }
+    setVariations(newVars);
+  }}
   userId={app.user?.id || ''}
   onColorsWithImagesChange={handleColorsWithImagesChange}
   externalColorImages={externalColorImages}
@@ -1597,6 +1779,10 @@ export function ProductFormDialog({
   basePrice={form.price}
   baseOldPrice={form.old_price}
   isEditing={!!product}   // ✅ 🆕 أضف هذا السطر
+  productId={product?.id}  // ✅ 🆕 أضف هذا السطر
+  onVariationManualEdit={(id) => {
+    manuallyEditedIdsRef.current.add(id);
+  }}
 />
                 </>
               )}
