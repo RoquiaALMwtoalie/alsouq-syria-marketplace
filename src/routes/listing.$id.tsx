@@ -3,9 +3,10 @@
 // ✅ إضافة: Portal لشريط الأزرار السفلي (Sticky Bottom Bar) — ثابت دائماً حتى مع PullToRefresh
 // ✅ إضافة: Portal لـ Fullscreen Image Viewer — يغطي الشاشة بالكامل على كل الأجهزة
 // ✅ إصلاح: عرض الصور كاملة (objectFit="contain") — بدون قطع — الصورة بنفس شكلها الأصلي
+// ✅ [NEW] اختيار تلقائي لأي خيار له قيمة واحدة فقط
 
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   Heart, Share2,
@@ -384,7 +385,7 @@ function ListingDetailPage() {
   }, [optionGroups, selectionMap, variations.length, matchedVariation, app.lang]);
 
   // ============================================================
-  // ✅ تأثيرات الاختيار التلقائي
+  // ✅ تأثيرات الاختيار التلقائي (الألوان والمقاسات — كما هي)
   // ============================================================
   useEffect(() => {
     if (colors.length === 1 && !selectedColor) {
@@ -398,6 +399,39 @@ function ListingDetailPage() {
   useEffect(() => {
     if (sizes.length === 1 && !selectedSize) setSelectedSize(sizes[0]);
   }, [sizes, selectedSize]);
+
+  // ============================================================
+  // ✅ [NEW] اختيار تلقائي لأي خيار له قيمة واحدة فقط
+  // لا يغيّر أي سلوك آخر — فقط يملأ الخيارات الأحادية تلقائياً
+  // ============================================================
+  const autoSelectedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (optionGroups.length === 0) return;
+
+    const updates: Record<string, string> = {};
+    let hasUpdates = false;
+
+    optionGroups.forEach((g) => {
+      // فقط الخيارات التي لها قيمة واحدة
+      if (g.values.length !== 1) return;
+
+      // تخطَّ الألوان والمقاسات — لهم useEffect خاص بهم
+      if (g.isColor || g.isSize) return;
+
+      // إذا لم يُختَر بعد (ولا من قبل المستخدم ولا تلقائياً)
+      if (selectionMap[g.key]) return;
+      if (autoSelectedRef.current.has(g.key)) return;
+
+      updates[g.key] = g.values[0];
+      autoSelectedRef.current.add(g.key);
+      hasUpdates = true;
+    });
+
+    if (hasUpdates) {
+      setSelectedExtra((prev) => ({ ...prev, ...updates }));
+    }
+  }, [optionGroups, selectionMap]);
 
   // ✅ ضبط الصورة الأولى عند تغيير المنتج
   useEffect(() => {
@@ -781,9 +815,7 @@ function ListingDetailPage() {
         </div>
       </div>
     );
-  }
-
-  return (
+  }  return (
     <ClientOnly fallback={<LoadingSkeleton />}>
       <div className="min-h-screen bg-[#f8f9fa] pb-24" dir="rtl">
 
@@ -1169,9 +1201,7 @@ function ListingDetailPage() {
                 {listing.description_ar}
               </p>
             </div>
-          )}
-
-          {/* ===== المنتجات التي قد تعجبك أيضاً (4 فقط — العروض أولاً) ===== */}
+          )}          {/* ===== المنتجات التي قد تعجبك أيضاً (4 فقط — العروض أولاً) ===== */}
           {sortedSimilarListings.length > 0 && (
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between px-1">

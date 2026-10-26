@@ -43,7 +43,6 @@ export interface ColorWithImage {
   hex?: string;
 }
 
-// ✅ ✅ ✅ واجهة الخيارات المتاحة من الـ DB
 export interface AvailableOption {
   key: string;
   name_ar: string;
@@ -66,19 +65,50 @@ interface ProductOptionsManagerProps {
   sizes?: string[];
   onSizesChange?: (sizes: string[]) => void;
   isOffer?: boolean;
-  // ✅ ✅ ✅ الخيارات المتاحة من التصنيف
   availableOptions?: AvailableOption[];
-  // ✅ 🆕 السعر الأساسي للمنتج (يُستخدم كـ default للتركيبات الجديدة)
   basePrice?: number;
-  // ✅ 🆕 السعر القديم الأساسي للمنتج (للعروض)
   baseOldPrice?: number;
-  // ✅ 🆕 هل نحن في وضع التعديل؟ (منتج موجود مسبقاً)
   isEditing?: boolean;
-  // ✅ 🆕 إبلاغ الأب عند تعديل المستخدم سعر تركيبة يدوياً
   onVariationManualEdit?: (id: string) => void;
-  // ✅ 🆕 معرف المنتج (لربط sessionStorage بمنتج محدد)
   productId?: string;
 }
+
+// ============================================================
+// 🛠️ دوال مساعدة للـ sessionStorage (خارج المكون)
+// ============================================================
+const buildDeletedStorageKey = (
+  productId: string | undefined,
+  isEditing: boolean
+): string => {
+  if (productId) return `zooq-deleted-combinations-${productId}`;
+  if (!isEditing) return 'zooq-deleted-combinations-new';
+  return 'zooq-deleted-combinations-edit';
+};
+
+const readDeletedSet = (key: string): Set<string> => {
+  try {
+    const stored = sessionStorage.getItem(key);
+    if (!stored) return new Set();
+    const arr = JSON.parse(stored);
+    if (!Array.isArray(arr)) return new Set();
+    return new Set(arr);
+  } catch (e) {
+    console.error('❌ [deleted] Failed to read sessionStorage:', e);
+    return new Set();
+  }
+};
+
+const writeDeletedSet = (key: string, set: Set<string>): void => {
+  try {
+    if (set.size === 0) {
+      sessionStorage.removeItem(key);
+    } else {
+      sessionStorage.setItem(key, JSON.stringify(Array.from(set)));
+    }
+  } catch (e) {
+    console.error('❌ [deleted] Failed to write sessionStorage:', e);
+  }
+};
 
 export function ProductOptionsManager({ 
   value, 
@@ -94,27 +124,33 @@ export function ProductOptionsManager({
   onSizesChange,
   isOffer = false,
   availableOptions = [],
-  basePrice = 0,          // ✅ 🆕
-  baseOldPrice = 0,       // ✅ 🆕
-  isEditing = false,      // ✅ 🆕
-  onVariationManualEdit,  // ✅ 🆕
-  productId,              // ✅ 🆕
+  basePrice = 0,
+  baseOldPrice = 0,
+  isEditing = false,
+  onVariationManualEdit,
+  productId,
 }: ProductOptionsManagerProps) {
   const app = useApp();
   
-  // ✅ ✅ ✅ دالة تطبيع الـ combination (ترتيب أبجدي للمفاتيح)
+  // ============================================================
+  // 🔑 [FIX-2026-PRO] التعديل 1: تطبيع صارم — يضمن تطابق "100 ml" مع "100ml"
+  // ============================================================
   const normalizeCombination = useCallback((combo: Record<string, string> | null | undefined): string => {
     if (!combo || typeof combo !== 'object') return '';
     const sorted = Object.keys(combo)
       .sort()
       .reduce((acc, key) => {
-        acc[key] = String(combo[key] ?? '').trim();
+        // trim + toLowerCase + إزالة كل المسافات الداخلية
+        acc[key] = String(combo[key] ?? '')
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '');
         return acc;
       }, {} as Record<string, string>);
     return JSON.stringify(sorted);
   }, []);
   
-  // ✅ ✅ ✅ قاموس شامل لكل الخيارات الممكنة (للأيقونات والألوان)
+  // ✅ قاموس الأيقونات
   const ALL_OPTION_TYPES: Record<string, { icon: any; emoji: string; color: string; description_ar: string; description_en: string }> = {
     colors: { icon: Palette, emoji: '🎨', color: '#2a655f', description_ar: 'أضف ألوان المنتج مع صور', description_en: 'Add product colors with images' },
     sizes: { icon: Ruler, emoji: '📏', color: '#2a655f', description_ar: 'أضف المقاسات المتوفرة', description_en: 'Add available sizes' },
@@ -126,6 +162,7 @@ export function ProductOptionsManager({
     season: { icon: Calendar, emoji: '🌤️', color: '#2a655f', description_ar: 'أضف المواسم', description_en: 'Add seasons' },
     gender: { icon: User, emoji: '👫', color: '#2a655f', description_ar: 'أضف الفئات الجنسية', description_en: 'Add gender categories' },
     brand: { icon: Tag, emoji: '🏷️', color: '#2a655f', description_ar: 'أضف الماركات', description_en: 'Add brands' },
+    brands: { icon: Tag, emoji: '🏷️', color: '#2a655f', description_ar: 'أضف الماركات', description_en: 'Add brands' },
     storage: { icon: HardDrive, emoji: '💾', color: '#2a655f', description_ar: 'أضف سعات التخزين', description_en: 'Add storage capacities' },
     ram: { icon: Cpu, emoji: '🧠', color: '#2a655f', description_ar: 'أضف سعات الذاكرة', description_en: 'Add RAM capacities' },
     processor: { icon: Cpu, emoji: '⚡', color: '#2a655f', description_ar: 'أضف أنواع المعالجات', description_en: 'Add processor types' },
@@ -136,6 +173,7 @@ export function ProductOptionsManager({
     dimensions: { icon: Ruler, emoji: '📐', color: '#2a655f', description_ar: 'أضف الأبعاد', description_en: 'Add dimensions' },
     weight: { icon: Weight, emoji: '⚖️', color: '#2a655f', description_ar: 'أضف الأوزان', description_en: 'Add weights' },
     volume: { icon: Droplet, emoji: '🧴', color: '#2a655f', description_ar: 'أضف الأحجام', description_en: 'Add volumes' },
+    volumes: { icon: Droplet, emoji: '🧴', color: '#2a655f', description_ar: 'أضف الأحجام', description_en: 'Add volumes' },
     concentration: { icon: Droplet, emoji: '💧', color: '#2a655f', description_ar: 'أضف التركيزات', description_en: 'Add concentrations' },
     notes: { icon: Star, emoji: '🌸', color: '#2a655f', description_ar: 'أضف المكونات العطرية', description_en: 'Add fragrance notes' },
     language: { icon: Globe, emoji: '🌐', color: '#2a655f', description_ar: 'أضف اللغات', description_en: 'Add languages' },
@@ -153,14 +191,9 @@ export function ProductOptionsManager({
     skin_type: { icon: User, emoji: '💆', color: '#2a655f', description_ar: 'أضف أنواع البشرة', description_en: 'Add skin types' },
   };
 
-  // ✅ ✅ ✅ بناء OPTION_TYPES من availableOptions فقط
   const OPTION_TYPES = useMemo(() => {
-    if (!availableOptions || availableOptions.length === 0) {
-      return [];
-    }
-    
+    if (!availableOptions || availableOptions.length === 0) return [];
     const isArabic = app.lang === 'ar';
-    
     return availableOptions
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((opt) => {
@@ -171,7 +204,6 @@ export function ProductOptionsManager({
           description_ar: 'خيار مخصص',
           description_en: 'Custom option',
         };
-        
         return {
           id: opt.key,
           label: isArabic ? opt.name_ar : opt.name_en,
@@ -185,11 +217,37 @@ export function ProductOptionsManager({
       });
   }, [availableOptions, app.lang]);
 
-  // ✅ ✅ ✅ إضافة الألوان تلقائياً إذا كان في availableOptions
   const hasColorsOption = useMemo(() => {
     return availableOptions.some(opt => opt.key === 'colors' || opt.key === 'shades');
   }, [availableOptions]);
 
+  // ============================================================
+  // 🔑 [FIX-RACE-2026] هل الخيارات جاهزة (وصلت من DB)؟
+  // ============================================================
+  const hasOptionsReady = useMemo(() => {
+    return Object.keys(value).some(k => value[k] && value[k].length > 0);
+  }, [value]);
+
+  // مفتاح sessionStorage ثابت
+  const deletedStorageKey = useMemo(() => {
+    return buildDeletedStorageKey(productId, isEditing);
+  }, [productId, isEditing]);
+
+  // استعادة المتزامنة (lazy initializer)
+  const deletedCombinationsRef = useRef<Set<string>>(
+    readDeletedSet(deletedStorageKey)
+  );
+
+  const lastKeyRef = useRef<string>(deletedStorageKey);
+  if (lastKeyRef.current !== deletedStorageKey) {
+    lastKeyRef.current = deletedStorageKey;
+    deletedCombinationsRef.current = readDeletedSet(deletedStorageKey);
+    console.log('🔑 [deleted] Key changed → reloaded:', deletedStorageKey);
+  }
+
+  // ============================================================
+  // State
+  // ============================================================
   const [newValue, setNewValue] = useState("");
   const [activeType, setActiveType] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -208,115 +266,19 @@ export function ProductOptionsManager({
   const previousStateRef = useRef<string>('');
   const [deletedVariationsBackup, setDeletedVariationsBackup] = useState<Variation[]>([]);
   const [showRestoreButton, setShowRestoreButton] = useState(false);
-  const isInitialLoadRef = useRef(true);
 
-  // ✅ ✅ ✅ ref لأحدث قيمة من localVariations (لتجنب إضافتها في deps)
   const localVariationsRef = useRef<Variation[]>(localVariations);
   useEffect(() => {
     localVariationsRef.current = localVariations;
   }, [localVariations]);
 
-  // ✅ ✅ ✅ ref للتركيبات الأصلية من الـ DB (لتحديد "الجديد" الحقيقي)
   const originalCombinationsRef = useRef<Set<string>>(new Set());
   const hasSavedOriginalRef = useRef(false);
 
-  // ✅ ✅ ✅ ref للتركيبات المحذوفة يدوياً (لمنع إعادة توليدها)
-  const deletedCombinationsRef = useRef<Set<string>>(new Set());
-
-  // ✅ ✅ ✅ مفتاح sessionStorage فريد لكل منتج
-  // نستخدم productId إذا موجود، وإلا أول تركيبة أصلية كبصمة، وإلا "new"
-  const [deletedStorageKey, setDeletedStorageKey] = useState<string>('zooq-deleted-combinations-init');
-  const [storageKeyInitialized, setStorageKeyInitialized] = useState(false);
-
-  useEffect(() => {
-    if (storageKeyInitialized) return;
-    
-    // ✅ إذا productId موجود — استخدمه (الأكثر موثوقية)
-    if (productId) {
-      setDeletedStorageKey(`zooq-deleted-combinations-${productId}`);
-      setStorageKeyInitialized(true);
-      return;
-    }
-    
-    // ✅ إذا في تركيبات أصلية — استخدم أولها كبصمة (فريدة لكل منتج)
-    if (originalCombinationsRef.current && originalCombinationsRef.current.size > 0) {
-      const firstCombo = Array.from(originalCombinationsRef.current)[0];
-      // ✅ hash بسيط (لتجنب مفاتيح طويلة)
-      let hash = 0;
-      for (let i = 0; i < firstCombo.length; i++) {
-        hash = ((hash << 5) - hash) + firstCombo.charCodeAt(i);
-        hash |= 0;
-      }
-      setDeletedStorageKey(`zooq-deleted-combinations-${Math.abs(hash)}`);
-      setStorageKeyInitialized(true);
-      return;
-    }
-    
-    // ✅ منتج جديد
-    if (!isEditing) {
-      setDeletedStorageKey('zooq-deleted-combinations-new');
-      setStorageKeyInitialized(true);
-    }
-  }, [productId, isEditing, storageKeyInitialized]);
-
-  // ✅ ✅ ✅ استرجاع التركيبات المحذوفة من sessionStorage
-  useEffect(() => {
-    if (!storageKeyInitialized) return;
-    
-    try {
-      // ✅ امسح المفاتيح القديمة (localStorage المشتركة) — لم تعد مستخدمة
-      if (!localStorage.getItem('zooq-deleted-migrated-v2')) {
-        localStorage.removeItem('zooq-deleted-combinations-edit');
-        localStorage.removeItem('zooq-deleted-combinations-new');
-        localStorage.setItem('zooq-deleted-migrated-v2', '1');
-        console.log('🗑️ [deleted] Migrated old localStorage keys (v2)');
-      }
-      
-      const stored = sessionStorage.getItem(deletedStorageKey);
-      if (stored) {
-        const arr = JSON.parse(stored);
-        if (Array.isArray(arr) && arr.length > 0) {
-          deletedCombinationsRef.current = new Set(arr);
-          console.log('📂 [deleted] Restored from sessionStorage:', arr.length, 'combinations');
-        }
-      } else {
-        deletedCombinationsRef.current = new Set();
-      }
-    } catch (e) {
-      console.error('❌ Failed to restore deleted combinations:', e);
-    }
-  }, [deletedStorageKey, storageKeyInitialized]);
-
-  // ✅ ✅ ✅ تنظيف sessionStorage القديم (مرة واحدة فقط لكل منتج)
-  // (يمنع تراكم التركيبات المحذوفة من محاولات سابقة)
-  useEffect(() => {
-    if (storageKeyInitialized && originalCombinationsRef.current.size > 0) {
-      const cleanupKey = `zooq-cleanup-${deletedStorageKey}`;
-      if (!sessionStorage.getItem(cleanupKey)) {
-        // ✅ أول فتح بعد التحديث — امسح المحذوفات القديمة
-        sessionStorage.removeItem(deletedStorageKey);
-        deletedCombinationsRef.current = new Set();
-        sessionStorage.setItem(cleanupKey, '1');
-        console.log('🧹 [deleted] Cleaned stale deleted combinations (first load for this product)');
-      }
-    }
-  }, [storageKeyInitialized, deletedStorageKey]);
-
-  // ✅ ✅ ✅ دالة حفظ التركيبات المحذوفة في sessionStorage
   const persistDeletedCombinations = useCallback(() => {
-    if (!storageKeyInitialized) return;
-    
-    try {
-      sessionStorage.setItem(
-        deletedStorageKey,
-        JSON.stringify(Array.from(deletedCombinationsRef.current))
-      );
-    } catch (e) {
-      console.error('❌ Failed to persist deleted combinations:', e);
-    }
-  }, [deletedStorageKey, storageKeyInitialized]);
+    writeDeletedSet(deletedStorageKey, deletedCombinationsRef.current);
+  }, [deletedStorageKey]);
 
-  // ✅ ✅ ✅ تعيين activeType تلقائياً لأول خيار متاح
   useEffect(() => {
     if (OPTION_TYPES.length > 0 && !activeType) {
       setActiveType(OPTION_TYPES[0].id);
@@ -327,26 +289,41 @@ export function ProductOptionsManager({
     return Object.values(options).filter(arr => arr && arr.length > 0).length;
   };
 
-  useEffect(() => {
-    console.log("🔍 [ProductOptionsManager] Syncing variations from props:", variations.length);
-    if (variations.length > 0) {
-      // ✅ 🆕 دائماً حدّث localVariations من props
-      // (لأن الأب هو المصدر الوحيد للحقيقة)
-      setLocalVariations(variations);
-      isInitialLoadRef.current = false;
-
-      // ✅ ✅ ✅ حفظ التركيبات الأصلية من الـ DB مرة واحدة فقط
-      if (!hasSavedOriginalRef.current) {
-        originalCombinationsRef.current = new Set(
-          variations.map(v => normalizeCombination(v.combination))
-        );
-        hasSavedOriginalRef.current = true;
-        console.log('📌 [Original] Saved original combinations from DB:', originalCombinationsRef.current.size);
-      }
-    } else {
-      setLocalVariations(variations);
-    }
+  // ============================================================
+  // تزامن ذكي — لا يستبدل localVariations إذا لم تتغير القيم
+  // ============================================================
+  const incomingSignature = useMemo(() => {
+    return JSON.stringify(
+      variations.map(v => ({
+        id: v.id,
+        combo: normalizeCombination(v.combination),
+        price: v.price,
+        old_price: v.old_price,
+        is_available: v.is_available,
+        stock_quantity: v.stock_quantity,
+      }))
+    );
   }, [variations, normalizeCombination]);
+
+  const lastSyncedSignatureRef = useRef<string>('');
+
+  useEffect(() => {
+    if (incomingSignature === lastSyncedSignatureRef.current) {
+      return;
+    }
+
+    console.log("🔍 [ProductOptionsManager] Syncing variations from props:", variations.length);
+    lastSyncedSignatureRef.current = incomingSignature;
+    setLocalVariations(variations);
+
+    if (variations.length > 0 && !hasSavedOriginalRef.current) {
+      originalCombinationsRef.current = new Set(
+        variations.map(v => normalizeCombination(v.combination))
+      );
+      hasSavedOriginalRef.current = true;
+      console.log('📌 [Original] Saved original combinations from DB:', originalCombinationsRef.current.size);
+    }
+  }, [incomingSignature, variations, normalizeCombination]);
 
   useEffect(() => {
     setColorImages(externalColorImages);
@@ -372,18 +349,14 @@ export function ProductOptionsManager({
   const isManualAction = useCallback((currentState: Variation[]): boolean => {
     const now = Date.now();
     const timeSinceLastAction = now - lastManualActionRef.current.timestamp;
-    
-    if (lastManualActionRef.current.type && timeSinceLastAction < 500) {
-      return true;
-    }
-    
-    if (currentState.length === 0 && lastManualActionRef.current.type === 'delete') {
-      return true;
-    }
-    
+    if (lastManualActionRef.current.type && timeSinceLastAction < 500) return true;
+    if (currentState.length === 0 && lastManualActionRef.current.type === 'delete') return true;
     return false;
   }, []);
 
+  // ============================================================
+  // 🔑 [FIX-2026-PRO] التعديل 2 + 3: التوليد التلقائي مع احترام التعديلات + is_new + isDifferent محسّن
+  // ============================================================
   useEffect(() => {
     if (isGeneratingRef.current) {
       console.log('⏳ [Auto-Generate] Generation in progress, skipping...');
@@ -395,19 +368,18 @@ export function ProductOptionsManager({
       return;
     }
 
-    // ✅ حارس: في وضع التعديل، إذا لم تُحمَّل variations بعد، لا تعِد التوليد
     if (isEditing && localVariationsRef.current.length === 0) {
       console.log("🟩 [ZOOQ][Options] Edit mode + no variations yet — waiting for DB load, skipping auto-gen");
       return;
     }
-    
-    if (isInitialLoadRef.current) {
-      isInitialLoadRef.current = false;
-      console.log('ℹ️ [Auto-Generate] Initial load - skipping auto-generation');
+
+    // 🔑 [FIX-RACE-2026] حماية: variations وصلت لكن options لسّا
+    // (يمنع مسح التركيبة الأصلية أثناء التحميل المتتابع)
+    if (isEditing && !hasOptionsReady && localVariationsRef.current.length > 0) {
+      console.log("⏳ [Auto-Generate] Variations arrived but options still loading — waiting");
       return;
     }
 
-    // 🛡️ حماية: في وضع التعديل، لا تمسح التركيبات تلقائياً إلا إذا طلب المستخدم صراحةً
     const isUserExplicitlyClearing = 
       lastManualActionRef.current.type === 'delete' && 
       (Date.now() - lastManualActionRef.current.timestamp) < 3000;
@@ -420,18 +392,14 @@ export function ProductOptionsManager({
       }
     }
     
-    // ✅ ✅ ✅ حارس إضافي: في وضع التعديل، إذا كانت options فارغة تماماً
-    // (مؤقتاً أثناء التحميل) — لا تمسح التركيبات
     if (isEditing && localVariationsRef.current.length > 0) {
       const activeCount2 = Object.keys(value).filter(k => value[k] && value[k].length > 0).length;
       const totalOptions2 = Object.values(value).reduce((acc: number, arr: any) => acc + (arr?.length || 0), 0);
-      
       if (activeCount2 === 0 || totalOptions2 === 0) {
         console.log("🛡️ [Guard] Edit mode + options EMPTY (loading?) + variations exist — refusing to clear");
         return;
       }
     }
-    // 🛡️ نهاية الحماية
 
     const activeTypes = Object.keys(value).filter(key => value[key] && value[key].length > 0);
     const activeOptionsCount = activeTypes.length;
@@ -480,7 +448,6 @@ export function ProductOptionsManager({
 
     const currentLocal = localVariationsRef.current;
 
-    // ✅ ✅ ✅ تخطَّ التركيبات المحذوفة يدوياً (لمنع إعادة توليدها)
     const filteredGenerated = generatedVariations.filter(v => {
       const vKey = normalizeCombination(v.combination);
       if (deletedCombinationsRef.current.has(vKey)) {
@@ -490,35 +457,68 @@ export function ProductOptionsManager({
       return true;
     });
 
-    const variationsWithDefaults = filteredGenerated.map(v => {
+       const variationsWithDefaults = filteredGenerated.map(v => {
       const vKey = normalizeCombination(v.combination);
       
       const existingVariation = currentLocal.find(existing => 
         normalizeCombination(existing.combination) === vKey
       );
       
-      // ✅ ✅ ✅ منطق is_new الصحيح:
+      // 🔍 [DEBUG-MATCH] اطبع تفاصيل المطابقة عند عدم العثور على التركيبة
+      if (!existingVariation && currentLocal.length > 0) {
+        console.log('🔍 [DEBUG-MATCH] NOT FOUND!', {
+          generated: {
+            combo: v.combination,
+            key: vKey,
+            combo_entries: Object.entries(v.combination),
+          },
+          currentLocal: currentLocal.map(c => ({
+            combo: c.combination,
+            key: normalizeCombination(c.combination),
+            combo_entries: Object.entries(c.combination),
+            id: c.id,
+            price: c.price,
+            old_price: c.old_price,
+          })),
+          basePrice,
+          baseOldPrice,
+        });
+      }
+      
+      // 🔑 [FIX-2026-PRO] التعديل 2: is_new محسّن
       let isNew: boolean;
       if (!isEditing) {
         isNew = true;
       } else {
-        isNew = !originalCombinationsRef.current.has(vKey);
+        const isInOriginal = originalCombinationsRef.current.has(vKey);
+        const isInCurrent = !!existingVariation;
+        isNew = !isInOriginal && !isInCurrent;
       }
       
-      // 🟢 🆕 🎯 الحل الجذري: استخدم basePrice دائماً (السعر الجديد)
-      // وليس existingVariation?.price (السعر القديم)
+      const hasExisting = !!existingVariation;
+      const existingPrice = existingVariation?.price;
+      const existingOldPrice = existingVariation?.old_price;
+      
+      const finalPrice = (hasExisting && existingPrice !== undefined && existingPrice !== null && existingPrice > 0)
+        ? existingPrice
+        : basePrice;
+      
+      // 🔑 [FIX] توحيد old_price: إذا 0 → null (مطابق لـ DB)
+      const finalOldPrice = (hasExisting && existingOldPrice !== undefined && existingOldPrice !== null && existingOldPrice > 0)
+        ? existingOldPrice
+        : (baseOldPrice > 0 ? baseOldPrice : null);
+      
       return {
         ...v,
         id: existingVariation?.id ?? v.id,
-        price: basePrice,        // ← ✅ basePrice (السعر الجديد 66) — وليس existingVariation.price (76)
-        old_price: baseOldPrice, // ← ✅ baseOldPrice
+        price: finalPrice,
+        old_price: finalOldPrice,
         stock_quantity: existingVariation?.stock_quantity ?? 0,
         is_available: existingVariation?.is_available ?? true,
         is_new: isNew,
       };
     });
 
-    // 🟢 [DEBUG] اطبع الأسعار قبل وبعد التوليد
     console.log('🟢 [DEBUG-OPTIONS] Generated prices:', {
       basePrice,
       oldPrices: currentLocal.map(v => v.price),
@@ -526,22 +526,44 @@ export function ProductOptionsManager({
       isEditing,
     });
 
-    const currentKeys = new Set(
-      currentLocal.map(v => normalizeCombination(v.combination))
-    );
-    const newKeys = new Set(
-      variationsWithDefaults.map(v => normalizeCombination(v.combination))
-    );
+    // 🔑 [FIX-2026-PRO] التعديل 3: isDifferent محسّن
+    const newById = new Map(variationsWithDefaults.map(v => [v.id, v]));
     
-    const isDifferent = 
-      currentLocal.length !== variationsWithDefaults.length ||
-      [...newKeys].some(key => !currentKeys.has(key)) ||
-      currentLocal.some((v, i) => v.price !== variationsWithDefaults[i]?.price);
+    const sameCount = currentLocal.length === variationsWithDefaults.length;
+    const sameIds = sameCount && currentLocal.every(v => newById.has(v.id));
+    const samePrices = sameIds && currentLocal.every(v => {
+      const newV = newById.get(v.id);
+      return newV && v.price === newV.price && v.old_price === newV.old_price;
+    });
+    
+    // 🔑 [FIX-RACE-2026] مقارنة متسامحة — تتجاهل المفاتيح غير المشتركة
+    // (مثال: التركيبة القديمة بها concentration والجديدة لا → تعتبر متطابقة
+    //  إذا تطابقت القيم على المفاتيح المشتركة)
+    const sameCombinations = 
+      currentLocal.length === variationsWithDefaults.length &&
+      currentLocal.every((cur) => {
+        const gen = variationsWithDefaults.find(g => g.id === cur.id) 
+          ?? variationsWithDefaults[currentLocal.indexOf(cur)];
+        if (!gen) return false;
+        const curKeys = Object.keys(cur.combination || {});
+        const genKeys = Object.keys(gen.combination || {});
+        const shared = curKeys.filter(k => genKeys.includes(k));
+        if (shared.length === 0) return false;
+        return shared.every(k =>
+          String(cur.combination[k] ?? '').trim().toLowerCase() ===
+          String(gen.combination[k] ?? '').trim().toLowerCase()
+        );
+      });
+
+    const isDifferent = !sameIds || !samePrices || !sameCombinations;
 
     console.log('🟢 [DEBUG-OPTIONS] isDifferent:', isDifferent, {
+      sameCount,
+      sameIds,
+      samePrices,
+      sameCombinations,
       oldCount: currentLocal.length,
       newCount: variationsWithDefaults.length,
-      priceChanged: currentLocal.some((v, i) => v.price !== variationsWithDefaults[i]?.price),
     });
 
     if (!isDifferent) {
@@ -561,7 +583,6 @@ export function ProductOptionsManager({
     }
 
     console.log(`🔄 [Auto-Generate] Regenerating ${variationsWithDefaults.length} variations (was ${currentLocal.length})`);
-    console.log('📊 [Auto-Generate] Active options:', activeTypes);
     console.log('📊 [Auto-Generate] New variations:', variationsWithDefaults.filter(v => v.is_new).length);
     
     isGeneratingRef.current = true;
@@ -575,21 +596,29 @@ export function ProductOptionsManager({
       console.log('✅ [Auto-Generate] Generation completed');
     }, 100);
     
-  }, [value, colorImages, onVariationsChange, isEditing, basePrice, baseOldPrice, lang, normalizeCombination]);
+  }, [value, colorImages, onVariationsChange, isEditing, basePrice, baseOldPrice, lang, normalizeCombination, hasOptionsReady]);
 
-  // ✅ ✅ ✅ امسح sessionStorage عند إغلاق النموذج (variations تصبح 0) — منتج جديد في المرة التالية
+  // ============================================================
+  // مسح sessionStorage عند منتج جديد — فقط عند التهيئة الأولى
+  // ============================================================
+  const didClearForNewRef = useRef(false);
   useEffect(() => {
-    if (variations.length === 0 && !isEditing && storageKeyInitialized) {
-      // منتج جديد — امسح أي محذوفات قديمة
+    if (
+      !isEditing && 
+      !productId && 
+      !didClearForNewRef.current &&
+      variations.length === 0
+    ) {
+      didClearForNewRef.current = true;
       try {
         sessionStorage.removeItem(deletedStorageKey);
-        deletedCombinationsRef.current.clear();
+        deletedCombinationsRef.current = new Set();
         console.log('🗑️ [deleted] Cleared sessionStorage for new product');
       } catch (e) {
         console.error('❌ Failed to clear deleted combinations:', e);
       }
     }
-  }, [variations.length, isEditing, deletedStorageKey, storageKeyInitialized]);
+  }, [variations.length, isEditing, productId, deletedStorageKey]);
 
   const generateVariationsAuto = (
     currentValue: Record<string, string[]>, 
@@ -623,8 +652,8 @@ export function ProductOptionsManager({
             id: `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
             combination: { ...current },
             is_available: true,
-            price: basePrice,        // ✅ 🆕
-            old_price: baseOldPrice, // ✅ 🆕
+            price: basePrice,
+            old_price: baseOldPrice,
             stock_quantity: 0,
           });
         }
@@ -676,9 +705,7 @@ export function ProductOptionsManager({
       }
     }
 
-    // ✅ ✅ ✅ امسح قائمة المحذوفات (المستخدم طلب توليد يدوي)
     deletedCombinationsRef.current.clear();
-    // ✅ احفظ في sessionStorage
     persistDeletedCombinations();
     
     recordManualAction('generate');
@@ -691,8 +718,8 @@ export function ProductOptionsManager({
           id: `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           combination: { ...current },
           is_available: true,
-          price: basePrice,        // ✅ 🆕
-          old_price: baseOldPrice, // ✅ 🆕
+          price: basePrice,
+          old_price: baseOldPrice,
           stock_quantity: 0,
         });
         return;
@@ -714,8 +741,8 @@ export function ProductOptionsManager({
     if (allVariations.length > 0) {
       const variationsWithDefaults = allVariations.map(v => ({
         ...v,
-        price: basePrice,        // ✅ 🆕
-        old_price: baseOldPrice, // ✅ 🆕
+        price: basePrice,
+        old_price: baseOldPrice,
         stock_quantity: 0,
         is_new: true,
       }));
@@ -744,9 +771,7 @@ export function ProductOptionsManager({
       setShowRestoreButton(true);
     }
     
-    // ✅ ✅ ✅ امسح قائمة المحذوفات (سنحذف كل شيء)
     deletedCombinationsRef.current.clear();
-    // ✅ احفظ في sessionStorage
     persistDeletedCombinations();
     
     recordManualAction('delete');
@@ -781,9 +806,7 @@ export function ProductOptionsManager({
       return;
     }
     
-    // ✅ ✅ ✅ امسح قائمة المحذوفات (المستخدم استعاد)
     deletedCombinationsRef.current.clear();
-    // ✅ احفظ في sessionStorage
     persistDeletedCombinations();
     
     setLocalVariations(deletedVariationsBackup);
@@ -893,13 +916,11 @@ export function ProductOptionsManager({
   };
 
   const removeVariation = (variationId: string) => {
-    // ✅ ✅ ✅ سجّل التركيبة المحذوفة (لمنع إعادة توليدها)
     const variation = localVariations.find(v => v.id === variationId);
     if (variation) {
       const key = normalizeCombination(variation.combination);
       deletedCombinationsRef.current.add(key);
       console.log(`🗑️ [removeVariation] Added to deleted set:`, key);
-      // ✅ احفظ في sessionStorage (يبقى عبر remounts)
       persistDeletedCombinations();
     }
     
@@ -927,7 +948,7 @@ export function ProductOptionsManager({
     type.emoji.includes(searchTerm)
   );
 
-  // ✅ ✅ ✅ إذا ما في خيارات متاحة
+  // ✅ إذا ما في خيارات متاحة
   if (OPTION_TYPES.length === 0) {
     return (
       <div className="p-6 text-center rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
@@ -944,9 +965,7 @@ export function ProductOptionsManager({
         </p>
       </div>
     );
-  }
-
-  return (
+  }  return (
     <div className="space-y-3">
       {/* ===== Header ===== */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1313,7 +1332,7 @@ export function ProductOptionsManager({
                 </div>
               </div>
 
-              {/* قائمة التركيبات - مقيّدة الارتفاع */}
+              {/* قائمة التركيبات */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 max-h-[300px] sm:max-h-[320px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#2a655f]/30 scrollbar-track-transparent pe-1">
                 {localVariations.map((variation) => {
                   const isAvailable = variation.is_available;
@@ -1388,7 +1407,6 @@ export function ProductOptionsManager({
                               onChange={(e) => {
                                 const val = e.target.value;
                                 const newPrice = val === '' ? 0 : Number(val);
-                                // ✅ 🆕 أبلِغ الأب أن هذه التركيبة عُدّلت يدوياً
                                 if (onVariationManualEdit) {
                                   onVariationManualEdit(variation.id);
                                 }

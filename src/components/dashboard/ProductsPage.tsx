@@ -70,6 +70,20 @@ const COLORS = {
 // ✅ عدد العناصر لكل دفعة في Infinite Scroll
 const ITEMS_PER_BATCH = 10;
 
+// ============================================================
+// 🔑 [FIX] دالة إبطال كل الـ caches المتعلقة بمنتج معين
+// ============================================================
+function invalidateProductCaches(queryClient: any, listingId?: string) {
+  if (listingId) {
+    queryClient.removeQueries({ queryKey: ["listing", listingId] });
+    queryClient.removeQueries({ queryKey: ["listing-details", listingId] });
+    queryClient.removeQueries({ queryKey: ["product-variations", listingId] });
+    queryClient.removeQueries({ queryKey: ["product-options", listingId] });
+    queryClient.removeQueries({ queryKey: ["seller-listing", listingId] }); // ✅ [FIX-STALE-PRICE] السطر الجديد
+  }
+  queryClient.invalidateQueries({ queryKey: ["listings"] });
+}
+
 export const ProductsPage = React.memo(function ProductsPage() {
   const app = useApp();
   const t = useT();
@@ -78,9 +92,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
   const { data: govs = [] } = useGovernorates();
 
   // ✅ منع التمرير التلقائي
-  // ✅ منع التمرير التلقائي (مع السماح بـ PullToRefresh)
-  // ملاحظة: أزلنا touchmove — لأنه يمنع PullToRefresh من العمل
-  // نُبقي scroll و wheel فقط لمنع auto-scroll أثناء تحميل المكون
   useEffect(() => {
     const currentScroll = window.scrollY;
     let isBlocking = true;
@@ -88,14 +99,12 @@ export const ProductsPage = React.memo(function ProductsPage() {
     
     const preventScroll = () => {
       if (!isBlocking) return;
-      // ✅ لا نمنع التمرير إذا كان المستخدم في أعلى الصفحة (للسحب)
       if (window.scrollY <= 0) return;
       window.scrollTo({ top: currentScroll, behavior: 'instant' });
     };
     
     window.addEventListener('scroll', preventScroll, { passive: true });
     window.addEventListener('wheel', preventScroll, { passive: true });
-    // ❌ تم حذف touchmove — يمنع PullToRefresh
     
     requestAnimationFrame(() => {
       window.scrollTo({ top: currentScroll, behavior: 'instant' });
@@ -110,7 +119,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
       if (timeoutId) clearTimeout(timeoutId);
       window.removeEventListener('scroll', preventScroll);
       window.removeEventListener('wheel', preventScroll);
-      // ❌ تم حذف touchmove
     };
   }, []);
 
@@ -144,7 +152,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const hasTriggeredLoadMoreRef = useRef(false);
   
-  // ✅ useInView مع rootMargin لتحميل أسرع
   const { ref: loadMoreRef, inView } = useInView({ 
     threshold: 0.1, 
     triggerOnce: false,
@@ -188,9 +195,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
   const [confirmDeleteOfferOpen, setConfirmDeleteOfferOpen] = useState(false);
   const [offerToDelete, setOfferToDelete] = useState<string | null>(null);
 
-  // ============================================================
-  // ✅ دالة جلب اسم التصنيف الكامل (رئيسي + فرعي)
-  // ============================================================
+  // ✅ دالة جلب اسم التصنيف الكامل
   const getFullCategoryPath = useCallback((parentCategoryId: string | null | undefined, categoryId: string | null | undefined): { parent: string; child: string } => {
     const parent = parentCategoryId ? cats.find((c: any) => c.id === parentCategoryId) : null;
     const child = categoryId ? cats.find((c: any) => c.id === categoryId) : null;
@@ -284,20 +289,18 @@ export const ProductsPage = React.memo(function ProductsPage() {
     return result;
   }, [productsWithPromo, searchQuery, filterStatus, filterType]);
 
-  // ✅ Infinite Scroll — عرض المنتجات تدريجياً
+  // ✅ Infinite Scroll
   const displayedProducts = useMemo(() => {
     return filteredProducts.slice(0, visibleCount);
   }, [filteredProducts, visibleCount]);
 
   const hasMore = visibleCount < filteredProducts.length;
 
-  // ✅ إعادة تعيين عند تغير الفلاتر
   useEffect(() => {
     setVisibleCount(ITEMS_PER_BATCH);
     hasTriggeredLoadMoreRef.current = false;
   }, [searchQuery, filterStatus, filterType]);
 
-  // ✅ دالة تحميل المزيد
   const loadMore = useCallback(() => {
     if (isLoadingMore || !hasMore) return;
     hasTriggeredLoadMoreRef.current = true;
@@ -309,7 +312,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
     }, 300);
   }, [hasMore, isLoadingMore]);
 
-  // ✅ Infinite Scroll effect — بدون isInitialLoad
   useEffect(() => {
     if (!inView) {
       hasTriggeredLoadMoreRef.current = false;
@@ -326,7 +328,6 @@ export const ProductsPage = React.memo(function ProductsPage() {
     loadMore();
   }, [inView, hasMore, isLoadingMore, loadMore]);
 
-  // ✅ log للتشخيص
   useEffect(() => {
     console.log("🔍 [Infinite Scroll]", { inView, hasMore, visibleCount, filtered: filteredProducts.length });
   }, [inView, hasMore, visibleCount, filteredProducts.length]);
@@ -444,13 +445,17 @@ export const ProductsPage = React.memo(function ProductsPage() {
   }, []);
 
   // ===== حفظ المنتج =====
-  const handleSaveProduct = useCallback(async (data: any) => {
+  // 🔑 [FIX #1] لا تصفّر dialogProduct قبل await (يمنع isEditing من التغير)
+  // 🔑 [FIX #2] removeQueries قبل refetch (يمنع cache stale)
+  // 🔑 [FIX #3] cancelRefetch: true
+const handleSaveProduct = useCallback(async (data: any) => {
     setDialogOpen(false);
     
     const isEditing = !!dialogProduct;
     const currentDialogProduct = dialogProduct;
 
-    setDialogProduct(null);
+    // ❌ [FIX] لا تصفّر dialogProduct هنا — أبقِه حتى نهاية الحفظ
+    // setDialogProduct(null);
 
     toast.success(
       isEditing
@@ -465,6 +470,8 @@ export const ProductsPage = React.memo(function ProductsPage() {
       const price = Number(data.price);
       const oldPrice = Number(data.old_price) || 0;
       const discount = data.is_offer && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : null;
+
+      const allowClear = data.allowVariationsClear === true;
 
       let listingId: string;
       const productTitle = data.title_ar;
@@ -484,21 +491,22 @@ export const ProductsPage = React.memo(function ProductsPage() {
             payment_method: data.payment_method,
             delivery_note: data.delivery_note || null,
             kind: data.kind || "product",
-            category_id: data.category_id,
-            parent_category_id: data.parent_category_id,
+            category_id: data.category_id || null,
+            parent_category_id: data.parent_category_id || null,
             governorate_id: data.governorate_id,
             cover_url: data.cover_url,
             updated_at: new Date().toISOString(),
           }
         });
         listingId = currentDialogProduct.id;
+
         // 🛡️ حماية: لا تحذف إلا إذا كانت البيانات القادمة غير فارغة
         const hasIncomingData = 
           (data.variations?.length || 0) > 0 ||
           (data.colors?.length || 0) > 0 ||
           (data.options && Object.values(data.options).some((v: any) => v && v.length > 0));
         
-        if (!hasIncomingData) {
+        if (!hasIncomingData && !allowClear) {
           const { count: varsInDB } = await supabase
             .from("product_variations")
             .select("*", { count: 'exact', head: true })
@@ -512,8 +520,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
             );
           }
         }
-        // 🛡️ نهاية الحماية
-        await ProductService.deleteProductData(listingId);
+        await ProductService.deleteProductData(listingId, { force: allowClear });
       } else {
         const result = await create.mutateAsync({
           owner_id: app.user!.id,
@@ -528,8 +535,8 @@ export const ProductsPage = React.memo(function ProductsPage() {
           payment_method: data.payment_method,
           delivery_note: data.delivery_note || null,
           kind: data.kind || "product",
-          category_id: data.category_id,
-          parent_category_id: data.parent_category_id,
+          category_id: data.category_id || null,
+          parent_category_id: data.parent_category_id || null,
           governorate_id: data.governorate_id,
           cover_url: data.cover_url,
           image_urls: [data.cover_url, ...(data.image_urls || [])].filter(Boolean),
@@ -543,71 +550,96 @@ export const ProductsPage = React.memo(function ProductsPage() {
         colors: data.colors || [],
         variations: data.variations || [],
         image_urls: data.image_urls || [],
-      });
+      }, allowClear);
 
       const actionType = isEditing ? "تعديل" : "إضافة";
       notifyAdmin(productTitle, actionType, app.user!.id, listingId).catch(console.error);
+
+      // ============================================================
+      // ✅ [FIX-RPC-CACHE-2026] أبلغ PostgREST بإعادة تحميل schema cache
+      // ============================================================
+      // المشكلة: بعد حفظ السعر، RPC get_seller_product_details قد تُرجع
+      // قيمة قديمة (plan cache) لدقائق. هذا يجعل form.price يعرض القيمة
+      // القديمة عند إعادة الفتح مباشرة بعد الحفظ.
+      //
+      // الحل: استدعاء reload_postgrest_schema() بعد الحفظ لإجبار PostgREST
+      // على إعادة تحميل الـ schema، فتُرجع RPC البيانات المحدّثة فوراً.
+      //
+      // مثال: عدّلت السعر إلى 100 → RPC ترجع 100 فوراً عند إعادة الفتح
+      // ============================================================
+      try {
+        await supabase.rpc('reload_postgrest_schema');
+        console.log('✅ [FIX-RPC-CACHE-2026] PostgREST schema reloaded');
+      } catch (reloadError) {
+        console.warn('⚠️ [FIX-RPC-CACHE-2026] Failed to reload schema:', reloadError);
+        // لا نرمي الخطأ — الحفظ نجح، والمستخدم سيرى التحديث بعد ثوانٍ
+      }
       
-      // ✅ 🆕 زيد الانتظار لضمان اكتمال عمليات DB (كان 300ms — غير كافٍ)
+      // ✅ انتظار لضمان اكتمال عمليات DB
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // ✅ 🆕 إبطال cache المنتج + التركيبات قبل الـ refetch
-      queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
-      queryClient.invalidateQueries({ queryKey: ["listing-details", listingId] });
-      queryClient.removeQueries({ queryKey: ["product-variations", listingId] });
+      // ============================================================
+      // 🔑 [FIX #4] removeQueries + invalidateQueries + refetch مع cancelRefetch
+      // ============================================================
+      console.log(`🔄 [handleSaveProduct] Invalidating caches for listing: ${listingId}`);
+      invalidateProductCaches(queryClient, listingId);
 
       await queryClient.refetchQueries({ 
         queryKey: ["listings", "my", app.user?.id],
         exact: true,
+        cancelRefetch: true,  // ✅ إلغاء أي طلب جاري
       });
 
       if (!isEditing) {
-  getUserDisplayName(app.user!.id).then(async (userName) => {
-    // ✅ التحقق فقط من وجود طلب "فتح متجر" pending
-    // إذا لم تتم الموافقة على المتجر بعد → لا يُنشأ طلب منتج
-    const { data: existingStoreApp } = await supabase
-      .from("seller_applications")
-      .select("id, status")
-      .eq("user_id", app.user!.id)
-      .eq("status", "pending")
-      .eq("application_type", "store")
-      .limit(1)
-      .maybeSingle();
+        getUserDisplayName(app.user!.id).then(async (userName) => {
+          const { data: existingStoreApp } = await supabase
+            .from("seller_applications")
+            .select("id, status")
+            .eq("user_id", app.user!.id)
+            .eq("status", "pending")
+            .eq("application_type", "store")
+            .limit(1)
+            .maybeSingle();
 
-    if (!existingStoreApp) {
-      // ✅ يُنشئ طلب منتج دائماً (حتى لو كان هناك طلبات منتجات pending سابقة)
-      await supabase.from("seller_applications").insert({
-        user_id: app.user!.id,
-        store_name: userName,
-        store_description: `طلب إضافة منتج: ${productTitle}`,
-        application_type: 'product',
-        status: 'pending',
-      });
-    }
-  }).catch(console.error);
-}
+          if (!existingStoreApp) {
+            await supabase.from("seller_applications").insert({
+              user_id: app.user!.id,
+              store_name: userName,
+              store_description: `طلب إضافة منتج: ${productTitle}`,
+              application_type: 'product',
+              status: 'pending',
+            });
+          }
+        }).catch(console.error);
+      }
       
-    } catch (e) {
+        } catch (e) {
       console.error("❌ Error in handleSaveProduct:", e);
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setIsSaving(false);
+      // 🔑 [FIX-2026] لا تصفّر dialogProduct هنا
+      // (يمنع productId من التغير إلى undefined بعد الحفظ → يحفظ المحذوفات)
     }
   }, [dialogProduct, update, create, app.user, notifyAdmin, app.lang, queryClient]);
-
   // ===== حذف المنتج =====
   const handleDeleteProduct = useCallback(async () => {
     if (!productToDelete) return;
     try {
-      await del.mutateAsync(productToDelete.id);
+      const deletedId = productToDelete.id;
+      await del.mutateAsync(deletedId);
       toast.success(app.lang === "ar" ? "تم حذف المنتج بنجاح" : "Product deleted");
       setDeleteDialogOpen(false);
       setProductToDelete(null);
+      
+      // ✅ [FIX] احذف caches المنتج المحذوف
+      invalidateProductCaches(queryClient, deletedId);
+      
       await refetchMyListings();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     }
-  }, [productToDelete, del, refetchMyListings, app.lang]);
+  }, [productToDelete, del, refetchMyListings, app.lang, queryClient]);
 
   // ===== تحويل المنتج إلى عرض =====
   const handleConvertToOffer = useCallback(async (
@@ -685,6 +717,10 @@ export const ProductsPage = React.memo(function ProductsPage() {
 
       setConvertDialogOpen(false);
       setProductToConvert(null);
+      
+      // ✅ [FIX] احذف caches المنتج المحوّل
+      invalidateProductCaches(queryClient, productId);
+      
       await refetchMyListings();
       await notifyAdmin(product.title_ar, "تحويل إلى عرض", app.user!.id, productId);
 
@@ -694,40 +730,40 @@ export const ProductsPage = React.memo(function ProductsPage() {
     } finally {
       setIsConverting(false);
     }
-  }, [myListings, update, refetchMyListings, notifyAdmin, app.user, app.lang]);
+  }, [myListings, update, refetchMyListings, notifyAdmin, app.user, app.lang, queryClient]);
 
   // ===== إعادة نشر المنتج =====
- const handleRepublish = useCallback(async (product: any) => {
-  try {
-    setIsSaving(true);
-    
-    await update.mutateAsync({
-      id: product.id,
-      patch: {
-        status: "pending",
-        rejection_reason: null,       // ← ✅ نظّف سبب الرفض
-        rejected_at: null,             // ← ✅ نظّف تاريخ الرفض
-        rejected_by: null,             // ← ✅ نظّف من رفض
-        updated_at: new Date().toISOString(),
-      }
-    });
-    
-    toast.success(app.lang === "ar" ? "📤 تم إرسال طلب إعادة النشر للمراجعة" : "📤 Republish request sent for review");
-    await notifyAdmin(product.title_ar, "إعادة نشر", app.user!.id, product.id);
-    
-    queryClient.invalidateQueries({ queryKey: ["listings", "my", app.user?.id] });
-    queryClient.invalidateQueries({ queryKey: ["listings"] });
-    queryClient.invalidateQueries({ queryKey: ["listing", product.id] });
-    
-    await refetchMyListings();
-    
-  } catch (error) {
-    console.error("❌ Error republishing product:", error);
-    toast.error(app.lang === "ar" ? "❌ فشل إرسال طلب إعادة النشر" : "❌ Failed to send republish request");
-  } finally {
-    setIsSaving(false);
-  }
-}, [update, app.user, app.lang, notifyAdmin, refetchMyListings, queryClient]);
+  const handleRepublish = useCallback(async (product: any) => {
+    try {
+      setIsSaving(true);
+      
+      await update.mutateAsync({
+        id: product.id,
+        patch: {
+          status: "pending",
+          rejection_reason: null,
+          rejected_at: null,
+          rejected_by: null,
+          updated_at: new Date().toISOString(),
+        }
+      });
+      
+      toast.success(app.lang === "ar" ? "📤 تم إرسال طلب إعادة النشر للمراجعة" : "📤 Republish request sent for review");
+      await notifyAdmin(product.title_ar, "إعادة نشر", app.user!.id, product.id);
+      
+      // ✅ [FIX] احذف caches المنتج
+      invalidateProductCaches(queryClient, product.id);
+      
+      await refetchMyListings();
+      
+    } catch (error) {
+      console.error("❌ Error republishing product:", error);
+      toast.error(app.lang === "ar" ? "❌ فشل إرسال طلب إعادة النشر" : "❌ Failed to send republish request");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [update, app.user, app.lang, notifyAdmin, refetchMyListings, queryClient]);
+
   // ===== دوال العروض الترويجية =====
   const openConvertDialog = useCallback((product: any) => {
     setProductToConvert(product);
@@ -844,7 +880,8 @@ export const ProductsPage = React.memo(function ProductsPage() {
     setDialogOpen(true);
   }, []);
 
-  const openEditDialog = useCallback((product: any) => {
+  // 🔑 [FIX #5] removeQueries قبل جلب المنتج (يمنع cache stale)
+  const openEditDialog = useCallback(async (product: any) => {
     if (isOpeningDialog.current) return;
     isOpeningDialog.current = true;
     
@@ -854,14 +891,44 @@ export const ProductsPage = React.memo(function ProductsPage() {
       return;
     }
     
-    setDialogProduct(product);
-    setDialogType(product.is_offer ? "offer" : "product");
+    // ✅ [FIX] احذف كل caches المنتج قبل الجلب
+    console.log(`🔄 [openEditDialog] Removing caches for product: ${product.id}`);
+    queryClient.removeQueries({ queryKey: ["listing", product.id] });
+    queryClient.removeQueries({ queryKey: ["listing-details", product.id] });
+    queryClient.removeQueries({ queryKey: ["product-variations", product.id] });
+    queryClient.removeQueries({ queryKey: ["product-options", product.id] });
+    
+    // ✅ اجلب product من DB مباشرة
+    let freshProduct = product;
+    try {
+      const { data: dbProduct, error: dbError } = await supabase
+        .from("listings")
+        .select("*")
+        .eq("id", product.id)
+        .maybeSingle();
+      
+      if (!dbError && dbProduct) {
+        freshProduct = dbProduct;
+        console.log('✅ [openEditDialog] Fetched fresh product from DB:', {
+          id: dbProduct.id,
+          price: dbProduct.price,
+          title: dbProduct.title_ar,
+        });
+      } else {
+        console.warn('⚠️ [openEditDialog] Could not fetch fresh product, using cached:', dbError);
+      }
+    } catch (e) {
+      console.error('❌ [openEditDialog] Error fetching product from DB:', e);
+    }
+    
+    setDialogProduct(freshProduct);
+    setDialogType(freshProduct.is_offer ? "offer" : "product");
     setDialogOpen(true);
     
     setTimeout(() => { isOpeningDialog.current = false; }, 500);
-  }, [handleEditPromoOffer]);
+  }, [handleEditPromoOffer, queryClient]);
 
-  const openProductDetail = useCallback((product: any) => {
+  const openProductDetail = useCallback(async (product: any) => {
     if (isOpeningDetail.current) return;
     isOpeningDetail.current = true;
     
@@ -871,11 +938,26 @@ export const ProductsPage = React.memo(function ProductsPage() {
       return;
     }
     
+    let freshProduct = product;
+    try {
+      const { data: dbProduct, error: dbError } = await supabase
+        .from("listings")
+        .select("*")
+        .eq("id", product.id)
+        .maybeSingle();
+      
+      if (!dbError && dbProduct) {
+        freshProduct = dbProduct;
+      }
+    } catch (e) {
+      console.error('❌ [openProductDetail] Error fetching product from DB:', e);
+    }
+    
     setSelectedVariation(null);
-    setSelectedProduct(product);
+    setSelectedProduct(freshProduct);
     setCurrentImageIndex(0);
     setIsZoomed(false);
-    setDetailCurrentImage(product?.cover_url || '');
+    setDetailCurrentImage(freshProduct?.cover_url || '');
     setDetailSelectedColor(null);
     setDetailDialogOpen(true);
     
@@ -956,9 +1038,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
         }
       }}
     />
-  ), [promoDetailDialogOpen, selectedPromoOffer, selectedPromoProduct, app.lang, app.currency, formatPrice, handleEditPromoOffer, handleRemovePromoOffer]);
-
-  // ✅ حالة التحميل — فقط عند التحميل الأولي (لا عند refetch)
+  ), [promoDetailDialogOpen, selectedPromoOffer, selectedPromoProduct, app.lang, app.currency, formatPrice, handleEditPromoOffer, handleRemovePromoOffer]);  // ✅ حالة التحميل — فقط عند التحميل الأولي (لا عند refetch)
   if (isLoading && myListings.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-6">
@@ -1132,12 +1212,10 @@ export const ProductsPage = React.memo(function ProductsPage() {
         ))}
       </div>
 
-      {/* ============================================================ */}
-      {/* ✅ SEARCH & FILTERS - محسّن للموبايل */}
-      {/* ============================================================ */}
+      {/* ===== SEARCH & FILTERS ===== */}
       <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-slate-200 dark:border-slate-700 p-3 sm:p-4 shadow-sm">
         
-        {/* ✅ الصف الأول: البحث */}
+        {/* الصف الأول: البحث */}
         <div className="relative group mb-3">
           <Search className="absolute inset-y-0 my-auto start-3 h-4 w-4 text-slate-400 group-focus-within:text-[#2a655f] transition-colors pointer-events-none" />
           <Input 
@@ -1157,7 +1235,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
           )}
         </div>
 
-        {/* ✅ الصف الثاني: الفلاتر + view mode + clear */}
+        {/* الصف الثاني: الفلاتر */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-12 gap-2">
           
           {/* Status Filter */}
@@ -1242,7 +1320,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
           </div>
         </div>
 
-        {/* ✅ عداد النتائج */}
+        {/* عداد النتائج */}
         {(searchQuery || filterStatus !== "all" || filterType !== "all") && (
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2 flex-wrap">
             <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
@@ -1261,7 +1339,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* ✅ عرض المنتجات */}
+      {/* عرض المنتجات */}
       {/* ============================================================ */}
       {myListings.length === 0 ? (
         <div className="rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-10 sm:p-20 text-center bg-gradient-to-b from-[#2a655f]/5 to-transparent">
@@ -1322,7 +1400,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
                 >
                   <div className="flex flex-col md:flex-row gap-3 p-3">
                     
-                    {/* ✅ الصورة */}
+                    {/* الصورة */}
                     <div 
                       className="relative w-full md:w-32 h-48 md:h-32 shrink-0 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 cursor-pointer"
                       onClick={() => openProductDetail(product)}
@@ -1352,7 +1430,7 @@ export const ProductsPage = React.memo(function ProductsPage() {
                       </div>
                     </div>
                     
-                    {/* ✅ المحتوى */}
+                    {/* المحتوى */}
                     <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
                       
                       <div>

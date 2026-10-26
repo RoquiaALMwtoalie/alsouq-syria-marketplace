@@ -16,6 +16,10 @@ export const PLURAL_MAP: Record<string, string> = {
   'gender': 'genders',
   'brand': 'brands',
   
+  // 🔑 [FIX-2026] عطور — identity (مفرد يبقى مفرد)
+  'concentration': 'concentration',
+  'note': 'notes',
+  
   // إلكترونيات
   'storage': 'storages',
   'ram': 'rams',
@@ -108,6 +112,10 @@ export const ALLOWED_OPTION_TYPES = [
   'seasons',
   'genders',
   'brands',
+  
+  // 🔑 [FIX-2026] عطور
+  'concentration',
+  'notes',
   
   // إلكترونيات
   'storages',
@@ -256,6 +264,10 @@ export const OPTION_TYPE_TRANSLATIONS: Record<string, { ar: string; en: string }
   'genders': { ar: 'الفئات الجنسية', en: 'Genders' },
   'brands': { ar: 'الماركات', en: 'Brands' },
   
+  // 🔑 [FIX-2026] عطور
+  'concentration': { ar: 'التركيز', en: 'Concentration' },
+  'notes': { ar: 'المكونات العطرية', en: 'Fragrance Notes' },
+  
   // إلكترونيات
   'storages': { ar: 'سعات التخزين', en: 'Storages' },
   'rams': { ar: 'سعات الذاكرة', en: 'RAMs' },
@@ -367,6 +379,9 @@ export function getSupportedOptionTypes(lang: string): Array<{ id: string; label
     'seasons': '🌤️',
     'genders': '👫',
     'brands': '🏷️',
+    // 🔑 [FIX-2026] عطور
+    'concentration': '💧',
+    'notes': '🌸',
     'storages': '💾',
     'rams': '🧠',
     'processors': '⚡',

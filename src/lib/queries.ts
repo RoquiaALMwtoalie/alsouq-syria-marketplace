@@ -696,7 +696,35 @@ export function useListing(id: string | undefined) {
     gcTime: 10 * 60 * 1000,
   });
 }
-
+export function useSellerListing(id: string | undefined) {
+  return useQuery({
+    queryKey: ["seller-listing", id],
+    enabled: !!id,
+    queryFn: async () => {
+      console.log("🚀 [useSellerListing] Fetching seller product:", id);
+      
+      const { data, error } = await supabase
+        .rpc('get_seller_product_details', { p_product_id: id });
+      
+      if (error) {
+        console.error("❌ [useSellerListing] RPC Error:", error);
+        throw error;
+      }
+      
+      if (data?.error) {
+        console.error("❌ [useSellerListing] Product error:", data.error);
+        return null;
+      }
+      
+      console.log("✅ [useSellerListing] Product found:", data?.title_ar, 'price:', data?.price);
+      return data;
+    },
+    // ✅ [FIX-RPC-CACHE-2026] تقليل staleTime لتجاوز PostgREST plan cache
+    staleTime: 30 * 1000,        // 30 ثانية بدل 5 دقائق
+    gcTime: 2 * 60 * 1000,       // 2 دقيقة بدل 10
+    refetchOnMount: 'always',    // اجلب دائماً عند mount
+  });
+}
 export function useCreateListing() {
   const qc = useQueryClient();
   return useMutation({
